@@ -1,0 +1,281 @@
+# Copyright (C) 2022 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Ubuntu CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/ubuntu-ci.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+    tags:
+      - 'v*.*.*'
+
+  pull_request:
+    paths:
+      - ".github/workflows/ubuntu-ci.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  matrix-factory:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-result.outputs.result }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.after }}
+
+      - name: Detect CI type
+        id: ci-type
+        run: |
+          if git log --format=%B -n 1 ${{ github.event.after }} | grep -qF '[ci full]'; then
+            echo "type=full" >> $GITHUB_OUTPUT
+          else
+            echo "type=short" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate matrix
+        uses: actions/github-script@v6
+        id: set-result
+        with:
+          script: |
+            // Documentation
+            // https://docs.github.com/en/actions/learn-github-actions/contexts#fromjson
+            // https://github.com/actions/runner/issues/982#issuecomment-809360765
+
+            var ci_short = "${{ steps.ci-type.outputs.type }}" === "short"
+
+            var includes = []
+
+            // Debug builds (short CI)
+            includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+
+            // Release builds (short CI)
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+
+            if (ci_short) {
+              return { include: includes }
+            }
+
+            // Debug builds (long CI)
+            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+
+            // Release builds (long CI)
+            includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
+
+            // Make sure project builds with CMake 3.20
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.20.5', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            // Make sure project builds with make
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+
+            return { include: includes }
+
+  build-project:
+    needs: matrix-factory
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      options: "--user=root"
+
+    env:
+      CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPRESSLEVEL: "13"
+      CCACHE_MAXSIZE: "200M"
+      CONAN_HOME: "/opt/conan/"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Check build deps are up-to-date
+        id: build-deps-outdated
+        run: |
+          pattern='[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+$'
+          flag=false
+
+          if [[ $(cmake --version | grep -o "$pattern") != ${{ matrix.cmake }} ||
+             $(conan --version | grep -o "$pattern") != ${{ matrix.conan }} ]]; then
+          flag=true
+          fi
+
+          echo "outdated=$flag" >> $GITHUB_OUTPUT
+
+      - name: Update build deps
+        if: ${{ steps.buld-deps-outdated.outputs.outdated }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-pip
+
+          python3 -m pip install         \
+            "cmake==${{ matrix.cmake }}" \
+            "conan==${{ matrix.conan }}"
+
+      - name: Generate cache keys
+        id: cache-key
+        run: |
+          set -u
+
+          os="${{ matrix.os }}"
+          compiler="${{ matrix.compiler }}"
+          generator="${{ matrix.generator }}"
+          build_type="${{ matrix.build_type }}"
+
+          conanfile_hash="${{ hashFiles('conanfile.txt') }}"
+          workflow_hash="${{ hashFiles('.github/workflows/ubuntu-ci.yml') }}"
+          combined_hash="${{ hashFiles('conanfile.txt', '.github/workflows/ubuntu-ci.yml') }}"
+
+          # This can be used by to always update a cache entry (useful e.g. for ccache)
+          current_date="$(date '+%s')"
+
+          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type-$generator"
+          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type-$generator"
+
+          echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
+          echo "conan-restore-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
+
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a $GITHUB_OUTPUT
+          echo "ccache-restore-key=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
+
+      - name: Restore Conan cache
+        id: cache-conan
+        uses: actions/cache/restore@v3
+        with:
+          key: conan-${{ steps.cache-key.outputs.conan-restore-key }}
+          path: ${{ env.CONAN_HOME }}
+
+      - name: Clean Conan cache (pre-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+          conan remove --confirm "*"
+
+      - name: Install build dependencies
+        run: |
+          conan install .                             \
+             --build=missing                          \
+             --build=cascade                          \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -s build_type="${{ matrix.build_type }}" \
+             -s compiler.libcxx=libstdc++11           \
+             -s compiler.cppstd=17                    \
+             --output-folder=build
+
+      - name: Clean Conan cache (post-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+
+      - name: Save Conan cache
+        uses: actions/cache/save@v3
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        with:
+          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}
+
+      - name: Cache Ccache folder
+        uses: actions/cache@v3
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          path: ${{ env.CCACHE_DIR }}
+
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
+                -DCMAKE_PREFIX_PATH="$PWD/build"                     \
+                -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
+                -DOPT_ENABLE_CPPCHECK=OFF                            \
+                -DCOOLERPP_ENABLE_TESTING=ON                         \
+                -DCOOLERPP_BUILD_EXAMPLES=ON                         \
+                -S .                                                 \
+                -B build
+
+      - name: Build project
+        run: cmake --build build -j $(nproc)
+
+      - name: Print Ccache statistics
+        run: ccache -s
+
+      - name: Run unit tests
+        working-directory: build
+        run: |
+          ctest --test-dir .        \
+                --schedule-random   \
+                --output-on-failure \
+                --no-tests=error    \
+                --timeout 240       \
+                -j $(nproc)
+
+
+  ubuntu-ci-status-check:
+    name: Status Check (Ubuntu CI)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - matrix-factory
+      - build-project
+
+    steps:
+      - name: Collect job results
+        if: |
+          needs.matrix-factory.result != 'success' ||
+          needs.build-project.result != 'success'
+        run: exit 1
