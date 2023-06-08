@@ -14,8 +14,8 @@
 #include "hictk/test/self_deleting_folder.hpp"
 
 namespace hictk::test {
-inline const SelfDeletingFolder testdir{true};            // NOLINT(cert-err58-cpp)
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
+inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-err58-cpp)
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
 namespace hictk::test::dataset {

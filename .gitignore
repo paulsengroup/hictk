@@ -20,5 +20,5 @@ gmon.out
 perf.*
 compile_commands.json
 CMakeUserPresets.json
-src/include/hictk/common/git.hpp
-src/include/hictk/common/version.hpp
+src/common/include/hictk/common/git.hpp
+src/common/include/hictk/common/version.hpp

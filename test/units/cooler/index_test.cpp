@@ -12,7 +12,7 @@
 #include "hictk/chromosome.hpp"
 
 namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }
 
 namespace hictk::test::index {
