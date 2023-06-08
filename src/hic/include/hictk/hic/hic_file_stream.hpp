@@ -40,9 +40,6 @@ class HiCFileStream {
   [[nodiscard]] inline const std::string &url() const noexcept;
   [[nodiscard]] const HiCHeader &header() const noexcept;
 
-  [[nodiscard]] bool isLocal() const noexcept;
-  [[nodiscard]] bool isRemote() const noexcept;
-
   [[nodiscard]] std::int32_t version() const noexcept;
 
   // reads the footer given a pair of chromosomes, norm, unit (BP or FRAG) and resolution.

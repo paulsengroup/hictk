@@ -95,8 +95,8 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release       \
                 -DCMAKE_PREFIX_PATH="$PWD/build" \
                 -DENABLE_DEVELOPER_MODE=OFF      \
-                -DCOOLERPP_ENABLE_TESTING=ON     \
-                -DCOOLERPP_BUILD_EXAMPLES=ON     \
+                -DHICTK_ENABLE_TESTING=ON        \
+                -DHICTK_BUILD_EXAMPLES=ON        \
                 -S .                             \
                 -B build
 

@@ -243,8 +243,8 @@ jobs:
                 -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
-                -DCOOLERPP_ENABLE_TESTING=ON                         \
-                -DCOOLERPP_BUILD_EXAMPLES=ON                         \
+                -DHICTK_ENABLE_TESTING=ON                            \
+                -DHICTK_BUILD_EXAMPLES=ON                            \
                 -S .                                                 \
                 -B build
 

@@ -123,8 +123,8 @@ jobs:
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                   \
-                -DCOOLERPP_BUILD_EXAMPLES=OFF                 \
-                -DCOOLERPP_ENABLE_TESTING=ON                  \
+                -DHICTK_BUILD_EXAMPLES=OFF                    \
+                -DHICTK_ENABLE_TESTING=ON                     \
                 -S .                                          \
                 -B build
 

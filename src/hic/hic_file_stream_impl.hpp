@@ -25,44 +25,15 @@ inline HiCFileStream::HiCFileStream(std::string url)
       _header(std::make_shared<const HiCHeader>(HiCFileStream::readHeader(*_fs))) {}
 
 inline filestream::FileStream HiCFileStream::openStream(std::string url) {
-#ifdef HICXX_USE_CURL
-  const auto isRemoteFile = StartsWith(url, "http");
-  try {
-    try {
-      if (isRemoteFile) {
-        constexpr std::size_t defaulChunkSize = 64 * 1024;
-        return filestream::FileStream::Remote(url, defaulChunkSize, "hictk");
-      }
-      return filestream::FileStream::Local(url);
-
-    } catch (const std::system_error &e) {
-      throw std::runtime_error(std::string(e.what()) + ": " + e.code().message());
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(fmt::format(FMT_STRING("Failed to open {} : {}"),
-                                         isRemoteFile ? "remote file" : "file", e.what()));
-  }
-#else
   try {
     return filestream::FileStream(url);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("Failed to open file: {}"), e.what()));
   }
-#endif
 }
 
 inline const std::string &HiCFileStream::url() const noexcept { return _fs->url(); }
 inline const HiCHeader &HiCFileStream::header() const noexcept { return *_header; }
-
-inline bool HiCFileStream::isLocal() const noexcept { return !isRemote(); }
-
-inline bool HiCFileStream::isRemote() const noexcept {
-#ifdef HICXX_USE_CURL
-  return _fs->is_remote();
-#else
-  return false;
-#endif
-}
 
 inline std::int32_t HiCFileStream::version() const noexcept {
   assert(_header->version != -1);
