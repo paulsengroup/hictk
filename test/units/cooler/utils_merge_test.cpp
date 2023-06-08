@@ -61,7 +61,7 @@ TEST_CASE("utils: merge", "[merge][utils][short]") {
     const auto clr2 = datadir / "ENCFF993FGR.2500000.cool";
     const auto dest2 = testdir() / "cooler_merge_test2.cool";
 
-    const std::array<std::string, 2> sources2{clr1, clr2};
+    const std::array<std::string, 2> sources2{clr1.string(), clr2.string()};
 
     CHECK_THROWS_WITH(utils::merge(sources2.begin(), sources2.end(), dest2.string(), true),
                       Catch::Matchers::ContainsSubstring("use different reference genomes"));
