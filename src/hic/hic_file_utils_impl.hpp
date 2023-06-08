@@ -7,8 +7,8 @@
 #include <filesystem>
 #include <string>
 
-namespace hicxx::utils {
+namespace hictk::utils {
 inline bool is_hic_file(const std::filesystem::path& path) {
-    return internal::HiCFileStream::checkMagicString(path.string());
+  return internal::HiCFileStream::checkMagicString(path.string());
 }
-}  // namespace hicxx::utils
+}  // namespace hictk::utils
