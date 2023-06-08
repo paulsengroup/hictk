@@ -88,7 +88,9 @@ inline constexpr std::uint8_t SENTINEL_ATTR_VALUE{255};
 #if defined(__GNUC__) && defined(__clang__)
   return __clang_major__ > 8;
 #elif defined(__GNUC__)
-  return __GNUC__ > 8;
+  return __GNUC__ > 9;
+#else
+  return true;
 #endif
 }
 
