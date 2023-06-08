@@ -1,0 +1,24 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+# Ignored directories
+.cache/
+.idea/
+.run/
+.vscode/
+benchmark/data
+build/
+cmake-build*/
+conan-envs/
+scratch/
+test/data
+test/Testing
+
+# Ignored files
+gmon.out
+perf.*
+compile_commands.json
+CMakeUserPresets.json
+src/include/hictable/internal/git.hpp
+src/include/hictable/internal/version.hpp

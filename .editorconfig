@@ -1,0 +1,18 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+# Configuration file for EditorConfig
+# More information is available under http://EditorConfig.org
+
+# Ignore any other files further up in the file system
+root = true
+
+# Configuration for all files
+[*]
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+charset = utf-8
