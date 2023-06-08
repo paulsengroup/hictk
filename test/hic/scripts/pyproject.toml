@@ -1,0 +1,18 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+[project]
+name = "hicxx"
+license = { text = "MIT License" }
+
+[tool.pycodestyle]
+ignore = "E226,E302,E41"
+max_line_length = 120
+
+
+[tool.black]
+line-length = 120
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
