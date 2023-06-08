@@ -22,8 +22,8 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-const auto path_plaintext = hictk::test::datadir / "data.txt";
-const auto path_binary = hictk::test::datadir / "data.zip";
+const auto path_plaintext = (hictk::test::datadir / "data.txt").string();  // NOLINT(cert-err58-cpp)
+const auto path_binary = (hictk::test::datadir / "data.zip").string();     // NOLINT(cert-err58-cpp)
 const auto& path = path_plaintext;
 
 static std::string read_file(const std::string& path_) {

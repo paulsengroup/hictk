@@ -15,8 +15,8 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-const auto pathV8 = test::datadir / "4DNFIZ1ZVXC8.hic8";
-const auto path_binary = test::datadir / "data.zip";
+const auto pathV8 = (test::datadir / "4DNFIZ1ZVXC8.hic8").string();  // NOLINT(cert-err58-cpp)
+const auto path_binary = (test::datadir / "data.zip").string();      // NOLINT(cert-err58-cpp)
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("utils: is_hic_file", "[hic][short]") {
