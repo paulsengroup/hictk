@@ -26,7 +26,7 @@ TEST_CASE("utils: is_hic_file", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiCFile accessors", "[hic][short]") {
-  HiCFile f(pathV8);
+  const HiCFile f(pathV8);
 
   CHECK(f.url() == pathV8);
   CHECK(f.name() == pathV8);

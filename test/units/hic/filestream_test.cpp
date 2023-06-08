@@ -159,6 +159,7 @@ TEST_CASE("Local - read", "[hic][short]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Local - append", "[hic][short]") {
   FileStream s(path_plaintext);
 
@@ -192,6 +193,7 @@ TEST_CASE("Local - append", "[hic][short]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Local - getline", "[hic][short]") {
   FileStream s(path_plaintext);
 
@@ -234,6 +236,7 @@ TEST_CASE("Local - getline", "[hic][short]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Local - read binary", "[hic][short]") {
   FileStream s(path_binary);
   s.seekg(10);
