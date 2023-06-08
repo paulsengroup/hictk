@@ -13,12 +13,12 @@ cmake-build*/
 conan-envs/
 scratch/
 test/data
-test/Testing
+Testing/
 
 # Ignored files
 gmon.out
 perf.*
 compile_commands.json
 CMakeUserPresets.json
-src/include/hictable/internal/git.hpp
-src/include/hictable/internal/version.hpp
+src/include/hictk/common/git.hpp
+src/include/hictk/common/version.hpp

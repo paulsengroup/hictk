@@ -14,12 +14,12 @@
 #include <string>
 #include <string_view>
 
-#include "coolerpp/attribute.hpp"
-#include "coolerpp/common.hpp"
-#include "coolerpp/internal/numeric_utils.hpp"
-#include "coolerpp/uri.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
+#include "hictk/cooler/uri.hpp"
+#include "hictk/numeric_utils.hpp"
 
-namespace coolerpp::utils {
+namespace hictk::utils {
 
 constexpr ValidationStatusCooler::operator bool() const noexcept { return this->is_cooler; }
 
@@ -83,7 +83,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
 
   if (Attribute::exists(root_group, "format-version")) {
     const auto version = Attribute::read<std::uint8_t>(root_group, "format-version");
-    status.file_was_properly_closed = version != coolerpp::internal::SENTINEL_ATTR_VALUE;
+    status.file_was_properly_closed = version != hictk::internal::SENTINEL_ATTR_VALUE;
     status.missing_or_invalid_format_attr |= version == 0 || version > 3;
   }
 
@@ -302,7 +302,7 @@ inline std::vector<std::uint32_t> list_resolutions(std::string_view uri, bool so
     std::vector<std::uint32_t> resolutions(resolutions_.size());
     std::transform(resolutions_.begin(), resolutions_.end(), resolutions.begin(),
                    [](const auto &res) {
-                     return coolerpp::internal::parse_numeric_or_throw<std::uint32_t>(res);
+                     return hictk::internal::parse_numeric_or_throw<std::uint32_t>(res);
                    });
 
     if (sorted) {
@@ -315,9 +315,9 @@ inline std::vector<std::uint32_t> list_resolutions(std::string_view uri, bool so
   }
 }
 
-}  // namespace coolerpp::utils
+}  // namespace hictk::utils
 
-constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusCooler>::parse(
+constexpr auto fmt::formatter<hictk::utils::ValidationStatusCooler>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -325,8 +325,8 @@ constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusCooler>::parse(
   return ctx.end();
 }
 
-auto fmt::formatter<coolerpp::utils::ValidationStatusCooler>::format(
-    const coolerpp::utils::ValidationStatusCooler &s, format_context &ctx) const
+auto fmt::formatter<hictk::utils::ValidationStatusCooler>::format(
+    const hictk::utils::ValidationStatusCooler &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -348,7 +348,7 @@ auto fmt::formatter<coolerpp::utils::ValidationStatusCooler>::format(
   // clang-format on
 }
 
-constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusMultiresCooler>::parse(
+constexpr auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -356,8 +356,8 @@ constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusMultiresCooler>::
   return ctx.end();
 }
 
-auto fmt::formatter<coolerpp::utils::ValidationStatusMultiresCooler>::format(
-    const coolerpp::utils::ValidationStatusMultiresCooler &s, format_context &ctx) const
+auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::format(
+    const hictk::utils::ValidationStatusMultiresCooler &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -382,7 +382,7 @@ auto fmt::formatter<coolerpp::utils::ValidationStatusMultiresCooler>::format(
   // clang-format on
 }
 
-constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusScool>::parse(
+constexpr auto fmt::formatter<hictk::utils::ValidationStatusScool>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -390,8 +390,8 @@ constexpr auto fmt::formatter<coolerpp::utils::ValidationStatusScool>::parse(
   return ctx.end();
 }
 
-auto fmt::formatter<coolerpp::utils::ValidationStatusScool>::format(
-    const coolerpp::utils::ValidationStatusScool &s, format_context &ctx) const
+auto fmt::formatter<hictk::utils::ValidationStatusScool>::format(
+    const hictk::utils::ValidationStatusScool &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(

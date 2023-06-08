@@ -10,7 +10,7 @@
 #include <string_view>
 #include <utility>
 
-namespace coolerpp {
+namespace hictk {
 inline CoolerURI::CoolerURI(std::string_view p1, std::string_view p2)
     : CoolerURI(std::string{p1}, std::string{p2}) {}
 
@@ -61,4 +61,4 @@ inline CoolerURI parse_cooler_uri(std::string_view uri) {
   return CoolerURI{std::string{tok1}, "/" + std::string{tok2}};
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

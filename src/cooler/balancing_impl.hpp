@@ -12,7 +12,7 @@
 #include <string_view>
 #include <utility>
 
-namespace coolerpp {
+namespace hictk {
 
 inline Weights::Weights(std::vector<double> weights, Type type) noexcept
     : _weights(std::move(weights)), _type(type) {
@@ -252,4 +252,4 @@ inline auto Balancer<N, CHUNK_SIZE>::iterator::operator++(int) -> iterator {
   return it;
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

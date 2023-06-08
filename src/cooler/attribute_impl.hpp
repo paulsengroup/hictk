@@ -20,12 +20,12 @@
 #include <type_traits>
 #include <variant>
 
-#include "coolerpp/common.hpp"
-#include "coolerpp/group.hpp"
-#include "coolerpp/internal/numeric_utils.hpp"
-#include "coolerpp/internal/type_pretty_printer.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/numeric_utils.hpp"
+#include "hictk/type_pretty_printer.hpp"
 
-namespace coolerpp {
+namespace hictk {
 
 template <typename ParentObj>
 inline bool Attribute::exists(ParentObj& h5obj, std::string_view key) {
@@ -194,4 +194,4 @@ inline Tout Attribute::numeric_converter(T1& buff) {
       internal::type_name<Tout>()));
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

@@ -17,9 +17,9 @@
 #include <string_view>
 #include <vector>
 
-#include "coolerpp/common.hpp"
+#include "hictk/common.hpp"
 
-namespace coolerpp {
+namespace hictk {
 
 namespace internal {
 
@@ -180,4 +180,4 @@ inline HighFive::Selection Dataset::select(std::size_t i1, std::size_t i2) const
   return this->_dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

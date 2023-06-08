@@ -20,9 +20,9 @@
 #include <variant>
 #include <vector>
 
-#include "coolerpp/common.hpp"
+#include "hictk/common.hpp"
 
-namespace coolerpp {
+namespace hictk {
 
 inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::size_t offset,
                                   bool allow_dataset_resize) {
@@ -200,4 +200,4 @@ inline HighFive::DataSet Dataset::create_fixed_str_dataset(
   return group.getDataSet(dataset_name);
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

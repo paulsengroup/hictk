@@ -14,10 +14,11 @@
 #include <utility>
 #include <vector>
 
-#include "coolerpp/bin_table.hpp"
-#include "coolerpp/chromosome.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/fmt.hpp"
 
-namespace coolerpp {
+namespace hictk {
 
 inline Index::Index(std::shared_ptr<const BinTable> bins, std::uint64_t nnz)
     : _bins(std::move(bins)),
@@ -28,7 +29,7 @@ inline Index::Index(std::shared_ptr<const BinTable> bins, std::uint64_t nnz)
                           [&](std::size_t sum, const auto &it) { return sum + it.size(); });
 }
 
-inline const ChromosomeSet &Index::chromosomes() const noexcept {
+inline const Reference &Index::chromosomes() const noexcept {
   assert(this->_bins);
   return this->_bins->chromosomes();
 }
@@ -205,7 +206,7 @@ inline void Index::validate_chrom_id(std::uint32_t chrom_id) const {
   }
 }
 
-inline auto Index::init(const ChromosomeSet &chroms, std::uint32_t bin_size) -> MapT {
+inline auto Index::init(const Reference &chroms, std::uint32_t bin_size) -> MapT {
   assert(!chroms.empty());
   assert(bin_size != 0);
 
@@ -331,4 +332,4 @@ inline auto Index::iterator::get_offsets() const noexcept -> const OffsetVect & 
   return this->_idx->_idx[static_cast<std::size_t>(this->_chrom_id)];
 }
 
-}  // namespace coolerpp
+}  // namespace hictk

@@ -9,9 +9,9 @@
 #include <string_view>
 #include <vector>
 
-#include "coolerpp/coolerpp.hpp"
+#include "hictk/cooler.hpp"
 
-namespace coolerpp::utils {
+namespace hictk::utils {
 
 namespace internal {
 template <typename N>
@@ -126,7 +126,7 @@ inline Pixel<N> PixelMerger<N>::next() {
   return clr1.bin_size();
 }
 
-[[nodiscard]] inline ChromosomeSet get_chromosomes_checked(const std::vector<File>& coolers) {
+[[nodiscard]] inline Reference get_chromosomes_checked(const std::vector<File>& coolers) {
   assert(coolers.size() > 1);
   const auto& clr1 = coolers.front();
 
@@ -185,4 +185,4 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
         fmt::format(FMT_STRING("failed to merge {} cooler files: {}"), clrs.size(), e.what()));
   }
 }
-}  // namespace coolerpp::utils
+}  // namespace hictk::utils

@@ -12,10 +12,10 @@
 #include <string_view>
 #include <vector>
 
-#include "coolerpp/attribute.hpp"
-#include "coolerpp/common.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
 
-namespace coolerpp {
+namespace hictk {
 
 template <typename N, typename>
 inline std::size_t Dataset::read(std::vector<N> &buff, std::size_t num, std::size_t offset) const {
@@ -227,4 +227,4 @@ inline auto Dataset::read_attribute(std::string_view key, bool missing_ok) const
   return Attribute::read(this->_dataset, key, missing_ok);
 }
 
-}  // namespace coolerpp
+}  // namespace hictk
