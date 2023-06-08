@@ -1,0 +1,175 @@
+# Copyright (C) 2023 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Run Codecov
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/codecov.yml"
+      - ".github/workflows/codecov.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+    tags:
+      - 'v*.*.*'
+
+  pull_request:
+    paths:
+      - ".github/codecov.yml"
+      - ".github/workflows/codecov.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CCACHE_DIR: "/opt/ccache-cache"
+  CCACHE_COMPRESSLEVEL: "13"
+  CCACHE_MAXSIZE: "200M"
+  CONAN_HOME: "/opt/conan/"
+
+jobs:
+  run-codecov:
+    name: Codecov
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-gcc-12
+      options: '--user=root'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          hash="${{ hashFiles('conanfile.txt', '.github/workflows/codecov.yml') }}"
+
+          # This can be used by to always update a cache entry (useful e.g. for ccache)
+          current_date="$(date '+%s')"
+
+          ccache_key_prefix="codecov-ccache-$hash"
+
+          echo "conan-key=codecov-$hash" >> $GITHUB_OUTPUT
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" >> $GITHUB_OUTPUT
+          echo "ccache-restore-key=$ccache_key_prefix" >> $GITHUB_OUTPUT
+
+      - name: Restore Conan cache
+        id: cache-conan
+        uses: actions/cache/restore@v3
+        with:
+          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}
+
+      - name: Clean Conan cache (pre-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+          conan remove --confirm "*"
+
+      - name: Install build dependencies
+        run: |
+          conan install .                        \
+             --build=missing                     \
+             --build=cascade                     \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
+             -s build_type=Debug                 \
+             -s compiler.libcxx=libstdc++11      \
+             -s compiler.cppstd=17               \
+             --output-folder=build
+
+      - name: Clean Conan cache (post-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+
+      - name: Save Conan cache
+        uses: actions/cache/save@v3
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        with:
+          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}
+
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug                      \
+                -DCMAKE_PREFIX_PATH="$PWD/build"              \
+                -DENABLE_DEVELOPER_MODE=ON                    \
+                -DOPT_ENABLE_COVERAGE=ON                      \
+                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
+                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                   \
+                -DCOOLERPP_BUILD_EXAMPLES=OFF                 \
+                -DCOOLERPP_ENABLE_TESTING=ON                  \
+                -S .                                          \
+                -B build
+
+      - name: Cache Ccache folder
+        uses: actions/cache@v3
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          path: ${{ env.CCACHE_DIR }}
+
+      - name: Build project
+        run: cmake --build build -j $(nproc)
+
+      - name: Print Ccache statistics
+        run: ccache -s
+
+      - name: Run unit tests
+        working-directory: build
+        run: |
+          ctest --test-dir .        \
+                --schedule-random   \
+                --output-on-failure \
+                --no-tests=error    \
+                --timeout 240       \
+                -j $(nproc)
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          gcov: true
+          gcov_executable: gcov-12
+          os: linux
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+
+  codecov-status-check:
+    name: Status Check (Codecov)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - run-codecov
+
+    steps:
+      - name: Collect job results
+        if: needs.run-codecov.result != 'success'
+        run: exit 1
