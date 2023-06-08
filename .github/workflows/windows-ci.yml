@@ -1,0 +1,132 @@
+# Copyright (C) 2023 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Windows CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/windows-ci.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+    tags:
+      - 'v*.*.*'
+
+  pull_request:
+    paths:
+      - ".github/workflows/windows-ci.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "conanfile.txt"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CONAN_HOME: "${{ github.workspace }}/.conan2"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-project:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate requirements.txt for pip
+        run: |
+          echo 'conan==2.0.*' > requirements.txt
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install deps with PIP
+        run: |
+          pip install -r requirements.txt
+
+      - name: Cache Conan packages
+        id: cache-conan
+        uses: actions/cache@v3
+        with:
+          key: conan-${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}
+          path: ${{ env.CONAN_HOME }}
+
+      - name: Configure Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan profile detect --force
+
+      - name: Clean Conan cache (pre-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+          conan remove --confirm "*"
+
+      - name: Install build dependencies
+        run: |
+          conan install .            \
+             --build=missing         \
+             --build=cascade         \
+             -pr default             \
+             -s build_type=Release   \
+             -s compiler=msvc        \
+             -s compiler.cppstd=17   \
+             --output-folder=build
+
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release       \
+                -DCMAKE_PREFIX_PATH="$PWD/build" \
+                -DENABLE_DEVELOPER_MODE=OFF      \
+                -DCOOLERPP_ENABLE_TESTING=ON     \
+                -DCOOLERPP_BUILD_EXAMPLES=ON     \
+                -S .                             \
+                -B build
+
+      - name: Clean Conan cache (post-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+
+      - name: Build project
+        run: cmake --build build --config Release
+
+      - name: Run unit tests
+        run: |
+          ctest --test-dir build    \
+                --schedule-random   \
+                --output-on-failure \
+                --schedule-random   \
+                --no-tests=error    \
+                --timeout 240
+
+  windows-ci-status-check:
+    name: Status Check (Windows CI)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-project
+
+    steps:
+      - name: Collect job results
+        if: needs.build-project.result != 'success'
+        run: exit 1
