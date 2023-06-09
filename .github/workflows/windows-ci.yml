@@ -59,9 +59,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Cache Conan packages
+      - name: Restore Conan cache
         id: cache-conan
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v3
         with:
           key: conan-${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}
           path: ${{ env.CONAN_HOME }}
@@ -90,6 +90,20 @@ jobs:
              -s compiler.cppstd=17   \
              --output-folder=build
 
+      - name: Clean Conan cache (post-build)
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          conan cache clean "*" --build
+          conan cache clean "*" --download
+          conan cache clean "*" --source
+
+      - name: Save Conan cache
+        uses: actions/cache/save@v3
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        with:
+          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}
+
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release       \
@@ -100,19 +114,12 @@ jobs:
                 -S .                             \
                 -B build
 
-      - name: Clean Conan cache (post-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-
       - name: Build project
         run: cmake --build build --config Release
 
       - name: Run unit tests (dbg)
         run: |
-          build/test/units/cooler/hictk_cooler_tests
+          D:/a/hictk/hictk/build/test/units/cooler/hictk_cooler_tests
 
       - name: Run unit tests
         run: |
