@@ -16,8 +16,8 @@
 
 namespace hictk {
 
-inline HiCFile::HiCFile(std::string url_)
-    : _fs(std::make_shared<internal::HiCFileStream>(std::move(url_))) {}
+inline HiCFile::HiCFile(std::string url_, MatrixType type_, MatrixUnit unit_)
+    : _fs(std::make_shared<internal::HiCFileStream>(std::move(url_))), _type(type_), _unit(unit_) {}
 
 inline const std::string& HiCFile::url() const noexcept { return _fs->url(); }
 
@@ -55,45 +55,45 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
   return node.first->second;
 }
 
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    const Chromosome& chrom, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
-    std::uint32_t resolution, std::size_t block_cache_capacity) {
-  return get_matrix_selector(chrom, chrom, matrix_type, norm, unit, resolution,
-                             block_cache_capacity);
+inline internal::MatrixSelector HiCFile::get_matrix_selector(const Chromosome& chrom,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
+  return get_matrix_selector(chrom, chrom, norm, resolution, block_cache_capacity);
 }
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    const std::string& chromName, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
-    std::uint32_t resolution, std::size_t block_cache_capacity) {
-  return get_matrix_selector(chromName, chromName, matrix_type, norm, unit, resolution,
-                             block_cache_capacity);
+inline internal::MatrixSelector HiCFile::get_matrix_selector(const std::string& chromName,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
+  return get_matrix_selector(chromName, chromName, norm, resolution, block_cache_capacity);
 }
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    std::uint32_t chrom_id, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
-    std::uint32_t resolution, std::size_t block_cache_capacity) {
-  return get_matrix_selector(chrom_id, chrom_id, matrix_type, norm, unit, resolution,
-                             block_cache_capacity);
-}
-
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
-    NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
-    std::size_t block_cache_capacity) {
-  return get_matrix_selector(chrom1.id(), chrom2.id(), matrix_type, norm, unit, resolution,
-                             block_cache_capacity);
+inline internal::MatrixSelector HiCFile::get_matrix_selector(std::uint32_t chrom_id,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
+  return get_matrix_selector(chrom_id, chrom_id, norm, resolution, block_cache_capacity);
 }
 
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    const std::string& chrom1_name, const std::string& chrom2_name, MatrixType matrix_type,
-    NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
-    std::size_t block_cache_capacity) {
+inline internal::MatrixSelector HiCFile::get_matrix_selector(const Chromosome& chrom1,
+                                                             const Chromosome& chrom2,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
+  return get_matrix_selector(chrom1.id(), chrom2.id(), norm, resolution, block_cache_capacity);
+}
+
+inline internal::MatrixSelector HiCFile::get_matrix_selector(const std::string& chrom1_name,
+                                                             const std::string& chrom2_name,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
   const auto it1 = chromosomes().find(chrom1_name);
   if (it1 == chromosomes().end()) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to find chromosome named {}"), chrom1_name));
   }
   if (chrom1_name == chrom2_name) {
-    return get_matrix_selector(*it1, *it1, matrix_type, norm, unit, resolution,
-                               block_cache_capacity);
+    return get_matrix_selector(*it1, *it1, norm, resolution, block_cache_capacity);
   }
 
   const auto it2 = chromosomes().find(chrom2_name);
@@ -102,13 +102,14 @@ inline internal::MatrixSelector HiCFile::get_matrix_selector(
         fmt::format(FMT_STRING("unable to find chromosome named {}"), chrom2_name));
   }
 
-  return get_matrix_selector(*it1, *it2, matrix_type, norm, unit, resolution, block_cache_capacity);
+  return get_matrix_selector(*it1, *it2, norm, resolution, block_cache_capacity);
 }
 
-inline internal::MatrixSelector HiCFile::get_matrix_selector(
-    std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
-    NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
-    std::size_t block_cache_capacity) {
+inline internal::MatrixSelector HiCFile::get_matrix_selector(std::uint32_t chrom1_id,
+                                                             std::uint32_t chrom2_id,
+                                                             NormalizationMethod norm,
+                                                             std::uint32_t resolution,
+                                                             std::size_t block_cache_capacity) {
   if (chrom1_id >= std::int64_t(chromosomes().size())) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to find chromosome corresponding to ID {}"), chrom1_id));
@@ -123,10 +124,9 @@ inline internal::MatrixSelector HiCFile::get_matrix_selector(
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
   }
 
-  if (matrix_type == MatrixType::expected && norm != NormalizationMethod::NONE) {
-    throw std::logic_error(
-        fmt::format(FMT_STRING("matrix type {} is incompatible with normalization method {}"),
-                    matrix_type, norm));
+  if (_type == MatrixType::expected && norm != NormalizationMethod::NONE) {
+    throw std::logic_error(fmt::format(
+        FMT_STRING("matrix type {} is incompatible with normalization method {}"), _type, norm));
   }
 
   const auto it = std::find(resolutions().begin(), resolutions().end(), resolution);
@@ -139,7 +139,7 @@ inline internal::MatrixSelector HiCFile::get_matrix_selector(
 
   try {
     return internal::MatrixSelector(
-        _fs, get_footer(chrom1_id, chrom2_id, matrix_type, norm, unit, resolution),
+        _fs, get_footer(chrom1_id, chrom2_id, _type, norm, _unit, resolution),
         block_cache_capacity);
   } catch (const std::exception& e) {
     // Check whether query is valid but there are no interactions for the given chromosome pair
@@ -150,9 +150,9 @@ inline internal::MatrixSelector HiCFile::get_matrix_selector(
     }
 
     internal::HiCFooterMetadata metadata{url(),
-                                         matrix_type,
+                                         _type,
                                          norm,
-                                         unit,
+                                         _unit,
                                          resolution,
                                          _fs->header().chromosomes.at(chrom1_id),
                                          _fs->header().chromosomes.at(chrom2_id),
