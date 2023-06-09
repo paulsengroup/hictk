@@ -110,6 +110,10 @@ jobs:
       - name: Build project
         run: cmake --build build --config Release
 
+      - name: Run unit tests (dbg)
+        run: |
+          build/test/units/cooler/hictk_cooler_tests
+
       - name: Run unit tests
         run: |
           ctest --test-dir build    \
