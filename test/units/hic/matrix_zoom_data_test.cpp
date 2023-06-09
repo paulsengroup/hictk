@@ -230,7 +230,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       SECTION("single pixel") {
         auto sel = HiCFile(pathV9).get_matrix_selector(
             "chr2L", MatrixType::observed, NormalizationMethod::NONE, MatrixUnit::BP, resolution);
-        sel.fetch("100000-100001", "100000-100001", buffer);
+        sel.fetch(100000, 100001, 100000, 100001, buffer);
         REQUIRE(buffer.size() == 1);
         compareContactRecord(buffer.front(), SerializedPixel{100000, 100000, 13895.0F});
       }

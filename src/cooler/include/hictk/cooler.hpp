@@ -88,10 +88,6 @@ void init_mcool(std::string_view file_path, bool force_overwrite = false);
 //                 bool force_overwrite = false);
 
 class File {
- public:
-  enum class QUERY_TYPE { BED, UCSC };
-
- private:
   unsigned int _mode{HighFive::File::ReadOnly};
   std::unique_ptr<HighFive::File> _fp{};
   RootGroup _root_group{};
@@ -115,6 +111,8 @@ class File {
                 double w0 = DEFAULT_HDF5_CACHE_W0);
 
  public:
+  using QUERY_TYPE = GenomicInterval::Type;
+
   File() = default;
   File(const File &other) = delete;
   File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT

@@ -88,19 +88,6 @@ inline void MatrixSelector::fetch(std::vector<Pixel<float>> &buffer, bool sorted
   return fetch(0, chrom1().size(), 0, chrom2().size(), buffer, sorted);
 }
 
-inline void MatrixSelector::fetch(const std::string &coord, std::vector<Pixel<float>> &buffer,
-                                  bool sorted) {
-  return fetch(coord, coord, buffer, sorted);
-}
-
-inline void MatrixSelector::fetch(const std::string &coord1, const std::string &coord2,
-                                  std::vector<Pixel<float>> &buffer, bool sorted) {
-  auto coord1_ = GenomicCoordinates::fromString(coord1, true);
-  auto coord2_ = GenomicCoordinates::fromString(coord2, true);
-
-  return fetch(coord1_.start, coord1_.end, coord2_.start, coord2_.end, buffer, sorted);
-}
-
 inline void MatrixSelector::fetch(std::int64_t start, std::int64_t end,
                                   std::vector<Pixel<float>> &buffer, bool sorted) {
   return fetch(start, end, start, end, buffer, sorted);

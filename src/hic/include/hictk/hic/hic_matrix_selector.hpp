@@ -60,12 +60,12 @@ class MatrixSelector {
   [[nodiscard]] inline double avgCount() const;
 
   void fetch(std::vector<Pixel<float>> &buffer, bool sorted = false);
-  void fetch(const std::string &coord, std::vector<Pixel<float>> &buffer, bool sorted = false);
+  // void fetch(const std::string &coord, std::vector<Pixel<float>> &buffer, bool sorted = false);
   void fetch(std::int64_t start, std::int64_t end, std::vector<Pixel<float>> &buffer,
              bool sorted = false);
 
-  void fetch(const std::string &coord1, const std::string &coord2,
-             std::vector<Pixel<float>> &buffer, bool sorted = false);
+  // void fetch(const std::string &coord1, const std::string &coord2,
+  //            std::vector<Pixel<float>> &buffer, bool sorted = false);
   void fetch(std::int64_t start1, std::int64_t end1, std::int64_t start2, std::int64_t end2,
              std::vector<Pixel<float>> &buffer, bool sorted = false);
 

@@ -18,9 +18,13 @@ class GenomicInterval {
   std::uint32_t _end{};
 
  public:
+  enum class Type { BED, UCSC };
+
   constexpr GenomicInterval() = default;
   explicit GenomicInterval(const Chromosome &chrom_) noexcept;
   GenomicInterval(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
+  [[nodiscard]] static GenomicInterval parse(const Reference &chroms, std::string query,
+                                             Type type = Type::UCSC);
   [[nodiscard]] static GenomicInterval parse_ucsc(const Reference &chroms, std::string query);
   [[nodiscard]] static GenomicInterval parse_bed(const Reference &chroms, std::string_view query,
                                                  char sep = '\t');

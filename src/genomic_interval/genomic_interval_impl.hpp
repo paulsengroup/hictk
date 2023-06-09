@@ -95,6 +95,14 @@ inline const Chromosome &GenomicInterval::chrom() const noexcept { return this->
 constexpr std::uint32_t GenomicInterval::start() const noexcept { return this->_start; }
 constexpr std::uint32_t GenomicInterval::end() const noexcept { return this->_end; }
 
+inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::string query,
+                                              Type type) {
+  if (type == Type::UCSC) {
+    return GenomicInterval::parse_ucsc(chroms, query);
+  }
+  return GenomicInterval::parse_bed(chroms, query);
+}
+
 inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std::string query) {
   if (query.empty()) {
     throw std::runtime_error("query is empty");
