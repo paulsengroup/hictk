@@ -17,7 +17,13 @@
 namespace hictk::internal {
 
 class InteractionBlock {
-  using BuffT = phmap::btree_map<std::int64_t, std::vector<SerializedPixel>>;
+  struct ThinPixel {
+    std::int64_t bin2_id{};
+    float count{};
+  };
+
+  using Row = std::vector<ThinPixel>;
+  using BuffT = phmap::btree_map<std::int64_t, Row>;
   BuffT _interactions{};
   std::int64_t _first_col{};
   std::int64_t _last_col{};
@@ -26,8 +32,18 @@ class InteractionBlock {
   using iterator = BuffT::iterator;
   using const_iterator = BuffT::const_iterator;
 
+  struct Overlap {
+    const_iterator first{};  // NOLINT
+    const_iterator last{};   // NOLINT
+
+    [[nodiscard]] auto begin() const noexcept;
+    [[nodiscard]] auto end() const noexcept;
+    [[nodiscard]] auto cbegin() const noexcept;
+    [[nodiscard]] auto cend() const noexcept;
+  };
+
   InteractionBlock() = default;
-  explicit InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(ndebug_defined());
+  explicit InteractionBlock(const std::vector<SerializedPixel>& pixels);
 
   [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
 
@@ -40,7 +56,7 @@ class InteractionBlock {
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
   [[nodiscard]] auto find_overlap(std::int64_t first_row, std::int64_t last_row) const noexcept
-      -> std::pair<const_iterator, const_iterator>;
+      -> Overlap;
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] std::size_t size_in_bytes() const noexcept;

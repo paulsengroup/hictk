@@ -11,24 +11,29 @@
 
 namespace hictk::internal {
 
-inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(
-    ndebug_defined()) {
-  if (interactions.empty()) {
+inline auto InteractionBlock::Overlap::begin() const noexcept { return first; }
+inline auto InteractionBlock::Overlap::end() const noexcept { return last; }
+inline auto InteractionBlock::Overlap::cbegin() const noexcept { return begin(); }
+inline auto InteractionBlock::Overlap::cend() const noexcept { return end(); }
+
+inline InteractionBlock::InteractionBlock(const std::vector<SerializedPixel> &pixels) {
+  if (pixels.empty()) {
     return;
   }
 
-  for (auto &&interaction : interactions) {
-    _first_col = (std::min)(_first_col, interaction.bin2_id);
-    _last_col = (std::max)(_last_col, interaction.bin2_id);
-    auto [node, inserted] = this->_interactions.try_emplace(
-        interaction.bin1_id, std::vector<SerializedPixel>{std::move(interaction)});
+  for (const SerializedPixel &p : pixels) {
+    _first_col = (std::min)(_first_col, p.bin2_id);
+    _last_col = (std::max)(_last_col, p.bin2_id);
+    auto [node, inserted] = this->_interactions.try_emplace(p.bin1_id, Row{{p.bin2_id, p.count}});
     if (!inserted) {
-      node->second.emplace_back(std::move(interaction));
+      node->second.emplace_back(ThinPixel{p.bin2_id, p.count});
     }
   }
   if constexpr (ndebug_not_defined()) {
     for (auto &[_, buff] : this->_interactions) {
-      if (!std::is_sorted(buff.begin(), buff.end())) {
+      if (!std::is_sorted(buff.begin(), buff.end(), [](const ThinPixel &p1, const ThinPixel &p2) {
+            return p1.bin2_id < p2.bin2_id;
+          })) {
         throw std::runtime_error("InteractionBlock is not sorted!");
       }
     }
@@ -52,10 +57,9 @@ inline auto InteractionBlock::end() const noexcept -> const_iterator { return _i
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
 inline auto InteractionBlock::find_overlap(std::int64_t first_row,
-                                           std::int64_t last_row) const noexcept
-    -> std::pair<const_iterator, const_iterator> {
+                                           std::int64_t last_row) const noexcept -> Overlap {
   assert(first_row <= last_row);
-  return std::make_pair(_interactions.lower_bound(first_row), _interactions.upper_bound(last_row));
+  return {_interactions.lower_bound(first_row), _interactions.upper_bound(last_row)};
 }
 
 inline std::size_t InteractionBlock::size() const noexcept { return _interactions.size(); }
@@ -68,13 +72,13 @@ inline std::int64_t InteractionBlock::first_row() const noexcept {
   if (_interactions.empty()) {
     return 0;
   }
-  return _interactions.begin()->second.front().bin1_id;
+  return _interactions.begin()->first;
 }
 inline std::int64_t InteractionBlock::last_row() const noexcept {
   if (_interactions.empty()) {
     return 0;
   }
-  return (--_interactions.end())->second.back().bin1_id;
+  return (--_interactions.end())->first;
 }
 inline std::int64_t InteractionBlock::first_col() const noexcept { return _first_col; }
 inline std::int64_t InteractionBlock::last_col() const noexcept { return _last_col; }

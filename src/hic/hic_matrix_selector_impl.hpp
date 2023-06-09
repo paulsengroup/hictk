@@ -160,27 +160,34 @@ inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::i
       continue;
     }
 
-    auto [first, last] = block->find_overlap(bin1, bin2);
-    std::for_each(first, last, [&](const auto &subblock) {
-      for (const SerializedPixel &interaction : subblock.second) {
-        const auto b1 = interaction.bin1_id;
-        const auto b2 = interaction.bin2_id;
+    // Obs we use open-closed interval instead of open-open like is done in straw
+    for (const auto &[b1, row] : block->find_overlap(bin1, bin2)) {
+      if (b1 >= bin2) {
+        // We're past the last row overlapping the query
+        break;
+      }
+      for (const auto &tp : row) {
+        const auto &b2 = tp.bin2_id;
+        if (b1 < bin1 || b2 < bin3) {
+          // We're upstream of the first column overlapping the query (if any)
+          continue;
+        }
 
-        // Obs we use open-closed interval instead of open-open like is done in straw
-        const auto overlapsQuery = b1 >= bin1 && b1 < bin2 && b2 >= bin3 && b2 < bin4;
+        if (b2 >= bin4) {
+          // We're past the last column overlapping the query for the current row
+          break;
+        }
 
-        if (overlapsQuery) {
-          auto record = processInteraction(interaction);
-          if (std::isfinite(record.count)) {
-            buffer.emplace_back(
-                PixelCoordinates{
-                    _bins.at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_id)),
-                    _bins.at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_id))},
-                record.count);
-          }
+        auto record = processInteraction(SerializedPixel{b1, b2, tp.count});
+        if (std::isfinite(record.count)) {
+          buffer.emplace_back(
+              PixelCoordinates{
+                  _bins.at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_id)),
+                  _bins.at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_id))},
+              record.count);
         }
       }
-    });
+    };
   }
   if (sorted && _blockNumberBuff.size() - empty_blocks > 1) {
     // Only interactions from the same block are guaranteed to already be sorted
