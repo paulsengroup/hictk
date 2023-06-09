@@ -101,7 +101,7 @@ jobs:
         uses: actions/cache/save@v3
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          key: conan-${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Configure project
@@ -116,10 +116,6 @@ jobs:
 
       - name: Build project
         run: cmake --build build --config Release
-
-      - name: Run unit tests (dbg)
-        run: |
-          D:/a/hictk/hictk/build/test/units/cooler/hictk_cooler_tests
 
       - name: Run unit tests
         run: |
