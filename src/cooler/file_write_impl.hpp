@@ -85,7 +85,9 @@ inline void File::write_weights(std::string_view uri, std::string_view name, It 
 template <typename It>
 inline void File::write_weights(std::string_view name, It first_weight, It last_weight,
                                 bool overwrite_if_exists, bool divisive) {
-  assert(!name.empty());
+  if (name.empty()) {
+    throw std::runtime_error("weight name is empty");
+  }
 
   if (this->_mode == HighFive::File::ReadOnly) {
     throw std::runtime_error("File::write_weights() was called on a file open in read-only mode");
@@ -108,7 +110,8 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
 
     // Create new dataset or throw
     const auto path = fmt::format(FMT_STRING("bins/{}"), name);
-    return Dataset(this->_root_group, path, *first_weight, HighFive::DataSpace::UNLIMITED);
+    typename std::iterator_traits<It>::value_type buff{};
+    return Dataset(this->_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
   }();
 
   dset.resize(static_cast<std::size_t>(std::distance(first_weight, last_weight)));
