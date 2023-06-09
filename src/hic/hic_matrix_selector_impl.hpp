@@ -183,11 +183,7 @@ inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::i
   }
   if (sorted && _blockNumberBuff.size() - empty_blocks > 1) {
     // Only interactions from the same block are guaranteed to already be sorted
-    std::sort(buffer.begin(), buffer.end(), [&](const Pixel<float> &p1, const Pixel<float> &p2) {
-      // TODO fixme
-      return SerializedPixel{p1.coords.bin1.start(), p1.coords.bin2.start(), p1.count} <
-             SerializedPixel{p2.coords.bin1.start(), p2.coords.bin2.start(), p2.count};
-    });
+    std::sort(buffer.begin(), buffer.end());
   }
 }
 
