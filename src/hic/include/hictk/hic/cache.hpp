@@ -26,7 +26,7 @@ class InteractionBlock {
   using const_iterator = BuffT::const_iterator;
 
   InteractionBlock() = default;
-  explicit InteractionBlock(std::vector<SerializedPixel> interactions) noexcept;
+  explicit InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(ndebug_defined());
 
   [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
 

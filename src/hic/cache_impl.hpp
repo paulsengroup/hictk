@@ -11,7 +11,7 @@
 
 namespace hictk::internal {
 
-inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept {
+inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(ndebug_defined()) {
   if (interactions.empty()) {
     return;
   }
@@ -25,8 +25,12 @@ inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interacti
       node->second.emplace_back(std::move(interaction));
     }
   }
-  for (auto &[_, buff] : this->_interactions) {
-    std::sort(buff.begin(), buff.end());
+  if constexpr (ndebug_not_defined()) {
+    for (auto &[_, buff] : this->_interactions) {
+      if (!std::is_sorted(buff.begin(), buff.end())) {
+        throw std::runtime_error("InteractionBlock is not sorted!");
+      }
+    }
   }
 }
 
