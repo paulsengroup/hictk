@@ -102,13 +102,16 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
   }
 
   auto dset = [&, name_ = std::string{name}]() {
-    // Return existing dataset
     auto &grp = this->group("bins").group;
-    if (overwrite_if_exists && grp.exist(name_)) {
+    const auto existing = grp.exist(name_);
+    if (overwrite_if_exists && existing) {
       return Dataset(this->_root_group, grp.getDataSet(name_));
     }
 
-    // Create new dataset or throw
+    if (!overwrite_if_exists && exists) {
+      throw std::runtime_error(fmt::format(FMT_STRING("dataset bins/{} already exists"), name_));
+    }
+
     const auto path = fmt::format(FMT_STRING("bins/{}"), name);
     typename std::iterator_traits<It>::value_type buff{};
     return Dataset(this->_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
