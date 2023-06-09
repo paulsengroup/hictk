@@ -108,7 +108,7 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
       return Dataset(this->_root_group, grp.getDataSet(name_));
     }
 
-    if (!overwrite_if_exists && exists) {
+    if (!overwrite_if_exists && existing) {
       throw std::runtime_error(fmt::format(FMT_STRING("dataset bins/{} already exists"), name_));
     }
 

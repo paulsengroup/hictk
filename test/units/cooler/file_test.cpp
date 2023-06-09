@@ -563,6 +563,11 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
     CHECK_THROWS(File::write_weights(path2.string(), "weight", weights.begin(), weights.end()));
   }
 
+  SECTION("invalid name") {
+    std::vector<double> weights{};
+    CHECK_THROWS(File::write_weights(path2.string(), "", weights.begin(), weights.end()));
+  }
+
   SECTION("overwriting") {
     const std::vector<double> weights(num_bins, 1.23);
     File::write_weights(path2.string(), "weight", weights.begin(), weights.end());
