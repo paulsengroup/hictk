@@ -7,7 +7,6 @@ find_package(Filesystem REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(HDF5 CONFIG REQUIRED)
 find_package(HighFive CONFIG REQUIRED)
-find_package(tsl-hopscotch-map CONFIG REQUIRED)
 
 add_library(hictk INTERFACE)
 add_library(hictk::cooler ALIAS hictk)
@@ -36,7 +35,7 @@ target_include_directories(hictk INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 # cmake-format: off
 target_link_libraries(
   hictk
-  INTERFACE hictk_project_warnings  hictk_project_options hictk::bin_table hictk::chromosome hictk::common hictk::fmt hictk::genomic_interval hictk::pixel hictk::reference hictk::variant
+  INTERFACE hictk_project_warnings hictk_project_options hictk::bin_table hictk::chromosome hictk::common hictk::fmt hictk::genomic_interval hictk::pixel hictk::reference hictk::variant
 )
 # cmake-format: on
 
@@ -47,7 +46,6 @@ target_link_system_libraries(
   fmt::fmt
   HDF5::HDF5
   HighFive
-  tsl::hopscotch_map
   std::filesystem)
 
 install(TARGETS hictk INCLUDES)

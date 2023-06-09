@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <tsl/hopscotch_map.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <memory>
 #include <vector>
@@ -102,7 +102,7 @@ class Balancer {
   };
 };
 
-using WeightMap = tsl::hopscotch_map<std::string, std::shared_ptr<const Weights>>;
+using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weights>>;
 
 }  // namespace hictk
 

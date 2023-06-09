@@ -11,7 +11,8 @@
 
 namespace hictk::internal {
 
-inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(ndebug_defined()) {
+inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept(
+    ndebug_defined()) {
   if (interactions.empty()) {
     return;
   }

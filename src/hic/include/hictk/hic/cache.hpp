@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <parallel_hashmap/btree.h>
 #include <tsl/ordered_map.h>
 
 #include <cstdint>
@@ -16,7 +17,7 @@
 namespace hictk::internal {
 
 class InteractionBlock {
-  using BuffT = std::map<std::int64_t, std::vector<SerializedPixel>>;
+  using BuffT = phmap::btree_map<std::int64_t, std::vector<SerializedPixel>>;
   BuffT _interactions{};
   std::int64_t _first_col{};
   std::int64_t _last_col{};

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <tsl/hopscotch_map.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -20,7 +20,7 @@ namespace hictk {
 
 class Reference {
   using ChromBuff = std::vector<Chromosome>;
-  using ChromMap = tsl::hopscotch_map<std::string_view, std::size_t>;
+  using ChromMap = phmap::flat_hash_map<std::string_view, std::size_t>;
 
   ChromBuff _buff{};
   ChromMap _map{};

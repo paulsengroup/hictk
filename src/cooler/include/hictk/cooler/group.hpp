@@ -8,7 +8,7 @@
 // clang-format on
 
 #include <fmt/format.h>
-#include <tsl/hopscotch_map.h>
+#include <parallel_hashmap/phmap.h>
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_NULL_DEREF
@@ -49,6 +49,6 @@ struct Group {
 };
 DISABLE_WARNING_POP
 
-using GroupMap = tsl::hopscotch_map<std::string, Group>;
+using GroupMap = phmap::flat_hash_map<std::string, Group>;
 
 }  // namespace hictk

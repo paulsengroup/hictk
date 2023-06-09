@@ -5,7 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <tsl/hopscotch_map.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <stdexcept>
 #include <string>
@@ -108,7 +108,7 @@ inline auto Weights::infer_type(const Dataset& dset) -> Type {
 }
 
 inline auto Weights::infer_type(std::string_view name) -> Type {
-  const static tsl::hopscotch_map<std::string_view, Type> mappings{
+  const static phmap::flat_hash_map<std::string_view, Type> mappings{
       {{"VC", Type::DIVISIVE},
        {"INTER_VC", Type::DIVISIVE},
        {"GW_VC", Type::DIVISIVE},

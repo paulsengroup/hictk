@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(tsl-hopscotch-map CONFIG REQUIRED)
-
 add_library(hictk_variant INTERFACE)
 add_library(hictk::variant ALIAS hictk_variant)
 

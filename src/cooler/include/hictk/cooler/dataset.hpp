@@ -12,6 +12,8 @@ DISABLE_WARNING_PUSH
 DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5DataSet.hpp>
 DISABLE_WARNING_POP
+#include <parallel_hashmap/phmap.h>
+
 #include <limits>
 #include <memory>
 #include <utility>
@@ -275,7 +277,7 @@ class Dataset {
 };
 DISABLE_WARNING_POP
 
-using DatasetMap = tsl::hopscotch_map<std::string, Dataset>;
+using DatasetMap = phmap::flat_hash_map<std::string, Dataset>;
 
 }  // namespace hictk
 

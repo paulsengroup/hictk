@@ -5,9 +5,9 @@
 #pragma once
 
 #include <libdeflate.h>
+#include <parallel_hashmap/btree.h>
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -22,7 +22,7 @@
 namespace hictk::internal {
 
 struct BlockMap {
-  std::map<std::size_t, indexEntry> blocks{};
+  phmap::btree_map<std::size_t, indexEntry> blocks{};
   std::int32_t blockBinCount{};
   std::int32_t blockColumnCount{};
   double sumCount{};

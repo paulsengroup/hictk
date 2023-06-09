@@ -10,7 +10,6 @@ fmt/[>=9,<10]
 hdf5/[>=1.12.2,<1.15]
 highfive/[>=2.7,<3]
 libdeflate/[>=1.18,<2]
-tsl-hopscotch-map/[>=2.3,<3]
 tsl-ordered-map/1.1.0
 zlib/[>=1.2.13]
 
