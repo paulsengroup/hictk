@@ -225,8 +225,8 @@ inline void HiCFileStream::readBlockMap(std::int64_t fileOffset,
   }
 
   throw std::runtime_error(
-      fmt::format(FMT_STRING("Unable to find block map for unit {} and resolution {}"), wantedUnit,
-                  wantedResolution));
+      fmt::format(FMT_STRING("Unable to find block map for {}:{} with unit {} and resolution {}"),
+                  chrom1.name(), chrom2.name(), wantedUnit, wantedResolution));
 }
 
 inline bool HiCFileStream::checkMagicString() { return checkMagicString(*_fs); }

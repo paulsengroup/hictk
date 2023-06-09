@@ -30,38 +30,42 @@ class HiCFile {
   FooterCacheT _footers{};
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};
+  internal::BlockLRUCache _block_cache{};
+  BinTable _bins{};
 
  public:
-  static constexpr std::size_t DEFAULT_BLOCK_CACHE_CAPACITY = 500UL << 20U;  // ~500MB
-  explicit HiCFile(std::string url_, MatrixType type_ = MatrixType::observed,
-                   MatrixUnit unit_ = MatrixUnit::BP);
+  explicit HiCFile(std::string url_, std::uint32_t resolution_,
+                   MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
+                   // TODO consider expressing cache size in terms of number of pixels
+                   std::uint64_t block_cache_capacity = 500ULL << 20U);
+
+  [[nodiscard]] HiCFile open_resolution(std::uint32_t resolution) const;
+  [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
   [[nodiscard]] const std::string &url() const noexcept;
   [[nodiscard]] const std::string &name() const noexcept;
   [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
-  [[nodiscard]] const std::vector<std::uint32_t> &resolutions() const noexcept;
+  [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
+  [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
 
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const Chromosome &chrom, NormalizationMethod norm, std::uint32_t resolution,
-      std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const std::string &chromName, NormalizationMethod norm, std::uint32_t resolution,
-      std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      std::uint32_t chrom_id, NormalizationMethod norm, std::uint32_t resolution,
-      std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const Chromosome &chrom,
+                                                             NormalizationMethod norm);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const std::string &chromName,
+                                                             NormalizationMethod norm);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(std::uint32_t chrom_id,
+                                                             NormalizationMethod norm);
 
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const Chromosome &chrom1, const Chromosome &chrom2, NormalizationMethod norm,
-      std::uint32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const std::string &chrom1_name, const std::string &chrom2_name, NormalizationMethod norm,
-      std::uint32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      std::uint32_t chrom1_id, std::uint32_t chrom2_id, NormalizationMethod norm,
-      std::uint32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const Chromosome &chrom1,
+                                                             const Chromosome &chrom2,
+                                                             NormalizationMethod norm);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const std::string &chrom1_name,
+                                                             const std::string &chrom2_name,
+                                                             NormalizationMethod norm);
+  [[nodiscard]] internal::MatrixSelector get_matrix_selector(std::uint32_t chrom1_id,
+                                                             std::uint32_t chrom2_id,
+                                                             NormalizationMethod norm);
 
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
