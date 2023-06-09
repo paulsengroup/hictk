@@ -22,8 +22,8 @@ const auto pathV9 = (test::datadir / "4DNFIZ1ZVXC8.hic9").string();  // NOLINT(c
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
-  constexpr std::array<std::int32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                     50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
+                                                      50000,   25000,   10000,  5000,   1000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
@@ -31,12 +31,12 @@ TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
   CHECK(header.url == pathV8);
   CHECK(header.masterIndexOffset == 131515430);
   CHECK(header.genomeID == genomeID);
-  CHECK(header.nChromosomes() == nChromosomes);
+  CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 8);
   CHECK(header.nviPosition == -1);
   CHECK(header.nviLength == -1);
 
-  REQUIRE(header.nResolutions() == resolutions.size());
+  REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
     CHECK(resolutions[i] == header.resolutions[i]);
   }
@@ -44,8 +44,8 @@ TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
-  constexpr std::array<std::int32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                     50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
+                                                      50000,   25000,   10000,  5000,   1000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
@@ -54,12 +54,12 @@ TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
   CHECK(header.url == pathV9);
   CHECK(header.masterIndexOffset == 130706734);
   CHECK(header.genomeID == genomeID);
-  CHECK(header.nChromosomes() == nChromosomes);
+  CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 9);
   CHECK(header.nviPosition == 131417220);
   CHECK(header.nviLength == 6600);
 
-  REQUIRE(header.nResolutions() == resolutions.size());
+  REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
     CHECK(resolutions[i] == header.resolutions[i]);
   }
@@ -79,7 +79,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
                                             0.008417076032024847};
 
   SECTION("observed NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::observed,
                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -93,7 +93,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed VC BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::VC, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -107,7 +107,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed VC_SQRT BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::VC_SQRT, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -121,7 +121,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed KR BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::KR, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -135,7 +135,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed SCALE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::SCALE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -149,7 +149,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::oe, NormalizationMethod::NONE,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::oe, NormalizationMethod::NONE,
                                 MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::oe);
@@ -169,7 +169,7 @@ TEST_CASE("readFooter (v8)", "[hic][v8][short]") {
   }
 
   SECTION("expected NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::expected,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::expected,
                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::expected);
@@ -203,7 +203,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
                                             0.008417075820557469};
 
   SECTION("observed NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::observed,
                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -217,7 +217,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
   }
 
   SECTION("observed VC BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::VC, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -231,7 +231,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
   }
 
   SECTION("observed VC_SQRT BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::VC_SQRT, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -246,7 +246,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
 
   /*  TODO: for some reason KR normalization is missing
   SECTION("observed KR BP 5000") {
-      const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+      const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
   NormalizationMethod::KR, MatrixUnit::BP, 5000);
 
       CHECK(f.matrix_type() == MatrixType::observed);
@@ -260,7 +260,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
   } */
 
   SECTION("observed SCALE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2R.index, MatrixType::observed,
+    const auto f = s.readFooter(chr2L.id(), chr2R.id(), MatrixType::observed,
                                 NormalizationMethod::SCALE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
@@ -274,7 +274,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::oe, NormalizationMethod::NONE,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::oe, NormalizationMethod::NONE,
                                 MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::oe);
@@ -294,7 +294,7 @@ TEST_CASE("readFooter (v9)", "[hic][v9][short]") {
   }
 
   SECTION("expected NONE BP 5000") {
-    const auto f = s.readFooter(chr2L.index, chr2L.index, MatrixType::expected,
+    const auto f = s.readFooter(chr2L.id(), chr2L.id(), MatrixType::expected,
                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::expected);

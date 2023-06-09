@@ -23,51 +23,49 @@ const auto pathV8 = (test::datadir / "4DNFIZ1ZVXC8.hic8").string();  // NOLINT(c
 const auto pathV9 = (test::datadir / "4DNFIZ1ZVXC8.hic9").string();  // NOLINT(cert-err58-cpp)
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static std::vector<contactRecord> head(const std::vector<contactRecord>& buffer,
-                                       std::size_t n = 5) {
+static std::vector<Pixel<float>> head(const std::vector<Pixel<float>>& buffer, std::size_t n = 5) {
   REQUIRE(buffer.size() >= n);
 
-  std::vector<contactRecord> slice(n);
+  std::vector<Pixel<float>> slice(n);
   std::copy_n(buffer.begin(), n, slice.begin());
   return slice;
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static std::vector<contactRecord> tail(const std::vector<contactRecord>& buffer,
-                                       std::size_t n = 5) {
+static std::vector<Pixel<float>> tail(const std::vector<Pixel<float>>& buffer, std::size_t n = 5) {
   REQUIRE(buffer.size() >= n);
 
-  std::vector<contactRecord> slice(n);
+  std::vector<Pixel<float>> slice(n);
   std::copy_n(buffer.end() - std::int32_t(n), n, slice.begin());
   return slice;
 }
 
 template <typename N>
-static N sumCounts(const std::vector<contactRecord>& buffer) {
+static N sumCounts(const std::vector<Pixel<float>>& buffer) {
   return std::accumulate(
       buffer.begin(), buffer.end(), N(0),
-      [](N accumulator, const contactRecord& r) { return accumulator + static_cast<N>(r.count); });
+      [](N accumulator, const Pixel<float>& r) { return accumulator + static_cast<N>(r.count); });
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void checkContactRecordsAreWithinBound(std::int32_t start1, std::int32_t end1,
-                                              std::int32_t start2, std::int32_t end2,
-                                              const std::vector<contactRecord>& buffer) {
+static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_t end1,
+                                              std::uint32_t start2, std::uint32_t end2,
+                                              const std::vector<Pixel<float>>& buffer) {
   assert(start1 < end1);
   assert(start2 < end2);
 
   for (const auto& r : buffer) {
-    CHECK(r.bin1_start >= std::min(start1, start2));
-    CHECK(r.bin1_start < std::max(end1, end2));
-    CHECK(r.bin2_start >= std::min(start1, start2));
-    CHECK(r.bin2_start < std::max(end1, end2));
+    CHECK(r.coords.bin1.start() >= std::min(start1, start2));
+    CHECK(r.coords.bin1.end() < std::max(end1, end2));
+    CHECK(r.coords.bin2.start() >= std::min(start1, start2));
+    CHECK(r.coords.bin2.end() < std::max(end1, end2));
   }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void compareContactRecord(const contactRecord& r1, const contactRecord& r2) {
-  CHECK(r1.bin1_start == r2.bin1_start);
-  CHECK(r1.bin2_start == r2.bin2_start);
+static void compareContactRecord(const Pixel<float>& r1, const SerializedPixel& r2) {
+  CHECK(r1.coords.bin1.start() == r2.bin1_start);
+  CHECK(r1.coords.bin2.start() == r2.bin2_start);
   CHECK_THAT(r1.count, Catch::Matchers::WithinRel(r2.count));
 }
 
@@ -76,21 +74,21 @@ TEST_CASE("MatrixSelector accessors", "[hic][short]") {
   const auto sel = HiCFile(pathV8).get_matrix_selector(
       "chr2L", MatrixType::observed, NormalizationMethod::NONE, MatrixUnit::BP, 2500000);
 
-  CHECK(sel.chrom1().name == "chr2L");
-  CHECK(sel.chrom2().name == "chr2L");
+  CHECK(sel.chrom1().name() == "chr2L");
+  CHECK(sel.chrom2().name() == "chr2L");
   CHECK(sel.matrix_type() == MatrixType::observed);
   CHECK(sel.normalizationMethod() == NormalizationMethod::NONE);
   CHECK(sel.matrixUnit() == MatrixUnit::BP);
   CHECK(sel.resolution() == 2500000);
 
-  REQUIRE(sel.chrom1().length == 23513712);
+  REQUIRE(sel.chrom1().size() == 23513712);
   CHECK(sel.numBins1() == 10);
   CHECK(sel.numBins2() == 10);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector LRU cache", "[hic][short]") {
-  std::vector<contactRecord> buffer;
+  std::vector<Pixel<float>> buffer;
   HiCFile f(pathV8);
 
   auto sel = f.get_matrix_selector("chr2L", MatrixType::observed, NormalizationMethod::NONE,
@@ -120,7 +118,7 @@ TEST_CASE("MatrixSelector LRU cache", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
-  std::vector<contactRecord> buffer;
+  std::vector<Pixel<float>> buffer;
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr std::int32_t expected_sum = 19968156;
@@ -130,7 +128,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
     constexpr std::array<float, N> tail_expected{8, 21, 34, 53, 193};
 
     constexpr auto expected_value =
-        std::make_pair(std::size_t(770433), contactRecord{15770000, 15770000, 1234.0F});
+        std::make_pair(std::size_t(770433), SerializedPixel{15770000, 15770000, 1234.0F});
 
     SECTION("v8") {
       HiCFile(pathV8)
@@ -179,7 +177,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
     constexpr std::array<float, N> tail_expected{1, 1, 1, 1, 1};
 
     constexpr auto expected_value =
-        std::make_pair(std::size_t(54023), contactRecord{21770000, 1250000, 12.0F});
+        std::make_pair(std::size_t(54023), SerializedPixel{21770000, 1250000, 12.0F});
 
     SECTION("v8") {
       HiCFile(pathV8)
@@ -227,49 +225,53 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       REQUIRE(buffer.size() == 110);
       CHECK(sumCounts<std::int32_t>(buffer) == 1483112);
 
-      compareContactRecord(buffer[53], contactRecord{7500000, 12500000, 16512});
+      compareContactRecord(buffer[53], SerializedPixel{7500000, 12500000, 16512});
     }
 
     SECTION("sub-queries") {
+      const std::uint32_t resolution = 10000;
       SECTION("single pixel") {
         HiCFile(pathV9)
             .get_matrix_selector("chr2L", MatrixType::observed, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 10000)
+                                 MatrixUnit::BP, resolution)
             .fetch("100000-100001", "100000-100001", buffer);
         REQUIRE(buffer.size() == 1);
-        compareContactRecord(buffer.front(), contactRecord{100000, 100000, 13895.0F});
+        compareContactRecord(buffer.front(), SerializedPixel{100000, 100000, 13895.0F});
       }
 
       SECTION("upper-triangle") {
         HiCFile(pathV9)
             .get_matrix_selector("chr2L", MatrixType::observed, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 10000)
+                                 MatrixUnit::BP, resolution)
             .fetch(123456, 200000, 0, 200000, buffer);
         REQUIRE(buffer.size() == 132);
         CHECK(sumCounts<std::int32_t>(buffer) == 124561);
-        compareContactRecord(buffer[17], contactRecord{40000, 130000, 148});
-        checkContactRecordsAreWithinBound(123456, 200000, 0, 200000, buffer);
+        compareContactRecord(buffer[17], SerializedPixel{40000, 130000, 148});
+        checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
+                                          buffer);
       }
 
       SECTION("lower-triangle") {
         HiCFile(pathV9)
             .get_matrix_selector("chr2L", MatrixType::observed, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 10000)
+                                 MatrixUnit::BP, resolution)
             .fetch(0, 200000, 123456, 200000, buffer);
         REQUIRE(buffer.size() == 132);
         CHECK(sumCounts<std::int32_t>(buffer) == 124561);
-        compareContactRecord(buffer[17], contactRecord{40000, 130000, 148});
-        checkContactRecordsAreWithinBound(0, 200000, 123456, 200000, buffer);
+        compareContactRecord(buffer[17], SerializedPixel{40000, 130000, 148});
+        checkContactRecordsAreWithinBound(0, 200000 + resolution, 123456, 200000 + resolution,
+                                          buffer);
       }
 
       SECTION("inter-chromosomal") {
         HiCFile(pathV9)
             .get_matrix_selector("chr2L", "chr4", MatrixType::observed, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 10000)
+                                 MatrixUnit::BP, resolution)
             .fetch(123456, 200000, 0, 200000, buffer);
         REQUIRE(buffer.size() == 57);
         CHECK(sumCounts<std::int32_t>(buffer) == 74);
-        checkContactRecordsAreWithinBound(123456, 200000, 0, 200000, buffer);
+        checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
+                                          buffer);
       }
     }
 
@@ -284,7 +286,8 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       }
       SECTION("invalid resolution") {
         CHECK_THROWS(hic.get_matrix_selector("chr2L", MatrixType::observed,
-                                             NormalizationMethod::NONE, MatrixUnit::BP, -1));
+                                             NormalizationMethod::NONE, MatrixUnit::BP,
+                                             (std::numeric_limits<std::uint32_t>::max)()));
       }
       SECTION("invalid unit") {
         CHECK_THROWS(hic.get_matrix_selector("chr2L", MatrixType::observed,
@@ -308,7 +311,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][short]") {
-  std::vector<contactRecord> buffer;
+  std::vector<Pixel<float>> buffer;
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 20391277.41514;
@@ -354,7 +357,7 @@ TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][short]") {
-  std::vector<contactRecord> buffer;
+  std::vector<Pixel<float>> buffer;
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 18314748.068024;
@@ -400,7 +403,7 @@ TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector fetch (oe NONE BP 10000)", "[hic][short]") {
-  std::vector<contactRecord> buffer;
+  std::vector<Pixel<float>> buffer;
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 2785506.2274201;

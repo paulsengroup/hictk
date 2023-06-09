@@ -42,11 +42,9 @@ constexpr NormalizationMethod HiCFooter::normalization() const noexcept {
   return metadata().normalization;
 }
 constexpr MatrixUnit HiCFooter::unit() const noexcept { return metadata().unit; }
-constexpr std::int64_t HiCFooter::resolution() const noexcept {
-  return std::int64_t(metadata().resolution);
-}
-constexpr const chromosome &HiCFooter::chrom1() const noexcept { return metadata().chrom1; }
-constexpr const chromosome &HiCFooter::chrom2() const noexcept { return metadata().chrom2; }
+constexpr std::uint32_t HiCFooter::resolution() const noexcept { return metadata().resolution; }
+constexpr const Chromosome &HiCFooter::chrom1() const noexcept { return metadata().chrom1; }
+constexpr const Chromosome &HiCFooter::chrom2() const noexcept { return metadata().chrom2; }
 constexpr std::int64_t HiCFooter::fileOffset() const noexcept { return metadata().fileOffset; }
 
 constexpr const std::vector<double> &HiCFooter::expectedValues() const noexcept {
@@ -56,7 +54,7 @@ constexpr const std::vector<double> &HiCFooter::expectedValues() const noexcept 
 constexpr const std::vector<double> &HiCFooter::c1Norm() const noexcept { return _c1Norm; }
 
 constexpr const std::vector<double> &HiCFooter::c2Norm() const noexcept {
-  if (chrom1() == chrom2()) {
+  if (chrom1().id() == chrom2().id()) {
     return _c1Norm;
   }
   return _c2Norm;
@@ -67,7 +65,7 @@ constexpr std::vector<double> &HiCFooter::expectedValues() noexcept { return _ex
 constexpr std::vector<double> &HiCFooter::c1Norm() noexcept { return _c1Norm; }
 
 constexpr std::vector<double> &HiCFooter::c2Norm() noexcept {
-  if (chrom1() == chrom2()) {
+  if (chrom1().id() == chrom2().id()) {
     return _c1Norm;
   }
   return _c2Norm;

@@ -31,6 +31,7 @@ class Chromosome {
   [[nodiscard]] constexpr std::uint32_t id() const noexcept;
   [[nodiscard]] std::string_view name() const noexcept;
   [[nodiscard]] constexpr std::uint32_t size() const noexcept;
+  [[nodiscard]] bool is_all() const noexcept;
 
   [[nodiscard]] constexpr bool operator<(const Chromosome& other) const noexcept;
   [[nodiscard]] constexpr bool operator>(const Chromosome& other) const noexcept;

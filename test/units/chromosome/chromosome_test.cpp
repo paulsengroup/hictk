@@ -21,6 +21,9 @@ TEST_CASE("Chromosome", "[chromosome][short]") {
     CHECK(chrom1.id() == 0);
     CHECK(chrom1.name() == "chr1");
     CHECK(chrom1.size() == 50001);
+    CHECK_FALSE(chrom1.is_all());
+    CHECK(Chromosome{0, "All", 10}.is_all());
+    CHECK(Chromosome{0, "aLl", 10}.is_all());
   }
 
   SECTION("operators") {

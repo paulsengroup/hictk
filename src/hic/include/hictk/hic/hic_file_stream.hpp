@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/hic_footer.hpp"
@@ -42,17 +43,18 @@ class HiCFileStream {
 
   [[nodiscard]] std::int32_t version() const noexcept;
 
-  // reads the footer given a pair of chromosomes, norm, unit (BP or FRAG) and resolution.
-  [[nodiscard]] HiCFooter readFooter(std::int32_t chrom1_id, std::int32_t chrom2_id,
-                                     MatrixType matrix_type, NormalizationMethod norm,
-                                     MatrixUnit unit, std::int32_t wantedResolution);
+  // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
+  // resolution.
+  [[nodiscard]] HiCFooter readFooter(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                     MatrixType matrix_type, NormalizationMethod wanted_norm,
+                                     MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
 
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static NormalizationMethod readNormalizationMethod(filestream::FileStream &fs,
                                                                    std::string &buff);
   [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream &fs, std::string &buff);
 
-  void readBlockMap(std::int64_t fileOffset, const chromosome &chrom1, const chromosome &chrom2,
+  void readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1, const Chromosome &chrom2,
                     MatrixUnit wantedUnit, std::int64_t wantedResolution, BlockMap &buffer);
   void readAndInflate(indexEntry idx, std::string &plainTextBuffer);
 
@@ -65,14 +67,14 @@ class HiCFileStream {
   [[nodiscard]] static HiCHeader readHeader(filestream::FileStream &fs);
 
   [[nodiscard]] std::vector<double> readExpectedVector(std::int64_t nValues);
-  [[nodiscard]] std::vector<double> readNormalizationFactors(std::int32_t wantedChrom);
+  [[nodiscard]] std::vector<double> readNormalizationFactors(std::uint32_t wantedChrom);
   void applyNormalizationFactors(std::vector<double> &expectedValues,
                                  const std::vector<double> &normFactors);
   [[nodiscard]] std::vector<double> readNormalizationVector(indexEntry cNormEntry,
                                                             std::size_t numValuesExpected);
 
   void discardExpectedVector(std::int64_t nValues);
-  void discardNormalizationFactors(std::int32_t wantedChrom);
+  void discardNormalizationFactors(std::uint32_t wantedChrom);
 
   [[nodiscard]] MatrixType readMatrixType();
   [[nodiscard]] NormalizationMethod readNormalizationMethod();

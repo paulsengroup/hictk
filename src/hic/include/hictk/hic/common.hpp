@@ -18,6 +18,25 @@
 
 namespace hictk {
 
+struct SerializedPixel {
+  std::int64_t bin1_start{};
+  std::int64_t bin2_start{};
+  float count{};
+
+  constexpr bool operator<(const SerializedPixel &other) const noexcept {
+    if (bin2_start == other.bin2_start) {
+      return bin1_start < other.bin1_start;
+    }
+    return bin2_start < other.bin2_start;
+  }
+  constexpr bool operator==(const SerializedPixel &other) const noexcept {
+    return bin1_start == other.bin1_start && bin2_start == other.bin2_start && count == other.count;
+  }
+  constexpr bool operator!=(const SerializedPixel &other) const noexcept {
+    return !(*this == other);
+  }
+};
+
 // pointer structure for reading blocks or matrices, holds the size and position
 struct indexEntry {
   std::int64_t position{-1};
@@ -33,61 +52,9 @@ struct indexEntry {
   constexpr bool operator!=(const indexEntry &other) const noexcept { return !(*this == other); }
 };
 
-// sparse matrix_type entry
-struct contactRecord {
-  std::int64_t bin1_start{};
-  std::int64_t bin2_start{};
-  float count{};
-
-  constexpr bool operator<(const contactRecord &other) const noexcept {
-    if (bin2_start == other.bin2_start) {
-      return bin1_start < other.bin1_start;
-    }
-    return bin2_start < other.bin2_start;
-  }
-  constexpr bool operator==(const contactRecord &other) const noexcept {
-    return bin1_start == other.bin1_start && bin2_start == other.bin2_start && count == other.count;
-  }
-  constexpr bool operator!=(const contactRecord &other) const noexcept { return !(*this == other); }
-};
-
-// chromosome
-struct chromosome {
-  std::string name{};
-  std::int32_t index{};
-  std::int64_t length{};
-
-  constexpr bool operator==(const chromosome &other) const noexcept { return index == other.index; }
-  constexpr bool operator!=(const chromosome &other) const noexcept { return !(*this == other); }
-  constexpr bool operator<(const chromosome &other) const noexcept { return index < other.index; }
-  constexpr bool operator<=(const chromosome &other) const noexcept { return index <= other.index; }
-  constexpr bool operator>(const chromosome &other) const noexcept { return index > other.index; }
-  constexpr bool operator>=(const chromosome &other) const noexcept { return index >= other.index; }
-  [[nodiscard]] bool is_all() const noexcept {
-    if (this->name == "All") {
-      return true;
-    }
-
-    auto all = this->name;
-
-    std::transform(all.begin(), all.end(), all.begin(),
-                   [&](const char c) { return std::tolower(c); });
-
-    return all == "all";
-  }
-};
 }  // namespace hictk
 
-template <>
-struct std::hash<hictk::chromosome> {
-  inline std::size_t operator()(hictk::chromosome const &c) const noexcept {
-    return std::hash<std::int32_t>{}(c.index);
-  }
-};
-
 namespace hictk {
-
-using ChromosomeMap = tsl::ordered_map<std::string, chromosome>;
 
 enum class NormalizationMethod {
   NONE,
@@ -177,36 +144,6 @@ enum class MatrixUnit { BP, FRAG };
   throw std::runtime_error("Invalid unit \"" + s + "\"");
 }
 
-namespace internal {
-// Adapted from:
-// https://www.boost.org/doc/libs/1_37_0/doc/html/hash/reference.html#boost.hash_combine
-
-template <typename T>
-[[nodiscard]] inline std::size_t hash_combine(std::size_t seed, const T &v) {
-  seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6U) + (seed >> 2U);
-  return seed;
-}
-template <typename T, typename... Args>
-[[nodiscard]] inline std::size_t hash_combine(std::size_t seed, const T &v, Args... args) {
-  seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6U) + (seed >> 2U);
-  return hash_combine(seed, args...);
-}
-
-inline bool StartsWith(const std::string &s, const std::string &prefix) {
-  return s.find(prefix) == 0;
-}
-
-}  // namespace internal
-
-// to avoid useless casts (see https://github.com/nlohmann/json/issues/2893#issuecomment-889152324)
-template <class T, class U>
-[[maybe_unused]] [[nodiscard]] constexpr T conditional_static_cast(U value) {
-  if constexpr (std::is_same_v<T, U>) {
-    return value;
-  } else {
-    return static_cast<T>(value);
-  }
-}
 }  // namespace hictk
 
 template <>

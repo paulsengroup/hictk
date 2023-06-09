@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 
 namespace hictk::internal {
@@ -16,9 +17,9 @@ struct HiCFooterMetadata {
   MatrixType matrix_type{MatrixType::observed};
   NormalizationMethod normalization{NormalizationMethod::NONE};
   MatrixUnit unit{MatrixUnit::BP};
-  std::int32_t resolution{-1};
-  chromosome chrom1{};
-  chromosome chrom2{};
+  std::uint32_t resolution{std::numeric_limits<std::uint32_t>::max()};
+  Chromosome chrom1{};
+  Chromosome chrom2{};
   std::int64_t fileOffset{-1};
 
   constexpr explicit operator bool() const noexcept;
@@ -47,9 +48,9 @@ class HiCFooter {
   [[nodiscard]] constexpr MatrixType matrix_type() const noexcept;
   [[nodiscard]] constexpr NormalizationMethod normalization() const noexcept;
   [[nodiscard]] constexpr MatrixUnit unit() const noexcept;
-  [[nodiscard]] constexpr std::int64_t resolution() const noexcept;
-  [[nodiscard]] constexpr const chromosome &chrom1() const noexcept;
-  [[nodiscard]] constexpr const chromosome &chrom2() const noexcept;
+  [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
+  [[nodiscard]] constexpr const Chromosome &chrom1() const noexcept;
+  [[nodiscard]] constexpr const Chromosome &chrom2() const noexcept;
   [[nodiscard]] constexpr std::int64_t fileOffset() const noexcept;
 
   [[nodiscard]] constexpr const std::vector<double> &expectedValues() const noexcept;

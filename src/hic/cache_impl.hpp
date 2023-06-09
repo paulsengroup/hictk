@@ -11,7 +11,7 @@
 
 namespace hictk::internal {
 
-inline InteractionBlock::InteractionBlock(std::vector<contactRecord> interactions) noexcept
+inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept
     : _interactions(std::move(interactions)) {
   assert(std::is_sorted(_interactions.begin(), _interactions.end()));
 }
@@ -35,7 +35,7 @@ inline auto InteractionBlock::cend() const noexcept -> const_iterator { return e
 inline std::size_t InteractionBlock::size() const noexcept { return _interactions.size(); }
 
 inline std::size_t InteractionBlock::size_in_bytes() const noexcept {
-  return sizeof(contactRecord) * size();
+  return sizeof(Pixel<float>) * size();
 }
 
 inline BlockLRUCache::BlockLRUCache(std::size_t max_size_in_bytes)

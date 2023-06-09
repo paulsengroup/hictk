@@ -36,32 +36,32 @@ class HiCFile {
   [[nodiscard]] const std::string &url() const noexcept;
   [[nodiscard]] const std::string &name() const noexcept;
   [[nodiscard]] std::int32_t version() const noexcept;
-  [[nodiscard]] const ChromosomeMap &chromosomes() const noexcept;
+  [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
-  [[nodiscard]] const std::vector<std::int32_t> &resolutions() const noexcept;
+  [[nodiscard]] const std::vector<std::uint32_t> &resolutions() const noexcept;
 
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const chromosome &chrom, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
-      std::int32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
+      const Chromosome &chrom, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
+      std::uint32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
       const std::string &chromName, MatrixType matrix_type, NormalizationMethod norm,
-      MatrixUnit unit, std::int32_t resolution,
+      MatrixUnit unit, std::uint32_t resolution,
       std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      std::int32_t chrom_id, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
-      std::int32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
+      std::uint32_t chrom_id, MatrixType matrix_type, NormalizationMethod norm, MatrixUnit unit,
+      std::uint32_t resolution, std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
 
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      const chromosome &chrom1, const chromosome &chrom2, MatrixType matrix_type,
-      NormalizationMethod norm, MatrixUnit unit, std::int32_t resolution,
+      const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
+      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
       std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
       const std::string &chrom1_name, const std::string &chrom2_name, MatrixType matrix_type,
-      NormalizationMethod norm, MatrixUnit unit, std::int32_t resolution,
+      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
       std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
   [[nodiscard]] internal::MatrixSelector get_matrix_selector(
-      std::int32_t chrom1_id, std::int32_t chrom2_id, MatrixType matrix_type,
-      NormalizationMethod norm, MatrixUnit unit, std::int32_t resolution,
+      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution,
       std::size_t block_cache_capacity = DEFAULT_BLOCK_CACHE_CAPACITY);
 
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
@@ -69,8 +69,8 @@ class HiCFile {
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
-      std::int32_t chrom1_id, std::int32_t chrom2_id, MatrixType matrix_type,
-      NormalizationMethod norm, MatrixUnit unit, std::int32_t resolution);
+      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution);
 };
 
 namespace utils {

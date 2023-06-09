@@ -11,19 +11,20 @@
 #include <vector>
 
 #include "hictk/hic/common.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::internal {
 
 class InteractionBlock {
-  using BuffT = std::vector<contactRecord>;
-  std::vector<contactRecord> _interactions{};
+  using BuffT = std::vector<SerializedPixel>;
+  BuffT _interactions{};
 
  public:
   using iterator = BuffT::iterator;
   using const_iterator = BuffT::const_iterator;
 
   InteractionBlock() = default;
-  explicit InteractionBlock(std::vector<contactRecord> interactions) noexcept;
+  explicit InteractionBlock(std::vector<SerializedPixel> interactions) noexcept;
 
   [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
 

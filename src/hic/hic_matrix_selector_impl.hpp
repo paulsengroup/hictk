@@ -37,12 +37,15 @@ inline MatrixSelector::MatrixSelector(std::shared_ptr<HiCFileStream> fs,
                                       std::size_t block_cache_capacity)
     : _fs(std::move(fs)),
       _footer(std::move(footer)),
+      _bins(_fs->header().chromosomes, _footer->resolution()),
       _blockMap(readBlockMap(*_fs, *_footer)),
-      _blockCache(block_cache_capacity) {}
+      _blockCache(block_cache_capacity) {
+  assert(_footer);
+}
 
-inline const chromosome &MatrixSelector::chrom1() const noexcept { return _footer->chrom1(); }
+inline const Chromosome &MatrixSelector::chrom1() const noexcept { return _footer->chrom1(); }
 
-inline const chromosome &MatrixSelector::chrom2() const noexcept { return _footer->chrom2(); }
+inline const Chromosome &MatrixSelector::chrom2() const noexcept { return _footer->chrom2(); }
 
 inline std::int64_t MatrixSelector::resolution() const noexcept { return _footer->resolution(); }
 
@@ -55,11 +58,11 @@ inline NormalizationMethod MatrixSelector::normalizationMethod() const noexcept 
 inline MatrixUnit MatrixSelector::matrixUnit() const noexcept { return _footer->unit(); }
 
 inline std::int64_t MatrixSelector::numBins1() const noexcept {
-  return (chrom1().length + resolution() - 1) / resolution();
+  return (chrom1().size() + resolution() - 1) / resolution();
 }
 
 inline std::int64_t MatrixSelector::numBins2() const noexcept {
-  return (chrom2().length + resolution() - 1) / resolution();
+  return (chrom2().size() + resolution() - 1) / resolution();
 }
 
 inline bool MatrixSelector::isIntra() const noexcept { return chrom1() == chrom2(); }
@@ -82,17 +85,17 @@ inline double MatrixSelector::avgCount() const {
       "MatrixSelector::avgCount is not implemented for intra-chromosomal matrices");
 }
 
-inline void MatrixSelector::fetch(std::vector<contactRecord> &buffer, bool sorted) {
-  return fetch(0, chrom1().length, 0, chrom2().length, buffer, sorted);
+inline void MatrixSelector::fetch(std::vector<Pixel<float>> &buffer, bool sorted) {
+  return fetch(0, chrom1().size(), 0, chrom2().size(), buffer, sorted);
 }
 
-inline void MatrixSelector::fetch(const std::string &coord, std::vector<contactRecord> &buffer,
+inline void MatrixSelector::fetch(const std::string &coord, std::vector<Pixel<float>> &buffer,
                                   bool sorted) {
   return fetch(coord, coord, buffer, sorted);
 }
 
 inline void MatrixSelector::fetch(const std::string &coord1, const std::string &coord2,
-                                  std::vector<contactRecord> &buffer, bool sorted) {
+                                  std::vector<Pixel<float>> &buffer, bool sorted) {
   auto coord1_ = GenomicCoordinates::fromString(coord1, true);
   auto coord2_ = GenomicCoordinates::fromString(coord2, true);
 
@@ -100,12 +103,12 @@ inline void MatrixSelector::fetch(const std::string &coord1, const std::string &
 }
 
 inline void MatrixSelector::fetch(std::int64_t start, std::int64_t end,
-                                  std::vector<contactRecord> &buffer, bool sorted) {
+                                  std::vector<Pixel<float>> &buffer, bool sorted) {
   return fetch(start, end, start, end, buffer, sorted);
 }
 
 inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::int64_t start2,
-                                  std::int64_t end2, std::vector<contactRecord> &buffer,
+                                  std::int64_t end2, std::vector<Pixel<float>> &buffer,
                                   bool sorted) {
   buffer.clear();
   if (start1 > end1) {
@@ -115,16 +118,16 @@ inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::i
     throw std::invalid_argument(fmt::format(FMT_STRING("start2 > end2: {} > {}"), start2, end2));
   }
 
-  if (start1 < 0 || end1 > chrom1().length) {
+  if (start1 < 0 || end1 > chrom1().size()) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("query extends past chromosome {}: interval {}-{} lies outside of 0-{}"),
-        chrom1().name, start1, end1, chrom1().length));
+        chrom1().name(), start1, end1, chrom1().size()));
   }
 
-  if (start2 < 0 || end2 > chrom2().length) {
+  if (start2 < 0 || end2 > chrom2().size()) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("query extends past chromosome {}: interval {}-{} lies outside of 0-{}"),
-        chrom2().name, start2, end2, chrom2().length));
+        chrom2().name(), start2, end2, chrom2().size()));
   }
 
   // Query is valid but returns no pixels
@@ -169,18 +172,26 @@ inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::i
       if (overlapsQuery) {
         auto record = processInteraction(*first);
         if (std::isfinite(record.count)) {
-          buffer.emplace_back(std::move(record));
+          buffer.emplace_back(
+              PixelCoordinates{
+                  _bins.at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_start)),
+                  _bins.at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_start))},
+              record.count);
         }
       }
     }
   }
   if (sorted && _blockNumberBuff.size() - empty_blocks > 1) {
     // Only interactions from the same block are guaranteed to already be sorted
-    std::sort(buffer.begin(), buffer.end());
+    std::sort(buffer.begin(), buffer.end(), [&](const Pixel<float> &p1, const Pixel<float> &p2) {
+      // TODO fixme
+      return SerializedPixel{p1.coords.bin1.start(), p1.coords.bin2.start(), p1.count} <
+             SerializedPixel{p2.coords.bin1.start(), p2.coords.bin2.start(), p2.count};
+    });
   }
 }
 
-inline contactRecord MatrixSelector::processInteraction(contactRecord record) {
+inline SerializedPixel MatrixSelector::processInteraction(SerializedPixel record) {
   const auto &c1Norm = _footer->c1Norm();
   const auto &c2Norm = _footer->c2Norm();
   const auto &expected = _footer->expectedValues();
@@ -228,7 +239,7 @@ inline contactRecord MatrixSelector::processInteraction(contactRecord record) {
 
 /*
 inline void MatrixSelector::readBlockOfInteractionsV6(BinaryBuffer &src,
-                                                      std::vector<contactRecord> &dest) {
+                                                      std::vector<SerializedPixel> &dest) {
     assert(src.i == sizeof(std::int32_t));
 
     constexpr auto recordSize = sizeof(std::int32_t) + sizeof(std::int32_t) + sizeof(float);
@@ -244,7 +255,7 @@ inline void MatrixSelector::readBlockOfInteractionsV6(BinaryBuffer &src,
 
     std::generate(dest.begin(), dest.end(), [&]() {
         // clang-format off
-        return contactRecord{src.read<std::int32_t>(),
+        return SerializedPixel{src.read<std::int32_t>(),
                              src.read<std::int32_t>(),
                              src.read<float>()};
         // clang-format on
@@ -254,7 +265,7 @@ inline void MatrixSelector::readBlockOfInteractionsV6(BinaryBuffer &src,
 */
 
 inline std::shared_ptr<InteractionBlock> MatrixSelector::readBlockOfInteractions(
-    indexEntry idx, std::vector<contactRecord> &buffer) {
+    indexEntry idx, std::vector<SerializedPixel> &buffer) {
   buffer.clear();
   if (idx.size <= 0) {
     return {nullptr};
@@ -322,7 +333,7 @@ inline std::shared_ptr<InteractionBlock> MatrixSelector::readBlockOfInteractions
 
 inline void MatrixSelector::readBlockOfInteractionsType1Dispatcher(
     bool i16Bin1, bool i16Bin2, bool i16Counts, std::int32_t bin1Offset, std::int32_t bin2Offset,
-    BinaryBuffer &src, std::vector<contactRecord> &dest) noexcept {
+    BinaryBuffer &src, std::vector<SerializedPixel> &dest) noexcept {
   using BS = std::int16_t;  // Short type for bins
   using CS = std::int16_t;  // Short type for count
 
@@ -364,7 +375,7 @@ inline void MatrixSelector::readBlockOfInteractionsType1Dispatcher(
 template <typename Bin1Type, typename Bin2Type, typename CountType>
 inline void MatrixSelector::readBlockOfInteractionsType1(
     std::int32_t bin1Offset, std::int32_t bin2Offset, BinaryBuffer &src,
-    std::vector<contactRecord> &dest) noexcept {
+    std::vector<SerializedPixel> &dest) noexcept {
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
@@ -389,7 +400,7 @@ inline void MatrixSelector::readBlockOfInteractionsType1(
       const auto bin1 = bin1Offset + static_cast<i32>(src.read<Bin1Type>());
 
       const auto counts = static_cast<f32>(src.read<CountType>());
-      dest.push_back(contactRecord{bin1, bin2, counts});
+      dest.push_back(SerializedPixel{bin1, bin2, counts});
     }
   }
 
@@ -400,7 +411,7 @@ inline void MatrixSelector::readBlockOfInteractionsType1(
 template <typename CountType>
 inline void MatrixSelector::readBlockOfInteractionsType2(
     std::int32_t bin1Offset, std::int32_t bin2Offset, BinaryBuffer &src,
-    std::vector<contactRecord> &dest) noexcept {
+    std::vector<SerializedPixel> &dest) noexcept {
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
@@ -429,7 +440,7 @@ inline void MatrixSelector::readBlockOfInteractionsType2(
     const auto bin1 = bin1Offset + col;
     const auto bin2 = bin2Offset + row;
 
-    dest.emplace_back(contactRecord{bin1, bin2, static_cast<f32>(count)});
+    dest.emplace_back(SerializedPixel{bin1, bin2, static_cast<f32>(count)});
   }
 }
 

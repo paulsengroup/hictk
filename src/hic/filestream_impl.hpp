@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/common.hpp"
+
 namespace hictk::internal::filestream {
 
 inline FileStream::FileStream(std::string path)
@@ -85,6 +87,24 @@ inline T FileStream::read() {
   T buffer{};
   this->read(buffer);
   return buffer;
+}
+
+template <typename Tin, typename Tout,
+          typename std::enable_if<std::is_integral<Tin>::value>::type *>
+inline Tout FileStream::read_as_signed() {
+  auto tmp = this->read<Tin>();
+  return conditional_static_cast<Tout>(this->read<Tin>());
+}
+
+template <typename Tin, typename Tout,
+          typename std::enable_if<std::is_integral<Tin>::value>::type *>
+inline Tout FileStream::read_as_unsigned() {
+  return conditional_static_cast<Tout>(this->read<Tin>());
+}
+
+template <typename Tin, typename std::enable_if<std::is_arithmetic<Tin>::value>::type *>
+inline double FileStream::read_as_double() {
+  return conditional_static_cast<double>(this->read<Tin>());
 }
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>

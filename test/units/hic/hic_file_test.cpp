@@ -93,11 +93,11 @@ TEST_CASE("HiCFile get_matrix_selector", "[hic][short]") {
   const auto chrom2 = f.chromosomes().at("chr2R");
 
   SECTION("intra-chromosomal") {
-    auto sel = f.get_matrix_selector(chrom1.name, mt, norm, unit, res);
+    auto sel = f.get_matrix_selector(chrom1, mt, norm, unit, res);
     CHECK(sel.chrom1() == chrom1);
     CHECK(sel.isIntra());
 
-    sel = f.get_matrix_selector(chrom1.index, mt, norm, unit, res);
+    sel = f.get_matrix_selector(chrom1.id(), mt, norm, unit, res);
     CHECK(sel.chrom1() == chrom1);
     CHECK(sel.isIntra());
 
@@ -107,11 +107,11 @@ TEST_CASE("HiCFile get_matrix_selector", "[hic][short]") {
   }
 
   SECTION("inter-chromosomal") {
-    auto sel = f.get_matrix_selector(chrom1.name, chrom2.name, mt, norm, unit, res);
+    auto sel = f.get_matrix_selector(chrom1, chrom2, mt, norm, unit, res);
     CHECK(sel.chrom1() == chrom1);
     CHECK(sel.chrom2() == chrom2);
 
-    sel = f.get_matrix_selector(chrom1.index, chrom2.index, mt, norm, unit, res);
+    sel = f.get_matrix_selector(chrom1.id(), chrom2.id(), mt, norm, unit, res);
     CHECK(sel.chrom1() == chrom1);
     CHECK(sel.chrom2() == chrom2);
 
@@ -125,16 +125,17 @@ TEST_CASE("HiCFile get_matrix_selector", "[hic][short]") {
 
   SECTION("valid, but empty matrix") {
     auto sel = f.get_matrix_selector("chrM", mt, norm, unit, res);
-    std::vector<contactRecord> buff{};
+    std::vector<Pixel<float>> buff{};
     sel.fetch(buff);
     CHECK(buff.empty());
   }
 
   SECTION("invalid chromosome") {
     CHECK_THROWS(f.get_matrix_selector("not-a-chromosome", mt, norm, unit, res));
-    CHECK_THROWS(f.get_matrix_selector(chrom1.name, "not-a-chromosome", mt, norm, unit, res));
+    CHECK_THROWS(
+        f.get_matrix_selector(std::string{chrom1.name()}, "not-a-chromosome", mt, norm, unit, res));
     CHECK_THROWS(f.get_matrix_selector(999, mt, norm, unit, res));
-    CHECK_THROWS(f.get_matrix_selector(chrom1.index, 999, mt, norm, unit, res));
+    CHECK_THROWS(f.get_matrix_selector(chrom1.id(), 999, mt, norm, unit, res));
   }
 
   SECTION("malformed") {

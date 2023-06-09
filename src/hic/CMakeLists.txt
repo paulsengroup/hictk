@@ -27,7 +27,14 @@ target_link_libraries(
   hic
   INTERFACE hictk_project_options
             hictk_project_warnings
-            fmt::fmt
-            libdeflate::libdeflate
-            tsl::ordered_map
-            std::filesystem)
+            hictk::common
+            hictk::chromosome
+            hictk::reference)
+
+target_link_system_libraries(
+  hic
+  INTERFACE
+  fmt::fmt
+  libdeflate::libdeflate
+  tsl::ordered_map
+  std::filesystem)

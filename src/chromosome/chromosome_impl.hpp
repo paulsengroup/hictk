@@ -34,6 +34,19 @@ inline std::string_view Chromosome::name() const noexcept { return this->_name; 
 
 constexpr std::uint32_t Chromosome::size() const noexcept { return this->_size; }
 
+inline bool Chromosome::is_all() const noexcept {
+  if (this->name() == "All") {
+    return true;
+  }
+
+  std::string name{this->name()};
+
+  std::transform(name.begin(), name.end(), name.begin(),
+                 [&](const char c) { return std::tolower(c); });
+
+  return name == "all";
+}
+
 constexpr bool Chromosome::operator<(const Chromosome& other) const noexcept {
   return this->id() < other.id();
 }
@@ -95,3 +108,7 @@ constexpr bool operator==(std::uint32_t a_id, const Chromosome& b) noexcept { re
 constexpr bool operator!=(std::uint32_t a_id, const Chromosome& b) noexcept { return b != a_id; }
 
 }  // namespace hictk
+
+inline std::size_t std::hash<hictk::Chromosome>::operator()(const hictk::Chromosome& c) const {
+  return hictk::internal::hash_combine(0, c.id(), c.name(), c.size());
+}

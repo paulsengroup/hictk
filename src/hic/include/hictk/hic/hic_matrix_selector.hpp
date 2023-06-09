@@ -28,10 +28,11 @@ class MatrixSelector {
 
   std::shared_ptr<HiCFileStream> _fs;
   std::shared_ptr<const HiCFooter> _footer;
+  BinTable _bins{};
   BlockMap _blockMap{};
   BlockLRUCache _blockCache{};
   std::set<std::size_t> _blockNumberBuff{};
-  std::vector<contactRecord> _contactRecordBuff{};
+  std::vector<SerializedPixel> _contactRecordBuff{};
   BinaryBuffer _buffer{};
 
  public:
@@ -39,8 +40,8 @@ class MatrixSelector {
   MatrixSelector(std::shared_ptr<HiCFileStream> fs, std::shared_ptr<const HiCFooter> footer,
                  std::size_t block_cache_capacity);
 
-  [[nodiscard]] const chromosome &chrom1() const noexcept;
-  [[nodiscard]] const chromosome &chrom2() const noexcept;
+  [[nodiscard]] const Chromosome &chrom1() const noexcept;
+  [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
   [[nodiscard]] std::int64_t resolution() const noexcept;
   [[nodiscard]] MatrixType matrix_type() const noexcept;
@@ -58,15 +59,15 @@ class MatrixSelector {
 
   [[nodiscard]] inline double avgCount() const;
 
-  void fetch(std::vector<contactRecord> &buffer, bool sorted = false);
-  void fetch(const std::string &coord, std::vector<contactRecord> &buffer, bool sorted = false);
-  void fetch(std::int64_t start, std::int64_t end, std::vector<contactRecord> &buffer,
+  void fetch(std::vector<Pixel<float>> &buffer, bool sorted = false);
+  void fetch(const std::string &coord, std::vector<Pixel<float>> &buffer, bool sorted = false);
+  void fetch(std::int64_t start, std::int64_t end, std::vector<Pixel<float>> &buffer,
              bool sorted = false);
 
   void fetch(const std::string &coord1, const std::string &coord2,
-             std::vector<contactRecord> &buffer, bool sorted = false);
+             std::vector<Pixel<float>> &buffer, bool sorted = false);
   void fetch(std::int64_t start1, std::int64_t end1, std::int64_t start2, std::int64_t end2,
-             std::vector<contactRecord> &buffer, bool sorted = false);
+             std::vector<Pixel<float>> &buffer, bool sorted = false);
 
   void clearBlockCache() noexcept;
   [[nodiscard]] constexpr double blockCacheHitRate() const noexcept;
@@ -83,23 +84,23 @@ class MatrixSelector {
   void readBlockNumbersV9Intra(std::int64_t bin1, std::int64_t bin2, std::int64_t bin3,
                                std::int64_t bin4, std::set<std::size_t> &buffer) const;
   [[nodiscard]] std::shared_ptr<InteractionBlock> readBlockOfInteractions(
-      indexEntry idx, std::vector<contactRecord> &buffer);
-  [[nodiscard]] contactRecord processInteraction(contactRecord record);
-  // static void readBlockOfInteractionsV6(BinaryBuffer &src, std::vector<contactRecord> &dest);
+      indexEntry idx, std::vector<SerializedPixel> &buffer);
+  [[nodiscard]] SerializedPixel processInteraction(SerializedPixel record);
+  // static void readBlockOfInteractionsV6(BinaryBuffer &src, std::vector<SerializedPixel> &dest);
 
   static void readBlockOfInteractionsType1Dispatcher(bool i16Bin1, bool i16Bin2, bool i16Counts,
                                                      std::int32_t bin1Offset,
                                                      std::int32_t bin2Offset, BinaryBuffer &src,
-                                                     std::vector<contactRecord> &dest) noexcept;
+                                                     std::vector<SerializedPixel> &dest) noexcept;
   template <typename Bin1Type, typename Bin2Type, typename CountType>
   static void readBlockOfInteractionsType1(std::int32_t bin1Offset, std::int32_t bin2Offset,
                                            BinaryBuffer &src,
-                                           std::vector<contactRecord> &dest) noexcept;
+                                           std::vector<SerializedPixel> &dest) noexcept;
 
   template <typename CountType>
   static void readBlockOfInteractionsType2(std::int32_t bin1Offset, std::int32_t bin2Offset,
                                            BinaryBuffer &src,
-                                           std::vector<contactRecord> &dest) noexcept;
+                                           std::vector<SerializedPixel> &dest) noexcept;
 };
 
 }  // namespace hictk::internal
