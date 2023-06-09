@@ -19,18 +19,18 @@
 namespace hictk {
 
 struct SerializedPixel {
-  std::int64_t bin1_start{};
-  std::int64_t bin2_start{};
+  std::int64_t bin1_id{};
+  std::int64_t bin2_id{};
   float count{};
 
   constexpr bool operator<(const SerializedPixel &other) const noexcept {
-    if (bin2_start == other.bin2_start) {
-      return bin1_start < other.bin1_start;
+    if (bin1_id == other.bin1_id) {
+      return bin2_id < other.bin2_id;
     }
-    return bin2_start < other.bin2_start;
+    return bin1_id < other.bin1_id;
   }
   constexpr bool operator==(const SerializedPixel &other) const noexcept {
-    return bin1_start == other.bin1_start && bin2_start == other.bin2_start && count == other.count;
+    return bin1_id == other.bin1_id && bin2_id == other.bin2_id && count == other.count;
   }
   constexpr bool operator!=(const SerializedPixel &other) const noexcept {
     return !(*this == other);

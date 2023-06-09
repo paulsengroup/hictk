@@ -16,8 +16,10 @@
 namespace hictk::internal {
 
 class InteractionBlock {
-  using BuffT = std::vector<SerializedPixel>;
+  using BuffT = std::map<std::int64_t, std::vector<SerializedPixel>>;
   BuffT _interactions{};
+  std::int64_t _first_col{};
+  std::int64_t _last_col{};
 
  public:
   using iterator = BuffT::iterator;
@@ -36,8 +38,16 @@ class InteractionBlock {
   [[nodiscard]] auto end() const noexcept -> const_iterator;
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
+  [[nodiscard]] auto find_overlap(std::int64_t first_row, std::int64_t last_row) const noexcept
+      -> std::pair<const_iterator, const_iterator>;
+
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] std::size_t size_in_bytes() const noexcept;
+
+  [[nodiscard]] std::int64_t first_row() const noexcept;
+  [[nodiscard]] std::int64_t last_row() const noexcept;
+  [[nodiscard]] std::int64_t first_col() const noexcept;
+  [[nodiscard]] std::int64_t last_col() const noexcept;
 };
 
 class BlockLRUCache {

@@ -65,8 +65,8 @@ static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void compareContactRecord(const Pixel<float>& r1, const SerializedPixel& r2) {
-  CHECK(r1.coords.bin1.start() == r2.bin1_start);
-  CHECK(r1.coords.bin2.start() == r2.bin2_start);
+  CHECK(r1.coords.bin1.start() == r2.bin1_id);
+  CHECK(r1.coords.bin2.start() == r2.bin2_id);
   CHECK_THAT(r1.count, Catch::Matchers::WithinRel(r2.count));
 }
 
@@ -222,7 +222,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       REQUIRE(buffer.size() == 110);
       CHECK(sumCounts<std::int32_t>(buffer) == 1483112);
 
-      compareContactRecord(buffer[53], SerializedPixel{7500000, 12500000, 16512});
+      compareContactRecord(buffer[38], SerializedPixel{7500000, 12500000, 16512});
     }
 
     SECTION("sub-queries") {
@@ -238,10 +238,10 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       SECTION("upper-triangle") {
         auto sel = HiCFile(pathV9).get_matrix_selector(
             "chr2L", MatrixType::observed, NormalizationMethod::NONE, MatrixUnit::BP, resolution);
-        sel.fetch(123456, 200000, 0, 200000, buffer);
+        sel.fetch(123456, 200000, 0, 200000, buffer, true);
         REQUIRE(buffer.size() == 132);
         CHECK(sumCounts<std::int32_t>(buffer) == 124561);
-        compareContactRecord(buffer[17], SerializedPixel{40000, 130000, 148});
+        compareContactRecord(buffer[33], SerializedPixel{40000, 130000, 148});
         checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
                                           buffer);
       }
@@ -249,10 +249,10 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       SECTION("lower-triangle") {
         auto sel = HiCFile(pathV9).get_matrix_selector(
             "chr2L", MatrixType::observed, NormalizationMethod::NONE, MatrixUnit::BP, resolution);
-        sel.fetch(0, 200000, 123456, 200000, buffer);
+        sel.fetch(0, 200000, 123456, 200000, buffer, true);
         REQUIRE(buffer.size() == 132);
         CHECK(sumCounts<std::int32_t>(buffer) == 124561);
-        compareContactRecord(buffer[17], SerializedPixel{40000, 130000, 148});
+        compareContactRecord(buffer[33], SerializedPixel{40000, 130000, 148});
         checkContactRecordsAreWithinBound(0, 200000 + resolution, 123456, 200000 + resolution,
                                           buffer);
       }

@@ -11,9 +11,23 @@
 
 namespace hictk::internal {
 
-inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept
-    : _interactions(std::move(interactions)) {
-  assert(std::is_sorted(_interactions.begin(), _interactions.end()));
+inline InteractionBlock::InteractionBlock(std::vector<SerializedPixel> interactions) noexcept {
+  if (interactions.empty()) {
+    return;
+  }
+
+  for (auto &&interaction : interactions) {
+    _first_col = (std::min)(_first_col, interaction.bin2_id);
+    _last_col = (std::max)(_last_col, interaction.bin2_id);
+    auto [node, inserted] = this->_interactions.try_emplace(
+        interaction.bin1_id, std::vector<SerializedPixel>{std::move(interaction)});
+    if (!inserted) {
+      node->second.emplace_back(std::move(interaction));
+    }
+  }
+  for (auto &[_, buff] : this->_interactions) {
+    std::sort(buff.begin(), buff.end());
+  }
 }
 
 inline auto InteractionBlock::operator()() const noexcept -> const BuffT & { return _interactions; }
@@ -32,11 +46,33 @@ inline auto InteractionBlock::end() const noexcept -> const_iterator { return _i
 
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
+inline auto InteractionBlock::find_overlap(std::int64_t first_row,
+                                           std::int64_t last_row) const noexcept
+    -> std::pair<const_iterator, const_iterator> {
+  assert(first_row <= last_row);
+  return std::make_pair(_interactions.lower_bound(first_row), _interactions.upper_bound(last_row));
+}
+
 inline std::size_t InteractionBlock::size() const noexcept { return _interactions.size(); }
 
 inline std::size_t InteractionBlock::size_in_bytes() const noexcept {
   return sizeof(Pixel<float>) * size();
 }
+
+inline std::int64_t InteractionBlock::first_row() const noexcept {
+  if (_interactions.empty()) {
+    return 0;
+  }
+  return _interactions.begin()->second.front().bin1_id;
+}
+inline std::int64_t InteractionBlock::last_row() const noexcept {
+  if (_interactions.empty()) {
+    return 0;
+  }
+  return (--_interactions.end())->second.back().bin1_id;
+}
+inline std::int64_t InteractionBlock::first_col() const noexcept { return _first_col; }
+inline std::int64_t InteractionBlock::last_col() const noexcept { return _last_col; }
 
 inline BlockLRUCache::BlockLRUCache(std::size_t max_size_in_bytes)
     : _max_size_bytes(max_size_in_bytes) {

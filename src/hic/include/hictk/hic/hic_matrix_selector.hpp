@@ -43,7 +43,7 @@ class MatrixSelector {
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
-  [[nodiscard]] std::int64_t resolution() const noexcept;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] NormalizationMethod normalizationMethod() const noexcept;
   [[nodiscard]] MatrixUnit matrixUnit() const noexcept;

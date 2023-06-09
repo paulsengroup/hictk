@@ -47,7 +47,7 @@ inline const Chromosome &MatrixSelector::chrom1() const noexcept { return _foote
 
 inline const Chromosome &MatrixSelector::chrom2() const noexcept { return _footer->chrom2(); }
 
-inline std::int64_t MatrixSelector::resolution() const noexcept { return _footer->resolution(); }
+inline std::uint32_t MatrixSelector::resolution() const noexcept { return _footer->resolution(); }
 
 inline MatrixType MatrixSelector::matrix_type() const noexcept { return _footer->matrix_type(); }
 
@@ -161,25 +161,27 @@ inline void MatrixSelector::fetch(std::int64_t start1, std::int64_t end1, std::i
       continue;
     }
 
-    const auto last = block->end();
-    for (auto first = block->begin(); first != last; ++first) {
-      const auto b1 = first->bin1_start;
-      const auto b2 = first->bin2_start;
+    auto [first, last] = block->find_overlap(bin1, bin2);
+    std::for_each(first, last, [&](const auto &subblock) {
+      for (const SerializedPixel &interaction : subblock.second) {
+        const auto b1 = interaction.bin1_id;
+        const auto b2 = interaction.bin2_id;
 
-      // Obs we use open-closed interval instead of open-open like is done in straw
-      const auto overlapsQuery = b1 >= bin1 && b1 < bin2 && b2 >= bin3 && b2 < bin4;
+        // Obs we use open-closed interval instead of open-open like is done in straw
+        const auto overlapsQuery = b1 >= bin1 && b1 < bin2 && b2 >= bin3 && b2 < bin4;
 
-      if (overlapsQuery) {
-        auto record = processInteraction(*first);
-        if (std::isfinite(record.count)) {
-          buffer.emplace_back(
-              PixelCoordinates{
-                  _bins.at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_start)),
-                  _bins.at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_start))},
-              record.count);
+        if (overlapsQuery) {
+          auto record = processInteraction(interaction);
+          if (std::isfinite(record.count)) {
+            buffer.emplace_back(
+                PixelCoordinates{
+                    _bins.at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_id)),
+                    _bins.at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_id))},
+                record.count);
+          }
         }
       }
-    }
+    });
   }
   if (sorted && _blockNumberBuff.size() - empty_blocks > 1) {
     // Only interactions from the same block are guaranteed to already be sorted
@@ -192,21 +194,21 @@ inline SerializedPixel MatrixSelector::processInteraction(SerializedPixel record
   const auto &c2Norm = _footer->c2Norm();
   const auto &expected = _footer->expectedValues();
 
-  assert(isInter() || record.bin1_start <= record.bin2_start);
+  assert(isInter() || record.bin1_id <= record.bin2_id);
 
   const auto skipNormalization =
       normalizationMethod() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
-    const auto bin1 = static_cast<std::size_t>(record.bin1_start);
-    const auto bin2 = static_cast<std::size_t>(record.bin2_start);
+    const auto bin1 = static_cast<std::size_t>(record.bin1_id);
+    const auto bin2 = static_cast<std::size_t>(record.bin2_id);
     assert(bin1 < c1Norm.size());
     assert(bin2 < c2Norm.size());
     record.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
   }
 
-  record.bin1_start *= resolution();
-  record.bin2_start *= resolution();
+  record.bin1_id *= resolution();
+  record.bin2_id *= resolution();
 
   if (matrix_type() == MatrixType::observed) {
     return record;
@@ -217,7 +219,7 @@ inline SerializedPixel MatrixSelector::processInteraction(SerializedPixel record
       return float(avgCount());
     }
 
-    const auto i = static_cast<std::size_t>((record.bin2_start - record.bin1_start) / resolution());
+    const auto i = static_cast<std::size_t>((record.bin2_id - record.bin1_id) / resolution());
     assert(i < expected.size());
     return float(expected[i]);
   }();
