@@ -42,28 +42,56 @@ defaults:
 jobs:
   build-project:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Debug,   developer_mode: ON  }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Release, developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Release, developer_mode: ON  }
+
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Generate requirements.txt for pip
         run: |
-          echo 'conan==2.0.*' > requirements.txt
+          echo 'conan==${{ matrix.conan-ver }}' > requirements.txt
+          echo 'cmake==${{ matrix.cmake-ver }}' >> requirements.txt
 
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Detect number available CPUs
+        run: |
+          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+
+          echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
+          echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
+
       - name: Install deps with PIP
         run: |
           pip install -r requirements.txt
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          set -u
+
+          os="${{ matrix.os }}"
+          compiler="${{ matrix.compiler-name }}"
+          build_type="${{ matrix.build_type }}"
+          hash="${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}"
+
+          echo "key=$os-$compiler-$hash-$build_type" >> $GITHUB_OUTPUT
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v3
         with:
-          key: conan-${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}
+          key: conan-${{ steps.cache-key.outputs.key }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Configure Conan
@@ -81,13 +109,14 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          conan install .            \
-             --build=missing         \
-             --build=cascade         \
-             -pr default             \
-             -s build_type=Release   \
-             -s compiler=msvc        \
-             -s compiler.cppstd=17   \
+          conan install .                                         \
+             --build=missing                                      \
+             --build=cascade                                      \
+             -pr default                                          \
+             -s "compiler=${{ matrix.compiler-name }}"            \
+             -s "build_type=${{ matrix.build_type }}"             \
+             -s "compiler.runtime_type=${{ matrix.build_type }}"  \
+             -s compiler.cppstd=17                                \
              --output-folder=build
 
       - name: Clean Conan cache (post-build)
@@ -101,17 +130,19 @@ jobs:
         uses: actions/cache/save@v3
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}
+          key: conan-${{ steps.cache-key.outputs.key }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release       \
-                -DCMAKE_PREFIX_PATH="$PWD/build" \
-                -DENABLE_DEVELOPER_MODE=OFF      \
-                -DHICTK_ENABLE_TESTING=ON        \
-                -DHICTK_BUILD_EXAMPLES=ON        \
-                -S .                             \
+          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/build"  \
+                -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
+                -DHICTK_ENABLE_TESTING=ON                            \
+                -DHICTK_BUILD_EXAMPLES=ON                            \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
+                -DOPT_ENABLE_CPPCHECK=OFF                            \
+                -S .                                                 \
                 -B build
 
       - name: Build project
@@ -123,7 +154,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 240
+                --timeout 180
 
   windows-ci-status-check:
     name: Status Check (Windows CI)
