@@ -91,7 +91,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator*() const -> value_type {
 
   assert(this->_buff);
   assert(this->_dset);
-  assert(this->_h5_offset < this->_dset->size());
+  assert(this->_h5_offset < this->_h5_size);
   assert(this->_h5_chunk_start <= this->_h5_offset);
   assert(this->_h5_offset - this->_h5_chunk_start < this->_buff->size());
   return (*this->_buff)[this->_h5_offset - this->_h5_chunk_start];
@@ -251,9 +251,9 @@ template <typename T, std::size_t CHUNK_SIZE>
 inline void Dataset::iterator<T, CHUNK_SIZE>::read_chunk_at_offset(std::size_t new_offset) const {
   assert(this->_dset);
 
-  if (new_offset == this->_dset->size()) {
+  if (new_offset == this->_h5_size) {
     this->_buff = nullptr;
-    this->_h5_chunk_start = this->_dset->size();
+    this->_h5_chunk_start = this->_h5_size;
     return;
   }
 
@@ -262,7 +262,7 @@ inline void Dataset::iterator<T, CHUNK_SIZE>::read_chunk_at_offset(std::size_t n
     this->_buff = std::make_shared<std::vector<T>>(CHUNK_SIZE);
   }
 
-  const auto buff_size = (std::min)(CHUNK_SIZE, this->_dset->size() - new_offset);
+  const auto buff_size = (std::min)(CHUNK_SIZE, this->_h5_size - new_offset);
   this->_buff->resize(buff_size);
   this->_dset->read(*this->_buff, buff_size, new_offset);
 
