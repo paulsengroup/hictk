@@ -26,6 +26,9 @@ namespace hictk {
 
 inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::size_t offset,
                                   bool allow_dataset_resize) {
+  if (buff.empty()) {
+    return offset;
+  }
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset + buff.size() > this->size()) {
     if (allow_dataset_resize) {
@@ -49,6 +52,9 @@ inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::siz
 template <typename N, typename>
 inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset,
                                   bool allow_dataset_resize) {
+  if (buff.empty()) {
+    return offset;
+  }
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset + buff.size() > this->size()) {
     if (allow_dataset_resize) {
@@ -76,6 +82,9 @@ template <typename InputIt, typename UnaryOperation,
           typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int> *>
 inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::size_t offset,
                                   bool allow_dataset_resize, UnaryOperation op) {
+  if (first_value == last_value) {
+    return offset;
+  }
   using T = remove_cvref_t<decltype(op(*first_value))>;
   constexpr std::size_t buffer_capacity =
       is_string_v<T> ? 256 : (16 * 1024 * 1024) / sizeof(std::uint64_t);
