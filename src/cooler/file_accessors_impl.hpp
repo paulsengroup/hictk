@@ -14,7 +14,7 @@
 #include <string_view>
 #include <variant>
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline std::string File::uri() const {
   if (this->hdf5_path() == "/") {
@@ -88,7 +88,7 @@ inline auto File::dataset(std::string_view dataset_name) const -> const Dataset 
   }
 }
 
-inline const internal::NumericVariant &File::pixel_variant() const noexcept {
+inline const hictk::internal::NumericVariant &File::pixel_variant() const noexcept {
   return this->_pixel_variant;
 }
 
@@ -169,4 +169,4 @@ inline auto File::index() const noexcept -> const Index & {
   return *this->_index;
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

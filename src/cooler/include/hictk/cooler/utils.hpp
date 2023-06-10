@@ -12,7 +12,7 @@
 
 #include "hictk/cooler.hpp"
 
-namespace hictk::utils {
+namespace hictk::cooler::utils {
 
 enum class MergeStrategy { IN_MEMORY, PQUEUE };
 
@@ -62,7 +62,7 @@ class PixelMerger {
   [[nodiscard]] Pixel<N> next();
 };
 }  // namespace internal
-}  // namespace hictk::utils
+}  // namespace hictk::cooler::utils
 
 #include "../../../utils_equal_impl.hpp"
 #include "../../../utils_merge_impl.hpp"

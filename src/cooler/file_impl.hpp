@@ -30,7 +30,7 @@
 #include "hictk/type_pretty_printer.hpp"
 #include "hictk/variant_buff.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename InputIt>
 inline void init_mcool(std::string_view file_path, InputIt first_resolution,
@@ -212,7 +212,7 @@ inline void File::open(std::string_view uri, bool validate) {
 template <typename PixelT>
 inline void File::create(std::string_view uri, const hictk::Reference &chroms,
                          std::uint32_t bin_size, bool overwrite_if_exists,
-                         hictk::StandardAttributes attributes) {
+                         StandardAttributes attributes) {
   *this = File::create_new_cooler<PixelT>(uri, chroms, bin_size, overwrite_if_exists, attributes);
 }
 
@@ -300,11 +300,11 @@ template <typename Variant, std::size_t i = 0>
 DISABLE_WARNING_POP
 }  // namespace internal
 
-inline internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,
-                                                        std::string_view path) {
+inline hictk::internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,
+                                                               std::string_view path) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto dset = root_grp().getDataSet(std::string{path});
-  return internal::read_pixel_variant<internal::NumericVariant>(dset);
+  return internal::read_pixel_variant<hictk::internal::NumericVariant>(dset);
 }
 
 template <typename N, bool cis>
@@ -321,4 +321,4 @@ inline void File::update_pixel_sum(N partial_sum) {
   }
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

@@ -13,7 +13,7 @@
 #include "hictk/common.hpp"
 #include "hictk/type_traits.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 struct Attribute {
   // Variants are listed in order from the most common to the least common for perf. reasons
@@ -54,6 +54,6 @@ struct Attribute {
   template <typename T1, typename Tout, typename Tin = remove_cvref_t<T1>>
   [[nodiscard]] static Tout numeric_converter(T1& buff);
 };
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../../attribute_impl.hpp"

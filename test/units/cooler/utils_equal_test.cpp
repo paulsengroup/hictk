@@ -14,7 +14,9 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::index {
+namespace hictk::cooler::test::utils {
+inline const auto& testdir = hictk::test::testdir;
+inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("utils: equal", "[equal][utils][short]") {
@@ -27,10 +29,10 @@ TEST_CASE("utils: equal", "[equal][utils][short]") {
   std::filesystem::copy(path1, path3);
 
   SECTION("equal") {
-    CHECK(utils::equal(path1.string(), path1.string()));
-    CHECK(utils::equal(path1.string(), path3.string()));
+    CHECK(cooler::utils::equal(path1.string(), path1.string()));
+    CHECK(cooler::utils::equal(path1.string(), path3.string()));
   }
 
-  SECTION("not equal") { CHECK_FALSE(utils::equal(path1.string(), path2.string())); }
+  SECTION("not equal") { CHECK_FALSE(cooler::utils::equal(path1.string(), path2.string())); }
 }
-}  // namespace hictk::test::index
+}  // namespace hictk::cooler::test::utils

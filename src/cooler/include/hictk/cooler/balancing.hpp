@@ -13,7 +13,7 @@
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 class Weights {
  public:
@@ -104,6 +104,6 @@ class Balancer {
 
 using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weights>>;
 
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../../balancing_impl.hpp"

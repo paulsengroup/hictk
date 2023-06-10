@@ -9,7 +9,7 @@
 
 #include "hictk/cooler.hpp"
 
-namespace hictk::utils {
+namespace hictk::cooler::utils {
 
 inline bool equal(std::string_view uri1, std::string_view uri2, bool ignore_attributes) {
   if (uri1 == uri2) {
@@ -74,4 +74,4 @@ inline bool equal(const File& clr1, const File& clr2, bool ignore_attributes) {
   return true;
 }
 
-}  // namespace hictk::utils
+}  // namespace hictk::cooler::utils

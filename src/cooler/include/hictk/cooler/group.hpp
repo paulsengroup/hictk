@@ -19,7 +19,7 @@ DISABLE_WARNING_POP
 
 #include "hictk/suppress_warnings.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_DEPRECATED_DECLARATIONS
@@ -51,4 +51,4 @@ DISABLE_WARNING_POP
 
 using GroupMap = phmap::flat_hash_map<std::string, Group>;
 
-}  // namespace hictk
+}  // namespace hictk::cooler

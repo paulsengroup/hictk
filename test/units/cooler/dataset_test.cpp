@@ -18,7 +18,10 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::dataset {
+namespace hictk::cooler::test::dataset {
+const auto& testdir = hictk::test::testdir;
+const auto& datadir = hictk::test::datadir;
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Dataset: read", "[dataset][short]") {
   const auto path = datadir / "cooler_test_file.cool";
@@ -70,7 +73,7 @@ TEST_CASE("Dataset: read", "[dataset][short]") {
     }
 
     SECTION("variant buff") {
-      internal::VariantBuffer vbuff{std::size_t(0), 0.0};
+      hictk::internal::VariantBuffer vbuff{std::size_t(0), 0.0};
       std::ignore = Dataset{grp, "bins/start"}.read(vbuff, expected.size());
       const auto& buff = vbuff.get<T>();
       REQUIRE(buff.size() == expected.size());
@@ -166,7 +169,7 @@ TEST_CASE("Dataset: write", "[dataset][short]") {
     }
 
     SECTION("variant buff") {
-      const internal::VariantBuffer vexpected{expected};
+      const hictk::internal::VariantBuffer vexpected{expected};
       Dataset{grp, "num", T{}}.write(vexpected, 0, true);
 
       const auto vbuff = Dataset{grp, "num"}.read_all();
@@ -382,4 +385,4 @@ TEST_CASE("Dataset: attributes", "[dataset][short]") {
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-}  // namespace hictk::test::dataset
+}  // namespace hictk::cooler::test::dataset

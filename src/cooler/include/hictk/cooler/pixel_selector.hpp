@@ -8,14 +8,13 @@
 #include <memory>
 #include <type_traits>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk {
-
-class BinTable;
-class Index;
+namespace hictk::cooler {
 
 template <typename N, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
 class PixelSelector {
@@ -129,6 +128,6 @@ class PixelSelector {
   };
 };
 
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../../pixel_selector_impl.hpp"
