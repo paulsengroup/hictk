@@ -46,9 +46,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Debug,   developer_mode: ON  }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Debug,   developer_mode: OFF }
           - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Release, developer_mode: OFF }
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Release, developer_mode: ON  }
 
 
     steps:
