@@ -347,11 +347,8 @@ TEST_CASE("Dataset: large read/write", "[dataset][long]") {
   REQUIRE(dset.size() == N);
 
   std::mt19937_64 rand_eng{seed};  // NOLINT(cert-msc32-c,cert-msc51-cpp)
-  auto it = dset.begin<std::uint8_t>();
-  for (std::size_t i = 0; i < N; ++i) {
-    CHECK(*it++ == static_cast<std::uint8_t>(rand_eng()));
-  }
-  CHECK(it == dset.end<std::uint8_t>());
+  std::for_each(dset.begin<std::uint8_t>(), dset.end<std::uint8_t>(),
+                [&](const auto& n) { CHECK(n == static_cast<std::uint8_t>(rand_eng())); });
 }
 
 TEST_CASE("Dataset: attributes", "[dataset][short]") {

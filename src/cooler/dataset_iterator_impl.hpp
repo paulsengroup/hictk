@@ -24,7 +24,15 @@ namespace hictk {
 template <typename T, std::size_t CHUNK_SIZE>
 inline Dataset::iterator<T, CHUNK_SIZE>::iterator(const Dataset &dset, std::size_t h5_offset,
                                                   bool init)
-    : _dset(&dset), _h5_chunk_start(h5_offset), _h5_offset(h5_offset) {
+    // clang-format off
+    : _dset(&dset),
+      _h5_chunk_start(h5_offset),
+      _h5_offset(h5_offset)
+#ifndef NDEBUG
+     ,_h5_size(dset.size())
+#endif
+// clang-format on
+{
   if (init) {
     this->read_chunk_at_offset(this->_h5_chunk_start);
   }
@@ -83,7 +91,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator*() const -> value_type {
 
   assert(this->_buff);
   assert(this->_dset);
-  assert(this->_h5_offset < this->_dset->size());
+  assert(this->_h5_offset < this->_h5_size);
   assert(this->_h5_chunk_start <= this->_h5_offset);
   assert(this->_h5_offset - this->_h5_chunk_start < this->_buff->size());
   return (*this->_buff)[this->_h5_offset - this->_h5_chunk_start];
@@ -112,7 +120,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator++(int) -> iterator {
 template <typename T, std::size_t CHUNK_SIZE>
 inline auto Dataset::iterator<T, CHUNK_SIZE>::operator+=(std::size_t i) -> iterator & {
   assert(this->_dset);
-  assert(this->_h5_offset + i <= this->_dset->size());
+  assert(this->_h5_offset + i <= this->_h5_size);
   this->_h5_offset += i;
   return *this;
 }
@@ -122,7 +130,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator+(std::size_t i) const -> 
   assert(this->_dset);
   assert(this->_buff);
   const auto new_offset = this->_h5_offset + i;
-  assert(new_offset <= this->_dset->size());
+  assert(new_offset <= this->_h5_size);
 
   if (!this->_buff || this->_h5_chunk_start + this->_buff->size() < new_offset) {
     return iterator(*this->_dset, new_offset);
@@ -243,9 +251,11 @@ template <typename T, std::size_t CHUNK_SIZE>
 inline void Dataset::iterator<T, CHUNK_SIZE>::read_chunk_at_offset(std::size_t new_offset) const {
   assert(this->_dset);
 
-  if (new_offset == this->_dset->size()) {
+  const auto dset_size = this->dataset().size();
+
+  if (new_offset == dset_size) {
     this->_buff = nullptr;
-    this->_h5_chunk_start = this->_dset->size();
+    this->_h5_chunk_start = dset_size;
     return;
   }
 
@@ -254,7 +264,7 @@ inline void Dataset::iterator<T, CHUNK_SIZE>::read_chunk_at_offset(std::size_t n
     this->_buff = std::make_shared<std::vector<T>>(CHUNK_SIZE);
   }
 
-  const auto buff_size = (std::min)(CHUNK_SIZE, this->_dset->size() - new_offset);
+  const auto buff_size = (std::min)(CHUNK_SIZE, this->dataset().size() - new_offset);
   this->_buff->resize(buff_size);
   this->_dset->read(*this->_buff, buff_size, new_offset);
 
@@ -268,6 +278,9 @@ constexpr auto Dataset::iterator<T, CHUNK_SIZE>::make_end_iterator(const Dataset
   it._buff = nullptr;
   it._dset = &dset;
   it._h5_offset = dset.size();
+#ifndef NDEBUG
+  it._h5_size = it._h5_offset;
+#endif
   it._h5_chunk_start = it._h5_offset;
 
   return it;

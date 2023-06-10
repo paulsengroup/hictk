@@ -93,29 +93,29 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     throw std::runtime_error("File::write_weights() was called on a file open in read-only mode");
   }
 
-  const auto num_weights = std::distance(first_weight, last_weight);
-  const auto expected_num_weights = static_cast<std::ptrdiff_t>(this->bins().size());
-  if (num_weights != expected_num_weights) {
+  const auto weights_shape = static_cast<std::size_t>(std::distance(first_weight, last_weight));
+  const auto expected_weights_shape = this->bins().size();
+  if (weights_shape != expected_weights_shape) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Invalid weight shape, expected {} values, found {}"),
-                    expected_num_weights, num_weights));
+                    expected_weights_shape, weights_shape));
   }
 
-  auto dset = [&, name_ = std::string{name}]() {
-    // Return existing dataset
-    auto &grp = this->group("bins").group;
-    if (overwrite_if_exists && grp.exist(name_)) {
-      return Dataset(this->_root_group, grp.getDataSet(name_));
-    }
+  const auto path = fmt::format(FMT_STRING("bins/{}"), name);
+  const auto existing = this->_root_group().exist(path);
+  if (!overwrite_if_exists && existing) {
+    throw std::runtime_error(fmt::format(FMT_STRING("dataset \"{}\" already exists"), path));
+  }
 
-    // Create new dataset or throw
-    const auto path = fmt::format(FMT_STRING("bins/{}"), name);
-    typename std::iterator_traits<It>::value_type buff{};
-    return Dataset(this->_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
-  }();
+  typename std::iterator_traits<It>::value_type buff{};
+  auto dset = existing ? Dataset(this->_root_group, this->_root_group().getDataSet(path))
+                       : Dataset(this->_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
 
-  dset.resize(static_cast<std::size_t>(std::distance(first_weight, last_weight)));
-  dset.write(first_weight, last_weight);
+  dset.resize(weights_shape);
+  if (weights_shape != 0) {
+    dset.write(first_weight, last_weight);
+  }
+
   dset.write_attribute("divisive_weights", std::uint8_t(divisive), overwrite_if_exists);
 }
 
@@ -246,7 +246,7 @@ inline void File::write_chromosomes() {
   File::write_chromosomes(this->dataset("chroms/name"), this->dataset("chroms/length"),
                           this->chromosomes().begin(), this->chromosomes().end());
 
-  this->_attrs.nchroms = this->chromosomes().size();
+  this->_attrs.nchroms = static_cast<std::int32_t>(this->chromosomes().size());
 }
 
 template <typename ChromIt, typename UnaryOperation, typename>

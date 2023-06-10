@@ -26,6 +26,7 @@
 #include "hictk/cooler/uri.hpp"
 #include "hictk/cooler/validation.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
 #include "hictk/variant_buff.hpp"
 
@@ -274,6 +275,8 @@ inline auto File::open_or_create_root_group(HighFive::File &f, std::string_view 
   return create_root_group(f, uri);
 }
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 namespace internal {
 template <typename Variant, std::size_t i = 0>
 [[nodiscard]] inline Variant read_pixel_variant(const HighFive::DataSet &dset) {
@@ -294,6 +297,7 @@ template <typename Variant, std::size_t i = 0>
         fmt::format(FMT_STRING("Unsupported type for dataset \"{}\""), dset.getPath()));
   }
 }
+DISABLE_WARNING_POP
 }  // namespace internal
 
 inline internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,

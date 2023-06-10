@@ -55,6 +55,9 @@ inline void FileStream::read(char *buffer, std::size_t count) {
 }
 
 inline void FileStream::append(std::string &buffer, std::size_t count) {
+  if (count == 0) {
+    return;
+  }
   const auto buff_size = buffer.size();
   buffer.resize(buffer.size() + count);
 
@@ -68,7 +71,7 @@ inline bool FileStream::getline(std::string &buffer, char delim) {
   }
   try {
     return !!std::getline(this->handle_, buffer, delim);
-  } catch (const std::exception &e) {
+  } catch (const std::exception &) {
     if (this->handle_.eof() && !this->handle_.bad()) {
       return !!this->handle_;
     }

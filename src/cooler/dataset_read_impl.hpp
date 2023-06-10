@@ -52,6 +52,8 @@ inline std::size_t Dataset::read(std::vector<std::string> &buff, std::size_t num
   return offset + buff.size();
 }
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline std::size_t Dataset::read(internal::VariantBuffer &vbuff, std::size_t num,
                                  std::size_t offset) const {
@@ -76,8 +78,8 @@ inline std::size_t Dataset::read(internal::VariantBuffer &vbuff, std::size_t num
       return read<i + 1>(vbuff, num, offset);
     }
 
-#if defined(__GNUC__) && !defined(__clang__)
-    // Workaround for buggy -Wunused-label on GCC
+#if !defined(__clang__)
+    // Workaround for buggy -Wunused-label on GCC and MSVC
     goto READ_VARIANT;  // NOLINT
 #endif
 
@@ -91,6 +93,7 @@ inline std::size_t Dataset::read(internal::VariantBuffer &vbuff, std::size_t num
 
   unreachable_code();
 }
+DISABLE_WARNING_POP
 
 template <typename BuffT, typename T, typename>
 inline BuffT Dataset::read_n(std::size_t num, std::size_t offset) const {
@@ -144,6 +147,8 @@ inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
   return offset + 1;
 }
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline std::size_t Dataset::read(internal::GenericVariant &vbuff, std::size_t offset) const {
   if constexpr (i == 0) {
@@ -166,8 +171,8 @@ inline std::size_t Dataset::read(internal::GenericVariant &vbuff, std::size_t of
       return read<i + 1>(vbuff, offset);
     }
 
-#if defined(__GNUC__) && !defined(__clang__)
-    // Workaround for buggy -Wunused-label on GCC
+#if !defined(__clang__)
+    // Workaround for buggy -Wunused-label on GCC and MSVC
     goto READ_VARIANT;  // NOLINT
 #endif
 
@@ -181,6 +186,7 @@ inline std::size_t Dataset::read(internal::GenericVariant &vbuff, std::size_t of
 
   unreachable_code();
 }
+DISABLE_WARNING_POP
 
 template <typename BuffT, typename T, typename>
 inline BuffT Dataset::read(std::size_t offset) const {

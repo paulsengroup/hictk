@@ -28,6 +28,7 @@
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
 #include "hictk/string_utils.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
 
 namespace hictk {
@@ -262,6 +263,8 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
   return datasets;
 }
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
     -> StandardAttributes {
   auto attrs = initialize_missing ? StandardAttributes::init(0) : StandardAttributes::init_empty();
@@ -359,6 +362,7 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initi
 
   return attrs;
 }
+DISABLE_WARNING_POP
 
 inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                 bool missing_ok) -> Reference {

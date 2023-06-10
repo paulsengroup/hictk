@@ -35,16 +35,17 @@ inline std::string_view Chromosome::name() const noexcept { return this->_name; 
 constexpr std::uint32_t Chromosome::size() const noexcept { return this->_size; }
 
 inline bool Chromosome::is_all() const noexcept {
-  if (this->name() == "All") {
+  constexpr std::string_view all{"All"};
+  if (this->name() == all) {
     return true;
   }
 
-  std::string name{this->name()};
+  if (this->name().size() != all.size()) {
+    return false;
+  }
 
-  std::transform(name.begin(), name.end(), name.begin(),
-                 [&](const char c) { return std::tolower(c); });
-
-  return name == "all";
+  return std::equal(this->name().begin(), this->name().end(), all.begin(),
+                    [](const char a, const char b) { return std::tolower(a) == std::tolower(b); });
 }
 
 constexpr bool Chromosome::operator<(const Chromosome& other) const noexcept {

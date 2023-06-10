@@ -23,6 +23,7 @@
 #include "hictk/common.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
 
 namespace hictk {
@@ -106,6 +107,8 @@ inline void Attribute::read_vector(const ParentObj& h5obj, std::string_view key,
   }
 }
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> AttributeVar {
   if constexpr (i < std::variant_size_v<AttributeVar>) {
@@ -119,7 +122,10 @@ inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> Attribut
   }
   return std::monostate();
 }
+DISABLE_WARNING_POP
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING_UNREACHABLE_CODE
 template <typename T1, typename Tout, typename Tin>
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline Tout Attribute::numeric_converter(T1& buff) {
@@ -193,5 +199,6 @@ inline Tout Attribute::numeric_converter(T1& buff) {
       internal::type_name<Tout>(), internal::type_name<Tin>(), buff, internal::type_name<Tin>(),
       internal::type_name<Tout>()));
 }
+DISABLE_WARNING_POP
 
 }  // namespace hictk
