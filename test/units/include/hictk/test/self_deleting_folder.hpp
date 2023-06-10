@@ -31,7 +31,7 @@ class SelfDeletingFolder {
   [[maybe_unused]] SelfDeletingFolder() {
     try {
       _path = create_uniq_temp_dir(std::filesystem::temp_directory_path());
-    } catch (const std::filesystem::filesystem_error& e) {
+    } catch (const std::filesystem::filesystem_error&) {
       // Workaround spurious CI failures due to missing /tmp folder exception
       _path = create_uniq_temp_dir("test/data/unit_tests/scratch");
     }

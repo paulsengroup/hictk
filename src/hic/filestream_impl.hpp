@@ -68,7 +68,7 @@ inline bool FileStream::getline(std::string &buffer, char delim) {
   }
   try {
     return !!std::getline(this->handle_, buffer, delim);
-  } catch (const std::exception &e) {
+  } catch (const std::exception &) {
     if (this->handle_.eof() && !this->handle_.bad()) {
       return !!this->handle_;
     }

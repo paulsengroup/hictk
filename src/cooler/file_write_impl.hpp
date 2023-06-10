@@ -249,7 +249,7 @@ inline void File::write_chromosomes() {
   File::write_chromosomes(this->dataset("chroms/name"), this->dataset("chroms/length"),
                           this->chromosomes().begin(), this->chromosomes().end());
 
-  this->_attrs.nchroms = this->chromosomes().size();
+  this->_attrs.nchroms = static_cast<std::int32_t>(this->chromosomes().size());
 }
 
 template <typename ChromIt, typename UnaryOperation, typename>

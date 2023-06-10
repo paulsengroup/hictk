@@ -261,7 +261,7 @@ TEST_CASE("Local - read binary", "[hic][short]") {
   SECTION("float") { CHECK(s.read<float>() == 16537405000000.0F); }
   SECTION("double") { CHECK(s.read<double>() == -1.2758357206942371e+296); }
 
-  SECTION("char") { CHECK(s.read<char>() == char(162)); }
+  SECTION("char") { CHECK(s.read<char>() == static_cast<char>(162)); }
   SECTION("unsigned char") { CHECK(s.read<unsigned char>() == static_cast<unsigned char>(162)); }
   DISABLE_WARNING_POP
 
