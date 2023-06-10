@@ -111,8 +111,8 @@ jobs:
         run: |
           conan install .                                         \
              --build=missing                                      \
-             --build=cascade                                      \
-             -pr default                                          \
+             -pr:h default                                        \
+             -pr:b default                                        \
              -s "compiler=${{ matrix.compiler-name }}"            \
              -s "build_type=${{ matrix.build_type }}"             \
              -s "compiler.runtime_type=${{ matrix.build_type }}"  \
