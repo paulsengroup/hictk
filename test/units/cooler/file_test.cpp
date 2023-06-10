@@ -563,6 +563,11 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
     CHECK_THROWS(File::write_weights(path2.string(), "weight", weights.begin(), weights.end()));
   }
 
+  SECTION("invalid name") {
+    std::vector<double> weights{};
+    CHECK_THROWS(File::write_weights(path2.string(), "", weights.begin(), weights.end()));
+  }
+
   SECTION("overwriting") {
     const std::vector<double> weights(num_bins, 1.23);
     File::write_weights(path2.string(), "weight", weights.begin(), weights.end());
@@ -574,13 +579,12 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
   }
 
   SECTION("write on file creation") {
-    const auto chroms = File::open_read_only(path1.string()).chromosomes();
-    const auto bin_size = File::open_read_only(path1.string()).bin_size();
-    auto f = File::create_new_cooler(path3.string(), chroms, bin_size);
+    const auto fin = File::open_read_only(path1.string());
+    auto fout = File::create_new_cooler(path3.string(), fin.chromosomes(), fin.bin_size());
 
     const std::vector<double> weights(num_bins, 1.23);
-    f.write_weights("weight", weights.begin(), weights.end());
-    f.write_weights("weight2", weights.begin(), weights.end());
+    fout.write_weights("weight", weights.begin(), weights.end());
+    fout.write_weights("weight2", weights.begin(), weights.end());
   }
 
   SECTION("attempt write on read-only file") {

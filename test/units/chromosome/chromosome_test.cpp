@@ -36,12 +36,12 @@ TEST_CASE("Chromosome", "[chromosome][short]") {
     CHECK(chrom2 > chrom1);
     CHECK(chrom2 >= chrom1);
 
-    CHECK(0 == chrom1);
-    CHECK(1 != chrom1);
-    CHECK(1 > chrom1);
-    CHECK(1 >= chrom1);
-    CHECK(0 < chrom2);
-    CHECK(0 <= chrom2);
+    CHECK(0U == chrom1);
+    CHECK(1U != chrom1);
+    CHECK(1U > chrom1);
+    CHECK(1U >= chrom1);
+    CHECK(0U < chrom2);
+    CHECK(0U <= chrom2);
 
     CHECK("chr1" == chrom1);
     CHECK("chr2" != chrom1);

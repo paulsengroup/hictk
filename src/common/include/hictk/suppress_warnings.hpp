@@ -11,13 +11,14 @@
 
 // Defines for MSVC
 #ifdef _MSC_VER
-    #define DISABLE_WARNING_PUSH                    __pragma(warning(push))
-    #define DISABLE_WARNING_POP                     __pragma(warning(pop))
-    #define DISABLE_WARNING(warningNumber)          __pragma(warning(disable : warningNumber))
+    #define DISABLE_WARNING_PUSH                      __pragma(warning(push))
+    #define DISABLE_WARNING_POP                       __pragma(warning(pop))
+    #define DISABLE_WARNING(warningNumber)            __pragma(warning(disable : warningNumber))
 
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
     #define DISABLE_WARNING_NULL_DEREF
     #define DISABLE_WARNING_USELESS_CAST
+    #define DISABLE_WARNING_UNREACHABLE_CODE          DISABLE_WARNING(4702)                          // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 // Defines for GCC and Clang
@@ -29,11 +30,12 @@
 
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING("-Wdeprecated-declarations")   // NOLINT(cppcoreguidelines-macro-usage)
     #define DISABLE_WARNING_NULL_DEREF                DISABLE_WARNING("-Wnull-dereference")          // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_UNREACHABLE_CODE
 #endif
 
 // Defines for GCC only
 #if defined(__GNUC__) && !defined(__clang__)
-    #define DISABLE_WARNING_USELESS_CAST   DISABLE_WARNING("-Wuseless-cast")   // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")   // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 // Defines for Clang only
@@ -50,6 +52,7 @@
   #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
   #define DISABLE_WARNING_NULL_DEREF
   #define DISABLE_WARNING_USELESS_CAST
+  #define DISABLE_WARNING_UNREACHABLE_CODE
 #endif
 
 // clang-format on

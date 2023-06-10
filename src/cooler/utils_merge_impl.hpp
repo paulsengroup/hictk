@@ -102,8 +102,11 @@ inline Pixel<N> PixelMerger<N>::next() {
   auto current_node = this->_pqueue.top();
   this->replace_top_node(current_node.i);
 
-  for (auto next_node = this->_pqueue.top(); !this->_pqueue.empty() && next_node == current_node;
-       next_node = this->_pqueue.top()) {
+  while (!this->_pqueue.empty()) {
+    const auto next_node = this->_pqueue.top();
+    if (next_node != current_node) {
+      break;
+    }
     current_node.pixel.count += next_node.pixel.count;
     this->replace_top_node(next_node.i);
   }

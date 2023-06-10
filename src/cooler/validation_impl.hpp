@@ -101,7 +101,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
     }
     try {
       root_group.getGroup(std::string{group});
-    } catch (const HighFive::Exception &e) {
+    } catch (const HighFive::Exception &) {
       status.missing_groups.emplace_back(group);
     }
   }
@@ -172,7 +172,7 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
         return {};
       }
       return resolutions_;
-    } catch (const HighFive::GroupException &e) {
+    } catch (const HighFive::GroupException &) {
       return {};
     }
   }();
@@ -243,7 +243,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   for (const auto &group : scool_root_groups) {
     try {
       fp.getGroup(std::string{group});
-    } catch (const HighFive::Exception &e) {
+    } catch (const HighFive::Exception &) {
       status.missing_groups.emplace_back(group);
     }
   }
@@ -252,7 +252,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     try {
       auto root_grp = fp.getGroup("/cells");
       return root_grp.listObjectNames();
-    } catch (const HighFive::GroupException &e) {
+    } catch (const HighFive::GroupException &) {
       return {};
     }
   }();

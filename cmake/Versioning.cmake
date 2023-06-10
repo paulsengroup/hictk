@@ -13,9 +13,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND HICTK_ENABLE_GIT_VERSION_TR
   message(
     WARNING
       "-- Unable to find .git/ under \"${CMAKE_CURRENT_SOURCE_DIR}\". Setting -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF")
-  set(HICTK_ENABLE_GIT_VERSION_TRACKING
-      OFF
-      CACHE FORCE)
+  set(HICTK_ENABLE_GIT_VERSION_TRACKING OFF)
 endif()
 
 function(ConfigureVersioning input_config_folder output_config_folder)
