@@ -24,7 +24,15 @@ namespace hictk {
 template <typename T, std::size_t CHUNK_SIZE>
 inline Dataset::iterator<T, CHUNK_SIZE>::iterator(const Dataset &dset, std::size_t h5_offset,
                                                   bool init)
-    : _dset(&dset), _h5_chunk_start(h5_offset), _h5_offset(h5_offset) {
+    // clang-format off
+    : _dset(&dset),
+      _h5_chunk_start(h5_offset),
+      _h5_offset(h5_offset)
+#ifndef NDEBUG
+     ,_h5_size(dset.size())
+#endif
+// clang-format on
+{
   if (init) {
     this->read_chunk_at_offset(this->_h5_chunk_start);
   }
@@ -112,7 +120,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator++(int) -> iterator {
 template <typename T, std::size_t CHUNK_SIZE>
 inline auto Dataset::iterator<T, CHUNK_SIZE>::operator+=(std::size_t i) -> iterator & {
   assert(this->_dset);
-  assert(this->_h5_offset + i <= this->_dset->size());
+  assert(this->_h5_offset + i <= this->_h5_size);
   this->_h5_offset += i;
   return *this;
 }
@@ -122,7 +130,7 @@ inline auto Dataset::iterator<T, CHUNK_SIZE>::operator+(std::size_t i) const -> 
   assert(this->_dset);
   assert(this->_buff);
   const auto new_offset = this->_h5_offset + i;
-  assert(new_offset <= this->_dset->size());
+  assert(new_offset <= this->_h5_size);
 
   if (!this->_buff || this->_h5_chunk_start + this->_buff->size() < new_offset) {
     return iterator(*this->_dset, new_offset);

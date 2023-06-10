@@ -220,6 +220,9 @@ class Dataset {
     const Dataset *_dset{};
     mutable std::size_t _h5_chunk_start{};
     std::size_t _h5_offset{};
+#ifndef NDEBUG
+    std::size_t _h5_size{};
+#endif
 
     explicit iterator(const Dataset &dset, std::size_t h5_offset = 0, bool init = true);
 
