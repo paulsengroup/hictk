@@ -21,7 +21,7 @@
 #include "hictk/cooler/validation.hpp"
 #include "hictk/fmt.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline void File::validate_bins() const {
   try {
@@ -163,4 +163,4 @@ inline void File::validate_pixel_type() const noexcept {
   }
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

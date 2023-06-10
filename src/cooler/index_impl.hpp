@@ -18,7 +18,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/fmt.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline Index::Index(std::shared_ptr<const BinTable> bins, std::uint64_t nnz)
     : _bins(std::move(bins)),
@@ -332,4 +332,4 @@ inline auto Index::iterator::get_offsets() const noexcept -> const OffsetVect & 
   return this->_idx->_idx[static_cast<std::size_t>(this->_chrom_id)];
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

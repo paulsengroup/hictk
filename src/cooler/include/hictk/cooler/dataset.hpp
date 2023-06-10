@@ -25,14 +25,14 @@ DISABLE_WARNING_POP
 #include "hictk/generic_variant.hpp"
 #include "hictk/variant_buff.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 struct RootGroup;
 
 namespace internal {
 template <typename T>
 struct is_atomic_buffer
-    : public std::disjunction<std::is_same<internal::GenericVariant, std::decay_t<T>>,
+    : public std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
                               std::is_same<std::string, std::decay_t<T>>,
                               std::is_arithmetic<std::decay_t<T>>> {};
 
@@ -43,9 +43,11 @@ inline constexpr bool is_atomic_buffer_v = is_atomic_buffer<T>::value;
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_DEPRECATED_DECLARATIONS
 class Dataset {
+  using VariantBuffer = hictk::internal::VariantBuffer;
+  using GenericVariant = hictk::internal::GenericVariant;
   RootGroup _root_group{};
   HighFive::DataSet _dataset{};
-  mutable internal::VariantBuffer _buff{};
+  mutable VariantBuffer _buff{};
 
  public:
   template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
@@ -102,7 +104,7 @@ class Dataset {
   std::size_t read(std::vector<N> &buff, std::size_t num, std::size_t offset = 0) const;
   std::size_t read(std::vector<std::string> &buff, std::size_t num, std::size_t offset = 0) const;
   template <std::size_t i = 0>
-  std::size_t read(internal::VariantBuffer &vbuff, std::size_t num, std::size_t offset = 0) const;
+  std::size_t read(VariantBuffer &vbuff, std::size_t num, std::size_t offset = 0) const;
 
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
             typename = std::enable_if_t<!internal::is_atomic_buffer_v<T>>>
@@ -117,23 +119,23 @@ class Dataset {
             typename = std::enable_if_t<!internal::is_atomic_buffer_v<T>>>
   BuffT read_all(std::size_t offset = 0) const;
 
-  internal::VariantBuffer read_all(std::size_t offset = 0) const;
+  VariantBuffer read_all(std::size_t offset = 0) const;
 
   // Read single values
   template <typename N, typename = std::enable_if_t<std::is_arithmetic_v<N>>>
   std::size_t read(N &buff, std::size_t offset) const;
   std::size_t read(std::string &buff, std::size_t offset) const;
   template <std::size_t i = 0>
-  std::size_t read(internal::GenericVariant &vbuff, std::size_t offset) const;
+  std::size_t read(GenericVariant &vbuff, std::size_t offset) const;
 
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
             typename = std::enable_if_t<internal::is_atomic_buffer_v<T>>>
   BuffT read(std::size_t offset) const;
-  internal::GenericVariant read(std::size_t offset) const;
+  GenericVariant read(std::size_t offset) const;
 
   template <typename BuffT>
   [[nodiscard]] BuffT read_last() const;
-  [[nodiscard]] internal::GenericVariant read_last() const;
+  [[nodiscard]] GenericVariant read_last() const;
 
   // Write N values
   template <typename N, typename = std::enable_if_t<std::is_arithmetic_v<N>>>
@@ -141,7 +143,7 @@ class Dataset {
                     bool allow_dataset_resize = false);
   std::size_t write(const std::vector<std::string> &buff, std::size_t offset = 0,
                     bool allow_dataset_resize = false);
-  std::size_t write(const internal::VariantBuffer &vbuff, std::size_t offset = 0,
+  std::size_t write(const VariantBuffer &vbuff, std::size_t offset = 0,
                     bool allow_dataset_resize = false);
 
   template <typename InputIt, typename UnaryOperation = identity,
@@ -159,7 +161,7 @@ class Dataset {
   template <typename N, typename = std::enable_if_t<std::is_arithmetic_v<N>>>
   std::size_t write(N buff, std::size_t offset = 0, bool allow_dataset_resize = false);
   std::size_t write(std::string buff, std::size_t offset = 0, bool allow_dataset_resize = false);
-  std::size_t write(const internal::GenericVariant &vbuff, std::size_t offset = 0,
+  std::size_t write(const GenericVariant &vbuff, std::size_t offset = 0,
                     bool allow_dataset_resize = false);
 
   template <typename BuffT>
@@ -282,7 +284,7 @@ DISABLE_WARNING_POP
 
 using DatasetMap = phmap::flat_hash_map<std::string, Dataset>;
 
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../../dataset_accessors_impl.hpp"
 #include "../../../dataset_impl.hpp"

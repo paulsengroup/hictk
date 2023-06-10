@@ -11,7 +11,7 @@
 
 #include "hictk/cooler.hpp"
 
-namespace hictk::utils {
+namespace hictk::cooler::utils {
 
 namespace internal {
 template <typename N>
@@ -188,4 +188,4 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
         fmt::format(FMT_STRING("failed to merge {} cooler files: {}"), clrs.size(), e.what()));
   }
 }
-}  // namespace hictk::utils
+}  // namespace hictk::cooler::utils

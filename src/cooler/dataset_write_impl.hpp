@@ -22,7 +22,7 @@
 
 #include "hictk/common.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::size_t offset,
                                   bool allow_dataset_resize) {
@@ -68,7 +68,7 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
   return offset + buff.size();
 }
 
-inline std::size_t Dataset::write(const internal::VariantBuffer &vbuff, std::size_t offset,
+inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
   std::visit(
@@ -156,7 +156,7 @@ inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool all
   return offset + 1;
 }
 
-inline std::size_t Dataset::write(const internal::GenericVariant &vbuff, std::size_t offset,
+inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
   std::visit(
@@ -209,4 +209,4 @@ inline HighFive::DataSet Dataset::create_fixed_str_dataset(
   return group.getDataSet(dataset_name);
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

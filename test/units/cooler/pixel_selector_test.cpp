@@ -18,7 +18,9 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::pixel_selector {
+namespace hictk::cooler::test::pixel_selector {
+const auto& testdir = hictk::test::testdir;
+const auto& datadir = hictk::test::datadir;
 
 template <typename N>
 static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, const Reference& chroms,
@@ -267,4 +269,4 @@ TEST_CASE("Pixel selector: 2D queries", "[pixel_selector][short]") {
   }
 }
 
-}  // namespace hictk::test::pixel_selector
+}  // namespace hictk::cooler::test::pixel_selector

@@ -18,7 +18,11 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::hictk {
+namespace hictk::cooler::test::cooler_file {
+
+const auto& testdir = hictk::test::testdir;
+const auto& datadir = hictk::test::datadir;
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: version", "[cooler][short]") {
   // clang-format off
@@ -593,4 +597,4 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
   }
 }
 
-}  // namespace hictk::test::hictk
+}  // namespace hictk::cooler::test::cooler_file

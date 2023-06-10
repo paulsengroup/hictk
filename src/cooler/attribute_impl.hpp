@@ -26,7 +26,7 @@
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename ParentObj>
 inline bool Attribute::exists(ParentObj& h5obj, std::string_view key) {
@@ -129,6 +129,7 @@ DISABLE_WARNING_UNREACHABLE_CODE
 template <typename T1, typename Tout, typename Tin>
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline Tout Attribute::numeric_converter(T1& buff) {
+  using namespace hictk::internal;
   static_assert(!std::is_same_v<Tin, std::monostate>);
 
   if constexpr (std::is_same_v<Tin, Tout>) {
@@ -143,12 +144,12 @@ inline Tout Attribute::numeric_converter(T1& buff) {
   if constexpr (std::is_same_v<Tin, std::string> && std::is_arithmetic_v<Tout>) {
     // Try to convert a string attribute to the appropriate numeric type
     try {
-      return internal::parse_numeric_or_throw<Tout>(buff);
+      return parse_numeric_or_throw<Tout>(buff);
     } catch (const std::exception& e) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("Expected type {}, found std::string. An attempt to convert "
                                  "std::string to {} was made, but failed. Reason {}"),
-                      internal::type_name<Tout>(), internal::type_name<Tin>(), e.what()));
+                      type_name<Tout>(), type_name<Tin>(), e.what()));
     }
   }
 
@@ -163,8 +164,7 @@ inline Tout Attribute::numeric_converter(T1& buff) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Expected type {}, found {}. Unable to represent value {} as {} "
                                "without information loss"),
-                    internal::type_name<Tout>(), internal::type_name<Tin>(), buff,
-                    internal::type_name<Tout>()));
+                    type_name<Tout>(), type_name<Tin>(), buff, type_name<Tout>()));
   }
 
   if constexpr (std::is_integral_v<Tin> && std::is_integral_v<Tout>) {
@@ -189,16 +189,14 @@ inline Tout Attribute::numeric_converter(T1& buff) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
             "Expected type {}, found {}. Unable to represent value {} as {} without overflowing"),
-        internal::type_name<Tout>(), internal::type_name<Tin>(), buff,
-        internal::type_name<Tout>()));
+        type_name<Tout>(), type_name<Tin>(), buff, type_name<Tout>()));
   }
   // No conversion was possible
   throw std::runtime_error(fmt::format(
       FMT_STRING(
           "Expected type {}, found {}. Unable to safely convert value {} of type {} to type {}"),
-      internal::type_name<Tout>(), internal::type_name<Tin>(), buff, internal::type_name<Tin>(),
-      internal::type_name<Tout>()));
+      type_name<Tout>(), type_name<Tin>(), buff, type_name<Tin>(), type_name<Tout>()));
 }
 DISABLE_WARNING_POP
 
-}  // namespace hictk
+}  // namespace hictk::cooler

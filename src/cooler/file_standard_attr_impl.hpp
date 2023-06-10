@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename PixelT, typename>
 inline StandardAttributes StandardAttributes::init(std::uint32_t bin_size_) {
@@ -43,7 +43,7 @@ inline StandardAttributes StandardAttributes::init_empty() noexcept {
   return attrs;
 }
 
-inline bool StandardAttributes::operator==(const hictk::StandardAttributes& other) const noexcept {
+inline bool StandardAttributes::operator==(const StandardAttributes& other) const noexcept {
   // clang-format off
   return bin_size == other.bin_size &&
          bin_type == other.bin_type &&
@@ -63,7 +63,7 @@ inline bool StandardAttributes::operator==(const hictk::StandardAttributes& othe
   // clang-format on
 }
 
-inline bool StandardAttributes::operator!=(const hictk::StandardAttributes& other) const noexcept {
+inline bool StandardAttributes::operator!=(const StandardAttributes& other) const noexcept {
   return !(*this == other);
 }
-}  // namespace hictk
+}  // namespace hictk::cooler

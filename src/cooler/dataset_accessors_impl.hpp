@@ -10,7 +10,7 @@
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataType.hpp>
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline HighFive::DataSet Dataset::operator()() { return this->_dataset; }
 
@@ -95,4 +95,4 @@ inline auto Dataset::cend() const -> iterator<T, CHUNK_SIZE> {
   return this->end<T, CHUNK_SIZE>();
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

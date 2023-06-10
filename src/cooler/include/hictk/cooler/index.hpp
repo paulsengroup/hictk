@@ -13,11 +13,12 @@
 #include <vector>
 
 namespace hictk {
-
 class GenomicInterval;
 class BinTable;
 class Chromosome;
 class Reference;
+
+namespace cooler {
 
 class Index {
   using ChromID = std::uint32_t;
@@ -144,6 +145,8 @@ class Index {
     [[nodiscard]] static auto make_end_iterator(const Index* idx) -> iterator;
   };
 };
+
+}  // namespace cooler
 
 }  // namespace hictk
 

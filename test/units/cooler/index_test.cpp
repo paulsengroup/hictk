@@ -15,7 +15,8 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }
 
-namespace hictk::test::index {
+namespace hictk::cooler::test::index {
+const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Index: ctor", "[index][short]") {
@@ -194,4 +195,4 @@ TEST_CASE("Index: compute chromosome offsets", "[index][short]") {
   CHECK(chrom_offsets[2] == chr1_offsets.size() + chr2_offsets.size());
 }
 
-}  // namespace hictk::test::index
+}  // namespace hictk::cooler::test::index
