@@ -155,7 +155,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 180 |&
+                --timeout 180 2>&1 |
           head -n 1000
 
 
