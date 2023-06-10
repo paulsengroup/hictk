@@ -111,7 +111,6 @@ jobs:
         run: |
           conan install .                                         \
              --build=missing                                      \
-             --build=cascade                                      \
              -pr default                                          \
              -s "build_type=${{ matrix.build_type }}"             \
              -s "compiler=${{ matrix.compiler-name }}"            \
@@ -156,8 +155,8 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 180       \
-                -E '.*LONG.*'
+                --timeout 180 |&
+          head -n 1000
 
 
   macos-ci-status-check:

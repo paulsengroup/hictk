@@ -92,7 +92,6 @@ jobs:
         run: |
           conan install .                        \
              --build=missing                     \
-             --build=cascade                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
              -s build_type=Debug                 \
@@ -149,7 +148,8 @@ jobs:
                 --output-on-failure \
                 --no-tests=error    \
                 --timeout 240       \
-                -j $(nproc)
+                -j $(nproc) |&
+          head -n 1000
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
