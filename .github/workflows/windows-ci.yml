@@ -146,7 +146,7 @@ jobs:
                 -B build
 
       - name: Build project
-        run: cmake --build build --config Release
+        run: cmake --build build --config ${{ matrix.build_type }}
 
       - name: Run unit tests
         run: |
@@ -154,7 +154,8 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 180
+                --timeout 180 |&
+          head -n 1000
 
   windows-ci-status-check:
     name: Status Check (Windows CI)
