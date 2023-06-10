@@ -55,6 +55,9 @@ inline void FileStream::read(char *buffer, std::size_t count) {
 }
 
 inline void FileStream::append(std::string &buffer, std::size_t count) {
+  if (count == 0) {
+    return;
+  }
   const auto buff_size = buffer.size();
   buffer.resize(buffer.size() + count);
 
