@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-
+find_package(Catch2 CONFIG REQUIRED)
 find_package(Filesystem REQUIRED)
 
 include(CTest)
