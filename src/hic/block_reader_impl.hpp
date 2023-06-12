@@ -12,18 +12,21 @@
 
 namespace hictk::hic::internal {
 
-inline BlockGrid::BlockGrid(const std::vector<BlockIndex> &index, std::size_t block_bin_count) {
+inline BlockGrid::BlockGrid(const std::vector<BlockIndex> &index, std::size_t block_column_count) {
   _grid.resize(index.size());
   std::transform(index.begin(), index.end(), _grid.begin(), [&](const BlockIndex &idx) {
-    const auto row = idx.id / block_bin_count;
-    const auto col = idx.id % block_bin_count;
+    const auto row = idx.id / block_column_count;
+    const auto col = idx.id % block_column_count;
 
     return Node{std::make_shared<const BlockIndex>(idx), nullptr, nullptr, row, col};
   });
 
-  assert(std::is_sorted(_grid.begin(), _grid.end(), [](const auto &n1, const auto &n2) {
-    return n1.block->id < n2.block->id;
-  }));
+  std::sort(_grid.begin(), _grid.end(), [](const Node &n1, const Node &n2) {
+    if (n1.col == n2.col) {
+      return n1.row < n2.row;
+    }
+    return n1.col < n2.col;
+  });
 
   auto head = _grid.begin();
   auto tail = _grid.end();
@@ -145,7 +148,7 @@ inline void HiCBlockReader::find_overlapping_blocks(const hictk::PixelCoordinate
                                                     const hictk::PixelCoordinates &coords2) {
   std::vector<BlockIndex> _blocks_idx;
   _index.map_2d_query_to_blocks(coords1, coords2, _blocks_idx);
-  _block_grid = BlockGrid(_blocks_idx, _index.block_bin_count());
+  _block_grid = BlockGrid(_blocks_idx, _index.block_column_count());
 }
 
 inline Index HiCBlockReader::read_index(HiCFileStream &hfs, const HiCFooter &footer) {

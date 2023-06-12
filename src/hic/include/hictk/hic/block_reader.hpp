@@ -31,7 +31,7 @@ class BlockGrid {
  public:
   class iterator;
   BlockGrid() = default;
-  BlockGrid(const std::vector<BlockIndex>& index, std::size_t block_bin_count);
+  BlockGrid(const std::vector<BlockIndex>& index, std::size_t block_column_count);
 
   [[nodiscard]] auto begin() const noexcept -> iterator;
   [[nodiscard]] auto end() const noexcept -> iterator;
