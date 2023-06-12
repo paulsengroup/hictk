@@ -14,7 +14,7 @@
 
 #include "hictk/hic/common.hpp"
 
-namespace hictk::internal::filestream {
+namespace hictk::hic::internal::filestream {
 
 class FileStream {
   std::string path_{};
@@ -65,6 +65,6 @@ class FileStream {
   [[nodiscard]] static std::ifstream open_file(const std::string &path,
                                                std::ifstream::openmode mode);
 };
-}  // namespace hictk::internal::filestream
+}  // namespace hictk::hic::internal::filestream
 
 #include "../../../filestream_impl.hpp"

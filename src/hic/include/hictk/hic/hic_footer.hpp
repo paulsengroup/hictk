@@ -11,7 +11,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 struct HiCFooterMetadata {
   std::string url{};
   MatrixType matrix_type{MatrixType::observed};
@@ -61,6 +61,6 @@ class HiCFooter {
   [[nodiscard]] constexpr std::vector<double> &c1Norm() noexcept;
   [[nodiscard]] constexpr std::vector<double> &c2Norm() noexcept;
 };
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
 #include "../../../hic_footer_impl.hpp"

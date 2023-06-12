@@ -33,6 +33,8 @@ struct PixelCoordinates {
   [[nodiscard]] bool operator<=(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator>(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator>=(const PixelCoordinates &other) const noexcept;
+
+  [[nodiscard]] bool is_intra() const noexcept;
 };
 
 template <typename N>

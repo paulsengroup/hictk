@@ -18,8 +18,9 @@
 
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
+#include "hictk/hic/index.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
 inline HiCFileStream::HiCFileStream(std::string url)
     : _fs(std::make_shared<filestream::FileStream>(HiCFileStream::openStream(std::move(url)))),
@@ -177,14 +178,10 @@ inline auto HiCFileStream::init_decompressor() -> Decompressor {
   return zs;
 }
 
-inline void HiCFileStream::readBlockMap(std::int64_t fileOffset,
-                                        [[maybe_unused]] const Chromosome &chrom1,
-                                        [[maybe_unused]] const Chromosome &chrom2,
-                                        MatrixUnit wantedUnit, std::int64_t wantedResolution,
-                                        BlockMap &buffer) {
+inline Index HiCFileStream::readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1,
+                                         const Chromosome &chrom2, MatrixUnit wantedUnit,
+                                         std::int64_t wantedResolution) {
   _fs->seekg(fileOffset);
-  auto &blockMap = buffer.blocks;
-  blockMap.clear();
 
   [[maybe_unused]] const auto c1i = _fs->read<std::int32_t>();
   [[maybe_unused]] const auto c2i = _fs->read<std::int32_t>();
@@ -205,23 +202,31 @@ inline void HiCFileStream::readBlockMap(std::int64_t fileOffset,
     const auto blockBinCount = _fs->read<std::int32_t>();
     const auto blockColumnCount = _fs->read<std::int32_t>();
 
-    const auto nBlocks = static_cast<std::int64_t>(_fs->read<std::int32_t>());
+    const auto nBlocks = static_cast<std::size_t>(_fs->read<std::int32_t>());
 
+    phmap::btree_set<BlockIndex, BlockIndexCmp> buffer;
     if (wantedUnit == foundUnit && wantedResolution == foundResolution) {
-      for (std::int64_t j = 0; j < nBlocks; ++j) {
-        const auto key = _fs->read<std::int32_t>();
-        indexEntry index{_fs->read<std::int64_t>(), _fs->read<std::int32_t>()};
-        assert(index.position + index.size < static_cast<std::int64_t>(_fs->size()));
-        blockMap.emplace(key, std::move(index));
+      for (std::size_t j = 0; j < nBlocks; ++j) {
+        const auto block_id = static_cast<std::size_t>(_fs->read<std::int32_t>());
+        const auto position = static_cast<std::size_t>(_fs->read<std::int64_t>());
+        const auto size = static_cast<std::size_t>(_fs->read<std::int32_t>());
+        assert(position + size < _fs->size());
+        if (size > 0) {
+          buffer.emplace(BlockIndex{block_id, position, size, 0, 0, 0, 0});
+        }
       }
-      buffer.blockBinCount = blockBinCount;
-      buffer.blockColumnCount = blockColumnCount;
-      buffer.sumCount = static_cast<double>(sumCount);
-      return;
+
+      return {chrom1,
+              chrom2,
+              std::move(buffer),
+              version(),
+              static_cast<std::size_t>(blockBinCount),
+              static_cast<std::size_t>(blockColumnCount),
+              static_cast<double>(sumCount)};
     }
 
     constexpr std::int64_t blockSize = sizeof(int32_t) + sizeof(int64_t) + sizeof(int32_t);
-    _fs->seekg(nBlocks * blockSize, std::ios::cur);
+    _fs->seekg(static_cast<std::int64_t>(nBlocks) * blockSize, std::ios::cur);
   }
 
   throw std::runtime_error(
@@ -306,18 +311,18 @@ inline HiCHeader HiCFileStream::readHeader(filestream::FileStream &fs) {
   return header;
 }
 
-inline void HiCFileStream::readAndInflate(indexEntry idx, std::string &plainTextBuffer) {
+inline void HiCFileStream::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
   try {
     // _strbuff is used to store compressed data
     // plainTextBuffer is used to store decompressed data
     assert(_decompressor);
-    assert(idx.size > 0);
-    const auto buffSize = static_cast<std::size_t>(idx.size);
+    assert(idx.compressed_size_bytes > 0);
+    const auto buffSize = static_cast<std::size_t>(idx.compressed_size_bytes);
 
     plainTextBuffer.reserve(buffSize * 3);
     plainTextBuffer.resize(plainTextBuffer.capacity());
 
-    _fs->seekg(idx.position);
+    _fs->seekg(static_cast<std::int64_t>(idx.file_offset));
     _fs->read(_strbuff, buffSize);
 
     std::size_t bytes_decompressed{};
@@ -341,7 +346,7 @@ inline void HiCFileStream::readAndInflate(indexEntry idx, std::string &plainText
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to decompress block at pos {}: {}"),
-                                         idx.position, e.what()));
+                                         idx.file_offset, e.what()));
   }
 }
 
@@ -523,4 +528,4 @@ inline HiCFooter HiCFileStream::readFooter(const std::uint32_t chrom1_id,
   return footer;
 }
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal

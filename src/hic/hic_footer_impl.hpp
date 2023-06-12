@@ -10,7 +10,7 @@
 
 #include "hictk/hic/common.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
 constexpr HiCFooterMetadata::operator bool() const noexcept { return fileOffset >= 0; }
 
@@ -71,11 +71,11 @@ constexpr std::vector<double> &HiCFooter::c2Norm() noexcept {
   return _c2Norm;
 }
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
 template <>
-struct std::hash<hictk::internal::HiCFooterMetadata> {
-  inline std::size_t operator()(hictk::internal::HiCFooterMetadata const &m) const noexcept {
+struct std::hash<hictk::hic::internal::HiCFooterMetadata> {
+  inline std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept {
     return hictk::internal::hash_combine(0, m.url, m.matrix_type, m.normalization, m.unit,
                                          m.resolution, m.chrom1, m.chrom2);
   }

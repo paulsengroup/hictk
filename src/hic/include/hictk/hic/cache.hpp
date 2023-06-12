@@ -11,22 +11,27 @@
 #include <memory>
 #include <vector>
 
+#include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
 class InteractionBlock {
+ public:
   struct ThinPixel {
-    std::int64_t bin2_id{};
+    std::uint64_t bin2_id{};
     float count{};
   };
 
   using Row = std::vector<ThinPixel>;
-  using BuffT = phmap::btree_map<std::int64_t, Row>;
+
+ private:
+  using BuffT = phmap::btree_map<std::uint64_t, Row>;
+  std::size_t _id{};
   BuffT _interactions{};
-  std::int64_t _first_col{};
-  std::int64_t _last_col{};
+  const Chromosome* _chrom1{};
+  const Chromosome* _chrom2{};
 
  public:
   using iterator = BuffT::iterator;
@@ -43,7 +48,19 @@ class InteractionBlock {
   };
 
   InteractionBlock() = default;
-  explicit InteractionBlock(const std::vector<SerializedPixel>& pixels);
+  InteractionBlock(std::size_t id_, const std::vector<SerializedPixel>& pixels);
+
+  friend constexpr bool operator<(const InteractionBlock& a, const InteractionBlock& b) noexcept;
+  friend constexpr bool operator==(const InteractionBlock& a, const InteractionBlock& b) noexcept;
+  friend constexpr bool operator!=(const InteractionBlock& a, const InteractionBlock& b) noexcept;
+
+  friend constexpr bool operator<(const InteractionBlock& a, std::size_t b_id) noexcept;
+  friend constexpr bool operator==(const InteractionBlock& a, std::size_t b_id) noexcept;
+  friend constexpr bool operator!=(const InteractionBlock& a, std::size_t b_id) noexcept;
+
+  friend constexpr bool operator<(std::size_t a_id, const InteractionBlock& b) noexcept;
+  friend constexpr bool operator==(std::size_t a_id, const InteractionBlock& b) noexcept;
+  friend constexpr bool operator!=(std::size_t a_id, const InteractionBlock& b) noexcept;
 
   [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
 
@@ -55,20 +72,30 @@ class InteractionBlock {
   [[nodiscard]] auto end() const noexcept -> const_iterator;
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
-  [[nodiscard]] auto find_overlap(std::int64_t first_row, std::int64_t last_row) const noexcept
+  [[nodiscard]] std::size_t id() const noexcept;
+  [[nodiscard]] const Chromosome& chrom1() const noexcept;
+  [[nodiscard]] const Chromosome& chrom2() const noexcept;
+
+  [[nodiscard]] auto at(std::uint64_t row) const noexcept -> const_iterator;
+  [[nodiscard]] auto find_overlap(std::uint64_t first_row, std::uint64_t last_row) const noexcept
       -> Overlap;
+
+  [[nodiscard]] bool has_overlap(std::uint64_t first_row, std::uint64_t last_row) const noexcept;
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] std::size_t size_in_bytes() const noexcept;
+};
 
-  [[nodiscard]] std::int64_t first_row() const noexcept;
-  [[nodiscard]] std::int64_t last_row() const noexcept;
-  [[nodiscard]] std::int64_t first_col() const noexcept;
-  [[nodiscard]] std::int64_t last_col() const noexcept;
+struct InteractionBlockCmp {
+  using is_transparent = void;
+
+  constexpr bool operator()(const InteractionBlock& a, const InteractionBlock& b) const noexcept;
+  constexpr bool operator()(const InteractionBlock& a, std::size_t b_id) const noexcept;
+  constexpr bool operator()(std::size_t a_id, const InteractionBlock& b) const noexcept;
 };
 
 class BlockLRUCache {
-  using MapT = tsl::ordered_map<std::size_t, std::shared_ptr<InteractionBlock>>;
+  using MapT = tsl::ordered_map<std::size_t, std::shared_ptr<const InteractionBlock>>;
   using key_t = MapT::key_type;
   using mapped_type = MapT::mapped_type;
   using iterator = MapT::iterator;
@@ -112,6 +139,6 @@ class BlockLRUCache {
   void erase(iterator it);
 };
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
 #include "../../../cache_impl.hpp"

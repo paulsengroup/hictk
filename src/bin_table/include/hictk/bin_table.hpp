@@ -19,18 +19,20 @@ namespace hictk {
 class Bin {
  public:
   static constexpr std::uint64_t null_id{(std::numeric_limits<std::uint64_t>::max)()};
+  static constexpr std::uint32_t rel_null_id{(std::numeric_limits<std::uint32_t>::max)()};
 
  private:
   std::uint64_t _id{null_id};
+  std::uint32_t _rel_id{rel_null_id};
   GenomicInterval _interval{};
 
  public:
   constexpr Bin() = default;
   Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
-  Bin(std::uint64_t id_, const Chromosome &chrom_, std::uint32_t start_,
+  Bin(std::uint64_t id_, std::uint32_t rel_id_, const Chromosome &chrom_, std::uint32_t start_,
       std::uint32_t end_) noexcept;
   explicit Bin(GenomicInterval interval) noexcept;
-  Bin(std::uint64_t id, GenomicInterval interval) noexcept;
+  Bin(std::uint64_t id_, std::uint32_t rel_id_, GenomicInterval interval) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
 
@@ -44,6 +46,7 @@ class Bin {
   [[nodiscard]] bool operator>=(const Bin &other) const noexcept;
 
   [[nodiscard]] constexpr std::uint64_t id() const noexcept;
+  [[nodiscard]] constexpr std::uint32_t rel_id() const noexcept;
   [[nodiscard]] const GenomicInterval &interval() const noexcept;
   [[nodiscard]] const Chromosome &chrom() const noexcept;
   [[nodiscard]] constexpr std::uint32_t start() const noexcept;

@@ -23,6 +23,9 @@ void parse_numeric_or_throw(std::string_view tok, N &field);
 
 template <typename N>
 N parse_numeric_or_throw(std::string_view tok);
+
+template <typename N>
+constexpr N abs_diff(N n1, N n2) noexcept;
 }  // namespace hictk::internal
 
 #include "../../numeric_utils_impl.hpp"

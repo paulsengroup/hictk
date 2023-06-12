@@ -22,16 +22,17 @@
 namespace hictk {  // NOLINT
 
 inline Bin::Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end_) noexcept
-    : Bin(Bin::null_id, chrom_, start_, end_) {}
+    : Bin(Bin::null_id, Bin::rel_null_id, chrom_, start_, end_) {}
 
-inline Bin::Bin(std::uint64_t id_, const Chromosome &chrom_, std::uint32_t start_,
-                std::uint32_t end_) noexcept
-    : _id(id_), _interval(chrom_, start_, end_) {}
+inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, const Chromosome &chrom_,
+                std::uint32_t start_, std::uint32_t end_) noexcept
+    : _id(id_), _rel_id(rel_id_), _interval(chrom_, start_, end_) {}
 
-inline Bin::Bin(GenomicInterval interval) noexcept : Bin(Bin::null_id, std::move(interval)) {}
+inline Bin::Bin(GenomicInterval interval) noexcept
+    : Bin(Bin::null_id, Bin::rel_null_id, std::move(interval)) {}
 
-inline Bin::Bin(std::uint64_t id_, GenomicInterval interval) noexcept
-    : _id(id_), _interval(std::move(interval)) {}
+inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, GenomicInterval interval) noexcept
+    : _id(id_), _rel_id(rel_id_), _interval(std::move(interval)) {}
 
 inline Bin::operator bool() const noexcept { return !!this->chrom(); }
 
@@ -72,6 +73,7 @@ inline bool Bin::operator>=(const Bin &other) const noexcept {
 }
 
 constexpr std::uint64_t Bin::id() const noexcept { return this->_id; }
+constexpr std::uint32_t Bin::rel_id() const noexcept { return this->_rel_id; }
 inline const GenomicInterval &Bin::interval() const noexcept { return this->_interval; }
 inline const Chromosome &Bin::chrom() const noexcept { return this->interval().chrom(); }
 constexpr std::uint32_t Bin::start() const noexcept { return this->_interval.start(); }
@@ -214,7 +216,7 @@ inline Bin BinTable::at_hint(std::uint64_t bin_id, const Chromosome &chrom) cons
   assert(start < chrom.size());
   const auto end = (std::min)(start + this->bin_size(), chrom.size());
 
-  return {bin_id, chrom, start, end};
+  return {bin_id, static_cast<std::uint32_t>(relative_bin_id), chrom, start, end};
 }
 
 inline std::pair<Bin, Bin> BinTable::at(const GenomicInterval &gi) const {

@@ -9,24 +9,79 @@
 #include <numeric>
 #include <vector>
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
+
+constexpr bool operator<(const InteractionBlock &a, const InteractionBlock &b) noexcept {
+  return a < b._id;
+}
+constexpr bool operator==(const InteractionBlock &a, const InteractionBlock &b) noexcept {
+  return a == b._id;
+}
+constexpr bool operator!=(const InteractionBlock &a, const InteractionBlock &b) noexcept {
+  return !(a == b);
+}
+
+constexpr bool operator<(const InteractionBlock &a, std::size_t b_id) noexcept {
+  return a._id < b_id;
+}
+constexpr bool operator==(const InteractionBlock &a, std::size_t b_id) noexcept {
+  return a._id == b_id;
+}
+constexpr bool operator!=(const InteractionBlock &a, std::size_t b_id) noexcept {
+  return !(a == b_id);
+}
+
+constexpr bool operator<(std::size_t a_id, const InteractionBlock &b) noexcept {
+  return a_id < b._id;
+}
+constexpr bool operator==(std::size_t a_id, const InteractionBlock &b) noexcept {
+  return a_id == b._id;
+}
+constexpr bool operator!=(std::size_t a_id, const InteractionBlock &b) noexcept {
+  return !(a_id == b);
+}
+
+constexpr bool InteractionBlockCmp::operator()(const InteractionBlock &a,
+                                               const InteractionBlock &b) const noexcept {
+  return a < b;
+}
+constexpr bool InteractionBlockCmp::operator()(const InteractionBlock &a,
+                                               std::size_t b_id) const noexcept {
+  return a < b_id;
+}
+constexpr bool InteractionBlockCmp::operator()(std::size_t a_id,
+                                               const InteractionBlock &b) const noexcept {
+  return a_id < b;
+}
 
 inline auto InteractionBlock::Overlap::begin() const noexcept { return first; }
 inline auto InteractionBlock::Overlap::end() const noexcept { return last; }
 inline auto InteractionBlock::Overlap::cbegin() const noexcept { return begin(); }
 inline auto InteractionBlock::Overlap::cend() const noexcept { return end(); }
 
-inline InteractionBlock::InteractionBlock(const std::vector<SerializedPixel> &pixels) {
+inline std::size_t InteractionBlock::id() const noexcept { return _id; }
+inline const Chromosome &InteractionBlock::chrom1() const noexcept {
+  assert(_chrom1);
+  return *_chrom1;
+}
+inline const Chromosome &InteractionBlock::chrom2() const noexcept {
+  assert(_chrom2);
+  return *_chrom2;
+}
+
+inline InteractionBlock::InteractionBlock(std::size_t id_,
+                                          const std::vector<SerializedPixel> &pixels)
+    : _id(id_) {
   if (pixels.empty()) {
     return;
   }
 
   for (const SerializedPixel &p : pixels) {
-    _first_col = (std::min)(_first_col, p.bin2_id);
-    _last_col = (std::max)(_last_col, p.bin2_id);
-    auto [node, inserted] = this->_interactions.try_emplace(p.bin1_id, Row{{p.bin2_id, p.count}});
+    const auto b1 = static_cast<std::uint64_t>(p.bin1_id);
+    const auto b2 = static_cast<std::uint64_t>(p.bin2_id);
+    auto [node, inserted] = this->_interactions.try_emplace(b1, Row{{b2, p.count}});
     if (!inserted) {
-      node->second.emplace_back(ThinPixel{p.bin2_id, p.count});
+      node->second.emplace_back(ThinPixel{b2, p.count});
     }
   }
   if constexpr (ndebug_not_defined()) {
@@ -56,10 +111,21 @@ inline auto InteractionBlock::end() const noexcept -> const_iterator { return _i
 
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
-inline auto InteractionBlock::find_overlap(std::int64_t first_row,
-                                           std::int64_t last_row) const noexcept -> Overlap {
+inline auto InteractionBlock::at(std::uint64_t row) const noexcept -> const_iterator {
+  return _interactions.lower_bound(row);
+}
+
+inline auto InteractionBlock::find_overlap(std::uint64_t first_row,
+                                           std::uint64_t last_row) const noexcept -> Overlap {
   assert(first_row <= last_row);
-  return {_interactions.lower_bound(first_row), _interactions.upper_bound(last_row)};
+  return {at(first_row), _interactions.upper_bound(last_row)};
+}
+
+inline bool InteractionBlock::has_overlap(std::uint64_t first_row,
+                                          std::uint64_t last_row) const noexcept {
+  auto overlap = find_overlap(first_row, last_row);
+
+  return overlap.begin() != this->_interactions.end();
 }
 
 inline std::size_t InteractionBlock::size() const noexcept { return _interactions.size(); }
@@ -67,21 +133,6 @@ inline std::size_t InteractionBlock::size() const noexcept { return _interaction
 inline std::size_t InteractionBlock::size_in_bytes() const noexcept {
   return sizeof(Pixel<float>) * size();
 }
-
-inline std::int64_t InteractionBlock::first_row() const noexcept {
-  if (_interactions.empty()) {
-    return 0;
-  }
-  return _interactions.begin()->first;
-}
-inline std::int64_t InteractionBlock::last_row() const noexcept {
-  if (_interactions.empty()) {
-    return 0;
-  }
-  return (--_interactions.end())->first;
-}
-inline std::int64_t InteractionBlock::first_col() const noexcept { return _first_col; }
-inline std::int64_t InteractionBlock::last_col() const noexcept { return _last_col; }
 
 inline BlockLRUCache::BlockLRUCache(std::size_t max_size_in_bytes)
     : _max_size_bytes(max_size_in_bytes) {
@@ -165,4 +216,4 @@ constexpr std::size_t BlockLRUCache::misses() const noexcept { return _misses; }
 
 inline std::size_t BlockLRUCache::size() const noexcept { return _cache.size(); }
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal

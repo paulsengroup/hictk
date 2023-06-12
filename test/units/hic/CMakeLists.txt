@@ -15,7 +15,7 @@ target_sources(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/filestream_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_stream_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/matrix_zoom_data_test.cpp)
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp)
 
 target_link_libraries(
   hictk_hic_tests

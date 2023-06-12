@@ -18,15 +18,20 @@
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/hic_footer.hpp"
 #include "hictk/hic/hic_header.hpp"
+#include "hictk/hic/index.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
-struct BlockMap {
-  phmap::btree_map<std::size_t, indexEntry> blocks{};
-  std::int32_t blockBinCount{};
-  std::int32_t blockColumnCount{};
-  double sumCount{};
-};
+// TODO REMOVE
+// struct BlockIndex {
+//   phmap::btree_map<std::size_t, indexEntry> blocks{};
+//   std::int32_t blockBinCount{};
+//   std::int32_t blockColumnCount{};
+//   double sumCount{};
+//
+//   [[nodiscard]] indexEntry at(std::size_t id) const noexcept;
+//   [[nodiscard]] indexEntry at(std::size_t row, std::size_t col) const noexcept;
+// };
 
 class HiCFileStream {
   using Decompressor = UniquePtrWithDeleter<libdeflate_decompressor>;
@@ -54,9 +59,10 @@ class HiCFileStream {
                                                                    std::string &buff);
   [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream &fs, std::string &buff);
 
-  void readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1, const Chromosome &chrom2,
-                    MatrixUnit wantedUnit, std::int64_t wantedResolution, BlockMap &buffer);
-  void readAndInflate(indexEntry idx, std::string &plainTextBuffer);
+  [[nodiscard]] Index readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1,
+                                   const Chromosome &chrom2, MatrixUnit wantedUnit,
+                                   std::int64_t wantedResolution);
+  void readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer);
 
   [[nodiscard]] static bool checkMagicString(std::string url) noexcept;
 
@@ -87,6 +93,6 @@ class HiCFileStream {
 
   [[nodiscard]] static auto init_decompressor() -> Decompressor;
 };
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
 #include "../../../hic_file_stream_impl.hpp"

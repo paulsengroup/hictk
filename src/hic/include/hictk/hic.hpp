@@ -12,28 +12,31 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/hic_file_stream.hpp"
 #include "hictk/hic/hic_footer.hpp"
 #include "hictk/hic/hic_header.hpp"
-#include "hictk/hic/hic_matrix_selector.hpp"
+// #include "hictk/hic/hic_matrix_selector.hpp"
+#include "hictk/hic/pixel_selector.hpp"
 
-namespace hictk {
+namespace hictk::hic {
 class HiCFile {
   // clang-format off
     using FooterCacheT =
         std::unordered_map<internal::HiCFooterMetadata,
                            std::shared_ptr<const internal::HiCFooter>>;
   // clang-format on
-  std::shared_ptr<internal::HiCFileStream> _fs{};
-  FooterCacheT _footers{};
+  mutable std::shared_ptr<internal::HiCFileStream> _fs{};
+  mutable FooterCacheT _footers{};
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};
-  internal::BlockLRUCache _block_cache{};
-  BinTable _bins{};
+  mutable std::shared_ptr<internal::BlockLRUCache> _block_cache{};
+  std::shared_ptr<const BinTable> _bins{};
 
  public:
+  using QUERY_TYPE = GenomicInterval::Type;
   explicit HiCFile(std::string url_, std::uint32_t resolution_,
                    MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
                    // TODO consider expressing cache size in terms of number of pixels
@@ -48,39 +51,40 @@ class HiCFile {
   [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
-  [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
 
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const Chromosome &chrom,
-                                                             NormalizationMethod norm);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const std::string &chromName,
-                                                             NormalizationMethod norm);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(std::uint32_t chrom_id,
-                                                             NormalizationMethod norm);
-
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const Chromosome &chrom1,
-                                                             const Chromosome &chrom2,
-                                                             NormalizationMethod norm);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(const std::string &chrom1_name,
-                                                             const std::string &chrom2_name,
-                                                             NormalizationMethod norm);
-  [[nodiscard]] internal::MatrixSelector get_matrix_selector(std::uint32_t chrom1_id,
-                                                             std::uint32_t chrom2_id,
-                                                             NormalizationMethod norm);
-
+  [[nodiscard]] PixelSelector fetch(std::string_view query,
+                                    NormalizationMethod norm = NormalizationMethod::NONE,
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
+                                    std::uint32_t end,
+                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
+                                    NormalizationMethod norm = NormalizationMethod::NONE,
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
+                                    std::uint32_t end1, std::string_view chrom2_name,
+                                    std::uint32_t start2, std::uint32_t end2,
+                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
       std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
-      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution);
+      NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution) const;
+
+  [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,
+                                    std::uint32_t end1, const Chromosome &chrom2,
+                                    std::uint32_t start2, std::uint32_t end2,
+                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
 };
 
 namespace utils {
 [[nodiscard]] bool is_hic_file(const std::filesystem::path &path);
 }  // namespace utils
 
-}  // namespace hictk
+}  // namespace hictk::hic
 
 #include "../../hic_file_impl.hpp"
 #include "../../hic_file_utils_impl.hpp"

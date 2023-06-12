@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "catch2/catch_test_macros.hpp"
-#include "hictk/hic/suppress_compiler_warnings.hpp"
+#include "hictk/suppress_warnings.hpp"
 
-using namespace hictk::internal::filestream;
+using namespace hictk::hic::internal::filestream;
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
