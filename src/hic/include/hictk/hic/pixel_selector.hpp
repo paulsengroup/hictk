@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <queue>
+#include <vector>
+
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
@@ -78,20 +81,14 @@ class PixelSelector {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
     const PixelSelector *_sel{};
+    using BufferT = std::vector<Pixel<N>>;
 
     std::shared_ptr<internal::BlockGrid> _grid{};
-
     decltype(_grid->begin()) _idx{};  // Index, knows where to read the next block
 
-    std::shared_ptr<const internal::InteractionBlock>
-        _blk{};  // block, the actual data. we need to keep a ptr here to make sure the underlying
-                 // storage is not freed
     std::size_t _bin1_id{};
-    using PixelIt = decltype(_blk->begin()->second.begin());
-    PixelIt _pixel_first{};  // iterator over pixels
-    PixelIt _pixel_last{};   // end iterator over pixels
-
-    mutable Pixel<N> _value{};
+    mutable std::shared_ptr<BufferT> _buffer{};
+    mutable std::size_t _buffer_i{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -123,15 +120,14 @@ class PixelSelector {
     [[nodiscard]] const BinTable &bins() const noexcept;
     [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
-
-    [[nodiscard]] std::uint32_t pos1() const noexcept;
-    [[nodiscard]] std::uint32_t pos2() const noexcept;
-    [[nodiscard]] N count() const noexcept;
+    [[nodiscard]] std::size_t size() const noexcept;
 
     void seek_to_next_block();
-    void seek_to_next_overlap() noexcept;
 
     void mark_block_as_fully_read();
+
+    [[nodiscard]] std::shared_ptr<const internal::InteractionBlock> read_block() noexcept;
+    void read_chunk_of_pixels(const internal::InteractionBlock &blk);
   };
 };
 

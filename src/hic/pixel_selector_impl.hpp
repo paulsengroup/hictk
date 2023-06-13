@@ -106,65 +106,6 @@ inline SerializedPixel PixelSelector::process_interaction(SerializedPixel record
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return {begin<N>(), end<N>()};
-  /*
-    std::vector<Pixel<N>> buffer{};
-    std::size_t empty_blocks = 0;
-
-    auto bin1 = coord1().bin1.rel_id();
-    auto bin2 = coord1().bin2.rel_id() + 1;
-    auto bin3 = coord2().bin1.rel_id();
-    auto bin4 = coord2().bin2.rel_id() + 1;
-
-    std::size_t i = 0;
-
-    for (const auto &block_idx : _reader.grid()) {
-      auto blk = _reader.read(*block_idx.block);
-      if (!blk) {
-        empty_blocks++;
-        continue;
-      }
-      std::ofstream ofs(fmt::format(FMT_STRING("/tmp/test{:03d}.bed"), i));
-      // Obs we use open-closed interval instead of open-open like is done in straw
-      for (const auto &[b1, row] : blk->find_overlap(bin1, bin2)) {
-        for (const auto &tp : row) {
-          const auto &b2 = tp.bin2_id;
-          auto tmp_record = process_interaction(SerializedPixel{
-              static_cast<std::int64_t>(b1), static_cast<std::int64_t>(b2), tp.count});
-          fmt::print(ofs, FMT_STRING("{}\t{}\t{}\t{}\n"), i, tmp_record.bin1_id, tmp_record.bin2_id,
-                     tp.count);
-        }
-
-        if (b1 >= bin2) {
-          // We're past the last row overlapping the query
-          break;
-        }
-        for (const auto &tp : row) {
-          const auto &b2 = tp.bin2_id;
-          if (b1 < bin1 || b2 < bin3) {
-            // We're upstream of the first column overlapping the query (if any)
-            continue;
-          }
-
-          if (b2 >= bin4) {
-            // We're past the last column overlapping the query for the current row
-            break;
-          }
-
-          auto record = process_interaction(SerializedPixel{static_cast<std::int64_t>(b1),
-                                                            static_cast<std::int64_t>(b2),
-    tp.count}); if (std::isfinite(record.count)) { buffer.emplace_back( PixelCoordinates{
-                    bins().at(_footer->chrom1(), static_cast<std::uint32_t>(record.bin1_id)),
-                    bins().at(_footer->chrom2(), static_cast<std::uint32_t>(record.bin2_id))},
-                record.count);
-          }
-        }
-      }
-      ++i;
-    }
-    // Only interactions from the same block are guaranteed to already be sorted
-    std::sort(buffer.begin(), buffer.end());
-    return buffer;
-    */
 }
 
 template <typename N>
@@ -183,9 +124,17 @@ inline std::vector<Pixel<N>> PixelSelector::read_all_dbg() const {
     if (!blk) {
       continue;
     }
-
+    std::ofstream ofs(fmt::format(FMT_STRING("/tmp/test{}.bed"), i));
     // Obs we use open-closed interval instead of open-open like is done in straw
     for (const auto &[b1, row] : blk->find_overlap(bin1, bin2)) {
+      for (const auto &tp : row) {
+        const auto &b2 = tp.bin2_id;
+        auto tmp_record = process_interaction(SerializedPixel{
+            static_cast<std::int64_t>(b1), static_cast<std::int64_t>(b2), tp.count});
+        fmt::print(ofs, FMT_STRING("{}\t{}\t{}\t{}\n"), i, tmp_record.bin1_id, tmp_record.bin2_id,
+                   blk->id());
+      }
+
       if (b1 >= bin2) {
         // We're past the last row overlapping the query
         break;
@@ -248,18 +197,14 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
     : _sel(&sel),
       _grid(std::make_shared<internal::BlockGrid>(_sel->_reader.grid())),
       _idx(_grid->begin()),
-      _blk(_sel->_reader.read(*_idx->block_idx)) {
-  if (!_blk) {
+      _bin1_id(coord1().bin1.rel_id()),
+      _buffer(std::make_shared<BufferT>(1000)) {
+  if (_grid->size() == 0) {
     *this = at_end(sel);
     return;
   }
-
-  auto row_it = _blk->at(coord1().bin1.rel_id());
-  _bin1_id = row_it->first;
-  _pixel_first = row_it->second.begin();
-  _pixel_last = row_it->second.end();
-
-  seek_to_next_overlap();
+  auto blk = read_block();
+  read_chunk_of_pixels(*blk);
 }
 
 template <typename N>
@@ -267,7 +212,7 @@ inline auto PixelSelector::iterator<N>::at_end(const PixelSelector &sel) -> iter
   iterator it{};
 
   it._sel = &sel;
-  it._blk = nullptr;  // This signals we're at end
+  it._buffer = nullptr;  // end of queue
 
   return it;
 }
@@ -277,7 +222,7 @@ inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const 
   // clang-format off
   return _sel == other._sel       &&
          _idx == other._idx       &&
-         _pixel_first == other._pixel_first;
+         size() == other.size();
   // clang-format on
 }
 
@@ -297,31 +242,29 @@ inline bool PixelSelector::iterator<N>::operator<(const iterator &other) const n
   if (_bin1_id != other._bin1_id) {
     return _bin1_id < other._bin1_id;
   }
-  return _pixel_first < other._pixel_first;
+  return size() < other.size();
 }
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
-  assert(!is_at_end());
-
-  const auto old_value = _value;
-
-  _value.coords = {bins().at(coord1().bin1.chrom(), pos1()),
-                   bins().at(coord2().bin1.chrom(), pos2())};
-  _value.count = count();
-
-  if (old_value != Pixel<N>{}) {
-    assert(old_value < _value);
-  }
-  return _value;
+  assert(!!_buffer);
+  assert(_buffer_i < _buffer->size());
+  return (*_buffer)[_buffer_i];
 }
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
-  assert(!is_at_end());
+  assert(!!_buffer);
 
-  if (discard() || ++_pixel_first == _pixel_last) {
+  if (!!_buffer) {
+    ++_buffer_i;
+  }
+
+  while (_buffer_i == size()) {
     seek_to_next_block();
+    if (is_at_end()) {
+      break;
+    }
   }
 
   return *this;
@@ -337,20 +280,26 @@ inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
 template <typename N>
 inline bool PixelSelector::iterator<N>::discard() const noexcept {
   if (is_at_end()) {
-    return false;
+    return true;
   }
+
+  assert(!!_buffer);
+  if (_buffer->empty()) {
+    return true;
+  }
+
+  const auto &pixel = _buffer->front();
   // clang-format off
-  return _pixel_first == _pixel_last    ||
-         pos1() < coord1().bin1.start() ||
-         pos1() > coord1().bin2.start() ||
-         pos2() < coord2().bin1.start() ||
-         pos2() > coord2().bin2.start();
+  return pixel.coords.bin1 < coord1().bin1 ||
+         pixel.coords.bin1 > coord1().bin2 ||
+         pixel.coords.bin2 < coord2().bin1 ||
+         pixel.coords.bin2 > coord2().bin2;
   // clang-format on
 }
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::is_at_end() const noexcept {
-  return !_blk;
+  return _buffer == nullptr;
 }
 
 template <typename N>
@@ -370,36 +319,19 @@ inline const PixelCoordinates &PixelSelector::iterator<N>::coord2() const noexce
 }
 
 template <typename N>
-inline std::uint32_t PixelSelector::iterator<N>::pos1() const noexcept {
-  assert(!is_at_end());
-  return static_cast<std::uint32_t>(_bin1_id) * bins().bin_size();
-}
-
-template <typename N>
-inline std::uint32_t PixelSelector::iterator<N>::pos2() const noexcept {
-  assert(!is_at_end());
-  assert(_pixel_first != _pixel_last);
-  return static_cast<std::uint32_t>(_pixel_first->bin2_id) * bins().bin_size();
-}
-
-template <typename N>
-inline N PixelSelector::iterator<N>::count() const noexcept {
-  assert(!is_at_end());
-  assert(_pixel_first != _pixel_last);
-  if constexpr (std::is_integral_v<N>) {
-    return static_cast<N>(std::round(_pixel_first->count));
-  } else {
-    return conditional_static_cast<N>(_pixel_first->count);
-  }
+inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
+  return !_buffer ? 0 : _buffer->size();
 }
 
 template <typename N>
 inline void PixelSelector::iterator<N>::seek_to_next_block() {
-  assert(!is_at_end());
-
-  // All pixels in block have been read
-  assert(_blk);
-  const auto block_was_fully_read = _bin1_id == (--_blk->end())->first;
+  auto blk = read_block();
+  if (!blk) {
+    _buffer = nullptr;
+    return;
+  }
+  assert(blk);
+  const auto block_was_fully_read = _bin1_id == (--blk->end())->first;
   if (block_was_fully_read) {
     mark_block_as_fully_read();
   }
@@ -408,10 +340,15 @@ inline void PixelSelector::iterator<N>::seek_to_next_block() {
   assert(_idx->current_row < _grid->end());
   const auto end_of_row = (_idx + 1 == _grid->end()) || _idx->row != (_idx + 1)->row;
   if (end_of_row) {
+    if (!_grid) {
+      *this = at_end(*_sel);
+    }
+    fmt::print(FMT_STRING("next row...\n"));
     _idx = std::find_if(_idx->current_row, _idx + 1,
                         [](const auto &node) { return node.block_idx != nullptr; });
     ++_bin1_id;
   } else {
+    fmt::print(FMT_STRING("next col...\n"));
     ++_idx;
   }
 
@@ -421,38 +358,16 @@ inline void PixelSelector::iterator<N>::seek_to_next_block() {
   }
 
   assert(_idx->block_idx);
-  _blk = _sel->_reader.read(*_idx->block_idx);
-  if (!_blk) {
+  blk = _sel->_reader.read(*_idx->block_idx);
+  if (!blk) {
     *this = at_end(*_sel);
     return;
   }
 
-  auto row_it = _blk->at(_bin1_id);
-  if (row_it->first != _bin1_id) {
+  if (_bin1_id != blk->at(_bin1_id)->first) {
     seek_to_next_block();
   }
-  assert(row_it != _blk->end());
-  _pixel_first = row_it->second.begin();
-  _pixel_last = row_it->second.end();
-
-  assert(_pixel_first != _pixel_last);
-
-  seek_to_next_overlap();
-}
-
-template <typename N>
-inline void PixelSelector::iterator<N>::seek_to_next_overlap() noexcept {
-  assert(!is_at_end());
-
-  do {
-    if (pos2() >= coord2().bin1.start()) {
-      return;
-    }
-  } while (++_pixel_first != _pixel_last);
-
-  if (_pixel_first == _pixel_last) {
-    seek_to_next_block();
-  }
+  read_chunk_of_pixels(*blk);
 }
 
 template <typename N>
@@ -464,4 +379,70 @@ inline void PixelSelector::iterator<N>::mark_block_as_fully_read() {
   _idx->block_idx = nullptr;
 }
 
+template <typename N>
+inline std::shared_ptr<const internal::InteractionBlock>
+PixelSelector::iterator<N>::read_block() noexcept {
+  if (!_grid) {
+    return nullptr;
+  }
+  assert(_sel);
+  assert(_idx != _grid->end());
+  assert(_idx->block_idx);
+  return _sel->_reader.read(*_idx->block_idx);
+}
+
+template <typename N>
+inline void PixelSelector::iterator<N>::read_chunk_of_pixels(
+    const internal::InteractionBlock &blk) {
+  auto row_it = blk.at(_bin1_id);
+  if (_bin1_id != row_it->first) {
+    return;
+  }
+
+  auto first = row_it->second.begin();
+  auto last = row_it->second.end();
+
+  first =
+      std::lower_bound(first, last, coord2().bin1.start(),
+                       [&](const internal::InteractionBlock::ThinPixel &pixel, const auto &pos) {
+                         return pixel.bin2_id * bins().bin_size() < pos;
+                       });
+  // clang-format off
+  const auto buff_capacity =
+      std::min({!!_buffer ? _buffer->capacity() : std::size_t(1000),
+                static_cast<std::size_t>(std::distance(first, last))});
+  // clang-format on
+  // This is fine, as iterators are not thread safe anyway
+  if (_buffer.use_count() == 1) {
+    _buffer->resize(buff_capacity);
+  } else {
+    _buffer = std::make_shared<BufferT>(buff_capacity);
+  }
+  _buffer->clear();
+  _buffer_i = 0;
+
+  const auto pos1 = static_cast<std::uint32_t>(_bin1_id) * bins().bin_size();
+  const auto bin1 = bins().at(coord1().bin1.chrom(), pos1);
+  do {
+    const auto pos2 = static_cast<std::uint32_t>(first->bin2_id) * bins().bin_size();
+    auto bin2 = bins().at(coord2().bin1.chrom(), pos2);
+
+    if (bin2 > coord2().bin2) {
+      break;
+    }
+
+    if constexpr (std::is_integral_v<N>) {
+      const auto count = static_cast<N>(std::round(first->count));
+      _buffer->emplace_back(bin1, std::move(bin2), count);
+    } else {
+      const auto count = conditional_static_cast<N>(first->count);
+      _buffer->emplace_back(bin1, std::move(bin2), count);
+    }
+  } while (++first != last);
+
+  if (first != last && _bin1_id + 1 > coord1().bin2.rel_id()) {
+    _grid = nullptr;
+    _idx = {};
+  }
+}
 }  // namespace hictk::hic
