@@ -113,7 +113,7 @@ inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std:
   }
 
   const auto p1 = query.find_last_of(':');
-  const auto p2 = query.find_last_of('-');
+  auto p2 = query.find_last_of('-');
 
   if (p1 == std::string::npos && p2 == std::string::npos) {
     throw std::runtime_error(
@@ -125,7 +125,8 @@ inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std:
   }
 
   if (query.find(',', p1) != std::string::npos) {
-    query.erase(std::remove(query.begin() + std::ptrdiff_t(p1), query.end(), ','));
+    query.erase(std::remove(query.begin() + std::ptrdiff_t(p1), query.end(), ','), query.end());
+    p2 = query.find_last_of('-');
   }
 
   query[p1] = '\t';
