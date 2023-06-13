@@ -16,51 +16,38 @@
 namespace hictk::hic::internal {
 
 class BlockGrid {
+ public:
   struct Node {
-    std::shared_ptr<const BlockIndex> block{};
-    const Node* next_right{};
-    const Node* next_down{};
-    std::size_t
-        row{};  // These should be in absolute term (i.e. first/last row and col mapping to block)
-    std::size_t
-        col{};  // These should be in absolute term (i.e. first/last row and col mapping to block)
+    std::shared_ptr<const BlockIndex> block_idx{};
+    std::vector<Node>::iterator current_row{};  // first node in row
+    std::vector<Node>::iterator next_row{};     // node to first node in next row
+    std::size_t row{};
+    std::size_t col{};
   };
 
+ private:
   std::vector<Node> _grid{};
 
  public:
   class iterator;
   BlockGrid() = default;
   BlockGrid(const std::vector<BlockIndex>& index, std::size_t block_column_count);
+  BlockGrid(const BlockGrid& other);
+  BlockGrid(BlockGrid&& other) noexcept;
 
-  [[nodiscard]] auto begin() const noexcept -> iterator;
-  [[nodiscard]] auto end() const noexcept -> iterator;
+  ~BlockGrid() = default;
+
+  BlockGrid& operator=(const BlockGrid& other);
+  BlockGrid& operator=(BlockGrid&& other) noexcept;
+
+  [[nodiscard]] auto begin() noexcept -> std::vector<Node>::iterator;
+  [[nodiscard]] auto end() noexcept -> std::vector<Node>::iterator;
+  [[nodiscard]] auto begin() const noexcept -> std::vector<Node>::const_iterator;
+  [[nodiscard]] auto end() const noexcept -> std::vector<Node>::const_iterator;
   [[nodiscard]] std::size_t size() const noexcept;
 
-  class iterator {
-    const Node* _node{};
-    std::size_t _current_row{(std::numeric_limits<std::size_t>::max)()};
-
-   public:
-    using difference_type = std::ptrdiff_t;
-    using value_type = Node;
-    using pointer = Node*;
-    using const_pointer = const Node*;
-    using reference = Node&;
-    using const_reference = const Node&;
-    using iterator_category = std::input_iterator_tag;
-
-    iterator() = default;
-    explicit iterator(const Node& head);
-    [[nodiscard]] bool operator==(const iterator& other) const noexcept;
-    [[nodiscard]] bool operator!=(const iterator& other) const noexcept;
-
-    auto operator++() noexcept -> iterator&;
-    auto operator++(int) noexcept -> iterator;
-
-    [[nodiscard]] auto operator*() noexcept -> const_reference;
-    [[nodiscard]] auto operator->() noexcept -> const_pointer;
-  };
+ private:
+  void init_nodes();
 };
 
 class BinaryBuffer {

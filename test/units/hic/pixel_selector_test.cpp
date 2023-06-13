@@ -86,6 +86,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       }
 
       compareContactRecord(buffer[expected_value.first], expected_value.second);
+      CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
 
     SECTION("v9") {
@@ -104,6 +105,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       }
 
       compareContactRecord(buffer[expected_value.first], expected_value.second);
+      CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
   }
 }

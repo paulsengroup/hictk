@@ -13,86 +13,76 @@
 namespace hictk::hic::internal {
 
 inline BlockGrid::BlockGrid(const std::vector<BlockIndex> &index, std::size_t block_column_count) {
+  if (index.empty()) {
+    return;
+  }
+
   _grid.resize(index.size());
   std::transform(index.begin(), index.end(), _grid.begin(), [&](const BlockIndex &idx) {
-    const auto row = idx.id / block_column_count;
-    const auto col = idx.id % block_column_count;
+    const auto col = idx.id / block_column_count;
+    const auto row = idx.id % block_column_count;
 
-    return Node{std::make_shared<const BlockIndex>(idx), nullptr, nullptr, row, col};
+    return Node{std::make_shared<const BlockIndex>(idx), {}, {}, row, col};
   });
 
   std::sort(_grid.begin(), _grid.end(), [](const Node &n1, const Node &n2) {
-    if (n1.col == n2.col) {
-      return n1.row < n2.row;
+    if (n1.row == n2.row) {
+      return n1.col < n2.col;
     }
-    return n1.col < n2.col;
+    return n1.row < n2.row;
   });
 
-  auto head = _grid.begin();
-  auto tail = _grid.end();
-  while (head != tail) {
-    const Node *next_right{};
-    const Node *next_down{};
+  init_nodes();
+}
 
-    const auto head_row = head->row;
+inline BlockGrid::BlockGrid(const BlockGrid &other) : _grid(other._grid) { init_nodes(); }
+inline BlockGrid::BlockGrid(BlockGrid &&other) noexcept : _grid(std::move(other._grid)) {
+  init_nodes();
+}
 
-    std::for_each(head + 1, tail, [&](const Node &n) {
-      if (!next_right || (n.row == head_row && n.col < next_right->col)) {
-        next_right = &n;
-      }
-
-      if (!next_down || (n.row == head_row + 1 && n.col < next_down->col)) {
-        next_down = &n;
-      }
-    });
-
-    head->next_right = next_right;
-    head->next_down = next_down;
-    ++head;
+inline BlockGrid &BlockGrid::operator=(const BlockGrid &other) {
+  if (this == &other) {
+    return *this;
   }
-}
-
-inline auto BlockGrid::begin() const noexcept -> iterator { return iterator{_grid.front()}; }
-inline auto BlockGrid::end() const noexcept -> iterator { return {}; }
-inline std::size_t BlockGrid::size() const noexcept { return _grid.size(); }
-
-inline BlockGrid::iterator::iterator(const BlockGrid::Node &head)
-    : _node(&head), _current_row(head.block->first_row) {}
-inline bool BlockGrid::iterator::operator==(const BlockGrid::iterator &other) const noexcept {
-  return _node == other._node;
-}
-
-inline bool BlockGrid::iterator::operator!=(const BlockGrid::iterator &other) const noexcept {
-  return !(*this == other);
-}
-
-inline auto BlockGrid::iterator::operator++() noexcept -> iterator & {
-  assert(!!_node);
-  const auto move_right = _current_row != _node->block->last_row;
-  if (move_right) {
-    _node = _node->next_right;
-  } else {
-    _node = _node->next_down;
-    _current_row = !!_node ? _node->block->first_row : (std::numeric_limits<std::size_t>::max)();
-  }
+  _grid = other._grid;
+  init_nodes();
 
   return *this;
 }
 
-inline auto BlockGrid::iterator::operator++(int) noexcept -> iterator {
-  auto it = *this;
-  std::ignore = ++*this;
-  return it;
+inline BlockGrid &BlockGrid::operator=(BlockGrid &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+  _grid = std::move(other._grid);
+  init_nodes();
+
+  return *this;
 }
 
-inline auto BlockGrid::iterator::operator*() noexcept -> const_reference {
-  assert(_node);
-  return *_node;
-}
+inline auto BlockGrid::begin() noexcept -> std::vector<Node>::iterator { return _grid.begin(); }
+inline auto BlockGrid::end() noexcept -> std::vector<Node>::iterator { return _grid.end(); }
 
-inline auto BlockGrid::iterator::operator->() noexcept -> const_pointer {
-  assert(_node);
-  return _node;
+inline auto BlockGrid::begin() const noexcept -> std::vector<Node>::const_iterator {
+  return _grid.begin();
+}
+inline auto BlockGrid::end() const noexcept -> std::vector<Node>::const_iterator {
+  return _grid.end();
+}
+inline std::size_t BlockGrid::size() const noexcept { return _grid.size(); }
+
+inline void BlockGrid::init_nodes() {
+  auto current_row = _grid.begin();
+  for (auto node = _grid.begin(); node != _grid.end(); ++node) {
+    if (node->row != current_row->row) {
+      current_row = node;
+    }
+    node->current_row = current_row;
+
+    const auto row = node->row;
+    node->next_row =
+        std::find_if(node + 1, _grid.end(), [&](const auto &node1) { return node1.row == row; });
+  }
 }
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>

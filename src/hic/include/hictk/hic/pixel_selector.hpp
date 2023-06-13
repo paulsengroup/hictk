@@ -38,20 +38,21 @@ class PixelSelector {
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
-  /*
-    template <typename N>
-    [[nodiscard]] auto begin() const -> iterator<N>;
-    template <typename N>
-    [[nodiscard]] auto end() const -> iterator<N>;
+  template <typename N>
+  [[nodiscard]] auto begin() const -> iterator<N>;
+  template <typename N>
+  [[nodiscard]] auto end() const -> iterator<N>;
 
-    template <typename N>
-    [[nodiscard]] auto cbegin() const -> iterator<N>;
-    template <typename N>
-    [[nodiscard]] auto cend() const -> iterator<N>;
-    */
+  template <typename N>
+  [[nodiscard]] auto cbegin() const -> iterator<N>;
+  template <typename N>
+  [[nodiscard]] auto cend() const -> iterator<N>;
 
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
+
+  template <typename N>
+  std::vector<Pixel<N>> read_all_dbg() const;
 
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
@@ -70,68 +71,68 @@ class PixelSelector {
 
  private:
   [[nodiscard]] SerializedPixel process_interaction(SerializedPixel record) const;
-  /*
+
+ public:
+  template <typename N>
+  class iterator {
+    static_assert(std::is_arithmetic_v<N>);
+    friend PixelSelector;
+    const PixelSelector *_sel{};
+
+    std::shared_ptr<internal::BlockGrid> _grid{};
+
+    decltype(_grid->begin()) _idx{};  // Index, knows where to read the next block
+
+    std::shared_ptr<const internal::InteractionBlock>
+        _blk{};  // block, the actual data. we need to keep a ptr here to make sure the underlying
+                 // storage is not freed
+    std::size_t _bin1_id{};
+    using PixelIt = decltype(_blk->begin()->second.begin());
+    PixelIt _pixel_first{};  // iterator over pixels
+    PixelIt _pixel_last{};   // end iterator over pixels
+
+    mutable Pixel<N> _value{};
+
    public:
-    template <typename N>
-    class iterator {
-      static_assert(std::is_arithmetic_v<N>);
-      friend PixelSelector;
-      const PixelSelector *_sel{};
+    using difference_type = std::ptrdiff_t;
+    using value_type = Pixel<N>;
+    using pointer = value_type *;
+    using const_pointer = const value_type *;
+    using reference = value_type &;
+    using const_reference = const value_type &;
+    using iterator_category = std::forward_iterator_tag;
 
-      std::uint32_t _pos1{};
-      std::uint32_t _pos2{};
+    iterator() = default;
+    explicit iterator(const PixelSelector &sel);
+    [[nodiscard]] static auto at_end(const PixelSelector &sel) -> iterator;
 
-      std::size_t _col_i{};
+    [[nodiscard]] bool operator==(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
 
-      std::shared_ptr<const internal::InteractionBlock> _blk{};
-      internal::InteractionBlock::const_iterator _row{};
+    [[nodiscard]] bool operator<(const iterator &other) const noexcept;
 
-      mutable Pixel<N> _value{};
+    [[nodiscard]] auto operator*() const -> const_reference;
+    // [[nodiscard]] auto operator->() const -> const_pointer;
 
-     public:
-      using difference_type = std::ptrdiff_t;
-      using value_type = Pixel<N>;
-      using pointer = value_type *;
-      using const_pointer = const value_type *;
-      using reference = value_type &;
-      using const_reference = const value_type &;
-      using iterator_category = std::forward_iterator_tag;
+    auto operator++() -> iterator &;
+    auto operator++(int) -> iterator;
 
-      iterator() = default;
-      explicit iterator(const PixelSelector &sel);
-      [[nodiscard]] static auto at_end(const PixelSelector &sel) -> iterator;
+   private:
+    [[nodiscard]] bool discard() const noexcept;
+    [[nodiscard]] bool is_at_end() const noexcept;
+    [[nodiscard]] const BinTable &bins() const noexcept;
+    [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
+    [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
-      [[nodiscard]] bool operator==(const iterator &other) const noexcept;
-      [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
+    [[nodiscard]] std::uint32_t pos1() const noexcept;
+    [[nodiscard]] std::uint32_t pos2() const noexcept;
+    [[nodiscard]] N count() const noexcept;
 
-      [[nodiscard]] bool operator<(const iterator &other) const noexcept;
-      [[nodiscard]] bool operator<=(const iterator &other) const noexcept;
+    void seek_to_next_block();
+    void seek_to_next_overlap() noexcept;
 
-      [[nodiscard]] bool operator>(const iterator &other) const noexcept;
-      [[nodiscard]] bool operator>=(const iterator &other) const noexcept;
-
-      [[nodiscard]] auto operator*() const -> const_reference;
-      // [[nodiscard]] auto operator->() const -> const_pointer;
-
-      auto operator++() -> iterator &;
-      auto operator++(int) -> iterator;
-
-     private:
-      [[nodiscard]] bool discard() const noexcept;
-      [[nodiscard]] bool is_at_end() const noexcept;
-      [[nodiscard]] const BinTable &bins() const noexcept;
-      [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
-      [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
-
-      [[nodiscard]] const internal::InteractionBlock::Row &row() const noexcept;
-      [[nodiscard]] std::uint32_t pos1() const noexcept;
-      [[nodiscard]] std::uint32_t pos2() const noexcept;
-      [[nodiscard]] N count() const noexcept;
-
-      void seek_to_next_block();
-      void seek_to_next_overlap() noexcept;
-    };
-    */
+    void mark_block_as_fully_read();
+  };
 };
 
 }  // namespace hictk::hic
