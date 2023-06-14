@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/hic/cache.hpp"
+#include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/hic_file_stream.hpp"
 #include "hictk/hic/index.hpp"
@@ -18,6 +18,7 @@ namespace hictk::hic {
 
 class PixelSelector {
   mutable internal::HiCBlockReader _reader{};
+
   std::shared_ptr<const internal::HiCFooter> _footer{};
 
   PixelCoordinates _coord1{};
@@ -60,6 +61,11 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
+  [[nodiscard]] MatrixType matrix_type() const noexcept;
+  [[nodiscard]] NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] MatrixUnit unit() const noexcept;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
+
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
@@ -83,12 +89,10 @@ class PixelSelector {
     const PixelSelector *_sel{};
     using BufferT = std::vector<Pixel<N>>;
 
-    std::shared_ptr<internal::BlockGrid> _grid{};
-    decltype(_grid->begin()) _idx{};  // Index, knows where to read the next block
-
     std::size_t _bin1_id{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
+    mutable std::size_t _pixels_processed{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -122,12 +126,8 @@ class PixelSelector {
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
 
-    void seek_to_next_block();
-
-    void mark_block_as_fully_read();
-
-    [[nodiscard]] std::shared_ptr<const internal::InteractionBlock> read_block() noexcept;
-    void read_chunk_of_pixels(const internal::InteractionBlock &blk);
+    void read_next_row();
+    [[nodiscard]] internal::Index find_blocks_overlapping_current_row();
   };
 };
 

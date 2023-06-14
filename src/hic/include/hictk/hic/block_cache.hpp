@@ -13,6 +13,7 @@
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
+#include "hictk/hic/hic_footer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
@@ -76,7 +77,7 @@ class InteractionBlock {
   [[nodiscard]] const Chromosome& chrom1() const noexcept;
   [[nodiscard]] const Chromosome& chrom2() const noexcept;
 
-  [[nodiscard]] auto at(std::uint64_t row) const noexcept -> const_iterator;
+  [[nodiscard]] auto find(std::uint64_t row) const noexcept -> const_iterator;
   [[nodiscard]] auto find_overlap(std::uint64_t first_row, std::uint64_t last_row) const noexcept
       -> Overlap;
 
@@ -141,4 +142,4 @@ class BlockLRUCache {
 
 }  // namespace hictk::hic::internal
 
-#include "../../../cache_impl.hpp"
+#include "../../../block_cache_impl.hpp"

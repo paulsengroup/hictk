@@ -12,79 +12,6 @@
 
 namespace hictk::hic::internal {
 
-inline BlockGrid::BlockGrid(const std::vector<BlockIndex> &index, std::size_t block_column_count) {
-  if (index.empty()) {
-    return;
-  }
-
-  _grid.resize(index.size());
-  std::transform(index.begin(), index.end(), _grid.begin(), [&](const BlockIndex &idx) {
-    const auto col = idx.id / block_column_count;
-    const auto row = idx.id % block_column_count;
-
-    return Node{std::make_shared<const BlockIndex>(idx), {}, {}, row, col};
-  });
-
-  std::sort(_grid.begin(), _grid.end(), [](const Node &n1, const Node &n2) {
-    if (n1.row == n2.row) {
-      return n1.col < n2.col;
-    }
-    return n1.row < n2.row;
-  });
-
-  init_nodes();
-}
-
-inline BlockGrid::BlockGrid(const BlockGrid &other) : _grid(other._grid) { init_nodes(); }
-inline BlockGrid::BlockGrid(BlockGrid &&other) noexcept : _grid(std::move(other._grid)) {
-  init_nodes();
-}
-
-inline BlockGrid &BlockGrid::operator=(const BlockGrid &other) {
-  if (this == &other) {
-    return *this;
-  }
-  _grid = other._grid;
-  init_nodes();
-
-  return *this;
-}
-
-inline BlockGrid &BlockGrid::operator=(BlockGrid &&other) noexcept {
-  if (this == &other) {
-    return *this;
-  }
-  _grid = std::move(other._grid);
-  init_nodes();
-
-  return *this;
-}
-
-inline auto BlockGrid::begin() noexcept -> std::vector<Node>::iterator { return _grid.begin(); }
-inline auto BlockGrid::end() noexcept -> std::vector<Node>::iterator { return _grid.end(); }
-
-inline auto BlockGrid::begin() const noexcept -> std::vector<Node>::const_iterator {
-  return _grid.begin();
-}
-inline auto BlockGrid::end() const noexcept -> std::vector<Node>::const_iterator {
-  return _grid.end();
-}
-inline std::size_t BlockGrid::size() const noexcept { return _grid.size(); }
-
-inline void BlockGrid::init_nodes() {
-  auto current_row = _grid.begin();
-  for (auto node = _grid.begin(); node != _grid.end(); ++node) {
-    if (node->row != current_row->row) {
-      current_row = node;
-    }
-    node->current_row = current_row;
-
-    const auto row = node->row;
-    node->next_row =
-        std::find_if(node + 1, _grid.end(), [&](const auto &node1) { return node1.row == row; });
-  }
-}
-
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline T BinaryBuffer::read() {
   static_assert(sizeof(char) == 1, "");
@@ -104,17 +31,15 @@ inline std::string &BinaryBuffer::reset() noexcept {
   return _buffer;
 }
 
-inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const HiCFooter &footer,
+inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const Index &master_index,
                                       std::shared_ptr<const BinTable> bins_,
                                       std::shared_ptr<BlockLRUCache> block_cache_,
                                       const PixelCoordinates &coords1,
                                       const PixelCoordinates &coords2)
     : _hfs(std::move(hfs)),
-      _index(read_index(*_hfs, footer)),
       _blk_cache(std::move(block_cache_)),
-      _bins(std::move(bins_)) {
-  find_overlapping_blocks(coords1, coords2);
-}
+      _bins(std::move(bins_)),
+      _index(master_index.subset(coords1, coords2)) {}
 
 inline HiCBlockReader::operator bool() const noexcept { return !!_hfs; }
 
@@ -123,7 +48,7 @@ inline const Chromosome &HiCBlockReader::chrom2() const noexcept { return _index
 
 inline const BinTable &HiCBlockReader::bins() const noexcept { return *_bins; }
 
-inline const BlockGrid &HiCBlockReader::grid() const { return _block_grid; }
+inline const Index &HiCBlockReader::index() const noexcept { return _index; }
 
 inline double HiCBlockReader::sum() const noexcept { return _index.matrix_sum(); }
 
@@ -134,21 +59,14 @@ inline double HiCBlockReader::avg() const noexcept {
   return sum() / double(num_bins1 * num_bins2);
 }
 
-inline void HiCBlockReader::find_overlapping_blocks(const hictk::PixelCoordinates &coords1,
-                                                    const hictk::PixelCoordinates &coords2) {
-  std::vector<BlockIndex> _blocks_idx;
-  _index.map_2d_query_to_blocks(coords1, coords2, _blocks_idx);
-  _block_grid = BlockGrid(_blocks_idx, _index.block_column_count());
-}
-
 inline Index HiCBlockReader::read_index(HiCFileStream &hfs, const HiCFooter &footer) {
   if (footer.fileOffset() == -1) {
     // Footer does not exist. However, query may be valid
     return {};
   }
 
-  return hfs.readBlockMap(footer.fileOffset(), footer.chrom1(), footer.chrom2(), footer.unit(),
-                          footer.resolution());
+  return hfs.read_index(footer.fileOffset(), footer.chrom1(), footer.chrom2(), footer.unit(),
+                        footer.resolution());
 }
 
 inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const BlockIndex &idx) {
@@ -158,7 +76,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const BlockI
 
   assert(_blk_cache);
   assert(_bins);
-  if (auto it = _blk_cache->find(idx.id); it != _blk_cache->end()) {
+  if (auto it = _blk_cache->find(idx.id()); it != _blk_cache->end()) {
     return it->second;
   }
 
@@ -212,7 +130,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const BlockI
       HICTK_UNREACHABLE_CODE;
   }
 
-  auto it = _blk_cache->emplace(idx.id, InteractionBlock{idx.id, _tmp_buffer});
+  auto it = _blk_cache->emplace(idx.id(), InteractionBlock{idx.id(), _tmp_buffer});
   return it.first->second;
 }
 

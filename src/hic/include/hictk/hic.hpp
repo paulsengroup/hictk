@@ -12,9 +12,11 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
+#include "hictk/hic/footer_cache.hpp"
 #include "hictk/hic/hic_file_stream.hpp"
 #include "hictk/hic/hic_footer.hpp"
 #include "hictk/hic/hic_header.hpp"
@@ -22,14 +24,10 @@
 #include "hictk/hic/pixel_selector.hpp"
 
 namespace hictk::hic {
+
 class HiCFile {
-  // clang-format off
-    using FooterCacheT =
-        std::unordered_map<internal::HiCFooterMetadata,
-                           std::shared_ptr<const internal::HiCFooter>>;
-  // clang-format on
   mutable std::shared_ptr<internal::HiCFileStream> _fs{};
-  mutable FooterCacheT _footers{};
+  mutable internal::FooterCache _footers{};
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};
   mutable std::shared_ptr<internal::BlockLRUCache> _block_cache{};

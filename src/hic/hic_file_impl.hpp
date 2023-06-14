@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "hictk/hic/common.hpp"
+#include "hictk/hic/hic_footer.hpp"
 
 namespace hictk::hic {
 
@@ -67,14 +68,13 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
                                              _fs->header().chromosomes.at(chrom2_id)};
   auto it = _footers.find(metadata);
   if (it != _footers.end()) {
-    return it->second;
+    return *it;
   }
-  auto footer = std::make_shared<const internal::HiCFooter>(
-      _fs->readFooter(chrom1_id, chrom2_id, matrix_type, norm, unit, resolution));
-  auto node = _footers.emplace(std::move(metadata), std::move(footer));
 
-  assert(node.second);
-  return node.first->second;
+  auto [node, _] =
+      _footers.emplace(_fs->read_footer(chrom1_id, chrom2_id, matrix_type, norm, unit, resolution));
+
+  return *node;
 }
 /*
 inline internal::MatrixSelector HiCFile::get_matrix_selector(const Chromosome& chrom,
@@ -166,7 +166,22 @@ inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t star
       internal::HiCFooterMetadata metadata{url(),        _type,  norm,   _unit,
                                            resolution(), chrom1, chrom2, -1};
 
-      return std::make_shared<const internal::HiCFooter>(std::move(metadata));
+      if (metadata.fileOffset == -1) {
+        return std::make_shared<const internal::HiCFooter>(internal::Index{metadata.chrom1,
+                                                                           metadata.chrom2,
+                                                                           metadata.unit,
+                                                                           metadata.resolution,
+                                                                           _fs->version(),
+                                                                           1,
+                                                                           1,
+                                                                           0,
+                                                                           {}},
+                                                           std::move(metadata));
+      }
+      return std::make_shared<const internal::HiCFooter>(
+          _fs->read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
+                          metadata.resolution),
+          std::move(metadata));
     }
   }();
 

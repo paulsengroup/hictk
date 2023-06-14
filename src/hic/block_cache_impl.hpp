@@ -9,6 +9,8 @@
 #include <numeric>
 #include <vector>
 
+#include "hictk/hic/hic_footer.hpp"
+
 namespace hictk::hic::internal {
 
 constexpr bool operator<(const InteractionBlock &a, const InteractionBlock &b) noexcept {
@@ -111,14 +113,14 @@ inline auto InteractionBlock::end() const noexcept -> const_iterator { return _i
 
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
-inline auto InteractionBlock::at(std::uint64_t row) const noexcept -> const_iterator {
-  return _interactions.lower_bound(row);
+inline auto InteractionBlock::find(std::uint64_t row) const noexcept -> const_iterator {
+  return _interactions.find(row);
 }
 
 inline auto InteractionBlock::find_overlap(std::uint64_t first_row,
                                            std::uint64_t last_row) const noexcept -> Overlap {
   assert(first_row <= last_row);
-  return {at(first_row), _interactions.upper_bound(last_row)};
+  return {_interactions.lower_bound(first_row), _interactions.upper_bound(last_row)};
 }
 
 inline bool InteractionBlock::has_overlap(std::uint64_t first_row,

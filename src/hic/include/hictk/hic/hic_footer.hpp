@@ -5,11 +5,13 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
+#include "hictk/hic/index.hpp"
 
 namespace hictk::hic::internal {
 struct HiCFooterMetadata {
@@ -28,6 +30,7 @@ struct HiCFooterMetadata {
 };
 
 class HiCFooter {
+  Index _index{};
   HiCFooterMetadata _metadata{};
   std::vector<double> _expectedValues{};
   std::vector<double> _c1Norm{};
@@ -35,7 +38,7 @@ class HiCFooter {
 
  public:
   HiCFooter() = default;
-  explicit HiCFooter(HiCFooterMetadata metadata_) noexcept;
+  explicit HiCFooter(Index index_, HiCFooterMetadata metadata_) noexcept;
 
   constexpr explicit operator bool() const noexcept;
   bool operator==(const HiCFooter &other) const noexcept;
@@ -43,6 +46,7 @@ class HiCFooter {
 
   [[nodiscard]] constexpr const HiCFooterMetadata &metadata() const noexcept;
   [[nodiscard]] constexpr HiCFooterMetadata &metadata() noexcept;
+  [[nodiscard]] const Index &index() const noexcept;
 
   [[nodiscard]] constexpr const std::string &url() const noexcept;
   [[nodiscard]] constexpr MatrixType matrix_type() const noexcept;
@@ -63,4 +67,13 @@ class HiCFooter {
 };
 }  // namespace hictk::hic::internal
 
+template <>
+struct std::hash<hictk::hic::internal::HiCFooterMetadata> {
+  inline std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept;
+};
+
+template <>
+struct std::hash<hictk::hic::internal::HiCFooter> {
+  inline std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
+};
 #include "../../../hic_footer_impl.hpp"

@@ -178,9 +178,9 @@ inline auto HiCFileStream::init_decompressor() -> Decompressor {
   return zs;
 }
 
-inline Index HiCFileStream::readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1,
-                                         const Chromosome &chrom2, MatrixUnit wantedUnit,
-                                         std::int64_t wantedResolution) {
+inline Index HiCFileStream::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
+                                       const Chromosome &chrom2, MatrixUnit wantedUnit,
+                                       std::int64_t wantedResolution) {
   _fs->seekg(fileOffset);
 
   [[maybe_unused]] const auto c1i = _fs->read<std::int32_t>();
@@ -199,8 +199,8 @@ inline Index HiCFileStream::readBlockMap(std::int64_t fileOffset, const Chromoso
     std::ignore = _fs->read<float>();  // percent95
 
     const auto foundResolution = static_cast<std::int64_t>(_fs->read<std::int32_t>());
-    const auto blockBinCount = _fs->read<std::int32_t>();
-    const auto blockColumnCount = _fs->read<std::int32_t>();
+    const auto blockBinCount = static_cast<std::size_t>(_fs->read<std::int32_t>());
+    const auto blockColumnCount = static_cast<std::size_t>(_fs->read<std::int32_t>());
 
     const auto nBlocks = static_cast<std::size_t>(_fs->read<std::int32_t>());
 
@@ -212,17 +212,15 @@ inline Index HiCFileStream::readBlockMap(std::int64_t fileOffset, const Chromoso
         const auto size = static_cast<std::size_t>(_fs->read<std::int32_t>());
         assert(position + size < _fs->size());
         if (size > 0) {
-          buffer.emplace(BlockIndex{block_id, position, size, 0, 0, 0, 0});
+          buffer.emplace(block_id, position, size, blockColumnCount);
         }
       }
 
-      return {chrom1,
-              chrom2,
-              std::move(buffer),
-              version(),
-              static_cast<std::size_t>(blockBinCount),
-              static_cast<std::size_t>(blockColumnCount),
-              static_cast<double>(sumCount)};
+      return {chrom1,           chrom2,
+              wantedUnit,       static_cast<std::uint32_t>(wantedResolution),
+              version(),        blockBinCount,
+              blockColumnCount, static_cast<double>(sumCount),
+              std::move(buffer)};
     }
 
     constexpr std::int64_t blockSize = sizeof(int32_t) + sizeof(int64_t) + sizeof(int32_t);
@@ -316,13 +314,13 @@ inline void HiCFileStream::readAndInflate(const BlockIndex &idx, std::string &pl
     // _strbuff is used to store compressed data
     // plainTextBuffer is used to store decompressed data
     assert(_decompressor);
-    assert(idx.compressed_size_bytes > 0);
-    const auto buffSize = static_cast<std::size_t>(idx.compressed_size_bytes);
+    assert(idx.compressed_size_bytes() > 0);
+    const auto buffSize = idx.compressed_size_bytes();
 
     plainTextBuffer.reserve(buffSize * 3);
     plainTextBuffer.resize(plainTextBuffer.capacity());
 
-    _fs->seekg(static_cast<std::int64_t>(idx.file_offset));
+    _fs->seekg(static_cast<std::int64_t>(idx.file_offset()));
     _fs->read(_strbuff, buffSize);
 
     std::size_t bytes_decompressed{};
@@ -346,7 +344,7 @@ inline void HiCFileStream::readAndInflate(const BlockIndex &idx, std::string &pl
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to decompress block at pos {}: {}"),
-                                         idx.file_offset, e.what()));
+                                         idx.file_offset(), e.what()));
   }
 }
 
@@ -359,12 +357,10 @@ inline bool HiCFileStream::checkMagicString(std::string url) noexcept {
   }
 }
 
-inline HiCFooter HiCFileStream::readFooter(const std::uint32_t chrom1_id,
-                                           const std::uint32_t chrom2_id,
-                                           const MatrixType matrix_type,
-                                           const NormalizationMethod wanted_norm,
-                                           const MatrixUnit wanted_unit,
-                                           const std::uint32_t wanted_resolution) {
+inline HiCFooter HiCFileStream::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                            MatrixType matrix_type, NormalizationMethod wanted_norm,
+                                            MatrixUnit wanted_unit,
+                                            std::uint32_t wanted_resolution) {
   assert(chrom1_id <= chrom2_id);
   assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), wanted_resolution) !=
          _header->resolutions.end());
@@ -373,21 +369,16 @@ inline HiCFooter HiCFileStream::readFooter(const std::uint32_t chrom1_id,
   using NM = NormalizationMethod;
 
   // clang-format off
-    HiCFooter footer{
-        HiCFooterMetadata{_fs->url(),
-                          matrix_type,
-                          wanted_norm,
-                          wanted_unit,
-                          wanted_resolution,
-                          _header->chromosomes.at(chrom1_id),
-                          _header->chromosomes.at(chrom2_id)}
-        };
+    HiCFooterMetadata metadata{
+        _fs->url(),
+        matrix_type,
+        wanted_norm,
+        wanted_unit,
+        wanted_resolution,
+        _header->chromosomes.at(chrom1_id),
+        _header->chromosomes.at(chrom2_id)
+    };
   // clang-format on
-
-  auto &metadata = footer.metadata();
-  auto &expectedValues = footer.expectedValues();
-  auto &c1Norm = footer.c1Norm();
-  auto &c2Norm = footer.c2Norm();
 
   const auto key = fmt::format(FMT_COMPILE("{}_{}"), chrom1_id, chrom2_id);
 
@@ -410,11 +401,19 @@ inline HiCFooter HiCFileStream::readFooter(const std::uint32_t chrom1_id,
         wanted_resolution, wanted_unit));
   }
 
+  HiCFooter footer{read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
+                              metadata.resolution),
+                   std::move(metadata)};
+
   if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||
       ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE &&
        chrom1_id != chrom2_id)) {
     return footer;  // no need to read wanted_norm vector index
   }
+
+  auto &expectedValues = footer.expectedValues();
+  auto &c1Norm = footer.c1Norm();
+  auto &c2Norm = footer.c2Norm();
 
   // read in and ignore expected value maps; don't store; reading these to
   // get to wanted_norm vector index

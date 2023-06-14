@@ -22,17 +22,6 @@
 
 namespace hictk::hic::internal {
 
-// TODO REMOVE
-// struct BlockIndex {
-//   phmap::btree_map<std::size_t, indexEntry> blocks{};
-//   std::int32_t blockBinCount{};
-//   std::int32_t blockColumnCount{};
-//   double sumCount{};
-//
-//   [[nodiscard]] indexEntry at(std::size_t id) const noexcept;
-//   [[nodiscard]] indexEntry at(std::size_t row, std::size_t col) const noexcept;
-// };
-
 class HiCFileStream {
   using Decompressor = UniquePtrWithDeleter<libdeflate_decompressor>;
   std::shared_ptr<filestream::FileStream> _fs{};
@@ -50,18 +39,18 @@ class HiCFileStream {
 
   // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
   // resolution.
-  [[nodiscard]] HiCFooter readFooter(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                     MatrixType matrix_type, NormalizationMethod wanted_norm,
-                                     MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+  [[nodiscard]] HiCFooter read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                      MatrixType matrix_type, NormalizationMethod wanted_norm,
+                                      MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
 
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static NormalizationMethod readNormalizationMethod(filestream::FileStream &fs,
                                                                    std::string &buff);
   [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream &fs, std::string &buff);
 
-  [[nodiscard]] Index readBlockMap(std::int64_t fileOffset, const Chromosome &chrom1,
-                                   const Chromosome &chrom2, MatrixUnit wantedUnit,
-                                   std::int64_t wantedResolution);
+  [[nodiscard]] Index read_index(std::int64_t fileOffset, const Chromosome &chrom1,
+                                 const Chromosome &chrom2, MatrixUnit wantedUnit,
+                                 std::int64_t wantedResolution);
   void readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer);
 
   [[nodiscard]] static bool checkMagicString(std::string url) noexcept;
