@@ -17,10 +17,10 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-const auto pathV8 =
-    (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();  // NOLINT(cert-err58-cpp)
-const auto pathV9 =
-    (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();  // NOLINT(cert-err58-cpp)
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("readHeader (v8)", "[hic][v8][short]") {

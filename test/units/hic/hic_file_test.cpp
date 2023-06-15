@@ -15,9 +15,10 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-const auto pathV8 =
-    (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();              // NOLINT(cert-err58-cpp)
-const auto path_binary = (hictk::test::datadir / "data.zip").string();  // NOLINT(cert-err58-cpp)
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto path_binary = (hictk::test::datadir / "data.zip").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("utils: is_hic_file", "[hic][short]") {
@@ -83,12 +84,12 @@ TEST_CASE("HiCFile footer cache", "[hic][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiCFile get_matrix_selector", "[hic][short]") {
   constexpr auto norm = NormalizationMethod::NONE;
-  HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
+  const HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
 
   REQUIRE(f.chromosomes().size() == 9);
 
-  const auto chrom1 = "chr2L";
-  const auto chrom2 = "chr2R";
+  const auto* chrom1 = "chr2L";
+  const auto* chrom2 = "chr2R";
   SECTION("intra-chromosomal") {
     auto sel = f.fetch(chrom1, norm);
     CHECK(sel.chrom1() == chrom1);

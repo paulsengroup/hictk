@@ -19,13 +19,15 @@ inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err
 template <typename N>
 using Pixel = hictk::Pixel<N>;
 
-const auto pathV8 =
-    (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();  // NOLINT(cert-err58-cpp)
-const auto pathV9 =
-    (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();              // NOLINT(cert-err58-cpp)
-const auto path_binary = (hictk::test::datadir / "data.zip").string();  // NOLINT(cert-err58-cpp)
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
+
+// NOLINTNEXTLINE(cert-err58-cpp)
+const auto path_binary = (hictk::test::datadir / "data.zip").string();
+
 template <typename N>
 static std::vector<hictk::Pixel<N>> head(const std::vector<hictk::Pixel<N>>& buffer,
                                          std::size_t n = 5) {
@@ -36,8 +38,7 @@ static std::vector<hictk::Pixel<N>> head(const std::vector<hictk::Pixel<N>>& buf
   return slice;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static std::vector<hictk::Pixel<N>> tail(const std::vector<hictk::Pixel<N>>& buffer,
                                          std::size_t n = 5) {
   REQUIRE(buffer.size() >= n);
@@ -54,8 +55,8 @@ static N sumCounts(const std::vector<hictk::Pixel<N>>& buffer) {
                            return accumulator + static_cast<N>(p.count);
                          });
 }
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-template <typename N>
+
+template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_t end1,
                                               std::uint32_t start2, std::uint32_t end2,
                                               const std::vector<Pixel<N>>& buffer) {
@@ -70,8 +71,7 @@ static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void compareContactRecord(const hictk::Pixel<N>& r1, const SerializedPixel& r2) {
   CHECK(r1.coords.bin1.start() == r2.bin1_id);
   CHECK(r1.coords.bin2.start() == r2.bin2_id);
