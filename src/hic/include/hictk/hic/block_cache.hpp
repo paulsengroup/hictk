@@ -14,7 +14,7 @@
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/hic_footer.hpp"
+#include "hictk/hic/footer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {

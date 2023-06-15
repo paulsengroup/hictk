@@ -13,13 +13,13 @@
 #include <vector>
 
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/hic_footer.hpp"
+#include "hictk/hic/footer.hpp"
 
 namespace hictk::hic {
 
 inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType type_,
                         MatrixUnit unit_, std::uint64_t block_cache_capacity)
-    : _fs(std::make_shared<internal::HiCFileStream>(std::move(url_))),
+    : _fs(std::make_shared<internal::HiCFileReader>(std::move(url_))),
       _type(type_),
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockLRUCache>(block_cache_capacity)),

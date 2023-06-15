@@ -15,18 +15,18 @@
 #include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
+#include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/filestream.hpp"
+#include "hictk/hic/footer.hpp"
 #include "hictk/hic/footer_cache.hpp"
-#include "hictk/hic/hic_file_stream.hpp"
-#include "hictk/hic/hic_footer.hpp"
-#include "hictk/hic/hic_header.hpp"
+#include "hictk/hic/header.hpp"
 // #include "hictk/hic/hic_matrix_selector.hpp"
 #include "hictk/hic/pixel_selector.hpp"
 
 namespace hictk::hic {
 
 class HiCFile {
-  mutable std::shared_ptr<internal::HiCFileStream> _fs{};
+  mutable std::shared_ptr<internal::HiCFileReader> _fs{};
   mutable internal::FooterCache _footers{};
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};

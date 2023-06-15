@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/hic/hic_file_stream.hpp"
-
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <string>
+
+#include "hictk/hic/file_reader.hpp"
 
 using namespace hictk::hic;
 
@@ -29,7 +29,7 @@ TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
-  const auto header = internal::HiCFileStream(pathV8).header();
+  const auto header = internal::HiCFileReader(pathV8).header();
   CHECK(header.url == pathV8);
   CHECK(header.masterIndexOffset == 131515430);
   CHECK(header.genomeID == genomeID);
@@ -51,7 +51,7 @@ TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
-  const auto header = internal::HiCFileStream(pathV9).header();
+  const auto header = internal::HiCFileReader(pathV9).header();
 
   CHECK(header.url == pathV9);
   CHECK(header.masterIndexOffset == 130706734);
@@ -69,7 +69,7 @@ TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("read_footer (v8)", "[hic][v8][short]") {
-  internal::HiCFileStream s(pathV8);
+  internal::HiCFileReader s(pathV8);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");
   // first 5 expected values
@@ -193,7 +193,7 @@ TEST_CASE("read_footer (v8)", "[hic][v8][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("read_footer (v9)", "[hic][v9][short]") {
-  internal::HiCFileStream s(pathV9);
+  internal::HiCFileReader s(pathV9);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");
   // first 5 expected values

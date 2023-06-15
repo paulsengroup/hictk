@@ -16,10 +16,10 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/block_reader_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_stream_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/file_reader_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_utils_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_footer_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_header_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/footer_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/header_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/index_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_impl.hpp)
 

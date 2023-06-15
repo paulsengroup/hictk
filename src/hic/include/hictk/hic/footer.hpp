@@ -76,4 +76,4 @@ template <>
 struct std::hash<hictk::hic::internal::HiCFooter> {
   inline std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
 };
-#include "../../../hic_footer_impl.hpp"
+#include "../../../footer_impl.hpp"

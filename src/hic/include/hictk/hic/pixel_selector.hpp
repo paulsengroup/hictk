@@ -12,7 +12,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/hic_file_stream.hpp"
+#include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
 
@@ -32,13 +32,13 @@ class PixelSelector {
   class iterator;
 
   PixelSelector() = delete;
-  PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
+  PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockLRUCache> cache_,
                 std::shared_ptr<const BinTable> bins_, PixelCoordinates coords,
                 std::size_t read_all_at_once_threshold = 0) noexcept;
 
-  PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
+  PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockLRUCache> cache_,
                 std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,

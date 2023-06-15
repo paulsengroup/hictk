@@ -22,11 +22,11 @@
 
 namespace hictk::hic::internal {
 
-inline HiCFileStream::HiCFileStream(std::string url)
-    : _fs(std::make_shared<filestream::FileStream>(HiCFileStream::openStream(std::move(url)))),
-      _header(std::make_shared<const HiCHeader>(HiCFileStream::readHeader(*_fs))) {}
+inline HiCFileReader::HiCFileReader(std::string url)
+    : _fs(std::make_shared<filestream::FileStream>(HiCFileReader::openStream(std::move(url)))),
+      _header(std::make_shared<const HiCHeader>(HiCFileReader::readHeader(*_fs))) {}
 
-inline filestream::FileStream HiCFileStream::openStream(std::string url) {
+inline filestream::FileStream HiCFileReader::openStream(std::string url) {
   try {
     return filestream::FileStream(url);
   } catch (const std::exception &e) {
@@ -34,20 +34,20 @@ inline filestream::FileStream HiCFileStream::openStream(std::string url) {
   }
 }
 
-inline const std::string &HiCFileStream::url() const noexcept { return _fs->url(); }
-inline const HiCHeader &HiCFileStream::header() const noexcept { return *_header; }
+inline const std::string &HiCFileReader::url() const noexcept { return _fs->url(); }
+inline const HiCHeader &HiCFileReader::header() const noexcept { return *_header; }
 
-inline std::int32_t HiCFileStream::version() const noexcept {
+inline std::int32_t HiCFileReader::version() const noexcept {
   assert(_header->version != -1);
   return _header->version;
 }
 
-inline void HiCFileStream::discardExpectedVector(std::int64_t nValues) {
+inline void HiCFileReader::discardExpectedVector(std::int64_t nValues) {
   const std::int64_t elementSize = version() > 8 ? sizeof(float) : sizeof(double);
   _fs->seekg(nValues * elementSize, std::ios::cur);
 }
 
-inline std::vector<double> HiCFileStream::readExpectedVector(std::int64_t nValues) {
+inline std::vector<double> HiCFileReader::readExpectedVector(std::int64_t nValues) {
   std::vector<double> initialExpectedValues(static_cast<std::size_t>(nValues));
   if (version() > 8) {
     std::vector<float> tmpbuff(static_cast<std::size_t>(nValues));
@@ -64,7 +64,7 @@ inline std::vector<double> HiCFileStream::readExpectedVector(std::int64_t nValue
   return initialExpectedValues;
 }
 
-inline std::vector<double> HiCFileStream::readNormalizationFactors(std::uint32_t wantedChrom) {
+inline std::vector<double> HiCFileReader::readNormalizationFactors(std::uint32_t wantedChrom) {
   const auto nFactors = _fs->read<std::int32_t>();
   std::vector<double> normFactors{};
   auto readFactor = [this]() {
@@ -84,7 +84,7 @@ inline std::vector<double> HiCFileStream::readNormalizationFactors(std::uint32_t
   return normFactors;
 }
 
-inline void HiCFileStream::applyNormalizationFactors(std::vector<double> &expectedValues,
+inline void HiCFileReader::applyNormalizationFactors(std::vector<double> &expectedValues,
                                                      const std::vector<double> &normFactors) {
   if (normFactors.empty() || expectedValues.empty()) {
     return;
@@ -94,7 +94,7 @@ inline void HiCFileStream::applyNormalizationFactors(std::vector<double> &expect
                    [&](auto n) { return n / factor; });
   }
 }
-inline std::vector<double> HiCFileStream::readNormalizationVector(indexEntry cNormEntry,
+inline std::vector<double> HiCFileReader::readNormalizationVector(indexEntry cNormEntry,
                                                                   std::size_t numValuesExpected) {
   _fs->seekg(cNormEntry.position);
   const auto numValues = static_cast<std::size_t>(readNValues());
@@ -121,54 +121,54 @@ inline std::vector<double> HiCFileStream::readNormalizationVector(indexEntry cNo
   return buffer;
 }
 
-inline void HiCFileStream::discardNormalizationFactors(std::uint32_t wantedChrom) {
+inline void HiCFileReader::discardNormalizationFactors(std::uint32_t wantedChrom) {
   std::ignore = readNormalizationFactors(wantedChrom);
 }
 
-inline MatrixType HiCFileStream::readMatrixType(filestream::FileStream &fs, std::string &buff) {
+inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseMatrixTypeStr(buff);
 }
 
-inline NormalizationMethod HiCFileStream::readNormalizationMethod(filestream::FileStream &fs,
+inline NormalizationMethod HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
                                                                   std::string &buff) {
   fs.getline(buff, '\0');
   return ParseNormStr(buff);
 }
 
-inline MatrixUnit HiCFileStream::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
+inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseUnitStr(buff);
 }
 
-inline MatrixType HiCFileStream::readMatrixType() {
-  return HiCFileStream::readMatrixType(*_fs, _strbuff);
+inline MatrixType HiCFileReader::readMatrixType() {
+  return HiCFileReader::readMatrixType(*_fs, _strbuff);
 }
 
-inline NormalizationMethod HiCFileStream::readNormalizationMethod() {
-  return HiCFileStream::readNormalizationMethod(*_fs, _strbuff);
+inline NormalizationMethod HiCFileReader::readNormalizationMethod() {
+  return HiCFileReader::readNormalizationMethod(*_fs, _strbuff);
 }
 
-inline MatrixUnit HiCFileStream::readMatrixUnit() {
-  return HiCFileStream::readMatrixUnit(*_fs, _strbuff);
+inline MatrixUnit HiCFileReader::readMatrixUnit() {
+  return HiCFileReader::readMatrixUnit(*_fs, _strbuff);
 }
 
-inline std::int64_t HiCFileStream::readNValues() {
+inline std::int64_t HiCFileReader::readNValues() {
   if (version() > 8) {
     return _fs->read<std::int64_t>();
   }
   return _fs->read<std::int32_t>();
 }
 
-inline bool HiCFileStream::checkMagicString(filestream::FileStream &fs) {
+inline bool HiCFileReader::checkMagicString(filestream::FileStream &fs) {
   return fs.getline('\0') == "HIC";
 }
 
-inline std::int64_t HiCFileStream::masterOffset() const noexcept {
+inline std::int64_t HiCFileReader::masterOffset() const noexcept {
   return _header->masterIndexOffset;
 }
 
-inline auto HiCFileStream::init_decompressor() -> Decompressor {
+inline auto HiCFileReader::init_decompressor() -> Decompressor {
   Decompressor zs(libdeflate_alloc_decompressor(),
                   [](auto *ptr) { libdeflate_free_decompressor(ptr); });
   if (!zs) {
@@ -178,7 +178,7 @@ inline auto HiCFileStream::init_decompressor() -> Decompressor {
   return zs;
 }
 
-inline Index HiCFileStream::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
+inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
                                        const Chromosome &chrom2, MatrixUnit wantedUnit,
                                        std::int64_t wantedResolution) {
   _fs->seekg(fileOffset);
@@ -232,11 +232,11 @@ inline Index HiCFileStream::read_index(std::int64_t fileOffset, const Chromosome
                   chrom1.name(), chrom2.name(), wantedUnit, wantedResolution));
 }
 
-inline bool HiCFileStream::checkMagicString() { return checkMagicString(*_fs); }
+inline bool HiCFileReader::checkMagicString() { return checkMagicString(*_fs); }
 
 // reads the header, storing the positions of the normalization vectors and returning the
 // masterIndexPosition pointer
-inline HiCHeader HiCFileStream::readHeader(filestream::FileStream &fs) {
+inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
   if (!checkMagicString(fs)) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("Hi-C magic string is missing. {} does not appear to be a hic file"), fs.url()));
@@ -309,7 +309,7 @@ inline HiCHeader HiCFileStream::readHeader(filestream::FileStream &fs) {
   return header;
 }
 
-inline void HiCFileStream::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
+inline void HiCFileReader::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
   try {
     // _strbuff is used to store compressed data
     // plainTextBuffer is used to store decompressed data
@@ -348,16 +348,16 @@ inline void HiCFileStream::readAndInflate(const BlockIndex &idx, std::string &pl
   }
 }
 
-inline bool HiCFileStream::checkMagicString(std::string url) noexcept {
+inline bool HiCFileReader::checkMagicString(std::string url) noexcept {
   try {
-    filestream::FileStream fs(HiCFileStream::openStream(std::move(url)));
-    return HiCFileStream::checkMagicString(fs);
+    filestream::FileStream fs(HiCFileReader::openStream(std::move(url)));
+    return HiCFileReader::checkMagicString(fs);
   } catch (...) {
     return false;
   }
 }
 
-inline HiCFooter HiCFileStream::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
                                             MatrixType matrix_type, NormalizationMethod wanted_norm,
                                             MatrixUnit wanted_unit,
                                             std::uint32_t wanted_resolution) {

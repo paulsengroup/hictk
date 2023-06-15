@@ -31,4 +31,4 @@ struct HiCHeader {
 
 }  // namespace hictk::hic::internal
 
-#include "../../../hic_header_impl.hpp"
+#include "../../../header_impl.hpp"

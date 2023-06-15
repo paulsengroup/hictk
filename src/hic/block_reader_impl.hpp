@@ -32,7 +32,7 @@ inline std::string &BinaryBuffer::reset() noexcept {
   return _buffer;
 }
 
-inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const Index &master_index,
+inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index &master_index,
                                       std::shared_ptr<const BinTable> bins_,
                                       std::shared_ptr<BlockLRUCache> block_cache_)
     : _hfs(std::move(hfs)),
@@ -58,7 +58,7 @@ inline double HiCBlockReader::avg() const noexcept {
   return sum() / double(num_bins1 * num_bins2);
 }
 
-inline Index HiCBlockReader::read_index(HiCFileStream &hfs, const HiCFooter &footer) {
+inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &footer) {
   if (footer.fileOffset() == -1) {
     // Footer does not exist. However, query may be valid
     return {};

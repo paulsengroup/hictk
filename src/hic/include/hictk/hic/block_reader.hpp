@@ -12,7 +12,7 @@
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/block_cache.hpp"
-#include "hictk/hic/hic_file_stream.hpp"
+#include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
 
 namespace hictk::hic::internal {
@@ -34,7 +34,7 @@ class BinaryBuffer {
 };
 
 class HiCBlockReader {
-  std::shared_ptr<HiCFileStream> _hfs{};
+  std::shared_ptr<HiCFileReader> _hfs{};
   std::shared_ptr<BlockLRUCache> _blk_cache{};  // This should be passed in by file. Key should be
                                                 // changed from size_t to {chrom1, chrom2, size_t}
   // We need the entire bin table in order to map pixels to abs bin ids
@@ -46,7 +46,7 @@ class HiCBlockReader {
 
  public:
   HiCBlockReader() = default;
-  HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const Index& master_index,
+  HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index& master_index,
                  std::shared_ptr<const BinTable> bins_,
                  std::shared_ptr<BlockLRUCache> block_cache_);
 
@@ -63,7 +63,7 @@ class HiCBlockReader {
   [[nodiscard]] std::shared_ptr<const InteractionBlock> read(const BlockIndex& idx);
 
  private:
-  [[nodiscard]] static Index read_index(HiCFileStream& hfs, const HiCFooter& footer);
+  [[nodiscard]] static Index read_index(HiCFileReader& hfs, const HiCFooter& footer);
   static void read_dispatcher_type1_block(bool i16Bin1, bool i16Bin2, bool i16Counts,
                                           std::int32_t bin1Offset, std::int32_t bin2Offset,
                                           BinaryBuffer& src,

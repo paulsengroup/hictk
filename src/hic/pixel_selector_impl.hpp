@@ -13,13 +13,13 @@
 #include "hictk/common.hpp"
 #include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/hic_file_stream.hpp"
-#include "hictk/hic/hic_footer.hpp"
+#include "hictk/hic/file_reader.hpp"
+#include "hictk/hic/footer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic {
 
-inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
+inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coords,
@@ -27,7 +27,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
                     coords, std::move(coords), read_all_at_once_thresh) {}
 
-inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
+inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,

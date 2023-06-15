@@ -11,7 +11,7 @@
 #include <numeric>
 #include <vector>
 
-#include "hictk/hic/hic_footer.hpp"
+#include "hictk/hic/footer.hpp"
 
 namespace hictk::hic::internal {
 

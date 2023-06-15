@@ -15,13 +15,13 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
-#include "hictk/hic/hic_footer.hpp"
-#include "hictk/hic/hic_header.hpp"
+#include "hictk/hic/footer.hpp"
+#include "hictk/hic/header.hpp"
 #include "hictk/hic/index.hpp"
 
 namespace hictk::hic::internal {
 
-class HiCFileStream {
+class HiCFileReader {
   using Decompressor = UniquePtrWithDeleter<libdeflate_decompressor>;
   std::shared_ptr<filestream::FileStream> _fs{};
   std::shared_ptr<const HiCHeader> _header{};
@@ -29,8 +29,8 @@ class HiCFileStream {
   Decompressor _decompressor{init_decompressor()};
 
  public:
-  HiCFileStream() = default;
-  explicit HiCFileStream(std::string url);
+  HiCFileReader() = default;
+  explicit HiCFileReader(std::string url);
   [[nodiscard]] inline const std::string &url() const noexcept;
   [[nodiscard]] const HiCHeader &header() const noexcept;
 
@@ -83,4 +83,4 @@ class HiCFileStream {
 };
 }  // namespace hictk::hic::internal
 
-#include "../../../hic_file_stream_impl.hpp"
+#include "../../../file_reader_impl.hpp"
