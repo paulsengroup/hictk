@@ -78,7 +78,7 @@ inline internal::InteractionBlock::ThinPixel PixelSelector::transform_pixel(
       normalization() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
-    const auto bin2 = static_cast<std::size_t>(pixel.bin2_id);
+    const auto bin2 = pixel.bin2_id;
     assert(bin1 < c1Norm.size());
     assert(bin2 < c2Norm.size());
     pixel.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
