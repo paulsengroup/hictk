@@ -116,11 +116,12 @@ class Index {
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
-  void _map_2d_query_to_blocks(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
-                               std::vector<BlockIndex>& buffer) const;
-  void _map_2d_query_to_blocks_intra_v9plus(const PixelCoordinates& coords1,
-                                            const PixelCoordinates& coords2,
-                                            std::vector<BlockIndex>& buffer) const;
+  void map_2d_query_to_blocks(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
+                              std::vector<BlockIndex>& buffer) const;
+  void generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
+                           bool is_intra) const;
+  void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
+                                        std::size_t bin4) const;
 };
 
 }  // namespace hictk::hic::internal
