@@ -116,7 +116,11 @@ inline SerializedPixel PixelSelector::process_interaction(SerializedPixel record
 
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
-  return {begin<N>(), end<N>()};
+  // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
+  // and a second time to copy the actual data)
+  std::vector<Pixel<N>> buff{};
+  std::copy(begin<N>(), end<N>(), std::back_inserter(buff));
+  return buff;
 }
 
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }

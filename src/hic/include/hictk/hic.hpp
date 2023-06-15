@@ -53,19 +53,27 @@ class HiCFile {
 
   [[nodiscard]] PixelSelector fetch(std::string_view query,
                                     NormalizationMethod norm = NormalizationMethod::NONE,
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
+                                    std::size_t read_at_once_threshold = 0) const;
   [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
                                     std::uint32_t end,
-                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
+                                    NormalizationMethod norm = NormalizationMethod::NONE,
+                                    std::size_t read_at_once_threshold = 0) const;
   [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
                                     NormalizationMethod norm = NormalizationMethod::NONE,
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
+                                    std::size_t read_at_once_threshold = 0) const;
   [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
+                                    NormalizationMethod norm = NormalizationMethod::NONE,
+                                    std::size_t read_at_once_threshold = 0) const;
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
+
+  [[nodiscard]] double block_cache_hit_rate() const noexcept;
+  [[nodiscard]] std::size_t block_cache_size() const noexcept;
+  void clear_block_cache() noexcept;
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
@@ -75,7 +83,8 @@ class HiCFile {
   [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome &chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
+                                    NormalizationMethod norm,
+                                    std::size_t read_at_once_threshold) const;
 };
 
 namespace utils {
