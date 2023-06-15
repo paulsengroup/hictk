@@ -4,10 +4,14 @@
 
 #pragma once
 
+#include <parallel_hashmap/phmap.h>
+
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
@@ -18,8 +22,8 @@ namespace hictk::hic::internal {
 class BlockIndex {
  public:
   struct GridCoordinates {
-    std::size_t row;
-    std::size_t col;
+    std::size_t row;  // NOLINT
+    std::size_t col;  // NOLINT
 
     constexpr bool operator==(const GridCoordinates& other) const noexcept;
     constexpr bool operator!=(const GridCoordinates& other) const noexcept;
@@ -46,24 +50,28 @@ class BlockIndex {
   constexpr bool operator==(const BlockIndex& other) const noexcept;
   constexpr bool operator!=(const BlockIndex& other) const noexcept;
   constexpr bool operator<(const BlockIndex& other) const noexcept;
-  constexpr bool operator==(const BlockIndex::GridCoordinates& coords_) const noexcept;
-  constexpr bool operator!=(const BlockIndex::GridCoordinates& coords_) const noexcept;
-  constexpr bool operator<(const BlockIndex::GridCoordinates& coords_) const noexcept;
+  constexpr bool operator==(std::size_t id_) const noexcept;
+  constexpr bool operator!=(std::size_t id_) const noexcept;
 };
 
-struct BlockIndexCmp {
+struct BlockIndexHasher {
+  using is_transparent = void;
+
+  std::size_t operator()(const BlockIndex& b) const noexcept;
+  std::size_t operator()(std::size_t id) const noexcept;
+};
+
+struct BlockIndexEq {
   using is_transparent = void;
 
   constexpr bool operator()(const BlockIndex& a, const BlockIndex& b) const noexcept;
-  constexpr bool operator()(const BlockIndex& a,
-                            const BlockIndex::GridCoordinates& b_coords) const noexcept;
-  constexpr bool operator()(const BlockIndex::GridCoordinates& a_coords,
-                            const BlockIndex& b) const noexcept;
+  constexpr bool operator()(const BlockIndex& a, std::size_t b_id) const noexcept;
+  constexpr bool operator()(std::size_t a_id, const BlockIndex& b) const noexcept;
 };
 
 // Map coordinates (bp) to block IDs
 class Index {
-  using BlockIndexMap = phmap::btree_set<BlockIndex, BlockIndexCmp>;
+  using BlockIndexMap = phmap::flat_hash_set<BlockIndex, BlockIndexHasher, BlockIndexEq>;
   // map block_ids to file offsets
   const BlockIndexMap _block_map{};
   std::int32_t _version{};
@@ -75,6 +83,7 @@ class Index {
   std::uint32_t _resolution{};
   Chromosome _chrom1{};
   Chromosome _chrom2{};
+  mutable phmap::flat_hash_set<BlockIndex> _tmp_buffer{32};
 
  public:
   static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
@@ -101,22 +110,25 @@ class Index {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
-  [[nodiscard]] Index subset(const PixelCoordinates& coords1,
-                             const PixelCoordinates& coords2) const;
-
-  [[nodiscard]] auto map_2d_query_to_blocks(const PixelCoordinates& coords1,
-                                            const PixelCoordinates& coords2) const -> BlockIndexMap;
+  [[nodiscard]] std::vector<BlockIndex> find_overlaps(const PixelCoordinates& coords1,
+                                                      const PixelCoordinates& coords2) const;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
   void _map_2d_query_to_blocks(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
-                               BlockIndexMap& buffer) const;
+                               std::vector<BlockIndex>& buffer) const;
   void _map_2d_query_to_blocks_intra_v9plus(const PixelCoordinates& coords1,
                                             const PixelCoordinates& coords2,
-                                            BlockIndexMap& buffer) const;
+                                            std::vector<BlockIndex>& buffer) const;
 };
 
 }  // namespace hictk::hic::internal
 
+template <>
+struct std::hash<hictk::hic::internal::BlockIndex> {
+  inline std::size_t operator()(hictk::hic::internal::BlockIndex const& b) const noexcept {
+    return std::hash<std::size_t>{}(b.id());
+  }
+};
 #include "../../../index_impl.hpp"

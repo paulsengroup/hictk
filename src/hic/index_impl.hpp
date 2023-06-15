@@ -8,10 +8,15 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <vector>
+
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk::hic::internal {
 
@@ -64,29 +69,25 @@ constexpr bool BlockIndex::operator<(const BlockIndex &other) const noexcept {
   return _coords < other._coords;
 }
 
-constexpr bool BlockIndex::operator==(const BlockIndex::GridCoordinates &coords_) const noexcept {
-  return _coords == coords_;
+constexpr bool BlockIndex::operator==(std::size_t id_) const noexcept { return _id == id_; }
+
+constexpr bool BlockIndex::operator!=(std::size_t id_) const noexcept { return !(*this == id_); }
+
+inline std::size_t BlockIndexHasher::operator()(const BlockIndex &b) const noexcept {
+  return (*this)(b.id());
+}
+inline std::size_t BlockIndexHasher::operator()(std::size_t id) const noexcept {
+  return std::hash<std::size_t>{}(id);
 }
 
-constexpr bool BlockIndex::operator!=(const BlockIndex::GridCoordinates &coords_) const noexcept {
-  return !(*this == coords_);
+constexpr bool BlockIndexEq::operator()(const BlockIndex &a, const BlockIndex &b) const noexcept {
+  return a == b;
 }
-
-constexpr bool BlockIndex::operator<(const BlockIndex::GridCoordinates &coords_) const noexcept {
-  return _coords < coords_;
+constexpr bool BlockIndexEq::operator()(std::size_t a_id, const BlockIndex &b) const noexcept {
+  return a_id == b.id();
 }
-
-constexpr bool BlockIndexCmp::operator()(const BlockIndex &a, const BlockIndex &b) const noexcept {
-  return a.coords() < b.coords();
-}
-
-constexpr bool BlockIndexCmp::operator()(
-    const BlockIndex &a, const BlockIndex::GridCoordinates &b_coords) const noexcept {
-  return a < b_coords;
-}
-constexpr bool BlockIndexCmp::operator()(const BlockIndex::GridCoordinates &a_coords,
-                                         const BlockIndex &b) const noexcept {
-  return a_coords < b._coords;
+constexpr bool BlockIndexEq::operator()(const BlockIndex &a, std::size_t b_id) const noexcept {
+  return a.id() == b_id;
 }
 
 inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
@@ -131,22 +132,25 @@ inline std::size_t Index::size() const noexcept { return _block_map.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
-inline Index Index::subset(const PixelCoordinates &coords1, const PixelCoordinates &coords2) const {
-  return {
-      chrom1(),
-      chrom2(),
-      unit(),
-      resolution(),
-      _version,
-      block_bin_count(),
-      block_column_count(),
-      matrix_sum(),
-      map_2d_query_to_blocks(coords1, coords2),
-  };
+inline std::vector<BlockIndex> Index::find_overlaps(const PixelCoordinates &coords1,
+                                                    const PixelCoordinates &coords2) const {
+  assert(coords1.is_intra());
+  assert(coords2.is_intra());
+
+  std::vector<BlockIndex> buffer{};
+
+  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
+  if (_version > 8 && is_intra) {
+    _map_2d_query_to_blocks_intra_v9plus(coords1, coords2, buffer);
+  } else {
+    _map_2d_query_to_blocks(coords1, coords2, buffer);
+  }
+  return buffer;
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
-  auto match = _block_map.find(BlockIndex::GridCoordinates{row, col});
+  const auto block_id = (col * block_column_count()) + row;
+  auto match = _block_map.find(block_id);
   if (match == _block_map.end()) {
     throw std::out_of_range(
         fmt::format(FMT_STRING("unable to find block {}{}: out of range"), row, col));
@@ -154,25 +158,9 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
   return *match;
 }
 
-inline auto Index::map_2d_query_to_blocks(const PixelCoordinates &coords1,
-                                          const PixelCoordinates &coords2) const -> BlockIndexMap {
-  assert(coords1.is_intra());
-  assert(coords2.is_intra());
-
-  BlockIndexMap buffer{};
-
-  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
-  if (_version < 9 || is_intra) {
-    _map_2d_query_to_blocks(coords1, coords2, buffer);
-  } else {
-    _map_2d_query_to_blocks_intra_v9plus(coords1, coords2, buffer);
-  }
-  return buffer;
-}
-
 inline void Index::_map_2d_query_to_blocks(const hictk::PixelCoordinates &coords1,
                                            const hictk::PixelCoordinates &coords2,
-                                           BlockIndexMap &buffer) const {
+                                           std::vector<BlockIndex> &buffer) const {
   assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
@@ -195,46 +183,50 @@ inline void Index::_map_2d_query_to_blocks(const hictk::PixelCoordinates &coords
 
   // check region part that overlaps with lower left triangle but only if intrachromosomal
   const auto checkLowerLeftTri = is_intra;
-  buffer.clear();
   // first check the upper triangular matrix_type
   for (auto row = row1; row <= row2; ++row) {
     for (auto col = col1; col <= col2; ++col) {
-      auto match = _block_map.find(BlockIndex::GridCoordinates{row, col});
+      auto block_id = (col * block_column_count()) + row;
+      auto match = _block_map.find(block_id);
       if (match != _block_map.end()) {
-        buffer.emplace(*match);
+        _tmp_buffer.emplace(*match);
       }
 
       if (checkLowerLeftTri) {
-        match = _block_map.find(BlockIndex::GridCoordinates{col, row});
+        block_id = (row * block_column_count()) + col;
+        match = _block_map.find(block_id);
         if (match != _block_map.end()) {
-          buffer.emplace(*match);
+          _tmp_buffer.emplace(*match);
         }
       }
     }
   }
+
+  buffer.resize(_tmp_buffer.size());
+  std::move(_tmp_buffer.begin(), _tmp_buffer.end(), buffer.begin());
+  std::sort(buffer.begin(), buffer.end());
 }
 
 inline void Index::_map_2d_query_to_blocks_intra_v9plus(const hictk::PixelCoordinates &coords1,
                                                         const hictk::PixelCoordinates &coords2,
-                                                        BlockIndexMap &buffer) const {
+                                                        std::vector<BlockIndex> &buffer) const {
   // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#grid-structure
   assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
+  assert(coords1.bin1.chrom() == coords2.bin1.chrom());
 
   auto bin1 = coords1.bin1.rel_id();
   auto bin2 = coords1.bin2.rel_id() + 1;
   auto bin3 = coords2.bin1.rel_id();
   auto bin4 = coords2.bin2.rel_id() + 1;
 
-  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
-
-  if (is_intra && bin1 > bin3) {
+  if (bin1 > bin3) {
     std::swap(bin1, bin3);
     std::swap(bin2, bin4);
   }
 
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
-  const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_column_count + 1;
+  const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
       static_cast<std::size_t>(std::log2(1.0 + double(hictk::internal::abs_diff(bin1, bin4)) /
                                                    std::sqrt(2.0) / double(_block_bin_count)));
@@ -247,20 +239,24 @@ inline void Index::_map_2d_query_to_blocks_intra_v9plus(const hictk::PixelCoordi
     if ((bin1 > bin4 && bin2 < bin3) || (bin2 > bin3 && bin1 < bin4)) {
       return 0;
     }
-    return std::min(translatedNearerDepth, translatedFurtherDepth);
+    return (std::min)(translatedNearerDepth, translatedFurtherDepth);
   }();
 
   // +1; integer divide rounds down
-  const auto furtherDepth = std::max(translatedNearerDepth, translatedFurtherDepth) + 1;
+  const auto furtherDepth = (std::max)(translatedNearerDepth, translatedFurtherDepth) + 1;
+  _tmp_buffer.clear();
   for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
     for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
-      auto match = _block_map.find(BlockIndex::GridCoordinates{depth, pad});
+      const auto block_id = (depth * block_column_count()) + pad;
+      auto match = _block_map.find(block_id);
       if (match != _block_map.end()) {
-        auto block = *match;
-        buffer.emplace(block);
+        _tmp_buffer.emplace(*match);
       }
     }
   }
+  buffer.resize(_tmp_buffer.size());
+  std::move(_tmp_buffer.begin(), _tmp_buffer.end(), buffer.begin());
+  std::sort(buffer.begin(), buffer.end());
 }
 
 }  // namespace hictk::hic::internal

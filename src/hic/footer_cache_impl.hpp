@@ -6,6 +6,8 @@
 
 #include <cassert>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <numeric>
 #include <vector>
 

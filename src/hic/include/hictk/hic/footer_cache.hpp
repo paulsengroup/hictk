@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <parallel_hashmap/btree.h>
 #include <parallel_hashmap/phmap.h>
 #include <tsl/ordered_map.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -15,7 +15,6 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/hic_footer.hpp"
-#include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
 
@@ -48,14 +47,14 @@ class FooterCache {
   using const_iterator = MapT::iterator;
   FooterCache() = default;
 
-  auto begin() const noexcept -> decltype(_cache.cbegin());
-  auto end() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto begin() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto end() const noexcept -> decltype(_cache.cbegin());
 
-  auto cbegin() const noexcept -> decltype(_cache.cbegin());
-  auto cend() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto cbegin() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto cend() const noexcept -> decltype(_cache.cbegin());
 
-  auto emplace(HiCFooter&& f) -> decltype(_cache.emplace());
-  auto find(const HiCFooterMetadata& m) -> const_iterator;
+  [[nodiscard]] auto emplace(HiCFooter&& f) -> decltype(_cache.emplace());
+  [[nodiscard]] auto find(const HiCFooterMetadata& m) -> const_iterator;
 
   [[nodiscard]] std::size_t size() const noexcept;
   void clear();

@@ -5,7 +5,6 @@
 #pragma once
 
 #include <libdeflate.h>
-#include <parallel_hashmap/btree.h>
 
 #include <cstdint>
 #include <memory>

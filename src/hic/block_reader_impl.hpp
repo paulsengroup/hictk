@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -33,13 +34,11 @@ inline std::string &BinaryBuffer::reset() noexcept {
 
 inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const Index &master_index,
                                       std::shared_ptr<const BinTable> bins_,
-                                      std::shared_ptr<BlockLRUCache> block_cache_,
-                                      const PixelCoordinates &coords1,
-                                      const PixelCoordinates &coords2)
+                                      std::shared_ptr<BlockLRUCache> block_cache_)
     : _hfs(std::move(hfs)),
       _blk_cache(std::move(block_cache_)),
       _bins(std::move(bins_)),
-      _index(master_index.subset(coords1, coords2)) {}
+      _index(master_index) {}
 
 inline HiCBlockReader::operator bool() const noexcept { return !!_hfs; }
 

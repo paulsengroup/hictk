@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "hictk/hic/hic_footer.hpp"
@@ -43,24 +47,6 @@ constexpr bool operator!=(std::size_t a_id, const InteractionBlock &b) noexcept 
   return !(a_id == b);
 }
 
-constexpr bool InteractionBlockCmp::operator()(const InteractionBlock &a,
-                                               const InteractionBlock &b) const noexcept {
-  return a < b;
-}
-constexpr bool InteractionBlockCmp::operator()(const InteractionBlock &a,
-                                               std::size_t b_id) const noexcept {
-  return a < b_id;
-}
-constexpr bool InteractionBlockCmp::operator()(std::size_t a_id,
-                                               const InteractionBlock &b) const noexcept {
-  return a_id < b;
-}
-
-inline auto InteractionBlock::Overlap::begin() const noexcept { return first; }
-inline auto InteractionBlock::Overlap::end() const noexcept { return last; }
-inline auto InteractionBlock::Overlap::cbegin() const noexcept { return begin(); }
-inline auto InteractionBlock::Overlap::cend() const noexcept { return end(); }
-
 inline std::size_t InteractionBlock::id() const noexcept { return _id; }
 inline const Chromosome &InteractionBlock::chrom1() const noexcept {
   assert(_chrom1);
@@ -73,7 +59,7 @@ inline const Chromosome &InteractionBlock::chrom2() const noexcept {
 
 inline InteractionBlock::InteractionBlock(std::size_t id_,
                                           const std::vector<SerializedPixel> &pixels)
-    : _id(id_) {
+    : _id(id_), _size(pixels.size()) {
   if (pixels.empty()) {
     return;
   }
@@ -81,9 +67,11 @@ inline InteractionBlock::InteractionBlock(std::size_t id_,
   for (const SerializedPixel &p : pixels) {
     const auto b1 = static_cast<std::uint64_t>(p.bin1_id);
     const auto b2 = static_cast<std::uint64_t>(p.bin2_id);
-    auto [node, inserted] = this->_interactions.try_emplace(b1, Row{{b2, p.count}});
-    if (!inserted) {
+    auto node = this->_interactions.find(b1);
+    if (node != this->_interactions.end()) {
       node->second.emplace_back(ThinPixel{b2, p.count});
+    } else {
+      this->_interactions.emplace(b1, Row{{b2, p.count}});
     }
   }
   if constexpr (ndebug_not_defined()) {
@@ -117,23 +105,10 @@ inline auto InteractionBlock::find(std::uint64_t row) const noexcept -> const_it
   return _interactions.find(row);
 }
 
-inline auto InteractionBlock::find_overlap(std::uint64_t first_row,
-                                           std::uint64_t last_row) const noexcept -> Overlap {
-  assert(first_row <= last_row);
-  return {_interactions.lower_bound(first_row), _interactions.upper_bound(last_row)};
-}
-
-inline bool InteractionBlock::has_overlap(std::uint64_t first_row,
-                                          std::uint64_t last_row) const noexcept {
-  auto overlap = find_overlap(first_row, last_row);
-
-  return overlap.begin() != this->_interactions.end();
-}
-
-inline std::size_t InteractionBlock::size() const noexcept { return _interactions.size(); }
+inline std::size_t InteractionBlock::size() const noexcept { return _size; }
 
 inline std::size_t InteractionBlock::size_in_bytes() const noexcept {
-  return sizeof(Pixel<float>) * size();
+  return sizeof(ThinPixel) * size();
 }
 
 inline BlockLRUCache::BlockLRUCache(std::size_t max_size_in_bytes)

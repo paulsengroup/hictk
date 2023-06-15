@@ -4,7 +4,9 @@
 
 #pragma once
 
-#include <queue>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "hictk/bin_table.hpp"
@@ -23,6 +25,7 @@ class PixelSelector {
 
   PixelCoordinates _coord1{};
   PixelCoordinates _coord2{};
+  std::size_t _read_all_at_once_thresh{};
 
  public:
   template <typename N>
@@ -32,13 +35,14 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockLRUCache> cache_,
-                std::shared_ptr<const BinTable> bins_, PixelCoordinates coords) noexcept;
+                std::shared_ptr<const BinTable> bins_, PixelCoordinates coords,
+                std::size_t read_all_at_once_threshold = 0) noexcept;
 
   PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockLRUCache> cache_,
                 std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                PixelCoordinates coord2_) noexcept;
+                PixelCoordinates coord2_, std::size_t read_all_at_once_threshold = 0) noexcept;
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
@@ -54,9 +58,6 @@ class PixelSelector {
 
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
-
-  template <typename N>
-  std::vector<Pixel<N>> read_all_dbg() const;
 
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
@@ -104,7 +105,7 @@ class PixelSelector {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const PixelSelector &sel);
+    explicit iterator(const PixelSelector &sel, std::size_t read_at_once_thresh);
     [[nodiscard]] static auto at_end(const PixelSelector &sel) -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
@@ -127,7 +128,8 @@ class PixelSelector {
     [[nodiscard]] std::size_t size() const noexcept;
 
     void read_next_row();
-    [[nodiscard]] internal::Index find_blocks_overlapping_current_row();
+    void read_all_at_once();
+    [[nodiscard]] std::vector<internal::BlockIndex> find_blocks_overlapping_current_row();
   };
 };
 

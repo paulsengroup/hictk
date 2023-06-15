@@ -4,30 +4,40 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cassert>
+#include <utility>
+#include <vector>
+
+#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
-#include "hictk/fmt.hpp"  // TODO: remove me
+#include "hictk/hic/block_cache.hpp"
+#include "hictk/hic/common.hpp"
 #include "hictk/hic/hic_file_stream.hpp"
+#include "hictk/hic/hic_footer.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::hic {
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_,
-                                    PixelCoordinates coords) noexcept
+                                    std::shared_ptr<const BinTable> bins_, PixelCoordinates coords,
+                                    std::size_t read_all_at_once_thresh) noexcept
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
-                    coords, std::move(coords)) {}
+                    coords, std::move(coords), read_all_at_once_thresh) {}
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileStream> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                                    PixelCoordinates coord2_) noexcept
-    : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_), coord1_,
-              coord2_),
+                                    PixelCoordinates coord2_,
+                                    std::size_t read_all_at_once_thresh) noexcept
+    : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
       _footer(std::move(footer_)),
       _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)) {}
+      _coord2(std::move(coord2_)),
+      _read_all_at_once_thresh(read_all_at_once_thresh) {}
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
@@ -40,7 +50,7 @@ inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept
 
 template <typename N>
 inline auto PixelSelector::cbegin() const -> iterator<N> {
-  return iterator<N>(*this);
+  return iterator<N>(*this, _read_all_at_once_thresh);
 }
 
 template <typename N>
@@ -109,66 +119,6 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return {begin<N>(), end<N>()};
 }
 
-template <typename N>
-inline std::vector<Pixel<N>> PixelSelector::read_all_dbg() const {
-  std::vector<Pixel<N>> buffer{};
-
-  auto bin1 = coord1().bin1.rel_id();
-  auto bin2 = coord1().bin2.rel_id() + 1;
-  auto bin3 = coord2().bin1.rel_id();
-  auto bin4 = coord2().bin2.rel_id() + 1;
-
-  std::size_t i = 0;
-
-  for (const auto &block_idx : _reader.index()) {
-    auto blk = _reader.read(block_idx);
-    if (!blk) {
-      continue;
-    }
-    std::ofstream ofs(fmt::format(FMT_STRING("/tmp/test{}.bed"), i));
-    // Obs we use open-closed interval instead of open-open like is done in straw
-    for (const auto &[b1, row] : blk->find_overlap(bin1, bin2)) {
-      for (const auto &tp : row) {
-        const auto &b2 = tp.bin2_id;
-        auto tmp_record = process_interaction(SerializedPixel{
-            static_cast<std::int64_t>(b1), static_cast<std::int64_t>(b2), tp.count});
-        fmt::print(ofs, FMT_STRING("{}\t{}\t{}\t{}\n"), i, tmp_record.bin1_id, tmp_record.bin2_id,
-                   blk->id());
-      }
-
-      if (b1 >= bin2) {
-        // We're past the last row overlapping the query
-        break;
-      }
-      for (const auto &tp : row) {
-        const auto &b2 = tp.bin2_id;
-        if (b1 < bin1 || b2 < bin3) {
-          // We're upstream of the first column overlapping the query (if any)
-          continue;
-        }
-
-        if (b2 >= bin4) {
-          // We're past the last column overlapping the query for the current row
-          break;
-        }
-
-        auto record = process_interaction(SerializedPixel{static_cast<std::int64_t>(b1),
-                                                          static_cast<std::int64_t>(b2), tp.count});
-        if (std::isfinite(record.count)) {
-          buffer.emplace_back(
-              PixelCoordinates{bins().at(chrom1(), static_cast<std::uint32_t>(record.bin1_id)),
-                               bins().at(chrom2(), static_cast<std::uint32_t>(record.bin2_id))},
-              record.count);
-        }
-      }
-    }
-    ++i;
-  }
-  // Only interactions from the same block are guaranteed to already be sorted
-  std::sort(buffer.begin(), buffer.end());
-  return buffer;
-}
-
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
@@ -201,12 +151,19 @@ inline N PixelSelector::sum() const noexcept {
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
+inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel,
+                                            std::size_t read_at_once_thresh)
     : _sel(&sel), _bin1_id(coord1().bin1.rel_id()), _buffer(std::make_shared<BufferT>()) {
   if (_sel->_reader.index().empty()) {
     *this = at_end(sel);
     return;
   }
+
+  if (_sel->_reader.index().size() < read_at_once_thresh) {
+    read_all_at_once();
+    return;
+  }
+
   while (_buffer->empty()) {
     read_next_row();
   }
@@ -315,7 +272,8 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
   return !_buffer ? 0 : _buffer->size();
 }
 template <typename N>
-inline internal::Index PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
+inline std::vector<internal::BlockIndex>
+PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
   const auto end_pos = coord2().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
   const auto pos2 = (std::min)(end_pos, pos1 + bins().bin_size());
@@ -323,7 +281,7 @@ inline internal::Index PixelSelector::iterator<N>::find_blocks_overlapping_curre
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
                                         bins().at(coord1().bin1.chrom(), pos2));
 
-  return _sel->_reader.index().subset(coord1_, coord2());
+  return _sel->_reader.index().find_overlaps(coord1_, coord2());
 }
 
 template <typename N>
@@ -344,7 +302,6 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   const auto bin_size = bins().bin_size();
   const auto bin1 =
       bins().at(coord1().bin1.chrom(), static_cast<std::uint32_t>(_bin1_id) * bin_size);
-  bool pixels_are_sorted = true;
   for (const auto block_idx : blocks) {
     const auto blk = _sel->_reader.read(block_idx);
     const auto match = blk->find(_bin1_id);
@@ -371,15 +328,61 @@ inline void PixelSelector::iterator<N>::read_next_row() {
             Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
                      conditional_static_cast<N>(first->count)});
       }
-
-      pixels_are_sorted &= _buffer->size() < 2 || *(_buffer->end() - 2) < _buffer->back();
       ++first;
+    }
+  }
+  assert(std::is_sorted(_buffer->begin(), _buffer->end()));
+  _bin1_id++;
+}
+
+template <typename N>
+inline void PixelSelector::iterator<N>::read_all_at_once() {
+  assert(!!_sel);
+  const auto &blocks = _sel->_reader.index();
+  if (blocks.empty()) {
+    *this = at_end(*_sel);
+    return;
+  }
+
+  if (_buffer.use_count() != 1) {
+    _buffer = std::make_shared<BufferT>(_buffer->capacity());
+  }
+
+  _buffer->clear();
+  _buffer_i = 0;
+  const auto bin_size = bins().bin_size();
+  bool pixels_are_sorted = true;
+  for (const auto block_idx : blocks) {
+    for (const auto &[bin1_id, pixels] : *_sel->_reader.read(block_idx)) {
+      const auto bin1 =
+          bins().at(coord1().bin1.chrom(), static_cast<std::uint32_t>(bin1_id) * bin_size);
+      if (bin1 < coord1().bin1 || bin1 > coord1().bin2) {
+        continue;
+      }
+      for (const auto &p : pixels) {
+        const auto bin2 =
+            bins().at(coord2().bin1.chrom(), static_cast<std::uint32_t>(p.bin2_id) * bin_size);
+        if (bin2 < coord2().bin1) {
+          continue;
+        }
+        if (bin2 > coord2().bin2) {
+          break;
+        }
+        if constexpr (std::is_integral_v<N>) {
+          _buffer->emplace_back(
+              Pixel<N>{PixelCoordinates{bin1, bin2}, static_cast<N>(std::round(p.count))});
+        } else {
+          _buffer->emplace_back(
+              Pixel<N>{PixelCoordinates{bin1, bin2}, conditional_static_cast<N>(p.count)});
+        }
+
+        pixels_are_sorted &= _buffer->size() < 2 || *(_buffer->end() - 2) < _buffer->back();
+      }
     }
   }
   if (!pixels_are_sorted) {
     std::sort(_buffer->begin(), _buffer->end());
   }
-  _bin1_id++;
+  _bin1_id = coord1().bin2.rel_id() + 1;
 }
-
 }  // namespace hictk::hic

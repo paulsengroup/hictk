@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <parallel_hashmap/btree.h>
-
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -49,8 +47,8 @@ class HiCBlockReader {
  public:
   HiCBlockReader() = default;
   HiCBlockReader(std::shared_ptr<HiCFileStream> hfs, const Index& master_index,
-                 std::shared_ptr<const BinTable> bins_, std::shared_ptr<BlockLRUCache> block_cache_,
-                 const PixelCoordinates& coords1, const PixelCoordinates& coords2);
+                 std::shared_ptr<const BinTable> bins_,
+                 std::shared_ptr<BlockLRUCache> block_cache_);
 
   [[nodiscard]] explicit operator bool() const noexcept;
 

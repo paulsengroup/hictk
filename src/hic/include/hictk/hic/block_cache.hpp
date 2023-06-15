@@ -7,6 +7,7 @@
 #include <parallel_hashmap/btree.h>
 #include <tsl/ordered_map.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -33,20 +34,11 @@ class InteractionBlock {
   BuffT _interactions{};
   const Chromosome* _chrom1{};
   const Chromosome* _chrom2{};
+  std::size_t _size{};
 
  public:
   using iterator = BuffT::iterator;
   using const_iterator = BuffT::const_iterator;
-
-  struct Overlap {
-    const_iterator first{};  // NOLINT
-    const_iterator last{};   // NOLINT
-
-    [[nodiscard]] auto begin() const noexcept;
-    [[nodiscard]] auto end() const noexcept;
-    [[nodiscard]] auto cbegin() const noexcept;
-    [[nodiscard]] auto cend() const noexcept;
-  };
 
   InteractionBlock() = default;
   InteractionBlock(std::size_t id_, const std::vector<SerializedPixel>& pixels);
@@ -78,21 +70,9 @@ class InteractionBlock {
   [[nodiscard]] const Chromosome& chrom2() const noexcept;
 
   [[nodiscard]] auto find(std::uint64_t row) const noexcept -> const_iterator;
-  [[nodiscard]] auto find_overlap(std::uint64_t first_row, std::uint64_t last_row) const noexcept
-      -> Overlap;
-
-  [[nodiscard]] bool has_overlap(std::uint64_t first_row, std::uint64_t last_row) const noexcept;
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] std::size_t size_in_bytes() const noexcept;
-};
-
-struct InteractionBlockCmp {
-  using is_transparent = void;
-
-  constexpr bool operator()(const InteractionBlock& a, const InteractionBlock& b) const noexcept;
-  constexpr bool operator()(const InteractionBlock& a, std::size_t b_id) const noexcept;
-  constexpr bool operator()(std::size_t a_id, const InteractionBlock& b) const noexcept;
 };
 
 class BlockLRUCache {
