@@ -58,7 +58,7 @@ class HiCBlockReader {
   [[nodiscard]] const Index& index() const noexcept;
 
   [[nodiscard]] double sum() const noexcept;
-  [[nodiscard]] double avg() const noexcept;
+  [[nodiscard]] double avg() const;
 
   [[nodiscard]] std::shared_ptr<const InteractionBlock> read(const BlockIndex& idx);
 

@@ -51,9 +51,15 @@ inline const Index &HiCBlockReader::index() const noexcept { return _index; }
 
 inline double HiCBlockReader::sum() const noexcept { return _index.matrix_sum(); }
 
-inline double HiCBlockReader::avg() const noexcept {
-  const auto num_bins1 = bins().subset(chrom1()).size();
-  const auto num_bins2 = bins().subset(chrom2()).size();
+inline double HiCBlockReader::avg() const {
+  if (_index.is_intra()) {
+    throw std::domain_error(
+        "HiCBlockReader::avg is not implemented for intra-chromosomal matrices");
+  }
+
+  const auto bin_size = bins().bin_size();
+  const auto num_bins1 = (chrom1().size() + bin_size - 1) / bin_size;
+  const auto num_bins2 = (chrom2().size() + bin_size - 1) / bin_size;
 
   return sum() / double(num_bins1 * num_bins2);
 }

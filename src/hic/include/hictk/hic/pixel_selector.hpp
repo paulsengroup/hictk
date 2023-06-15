@@ -78,7 +78,8 @@ class PixelSelector {
   [[nodiscard]] double avg() const noexcept;
 
  private:
-  [[nodiscard]] SerializedPixel process_interaction(SerializedPixel record) const;
+  [[nodiscard]] internal::InteractionBlock::ThinPixel transform_pixel(
+      std::size_t bin1, internal::InteractionBlock::ThinPixel pixel) const;
 
  public:
   template <typename N>

@@ -66,29 +66,26 @@ inline auto PixelSelector::end() const -> iterator<N> {
   return this->cend<N>();
 }
 
-inline SerializedPixel PixelSelector::process_interaction(SerializedPixel record) const {
+inline internal::InteractionBlock::ThinPixel PixelSelector::transform_pixel(
+    std::size_t bin1, internal::InteractionBlock::ThinPixel pixel) const {
   const auto &c1Norm = _footer->c1Norm();
   const auto &c2Norm = _footer->c2Norm();
   const auto &expected = _footer->expectedValues();
 
-  assert(is_inter() || record.bin1_id <= record.bin2_id);
+  assert(is_inter() || bin1 <= pixel.bin2_id);
 
   const auto skipNormalization =
       normalization() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
-    const auto bin1 = static_cast<std::size_t>(record.bin1_id);
-    const auto bin2 = static_cast<std::size_t>(record.bin2_id);
+    const auto bin2 = static_cast<std::size_t>(pixel.bin2_id);
     assert(bin1 < c1Norm.size());
     assert(bin2 < c2Norm.size());
-    record.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
+    pixel.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
   }
 
-  record.bin1_id *= resolution();
-  record.bin2_id *= resolution();
-
   if (matrix_type() == MatrixType::observed) {
-    return record;
+    return pixel;
   }
 
   const auto expectedCount = [&]() {
@@ -96,20 +93,20 @@ inline SerializedPixel PixelSelector::process_interaction(SerializedPixel record
       return float(_reader.avg());
     }
 
-    const auto i = static_cast<std::size_t>((record.bin2_id - record.bin1_id) / resolution());
+    const auto i = (pixel.bin2_id - bin1);
     assert(i < expected.size());
     return float(expected[i]);
   }();
 
   if (matrix_type() == MatrixType::expected) {
-    record.count = expectedCount;
-    return record;
+    pixel.count = expectedCount;
+    return pixel;
   }
 
   assert(matrix_type() == MatrixType::oe);
-  record.count /= expectedCount;
+  pixel.count /= expectedCount;
 
-  return record;
+  return pixel;
 }
 
 template <typename N>
@@ -297,7 +294,7 @@ inline void PixelSelector::iterator<N>::read_next_row() {
                                   [](const internal::InteractionBlock::ThinPixel &pixel,
                                      std::size_t bin_id) { return pixel.bin2_id < bin_id; });
     while (first != pixels.end()) {
-      const auto &p = *first;
+      const auto p = _sel->transform_pixel(_bin1_id, *first);
       if (p.bin2_id > coord2().bin2.rel_id()) {
         break;
       }
@@ -306,7 +303,7 @@ inline void PixelSelector::iterator<N>::read_next_row() {
       if constexpr (std::is_integral_v<N>) {
         _buffer->emplace_back(
             Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
-                     static_cast<N>(std::round(p.count))});
+                     conditional_static_cast<N>(std::round(p.count))});
       } else {
         _buffer->emplace_back(
             Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},

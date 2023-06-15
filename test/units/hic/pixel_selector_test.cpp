@@ -258,4 +258,141 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
   }
+  SECTION("invalid") {
+    SECTION("invalid chromosome") {
+      const HiCFile hic(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP);
+      CHECK_THROWS(hic.fetch("chr123", NormalizationMethod::NONE));
+    }
+    SECTION("invalid unit") {
+      const HiCFile hic(pathV9, 10'000, MatrixType::observed, MatrixUnit::FRAG);
+      CHECK_THROWS(hic.fetch("chr2L", NormalizationMethod::NONE));
+    }
+    SECTION("expected + norm") {
+      const HiCFile hic(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP);
+      CHECK_THROWS(hic.fetch("chr2L", NormalizationMethod::VC));
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][short]") {
+  SECTION("intra-chromosomal") {
+    constexpr std::size_t expected_size = 1433133;
+    constexpr double expected_sum = 20391277.41514;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::VC);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::VC);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
+  SECTION("inter-chromosomal") {
+    constexpr std::size_t expected_size = 56743;
+    constexpr double expected_sum = 96690.056244753;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::VC);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::VC);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][short]") {
+  SECTION("intra-chromosomal") {
+    constexpr std::size_t expected_size = 1433133;
+    constexpr double expected_sum = 18314748.068024;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::expected, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
+  SECTION("inter-chromosomal") {
+    constexpr std::size_t expected_size = 56743;
+    constexpr double expected_sum = 12610.80619812;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::expected, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("MatrixSelector fetch (oe NONE BP 10000)", "[hic][short]") {
+  SECTION("intra-chromosomal") {
+    constexpr std::size_t expected_size = 1433133;
+    constexpr double expected_sum = 2785506.2274201;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::oe, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::oe, MatrixUnit::BP)
+                     .fetch("chr2L", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
+  SECTION("inter-chromosomal") {
+    constexpr std::size_t expected_size = 56743;
+    constexpr double expected_sum = 317520.00459671;
+    SECTION("v8") {
+      auto sel = HiCFile(pathV8, 10'000, MatrixType::oe, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+
+    SECTION("v9") {
+      auto sel = HiCFile(pathV9, 10'000, MatrixType::oe, MatrixUnit::BP)
+                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<double>();
+      REQUIRE(buffer.size() == expected_size);
+      CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
+    }
+  }
 }
