@@ -98,7 +98,7 @@ TEST_CASE("MatrixSelector accessors", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
+TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr std::int32_t expected_sum = 19968156;
@@ -275,7 +275,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][short]") {
+TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 20391277.41514;
@@ -316,7 +316,7 @@ TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][short]") {
+TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 18314748.068024;
@@ -357,7 +357,7 @@ TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (oe NONE BP 10000)", "[hic][short]") {
+TEST_CASE("MatrixSelector fetch (oe NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 2785506.2274201;
