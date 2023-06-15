@@ -401,9 +401,11 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
         wanted_resolution, wanted_unit));
   }
 
+  const auto file_offset = _fs->tellg();
   HiCFooter footer{read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
                               metadata.resolution),
                    std::move(metadata)};
+  _fs->seekg(static_cast<std::int64_t>(file_offset));
 
   if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||
       ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE &&
@@ -415,8 +417,6 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   auto &c1Norm = footer.c1Norm();
   auto &c2Norm = footer.c2Norm();
 
-  // read in and ignore expected value maps; don't store; reading these to
-  // get to wanted_norm vector index
   auto nExpectedValues = _fs->read<std::int32_t>();
   for (std::int32_t i = 0; i < nExpectedValues; ++i) {
     const auto foundUnit = readMatrixUnit();
