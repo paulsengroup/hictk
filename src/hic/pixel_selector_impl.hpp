@@ -278,7 +278,7 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
 template <typename N>
 inline std::vector<internal::BlockIndex>
 PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
-  const auto end_pos = coord2().bin2.start();
+  const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
   const auto pos2 = (std::min)(end_pos, pos1 + bins().bin_size());
 
@@ -317,7 +317,6 @@ inline void PixelSelector::iterator<N>::read_next_row() {
     auto first = std::lower_bound(pixels.begin(), pixels.end(), coord2().bin1.rel_id(),
                                   [](const internal::InteractionBlock::ThinPixel &pixel,
                                      std::size_t bin_id) { return pixel.bin2_id < bin_id; });
-
     while (first != pixels.end()) {
       if (first->bin2_id > coord2().bin2.rel_id()) {
         break;
