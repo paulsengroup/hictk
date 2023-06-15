@@ -133,8 +133,8 @@ inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t star
         FMT_STRING("matrix type {} is incompatible with normalization method {}"), _type, norm));
   }
 
-  const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1)};
-  const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2)};
+  const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
+  const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2 - 1)};
 
   auto footer = [&]() {
     try {

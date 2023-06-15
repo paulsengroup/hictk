@@ -153,7 +153,7 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
 }
 
 inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                       std::size_t bin4, bool is_intra) const {
+                                       std::size_t bin4) const {
   const auto col1 = bin1 / _block_bin_count;
   const auto col2 = (bin2 + 1) / _block_bin_count;
   const auto row1 = bin3 / _block_bin_count;
@@ -168,12 +168,6 @@ inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
         _tmp_buffer.emplace(*match);
       }
     }
-  }
-
-  if (is_intra) {
-    std::swap(bin1, bin3);
-    std::swap(bin3, bin4);
-    generate_block_list(bin1, bin2, bin3, bin4, false);
   }
 }
 
@@ -226,7 +220,7 @@ inline void Index::map_2d_query_to_blocks(const hictk::PixelCoordinates &coords1
   if (_version > 8 && is_intra) {
     generate_block_list_intra_v9plus(bin1, bin2, bin3, bin4);
   } else {
-    generate_block_list(bin1, bin2, bin3, bin4, is_intra);
+    generate_block_list(bin1, bin2, bin3, bin4);
   }
 
   buffer.resize(_tmp_buffer.size());

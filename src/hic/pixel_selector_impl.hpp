@@ -318,18 +318,20 @@ inline void PixelSelector::iterator<N>::read_next_row() {
                                   [](const internal::InteractionBlock::ThinPixel &pixel,
                                      std::size_t bin_id) { return pixel.bin2_id < bin_id; });
     while (first != pixels.end()) {
-      if (first->bin2_id > coord2().bin2.rel_id()) {
+      const auto &p = *first;
+      if (p.bin2_id > coord2().bin2.rel_id()) {
         break;
       }
-      const auto pos2 = static_cast<std::uint32_t>(first->bin2_id) * bin_size;
+
+      const auto pos2 = static_cast<std::uint32_t>(p.bin2_id) * bin_size;
       if constexpr (std::is_integral_v<N>) {
         _buffer->emplace_back(
             Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
-                     static_cast<N>(std::round(first->count))});
+                     static_cast<N>(std::round(p.count))});
       } else {
         _buffer->emplace_back(
             Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
-                     conditional_static_cast<N>(first->count)});
+                     conditional_static_cast<N>(p.count)});
       }
       ++first;
     }

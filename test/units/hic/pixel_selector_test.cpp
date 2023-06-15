@@ -192,9 +192,6 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
                      .fetch("chr2L", "chr4", NormalizationMethod::NONE);
       const auto buffer = sel.read_all<std::int32_t>();
-      auto f = std::fopen("/tmp/test.bg2", "w");
-      fmt::print(f, FMT_STRING("{}\n"), fmt::join(buffer, "\n"));
-      std::fclose(f);
       REQUIRE(buffer.size() == expected_size);
 
       CHECK(sumCounts<std::int32_t>(buffer) == expected_sum);
@@ -228,6 +225,64 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
       }
 
       compareContactRecord(buffer[expected_value.first], expected_value.second);
+      CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+    }
+  }
+
+  SECTION("cover type 2 interactions") {
+    auto sel = HiCFile(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP)
+                   .fetch("chr2L", "chr2R", NormalizationMethod::NONE);
+    const auto buffer = sel.read_all<std::int32_t>();
+    REQUIRE(buffer.size() == 110);
+    CHECK(sumCounts<std::int32_t>(buffer) == 1483112);
+
+    compareContactRecord(buffer[38], SerializedPixel{7500000, 12500000, 16512});
+    CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+  }
+
+  SECTION("sub-chromosomal queries") {
+    const std::uint32_t resolution = 10'000;
+    SECTION("single pixel") {
+      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L:100,000-100,001", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<std::int32_t>();
+      REQUIRE(buffer.size() == 1);
+      compareContactRecord(buffer.front(), SerializedPixel{100000, 100000, 13895.0F});
+    }
+
+    SECTION("upper-triangle") {
+      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L:123,456-200,000", "chr2L:0-200,000", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<std::int32_t>();
+      REQUIRE(buffer.size() == 36);
+      CHECK(sumCounts<std::int32_t>(buffer) == 99946);
+      compareContactRecord(buffer[33], SerializedPixel{180000, 180000, 3888});
+
+      checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
+                                        buffer);
+      CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+    }
+
+    SECTION("lower-triangle") {
+      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L:0-200,000", "chr2L:123,456-200,000", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<std::int32_t>();
+      REQUIRE(buffer.size() == 132);
+      CHECK(sumCounts<std::int32_t>(buffer) == 124561);
+      compareContactRecord(buffer[33], SerializedPixel{40000, 130000, 148});
+      checkContactRecordsAreWithinBound(0, 200000 + resolution, 123456, 200000 + resolution,
+                                        buffer);
+      CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+    }
+
+    SECTION("inter-chromosomal") {
+      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+                     .fetch("chr2L:123,456-200,000", "chr4:0-200,000", NormalizationMethod::NONE);
+      const auto buffer = sel.read_all<std::int32_t>();
+      REQUIRE(buffer.size() == 57);
+      CHECK(sumCounts<std::int32_t>(buffer) == 74);
+      checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
+                                        buffer);
       CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
   }
