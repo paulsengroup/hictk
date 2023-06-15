@@ -78,25 +78,21 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view query, NormalizationMethod norm,
-                                    QUERY_TYPE query_type,
-                                    std::size_t read_at_once_threshold) const {
+                                    QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(this->chromosomes(), query)
                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{query});
 
-  return this->fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm,
-                     read_at_once_threshold);
+  return this->fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view chrom_name, std::uint32_t start,
-                                    std::uint32_t end, NormalizationMethod norm,
-                                    std::size_t read_at_once_threshold) const {
-  return this->fetch(chrom_name, start, end, chrom_name, start, end, norm, read_at_once_threshold);
+                                    std::uint32_t end, NormalizationMethod norm) const {
+  return this->fetch(chrom_name, start, end, chrom_name, start, end, norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view range2,
-                                    NormalizationMethod norm, QUERY_TYPE query_type,
-                                    std::size_t read_at_once_threshold) const {
+                                    NormalizationMethod norm, QUERY_TYPE query_type) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
                        ? GenomicInterval::parse_bed(this->chromosomes(), range1)
                        : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range1});
@@ -105,24 +101,22 @@ inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view ra
                        ? GenomicInterval::parse_bed(this->chromosomes(), range2)
                        : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range2});
 
-  return this->fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(), norm,
-                     read_at_once_threshold);
+  return this->fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(),
+                     norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm,
-                                    std::size_t read_at_once_threshold) const {
+                                    NormalizationMethod norm) const {
   return this->fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name),
-                     start2, end2, norm, read_at_once_threshold);
+                     start2, end2, norm);
 }
 
 inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome& chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm,
-                                    std::size_t read_at_once_threshold) const {
+                                    NormalizationMethod norm) const {
   if (chrom1 > chrom2) {
     throw std::runtime_error(
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
@@ -170,7 +164,7 @@ inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t star
     }
   }();
 
-  return PixelSelector{_fs, footer, _block_cache, _bins, coord1, coord2, read_at_once_threshold};
+  return PixelSelector{_fs, footer, _block_cache, _bins, coord1, coord2};
 }
 
 inline std::size_t HiCFile::num_cached_footers() const noexcept { return _footers.size(); }

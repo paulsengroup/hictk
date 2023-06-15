@@ -22,22 +22,20 @@ namespace hictk::hic {
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_, PixelCoordinates coords,
-                                    std::size_t read_all_at_once_thresh) noexcept
+                                    std::shared_ptr<const BinTable> bins_,
+                                    PixelCoordinates coords) noexcept
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
-                    coords, std::move(coords), read_all_at_once_thresh) {}
+                    coords, std::move(coords)) {}
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockLRUCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                                    PixelCoordinates coord2_,
-                                    std::size_t read_all_at_once_thresh) noexcept
+                                    PixelCoordinates coord2_) noexcept
     : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
       _footer(std::move(footer_)),
       _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)),
-      _read_all_at_once_thresh(read_all_at_once_thresh) {}
+      _coord2(std::move(coord2_)) {}
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
@@ -50,7 +48,7 @@ inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept
 
 template <typename N>
 inline auto PixelSelector::cbegin() const -> iterator<N> {
-  return iterator<N>(*this, _read_all_at_once_thresh);
+  return iterator<N>(*this);
 }
 
 template <typename N>
@@ -155,16 +153,10 @@ inline N PixelSelector::sum() const noexcept {
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel,
-                                            std::size_t read_at_once_thresh)
+inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
     : _sel(&sel), _bin1_id(coord1().bin1.rel_id()), _buffer(std::make_shared<BufferT>()) {
   if (_sel->_reader.index().empty()) {
     *this = at_end(sel);
-    return;
-  }
-
-  if (_sel->_reader.index().size() < read_at_once_thresh) {
-    read_all_at_once();
     return;
   }
 
@@ -211,6 +203,13 @@ inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
 }
 
 template <typename N>
+inline auto PixelSelector::iterator<N>::operator->() const -> const_pointer {
+  assert(!!_buffer);
+  assert(_buffer_i < _buffer->size());
+  return &(*_buffer)[_buffer_i];
+}
+
+template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
@@ -228,26 +227,6 @@ inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
-}
-
-template <typename N>
-inline bool PixelSelector::iterator<N>::discard() const noexcept {
-  if (is_at_end()) {
-    return true;
-  }
-
-  assert(!!_buffer);
-  if (_buffer->empty()) {
-    return true;
-  }
-
-  const auto &pixel = _buffer->front();
-  // clang-format off
-  return pixel.coords.bin1 < coord1().bin1 ||
-         pixel.coords.bin1 > coord1().bin2 ||
-         pixel.coords.bin2 < coord2().bin1 ||
-         pixel.coords.bin2 > coord2().bin2;
-  // clang-format on
 }
 
 template <typename N>
@@ -338,51 +317,5 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   }
   assert(std::is_sorted(_buffer->begin(), _buffer->end()));
   _bin1_id++;
-}
-
-template <typename N>
-inline void PixelSelector::iterator<N>::read_all_at_once() {
-  assert(!!_sel);
-  const auto &blocks = _sel->_reader.index();
-  if (blocks.empty()) {
-    *this = at_end(*_sel);
-    return;
-  }
-
-  if (_buffer.use_count() != 1) {
-    _buffer = std::make_shared<BufferT>(_buffer->capacity());
-  }
-
-  _buffer->clear();
-  _buffer_i = 0;
-  const auto bin_size = bins().bin_size();
-  for (const auto block_idx : blocks) {
-    for (const auto &[bin1_id, pixels] : *_sel->_reader.read(block_idx)) {
-      const auto bin1 =
-          bins().at(coord1().bin1.chrom(), static_cast<std::uint32_t>(bin1_id) * bin_size);
-      if (bin1 < coord1().bin1 || bin1 > coord1().bin2) {
-        continue;
-      }
-      for (const auto &p : pixels) {
-        const auto bin2 =
-            bins().at(coord2().bin1.chrom(), static_cast<std::uint32_t>(p.bin2_id) * bin_size);
-        if (bin2 < coord2().bin1) {
-          continue;
-        }
-        if (bin2 > coord2().bin2) {
-          break;
-        }
-        if constexpr (std::is_integral_v<N>) {
-          _buffer->emplace_back(
-              Pixel<N>{PixelCoordinates{bin1, bin2}, static_cast<N>(std::round(p.count))});
-        } else {
-          _buffer->emplace_back(
-              Pixel<N>{PixelCoordinates{bin1, bin2}, conditional_static_cast<N>(p.count)});
-        }
-      }
-    }
-  }
-  assert(std::is_sorted(_buffer->begin(), _buffer->end()));
-  _bin1_id = coord1().bin2.rel_id() + 1;
 }
 }  // namespace hictk::hic

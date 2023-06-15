@@ -53,21 +53,17 @@ class HiCFile {
 
   [[nodiscard]] PixelSelector fetch(std::string_view query,
                                     NormalizationMethod norm = NormalizationMethod::NONE,
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
-                                    std::size_t read_at_once_threshold = 0) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
                                     std::uint32_t end,
-                                    NormalizationMethod norm = NormalizationMethod::NONE,
-                                    std::size_t read_at_once_threshold = 0) const;
+                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
   [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
                                     NormalizationMethod norm = NormalizationMethod::NONE,
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
-                                    std::size_t read_at_once_threshold = 0) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm = NormalizationMethod::NONE,
-                                    std::size_t read_at_once_threshold = 0) const;
+                                    NormalizationMethod norm = NormalizationMethod::NONE) const;
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
 
@@ -83,8 +79,7 @@ class HiCFile {
   [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome &chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm,
-                                    std::size_t read_at_once_threshold) const;
+                                    NormalizationMethod norm) const;
 };
 
 namespace utils {

@@ -98,34 +98,6 @@ TEST_CASE("MatrixSelector accessors", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector LRU cache", "[hic][short]") {
-  HiCFile f(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP);
-
-  auto sel = f.fetch("chr2L", NormalizationMethod::NONE, HiCFile::QUERY_TYPE::UCSC, 100);
-  // Fill cache
-  const auto expected_sum = sumCounts(sel.read_all<std::int32_t>());
-
-  REQUIRE(f.block_cache_hit_rate() == 0);
-  REQUIRE(f.block_cache_size() == 6);
-
-  auto sum = sumCounts<std::int32_t>(sel.read_all<std::int32_t>());
-  CHECK(sum == expected_sum);
-  CHECK(f.block_cache_hit_rate() == 0.5);
-  CHECK(f.block_cache_size() == 6);
-
-  for (auto i = 0; i < 3; ++i) {
-    sum = sumCounts<std::int32_t>(sel.read_all<std::int32_t>());
-    CHECK(sum == expected_sum);
-  }
-  CHECK(f.block_cache_hit_rate() == 4.0 / 5.0);
-  CHECK(f.block_cache_size() == 6);
-
-  f.clear_block_cache();
-  CHECK(f.block_cache_hit_rate() == 0);
-  CHECK(f.block_cache_size() == 0);
-}
-
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][short]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
