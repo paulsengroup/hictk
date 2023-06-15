@@ -246,21 +246,6 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.expectedValues().empty());
   }
 
-  /*  TODO: for some reason KR normalization is missing
-  SECTION("observed KR BP 5000") {
-      const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-  NormalizationMethod::KR, MatrixUnit::BP, 5000);
-
-      CHECK(f.matrix_type() == MatrixType::observed);
-      CHECK(f.normalization() == NormalizationMethod::KR);
-      CHECK(f.unit() == MatrixUnit::BP);
-      CHECK(f.resolution() == 5000);
-      CHECK(f.fileOffset() == 11625116);
-      CHECK(f.c1Norm().size() == 4703);
-      CHECK(f.c2Norm().size() == 5058);
-      CHECK(f._expectedValues().empty());
-  } */
-
   SECTION("observed SCALE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
                                  NormalizationMethod::SCALE, MatrixUnit::BP, 5000);

@@ -101,32 +101,24 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
     CHECK(sel.chrom2() == chrom2);
   }
 
-  /*
   SECTION("valid, but empty matrix") {
-    // TODO: fixme
     auto sel = f.fetch("chrM", norm);
-    std::vector<hictk::Pixel<float>> buff{};
-    // sel.fetch(buff);
-    // CHECK(buff.empty());
+    const auto buff = sel.read_all<float>();
+    CHECK(buff.empty());
   }
-   */
 
   SECTION("invalid chromosome") {
     CHECK_THROWS(f.fetch("not-a-chromosome", norm));
     CHECK_THROWS(f.fetch("chr2L", "not-a-chromosome", norm));
   }
 
-  /*
   SECTION("malformed") {
-    // TODO: update
-    CHECK_THROWS(f.get_matrix_selector(chrom2, chrom1, norm));  // NOLINT
+    CHECK_THROWS(f.fetch(chrom2, chrom1, norm));  // NOLINT
     CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
-                     .get_matrix_selector(chrom1, NormalizationMethod::VC));
+                     .fetch(chrom1, NormalizationMethod::VC));
 
     // Matrix does not have contacts for fragments
     CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG)
-                     .get_matrix_selector(chrom1, norm));
+                     .fetch(chrom1, norm));
   }
-    CHECK_THROWS(f.fetch(chrom1.id(), 999, norm));
-  */
 }
