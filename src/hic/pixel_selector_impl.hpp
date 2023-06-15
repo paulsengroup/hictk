@@ -355,7 +355,6 @@ inline void PixelSelector::iterator<N>::read_all_at_once() {
   _buffer->clear();
   _buffer_i = 0;
   const auto bin_size = bins().bin_size();
-  bool pixels_are_sorted = true;
   for (const auto block_idx : blocks) {
     for (const auto &[bin1_id, pixels] : *_sel->_reader.read(block_idx)) {
       const auto bin1 =
@@ -379,14 +378,10 @@ inline void PixelSelector::iterator<N>::read_all_at_once() {
           _buffer->emplace_back(
               Pixel<N>{PixelCoordinates{bin1, bin2}, conditional_static_cast<N>(p.count)});
         }
-
-        pixels_are_sorted &= _buffer->size() < 2 || *(_buffer->end() - 2) < _buffer->back();
       }
     }
   }
-  if (!pixels_are_sorted) {
-    std::sort(_buffer->begin(), _buffer->end());
-  }
+  assert(std::is_sorted(_buffer->begin(), _buffer->end()));
   _bin1_id = coord1().bin2.rel_id() + 1;
 }
 }  // namespace hictk::hic

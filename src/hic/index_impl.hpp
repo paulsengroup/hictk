@@ -183,6 +183,7 @@ inline void Index::_map_2d_query_to_blocks(const hictk::PixelCoordinates &coords
 
   // check region part that overlaps with lower left triangle but only if intrachromosomal
   const auto checkLowerLeftTri = is_intra;
+  _tmp_buffer.clear();
   // first check the upper triangular matrix_type
   for (auto row = row1; row <= row2; ++row) {
     for (auto col = col1; col <= col2; ++col) {
