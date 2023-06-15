@@ -44,7 +44,7 @@ static void compare_attribute(H5Obj& obj, std::string_view key, const std::vecto
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: write", "[cooler][short]") {
+TEST_CASE("Cooler: attribute write", "[cooler][short]") {
   const auto path = testdir() / "test_write_attrs.cool";
 
   auto f = HighFive::File(path.string(), HighFive::File::Truncate);
@@ -287,7 +287,7 @@ TEST_CASE("Attribute: write", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: read", "[cooler][short]") {
+TEST_CASE("Cooler: attribute read", "[cooler][short]") {
   const auto path = datadir / "test_read_attrs.h5";
 
   auto f = HighFive::File(path.string(), HighFive::File::ReadOnly);
@@ -412,7 +412,7 @@ TEST_CASE("Attribute: read", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: read - test numeric conversions", "[cooler][short]") {
+TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]") {
   const auto path = testdir() / "test_read_attrs_numeric_conversion.cool";
 
   auto f = HighFive::File(path.string(), HighFive::File::Truncate);

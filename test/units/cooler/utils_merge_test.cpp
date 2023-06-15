@@ -19,7 +19,7 @@ inline const auto& testdir = hictk::test::testdir;
 inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("utils: merge", "[merge][utils][short]") {
+TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   const auto src = datadir / "cooler_test_file.cool";
   const auto dest = testdir() / "cooler_merge_test1.cool";
 

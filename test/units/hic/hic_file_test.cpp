@@ -21,13 +21,13 @@ const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
 const auto path_binary = (hictk::test::datadir / "data.zip").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("utils: is_hic_file", "[hic][short]") {
+TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
   CHECK(utils::is_hic_file(pathV8));
   CHECK_FALSE(utils::is_hic_file(path_binary));
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiCFile accessors", "[hic][short]") {
+TEST_CASE("HiC: file accessors", "[hic][short]") {
   const HiCFile f(pathV8, 1'000);
 
   CHECK(f.url() == pathV8);
@@ -52,7 +52,7 @@ TEST_CASE("HiCFile accessors", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiCFile footer cache", "[hic][short]") {
+TEST_CASE("HiC: footer cache", "[hic][short]") {
   HiCFile f(pathV8, 2'500'000);
 
   CHECK(f.num_cached_footers() == 0);
@@ -82,7 +82,7 @@ TEST_CASE("HiCFile footer cache", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiCFile get_matrix_selector", "[hic][short]") {
+TEST_CASE("HiC: fetch", "[hic][short]") {
   constexpr auto norm = NormalizationMethod::NONE;
   const HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
 

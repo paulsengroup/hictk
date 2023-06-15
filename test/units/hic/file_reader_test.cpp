@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/hic/file_reader.hpp"
+
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <string>
-
-#include "hictk/hic/file_reader.hpp"
 
 using namespace hictk::hic;
 
@@ -23,7 +23,7 @@ const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
 const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
+TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
   constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
                                                       50000,   25000,   10000,  5000,   1000};
   constexpr auto* genomeID = "dm6";
@@ -45,7 +45,7 @@ TEST_CASE("readHeader (v8)", "[hic][v8][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
+TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
   constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
                                                       50000,   25000,   10000,  5000,   1000};
   constexpr auto* genomeID = "dm6";
@@ -68,7 +68,7 @@ TEST_CASE("readHeader (v9)", "[hic][v9][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("read_footer (v8)", "[hic][v8][short]") {
+TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   internal::HiCFileReader s(pathV8);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");
@@ -192,7 +192,7 @@ TEST_CASE("read_footer (v8)", "[hic][v8][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("read_footer (v9)", "[hic][v9][short]") {
+TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   internal::HiCFileReader s(pathV9);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");

@@ -19,7 +19,7 @@ namespace hictk::cooler::test::index {
 const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Index: ctor", "[index][short]") {
+TEST_CASE("Cooler: index ctor", "[index][short]") {
   constexpr std::uint32_t bin_size = 100;
   const auto bins = std::make_shared<const BinTable>(
       Reference{Chromosome{0, "chr1", 10001}, Chromosome{1, "chr2", 5000}}, bin_size);
@@ -41,7 +41,7 @@ TEST_CASE("Index: ctor", "[index][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Index: offset setters and getters", "[index][short]") {
+TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
   constexpr std::uint32_t bin_size = 10;
   const auto bins =
       std::make_shared<const BinTable>(Reference{Chromosome{0, "chr1", 100}}, bin_size);
@@ -96,7 +96,7 @@ TEST_CASE("Index: offset setters and getters", "[index][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Index: iterator", "[index][short]") {
+TEST_CASE("Cooler: index iterator", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
       Reference{Chromosome{0, "chr1", 10001}, Chromosome{1, "chr2", 5000}}, bin_size);
@@ -130,7 +130,7 @@ TEST_CASE("Index: iterator", "[index][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Index: validation", "[index][short]") {
+TEST_CASE("Cooler: index validation", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
       Reference{Chromosome{0, "chr1", 10001}, Chromosome{1, "chr2", 5000}}, bin_size);
@@ -168,7 +168,7 @@ TEST_CASE("Index: validation", "[index][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Index: compute chromosome offsets", "[index][short]") {
+TEST_CASE("Cooler: index compute chromosome offsets", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
       Reference{Chromosome{0, "chr1", 10001}, Chromosome{1, "chr2", 5000}}, bin_size);

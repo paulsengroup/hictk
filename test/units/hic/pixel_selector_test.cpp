@@ -83,7 +83,7 @@ static void compareContactRecord(const hictk::Pixel<N>& r1, const SerializedPixe
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector accessors", "[hic][short]") {
+TEST_CASE("HiC: pixel selector accessors", "[hic][short]") {
   const auto sel = HiCFile(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP)
                        .fetch("chr2L", NormalizationMethod::NONE);
 
@@ -98,7 +98,7 @@ TEST_CASE("MatrixSelector accessors", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][long]") {
+TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr std::int32_t expected_sum = 19968156;
@@ -275,7 +275,7 @@ TEST_CASE("MatrixSelector fetch (observed NONE BP 10000)", "[hic][long]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][long]") {
+TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 20391277.41514;
@@ -316,7 +316,7 @@ TEST_CASE("MatrixSelector fetch (observed VC BP 10000)", "[hic][long]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][long]") {
+TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 18314748.068024;
@@ -357,7 +357,7 @@ TEST_CASE("MatrixSelector fetch (expected NONE BP 10000)", "[hic][long]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MatrixSelector fetch (oe NONE BP 10000)", "[hic][long]") {
+TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
   SECTION("intra-chromosomal") {
     constexpr std::size_t expected_size = 1433133;
     constexpr double expected_sum = 2785506.2274201;

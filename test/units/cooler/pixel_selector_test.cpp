@@ -42,7 +42,7 @@ static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, cons
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Pixel selector: 1D queries", "[pixel_selector][short]") {
+TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
   const auto path1 = testdir() / "pixel_selector_devel.cool";
 
   const Reference chroms{Chromosome{0, "chr1", 1000}, Chromosome{1, "chr2", 100}};
@@ -212,7 +212,7 @@ TEST_CASE("Pixel selector: 1D queries", "[pixel_selector][short]") {
   }
 }
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Pixel selector: 2D queries", "[pixel_selector][short]") {
+TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
   using T = std::uint32_t;
   const auto path = datadir / "cooler_test_file.cool";
   auto f = File::open_read_only(path.string());

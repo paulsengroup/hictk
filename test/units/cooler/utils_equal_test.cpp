@@ -19,7 +19,7 @@ inline const auto& testdir = hictk::test::testdir;
 inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("utils: equal", "[equal][utils][short]") {
+TEST_CASE("Cooler: utils equal", "[equal][utils][short]") {
   const auto path1 = datadir / "cooler_test_file.cool";
   const auto path2 = datadir / "multires_cooler_test_file.mcool::/resolutions/6400000";
 
