@@ -33,9 +33,11 @@ int main(int argc, char** argv) {
         case subcmd::merge:
           // merge_subcmd(std::get<MergeConfig>(config));
           break;
+        case subcmd::help:
+          break;
         default:
           throw std::runtime_error(
-              "Default branch in switch statement in coolerpp_tools::main() should be unreachable! "
+              "Default branch in switch statement in hictk_tools::main() should be unreachable! "
               "If "
               "you see this message, please file an issue on GitHub");
       }

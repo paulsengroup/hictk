@@ -61,6 +61,8 @@ static void dump_pixels(const hic::HiCFile& f, std::string_view range1, [[maybe_
     auto sel = f.fetch(hic::ParseNormStr(std::string{normalization}));
     return print_pixels<join>(sel.begin<double>(), sel.end<double>());
   }
+    auto sel = f.fetch(range1, range2);
+    return print_pixels<join>(sel.begin<double>(), sel.end<double>());
 }
 
 template <bool join, typename File>
