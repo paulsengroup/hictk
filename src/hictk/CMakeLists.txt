@@ -1,0 +1,34 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+find_package(CLI11 QUIET REQUIRED)
+find_package(fmt QUIET REQUIRED)
+find_package(Filesystem REQUIRED)
+find_package(spdlog QUIET REQUIRED)
+
+add_executable(hictk_tools)
+
+target_sources(
+  hictk_tools
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
+)
+
+target_include_directories(hictk_tools PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(
+  hictk_tools
+  PRIVATE hictk_project_options
+          hictk_project_warnings
+          hictk::cooler
+          hictk::hic)
+
+target_link_system_libraries(
+  hictk_tools
+  PRIVATE
+  spdlog::spdlog
+  std::filesystem
+  PUBLIC
+  fmt::fmt)
+
