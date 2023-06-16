@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/hash.hpp"
 #include "hictk/hic/footer.hpp"
 
 namespace hictk::hic::internal {
@@ -111,6 +112,16 @@ inline std::size_t InteractionBlock::size_in_bytes() const noexcept {
   return sizeof(ThinPixel) * size();
 }
 
+inline std::size_t BlockLRUCache::KeyHasher::operator()(
+    const BlockLRUCache::Key &k) const noexcept {
+  return hictk::internal::hash_combine(0, k.chrom1_id, k.chrom2_id, k.id);
+}
+
+constexpr bool BlockLRUCache::Key::operator==(
+    const hictk::hic::internal::BlockLRUCache::Key &other) const noexcept {
+  return chrom1_id == other.chrom1_id && chrom2_id == other.chrom2_id && id == other.id;
+}
+
 inline BlockLRUCache::BlockLRUCache(std::size_t max_size_in_bytes)
     : _max_size_bytes(max_size_in_bytes) {
   if (_max_size_bytes == 0) {
@@ -140,7 +151,9 @@ inline auto BlockLRUCache::end() const noexcept -> const_iterator { return _cach
 
 inline auto BlockLRUCache::cend() const noexcept -> const_iterator { return end(); }
 
-inline auto BlockLRUCache::find(key_t key) -> iterator {
+inline auto BlockLRUCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
+    -> iterator {
+  const Key key{chrom1_id, chrom2_id, block_id};
   auto it = _cache.find(key);
   if (it == end()) {
     _misses++;
@@ -164,7 +177,9 @@ inline void BlockLRUCache::erase(iterator it) {
   std::ignore = _cache.erase(it);
 }
 
-inline auto BlockLRUCache::emplace(key_t key, mapped_type &&block) -> std::pair<iterator, bool> {
+inline auto BlockLRUCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id,
+                                   std::size_t block_id, mapped_type &&block)
+    -> std::pair<iterator, bool> {
   assert(block);
 
   while (size() != 0 && size_in_bytes() + block->size_in_bytes() > max_size_in_bytes()) {
@@ -172,12 +187,14 @@ inline auto BlockLRUCache::emplace(key_t key, mapped_type &&block) -> std::pair<
   }
 
   _current_size_bytes += block->size_in_bytes();
-  return _cache.emplace(key, std::move(block));
+  return _cache.emplace(Key{chrom1_id, chrom2_id, block_id}, std::move(block));
 }
 
-inline auto BlockLRUCache::emplace(key_t key, InteractionBlock &&block)
+inline auto BlockLRUCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id,
+                                   std::size_t block_id, InteractionBlock &&block)
     -> std::pair<iterator, bool> {
-  return emplace(key, std::make_shared<InteractionBlock>(std::move(block)));
+  return emplace(chrom1_id, chrom2_id, block_id,
+                 std::make_shared<InteractionBlock>(std::move(block)));
 }
 
 constexpr double BlockLRUCache::hit_rate() const noexcept {

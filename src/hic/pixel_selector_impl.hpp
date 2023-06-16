@@ -280,10 +280,10 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   _buffer->clear();
   _buffer_i = 0;
   const auto bin_size = bins().bin_size();
-  const auto bin1 =
-      bins().at(coord1().bin1.chrom(), static_cast<std::uint32_t>(_bin1_id) * bin_size);
+  const auto &chrom1 = coord1().bin1.chrom();
+  const auto bin1 = bins().at(chrom1, static_cast<std::uint32_t>(_bin1_id) * bin_size);
   for (const auto block_idx : blocks) {
-    const auto blk = _sel->_reader.read(block_idx);
+    const auto blk = _sel->_reader.read(chrom1, coord2().bin1.chrom(), block_idx);
     const auto match = blk->find(_bin1_id);
     if (match == blk->end()) {
       continue;

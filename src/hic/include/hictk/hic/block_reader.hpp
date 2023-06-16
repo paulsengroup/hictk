@@ -60,7 +60,9 @@ class HiCBlockReader {
   [[nodiscard]] double sum() const noexcept;
   [[nodiscard]] double avg() const;
 
-  [[nodiscard]] std::shared_ptr<const InteractionBlock> read(const BlockIndex& idx);
+  [[nodiscard]] std::shared_ptr<const InteractionBlock> read(const Chromosome& chrom1,
+                                                             const Chromosome& chrom2,
+                                                             const BlockIndex& idx);
 
  private:
   [[nodiscard]] static Index read_index(HiCFileReader& hfs, const HiCFooter& footer);

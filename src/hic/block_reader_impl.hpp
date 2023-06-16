@@ -74,14 +74,16 @@ inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &foo
                         footer.resolution());
 }
 
-inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const BlockIndex &idx) {
+inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromosome &chrom1,
+                                                                    const Chromosome &chrom2,
+                                                                    const BlockIndex &idx) {
   if (!idx) {
     return {nullptr};
   }
 
   assert(_blk_cache);
   assert(_bins);
-  if (auto it = _blk_cache->find(idx.id()); it != _blk_cache->end()) {
+  if (auto it = _blk_cache->find(chrom1.id(), chrom2.id(), idx.id()); it != _blk_cache->end()) {
     return it->second;
   }
 
@@ -135,7 +137,8 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const BlockI
       HICTK_UNREACHABLE_CODE;
   }
 
-  auto it = _blk_cache->emplace(idx.id(), InteractionBlock{idx.id(), _tmp_buffer});
+  auto it = _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
+                                InteractionBlock{idx.id(), _tmp_buffer});
   return it.first->second;
 }
 

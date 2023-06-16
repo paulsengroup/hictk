@@ -76,7 +76,22 @@ class InteractionBlock {
 };
 
 class BlockLRUCache {
-  using MapT = tsl::ordered_map<std::size_t, std::shared_ptr<const InteractionBlock>>;
+ public:
+  struct Key {
+    std::size_t chrom1_id;  // NOLINT
+    std::size_t chrom2_id;  // NOLINT
+    std::size_t id;         // NOLINT
+
+    [[nodiscard]] constexpr bool operator==(const Key& other) const noexcept;
+  };
+
+ private:
+  struct KeyHasher {
+    [[nodiscard]] std::size_t operator()(const Key& k) const noexcept;
+  };
+
+  using MapT =
+      tsl::ordered_map<Key, std::shared_ptr<const InteractionBlock>, KeyHasher, std::equal_to<>>;
   using key_t = MapT::key_type;
   using mapped_type = MapT::mapped_type;
   using iterator = MapT::iterator;
@@ -106,10 +121,13 @@ class BlockLRUCache {
   [[nodiscard]] auto end() const noexcept -> const_iterator;
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
-  [[nodiscard]] auto find(key_t key) -> iterator;
+  [[nodiscard]] auto find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
+      -> iterator;
 
-  auto emplace(key_t key, mapped_type&& block) -> std::pair<iterator, bool>;
-  auto emplace(key_t key, InteractionBlock&& block) -> std::pair<iterator, bool>;
+  auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
+               mapped_type&& block) -> std::pair<iterator, bool>;
+  auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
+               InteractionBlock&& block) -> std::pair<iterator, bool>;
 
   [[nodiscard]] constexpr double hit_rate() const noexcept;
   [[nodiscard]] constexpr std::size_t hits() const noexcept;
