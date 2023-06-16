@@ -396,3 +396,34 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
     }
   }
 }
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long]") {
+  SECTION("accessors") {
+    auto sel = HiCFile(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
+
+    CHECK(sel.resolution() == 100'000);
+    CHECK(sel.matrix_type() == MatrixType::observed);
+    CHECK(sel.normalization() == NormalizationMethod::NONE);
+    CHECK(sel.unit() == MatrixUnit::BP);
+    CHECK(sel.bins().size() == 1382);
+  }
+
+  SECTION("v8") {
+    auto sel = HiCFile(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
+    const auto buffer = sel.read_all<double>();
+    REQUIRE(buffer.size() == 890384);
+
+    CHECK_THAT(sumCounts(buffer), Catch::Matchers::WithinRel(119208613, 1.0e-6));
+    CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+  }
+
+  SECTION("v9") {
+    auto sel = HiCFile(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
+    const auto buffer = sel.read_all<double>();
+    REQUIRE(buffer.size() == 890384);
+
+    CHECK_THAT(sumCounts(buffer), Catch::Matchers::WithinRel(119208613, 1.0e-6));
+    CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+  }
+}

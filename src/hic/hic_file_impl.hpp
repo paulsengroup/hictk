@@ -61,24 +61,68 @@ inline const std::vector<std::uint32_t>& HiCFile::avail_resolutions() const noex
 inline std::uint32_t HiCFile::resolution() const noexcept { return _bins->bin_size(); }
 
 inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
-    std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+    const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
     NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution) const {
-  const internal::HiCFooterMetadata metadata{url(),
-                                             matrix_type,
-                                             norm,
-                                             unit,
-                                             resolution,
-                                             _fs->header().chromosomes.at(chrom1_id),
-                                             _fs->header().chromosomes.at(chrom2_id)};
+  const internal::HiCFooterMetadata metadata{url(),      matrix_type, norm,  unit,
+                                             resolution, chrom1,      chrom2};
   auto it = _footers.find(metadata);
   if (it != _footers.end()) {
     return *it;
   }
 
-  auto [node, _] =
-      _footers.emplace(_fs->read_footer(chrom1_id, chrom2_id, matrix_type, norm, unit, resolution));
+  try {
+    auto [node, _] = _footers.emplace(
+        _fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm, unit, resolution));
 
-  return *node;
+    return *node;
+  } catch (const std::exception& e) {
+    // Check whether query is valid but there are no interactions for the given chromosome
+    // pair
+    const auto missing_footer =
+        std::string_view{e.what()}.find("unable to read file offset") == std::string_view::npos;
+    if (missing_footer) {
+      throw;
+    }
+
+    auto idx = [&]() -> internal::Index {
+      if (metadata.fileOffset != -1) {
+        return _fs->read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
+                               metadata.resolution);
+      }
+      // Chromosomes are valid, but footer is missing, meaning that file has no interactions
+      // for the given params: return an empty index/footer
+      return {metadata.chrom1,
+              metadata.chrom2,
+              metadata.unit,
+              metadata.resolution,
+              _fs->version(),
+              1,
+              1,
+              0,
+              {}};
+    }();
+    return std::make_shared<const internal::HiCFooter>(std::move(idx), std::move(metadata));
+  }
+}
+
+inline PixelSelectorAll HiCFile::fetch(NormalizationMethod norm) const {
+  std::vector<PixelSelector> selectors;
+
+  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
+    const auto& chrom1 = chromosomes().at(chrom1_id);
+    if (chrom1.is_all()) {
+      continue;
+    }
+    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
+      const auto& chrom2 = chromosomes().at(chrom2_id);
+      if (chrom2.is_all()) {
+        continue;
+      }
+      selectors.emplace_back(fetch(chrom1.name(), chrom2.name(), norm));
+    }
+  }
+
+  return PixelSelectorAll{std::move(selectors)};
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view query, NormalizationMethod norm,

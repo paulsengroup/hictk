@@ -52,6 +52,8 @@ class HiCFile {
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
+  [[nodiscard]] PixelSelectorAll fetch(NormalizationMethod norm = NormalizationMethod::NONE) const;
+
   [[nodiscard]] PixelSelector fetch(std::string_view query,
                                     NormalizationMethod norm = NormalizationMethod::NONE,
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;

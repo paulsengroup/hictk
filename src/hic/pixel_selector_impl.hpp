@@ -315,4 +315,112 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   assert(std::is_sorted(_buffer->begin(), _buffer->end()));
   _bin1_id++;
 }
+
+inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
+    : _selectors(std::move(selectors_)) {}
+
+template <typename N>
+inline auto PixelSelectorAll::begin() const -> iterator<N> {
+  return cbegin<N>();
+}
+template <typename N>
+inline auto PixelSelectorAll::cbegin() const -> iterator<N> {
+  return iterator<N>(_selectors);
+}
+
+template <typename N>
+inline auto PixelSelectorAll::end() const -> iterator<N> {
+  return cend<N>();
+}
+template <typename N>
+inline auto PixelSelectorAll::cend() const -> iterator<N> {
+  return iterator<N>{};
+}
+
+template <typename N>
+inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
+  // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
+  // and a second time to copy the actual data)
+  std::vector<Pixel<N>> buff{};
+  std::copy(begin<N>(), end<N>(), std::back_inserter(buff));
+  return buff;
+}
+
+inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
+  return _selectors.front().matrix_type();
+}
+inline NormalizationMethod PixelSelectorAll::normalization() const noexcept {
+  return _selectors.front().normalization();
+}
+inline MatrixUnit PixelSelectorAll::unit() const noexcept { return _selectors.front().unit(); }
+inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
+  return _selectors.front().resolution();
+}
+
+inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
+
+template <typename N>
+inline PixelSelectorAll::iterator<N>::iterator(const std::vector<PixelSelector> &selectors_) {
+  std::vector<PixelSelector::iterator<N>> heads;
+  std::vector<PixelSelector::iterator<N>> tails;
+
+  for (const auto &sel : selectors_) {
+    auto first = sel.begin<N>();
+    auto last = sel.end<N>();
+    if (first != last) {
+      heads.emplace_back(std::move(first));
+      tails.emplace_back(std::move(last));
+    }
+  }
+
+  if (heads.empty()) {
+    *this = iterator{};
+    return;
+  }
+
+  _merger = std::make_shared<PixelMerger>(std::move(heads), std::move(tails));
+  _value = _merger->next();
+
+  if (!_value) {
+    *this = iterator{};
+    return;
+  }
+}
+
+template <typename N>
+inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
+  return _i == other._i && _value == other._value;
+}
+
+template <typename N>
+inline bool PixelSelectorAll::iterator<N>::operator!=(const iterator<N> &other) const noexcept {
+  return !(*this == other);
+}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator*() const -> const_reference {
+  return _value;
+}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
+  return &_value;
+}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
+  _value = _merger->next();
+  if (!_value) {
+    *this = iterator{};
+  }
+  return *this;
+}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
+  auto it = *this;
+  std::ignore = ++(*this);
+  return it;
+}
+
 }  // namespace hictk::hic

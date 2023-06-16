@@ -130,6 +130,70 @@ class PixelSelector {
   };
 };
 
+class PixelSelectorAll {
+ public:
+  template <typename N>
+  class iterator;
+
+ private:
+  std::vector<PixelSelector> _selectors{};
+
+ public:
+  PixelSelectorAll() = default;
+  explicit PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept;
+
+  template <typename N>
+  [[nodiscard]] auto begin() const -> iterator<N>;
+  template <typename N>
+  [[nodiscard]] auto end() const -> iterator<N>;
+
+  template <typename N>
+  [[nodiscard]] auto cbegin() const -> iterator<N>;
+  template <typename N>
+  [[nodiscard]] auto cend() const -> iterator<N>;
+
+  template <typename N>
+  [[nodiscard]] std::vector<Pixel<N>> read_all() const;
+
+  [[nodiscard]] MatrixType matrix_type() const noexcept;
+  [[nodiscard]] NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] MatrixUnit unit() const noexcept;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
+
+  [[nodiscard]] const BinTable &bins() const noexcept;
+
+  template <typename N>
+  class iterator {
+    static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
+
+    using PixelMerger = hictk::internal::PixelMerger<PixelSelector::iterator<N>>;
+    std::shared_ptr<PixelMerger> _merger{};
+    Pixel<N> _value{};
+    std::size_t _i{npos};
+
+   public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = Pixel<N>;
+    using pointer = value_type *;
+    using const_pointer = const value_type *;
+    using reference = value_type &;
+    using const_reference = const value_type &;
+    using iterator_category = std::forward_iterator_tag;
+
+    iterator() = default;
+    explicit iterator(const std::vector<PixelSelector> &selectors_);
+
+    [[nodiscard]] bool operator==(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
+
+    [[nodiscard]] auto operator*() const -> const_reference;
+    [[nodiscard]] auto operator->() const -> const_pointer;
+
+    auto operator++() -> iterator &;
+    auto operator++(int) -> iterator;
+  };
+};
+
 }  // namespace hictk::hic
 
 #include "../../../pixel_selector_impl.hpp"
