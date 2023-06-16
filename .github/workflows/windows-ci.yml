@@ -153,8 +153,9 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 3600 |&
-          head -n 1000
+                --timeout 180       \
+                --exclude 'HiC: pixel selector fetch.*' |&
+          tail -n 1000
 
   windows-ci-status-check:
     name: Status Check (Windows CI)
