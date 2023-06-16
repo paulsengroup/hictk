@@ -92,8 +92,7 @@ class PixelMerger {
 
  public:
   PixelMerger() = delete;
-  PixelMerger(const std::vector<PixelIt> &head, const std::vector<PixelIt> &tail);
-  PixelMerger(PixelIt head_first, PixelIt head_last, PixelIt tail_first);
+  PixelMerger(std::vector<PixelIt> head, std::vector<PixelIt> tail);
   [[nodiscard]] auto next() -> Pixel<N>;
 
  private:

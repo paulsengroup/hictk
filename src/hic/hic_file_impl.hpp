@@ -23,7 +23,7 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
       _type(type_),
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockLRUCache>(block_cache_capacity)),
-      _bins(std::make_shared<const BinTable>(chromosomes(), resolution_)) {
+      _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   assert(block_cache_capacity != 0);
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
@@ -46,7 +46,11 @@ inline const std::string& HiCFile::name() const noexcept { return url(); }
 
 inline std::int32_t HiCFile::version() const noexcept { return _fs->version(); }
 
-inline const Reference& HiCFile::chromosomes() const noexcept { return _fs->header().chromosomes; }
+inline const BinTable& HiCFile::bins() const noexcept {
+  assert(_bins);
+  return *_bins;
+}
+inline const Reference& HiCFile::chromosomes() const noexcept { return bins().chromosomes(); }
 
 inline const std::string& HiCFile::assembly() const noexcept { return _fs->header().genomeID; }
 
@@ -94,12 +98,12 @@ inline PixelSelector HiCFile::fetch(std::string_view chrom_name, std::uint32_t s
 inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view range2,
                                     NormalizationMethod norm, QUERY_TYPE query_type) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
-                       ? GenomicInterval::parse_bed(this->chromosomes(), range1)
-                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range1});
+                       ? GenomicInterval::parse_bed(chromosomes(), range1)
+                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
 
   const auto gi2 = query_type == QUERY_TYPE::BED
-                       ? GenomicInterval::parse_bed(this->chromosomes(), range2)
-                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range2});
+                       ? GenomicInterval::parse_bed(chromosomes(), range2)
+                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{range2});
 
   return this->fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(),
                      norm);
@@ -130,41 +134,9 @@ inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t star
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
   const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2 - 1)};
 
-  auto footer = [&]() {
-    try {
-      return get_footer(chrom1.id(), chrom2.id(), _type, norm, _unit, resolution());
-    } catch (const std::exception& e) {
-      // Check whether query is valid but there are no interactions for the given chromosome
-      // pair
-      const auto missing_footer =
-          std::string_view{e.what()}.find("unable to read file offset") == std::string_view::npos;
-      if (missing_footer) {
-        throw;
-      }
-
-      internal::HiCFooterMetadata metadata{url(),        _type,  norm,   _unit,
-                                           resolution(), chrom1, chrom2, -1};
-
-      if (metadata.fileOffset == -1) {
-        return std::make_shared<const internal::HiCFooter>(internal::Index{metadata.chrom1,
-                                                                           metadata.chrom2,
-                                                                           metadata.unit,
-                                                                           metadata.resolution,
-                                                                           _fs->version(),
-                                                                           1,
-                                                                           1,
-                                                                           0,
-                                                                           {}},
-                                                           std::move(metadata));
-      }
-      return std::make_shared<const internal::HiCFooter>(
-          _fs->read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
-                          metadata.resolution),
-          std::move(metadata));
-    }
-  }();
-
-  return PixelSelector{_fs, footer, _block_cache, _bins, coord1, coord2};
+  return {_fs,          get_footer(chrom1, chrom2, _type, norm, _unit, resolution()),
+          _block_cache, _bins,
+          coord1,       coord2};
 }
 
 inline std::size_t HiCFile::num_cached_footers() const noexcept { return _footers.size(); }

@@ -395,10 +395,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     }
   }
   if (metadata.fileOffset == -1) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("unable to find interactions for {}:{} at {} ({}): unable to read file offset"),
-        _header->chromosomes.at(chrom1_id).name(), _header->chromosomes.at(chrom2_id).name(),
-        wanted_resolution, wanted_unit));
+    return HiCFooter{Index{}, std::move(metadata)};
   }
 
   const auto file_offset = _fs->tellg();

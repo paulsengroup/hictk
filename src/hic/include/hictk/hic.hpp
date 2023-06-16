@@ -47,6 +47,7 @@ class HiCFile {
   [[nodiscard]] const std::string &name() const noexcept;
   [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] const Reference &chromosomes() const noexcept;
+  [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
@@ -73,7 +74,7 @@ class HiCFile {
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
-      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
       NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution) const;
 
   [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,

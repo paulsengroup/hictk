@@ -158,20 +158,17 @@ inline bool PixelMerger<PixelIt>::Node::operator!=(const Node &other) const noex
 }
 
 template <typename PixelIt>
-inline PixelMerger<PixelIt>::PixelMerger(const std::vector<PixelIt> &heads,
-                                         const std::vector<PixelIt> &tails) {
+inline PixelMerger<PixelIt>::PixelMerger(std::vector<PixelIt> heads, std::vector<PixelIt> tails) {
   assert(heads.size() == tails.size());
-  auto tail = tails.begin();
-  std::for_each(heads.begin(), heads.end(), [&](const auto &it) {
-    auto first = it;
-    auto last = *tail++;
+  for (std::size_t i = 0; i < heads.size(); ++i) {
+    auto &first = heads[i];
+    auto &last = tails[i];
     if (first != last) {
-      auto pixel = *first++;
       _heads.emplace_back(std::move(first));
       _tails.emplace_back(std::move(last));
-      _pqueue.emplace(Node{std::move(pixel), _pqueue.size()});
+      _pqueue.emplace(Node{std::move(*_heads.back()++), _pqueue.size()});
     }
-  });
+  }
 }
 
 template <typename PixelIt>
