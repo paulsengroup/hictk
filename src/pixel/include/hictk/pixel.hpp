@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <queue>
 #include <string_view>
 #include <type_traits>
 
@@ -63,6 +64,42 @@ struct Pixel {
   [[nodiscard]] bool operator>(const Pixel<N> &other) const noexcept;
   [[nodiscard]] bool operator>=(const Pixel<N> &other) const noexcept;
 };
+
+namespace internal {
+
+/// This class is basically a wrapper around a priority queue of objects of type Node
+/// Node consist of a pixel and an index. The index represent from which iterator the
+/// pixel was read. This allows us to know from which iterator we should read the next pixel (i.e.
+/// the same iterator from which the top pixel originated)
+template <typename PixelIt>
+class PixelMerger {
+  using N = decltype(std::declval<PixelIt>()->count);
+  struct Node {
+    Pixel<N> pixel{};  // NOLINT
+    std::size_t i{};   // NOLINT
+
+    bool operator<(const Node &other) const noexcept;
+    bool operator>(const Node &other) const noexcept;
+    bool operator==(const Node &other) const noexcept;
+    bool operator!=(const Node &other) const noexcept;
+  };
+
+  std::vector<Pixel<N>> _buffer{};
+  std::priority_queue<Node, std::vector<Node>, std::greater<>> _pqueue{};
+
+  std::vector<PixelIt> _heads{};
+  std::vector<PixelIt> _tails{};
+
+ public:
+  PixelMerger() = delete;
+  PixelMerger(const std::vector<PixelIt> &head, const std::vector<PixelIt> &tail);
+  PixelMerger(PixelIt head_first, PixelIt head_last, PixelIt tail_first);
+  [[nodiscard]] auto next() -> Pixel<N>;
+
+ private:
+  void replace_top_node(std::size_t i);
+};
+}  // namespace internal
 
 }  // namespace hictk
 

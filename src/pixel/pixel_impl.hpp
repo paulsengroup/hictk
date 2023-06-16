@@ -10,120 +10,6 @@
 #include "hictk/chromosome.hpp"
 
 namespace hictk {
-/*
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          const Chromosome &chrom1, const Chromosome &chrom2,
-                                          std::uint32_t bin1_start_, std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, bins->chromosomes().get_id(chrom1), bins->chromosomes().get_id(chrom2),
-                       bin1_start_, bin2_start_) {}
-
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          std::string_view chrom1_name,
-                                          std::string_view chrom2_name, std::uint32_t bin1_start_,
-                                          std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, bins->chromosomes().get_id(chrom1_name),
-                       bins->chromosomes().get_id(chrom2_name), bin1_start_, bin2_start_) {}
-
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          std::uint32_t chrom1_id_, std::uint32_t chrom2_id_,
-                                          std::uint32_t bin1_start_, std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, bins->map_to_bin_id(chrom1_id_, bin1_start_),
-                       bins->map_to_bin_id(chrom2_id_, bin2_start_)) {}
-
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          const Chromosome &chrom, std::uint32_t bin1_start_,
-                                          std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, chrom, chrom, bin1_start_, bin2_start_) {}
-
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          std::uint32_t chrom_id, std::uint32_t bin1_start_,
-                                          std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, chrom_id, chrom_id, bin1_start_, bin2_start_) {}
-
-inline PixelCoordinates::PixelCoordinates(const std::shared_ptr<const BinTable> &bins,
-                                          std::string_view chrom_name, std::uint32_t bin1_start_,
-                                          std::uint32_t bin2_start_)
-    : PixelCoordinates(bins, chrom_name, chrom_name, bin1_start_, bin2_start_) {}
-
-inline PixelCoordinates::PixelCoordinates(std::shared_ptr<const BinTable> bins,
-                                          std::uint64_t bin1_id_, std::uint64_t bin2_id_)
-    : _bins(std::move(bins)), _bin1_id(bin1_id_), _bin2_id(bin2_id_) {
-  assert(_bin1_id <= _bins->size());
-  assert(_bin2_id <= _bins->size());
-}
-
-inline PixelCoordinates::operator bool() const noexcept { return !!this->_bins; }
-
-inline const Chromosome &PixelCoordinates::chrom1() const { return this->bin1().chrom; }
-
-inline const Chromosome &PixelCoordinates::chrom2() const { return this->bin2().chrom; }
-
-inline std::uint32_t PixelCoordinates::bin1.chrom().id() const {
-  return this->_bins->chromosomes().get_id(this->chrom1());
-}
-
-inline std::uint32_t PixelCoordinates::bin2.chrom().id() const {
-  return this->_bins->chromosomes().get_id(this->chrom2());
-}
-
-inline GenomicInterval PixelCoordinates::bin1() const {
-  assert(this->_bins);
-  assert(!!*this);
-
-  return this->_bins->bin_id_to_coords(_bin1_id);
-}
-
-inline GenomicInterval PixelCoordinates::bin2() const {
-  assert(this->_bins);
-  assert(!!*this);
-
-  return this->_bins->at(_bin2_id);
-}
-
-inline std::uint64_t PixelCoordinates::bin1_id() const noexcept { return this->_bin1_id; }
-inline std::uint64_t PixelCoordinates::bin2_id() const noexcept { return this->_bin2_id; }
-
-inline std::uint32_t PixelCoordinates::bin_size() const noexcept {
-  assert(this->_bins);
-  return this->_bins->bin_size();
-}
-
-constexpr bool PixelCoordinates::operator==(const PixelCoordinates &other) const noexcept {
-  return this->_bin1_id == other._bin1_id && this->_bin2_id == other._bin2_id;
-}
-
-constexpr bool PixelCoordinates::operator!=(const PixelCoordinates &other) const noexcept {
-  return !(*this == other);
-}
-
-constexpr bool PixelCoordinates::operator<(const PixelCoordinates &other) const noexcept {
-  if (this->_bin1_id == other._bin1_id) {
-    return this->_bin2_id < other._bin2_id;
-  }
-  return this->_bin1_id < other._bin1_id;
-}
-
-constexpr bool PixelCoordinates::operator<=(const PixelCoordinates &other) const noexcept {
-  if (this->_bin1_id == other._bin1_id) {
-    return this->_bin2_id <= other._bin2_id;
-  }
-  return this->_bin1_id <= other._bin1_id;
-}
-
-constexpr bool PixelCoordinates::operator>(const PixelCoordinates &other) const noexcept {
-  if (this->_bin1_id == other._bin1_id) {
-    return this->_bin2_id > other._bin2_id;
-  }
-  return this->_bin1_id > other._bin1_id;
-}
-
-constexpr bool PixelCoordinates::operator>=(const PixelCoordinates &other) const noexcept {
-  if (this->_bin1_id == other._bin1_id) {
-    return this->_bin2_id >= other._bin2_id;
-  }
-  return this->_bin1_id >= other._bin1_id;
-}
-*/
 
 inline PixelCoordinates::PixelCoordinates(Bin bin1_, Bin bin2_) noexcept
     : bin1(std::move(bin1_)), bin2(std::move(bin2_)) {}
@@ -245,4 +131,77 @@ inline bool Pixel<N>::operator>=(const Pixel<N> &other) const noexcept {
   }
   return this->coords >= other.coords;
 }
+
+namespace internal {
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::Node::operator<(const Node &other) const noexcept {
+  assert(!!this->pixel);
+  assert(!!other.pixel);
+  return this->pixel.coords < other.pixel.coords;
+}
+
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::Node::operator>(const Node &other) const noexcept {
+  assert(!!this->pixel);
+  assert(!!other.pixel);
+  return this->pixel.coords > other.pixel.coords;
+}
+
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::Node::operator==(const Node &other) const noexcept {
+  return this->pixel.coords == other.pixel.coords;
+}
+
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::Node::operator!=(const Node &other) const noexcept {
+  return !(*this == other);
+}
+
+template <typename PixelIt>
+inline PixelMerger<PixelIt>::PixelMerger(const std::vector<PixelIt> &heads,
+                                         const std::vector<PixelIt> &tails) {
+  assert(heads.size() == tails.size());
+  auto tail = tails.begin();
+  std::for_each(heads.begin(), heads.end(), [&](const auto &it) {
+    auto first = it;
+    auto last = *tail++;
+    if (first != last) {
+      auto pixel = *first++;
+      _heads.emplace_back(std::move(first));
+      _tails.emplace_back(std::move(last));
+      _pqueue.emplace(Node{std::move(pixel), _pqueue.size()});
+    }
+  });
+}
+
+template <typename PixelIt>
+inline void PixelMerger<PixelIt>::replace_top_node(std::size_t i) {
+  assert(this->_pqueue.top().i == i);
+  this->_pqueue.pop();
+  if (auto &it = this->_heads[i]; it != this->_tails[i]) {
+    this->_pqueue.emplace(Node{*it++, i});
+  }
+}
+
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::next() -> Pixel<N> {
+  if (this->_pqueue.empty()) {
+    return {};
+  }
+
+  auto current_node = this->_pqueue.top();
+  this->replace_top_node(current_node.i);
+
+  while (!this->_pqueue.empty()) {
+    const auto next_node = this->_pqueue.top();
+    if (next_node != current_node) {
+      break;
+    }
+    current_node.pixel.count += next_node.pixel.count;
+    this->replace_top_node(next_node.i);
+  }
+  return current_node.pixel;
+}
+}  // namespace internal
+
 }  // namespace hictk

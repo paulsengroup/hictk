@@ -14,104 +14,6 @@
 namespace hictk::cooler::utils {
 
 namespace internal {
-template <typename N>
-inline bool PixelMerger<N>::Node::operator<(const Node& other) const noexcept {
-  assert(!!this->pixel);
-  assert(!!other.pixel);
-  return this->pixel.coords < other.pixel.coords;
-}
-
-template <typename N>
-inline bool PixelMerger<N>::Node::operator>(const Node& other) const noexcept {
-  assert(!!this->pixel);
-  assert(!!other.pixel);
-  return this->pixel.coords > other.pixel.coords;
-}
-
-template <typename N>
-inline bool PixelMerger<N>::Node::operator==(const Node& other) const noexcept {
-  return this->pixel.coords == other.pixel.coords;
-}
-
-template <typename N>
-inline bool PixelMerger<N>::Node::operator!=(const Node& other) const noexcept {
-  return !(*this == other);
-}
-
-template <typename N>
-inline PixelMerger<N>::PixelMerger(const std::vector<File>& input_coolers)
-    : PixelMerger<N>(input_coolers.begin(), input_coolers.end()) {}
-
-template <typename N>
-template <typename FileIt>
-inline PixelMerger<N>::PixelMerger(FileIt first_file, FileIt last_file) {
-  std::for_each(first_file, last_file, [&](const auto& clr) {
-    auto first = clr.template begin<N>();
-    auto last = clr.template end<N>();
-    if (first != last) {
-      auto pixel = *first++;
-      _heads.emplace_back(std::move(first));
-      _tails.emplace_back(std::move(last));
-      _pqueue.emplace(Node{std::move(pixel), _pqueue.size()});
-    }
-  });
-}
-
-template <typename N>
-inline void PixelMerger<N>::merge(File& clr, std::size_t queue_capacity, bool quiet) {
-  this->_buffer.clear();
-  this->_buffer.reserve((std::max)(queue_capacity, this->_buffer.capacity()));
-
-  std::size_t pixels_processed{};
-  while (true) {
-    auto pixel = this->next();
-    if (!pixel) {
-      break;
-    }
-    this->_buffer.emplace_back(std::move(pixel));
-    if (this->_buffer.size() == queue_capacity) {
-      clr.append_pixels(this->_buffer.begin(), this->_buffer.end());
-      pixels_processed += this->_buffer.size();
-      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(1'000'000)) == 0) {
-        fmt::print(stderr, FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 1'000'000);
-      }
-      this->_buffer.clear();
-    }
-  }
-
-  if (!this->_buffer.empty()) {
-    clr.append_pixels(this->_buffer.begin(), this->_buffer.end());
-  }
-}
-
-template <typename N>
-inline void PixelMerger<N>::replace_top_node(std::size_t i) {
-  assert(this->_pqueue.top().i == i);
-  this->_pqueue.pop();
-  if (auto& it = this->_heads[i]; it != this->_tails[i]) {
-    this->_pqueue.emplace(Node{*it++, i});
-  }
-}
-
-template <typename N>
-inline Pixel<N> PixelMerger<N>::next() {
-  if (this->_pqueue.empty()) {
-    return {};
-  }
-
-  auto current_node = this->_pqueue.top();
-  this->replace_top_node(current_node.i);
-
-  while (!this->_pqueue.empty()) {
-    const auto next_node = this->_pqueue.top();
-    if (next_node != current_node) {
-      break;
-    }
-    current_node.pixel.count += next_node.pixel.count;
-    this->replace_top_node(next_node.i);
-  }
-  return current_node.pixel;
-}
 
 [[nodiscard]] inline std::uint32_t get_bin_size_checked(const std::vector<File>& coolers) {
   assert(coolers.size() > 1);
@@ -153,6 +55,75 @@ inline Pixel<N> PixelMerger<N>::next() {
   return false;
 }
 
+template <typename N>
+inline void merge(const std::vector<typename PixelSelector<N>::iterator>& heads,
+                  const std::vector<typename PixelSelector<N>::iterator>& tails, File& dest,
+                  std::size_t queue_capacity, bool quiet) {
+  hictk::internal::PixelMerger merger{heads, tails};
+
+  std::vector<Pixel<N>> buffer(queue_capacity);
+  buffer.clear();
+
+  std::size_t pixels_processed{};
+  while (true) {
+    auto pixel = merger.next();
+    if (!pixel) {
+      break;
+    }
+
+    buffer.emplace_back(std::move(pixel));
+    if (buffer.size() == queue_capacity) {
+      dest.append_pixels(buffer.begin(), buffer.end());
+      pixels_processed += buffer.size();
+      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(1'000'000)) == 0) {
+        fmt::print(stderr, FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 1'000'000);
+      }
+    }
+  }
+
+  if (!buffer.empty()) {
+    dest.append_pixels(buffer.begin(), buffer.end());
+  }
+}
+
+template <typename N>
+struct CoolerIteratorPairs {
+  std::vector<typename PixelSelector<N>::iterator> heads{};
+  std::vector<typename PixelSelector<N>::iterator> tails{};
+};
+
+template <typename N>
+inline CoolerIteratorPairs<N> collect_iterators(const std::vector<File>& clrs) {
+  if constexpr (std::is_floating_point_v<N>) {
+    std::vector<PixelSelector<double>::iterator> heads{};
+    std::vector<PixelSelector<double>::iterator> tails{};
+
+    for (const auto& clr : clrs) {
+      auto first = clr.begin<double>();
+      auto last = clr.end<double>();
+      if (first != last) {
+        heads.emplace_back(std::move(first));
+        tails.emplace_back(std::move(last));
+      }
+    }
+
+    return {heads, tails};
+  } else {
+    std::vector<PixelSelector<std::int32_t>::iterator> heads{};
+    std::vector<PixelSelector<std::int32_t>::iterator> tails{};
+
+    for (const auto& clr : clrs) {
+      auto first = clr.begin<std::int32_t>();
+      auto last = clr.end<std::int32_t>();
+      if (first != last) {
+        heads.emplace_back(std::move(first));
+        tails.emplace_back(std::move(last));
+      }
+    }
+    return {heads, tails};
+  }
+}
+
 }  // namespace internal
 
 template <typename Str>
@@ -179,9 +150,11 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
           : File::create_new_cooler<std::int32_t>(dest_uri, chroms, bin_size, overwrite_if_exists);
   try {
     if (float_pixels) {
-      internal::PixelMerger<double>(clrs).merge(dest, chunk_size, quiet);
+      auto [heads, tails] = internal::collect_iterators<double>(clrs);
+      internal::merge<double>(heads, tails, dest, chunk_size, quiet);
     } else {
-      internal::PixelMerger<std::int32_t>(clrs).merge(dest, chunk_size, quiet);
+      auto [heads, tails] = internal::collect_iterators<std::int32_t>(clrs);
+      internal::merge<std::int32_t>(heads, tails, dest, chunk_size, quiet);
     }
   } catch (const std::exception& e) {
     throw std::runtime_error(
