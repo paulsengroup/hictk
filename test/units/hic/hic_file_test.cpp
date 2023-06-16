@@ -63,7 +63,7 @@ TEST_CASE("HiC: footer cache", "[hic][short]") {
     std::ignore = f.fetch(chrom.name());
   }
 
-  CHECK(f.num_cached_footers() == 7);
+  CHECK(f.num_cached_footers() == 8);
 
   const auto sel1 = f.fetch("chr2L");
   const auto sel2 = f.fetch("chr2L");
