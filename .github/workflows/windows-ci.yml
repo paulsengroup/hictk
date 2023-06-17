@@ -154,7 +154,7 @@ jobs:
                 --output-on-failure \
                 --no-tests=error    \
                 --timeout 180       \
-                --exclude 'HiC: pixel selector fetch.*' |&
+                --exclude-regex 'HiC: pixel selector fetch.*' |&
           tail -n 1000
 
   windows-ci-status-check:
