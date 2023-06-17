@@ -395,7 +395,13 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     }
   }
   if (metadata.fileOffset == -1) {
-    return HiCFooter{Index{}, std::move(metadata)};
+    const auto num_bins1 = (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution;
+    const auto num_bins2 = (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution;
+
+    auto f = HiCFooter{Index{}, std::move(metadata)};
+    f.c1Norm() = std::vector<double>(num_bins1, std::numeric_limits<double>::quiet_NaN());
+    f.c2Norm() = std::vector<double>(num_bins2, std::numeric_limits<double>::quiet_NaN());
+    return f;
   }
 
   const auto file_offset = _fs->tellg();

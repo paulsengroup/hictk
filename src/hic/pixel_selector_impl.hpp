@@ -132,6 +132,13 @@ inline std::uint32_t PixelSelector::resolution() const noexcept {
 inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1.bin1.chrom(); }
 inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2.bin1.chrom(); }
 
+inline const std::vector<double> &PixelSelector::chrom1_norm() const noexcept {
+  return _footer->c1Norm();
+}
+inline const std::vector<double> &PixelSelector::chrom2_norm() const noexcept {
+  return _footer->c2Norm();
+}
+
 inline const BinTable &PixelSelector::bins() const noexcept { return _reader.bins(); }
 
 inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexcept {

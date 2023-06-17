@@ -67,6 +67,9 @@ class PixelSelector {
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
+  [[nodiscard]] const std::vector<double> &chrom1_norm() const noexcept;
+  [[nodiscard]] const std::vector<double> &chrom2_norm() const noexcept;
+
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
 
