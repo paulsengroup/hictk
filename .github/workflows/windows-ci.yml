@@ -154,8 +154,7 @@ jobs:
                 --output-on-failure \
                 --no-tests=error    \
                 --timeout 180       \
-                --exclude-regex 'HiC: pixel selector fetch.*' \
-                --exclude-regex 'Cooler: dataset large read/write.*' |&
+                --exclude-regex '(HiC: pixel selector fetch.*)|(Cooler: dataset large read\/write.*)' |&
           tail -n 1000
 
   windows-ci-status-check:
