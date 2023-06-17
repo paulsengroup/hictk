@@ -161,15 +161,16 @@ class PixelSelectorAll {
   [[nodiscard]] NormalizationMethod normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
-
   [[nodiscard]] const BinTable &bins() const noexcept;
 
   template <typename N>
   class iterator {
     static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
+    const PixelSelectorAll *_sel{};
 
     using PixelMerger = hictk::internal::PixelMerger<PixelSelector::iterator<N>>;
     std::shared_ptr<PixelMerger> _merger{};
+    std::vector<PixelSelector>::const_iterator _it{};
     Pixel<N> _value{};
     std::size_t _i{npos};
 
@@ -183,7 +184,7 @@ class PixelSelectorAll {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const std::vector<PixelSelector> &selectors_);
+    explicit iterator(const PixelSelectorAll &sel);
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
@@ -193,6 +194,9 @@ class PixelSelectorAll {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
+
+   private:
+    void setup_next_pixel_merger();
   };
 };
 
