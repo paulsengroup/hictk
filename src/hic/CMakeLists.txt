@@ -5,7 +5,6 @@
 find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(libdeflate QUIET REQUIRED)
-find_package(tsl-ordered-map QUIET REQUIRED)
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
@@ -37,5 +36,5 @@ target_link_system_libraries(
   INTERFACE
   fmt::fmt
   libdeflate::libdeflate
-  tsl::ordered_map
+  phmap
   std::filesystem)

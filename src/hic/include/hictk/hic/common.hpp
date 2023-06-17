@@ -5,7 +5,6 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <tsl/ordered_map.h>
 
 #include <cassert>
 #include <cstdint>

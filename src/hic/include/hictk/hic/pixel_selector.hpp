@@ -33,14 +33,13 @@ class PixelSelector {
   PixelSelector() = delete;
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
-                std::shared_ptr<internal::BlockLRUCache> cache_,
-                std::shared_ptr<const BinTable> bins_, PixelCoordinates coords) noexcept;
+                std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
+                PixelCoordinates coords) noexcept;
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
-                std::shared_ptr<internal::BlockLRUCache> cache_,
-                std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                PixelCoordinates coord2_) noexcept;
+                std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
+                PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;

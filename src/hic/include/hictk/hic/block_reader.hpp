@@ -35,8 +35,7 @@ class BinaryBuffer {
 
 class HiCBlockReader {
   std::shared_ptr<HiCFileReader> _hfs{};
-  std::shared_ptr<BlockLRUCache> _blk_cache{};  // This should be passed in by file. Key should be
-                                                // changed from size_t to {chrom1, chrom2, size_t}
+  std::shared_ptr<BlockCache> _blk_cache{};
   // We need the entire bin table in order to map pixels to abs bin ids
   std::shared_ptr<const BinTable> _bins{};
   Index _index{};
@@ -47,8 +46,7 @@ class HiCBlockReader {
  public:
   HiCBlockReader() = default;
   HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index& master_index,
-                 std::shared_ptr<const BinTable> bins_,
-                 std::shared_ptr<BlockLRUCache> block_cache_);
+                 std::shared_ptr<const BinTable> bins_, std::shared_ptr<BlockCache> block_cache_);
 
   [[nodiscard]] explicit operator bool() const noexcept;
 

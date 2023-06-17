@@ -34,7 +34,7 @@ inline std::string &BinaryBuffer::reset() noexcept {
 
 inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index &master_index,
                                       std::shared_ptr<const BinTable> bins_,
-                                      std::shared_ptr<BlockLRUCache> block_cache_)
+                                      std::shared_ptr<BlockCache> block_cache_)
     : _hfs(std::move(hfs)),
       _blk_cache(std::move(block_cache_)),
       _bins(std::move(bins_)),
@@ -83,8 +83,9 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
 
   assert(_blk_cache);
   assert(_bins);
-  if (auto it = _blk_cache->find(chrom1.id(), chrom2.id(), idx.id()); it != _blk_cache->end()) {
-    return it->second;
+  auto blk = _blk_cache->find(chrom1.id(), chrom2.id(), idx.id());
+  if (blk) {
+    return blk;
   }
 
   _hfs->readAndInflate(idx, _bbuffer.reset());
@@ -137,9 +138,8 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
       HICTK_UNREACHABLE_CODE;
   }
 
-  auto it = _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
-                                InteractionBlock{idx.id(), _tmp_buffer});
-  return it.first->second;
+  return _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
+                             InteractionBlock{idx.id(), _tmp_buffer});
 }
 
 inline void HiCBlockReader::read_dispatcher_type1_block(

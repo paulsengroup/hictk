@@ -30,7 +30,7 @@ class HiCFile {
   mutable internal::FooterCache _footers{};
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};
-  mutable std::shared_ptr<internal::BlockLRUCache> _block_cache{};
+  mutable std::shared_ptr<internal::BlockCache> _block_cache{};
   std::shared_ptr<const BinTable> _bins{};
 
  public:
@@ -71,8 +71,7 @@ class HiCFile {
   void purge_footer_cache();
 
   [[nodiscard]] double block_cache_hit_rate() const noexcept;
-  [[nodiscard]] std::size_t block_cache_size() const noexcept;
-  void clear_block_cache() noexcept;
+  void reset_cache_stats() const noexcept;
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(

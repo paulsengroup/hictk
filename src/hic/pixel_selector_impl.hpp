@@ -21,7 +21,7 @@ namespace hictk::hic {
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockLRUCache> cache_,
+                                    std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_,
                                     PixelCoordinates coords) noexcept
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
@@ -29,7 +29,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockLRUCache> cache_,
+                                    std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
                                     PixelCoordinates coord2_) noexcept
     : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
