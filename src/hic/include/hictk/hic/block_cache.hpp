@@ -103,6 +103,10 @@ class BlockCache {
   auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
                InteractionBlock&& block) -> Value;
 
+  bool try_erase(const BlockID& key);
+  bool try_erase(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id);
+  void clear() noexcept;
+
   [[nodiscard]] constexpr std::size_t capacity() const noexcept;
   [[nodiscard]] constexpr std::size_t size() const noexcept;
   [[nodiscard]] std::size_t num_blocks() const noexcept;

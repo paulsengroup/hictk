@@ -182,7 +182,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
 
   auto first_idx = _reader.index().begin();
   auto last_idx = _reader.index().end();
-  const auto samples = (std::min(100UL, _reader.index().size() - 1));
+  auto samples = (std::min(100UL, _reader.index().size() - 1));
   // index is backed by a hashmap, so iteration should be somewhat random
   for (std::size_t i = 0; i < samples && first_idx++ != last_idx; ++i) {
     avg_block_size += first_idx->compressed_size_bytes() * compression_ratio;
@@ -190,13 +190,14 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
   avg_block_size /= samples + 1;
 
   // Try to guess how many blocks overlap a single row of pixels
-  std::size_t max_blocks_per_row = 0;
+  std::size_t avg_blocks_per_row = 0;
   const auto bin_size = bins().bin_size();
 
   const std::size_t first_bin_id = 0;
   const std::size_t last_bin_id =
       bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
-  for (std::size_t i = 0; i < 10; ++i) {
+  samples = 10;
+  for (std::size_t i = 0; i < samples; ++i) {
     const auto bin_id =
         std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
 
@@ -208,10 +209,19 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
 
     std::vector<internal::BlockIndex> buffer{};
     _reader.index().find_overlaps(coord1_, coord2(), buffer, true);
-    max_blocks_per_row = (std::max)(max_blocks_per_row, buffer.size());
+    avg_blocks_per_row += buffer.size();
   }
+  avg_blocks_per_row /= samples;
 
-  return max_blocks_per_row * avg_block_size;
+  return avg_blocks_per_row * avg_block_size;
+}
+
+inline void PixelSelector::evict_blocks_from_cache() const {
+  std::vector<internal::BlockIndex> buff{};
+  _reader.index().find_overlaps(coord1(), coord2(), buff);
+  for (const auto &idx : buff) {
+    _reader.evict(chrom1(), chrom2(), idx);
+  }
 }
 
 template <typename N>
@@ -500,6 +510,11 @@ inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
 template <typename N>
 inline void PixelSelectorAll::iterator<N>::setup_next_pixel_merger() {
   assert(_it != _sel->_selectors.end());
+
+  if (_it != _sel->_selectors.begin()) {
+    std::for_each(_sel->_selectors.begin(), _it - 1,
+                  [](const auto &sel) { sel.evict_blocks_from_cache(); });
+  }
 
   auto chrom1 = _it->chrom1();
   auto first_sel = _it;

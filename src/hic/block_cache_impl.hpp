@@ -105,6 +105,29 @@ inline auto BlockCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id, st
                  std::make_shared<InteractionBlock>(std::move(block)));
 }
 
+inline bool BlockCache::try_erase(const BlockID &key) {
+  auto it = _map.find(key);
+  if (it != _map.end()) {
+    _size -= it->second->size();
+    _map.erase(it);
+    return true;
+  }
+  return false;
+}
+
+inline bool BlockCache::try_erase(std::size_t chrom1_id, std::size_t chrom2_id,
+                                  std::size_t block_id) {
+  return try_erase({chrom1_id, chrom2_id, block_id});
+}
+
+inline void BlockCache::clear() noexcept {
+  reset_stats();
+  _map.clear();
+  while (!_queue.empty()) {
+    _queue.pop();
+  }
+}
+
 constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity; }
 constexpr std::size_t BlockCache::size() const noexcept { return _size; }
 inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
@@ -132,10 +155,13 @@ constexpr std::size_t BlockCache::hits() const noexcept { return _hits; }
 constexpr std::size_t BlockCache::misses() const noexcept { return _misses; }
 
 inline void BlockCache::pop_oldest() {
-  auto it = _map.find(_queue.front());
-  _queue.pop();
-  _size -= it->second->size();
-  _map.erase(it);
+  while (!_map.empty()) {
+    const auto erased = try_erase(_queue.front());
+    _queue.pop();
+    if (erased) {
+      break;
+    }
+  }
 }
 
 }  // namespace hictk::hic::internal

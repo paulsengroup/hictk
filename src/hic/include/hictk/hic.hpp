@@ -71,6 +71,7 @@ class HiCFile {
 
   [[nodiscard]] double block_cache_hit_rate() const noexcept;
   void reset_cache_stats() const noexcept;
+  void clear_cache() noexcept;
   void optimize_cache_size(std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
 
  private:
@@ -86,6 +87,7 @@ class HiCFile {
 
 namespace utils {
 [[nodiscard]] bool is_hic_file(const std::filesystem::path &path);
+[[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &path);
 }  // namespace utils
 
 }  // namespace hictk::hic

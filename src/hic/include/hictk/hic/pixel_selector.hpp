@@ -80,6 +80,7 @@ class PixelSelector {
   [[nodiscard]] double avg() const noexcept;
 
   [[nodiscard]] std::size_t estimate_optimal_cache_size() const;
+  void evict_blocks_from_cache() const;
 
  private:
   [[nodiscard]] SerializedPixel transform_pixel(SerializedPixel pixel) const;

@@ -162,6 +162,7 @@ inline void HiCFile::purge_footer_cache() { _footers.clear(); }
 
 inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cache->hit_rate(); }
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
+inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
 inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
   const auto& chrom = chromosomes().longest_chromosome();
   const auto cache_size = this->fetch(chrom.name()).estimate_optimal_cache_size();
