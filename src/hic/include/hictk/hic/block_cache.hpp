@@ -58,7 +58,8 @@ class InteractionBlock {
   using const_iterator = BuffT::const_iterator;
 
   InteractionBlock() = default;
-  InteractionBlock(std::size_t id_, const std::vector<SerializedPixel>& pixels);
+  InteractionBlock(std::size_t id_, std::size_t block_bin_count,
+                   const std::vector<SerializedPixel>& pixels);
 
   friend constexpr bool operator<(const InteractionBlock& a, const InteractionBlock& b) noexcept;
   friend constexpr bool operator==(const InteractionBlock& a, const InteractionBlock& b) noexcept;
