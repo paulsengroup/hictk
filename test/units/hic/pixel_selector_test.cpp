@@ -419,7 +419,7 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
   }
 
   SECTION("v9") {
-    auto sel = HiCFile(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
+    auto sel = HiCFile(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
     const auto buffer = sel.read_all<double>();
     REQUIRE(buffer.size() == 890384);
 

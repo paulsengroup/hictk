@@ -56,8 +56,8 @@ inline InteractionBlock::InteractionBlock(std::size_t id_,
   }
 
   for (const SerializedPixel &p : pixels) {
-    const auto b1 = static_cast<std::uint64_t>(p.bin1_id);
-    const auto b2 = static_cast<std::uint64_t>(p.bin2_id);
+    const auto b1 = static_cast<std::size_t>(p.bin1_id);
+    const auto b2 = static_cast<std::size_t>(p.bin2_id);
 
     _first_bin1_id = (std::min)(b1, _first_bin1_id);
     _first_bin2_id = (std::min)(b2, _first_bin2_id);
