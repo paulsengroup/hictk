@@ -37,8 +37,7 @@ class HiCFile {
   using QUERY_TYPE = GenomicInterval::Type;
   explicit HiCFile(std::string url_, std::uint32_t resolution_,
                    MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
-                   // TODO consider expressing cache size in terms of number of pixels
-                   std::uint64_t block_cache_capacity = 500ULL << 20U);
+                   std::uint64_t block_cache_capacity = 10'000'000);
 
   [[nodiscard]] HiCFile open_resolution(std::uint32_t resolution) const;
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
