@@ -377,7 +377,7 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &sel) : _s
 
 template <typename N>
 inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
-  return _i == other._i && _value == other._value;
+  return _value == other._value;
 }
 
 template <typename N>
@@ -398,10 +398,8 @@ inline auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
 template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
   _value = _merger->next();
-  ++_i;
   if (!_value) {
     setup_next_pixel_merger();
-    return ++(*this);
   }
   return *this;
 }
@@ -415,10 +413,7 @@ inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
 
 template <typename N>
 inline void PixelSelectorAll::iterator<N>::setup_next_pixel_merger() {
-  if (_it == _sel->_selectors.end()) {
-    *this = iterator{};
-    return;
-  }
+  assert(_it != _sel->_selectors.end());
 
   auto chrom1 = _it->chrom1();
   auto first_sel = _it;
@@ -445,6 +440,8 @@ inline void PixelSelectorAll::iterator<N>::setup_next_pixel_merger() {
     }
     ++first_sel;
   }
+
+  _it = last_sel;
 
   if (heads.empty()) {
     *this = iterator{};

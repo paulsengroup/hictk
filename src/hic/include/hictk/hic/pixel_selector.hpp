@@ -165,14 +165,12 @@ class PixelSelectorAll {
 
   template <typename N>
   class iterator {
-    static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
     const PixelSelectorAll *_sel{};
 
     using PixelMerger = hictk::internal::PixelMerger<PixelSelector::iterator<N>>;
     std::shared_ptr<PixelMerger> _merger{};
     std::vector<PixelSelector>::const_iterator _it{};
     Pixel<N> _value{};
-    std::size_t _i{npos};
 
    public:
     using difference_type = std::ptrdiff_t;
