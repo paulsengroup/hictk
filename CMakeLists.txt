@@ -125,5 +125,5 @@ endif()
 
 if(HICTK_BUILD_BENCHMARKS)
   message(STATUS "Building benchmarks.")
-  # add_subdirectory(benchmarks)
+  add_subdirectory(benchmark)
 endif()
