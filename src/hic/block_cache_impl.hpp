@@ -48,25 +48,28 @@ constexpr bool operator!=(std::size_t a_id, const InteractionBlock &b) noexcept 
   return !(a_id == b);
 }
 
-inline InteractionBlock::InteractionBlock(std::size_t id_,
+inline InteractionBlock::InteractionBlock(std::size_t id_, std::size_t block_bin_count,
                                           const std::vector<SerializedPixel> &pixels)
     : _id(id_), _size(pixels.size()) {
   if (pixels.empty()) {
     return;
   }
+  _interactions.reserve((std::min)(block_bin_count, pixels.size()));
 
   for (const SerializedPixel &p : pixels) {
-    const auto b1 = static_cast<std::uint64_t>(p.bin1_id);
-    const auto b2 = static_cast<std::uint64_t>(p.bin2_id);
+    const auto b1 = static_cast<std::size_t>(p.bin1_id);
+    const auto b2 = static_cast<std::size_t>(p.bin2_id);
 
-    _first_bin1_id = (std::min)(b1, _first_bin1_id);
-    _first_bin2_id = (std::min)(b2, _first_bin2_id);
-    _last_bin1_id = (std::max)(b1, _last_bin1_id);
-    _last_bin2_id = (std::max)(b2, _last_bin2_id);
-
-    auto [node, _] = this->_interactions.try_emplace(b1, Row{});
+    auto [node, _] = _interactions.try_emplace(b1, Row{});
+    // usually if a row has more than a few interactions, it is likely it has many,
+    // thus we grow the vector faster than what the stl does (2x).
+    // For certain workloads, this leads to a significant perf improvement (~15%)
+    if (node->second.size() == node->second.capacity()) {
+      node->second.reserve(node->second.size() * 10);
+    }
     node->second.push_back({b2, p.count});
   }
+
   if constexpr (ndebug_not_defined()) {
     for (auto &[_, buff] : this->_interactions) {
       if (!std::is_sorted(buff.begin(), buff.end(), [](const ThinPixel &p1, const ThinPixel &p2) {
@@ -80,18 +83,11 @@ inline InteractionBlock::InteractionBlock(std::size_t id_,
 
 inline auto InteractionBlock::operator()() const noexcept -> const BuffT & { return _interactions; }
 
-inline auto InteractionBlock::begin() noexcept -> iterator { return _interactions.begin(); }
-
 inline auto InteractionBlock::begin() const noexcept -> const_iterator {
   return _interactions.begin();
 }
-
-inline auto InteractionBlock::cbegin() const noexcept -> const_iterator { return begin(); }
-
-inline auto InteractionBlock::end() noexcept -> iterator { return _interactions.end(); }
-
 inline auto InteractionBlock::end() const noexcept -> const_iterator { return _interactions.end(); }
-
+inline auto InteractionBlock::cbegin() const noexcept -> const_iterator { return begin(); }
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
 inline std::size_t InteractionBlock::id() const noexcept { return _id; }
@@ -104,13 +100,13 @@ inline const Chromosome &InteractionBlock::chrom2() const noexcept {
   return *_chrom2;
 }
 
-inline std::size_t InteractionBlock::first_bin1_id() const noexcept { return _first_bin1_id; }
-inline std::size_t InteractionBlock::first_bin2_id() const noexcept { return _first_bin2_id; }
-inline std::size_t InteractionBlock::last_bin1_id() const noexcept { return _last_bin1_id; }
-inline std::size_t InteractionBlock::last_bin2_id() const noexcept { return _last_bin2_id; }
-
-inline auto InteractionBlock::find(std::uint64_t row) const noexcept -> const_iterator {
-  return _interactions.find(row);
+inline nonstd::span<const internal::InteractionBlock::ThinPixel> InteractionBlock::at(
+    std::size_t bin1_id) const noexcept {
+  auto match = _interactions.find(bin1_id);
+  if (match != _interactions.end()) {
+    return match->second;
+  }
+  return {};
 }
 
 inline std::size_t InteractionBlock::size() const noexcept { return _size; }

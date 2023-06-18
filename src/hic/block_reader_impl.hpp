@@ -139,7 +139,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
   }
 
   return _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
-                             InteractionBlock{idx.id(), _tmp_buffer});
+                             InteractionBlock{idx.id(), _index.block_bin_count(), _tmp_buffer});
 }
 
 inline void HiCBlockReader::read_dispatcher_type1_block(

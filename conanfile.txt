@@ -11,6 +11,7 @@ hdf5/1.14.0
 highfive/2.7.1
 libdeflate/1.18
 spdlog/1.11.0
+span-lite/0.10.3
 zlib/1.2.13
 
 [generators]

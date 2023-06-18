@@ -83,7 +83,6 @@ class Index {
   std::uint32_t _resolution{};
   Chromosome _chrom1{};
   Chromosome _chrom2{};
-  mutable phmap::flat_hash_set<BlockIndex> _tmp_buffer{32};
 
  public:
   static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
@@ -112,16 +111,16 @@ class Index {
 
   [[nodiscard]] std::vector<BlockIndex> find_overlaps(const PixelCoordinates& coords1,
                                                       const PixelCoordinates& coords2) const;
+  void find_overlaps(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
+                     std::vector<BlockIndex>& buffer) const;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
-  void map_2d_query_to_blocks(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
-                              std::vector<BlockIndex>& buffer) const;
-  void generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                           std::size_t bin4) const;
+  void generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
+                           std::vector<BlockIndex>& buffer) const;
   void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                        std::size_t bin4) const;
+                                        std::size_t bin4, std::vector<BlockIndex>& buffer) const;
 };
 
 }  // namespace hictk::hic::internal
