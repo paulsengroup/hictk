@@ -16,6 +16,7 @@ class Cli {
  public:
   enum subcommand {
     help,
+    convert,
     dump,
     load,
     merge,
@@ -36,15 +37,20 @@ class Cli {
   CLI::App _cli{};
   subcommand _subcommand{subcommand::help};
 
+  void make_convert_subcommand();
   void make_dump_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
   void make_cli();
 
+  void validate_convert_subcommand() const;
   void validate_dump_subcommand() const;
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
   void validate() const;
+
+  void transform_args_convert_subcommand();
+  void transform_args();
 };
 
 }  // namespace hictk::tools

@@ -494,7 +494,7 @@ inline auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
 template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
   _value = _merger->next();
-  if (!_value) {
+  if (!_value && _it != _sel->_selectors.end()) {
     setup_next_pixel_merger();
   }
   return *this;

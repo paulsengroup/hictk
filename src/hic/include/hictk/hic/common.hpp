@@ -73,6 +73,22 @@ enum class NormalizationMethod {
 enum class MatrixType { observed, oe, expected };
 enum class MatrixUnit { BP, FRAG };
 
+// clang-format off
+constexpr std::array<NormalizationMethod, 11> NORMALIZATION_METHODS{
+    NormalizationMethod::NONE,
+    NormalizationMethod::VC,
+    NormalizationMethod::VC_SQRT,
+    NormalizationMethod::KR,
+    NormalizationMethod::SCALE,
+    NormalizationMethod::INTER_VC,
+    NormalizationMethod::INTER_KR,
+    NormalizationMethod::INTER_SCALE,
+    NormalizationMethod::GW_VC,
+    NormalizationMethod::GW_KR,
+    NormalizationMethod::GW_SCALE
+};
+// clang-format on
+
 [[nodiscard]] inline NormalizationMethod ParseNormStr(const std::string &s) {
   if (s == "NONE") {
     return NormalizationMethod::NONE;

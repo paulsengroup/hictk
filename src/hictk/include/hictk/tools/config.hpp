@@ -14,6 +14,21 @@
 
 namespace hictk::tools {
 
+struct ConvertConfig {
+  std::filesystem::path input_hic{};
+  std::filesystem::path output_cooler{};
+  std::vector<std::uint32_t> resolutions{};
+  std::vector<std::string> normalization_methods_str{{"ALL"}};
+  std::vector<hic::NormalizationMethod> normalization_methods{};
+  std::string genome{};
+  std::vector<std::string> norm_dset_names{};
+
+  bool fail_if_normalization_method_is_not_avaliable{false};
+  bool quiet{false};
+  std::uint8_t verbosity{3};
+  bool force{false};
+};
+
 struct DumpConfig {
   std::string uri{};
 
@@ -53,6 +68,7 @@ struct MergeConfig {
 
 // clang-format off
 using Config = std::variant<std::monostate,
+                            ConvertConfig,
                             DumpConfig,
                             LoadConfig,
                             MergeConfig>;

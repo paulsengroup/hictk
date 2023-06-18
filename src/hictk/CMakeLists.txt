@@ -13,8 +13,8 @@ target_sources(
   hictk_tools
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
-)
+          ${CMAKE_CURRENT_SOURCE_DIR}/convert/convert.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp)
 
 target_include_directories(hictk_tools PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
@@ -32,4 +32,3 @@ target_link_system_libraries(
   std::filesystem
   PUBLIC
   fmt::fmt)
-

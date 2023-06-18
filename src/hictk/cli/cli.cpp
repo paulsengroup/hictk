@@ -4,6 +4,10 @@
 
 #include "hictk/tools/cli.hpp"
 
+#include <fmt/format.h>
+#include <fmt/std.h>
+#include <spdlog/common.h>
+
 #include <CLI/CLI.hpp>
 #include <cassert>
 #include <cstdint>
@@ -164,7 +168,9 @@ auto Cli::parse_arguments() -> Config {
     this->_cli.name(this->_exec_name);
     this->_cli.parse(this->_argc, this->_argv);
 
-    if (this->_cli.get_subcommand("dump")->parsed()) {
+    if (this->_cli.get_subcommand("convert")->parsed()) {
+      this->_subcommand = subcommand::convert;
+    } else if (this->_cli.get_subcommand("dump")->parsed()) {
       this->_subcommand = subcommand::dump;
     } else if (this->_cli.get_subcommand("load")->parsed()) {
       this->_subcommand = subcommand::load;
@@ -192,6 +198,7 @@ auto Cli::parse_arguments() -> Config {
         "file an issue on GitHub");
   }
   this->validate();
+  this->transform_args();
 
   this->_exit_code = 0;
   return this->_config;
@@ -201,6 +208,8 @@ int Cli::exit(const CLI::ParseError& e) const { return this->_cli.exit(e); }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
   switch (s) {
+    case convert:
+      return "convert";
     case dump:
       return "dump";
     case load:
@@ -211,6 +220,46 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
       assert(s == help);
       return "--help";
   }
+}
+
+void Cli::make_convert_subcommand() {
+  auto& sc = *this->_cli.add_subcommand("convert", "Convert HiC matrices to a different format.")
+                  ->fallthrough()
+                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+                    assert(this->_config.index() == 0);
+                    this->_config = ConvertConfig{};
+                  });
+
+  this->_config = ConvertConfig{};
+  auto& c = std::get<ConvertConfig>(this->_config);
+
+  // clang-format off
+  sc.add_option("hic", c.input_hic, "Path to the .hic file to be converted.")
+      ->check(CLI::ExistingFile)
+      ->required();
+  sc.add_option("-o,--output", c.output_cooler, "Path where to store the output cooler.");
+  sc.add_option("-r,--resolutions", c.resolutions,
+               "One or more resolution to be converted. By default all resolutions are converted.")
+      ->check(CLI::PositiveNumber);
+  sc.add_option(
+       "--normalization-methods", c.normalization_methods_str,
+       fmt::format(FMT_STRING("Name of one or more normalization methods to be copied.\n"
+                              "By default vectors for all known normalization methods are copied.\n"
+                              "Supported methods:\n - {}"),
+                   fmt::join(hic::NORMALIZATION_METHODS, "\n - ")))
+      ->default_str("ALL");
+  sc.add_flag("--fail-if-norm-not-found", c.fail_if_normalization_method_is_not_avaliable,
+             "Fail if any of the requested normalization vectors are missing.")
+      ->capture_default_str();
+  sc.add_option("-g,--genome", c.genome,
+               "Genome assembly name. By default this is copied from the .hic file metadata.");
+  sc.add_flag("-q,--quiet", c.quiet, "Suppress console output.")->capture_default_str();
+  sc.add_option("-v,--verbosity", c.verbosity, "Set verbosity of output to the console.")
+      ->check(CLI::Range(1, 4))
+      ->excludes("--quiet")
+      ->capture_default_str();
+  sc.add_flag("-f,--force", c.force, "Overwrite existing files (if any).")->capture_default_str();
+  // clang-format on
 }
 
 void Cli::make_dump_subcommand() {
@@ -415,9 +464,69 @@ void Cli::make_cli() {
   this->_cli.set_version_flag("-V,--version", "hictk::cooler-tools-0.0.1");
   this->_cli.require_subcommand(1);
 
+  this->make_convert_subcommand();
   this->make_dump_subcommand();
   this->make_load_subcommand();
   this->make_merge_subcommand();
+}
+
+static void check_requested_resolutions_avail(const std::filesystem::path& path_to_hic,
+                                              const std::vector<std::uint32_t>& requested_res,
+                                              std::vector<std::string>& errors) {
+  const auto available_res = hic::utils::list_resolutions(path_to_hic);
+  std::vector<std::uint32_t> missing_resolutions;
+  for (const auto res : requested_res) {
+    const auto it = std::find(available_res.begin(), available_res.end(), std::int32_t(res));
+    if (it == available_res.end()) {
+      missing_resolutions.push_back(res);
+    }
+  }
+
+  if (!missing_resolutions.empty()) {
+    errors.emplace_back(fmt::format(FMT_STRING("{} does not contain matrices for the following "
+                                               "resolution(s): {}.\n"
+                                               "Available resolutions: {}"),
+                                    path_to_hic, fmt::join(missing_resolutions, ", "),
+                                    fmt::join(available_res, ", ")));
+  }
+}
+
+static void check_normalization_methods(const std::vector<std::string>& norm_methods,
+                                        std::vector<std::string>& errors) {
+  assert(!norm_methods.empty());
+  if (norm_methods.size() > 1 && norm_methods.front() != "ALL") {
+    for (const auto& n : norm_methods) {
+      try {
+        std::ignore = hic::ParseNormStr(n);
+      } catch (...) {
+        errors.emplace_back(
+            fmt::format(FMT_STRING("\"{}\" is not a known normalization method"), n));
+      }
+    }
+  }
+}
+
+void Cli::validate_convert_subcommand() const {
+  auto& c = std::get<ConvertConfig>(this->_config);
+  std::vector<std::string> errors;
+
+  if (!hic::utils::is_hic_file(c.input_hic)) {
+    errors.emplace_back(
+        fmt::format(FMT_STRING("{} does not appear to be a valid .hic file"), c.input_hic));
+  }
+
+  if (!c.resolutions.empty()) {
+    check_requested_resolutions_avail(c.input_hic, c.resolutions, errors);
+  }
+
+  check_normalization_methods(c.normalization_methods_str, errors);
+
+  if (!errors.empty()) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "The following error(s) where encountered while validating CLI arguments:\n - {}"),
+        fmt::join(errors, "\n - ")));
+  }
 }
 
 void Cli::validate_dump_subcommand() const {
@@ -503,14 +612,87 @@ void Cli::validate_merge_subcommand() const {
 }
 
 void Cli::validate() const {
-  if (this->_cli.get_subcommand("dump")->parsed()) {
-    this->validate_dump_subcommand();
-  } else if (this->_cli.get_subcommand("load")->parsed()) {
-    this->validate_load_subcommand();
-  } else if (this->_cli.get_subcommand("merge")->parsed()) {
-    this->validate_merge_subcommand();
+  switch (this->_subcommand) {
+    case convert:
+      this->validate_convert_subcommand();
+      break;
+    case dump:
+      this->validate_dump_subcommand();
+      break;
+    case load:
+      this->validate_load_subcommand();
+      break;
+    case merge:
+      this->validate_merge_subcommand();
+      break;
+    case help:
+      break;
+  }
+}
+
+[[nodiscard]] static std::vector<hic::NormalizationMethod> generate_norm_vect(
+    const std::vector<std::string>& norms_str) {
+  assert(!norms_str.empty());
+  if (norms_str.size() == 1 && norms_str.front() == "ALL") {
+    return {hic::NORMALIZATION_METHODS.begin(), hic::NORMALIZATION_METHODS.end()};
+  }
+
+  std::vector<hic::NormalizationMethod> norms(norms_str.size());
+  std::transform(norms_str.begin(), norms_str.end(), norms.begin(),
+                 [&](const auto& s) { return hic::ParseNormStr(s); });
+  return norms;
+}
+
+void Cli::transform_args_convert_subcommand() {
+  auto& c = std::get<ConvertConfig>(this->_config);
+  if (c.resolutions.empty()) {
+    c.resolutions = hic::utils::list_resolutions(c.input_hic);
+  }
+
+  c.normalization_methods = generate_norm_vect(c.normalization_methods_str);
+
+  hic::HiCFile f(c.input_hic, c.resolutions.front());
+  if (c.genome.empty()) {
+    c.genome = f.assembly();
+  }
+
+  if (c.output_cooler.empty()) {
+    const auto extension = c.resolutions.size() > 1 ? ".mcool" : ".cool";
+    c.output_cooler = c.input_hic;
+    c.output_cooler.replace_extension(extension);
+  }
+
+  if (c.norm_dset_names.empty()) {
+    c.norm_dset_names.resize(c.normalization_methods.size());
+    std::transform(c.normalization_methods.begin(), c.normalization_methods.end(),
+                   c.norm_dset_names.begin(), [](const auto norm) { return fmt::to_string(norm); });
+  }
+
+  if (c.quiet) {
+    c.verbosity = spdlog::level::err;
   } else {
-    assert(false);
+    // in spdlog, high numbers correspond to low log levels
+    assert(c.verbosity > 0 && c.verbosity < 5);
+    c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  }
+}
+
+void Cli::transform_args() {
+  switch (this->_subcommand) {
+    case convert:
+      this->transform_args_convert_subcommand();
+      break;
+    case dump:
+      // this->transform_args_dump_subcommand();
+      break;
+    case load:
+      // this->transform_args_load_subcommand();
+      break;
+    case merge:
+      // this->transform_args_merge_subcommand();
+      break;
+    case help:
+      break;
   }
 }
 
