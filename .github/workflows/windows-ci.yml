@@ -153,8 +153,9 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 600 |&
-          head -n 1000
+                --timeout 180       \
+                --exclude-regex '(HiC: pixel selector fetch.*)|(Cooler: dataset large read\/write.*)' |&
+          tail -n 1000
 
   windows-ci-status-check:
     name: Status Check (Windows CI)

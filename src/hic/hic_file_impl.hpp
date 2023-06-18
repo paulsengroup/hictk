@@ -22,7 +22,7 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
     : _fs(std::make_shared<internal::HiCFileReader>(std::move(url_))),
       _type(type_),
       _unit(unit_),
-      _block_cache(std::make_shared<internal::BlockLRUCache>(block_cache_capacity)),
+      _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   assert(block_cache_capacity != 0);
   if (!has_resolution(resolution())) {
@@ -158,6 +158,5 @@ inline std::size_t HiCFile::num_cached_footers() const noexcept { return _footer
 inline void HiCFile::purge_footer_cache() { _footers.clear(); }
 
 inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cache->hit_rate(); }
-inline std::size_t HiCFile::block_cache_size() const noexcept { return _block_cache->size(); }
-inline void HiCFile::clear_block_cache() noexcept { _block_cache->reset(); }
+inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 }  // namespace hictk::hic

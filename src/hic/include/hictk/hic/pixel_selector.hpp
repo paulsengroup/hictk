@@ -33,14 +33,13 @@ class PixelSelector {
   PixelSelector() = delete;
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
-                std::shared_ptr<internal::BlockLRUCache> cache_,
-                std::shared_ptr<const BinTable> bins_, PixelCoordinates coords) noexcept;
+                std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
+                PixelCoordinates coords) noexcept;
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
-                std::shared_ptr<internal::BlockLRUCache> cache_,
-                std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                PixelCoordinates coord2_) noexcept;
+                std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
+                PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
@@ -67,6 +66,9 @@ class PixelSelector {
 
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
+
+  [[nodiscard]] const std::vector<double> &chrom1_norm() const noexcept;
+  [[nodiscard]] const std::vector<double> &chrom2_norm() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
@@ -159,17 +161,16 @@ class PixelSelectorAll {
   [[nodiscard]] NormalizationMethod normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
-
   [[nodiscard]] const BinTable &bins() const noexcept;
 
   template <typename N>
   class iterator {
-    static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
+    const PixelSelectorAll *_sel{};
 
     using PixelMerger = hictk::internal::PixelMerger<PixelSelector::iterator<N>>;
     std::shared_ptr<PixelMerger> _merger{};
+    std::vector<PixelSelector>::const_iterator _it{};
     Pixel<N> _value{};
-    std::size_t _i{npos};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -181,7 +182,7 @@ class PixelSelectorAll {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const std::vector<PixelSelector> &selectors_);
+    explicit iterator(const PixelSelectorAll &sel);
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
@@ -191,6 +192,9 @@ class PixelSelectorAll {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
+
+   private:
+    void setup_next_pixel_merger();
   };
 };
 

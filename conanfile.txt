@@ -11,7 +11,6 @@ hdf5/1.14.0
 highfive/2.7.1
 libdeflate/1.18
 spdlog/1.11.0
-tsl-ordered-map/1.1.0
 zlib/1.2.13
 
 [generators]

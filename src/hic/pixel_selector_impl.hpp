@@ -21,7 +21,7 @@ namespace hictk::hic {
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockLRUCache> cache_,
+                                    std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_,
                                     PixelCoordinates coords) noexcept
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
@@ -29,7 +29,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockLRUCache> cache_,
+                                    std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
                                     PixelCoordinates coord2_) noexcept
     : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
@@ -131,6 +131,13 @@ inline std::uint32_t PixelSelector::resolution() const noexcept {
 
 inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1.bin1.chrom(); }
 inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2.bin1.chrom(); }
+
+inline const std::vector<double> &PixelSelector::chrom1_norm() const noexcept {
+  return _footer->c1Norm();
+}
+inline const std::vector<double> &PixelSelector::chrom2_norm() const noexcept {
+  return _footer->c2Norm();
+}
 
 inline const BinTable &PixelSelector::bins() const noexcept { return _reader.bins(); }
 
@@ -325,7 +332,7 @@ inline auto PixelSelectorAll::begin() const -> iterator<N> {
 }
 template <typename N>
 inline auto PixelSelectorAll::cbegin() const -> iterator<N> {
-  return iterator<N>(_selectors);
+  return iterator<N>(*this);
 }
 
 template <typename N>
@@ -360,36 +367,17 @@ inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
 inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const std::vector<PixelSelector> &selectors_) {
+inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &sel) : _sel(&sel) {
   std::vector<PixelSelector::iterator<N>> heads;
   std::vector<PixelSelector::iterator<N>> tails;
 
-  for (const auto &sel : selectors_) {
-    auto first = sel.begin<N>();
-    auto last = sel.end<N>();
-    if (first != last) {
-      heads.emplace_back(std::move(first));
-      tails.emplace_back(std::move(last));
-    }
-  }
-
-  if (heads.empty()) {
-    *this = iterator{};
-    return;
-  }
-
-  _merger = std::make_shared<PixelMerger>(std::move(heads), std::move(tails));
-  _value = _merger->next();
-
-  if (!_value) {
-    *this = iterator{};
-    return;
-  }
+  _it = _sel->_selectors.begin();
+  setup_next_pixel_merger();
 }
 
 template <typename N>
 inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
-  return _i == other._i && _value == other._value;
+  return _value == other._value;
 }
 
 template <typename N>
@@ -411,7 +399,7 @@ template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
   _value = _merger->next();
   if (!_value) {
-    *this = iterator{};
+    setup_next_pixel_merger();
   }
   return *this;
 }
@@ -421,6 +409,52 @@ inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
+}
+
+template <typename N>
+inline void PixelSelectorAll::iterator<N>::setup_next_pixel_merger() {
+  assert(_it != _sel->_selectors.end());
+
+  auto chrom1 = _it->chrom1();
+  auto first_sel = _it;
+  auto last_sel = std::find_if(first_sel, _sel->_selectors.end(),
+                               [&](const PixelSelector &s) { return s.chrom1() != chrom1; });
+
+  std::vector<PixelSelector::iterator<N>> heads;
+  std::vector<PixelSelector::iterator<N>> tails;
+
+  while (first_sel != last_sel) {
+    const auto &sel = *first_sel;
+    if (sel.chrom1() != chrom1) {
+      if (!heads.empty()) {
+        break;
+      } else {
+        chrom1 = sel.chrom1();
+      }
+    }
+    auto first = sel.template begin<N>();
+    auto last = sel.template end<N>();
+    if (first != last) {
+      heads.emplace_back(std::move(first));
+      tails.emplace_back(std::move(last));
+    }
+    ++first_sel;
+  }
+
+  _it = last_sel;
+
+  if (heads.empty()) {
+    *this = iterator{};
+    return;
+  }
+
+  _merger = std::make_shared<PixelMerger>(std::move(heads), std::move(tails));
+  _value = _merger->next();
+
+  if (!_value) {
+    *this = iterator{};
+    return;
+  }
 }
 
 }  // namespace hictk::hic
