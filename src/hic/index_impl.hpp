@@ -160,8 +160,8 @@ inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
     generate_block_list(bin1, bin2, bin3, bin4, buffer);
   }
 
-  assert(std::is_sorted(buffer.begin(), buffer.end()));
-  assert(std::unique(buffer.begin(), buffer.end()) == buffer.end());
+  std::sort(buffer.begin(), buffer.end());
+  buffer.erase(std::unique(buffer.begin(), buffer.end()), buffer.end());
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {

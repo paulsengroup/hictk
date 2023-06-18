@@ -66,12 +66,12 @@ inline auto PixelSelector::end() const -> iterator<N> {
   return this->cend<N>();
 }
 
-inline internal::InteractionBlock::ThinPixel PixelSelector::transform_pixel(
-    std::size_t bin1, internal::InteractionBlock::ThinPixel pixel) const {
+inline SerializedPixel PixelSelector::transform_pixel(SerializedPixel pixel) const {
   const auto &c1Norm = _footer->c1Norm();
   const auto &c2Norm = _footer->c2Norm();
   const auto &expected = _footer->expectedValues();
 
+  const auto bin1 = static_cast<std::size_t>(pixel.bin1_id);
   const auto bin2 = static_cast<std::size_t>(pixel.bin2_id);
 
   assert(is_inter() || bin1 <= bin2);
@@ -169,7 +169,7 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
   }
 
   while (_buffer->empty()) {
-    read_next_row();
+    read_next_chunk();
   }
 }
 
@@ -224,7 +224,7 @@ inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   ++_pixels_processed;
   ++_buffer_i;
   while (!is_at_end() && _buffer_i >= size()) {
-    read_next_row();
+    read_next_chunk();
   }
 
   return *this;
@@ -262,12 +262,29 @@ template <typename N>
 inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
   return !_buffer ? 0 : _buffer->size();
 }
+
 template <typename N>
-inline const std::vector<internal::BlockIndex>
-    &PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
+inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fraction) const noexcept {
+  const auto bin_size = bins().bin_size();
+  const auto num_bins = (coord1().bin1.chrom().size() + bin_size - 1) / bin_size;
+  const auto max_num_bins =
+      (std::max)(1U, static_cast<std::uint32_t>(fraction * static_cast<double>(num_bins)));
+
   const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
-  const auto pos2 = (std::min)(end_pos, pos1 + bins().bin_size());
+  const auto pos2 = (std::min)(end_pos, pos1 + (max_num_bins * bin_size));
+
+  return (pos2 - pos1 + bin_size - 1) / bin_size;
+}
+
+template <typename N>
+inline const std::vector<internal::BlockIndex>
+    &PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+  const auto bin_size = bins().bin_size();
+
+  const auto end_pos = coord1().bin2.start();
+  const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
+  const auto pos2 = (std::min)(end_pos, pos1 + static_cast<std::uint32_t>((num_bins * bin_size)));
 
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
                                         bins().at(coord1().bin1.chrom(), pos2));
@@ -281,9 +298,10 @@ inline const std::vector<internal::BlockIndex>
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_row() {
+inline void PixelSelector::iterator<N>::read_next_chunk() {
   assert(!!_sel);
-  const auto blocks = find_blocks_overlapping_current_row();
+  const auto chunk_size = compute_chunk_size();
+  const auto blocks = find_blocks_overlapping_next_chunk(chunk_size);
   if (blocks.empty() || _bin1_id > coord1().bin2.rel_id()) {
     *this = at_end(*_sel);
     return;
@@ -296,39 +314,42 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   _buffer->clear();
   _buffer_i = 0;
   const auto bin_size = bins().bin_size();
-  const auto &chrom1 = coord1().bin1.chrom();
-  const auto bin1 = bins().at(chrom1, static_cast<std::uint32_t>(_bin1_id) * bin_size);
-  for (const auto block_idx : blocks) {
-    const auto blk = _sel->_reader.read(chrom1, coord2().bin1.chrom(), block_idx);
-    const auto pixels = blk->at(_bin1_id);
-    if (pixels.empty()) {
-      continue;
-    }
+  const auto bin1_id_last = _bin1_id + chunk_size;
+  for (const auto &block_idx : blocks) {
+    const auto block = _sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), block_idx);
+    auto first = std::lower_bound(block->begin(), block->end(), _bin1_id,
+                                  [](const SerializedPixel &pixel, std::size_t bin_id) {
+                                    return pixel.bin1_id < static_cast<std::int64_t>(bin_id);
+                                  });
+    auto last = std::lower_bound(first, block->end(), bin1_id_last + 1,
+                                 [](const SerializedPixel &pixel, std::size_t bin_id) {
+                                   return pixel.bin1_id < static_cast<std::int64_t>(bin_id);
+                                 });
 
-    auto first = std::lower_bound(pixels.begin(), pixels.end(), coord2().bin1.rel_id(),
-                                  [](const internal::InteractionBlock::ThinPixel &pixel,
-                                     std::size_t bin_id) { return pixel.bin2_id < bin_id; });
-    while (first != pixels.end()) {
-      const auto p = _sel->transform_pixel(_bin1_id, *first);
-      if (p.bin2_id > coord2().bin2.rel_id()) {
-        break;
+    const auto buffer_size = _buffer->size();
+    while (first != last) {
+      const auto p = _sel->transform_pixel(*first++);
+      if (p.bin2_id < coord2().bin1.rel_id() || p.bin2_id > coord2().bin2.rel_id()) {
+        continue;
       }
 
+      const auto pos1 = static_cast<std::uint32_t>(p.bin1_id) * bin_size;
       const auto pos2 = static_cast<std::uint32_t>(p.bin2_id) * bin_size;
+      auto coords = PixelCoordinates{bins().at(coord1().bin1.chrom(), pos1),
+                                     bins().at(coord2().bin1.chrom(), pos2)};
       if constexpr (std::is_integral_v<N>) {
-        _buffer->emplace_back(
-            Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
-                     conditional_static_cast<N>(std::round(p.count))});
+        _buffer->emplace_back(Pixel<N>{coords, conditional_static_cast<N>(std::round(p.count))});
       } else {
-        _buffer->emplace_back(
-            Pixel<N>{PixelCoordinates{bin1, bins().at(coord2().bin1.chrom(), pos2)},
-                     conditional_static_cast<N>(p.count)});
+        _buffer->emplace_back(Pixel<N>{coords, conditional_static_cast<N>(p.count)});
       }
-      ++first;
     }
+
+    auto sorted_first = _buffer->begin();
+    auto sorted_last = sorted_first + static_cast<std::ptrdiff_t>(buffer_size);
+    std::inplace_merge(sorted_first, sorted_last, _buffer->end());
   }
   assert(std::is_sorted(_buffer->begin(), _buffer->end()));
-  _bin1_id++;
+  _bin1_id = bin1_id_last + 1;
 }
 
 inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept

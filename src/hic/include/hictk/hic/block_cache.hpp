@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <parallel_hashmap/btree.h>
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>
@@ -38,20 +39,12 @@ namespace hictk::hic::internal {
 
 class InteractionBlock {
  public:
-  struct ThinPixel {
-    std::uint64_t bin2_id{};
-    float count{};
-  };
-
-  using Row = std::vector<ThinPixel>;
+  using Row = std::vector<SerializedPixel>;
 
  private:
-  using BuffT = phmap::flat_hash_map<std::uint64_t, Row>;
+  using BuffT = std::vector<SerializedPixel>;
   std::size_t _id{};
   BuffT _interactions{};
-  const Chromosome* _chrom1{};
-  const Chromosome* _chrom2{};
-  std::size_t _size{};
 
  public:
   using iterator = BuffT::iterator;
@@ -59,7 +52,7 @@ class InteractionBlock {
 
   InteractionBlock() = default;
   InteractionBlock(std::size_t id_, std::size_t block_bin_count,
-                   const std::vector<SerializedPixel>& pixels);
+                   std::vector<SerializedPixel> pixels);
 
   friend constexpr bool operator<(const InteractionBlock& a, const InteractionBlock& b) noexcept;
   friend constexpr bool operator==(const InteractionBlock& a, const InteractionBlock& b) noexcept;
@@ -82,13 +75,8 @@ class InteractionBlock {
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
   [[nodiscard]] std::size_t id() const noexcept;
-  [[nodiscard]] const Chromosome& chrom1() const noexcept;
-  [[nodiscard]] const Chromosome& chrom2() const noexcept;
-
-  [[nodiscard]] nonstd::span<const ThinPixel> at(std::size_t bin1_id) const noexcept;
 
   [[nodiscard]] std::size_t size() const noexcept;
-  [[nodiscard]] std::size_t size_in_bytes() const noexcept;
 };
 
 class BlockCache {

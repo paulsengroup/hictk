@@ -80,8 +80,7 @@ class PixelSelector {
   [[nodiscard]] double avg() const noexcept;
 
  private:
-  [[nodiscard]] internal::InteractionBlock::ThinPixel transform_pixel(
-      std::size_t bin1, internal::InteractionBlock::ThinPixel pixel) const;
+  [[nodiscard]] SerializedPixel transform_pixel(SerializedPixel pixel) const;
 
  public:
   template <typename N>
@@ -129,8 +128,10 @@ class PixelSelector {
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
 
-    void read_next_row();
-    [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_current_row();
+    void read_next_chunk();
+    [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
+        std::size_t num_bins);
+    [[nodiscard]] std::size_t compute_chunk_size(double fraction = 0.0005) const noexcept;
   };
 };
 
