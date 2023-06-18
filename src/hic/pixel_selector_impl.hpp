@@ -72,13 +72,14 @@ inline internal::InteractionBlock::ThinPixel PixelSelector::transform_pixel(
   const auto &c2Norm = _footer->c2Norm();
   const auto &expected = _footer->expectedValues();
 
-  assert(is_inter() || bin1 <= pixel.bin2_id);
+  const auto bin2 = static_cast<std::size_t>(pixel.bin2_id);
+
+  assert(is_inter() || bin1 <= bin2);
 
   const auto skipNormalization =
       normalization() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
-    const auto bin2 = pixel.bin2_id;
     assert(bin1 < c1Norm.size());
     assert(bin2 < c2Norm.size());
     pixel.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
@@ -93,7 +94,7 @@ inline internal::InteractionBlock::ThinPixel PixelSelector::transform_pixel(
       return float(_reader.avg());
     }
 
-    const auto i = (pixel.bin2_id - bin1);
+    const auto i = (bin2 - bin1);
     assert(i < expected.size());
     return float(expected[i]);
   }();
@@ -158,7 +159,10 @@ inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
-    : _sel(&sel), _bin1_id(coord1().bin1.rel_id()), _buffer(std::make_shared<BufferT>()) {
+    : _sel(&sel),
+      _bin1_id(coord1().bin1.rel_id()),
+      _block_idx_buffer(std::make_shared<BlockIdxBufferT>()),
+      _buffer(std::make_shared<BufferT>()) {
   if (_sel->_reader.index().empty()) {
     *this = at_end(sel);
     return;
@@ -259,8 +263,8 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
   return !_buffer ? 0 : _buffer->size();
 }
 template <typename N>
-inline std::vector<internal::BlockIndex>
-PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
+inline const std::vector<internal::BlockIndex>
+    &PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
   const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
   const auto pos2 = (std::min)(end_pos, pos1 + bins().bin_size());
@@ -268,7 +272,12 @@ PixelSelector::iterator<N>::find_blocks_overlapping_current_row() {
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
                                         bins().at(coord1().bin1.chrom(), pos2));
 
-  return _sel->_reader.index().find_overlaps(coord1_, coord2());
+  if (_block_idx_buffer.use_count() != 1) {
+    _block_idx_buffer = std::make_shared<BlockIdxBufferT>();
+  }
+
+  _sel->_reader.index().find_overlaps(coord1_, coord2(), *_block_idx_buffer);
+  return *_block_idx_buffer;
 }
 
 template <typename N>
@@ -291,12 +300,11 @@ inline void PixelSelector::iterator<N>::read_next_row() {
   const auto bin1 = bins().at(chrom1, static_cast<std::uint32_t>(_bin1_id) * bin_size);
   for (const auto block_idx : blocks) {
     const auto blk = _sel->_reader.read(chrom1, coord2().bin1.chrom(), block_idx);
-    const auto match = blk->find(_bin1_id);
-    if (match == blk->end()) {
+    const auto pixels = blk->at(_bin1_id);
+    if (pixels.empty()) {
       continue;
     }
 
-    const auto &pixels = match->second;
     auto first = std::lower_bound(pixels.begin(), pixels.end(), coord2().bin1.rel_id(),
                                   [](const internal::InteractionBlock::ThinPixel &pixel,
                                      std::size_t bin_id) { return pixel.bin2_id < bin_id; });

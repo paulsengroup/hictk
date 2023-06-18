@@ -59,11 +59,6 @@ inline InteractionBlock::InteractionBlock(std::size_t id_,
     const auto b1 = static_cast<std::size_t>(p.bin1_id);
     const auto b2 = static_cast<std::size_t>(p.bin2_id);
 
-    _first_bin1_id = (std::min)(b1, _first_bin1_id);
-    _first_bin2_id = (std::min)(b2, _first_bin2_id);
-    _last_bin1_id = (std::max)(b1, _last_bin1_id);
-    _last_bin2_id = (std::max)(b2, _last_bin2_id);
-
     auto [node, _] = this->_interactions.try_emplace(b1, Row{});
     node->second.push_back({b2, p.count});
   }
@@ -80,18 +75,11 @@ inline InteractionBlock::InteractionBlock(std::size_t id_,
 
 inline auto InteractionBlock::operator()() const noexcept -> const BuffT & { return _interactions; }
 
-inline auto InteractionBlock::begin() noexcept -> iterator { return _interactions.begin(); }
-
 inline auto InteractionBlock::begin() const noexcept -> const_iterator {
   return _interactions.begin();
 }
-
-inline auto InteractionBlock::cbegin() const noexcept -> const_iterator { return begin(); }
-
-inline auto InteractionBlock::end() noexcept -> iterator { return _interactions.end(); }
-
 inline auto InteractionBlock::end() const noexcept -> const_iterator { return _interactions.end(); }
-
+inline auto InteractionBlock::cbegin() const noexcept -> const_iterator { return begin(); }
 inline auto InteractionBlock::cend() const noexcept -> const_iterator { return end(); }
 
 inline std::size_t InteractionBlock::id() const noexcept { return _id; }
@@ -104,13 +92,13 @@ inline const Chromosome &InteractionBlock::chrom2() const noexcept {
   return *_chrom2;
 }
 
-inline std::size_t InteractionBlock::first_bin1_id() const noexcept { return _first_bin1_id; }
-inline std::size_t InteractionBlock::first_bin2_id() const noexcept { return _first_bin2_id; }
-inline std::size_t InteractionBlock::last_bin1_id() const noexcept { return _last_bin1_id; }
-inline std::size_t InteractionBlock::last_bin2_id() const noexcept { return _last_bin2_id; }
-
-inline auto InteractionBlock::find(std::uint64_t row) const noexcept -> const_iterator {
-  return _interactions.find(row);
+inline nonstd::span<const internal::InteractionBlock::ThinPixel> InteractionBlock::at(
+    std::size_t bin1_id) const noexcept {
+  auto match = _interactions.find(bin1_id);
+  if (match != _interactions.end()) {
+    return match->second;
+  }
+  return {};
 }
 
 inline std::size_t InteractionBlock::size() const noexcept { return _size; }

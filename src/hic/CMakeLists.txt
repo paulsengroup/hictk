@@ -5,6 +5,7 @@
 find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(libdeflate QUIET REQUIRED)
+find_package(span-lite QUIET REQUIRED)
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
@@ -37,4 +38,5 @@ target_link_system_libraries(
   fmt::fmt
   libdeflate::libdeflate
   phmap
+  nonstd::span-lite
   std::filesystem)

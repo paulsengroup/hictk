@@ -90,8 +90,10 @@ class PixelSelector {
     friend PixelSelector;
     const PixelSelector *_sel{};
     using BufferT = std::vector<Pixel<N>>;
+    using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
     std::size_t _bin1_id{};
+    mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
     mutable std::size_t _pixels_processed{};
@@ -128,7 +130,7 @@ class PixelSelector {
     [[nodiscard]] std::size_t size() const noexcept;
 
     void read_next_row();
-    [[nodiscard]] std::vector<internal::BlockIndex> find_blocks_overlapping_current_row();
+    [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_current_row();
   };
 };
 

@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <nonstd/span.hpp>
 #include <queue>
 #include <vector>
 
@@ -51,10 +52,6 @@ class InteractionBlock {
   const Chromosome* _chrom1{};
   const Chromosome* _chrom2{};
   std::size_t _size{};
-  std::size_t _first_bin1_id{(std::numeric_limits<std::size_t>::max)()};
-  std::size_t _last_bin1_id{};
-  std::size_t _first_bin2_id{(std::numeric_limits<std::size_t>::max)()};
-  std::size_t _last_bin2_id{};
 
  public:
   using iterator = BuffT::iterator;
@@ -77,23 +74,17 @@ class InteractionBlock {
 
   [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
 
-  [[nodiscard]] auto begin() noexcept -> iterator;
   [[nodiscard]] auto begin() const noexcept -> const_iterator;
-  [[nodiscard]] auto cbegin() const noexcept -> const_iterator;
-
-  [[nodiscard]] auto end() noexcept -> iterator;
   [[nodiscard]] auto end() const noexcept -> const_iterator;
+
+  [[nodiscard]] auto cbegin() const noexcept -> const_iterator;
   [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
   [[nodiscard]] std::size_t id() const noexcept;
   [[nodiscard]] const Chromosome& chrom1() const noexcept;
   [[nodiscard]] const Chromosome& chrom2() const noexcept;
-  [[nodiscard]] std::size_t first_bin1_id() const noexcept;
-  [[nodiscard]] std::size_t first_bin2_id() const noexcept;
-  [[nodiscard]] std::size_t last_bin1_id() const noexcept;
-  [[nodiscard]] std::size_t last_bin2_id() const noexcept;
 
-  [[nodiscard]] auto find(std::uint64_t row) const noexcept -> const_iterator;
+  [[nodiscard]] nonstd::span<const ThinPixel> at(std::size_t bin1_id) const noexcept;
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] std::size_t size_in_bytes() const noexcept;
