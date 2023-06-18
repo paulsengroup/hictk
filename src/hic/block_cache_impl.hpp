@@ -141,13 +141,14 @@ inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::
 
 inline auto BlockCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
                                 Value block) -> Value {
-  if (_map.size() == _capacity) {
+  while (_size + block->size() > capacity() && !_map.empty()) {
     pop_oldest();
   }
 
   BlockID key{chrom1_id, chrom2_id, block_id};
   _queue.push(key);
   _map.emplace(std::move(key), block);
+  _size += block->size();
   return block;
 }
 
@@ -158,7 +159,8 @@ inline auto BlockCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id, st
 }
 
 constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity; }
-inline std::size_t BlockCache::size() const noexcept { return _map.size(); }
+constexpr std::size_t BlockCache::size() const noexcept { return _size; }
+inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
 
 constexpr double BlockCache::hit_rate() const noexcept {
   if (_hits + _misses == 0) {
@@ -176,8 +178,10 @@ constexpr std::size_t BlockCache::hits() const noexcept { return _hits; }
 constexpr std::size_t BlockCache::misses() const noexcept { return _misses; }
 
 inline void BlockCache::pop_oldest() {
-  _map.erase(_queue.front());
+  auto it = _map.find(_queue.front());
   _queue.pop();
+  _size -= it->second->size();
+  _map.erase(it);
 }
 
 }  // namespace hictk::hic::internal

@@ -109,6 +109,7 @@ class BlockCache {
   std::size_t _misses{};
 
   std::size_t _capacity{};
+  std::size_t _size{};
 
  public:
   BlockCache() = delete;
@@ -123,7 +124,8 @@ class BlockCache {
                InteractionBlock&& block) -> Value;
 
   [[nodiscard]] constexpr std::size_t capacity() const noexcept;
-  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] constexpr std::size_t size() const noexcept;
+  [[nodiscard]] std::size_t num_blocks() const noexcept;
 
   [[nodiscard]] constexpr double hit_rate() const noexcept;
   [[nodiscard]] constexpr std::size_t hits() const noexcept;
