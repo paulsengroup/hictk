@@ -111,6 +111,7 @@ class BlockCache {
   [[nodiscard]] constexpr std::size_t hits() const noexcept;
   [[nodiscard]] constexpr std::size_t misses() const noexcept;
   constexpr void reset_stats() noexcept;
+  void set_capacity(std::size_t new_capacity);
 
  private:
   void pop_oldest();

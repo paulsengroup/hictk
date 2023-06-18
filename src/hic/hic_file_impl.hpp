@@ -24,10 +24,13 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
-  assert(block_cache_capacity != 0);
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("file {} does not have interactions for resolution {}"), url(), resolution()));
+  }
+
+  if (block_cache_capacity == 0) {
+    optimize_cache_size();
   }
 }
 
@@ -159,4 +162,9 @@ inline void HiCFile::purge_footer_cache() { _footers.clear(); }
 
 inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cache->hit_rate(); }
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
+inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
+  const auto& chrom = chromosomes().longest_chromosome();
+  const auto cache_size = this->fetch(chrom.name()).estimate_optimal_cache_size();
+  _block_cache->set_capacity((std::min)(upper_bound, cache_size));
+}
 }  // namespace hictk::hic

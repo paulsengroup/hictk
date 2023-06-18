@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -156,6 +157,62 @@ inline N PixelSelector::sum() const noexcept {
   return _reader.sum();
 }
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
+
+inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
+  if (_reader.index().empty()) {
+    return 0;  // should we throw instead?
+  }
+
+  std::seed_seq sseq({_reader.index().size()});
+  std::mt19937_64 rand_eng(sseq);
+
+  // Find block with the largest compressed size and use it to guess the compression ratio
+  const auto idx =
+      std::max_element(_reader.index().begin(), _reader.index().end(),
+                       [&](const internal::BlockIndex &idx1, const internal::BlockIndex &idx2) {
+                         return idx1.compressed_size_bytes() < idx2.compressed_size_bytes();
+                       });
+
+  const auto num_pixels_in_largest_block = _reader.read(chrom1(), chrom2(), *idx)->size();
+  const auto compression_ratio = static_cast<std::size_t>(
+      std::ceil(double(num_pixels_in_largest_block) / double(idx->compressed_size_bytes())));
+
+  // Try to guess the average block size
+  std::size_t avg_block_size = num_pixels_in_largest_block;
+
+  auto first_idx = _reader.index().begin();
+  auto last_idx = _reader.index().end();
+  const auto samples = (std::min(100UL, _reader.index().size() - 1));
+  // index is backed by a hashmap, so iteration should be somewhat random
+  for (std::size_t i = 0; i < samples && first_idx++ != last_idx; ++i) {
+    avg_block_size += first_idx->compressed_size_bytes() * compression_ratio;
+  }
+  avg_block_size /= samples + 1;
+
+  // Try to guess how many blocks overlap a single row of pixels
+  std::size_t max_blocks_per_row = 0;
+  const auto bin_size = bins().bin_size();
+
+  const std::size_t first_bin_id = 0;
+  const std::size_t last_bin_id =
+      bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
+  for (std::size_t i = 0; i < 10; ++i) {
+    const auto bin_id =
+        std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
+
+    const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
+    const auto pos2 = (std::min)(pos1 + bin_size, coord1().bin1.chrom().size());
+
+    const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
+                                          bins().at(coord1().bin1.chrom(), pos2));
+
+    std::vector<internal::BlockIndex> buffer{};
+    _reader.index().find_overlaps(coord1_, coord2(), buffer, true);
+    max_blocks_per_row = (std::max)(max_blocks_per_row, buffer.size());
+  }
+
+  return max_blocks_per_row * avg_block_size;
+}
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
