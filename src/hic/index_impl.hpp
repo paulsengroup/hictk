@@ -137,6 +137,11 @@ inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
   assert(coords1.is_intra());
   assert(coords2.is_intra());
 
+  if (this->empty()) {
+    buffer.clear();
+    return;
+  }
+
   assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
