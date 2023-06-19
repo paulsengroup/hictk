@@ -168,7 +168,7 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
     return;
   }
 
-  while (_buffer->empty()) {
+  while (!!_buffer && _buffer->empty()) {
     read_next_chunk();
   }
 }
@@ -300,9 +300,8 @@ inline const std::vector<internal::BlockIndex>
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk() {
   assert(!!_sel);
-  const auto chunk_size = compute_chunk_size();
-  const auto blocks = find_blocks_overlapping_next_chunk(chunk_size);
-  if (blocks.empty() || _bin1_id > coord1().bin2.rel_id()) {
+
+  if (_bin1_id > coord1().bin2.rel_id()) {
     *this = at_end(*_sel);
     return;
   }
@@ -310,11 +309,19 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   if (_buffer.use_count() != 1) {
     _buffer = std::make_shared<BufferT>(_buffer->capacity());
   }
-
   _buffer->clear();
   _buffer_i = 0;
+
+  const auto chunk_size = compute_chunk_size();
   const auto bin_size = bins().bin_size();
   const auto bin1_id_last = _bin1_id + chunk_size;
+
+  const auto blocks = find_blocks_overlapping_next_chunk(chunk_size);
+  if (blocks.empty()) {
+    _bin1_id = bin1_id_last + 1;
+    return;
+  }
+
   for (const auto &block_idx : blocks) {
     const auto block = _sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), block_idx);
     auto first = std::lower_bound(block->begin(), block->end(), _bin1_id,
