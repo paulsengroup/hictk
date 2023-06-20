@@ -133,7 +133,7 @@ inline std::size_t Index::size() const noexcept { return _block_map.size(); }
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
 inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
-                                 std::vector<BlockIndex> &buffer, bool drop_empty) const {
+                                 std::vector<BlockIndex> &buffer) const {
   assert(coords1.is_intra());
   assert(coords2.is_intra());
 
@@ -153,9 +153,9 @@ inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
   const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
 
   if (_version > 8 && is_intra) {
-    generate_block_list_intra_v9plus(bin1, bin2, bin3, bin4, buffer, drop_empty);
+    generate_block_list_intra_v9plus(bin1, bin2, bin3, bin4, buffer);
   } else {
-    generate_block_list(bin1, bin2, bin3, bin4, buffer, drop_empty);
+    generate_block_list(bin1, bin2, bin3, bin4, buffer);
   }
 
   std::sort(buffer.begin(), buffer.end());
@@ -173,8 +173,7 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
 }
 
 inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                       std::size_t bin4, std::vector<BlockIndex> &buffer,
-                                       bool drop_empty) const {
+                                       std::size_t bin4, std::vector<BlockIndex> &buffer) const {
   const auto col1 = bin1 / _block_bin_count;
   const auto col2 = (bin2 + 1) / _block_bin_count;
   const auto row1 = bin3 / _block_bin_count;
@@ -185,7 +184,7 @@ inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
     for (auto col = col1; col <= col2; ++col) {
       const auto block_id = (row * block_column_count()) + col;
       const auto match = _block_map.find(block_id);
-      if (!drop_empty || match != _block_map.end()) {
+      if (match != _block_map.end()) {
         buffer.emplace_back(*match);
       }
     }
@@ -194,8 +193,7 @@ inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
 
 inline void Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                     std::size_t bin3, std::size_t bin4,
-                                                    std::vector<BlockIndex> &buffer,
-                                                    bool drop_empty) const {
+                                                    std::vector<BlockIndex> &buffer) const {
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
@@ -219,7 +217,7 @@ inline void Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
     for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
       const auto block_id = (depth * block_column_count()) + pad;
       auto match = _block_map.find(block_id);
-      if (!drop_empty || match != _block_map.end()) {
+      if (match != _block_map.end()) {
         buffer.emplace_back(*match);
       }
     }

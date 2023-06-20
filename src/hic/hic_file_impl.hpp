@@ -164,8 +164,17 @@ inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cac
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
 inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
-  const auto& chrom = chromosomes().longest_chromosome();
-  const auto cache_size = this->fetch(chrom.name()).estimate_optimal_cache_size();
+  std::size_t cache_size = 0;
+
+  const auto& chrom1 = chromosomes().longest_chromosome();
+
+  for (const auto& chrom2 : chromosomes()) {
+    if (chrom2.is_all()) {
+      continue;
+    }
+    cache_size += this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+  }
+
   _block_cache->set_capacity((std::min)(upper_bound, cache_size));
 }
 }  // namespace hictk::hic

@@ -110,16 +110,15 @@ class Index {
   [[nodiscard]] bool empty() const noexcept;
 
   void find_overlaps(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
-                     std::vector<BlockIndex>& buffer, bool drop_empty = true) const;
+                     std::vector<BlockIndex>& buffer) const;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
   void generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
-                           std::vector<BlockIndex>& buffer, bool drop_empty = true) const;
+                           std::vector<BlockIndex>& buffer) const;
   void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                        std::size_t bin4, std::vector<BlockIndex>& buffer,
-                                        bool drop_empty = true) const;
+                                        std::size_t bin4, std::vector<BlockIndex>& buffer) const;
 };
 
 }  // namespace hictk::hic::internal

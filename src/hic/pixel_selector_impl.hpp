@@ -158,7 +158,7 @@ inline N PixelSelector::sum() const noexcept {
 }
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
-inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
+inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_samples) const {
   if (_reader.index().empty()) {
     return 0;  // should we throw instead?
   }
@@ -166,37 +166,32 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
   std::seed_seq sseq({_reader.index().size()});
   std::mt19937_64 rand_eng(sseq);
 
-  // Find block with the largest compressed size and use it to guess the compression ratio
-  const auto idx =
-      std::max_element(_reader.index().begin(), _reader.index().end(),
-                       [&](const internal::BlockIndex &idx1, const internal::BlockIndex &idx2) {
-                         return idx1.compressed_size_bytes() < idx2.compressed_size_bytes();
-                       });
-
-  const auto num_pixels_in_largest_block = _reader.read(chrom1(), chrom2(), *idx)->size();
-  const auto compression_ratio = static_cast<std::size_t>(
-      std::ceil(double(num_pixels_in_largest_block) / double(idx->compressed_size_bytes())));
-
   // Try to guess the average block size
-  std::size_t avg_block_size = num_pixels_in_largest_block;
+  std::size_t max_block_size = 0;
 
-  auto first_idx = _reader.index().begin();
-  auto last_idx = _reader.index().end();
-  auto samples = (std::min(100UL, _reader.index().size() - 1));
+  std::vector<std::size_t> block_sizes{};
+  std::size_t samples = 0;
   // index is backed by a hashmap, so iteration should be somewhat random
-  for (std::size_t i = 0; i < samples && first_idx++ != last_idx; ++i) {
-    avg_block_size += first_idx->compressed_size_bytes() * compression_ratio;
+  for (const auto &idx : _reader.index()) {
+    auto blk = _reader.read(chrom1(), chrom2(), idx);
+    if (blk) {
+      samples++;
+      max_block_size = (std::max)(blk->size(), max_block_size);
+      _reader.evict(*blk);
+    }
+    if (samples == num_samples) {
+      break;
+    }
   }
-  avg_block_size /= samples + 1;
 
   // Try to guess how many blocks overlap a single row of pixels
-  std::size_t avg_blocks_per_row = 0;
+  std::size_t max_blocks_per_row = 0;
   const auto bin_size = bins().bin_size();
 
   const std::size_t first_bin_id = 0;
   const std::size_t last_bin_id =
       bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
-  samples = 10;
+  samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
   for (std::size_t i = 0; i < samples; ++i) {
     const auto bin_id =
         std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
@@ -208,12 +203,11 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size() const {
                                           bins().at(coord1().bin1.chrom(), pos2));
 
     std::vector<internal::BlockIndex> buffer{};
-    _reader.index().find_overlaps(coord1_, coord2(), buffer, true);
-    avg_blocks_per_row += buffer.size();
+    _reader.index().find_overlaps(coord1_, coord2(), buffer);
+    max_blocks_per_row = (std::max)(max_blocks_per_row, buffer.size());
   }
-  avg_blocks_per_row /= samples;
 
-  return avg_blocks_per_row * avg_block_size;
+  return (std::max)(10'000'000UL, max_blocks_per_row * max_block_size);
 }
 
 inline void PixelSelector::evict_blocks_from_cache() const {
@@ -345,8 +339,8 @@ inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fractio
 }
 
 template <typename N>
-inline const std::vector<internal::BlockIndex>
-    &PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+inline const std::vector<internal::BlockIndex> &
+PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
   const auto bin_size = bins().bin_size();
 
   const auto end_pos = coord1().bin2.start();
