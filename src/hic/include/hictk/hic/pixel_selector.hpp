@@ -99,7 +99,6 @@ class PixelSelector {
     mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
-    mutable std::size_t _pixels_processed{};
 
    public:
     using difference_type = std::ptrdiff_t;

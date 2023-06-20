@@ -311,7 +311,6 @@ template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
-  ++_pixels_processed;
   ++_buffer_i;
   while (!is_at_end() && _buffer_i >= size()) {
     read_next_chunk();
@@ -578,6 +577,10 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
 
   if (_its.use_count() != 1) {
     _its = std::make_shared<ItPQueue>();
+  }
+
+  if (_selectors.use_count() != 1) {
+    _selectors = std::make_shared<SelectorQueue>(*_selectors);
   }
 
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
