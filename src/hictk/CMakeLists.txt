@@ -9,6 +9,7 @@ find_package(readerwriterqueue QUIET REQUIRED)
 find_package(spdlog QUIET REQUIRED)
 
 add_executable(hictk_tools)
+set_target_properties(hictk_tools PROPERTIES OUTPUT_NAME hictk)
 
 target_sources(
   hictk_tools
@@ -34,3 +35,13 @@ target_link_system_libraries(
   PUBLIC
   fmt::fmt
   spdlog::spdlog)
+
+include(GNUInstallDirs)
+install(
+  TARGETS hictk_tools
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/hictk/)
