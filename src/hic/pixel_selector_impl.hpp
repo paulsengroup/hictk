@@ -519,6 +519,10 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
     _its = std::make_shared<ItPQueue>();
   }
 
+  if (_selectors.use_count() != 1) {
+    _selectors = std::make_shared<SelectorQueue>(*_selectors);
+  }
+
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
     auto *sel = _selectors->front();
     _selectors->pop();
