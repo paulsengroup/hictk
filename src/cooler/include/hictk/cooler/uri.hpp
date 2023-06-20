@@ -8,7 +8,7 @@
 #include <string_view>
 #include <utility>
 
-namespace hictk {
+namespace hictk::cooler {
 
 struct CoolerURI {
   std::string file_path;
@@ -23,6 +23,6 @@ struct CoolerURI {
 };
 
 [[nodiscard]] CoolerURI parse_cooler_uri(std::string_view uri);
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../../uri_impl.hpp"

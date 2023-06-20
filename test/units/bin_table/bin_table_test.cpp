@@ -22,16 +22,17 @@ TEST_CASE("Bin", "[bin][short]") {
   const Chromosome chrom2{1, "chr2", 10};
   SECTION("Ctors") {
     CHECK(Bin{chrom1, 1, 2}.has_null_id());
-    CHECK_FALSE(Bin{0, chrom1, 1, 2}.has_null_id());
-    CHECK_FALSE(Bin{0, GenomicInterval{chrom1, 1, 2}}.has_null_id());
+    CHECK_FALSE(Bin{0, 0, chrom1, 1, 2}.has_null_id());
+    CHECK_FALSE(Bin{0, 0, GenomicInterval{chrom1, 1, 2}}.has_null_id());
   }
 
   SECTION("Accessors") {
     const Bin bin1{chrom1, 1, 2};
-    const Bin bin2{10, chrom1, 1, 2};
+    const Bin bin2{10, 5, chrom1, 1, 2};
 
     CHECK(bin1.id() == Bin::null_id);
     CHECK(bin2.id() == 10);
+    CHECK(bin2.rel_id() == 5);
 
     CHECK(bin1.interval() == GenomicInterval{chrom1, 1, 2});
 
@@ -67,11 +68,11 @@ TEST_CASE("Bin", "[bin][short]") {
   }
 
   SECTION("operators (w/ id)") {
-    const Bin bin1{0, chrom1, 1, 2};
-    const Bin bin2{1, chrom1, 2, 3};
+    const Bin bin1{0, 0, chrom1, 1, 2};
+    const Bin bin2{1, 1, chrom1, 2, 3};
 
-    const Bin bin3{10, chrom2, 1, 2};
-    const Bin bin4{10, chrom2, 10, 20};
+    const Bin bin3{10, 10, chrom2, 1, 2};
+    const Bin bin4{10, 10, chrom2, 10, 20};
 
     CHECK(bin1 != bin2);
     CHECK(bin1 != bin3);
@@ -95,7 +96,7 @@ TEST_CASE("Bin", "[bin][short]") {
 
   SECTION("fmt") {
     const Bin bin1{chrom1, 0, 100};
-    const Bin bin2{123, chrom1, 0, 100};
+    const Bin bin2{123, 123, chrom1, 0, 100};
 
     CHECK(fmt::format(FMT_STRING("{}"), bin1) == std::to_string(Bin::null_id));
     CHECK(fmt::format(FMT_STRING("{}"), bin2) == "123");

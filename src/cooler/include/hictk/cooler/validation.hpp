@@ -17,7 +17,7 @@ DISABLE_WARNING_POP
 #include <string_view>
 #include <utility>
 
-namespace hictk::utils {
+namespace hictk::cooler::utils {
 
 namespace internal {
 struct ValidationStatusBase {
@@ -70,31 +70,31 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
 [[nodiscard]] ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells = true);
 [[nodiscard]] ValidationStatusScool is_scool_file(const HighFive::File& fp,
                                                   bool validate_cells = true);
-}  // namespace hictk::utils
+}  // namespace hictk::cooler::utils
 
 namespace fmt {
 template <>
-struct formatter<hictk::utils::ValidationStatusCooler> {
+struct formatter<hictk::cooler::utils::ValidationStatusCooler> {
   constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
 
-  inline auto format(const hictk::utils::ValidationStatusCooler& s, format_context& ctx) const
-      -> format_context::iterator;
-};
-
-template <>
-struct formatter<hictk::utils::ValidationStatusMultiresCooler> {
-  constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
-
-  inline auto format(const hictk::utils::ValidationStatusMultiresCooler& s,
+  inline auto format(const hictk::cooler::utils::ValidationStatusCooler& s,
                      format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
-struct formatter<hictk::utils::ValidationStatusScool> {
+struct formatter<hictk::cooler::utils::ValidationStatusMultiresCooler> {
   constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
 
-  inline auto format(const hictk::utils::ValidationStatusScool& s, format_context& ctx) const
-      -> format_context::iterator;
+  inline auto format(const hictk::cooler::utils::ValidationStatusMultiresCooler& s,
+                     format_context& ctx) const -> format_context::iterator;
+};
+
+template <>
+struct formatter<hictk::cooler::utils::ValidationStatusScool> {
+  constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
+
+  inline auto format(const hictk::cooler::utils::ValidationStatusScool& s,
+                     format_context& ctx) const -> format_context::iterator;
 };
 }  // namespace fmt
 

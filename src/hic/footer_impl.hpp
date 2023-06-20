@@ -10,7 +10,7 @@
 
 #include "hictk/hic/common.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
 constexpr HiCFooterMetadata::operator bool() const noexcept { return fileOffset >= 0; }
 
@@ -24,8 +24,8 @@ inline bool HiCFooterMetadata::operator!=(const HiCFooterMetadata &other) const 
   return !(*this == other);
 }
 
-inline HiCFooter::HiCFooter(HiCFooterMetadata metadata_) noexcept
-    : _metadata(std::move(metadata_)) {}
+inline HiCFooter::HiCFooter(Index index_, HiCFooterMetadata metadata_) noexcept
+    : _index(std::move(index_)), _metadata(std::move(metadata_)) {}
 
 constexpr HiCFooter::operator bool() const noexcept { return !metadata(); }
 inline bool HiCFooter::operator==(const HiCFooter &other) const noexcept {
@@ -36,6 +36,7 @@ inline bool HiCFooter::operator!=(const HiCFooter &other) const noexcept {
 }
 constexpr const HiCFooterMetadata &HiCFooter::metadata() const noexcept { return _metadata; }
 constexpr HiCFooterMetadata &HiCFooter::metadata() noexcept { return _metadata; }
+inline const Index &HiCFooter::index() const noexcept { return _index; }
 constexpr const std::string &HiCFooter::url() const noexcept { return metadata().url; }
 constexpr MatrixType HiCFooter::matrix_type() const noexcept { return metadata().matrix_type; }
 constexpr NormalizationMethod HiCFooter::normalization() const noexcept {
@@ -71,12 +72,15 @@ constexpr std::vector<double> &HiCFooter::c2Norm() noexcept {
   return _c2Norm;
 }
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
-template <>
-struct std::hash<hictk::internal::HiCFooterMetadata> {
-  inline std::size_t operator()(hictk::internal::HiCFooterMetadata const &m) const noexcept {
-    return hictk::internal::hash_combine(0, m.url, m.matrix_type, m.normalization, m.unit,
-                                         m.resolution, m.chrom1, m.chrom2);
-  }
-};
+inline std::size_t std::hash<hictk::hic::internal::HiCFooterMetadata>::operator()(
+    hictk::hic::internal::HiCFooterMetadata const &m) const noexcept {
+  return hictk::internal::hash_combine(0, m.url, m.matrix_type, m.normalization, m.unit,
+                                       m.resolution, m.chrom1, m.chrom2);
+}
+
+inline std::size_t std::hash<hictk::hic::internal::HiCFooter>::operator()(
+    hictk::hic::internal::HiCFooter const &f) const noexcept {
+  return std::hash<hictk::hic::internal::HiCFooterMetadata>{}(f.metadata());
+}

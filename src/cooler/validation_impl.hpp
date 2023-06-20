@@ -19,7 +19,7 @@
 #include "hictk/cooler/uri.hpp"
 #include "hictk/numeric_utils.hpp"
 
-namespace hictk::utils {
+namespace hictk::cooler::utils {
 
 constexpr ValidationStatusCooler::operator bool() const noexcept { return this->is_cooler; }
 
@@ -83,7 +83,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
 
   if (Attribute::exists(root_group, "format-version")) {
     const auto version = Attribute::read<std::uint8_t>(root_group, "format-version");
-    status.file_was_properly_closed = version != hictk::internal::SENTINEL_ATTR_VALUE;
+    status.file_was_properly_closed = version != cooler::internal::SENTINEL_ATTR_VALUE;
     status.missing_or_invalid_format_attr |= version == 0 || version > 3;
   }
 
@@ -315,9 +315,9 @@ inline std::vector<std::uint32_t> list_resolutions(std::string_view uri, bool so
   }
 }
 
-}  // namespace hictk::utils
+}  // namespace hictk::cooler::utils
 
-constexpr auto fmt::formatter<hictk::utils::ValidationStatusCooler>::parse(
+constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -325,8 +325,8 @@ constexpr auto fmt::formatter<hictk::utils::ValidationStatusCooler>::parse(
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::utils::ValidationStatusCooler>::format(
-    const hictk::utils::ValidationStatusCooler &s, format_context &ctx) const
+auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
+    const hictk::cooler::utils::ValidationStatusCooler &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -348,7 +348,7 @@ auto fmt::formatter<hictk::utils::ValidationStatusCooler>::format(
   // clang-format on
 }
 
-constexpr auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::parse(
+constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -356,8 +356,8 @@ constexpr auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::par
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::format(
-    const hictk::utils::ValidationStatusMultiresCooler &s, format_context &ctx) const
+auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::format(
+    const hictk::cooler::utils::ValidationStatusMultiresCooler &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -382,7 +382,7 @@ auto fmt::formatter<hictk::utils::ValidationStatusMultiresCooler>::format(
   // clang-format on
 }
 
-constexpr auto fmt::formatter<hictk::utils::ValidationStatusScool>::parse(
+constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::parse(
     format_parse_context &ctx) const -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
@@ -390,8 +390,8 @@ constexpr auto fmt::formatter<hictk::utils::ValidationStatusScool>::parse(
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::utils::ValidationStatusScool>::format(
-    const hictk::utils::ValidationStatusScool &s, format_context &ctx) const
+auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
+    const hictk::cooler::utils::ValidationStatusScool &s, format_context &ctx) const
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(

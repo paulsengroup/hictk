@@ -104,4 +104,10 @@ inline N parse_numeric_or_throw(std::string_view tok) {
   parse_numeric_or_throw(tok, field);
   return field;
 }
+
+template <typename N>
+constexpr N abs_diff(N n1, N n2) noexcept {
+  const auto [n3, n4] = std::minmax(n1, n2);
+  return n4 - n3;
+}
 }  // namespace hictk::internal

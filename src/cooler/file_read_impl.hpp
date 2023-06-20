@@ -31,7 +31,7 @@
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 inline bool File::check_sentinel_attr(const HighFive::Group &grp) {
   const auto generated_by_v = Attribute::read(grp, "generated-by", true);
@@ -253,8 +253,9 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
   auto open_dataset = [&](const auto dataset_uri) {
     return std::make_pair(
         std::string{dataset_uri},
-        Dataset{root_grp, dataset_uri,
-                internal::starts_with(dataset_uri, "pixels") ? pixels_aprop : default_aprop});
+        Dataset{
+            root_grp, dataset_uri,
+            hictk::internal::starts_with(dataset_uri, "pixels") ? pixels_aprop : default_aprop});
   };
 
   std::transform(MANDATORY_DATASET_NAMES.begin(), MANDATORY_DATASET_NAMES.end(),
@@ -318,7 +319,7 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initi
             throw std::runtime_error(
                 fmt::format(FMT_STRING("Attribute \"{}{}\" as an unexpected type. Expected a "
                                        "numeric type, found {}"),
-                            root_grp().getPath(), key, internal::type_name<T>()));
+                            root_grp().getPath(), key, hictk::internal::type_name<T>()));
           },
           sumv);
       return true;
@@ -452,4 +453,4 @@ inline Bin File::get_last_bin_written() const {
   return this->bins().at(bin1_id);
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

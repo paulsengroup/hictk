@@ -19,7 +19,7 @@
 #include "hictk/common.hpp"
 #include "hictk/type_pretty_printer.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename T, std::size_t CHUNK_SIZE>
 inline Dataset::iterator<T, CHUNK_SIZE>::iterator(const Dataset &dset, std::size_t h5_offset,
@@ -286,4 +286,4 @@ constexpr auto Dataset::iterator<T, CHUNK_SIZE>::make_end_iterator(const Dataset
   return it;
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

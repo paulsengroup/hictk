@@ -19,7 +19,10 @@ inline const SelfDeletingFolder testdir{true};                          // NOLIN
 static inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::attribute {
+namespace hictk::cooler::test::attribute {
+
+const auto& testdir = hictk::test::testdir;
+const auto& datadir = hictk::test::datadir;
 
 template <typename H5Obj, typename T>
 static void compare_attribute(H5Obj& obj, std::string_view key, const T& expected) {
@@ -41,7 +44,7 @@ static void compare_attribute(H5Obj& obj, std::string_view key, const std::vecto
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: write", "[cooler][short]") {
+TEST_CASE("Cooler: attribute write", "[cooler][short]") {
   const auto path = testdir() / "test_write_attrs.cool";
 
   auto f = HighFive::File(path.string(), HighFive::File::Truncate);
@@ -284,7 +287,7 @@ TEST_CASE("Attribute: write", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: read", "[cooler][short]") {
+TEST_CASE("Cooler: attribute read", "[cooler][short]") {
   const auto path = datadir / "test_read_attrs.h5";
 
   auto f = HighFive::File(path.string(), HighFive::File::ReadOnly);
@@ -409,7 +412,7 @@ TEST_CASE("Attribute: read", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Attribute: read - test numeric conversions", "[cooler][short]") {
+TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]") {
   const auto path = testdir() / "test_read_attrs_numeric_conversion.cool";
 
   auto f = HighFive::File(path.string(), HighFive::File::Truncate);
@@ -486,4 +489,4 @@ TEST_CASE("Attribute: read - test numeric conversions", "[cooler][short]") {
   }
 }
 
-}  // namespace hictk::test::attribute
+}  // namespace hictk::cooler::test::attribute

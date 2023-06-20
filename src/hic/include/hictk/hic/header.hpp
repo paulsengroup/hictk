@@ -12,7 +12,7 @@
 #include "hictk/hic/common.hpp"
 #include "hictk/reference.hpp"
 
-namespace hictk::internal {
+namespace hictk::hic::internal {
 
 struct HiCHeader {
   std::string url{};
@@ -29,6 +29,6 @@ struct HiCHeader {
   bool operator!=(const HiCHeader &other) const noexcept;
 };
 
-}  // namespace hictk::internal
+}  // namespace hictk::hic::internal
 
-#include "../../../hic_header_impl.hpp"
+#include "../../../header_impl.hpp"

@@ -18,9 +18,12 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::dataset {
+namespace hictk::cooler::test::dataset {
+const auto& testdir = hictk::test::testdir;
+const auto& datadir = hictk::test::datadir;
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Dataset: read", "[dataset][short]") {
+TEST_CASE("Cooler: dataset read", "[dataset][short]") {
   const auto path = datadir / "cooler_test_file.cool";
   const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
 
@@ -70,7 +73,7 @@ TEST_CASE("Dataset: read", "[dataset][short]") {
     }
 
     SECTION("variant buff") {
-      internal::VariantBuffer vbuff{std::size_t(0), 0.0};
+      hictk::internal::VariantBuffer vbuff{std::size_t(0), 0.0};
       std::ignore = Dataset{grp, "bins/start"}.read(vbuff, expected.size());
       const auto& buff = vbuff.get<T>();
       REQUIRE(buff.size() == expected.size());
@@ -98,7 +101,7 @@ TEST_CASE("Dataset: read", "[dataset][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Dataset: write", "[dataset][short]") {
+TEST_CASE("Cooler: dataset write", "[dataset][short]") {
   const auto path = testdir() / "test_dataset_write.cool";
   const RootGroup grp{HighFive::File(path.string(), HighFive::File::Truncate).getGroup("/")};
 
@@ -166,7 +169,7 @@ TEST_CASE("Dataset: write", "[dataset][short]") {
     }
 
     SECTION("variant buff") {
-      const internal::VariantBuffer vexpected{expected};
+      const hictk::internal::VariantBuffer vexpected{expected};
       Dataset{grp, "num", T{}}.write(vexpected, 0, true);
 
       const auto vbuff = Dataset{grp, "num"}.read_all();
@@ -207,7 +210,7 @@ TEST_CASE("Dataset: write", "[dataset][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Dataset: accessors", "[dataset][short]") {
+TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
   const auto path = datadir / "cooler_test_file.cool";
   const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
 
@@ -223,7 +226,7 @@ TEST_CASE("Dataset: accessors", "[dataset][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Dataset: linear iteration", "[dataset][long]") {
+TEST_CASE("Cooler: dataset linear iteration", "[dataset][long]") {
   const auto path = datadir / "cooler_test_file.cool";
 
   const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
@@ -261,7 +264,7 @@ TEST_CASE("Dataset: linear iteration", "[dataset][long]") {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Dataset: random iteration", "[dataset][medium]") {
+TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   const auto path = testdir() / "dataset_iterator_random.h5";
 
   const RootGroup grp{HighFive::File(path.string(), HighFive::File::Truncate).getGroup("/")};
@@ -323,7 +326,7 @@ TEST_CASE("Dataset: random iteration", "[dataset][medium]") {
   }
 }
 
-TEST_CASE("Dataset: large read/write", "[dataset][long]") {
+TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
   const auto path = testdir() / "test_dataset_large_rw.h5";
 
   constexpr std::uint64_t seed{4195331987557451569};
@@ -351,7 +354,7 @@ TEST_CASE("Dataset: large read/write", "[dataset][long]") {
                 [&](const auto& n) { CHECK(n == static_cast<std::uint8_t>(rand_eng())); });
 }
 
-TEST_CASE("Dataset: attributes", "[dataset][short]") {
+TEST_CASE("Cooler: dataset attributes", "[dataset][short]") {
   SECTION("read") {
     const auto path = datadir / "test_read_attrs.h5";
 
@@ -382,4 +385,4 @@ TEST_CASE("Dataset: attributes", "[dataset][short]") {
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-}  // namespace hictk::test::dataset
+}  // namespace hictk::cooler::test::dataset

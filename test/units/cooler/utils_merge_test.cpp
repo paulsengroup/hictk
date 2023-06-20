@@ -14,17 +14,19 @@ inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::index {
+namespace hictk::cooler::test::utils {
+inline const auto& testdir = hictk::test::testdir;
+inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("utils: merge", "[merge][utils][short]") {
+TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   const auto src = datadir / "cooler_test_file.cool";
   const auto dest = testdir() / "cooler_merge_test1.cool";
 
   const std::array<std::string, 2> sources{src.string(), src.string()};
 
   SECTION("merge") {
-    utils::merge(sources.begin(), sources.end(), dest.string(), true);
+    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true);
 
     const auto clr1 = File::open_read_only_read_once(src.string());
     const auto clr2 = File::open_read_only_read_once(dest.string());
@@ -52,7 +54,7 @@ TEST_CASE("utils: merge", "[merge][utils][short]") {
         fmt::format(FMT_STRING("{}::/resolutions/100000"), mclr.string()),
         fmt::format(FMT_STRING("{}::/resolutions/200000"), mclr.string())};
 
-    CHECK_THROWS_WITH(utils::merge(sources1.begin(), sources1.end(), dest1.string(), true),
+    CHECK_THROWS_WITH(cooler::utils::merge(sources1.begin(), sources1.end(), dest1.string(), true),
                       Catch::Matchers::ContainsSubstring("have different resolutions"));
   }
 
@@ -63,8 +65,8 @@ TEST_CASE("utils: merge", "[merge][utils][short]") {
 
     const std::array<std::string, 2> sources2{clr1.string(), clr2.string()};
 
-    CHECK_THROWS_WITH(utils::merge(sources2.begin(), sources2.end(), dest2.string(), true),
+    CHECK_THROWS_WITH(cooler::utils::merge(sources2.begin(), sources2.end(), dest2.string(), true),
                       Catch::Matchers::ContainsSubstring("use different reference genomes"));
   }
 }
-}  // namespace hictk::test::index
+}  // namespace hictk::cooler::test::utils

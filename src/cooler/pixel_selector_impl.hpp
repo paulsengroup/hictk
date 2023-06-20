@@ -6,13 +6,12 @@
 
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
-#include "hictk/bin_table.hpp"
-#include "hictk/cooler/index.hpp"
 #include "hictk/numeric_utils.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename N, std::size_t CHUNK_SIZE>
 inline PixelSelector<N, CHUNK_SIZE>::PixelSelector(std::shared_ptr<const Index> index,
@@ -428,4 +427,4 @@ constexpr bool PixelSelector<N, CHUNK_SIZE>::iterator::is_at_end() const noexcep
   return !this->overlaps_coord1() && !this->overlaps_coord2();
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

@@ -15,7 +15,7 @@
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 template <typename N, typename>
 inline std::size_t Dataset::read(std::vector<N> &buff, std::size_t num, std::size_t offset) const {
@@ -55,8 +55,7 @@ inline std::size_t Dataset::read(std::vector<std::string> &buff, std::size_t num
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
-inline std::size_t Dataset::read(internal::VariantBuffer &vbuff, std::size_t num,
-                                 std::size_t offset) const {
+inline std::size_t Dataset::read(VariantBuffer &vbuff, std::size_t num, std::size_t offset) const {
   if constexpr (i == 0) {
     if (offset + num > this->size()) {
       this->throw_out_of_range_excp(offset, num);
@@ -108,8 +107,8 @@ inline std::size_t Dataset::read_all(BuffT &buff, std::size_t offset) const {
   return this->read(buff, num, offset);
 }
 
-inline internal::VariantBuffer Dataset::read_all(std::size_t offset) const {
-  return this->read_all<internal::VariantBuffer>(offset);
+inline hictk::internal::VariantBuffer Dataset::read_all(std::size_t offset) const {
+  return this->read_all<VariantBuffer>(offset);
 }
 
 template <typename BuffT, typename T, typename>
@@ -150,14 +149,14 @@ inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
-inline std::size_t Dataset::read(internal::GenericVariant &vbuff, std::size_t offset) const {
+inline std::size_t Dataset::read(GenericVariant &vbuff, std::size_t offset) const {
   if constexpr (i == 0) {
     if (offset >= this->size()) {
       this->throw_out_of_range_excp(offset);
     }
   }
 
-  using VBuffT = internal::GenericVariant;
+  using VBuffT = GenericVariant;
   if constexpr (i < std::variant_size_v<VBuffT>) {
     using T = std::variant_alternative_t<i, VBuffT>;
 
@@ -195,8 +194,8 @@ inline BuffT Dataset::read(std::size_t offset) const {
   return buff;
 }
 
-inline internal::GenericVariant Dataset::read(std::size_t offset) const {
-  return this->read<internal::GenericVariant>(offset);
+inline hictk::internal::GenericVariant Dataset::read(std::size_t offset) const {
+  return this->read<GenericVariant>(offset);
 }
 
 template <typename BuffT>
@@ -210,8 +209,8 @@ inline BuffT Dataset::read_last() const {
   return buff;
 }
 
-inline internal::GenericVariant Dataset::read_last() const {
-  return this->read_last<internal::GenericVariant>();
+inline hictk::internal::GenericVariant Dataset::read_last() const {
+  return this->read_last<GenericVariant>();
 }
 
 template <typename T>
@@ -233,4 +232,4 @@ inline auto Dataset::read_attribute(std::string_view key, bool missing_ok) const
   return Attribute::read(this->_dataset, key, missing_ok);
 }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

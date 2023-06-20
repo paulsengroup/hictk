@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "catch2/catch_test_macros.hpp"
-#include "hictk/hic/suppress_compiler_warnings.hpp"
+#include "hictk/suppress_warnings.hpp"
 
-using namespace hictk::internal::filestream;
+using namespace hictk::hic::internal::filestream;
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
@@ -53,7 +53,7 @@ static std::vector<std::string> read_file_by_line(const std::string& path_, char
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - ctor", "[hic][short]") {
+TEST_CASE("HiC: filestream ctor", "[hic][short]") {
   SECTION("default") {
     const FileStream s{};
     CHECK(s.url().empty());
@@ -71,7 +71,7 @@ TEST_CASE("Local - ctor", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - seek", "[hic][short]") {
+TEST_CASE("HiC: filestream seek", "[hic][short]") {
   FileStream s(path_plaintext);
   {
     std::string buff;
@@ -115,7 +115,7 @@ TEST_CASE("Local - seek", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - read", "[hic][short]") {
+TEST_CASE("HiC: filestream read", "[hic][short]") {
   FileStream s(path_plaintext);
 
   std::string buffer{"garbage"};
@@ -160,7 +160,7 @@ TEST_CASE("Local - read", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - append", "[hic][short]") {
+TEST_CASE("HiC: filestream append", "[hic][short]") {
   FileStream s(path_plaintext);
 
   std::string buffer;
@@ -194,7 +194,7 @@ TEST_CASE("Local - append", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - getline", "[hic][short]") {
+TEST_CASE("HiC: filestream getline", "[hic][short]") {
   FileStream s(path_plaintext);
 
   std::string buffer;
@@ -237,7 +237,7 @@ TEST_CASE("Local - getline", "[hic][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Local - read binary", "[hic][short]") {
+TEST_CASE("HiC: filestream read binary", "[hic][short]") {
   FileStream s(path_binary);
   s.seekg(10);
 

@@ -15,6 +15,7 @@ namespace hictk {
 
 inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
 
+namespace cooler {
 // Magic values
 inline constexpr std::string_view COOL_MAGIC{"HDF5::Cooler"};
 inline constexpr std::string_view MCOOL_MAGIC{"HDF5::MCOOL"};
@@ -57,6 +58,8 @@ namespace internal {
 inline constexpr std::string_view SENTINEL_ATTR_NAME{"format-version"};
 inline constexpr std::uint8_t SENTINEL_ATTR_VALUE{255};
 }  // namespace internal
+
+}  // namespace cooler
 
 [[nodiscard]] constexpr bool ndebug_defined() noexcept {
 #ifdef NDEBUG

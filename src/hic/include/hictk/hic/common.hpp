@@ -5,7 +5,6 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <tsl/ordered_map.h>
 
 #include <cassert>
 #include <cstdint>
@@ -16,7 +15,9 @@
 #include <type_traits>
 #include <utility>
 
-namespace hictk {
+#include "hictk/common.hpp"
+
+namespace hictk::hic {
 
 struct SerializedPixel {
   std::int64_t bin1_id{};
@@ -52,9 +53,9 @@ struct indexEntry {
   constexpr bool operator!=(const indexEntry &other) const noexcept { return !(*this == other); }
 };
 
-}  // namespace hictk
+}  // namespace hictk::hic
 
-namespace hictk {
+namespace hictk::hic {
 
 enum class NormalizationMethod {
   NONE,
@@ -144,10 +145,10 @@ enum class MatrixUnit { BP, FRAG };
   throw std::runtime_error("Invalid unit \"" + s + "\"");
 }
 
-}  // namespace hictk
+}  // namespace hictk::hic
 
 template <>
-struct fmt::formatter<hictk::NormalizationMethod> {
+struct fmt::formatter<hictk::hic::NormalizationMethod> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
       throw fmt::format_error("invalid format");
@@ -156,39 +157,39 @@ struct fmt::formatter<hictk::NormalizationMethod> {
   }
 
   template <class FormatContext>
-  static auto format(const hictk::NormalizationMethod n, FormatContext &ctx)
+  static auto format(const hictk::hic::NormalizationMethod n, FormatContext &ctx)
       -> decltype(ctx.out()) {
+    using NM = hictk::hic::NormalizationMethod;
     switch (n) {
-      case hictk::NormalizationMethod::NONE:
+      case NM::NONE:
         return fmt::format_to(ctx.out(), FMT_STRING("NONE"));
-      case hictk::NormalizationMethod::VC:
+      case NM::VC:
         return fmt::format_to(ctx.out(), FMT_STRING("VC"));
-      case hictk::NormalizationMethod::VC_SQRT:
+      case NM::VC_SQRT:
         return fmt::format_to(ctx.out(), FMT_STRING("VC_SQRT"));
-      case hictk::NormalizationMethod::KR:
+      case NM::KR:
         return fmt::format_to(ctx.out(), FMT_STRING("KR"));
-      case hictk::NormalizationMethod::SCALE:
+      case NM::SCALE:
         return fmt::format_to(ctx.out(), FMT_STRING("SCALE"));
-      case hictk::NormalizationMethod::INTER_VC:
+      case NM::INTER_VC:
         return fmt::format_to(ctx.out(), FMT_STRING("INTER_VC"));
-      case hictk::NormalizationMethod::INTER_KR:
+      case NM::INTER_KR:
         return fmt::format_to(ctx.out(), FMT_STRING("INTER_KR"));
-      case hictk::NormalizationMethod::INTER_SCALE:
+      case NM::INTER_SCALE:
         return fmt::format_to(ctx.out(), FMT_STRING("INTER_SCALE"));
-      case hictk::NormalizationMethod::GW_VC:
+      case NM::GW_VC:
         return fmt::format_to(ctx.out(), FMT_STRING("GW_VC"));
-      case hictk::NormalizationMethod::GW_KR:
+      case NM::GW_KR:
         return fmt::format_to(ctx.out(), FMT_STRING("GW_KR"));
-      case hictk::NormalizationMethod::GW_SCALE:
+      case NM::GW_SCALE:
         return fmt::format_to(ctx.out(), FMT_STRING("GW_SCALE"));
     }
-    assert(false);
-    std::abort();
+    HICTK_UNREACHABLE_CODE;
   }
 };
 
 template <>
-struct fmt::formatter<hictk::MatrixType> {
+struct fmt::formatter<hictk::hic::MatrixType> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
       throw fmt::format_error("invalid format");
@@ -197,22 +198,21 @@ struct fmt::formatter<hictk::MatrixType> {
   }
 
   template <class FormatContext>
-  static auto format(const hictk::MatrixType t, FormatContext &ctx) -> decltype(ctx.out()) {
+  static auto format(const hictk::hic::MatrixType t, FormatContext &ctx) -> decltype(ctx.out()) {
     switch (t) {
-      case hictk::MatrixType::observed:
+      case hictk::hic::MatrixType::observed:
         return fmt::format_to(ctx.out(), FMT_STRING("observed"));
-      case hictk::MatrixType::oe:
+      case hictk::hic::MatrixType::oe:
         return fmt::format_to(ctx.out(), FMT_STRING("oe"));
-      case hictk::MatrixType::expected:
+      case hictk::hic::MatrixType::expected:
         return fmt::format_to(ctx.out(), FMT_STRING("expected"));
     }
-    assert(false);
-    std::abort();
+    HICTK_UNREACHABLE_CODE;
   }
 };
 
 template <>
-struct fmt::formatter<hictk::MatrixUnit> {
+struct fmt::formatter<hictk::hic::MatrixUnit> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
       throw fmt::format_error("invalid format");
@@ -221,15 +221,14 @@ struct fmt::formatter<hictk::MatrixUnit> {
   }
 
   template <class FormatContext>
-  static auto format(const hictk::MatrixUnit u, FormatContext &ctx) -> decltype(ctx.out()) {
+  static auto format(const hictk::hic::MatrixUnit u, FormatContext &ctx) -> decltype(ctx.out()) {
     switch (u) {
-      case hictk::MatrixUnit::BP:
+      case hictk::hic::MatrixUnit::BP:
         return fmt::format_to(ctx.out(), FMT_STRING("BP"));
-      case hictk::MatrixUnit::FRAG:
+      case hictk::hic::MatrixUnit::FRAG:
         return fmt::format_to(ctx.out(), FMT_STRING("FRAG"));
     }
-    assert(false);
-    std::abort();
+    HICTK_UNREACHABLE_CODE;
   }
 };
 

@@ -28,8 +28,7 @@
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
 
-namespace hictk {
-
+namespace hictk::cooler {
 template <typename PixelIt, typename>
 inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool validate) {
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
@@ -350,4 +349,4 @@ inline void File::write_sentinel_attr(HighFive::Group grp) {
 
 inline void File::write_sentinel_attr() { File::write_sentinel_attr(this->_root_group()); }
 
-}  // namespace hictk
+}  // namespace hictk::cooler

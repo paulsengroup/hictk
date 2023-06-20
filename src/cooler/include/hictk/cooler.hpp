@@ -34,7 +34,7 @@ DISABLE_WARNING_POP
 #include "hictk/numeric_variant.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk {
+namespace hictk::cooler {
 
 using DefaultPixelT = std::int32_t;
 
@@ -88,6 +88,7 @@ void init_mcool(std::string_view file_path, bool force_overwrite = false);
 //                 bool force_overwrite = false);
 
 class File {
+  using NumericVariant = hictk::internal::NumericVariant;
   unsigned int _mode{HighFive::File::ReadOnly};
   std::unique_ptr<HighFive::File> _fp{};
   RootGroup _root_group{};
@@ -95,7 +96,7 @@ class File {
   DatasetMap _datasets{};
   mutable WeightMap _weights{};
   StandardAttributes _attrs{StandardAttributes::init(0)};
-  internal::NumericVariant _pixel_variant{};
+  NumericVariant _pixel_variant{};
   std::shared_ptr<const BinTable> _bins{};
   std::shared_ptr<Index> _index{};
   bool _finalize{false};
@@ -111,7 +112,7 @@ class File {
                 double w0 = DEFAULT_HDF5_CACHE_W0);
 
  public:
-  using QUERY_TYPE = GenomicInterval::Type;
+  using QUERY_TYPE = hictk::GenomicInterval::Type;
 
   File() = default;
   File(const File &other) = delete;
@@ -178,7 +179,7 @@ class File {
   [[nodiscard]] auto group(std::string_view group_name) const -> const Group &;
   [[nodiscard]] auto dataset(std::string_view dataset_name) const -> const Dataset &;
 
-  [[nodiscard]] const internal::NumericVariant &pixel_variant() const noexcept;
+  [[nodiscard]] const NumericVariant &pixel_variant() const noexcept;
   template <typename T>
   [[nodiscard]] bool has_pixel_of_type() const noexcept;
 
@@ -275,8 +276,8 @@ class File {
   template <typename PixelIt>
   void validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
 
-  [[nodiscard]] static internal::NumericVariant detect_pixel_type(
-      const RootGroup &root_grp, std::string_view path = "pixels/count");
+  [[nodiscard]] static NumericVariant detect_pixel_type(const RootGroup &root_grp,
+                                                        std::string_view path = "pixels/count");
   void write_attributes(bool skip_sentinel_attr = true);
   void write_chromosomes();
 
@@ -317,7 +318,7 @@ class File {
                                                    PixelCoordinates coord2) const;
 };
 
-}  // namespace hictk
+}  // namespace hictk::cooler
 
 #include "../../file_accessors_impl.hpp"
 #include "../../file_impl.hpp"

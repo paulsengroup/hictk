@@ -15,7 +15,7 @@
 
 #include "hictk/common.hpp"
 
-namespace hictk::internal::filestream {
+namespace hictk::hic::internal::filestream {
 
 inline FileStream::FileStream(std::string path)
     : path_(std::move(path)),
@@ -151,4 +151,4 @@ inline std::ifstream FileStream::open_file(const std::string &path, std::ifstrea
   return ifs;
 }
 
-}  // namespace hictk::internal::filestream
+}  // namespace hictk::hic::internal::filestream

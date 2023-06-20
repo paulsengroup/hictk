@@ -5,22 +5,23 @@
 find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(libdeflate QUIET REQUIRED)
-find_package(tsl-ordered-map QUIET REQUIRED)
+find_package(span-lite QUIET REQUIRED)
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
 
 target_sources(
   hic
-  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cache_impl.hpp
+  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/block_cache_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/block_reader_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_stream_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/file_reader_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_utils_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_footer_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_header_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_matrix_selector_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp)
+            ${CMAKE_CURRENT_SOURCE_DIR}/footer_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/header_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/index_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_impl.hpp)
 
 target_include_directories(hic INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
@@ -36,5 +37,6 @@ target_link_system_libraries(
   INTERFACE
   fmt::fmt
   libdeflate::libdeflate
-  tsl::ordered_map
+  phmap
+  nonstd::span-lite
   std::filesystem)
