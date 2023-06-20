@@ -364,7 +364,7 @@ inline std::size_t PixelSelector::iterator<N>::bin2_id() const noexcept {
 template <typename N>
 inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fraction) const noexcept {
   const auto bin_size = bins().bin_size();
-  const auto num_bins = (coord1().bin1.chrom().size() + bin_size - 1) / bin_size;
+  const auto num_bins = (std::max)(100U, (coord1().bin1.chrom().size() + bin_size - 1) / bin_size);
   const auto max_num_bins =
       (std::max)(1U, static_cast<std::uint32_t>(fraction * static_cast<double>(num_bins)));
 
