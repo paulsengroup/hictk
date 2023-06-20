@@ -191,7 +191,7 @@ template <typename N>
 static std::size_t append_pixels(cooler::File& clr,
                                  moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue,
                                  std::atomic<bool>& early_return,
-                                 std::size_t buffer_capacity = 1'000'000) {
+                                 std::size_t buffer_capacity = 100'000) {
   try {
     std::vector<Pixel<N>> buffer{buffer_capacity};
     buffer.clear();
@@ -237,12 +237,11 @@ static void convert_resolution_multi_threaded(
     bool quiet) {
   const auto t0 = std::chrono::steady_clock::now();
 
-  spdlog::info(FMT_STRING("[{}] Begin processing {} resolution using a cache size of {} MBs..."),
-               hf.resolution(), hf.resolution(),
-               double(hf.cache_capacity() * sizeof(hic::SerializedPixel)) / 1.0e6);
+  spdlog::info(FMT_STRING("[{}] Begin processing {}bp matrix..."), hf.resolution(),
+               hf.resolution());
 
   std::atomic<bool> early_return = false;
-  moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{1'000'000};
+  moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{100'000};
 
   auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, quiet, early_return); };
   auto producer = std::async(std::launch::async, producer_fx);

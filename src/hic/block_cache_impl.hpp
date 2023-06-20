@@ -72,7 +72,8 @@ constexpr bool BlockID::operator==(const BlockID &other) const noexcept {
   return chrom1_id == other.chrom1_id && chrom2_id == other.chrom2_id && id == other.id;
 }
 
-inline BlockCache::BlockCache(std::size_t capacity) : _map(capacity), _capacity(capacity) {}
+inline BlockCache::BlockCache(std::size_t capacity_bytes)
+    : _capacity(capacity_bytes / sizeof(SerializedPixel)) {}
 
 inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
     -> Value {

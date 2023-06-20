@@ -93,7 +93,7 @@ class BlockCache {
 
  public:
   BlockCache() = delete;
-  explicit BlockCache(std::size_t capacity);
+  explicit BlockCache(std::size_t capacity_bytes);
 
   [[nodiscard]] auto find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
       -> Value;

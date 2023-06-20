@@ -23,7 +23,7 @@ struct ConvertConfig {
   std::string genome{};
   std::vector<std::string> norm_dset_names{};
 
-  std::size_t block_cache_size{8ULL << 30U};  // 8G
+  std::size_t block_cache_size{0};
   bool fail_if_normalization_method_is_not_avaliable{false};
   bool quiet{false};
   std::uint8_t verbosity{3};

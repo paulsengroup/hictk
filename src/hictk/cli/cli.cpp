@@ -261,13 +261,6 @@ void Cli::make_convert_subcommand() {
       c.fail_if_normalization_method_is_not_avaliable,
       "Fail if any of the requested normalization vectors are missing.")
       ->capture_default_str();
-  sc.add_option(
-      "--read-cache-size",
-      c.block_cache_size,
-      "Maximum size of the in-memory read cache.")
-      ->check(CLI::PositiveNumber)
-      ->transform(CLI::AsSizeValue(true))
-      ->capture_default_str();
   sc.add_option("-g,--genome", c.genome,
                "Genome assembly name. By default this is copied from the .hic file metadata.");
   sc.add_flag("-q,--quiet", c.quiet, "Suppress console output.")->capture_default_str();
@@ -669,7 +662,7 @@ void Cli::transform_args_convert_subcommand() {
   c.normalization_methods = generate_norm_vect(c.normalization_methods_str);
 
   if (c.genome.empty()) {
-    hic::HiCFile f(c.input_hic, c.resolutions.front());
+    const hic::HiCFile f(c.input_hic, c.resolutions.front());
     c.genome = f.assembly();
   }
 
