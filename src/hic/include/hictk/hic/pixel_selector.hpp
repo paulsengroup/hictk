@@ -134,7 +134,7 @@ class PixelSelector {
     void read_next_chunk();
     [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
         std::size_t num_bins);
-    [[nodiscard]] std::size_t compute_chunk_size(double fraction = 0.0005) const noexcept;
+    [[nodiscard]] std::size_t compute_chunk_size(double fraction = 0.0001) const noexcept;
   };
 };
 

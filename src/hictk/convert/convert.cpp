@@ -172,8 +172,10 @@ static void enqueue_pixels(const hic::HiCFile& hf,
                 std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
             1000.0;
         spdlog::info(
-            FMT_STRING("Processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-            first->coords.bin1, double(update_frequency) / delta, hf.block_cache_hit_rate() * 100);
+            FMT_STRING("[{}] Processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
+            hf.resolution(), first->coords.bin1, double(update_frequency) / delta,
+            hf.block_cache_hit_rate() * 100);
+        hf.reset_cache_stats();
         t0 = t1;
         i = 0;
       }
@@ -235,6 +237,10 @@ static void convert_resolution_multi_threaded(
     bool quiet) {
   const auto t0 = std::chrono::steady_clock::now();
 
+  spdlog::info(FMT_STRING("[{}] Begin processing {} resolution using a cache size of {} MBs..."),
+               hf.resolution(), hf.resolution(),
+               double(hf.cache_capacity() * sizeof(hic::SerializedPixel)) / 1.0e6);
+
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{1'000'000};
 
@@ -289,15 +295,20 @@ void convert_subcmd(const ConvertConfig& c) {
 
   if (c.resolutions.size() == 1) {
     hic::HiCFile hf(c.input_hic.string(), c.resolutions.front(), hic::MatrixType::observed,
-                    hic::MatrixUnit::BP);
+                    hic::MatrixUnit::BP, c.block_cache_size);
     convert_resolution_multi_threaded<std::int32_t>(
         hf, c.output_cooler.string(), chroms, c.resolutions.front(), c.genome,
         c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable, c.quiet);
     return;
   }
 
+  auto cache_size = c.block_cache_size;
   std::for_each(c.resolutions.rbegin(), c.resolutions.rend(), [&](const auto res) {
-    hic::HiCFile hf(c.input_hic.string(), res, hic::MatrixType::observed, hic::MatrixUnit::BP);
+    hic::HiCFile hf(c.input_hic.string(), res, hic::MatrixType::observed, hic::MatrixUnit::BP,
+                    cache_size);
+    if (cache_size == 0) {
+      cache_size = hf.cache_capacity();
+    }
     convert_resolution_multi_threaded<std::int32_t>(
         hf, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_cooler.string(), res), chroms,
         res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable,

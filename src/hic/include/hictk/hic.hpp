@@ -73,6 +73,7 @@ class HiCFile {
   void reset_cache_stats() const noexcept;
   void clear_cache() noexcept;
   void optimize_cache_size(std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
+  [[nodiscard]] std::size_t cache_capacity() const noexcept;
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(

@@ -172,9 +172,15 @@ inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
     if (chrom2.is_all()) {
       continue;
     }
-    cache_size += this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+    if (chrom1.id() < chrom2.id()) {
+      cache_size += this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+    } else {
+      cache_size += this->fetch(chrom2.name(), chrom1.name()).estimate_optimal_cache_size();
+    }
   }
 
   _block_cache->set_capacity((std::min)(upper_bound, cache_size));
 }
+
+inline std::size_t HiCFile::cache_capacity() const noexcept { return _block_cache->capacity(); }
 }  // namespace hictk::hic
