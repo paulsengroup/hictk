@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <queue>
 #include <vector>
 
 #include "hictk/bin_table.hpp"
@@ -117,6 +118,7 @@ class PixelSelector {
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
 
     [[nodiscard]] bool operator<(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator>(const iterator &other) const noexcept;
 
     [[nodiscard]] auto operator*() const -> const_reference;
     [[nodiscard]] auto operator->() const -> const_pointer;
@@ -130,6 +132,8 @@ class PixelSelector {
     [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
+    [[nodiscard]] std::size_t bin1_id() const noexcept;
+    [[nodiscard]] std::size_t bin2_id() const noexcept;
 
     void read_next_chunk();
     [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
@@ -171,12 +175,22 @@ class PixelSelectorAll {
 
   template <typename N>
   class iterator {
-    const PixelSelectorAll *_sel{};
+    struct Pair {
+      PixelSelector::iterator<N> first{};
+      PixelSelector::iterator<N> last{};
+      bool operator<(const Pair &other) const noexcept;
+      bool operator>(const Pair &other) const noexcept;
+    };
 
-    using PixelMerger = hictk::internal::PixelMerger<PixelSelector::iterator<N>>;
-    std::shared_ptr<PixelMerger> _merger{};
-    std::vector<PixelSelector>::const_iterator _it{};
-    Pixel<N> _value{};
+    using SelectorQueue = std::queue<const PixelSelector *>;
+    using ItPQueue = std::priority_queue<Pair, std::vector<Pair>, std::greater<>>;
+    std::shared_ptr<SelectorQueue> _selectors{};
+    std::shared_ptr<ItPQueue> _its{};
+
+    std::uint32_t _chrom1_id{};
+
+    std::shared_ptr<std::vector<Pixel<N>>> _buff{};
+    std::size_t _i{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -188,7 +202,7 @@ class PixelSelectorAll {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const PixelSelectorAll &sel);
+    explicit iterator(const PixelSelectorAll &selector);
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
@@ -200,7 +214,8 @@ class PixelSelectorAll {
     auto operator++(int) -> iterator;
 
    private:
-    void setup_next_pixel_merger();
+    void init_iterators();
+    void read_next_chunk();
   };
 };
 
