@@ -5,6 +5,7 @@
 find_package(CLI11 QUIET REQUIRED)
 find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
+find_package(readerwriterqueue QUIET REQUIRED)
 find_package(spdlog QUIET REQUIRED)
 
 add_executable(hictk_tools)
@@ -28,7 +29,8 @@ target_link_system_libraries(
   hictk_tools
   PRIVATE
   CLI11::CLI11
-  spdlog::spdlog
+  readerwriterqueue::readerwriterqueue
   std::filesystem
   PUBLIC
-  fmt::fmt)
+  fmt::fmt
+  spdlog::spdlog)

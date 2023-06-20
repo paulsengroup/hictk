@@ -4,7 +4,10 @@
 
 #include <fmt/format.h>
 #include <fmt/std.h>
+#include <readerwriterqueue/readerwriterqueue.h>
 #include <spdlog/spdlog.h>
+
+#include <future>
 
 #include "hictk/cooler.hpp"
 #include "hictk/hic.hpp"
@@ -47,6 +50,7 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
                                         hic::NormalizationMethod norm) {
   std::vector<double> weights{};
   weights.reserve(bins.size());
+  std::size_t missing_norms = 0;
   for (const auto& chrom : bins.chromosomes()) {
     if (chrom.is_all()) {
       continue;
@@ -62,15 +66,19 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
       }
 
       weights.insert(weights.end(), weights_.begin(), weights_.end());
+      missing_norms = false;
     } catch (const std::exception& e) {
       if (!missing_norm_or_interactions(e, norm)) {
         throw;
       }
-      spdlog::warn(FMT_STRING("[{}] {} normalization vector for {} is missing. Filling "
-                              "normalization vector with NaNs."),
-                   bins.bin_size(), norm, chrom.name());
       weights.resize(weights.size() + expected_length, std::numeric_limits<double>::quiet_NaN());
+      ++missing_norms;
     }
+  }
+  if (missing_norms == f.chromosomes().size() - 1) {
+    spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. Filling "
+                            "normalization vector with NaNs."),
+                 bins.bin_size(), norm);
   }
 
   assert(weights.size() == bins.size());
@@ -133,47 +141,132 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
   return {names.begin(), names.end(), sizes.begin()};
 }
 
-static void convert_resolution(hic::HiCFile& hf, std::string_view cooler_uri,
-                               const Reference& chromosomes, std::uint32_t resolution,
-                               std::string_view genome,
-                               const std::vector<hic::NormalizationMethod>& normalization_methods,
-                               bool fail_if_norm_not_found) {
-  const auto t0 = std::chrono::steady_clock::now();
-  std::size_t nnz = 0;
-  auto cf = init_cooler(cooler_uri, resolution, genome, chromosomes);
-  std::vector<Pixel<std::int32_t>> buffer(1'000'000);
-  buffer.clear();
-
-  auto sel = hf.fetch();
-
-  auto t1 = std::chrono::steady_clock::now();
-  std::for_each(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), [&](auto pixel) {
-    buffer.emplace_back(std::move(pixel));
-    if (buffer.size() == buffer.capacity()) {
-      cf.append_pixels(buffer.begin(), buffer.end());
-      const auto t2 = std::chrono::steady_clock::now();
-      const auto delta =
-          static_cast<double>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()) /
-          1000.0;
-      spdlog::info(FMT_STRING("Processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-                   buffer.back().coords.bin1, double(buffer.size()) / delta,
-                   hf.block_cache_hit_rate() * 100);
-      hf.reset_cache_stats();
-      t1 = t2;
-      buffer.clear();
+template <typename N>
+static void enqueue_pixels(const hic::HiCFile& hf,
+                           moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue, bool quiet,
+                           std::atomic<bool>& early_return,
+                           std::size_t update_frequency = 10'000'000) {
+  try {
+    if (quiet) {
+      update_frequency = (std::numeric_limits<std::size_t>::max)();
     }
-  });
 
-  if (!buffer.empty()) {
-    cf.append_pixels(buffer.begin(), buffer.end());
+    auto sel = hf.fetch();
+    auto first = sel.begin<N>();
+    auto last = sel.end<N>();
+
+    auto t0 = std::chrono::steady_clock::now();
+    for (std::size_t i = 0; first != last && !early_return; ++i) {
+      while (!queue.try_enqueue(*first)) {
+        if (early_return) {
+          return;
+        }
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+      }
+      ++first;
+
+      if (i == update_frequency) {
+        const auto t1 = std::chrono::steady_clock::now();
+        const auto delta =
+            static_cast<double>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+            1000.0;
+        spdlog::info(
+            FMT_STRING("Processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
+            first->coords.bin1, double(update_frequency) / delta, hf.block_cache_hit_rate() * 100);
+        t0 = t1;
+        i = 0;
+      }
+    }
+    queue.enqueue(Pixel<N>{});
+  } catch (...) {
+    early_return = true;
+    throw;
+  }
+}
+
+template <typename N>
+static std::size_t append_pixels(cooler::File& clr,
+                                 moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue,
+                                 std::atomic<bool>& early_return,
+                                 std::size_t buffer_capacity = 1'000'000) {
+  try {
+    std::vector<Pixel<N>> buffer{buffer_capacity};
+    buffer.clear();
+
+    Pixel<N> value{};
+    std::size_t nnz = 0;
+
+    while (!early_return) {
+      while (!queue.wait_dequeue_timed(value, std::chrono::milliseconds(25))) {
+        if (early_return) {
+          return nnz;
+        }
+      }
+
+      if (!value) {
+        break;
+      }
+
+      buffer.push_back(value);
+      ++nnz;
+
+      if (buffer.size() == buffer.capacity()) {
+        clr.append_pixels(buffer.begin(), buffer.end());
+        buffer.clear();
+      }
+    }
+
+    if (!buffer.empty()) {
+      clr.append_pixels(buffer.begin(), buffer.end());
+    }
+    return nnz + buffer.size();
+  } catch (...) {
+    early_return = true;
+    throw;
+  }
+}
+
+template <typename N>
+static void convert_resolution_multi_threaded(
+    hic::HiCFile& hf, std::string_view cooler_uri, const Reference& chromosomes,
+    std::uint32_t resolution, std::string_view genome,
+    const std::vector<hic::NormalizationMethod>& normalization_methods, bool fail_if_norm_not_found,
+    bool quiet) {
+  const auto t0 = std::chrono::steady_clock::now();
+
+  std::atomic<bool> early_return = false;
+  moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{1'000'000};
+
+  auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, quiet, early_return); };
+  auto producer = std::async(std::launch::async, producer_fx);
+
+  auto clr = init_cooler(cooler_uri, resolution, genome, chromosomes);
+  auto consumer_fx = [&]() { return append_pixels<N>(clr, queue, early_return); };
+  auto consumer = std::async(std::launch::async, consumer_fx);
+
+  try {
+    producer.get();
+  } catch (const std::exception& e) {
+    early_return = true;
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("exception raised while reading interactions from input file: {}"), e.what()));
+  }
+
+  std::size_t nnz = 0;
+  try {
+    nnz = consumer.get();
+  } catch (const std::exception& e) {
+    early_return = true;
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("exception raised while writing interactions to output file: {}"), e.what()));
   }
 
   for (const auto norm : normalization_methods) {
-    copy_weights(hf, cf, norm, fail_if_norm_not_found);
+    copy_weights(hf, clr, norm, fail_if_norm_not_found);
   }
 
-  t1 = std::chrono::steady_clock::now();
+  const auto t1 = std::chrono::steady_clock::now();
   const auto delta =
       static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
       1000.0;
@@ -197,16 +290,18 @@ void convert_subcmd(const ConvertConfig& c) {
   if (c.resolutions.size() == 1) {
     hic::HiCFile hf(c.input_hic.string(), c.resolutions.front(), hic::MatrixType::observed,
                     hic::MatrixUnit::BP);
-    convert_resolution(hf, c.output_cooler.string(), chroms, c.resolutions.front(), c.genome,
-                       c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
+    convert_resolution_multi_threaded<std::int32_t>(
+        hf, c.output_cooler.string(), chroms, c.resolutions.front(), c.genome,
+        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable, c.quiet);
     return;
   }
 
   std::for_each(c.resolutions.rbegin(), c.resolutions.rend(), [&](const auto res) {
     hic::HiCFile hf(c.input_hic.string(), res, hic::MatrixType::observed, hic::MatrixUnit::BP);
-    convert_resolution(
+    convert_resolution_multi_threaded<std::int32_t>(
         hf, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_cooler.string(), res), chroms,
-        res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
+        res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable,
+        c.quiet);
   });
 
   const auto t1 = std::chrono::steady_clock::now();
