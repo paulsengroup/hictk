@@ -18,7 +18,7 @@ struct Config {
 
   std::size_t target_num_records{1'000'000};
   bool genome_wide{};
-  std::vector<std::size_t> block_cache_sizes{25'000'000};
+  std::vector<std::size_t> block_cache_sizes{500'000'000};
 };
 
 static void dump_genome_wide(const std::string& path_to_hic, std::uint32_t resolution,
@@ -47,9 +47,10 @@ static void dump_genome_wide(const std::string& path_to_hic, std::uint32_t resol
 
 static void dump(const std::string& path_to_hic, std::uint32_t resolution,
                  std::size_t target_num_records, std::size_t block_cache_size) {
-  hic::HiCFile const hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
-                        block_cache_size);
-  auto sel = hf.fetch("chr1");
+  hic::HiCFile hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
+                  block_cache_size);
+
+  auto sel = hf.fetch(hf.chromosomes().longest_chromosome().name());
 
   const auto t0 = std::chrono::steady_clock::now();
   auto first = sel.begin<float>();

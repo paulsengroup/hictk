@@ -67,8 +67,8 @@ struct Pixel {
 
 namespace internal {
 
-/// This class is basically a wrapper around a priority queue of objects of type Node
-/// Node consist of a pixel and an index. The index represent from which iterator the
+/// This class is basically a wrapper around a priority queue of objects of type Pair
+/// Pair consist of a pixel and an index. The index represent from which iterator the
 /// pixel was read. This allows us to know from which iterator we should read the next pixel (i.e.
 /// the same iterator from which the top pixel originated)
 template <typename PixelIt>
