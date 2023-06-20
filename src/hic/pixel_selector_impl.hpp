@@ -250,7 +250,6 @@ template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
-  ++_pixels_processed;
   ++_buffer_i;
   while (!is_at_end() && _buffer_i >= size()) {
     read_next_chunk();
