@@ -140,11 +140,11 @@ jobs:
       - name: Build project
         run: cmake --build build -j $(nproc)
 
-      - name: Upload hictk_tools
+      - name: Upload hictk
         uses: actions/upload-artifact@v3
         with:
           name: hictk-tools-fuzzy-testing
-          path: build/src/hictk/hictk_tools
+          path: build/src/hictk/hictk
           if-no-files-found: error
           retention-days: 1
 
@@ -223,7 +223,7 @@ jobs:
             echo "type=short" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download hictk_tools
+      - name: Download hictk_
         uses: actions/download-artifact@v3
         with:
           name: hictk-tools-fuzzy-testing
@@ -257,13 +257,11 @@ jobs:
 
       - name: Run test
         run: |
-          chmod 750 hictk_tools
-          hictk_tools="$(readlink -f ./hictk_tools)"
-
-          ls -lahL
+          chmod 750 hictk
+          hictk="$(readlink -f ./hictk)"
 
           test/scripts/fuzzy_test.py \
-            --path-to-hictk="$hictk_tools" \
+            --path-to-hictk="$hictk" \
             --resolution '${{ steps.test-params.outputs.resolution }}' \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
