@@ -113,7 +113,15 @@ template <std::size_t i>
 inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> AttributeVar {
   if constexpr (i < std::variant_size_v<AttributeVar>) {
     using T = std::variant_alternative_t<i, AttributeVar>;
-    if (attr.getDataType() != HighFive::create_datatype<T>()) {
+    const auto variant_found = [&]() {
+      if constexpr (std::is_same_v<T, bool>) {
+        return attr.getDataType() == HighFive::create_enum_boolean();
+      } else {
+        return attr.getDataType() == HighFive::create_datatype<T>();
+      }
+    }();
+
+    if (!variant_found) {
       return read_variant<i + 1>(attr);
     }
     T buff{};
@@ -136,12 +144,21 @@ inline Tout Attribute::numeric_converter(T1& buff) {
     return buff;
   }
 
+  if constexpr (std::is_same_v<Tout, bool>) {
+    if constexpr (std::is_same_v<Tin, std::string>) {
+      return static_cast<bool>(buff != "0");
+    } else {
+      return static_cast<bool>(buff != 0);
+    }
+  }
+
   if constexpr (std::is_floating_point_v<Tin> && std::is_floating_point_v<Tout>) {
     // Here we assume that errors due to casting e.g. float to double are acceptable
     return static_cast<Tout>(buff);
   }
 
-  if constexpr (std::is_same_v<Tin, std::string> && std::is_arithmetic_v<Tout>) {
+  if constexpr (std::is_same_v<Tin, std::string> && std::is_arithmetic_v<Tout> &&
+                !std::is_same_v<Tout, bool>) {
     // Try to convert a string attribute to the appropriate numeric type
     try {
       return parse_numeric_or_throw<Tout>(buff);
@@ -167,7 +184,9 @@ inline Tout Attribute::numeric_converter(T1& buff) {
                     type_name<Tout>(), type_name<Tin>(), buff, type_name<Tout>()));
   }
 
-  if constexpr (std::is_integral_v<Tin> && std::is_integral_v<Tout>) {
+  if constexpr (std::is_same_v<Tin, bool> && std::is_arithmetic_v<Tout>) {
+    return static_cast<Tout>(buff);
+  } else if constexpr (std::is_integral_v<Tin> && std::is_integral_v<Tout>) {
     // Cast integers without causing overflows
     if (buff < 0) {
       if (!std::is_unsigned_v<Tout>) {

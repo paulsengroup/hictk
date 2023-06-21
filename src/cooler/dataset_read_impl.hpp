@@ -215,12 +215,7 @@ inline hictk::internal::GenericVariant Dataset::read_last() const {
 
 template <typename T>
 inline T Dataset::read_attribute(std::string_view key) const {
-  if constexpr (std::is_same_v<T, bool>) {
-    [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-    return this->_dataset.getAttribute(std::string{key}).read<bool>();
-  } else {
-    return Attribute::read<T>(this->_dataset, key);
-  }
+  return Attribute::read<T>(this->_dataset, key);
 }
 
 template <typename T>

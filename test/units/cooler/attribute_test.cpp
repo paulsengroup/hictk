@@ -231,6 +231,24 @@ TEST_CASE("Cooler: attribute write", "[cooler][short]") {
     }
   }
 
+  SECTION("bool") {
+    const bool buff{};
+    SECTION("File") {
+      Attribute::write(f, "bool", buff);
+      compare_attribute(f, "bool", buff);
+    }
+
+    SECTION("Group") {
+      Attribute::write(g, "bool", buff);
+      compare_attribute(g, "bool", buff);
+    }
+
+    SECTION("Dataset") {
+      Attribute::write(d, "bool", buff);
+      compare_attribute(d, "bool", buff);
+    }
+  }
+
   SECTION("long double") {
     const long double buff{0.123456789L};
     SECTION("File") {
@@ -371,6 +389,13 @@ TEST_CASE("Cooler: attribute read", "[cooler][short]") {
     SECTION("File") { CHECK(Attribute::read<std::int8_t>(f, "std::int8_t") == buff); }
     SECTION("Group") { CHECK(Attribute::read<std::int8_t>(g, "std::int8_t") == buff); }
     SECTION("Dataset") { CHECK(Attribute::read<std::int8_t>(d, "std::int8_t") == buff); }
+  }
+
+  SECTION("bool") {
+    const bool buff{};
+    SECTION("File") { CHECK(Attribute::read<bool>(f, "bool") == buff); }
+    SECTION("Group") { CHECK(Attribute::read<bool>(g, "bool") == buff); }
+    SECTION("Dataset") { CHECK(Attribute::read<bool>(d, "bool") == buff); }
   }
 
   SECTION("float") {
