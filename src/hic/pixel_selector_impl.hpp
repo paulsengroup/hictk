@@ -376,8 +376,8 @@ inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fractio
 }
 
 template <typename N>
-inline const std::vector<internal::BlockIndex> &
-PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+inline const std::vector<internal::BlockIndex>
+    &PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
   const auto bin_size = bins().bin_size();
 
   const auto end_pos = coord1().bin2.start();

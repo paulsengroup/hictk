@@ -138,8 +138,9 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
       HICTK_UNREACHABLE_CODE;
   }
 
-  return _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
-                             InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
+  return _blk_cache->emplace(
+      chrom1.id(), chrom2.id(), idx.id(),
+      InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
 }
 
 inline void HiCBlockReader::evict(const InteractionBlock &blk) {

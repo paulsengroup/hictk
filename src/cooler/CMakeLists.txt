@@ -4,12 +4,12 @@
 
 find_package(Filesystem REQUIRED)
 find_package(HighFive CONFIG QUIET)
-if (NOT HighFive_FOUND)
+if(NOT HighFive_FOUND)
   find_package(HighFive QUIET)
 endif()
 
 find_package(HDF5 CONFIG QUIET)
-if (NOT HDF5_FOUND)
+if(NOT HDF5_FOUND)
   find_package(HDF5 QUIET REQUIRED)
 endif()
 

@@ -129,7 +129,9 @@ inline void BlockCache::clear() noexcept {
   }
 }
 
-constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity * sizeof(SerializedPixel); }
+constexpr std::size_t BlockCache::capacity() const noexcept {
+  return _capacity * sizeof(SerializedPixel);
+}
 constexpr std::size_t BlockCache::size() const noexcept { return _size; }
 inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
 
