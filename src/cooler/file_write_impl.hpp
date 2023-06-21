@@ -160,7 +160,7 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
   const auto default_aprop =
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, read_once_cache_size, 1.0);
   const auto pixels_aprop = Dataset::init_access_props(
-      DEFAULT_HDF5_CHUNK_SIZE, (std::max(read_once_cache_size, pixel_dataset_cache_size)), w0);
+      DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
   auto create_dataset = [&](const auto &path, const auto &type, auto aprop) {
     using T = remove_cvref_t<decltype(type)>;

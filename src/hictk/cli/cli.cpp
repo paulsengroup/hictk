@@ -55,6 +55,7 @@ class HiCFileValidator : public CLI::Validator {
 }
 
 class Formatter : public CLI::Formatter {
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
   [[nodiscard]] inline std::string make_option_opts(const CLI::Option* opt) const override {
     if (!opt->get_option_text().empty()) {
       return opt->get_option_text();
@@ -82,8 +83,8 @@ class Formatter : public CLI::Formatter {
       // Format param domain using open/closed interval notation
       const std::regex pattern(" - ");
       if (const auto& t = opt->get_type_name(); str_contains(t, " in ")) {
-        const auto p1 = t.find("[", t.find(" in "));
-        const auto p2 = t.find("]", t.find(" in "));
+        const auto p1 = t.find('[', t.find(" in "));
+        const auto p2 = t.find(']', t.find(" in "));
         if (p1 != std::string::npos && p2 != std::string::npos && p2 > p1) {
           out += " " + str_replace_all(t.substr(p1, p2), pattern, ", ");
         }
@@ -123,10 +124,11 @@ class Formatter : public CLI::Formatter {
   }
 };
 
-inline const auto IsValidCoolerFile = CoolerFileValidator();
-inline const auto IsValidHiCFile = HiCFileValidator();
+inline const auto IsValidCoolerFile = CoolerFileValidator();  // NOLINT(cert-err58-cpp)
+inline const auto IsValidHiCFile = HiCFileValidator();        // NOLINT(cert-err58-cpp)
 
 // clang-format off
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::MatrixType>{
         {"observed", hictk::hic::MatrixType::observed},
@@ -134,6 +136,7 @@ inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
         {"expected", hictk::hic::MatrixType::expected}},
     CLI::ignore_case);
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::NormalizationMethod>{
         {"NONE", hictk::hic::NormalizationMethod::NONE},
@@ -149,6 +152,7 @@ inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
         {"GW_SCALE", hictk::hic::NormalizationMethod::GW_SCALE}},
     CLI::ignore_case);
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::MatrixUnit>{
         {"BP", hictk::hic::MatrixUnit::BP},
@@ -521,7 +525,7 @@ static void check_normalization_methods(const std::vector<std::string>& norm_met
 }
 
 void Cli::validate_convert_subcommand() const {
-  auto& c = std::get<ConvertConfig>(this->_config);
+  const auto& c = std::get<ConvertConfig>(this->_config);
   std::vector<std::string> errors;
 
   if (!hic::utils::is_hic_file(c.input_hic)) {
@@ -562,15 +566,15 @@ void Cli::validate_dump_subcommand() const {
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
 
   if (is_hic && c.resolution == 0) {
-    errors.push_back("--resolution is mandatory when file is in .hic format.");
+    errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
   if ((is_cooler || is_mcooler) && c.resolution != 0) {
-    warnings.push_back("--resolution is ignored when file is in .cool or .mcool format.");
+    warnings.emplace_back("--resolution is ignored when file is in .cool or .mcool format.");
   }
 
   if (is_hic && c.weight_type == "infer") {
-    warnings.push_back("--weight-type is ignored when file is in .hic format.");
+    warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
   }
 
   const auto matrix_type_parsed =
@@ -579,12 +583,12 @@ void Cli::validate_dump_subcommand() const {
       this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
-    warnings.push_back(
+    warnings.emplace_back(
         "--matrix-type and --matrix-unit are ignored when file is not in .hic format.");
   }
 
   if (is_hic && c.matrix_unit == hic::MatrixUnit::FRAG) {
-    errors.push_back("--matrix-type=FRAG is not yet supported.");
+    errors.emplace_back("--matrix-type=FRAG is not yet supported.");
   }
 
   if (!errors.empty()) {
@@ -666,7 +670,7 @@ void Cli::transform_args_convert_subcommand() {
   c.normalization_methods = generate_norm_vect(c.normalization_methods_str);
 
   if (c.genome.empty()) {
-    const hic::HiCFile f(c.input_hic, c.resolutions.back());
+    const hic::HiCFile f(c.input_hic.string(), c.resolutions.back());
     c.genome = f.assembly();
   }
 
@@ -696,13 +700,13 @@ void Cli::transform_args() {
     case convert:
       this->transform_args_convert_subcommand();
       break;
-    case dump:
+    case dump:  // NOLINT
       // this->transform_args_dump_subcommand();
       break;
-    case load:
+    case load:  // NOLINT
       // this->transform_args_load_subcommand();
       break;
-    case merge:
+    case merge:  // NOLINT
       // this->transform_args_merge_subcommand();
       break;
     case help:

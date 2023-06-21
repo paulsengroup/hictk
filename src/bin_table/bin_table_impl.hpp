@@ -116,10 +116,10 @@ constexpr const std::vector<std::uint64_t> &BinTable::num_bin_prefix_sum() const
   return this->_num_bins_prefix_sum;
 }
 
-constexpr auto BinTable::begin() const -> iterator { return iterator(*this); }
-constexpr auto BinTable::end() const -> iterator { return iterator::make_end_iterator(*this); }
-constexpr auto BinTable::cbegin() const -> iterator { return this->begin(); }
-constexpr auto BinTable::cend() const -> iterator { return this->end(); }
+inline auto BinTable::begin() const -> iterator { return iterator(*this); }
+inline auto BinTable::end() const -> iterator { return iterator::make_end_iterator(*this); }
+inline auto BinTable::cbegin() const -> iterator { return this->begin(); }
+inline auto BinTable::cend() const -> iterator { return this->end(); }
 
 constexpr std::uint32_t BinTable::iterator::bin_size() const noexcept {
   assert(this->_bin_table);
@@ -286,8 +286,11 @@ inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Re
   return prefix_sum;
 }
 
-constexpr BinTable::iterator::iterator(const BinTable &bin_table) noexcept
-    : _bin_table{&bin_table} {}
+inline BinTable::iterator::iterator(const BinTable &bin_table) noexcept : _bin_table{&bin_table} {
+  if (_bin_table->chromosomes().at(_chrom_id).is_all()) {
+    _chrom_id++;
+  }
+}
 
 constexpr bool BinTable::iterator::operator==(const iterator &other) const noexcept {
   // clang-format off
@@ -329,7 +332,7 @@ constexpr bool BinTable::iterator::operator>=(const iterator &other) const noexc
   return this->_chrom_id >= other._chrom_id;
 }
 
-constexpr auto BinTable::iterator::make_end_iterator(const BinTable &table) noexcept -> iterator {
+inline auto BinTable::iterator::make_end_iterator(const BinTable &table) noexcept -> iterator {
   iterator it(table);
 
   it._chrom_id = nchrom;

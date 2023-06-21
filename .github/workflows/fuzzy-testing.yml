@@ -140,11 +140,11 @@ jobs:
       - name: Build project
         run: cmake --build build -j $(nproc)
 
-      - name: Upload hictk_tools
+      - name: Upload hictk
         uses: actions/upload-artifact@v3
         with:
           name: hictk-tools-fuzzy-testing
-          path: build/src/hictk/hictk_tools
+          path: build/src/hictk/hictk
           if-no-files-found: error
           retention-days: 1
 
@@ -160,31 +160,24 @@ jobs:
         include:
           - {
             url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             balance: 'NONE'
           }
           - {
             url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
-            balance: 'weights'
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
+            balance: 'weight'
           }
           - {
             url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
             sha256: 'b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             balance: 'NONE'
-          }
-          - {
-            url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
-            sha256: 'b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42',
-            ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
-            balance: 'KR'
           }
 
     steps:
@@ -223,7 +216,7 @@ jobs:
             echo "type=short" >> $GITHUB_OUTPUT
           fi
 
-      - name: Download hictk_tools
+      - name: Download hictk
         uses: actions/download-artifact@v3
         with:
           name: hictk-tools-fuzzy-testing
@@ -247,6 +240,10 @@ jobs:
             resolution='${{ inputs.resolution }}'
           fi
 
+          if cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp &> /dev/null ; then
+            mv test.matrix.tmp test.matrix
+          fi
+
           2>&1 echo "Seed: ${seed}"
           2>&1 echo "Duration: ${duration}"
           2>&1 echo "Resolution: ${resolution}"
@@ -257,13 +254,11 @@ jobs:
 
       - name: Run test
         run: |
-          chmod 750 hictk_tools
-          hictk_tools="$(readlink -f ./hictk_tools)"
-
-          ls -lahL
+          chmod 750 hictk
+          hictk="$(readlink -f ./hictk)"
 
           test/scripts/fuzzy_test.py \
-            --path-to-hictk="$hictk_tools" \
+            --path-to-hictk="$hictk" \
             --resolution '${{ steps.test-params.outputs.resolution }}' \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \

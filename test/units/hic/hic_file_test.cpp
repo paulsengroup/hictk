@@ -28,7 +28,7 @@ TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: file accessors", "[hic][short]") {
-  const HiCFile f(pathV8, 1'000);
+  HiCFile f(pathV8, 1'000);
 
   CHECK(f.url() == pathV8);
   CHECK(f.name() == pathV8);
@@ -40,7 +40,7 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.avail_resolutions().front() == 2'500'000);
   CHECK(f.avail_resolutions().back() == 1000);
 
-  CHECK(f.open_resolution(2'500'000).resolution() == 2'500'000);
+  CHECK(f.open(2'500'000).resolution() == 2'500'000);
 
   SECTION("invalid") {
     CHECK_THROWS(HiCFile(pathV8, (std::numeric_limits<std::uint32_t>::max)(), MatrixType::observed,
@@ -53,9 +53,9 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: footer cache", "[hic][short]") {
-  HiCFile f(pathV8, 2'500'000);
+  HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP, 1);
 
-  CHECK(f.num_cached_footers() == 1);
+  CHECK(f.num_cached_footers() == 0);
   for (const auto& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
       continue;

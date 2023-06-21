@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "hictk/common.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/tools.hpp"
 #include "hictk/version.hpp"
@@ -51,8 +52,16 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int a
     cli = std::make_unique<Cli>(argc, argv);
     auto config = cli->parse_arguments();
     const auto subcmd = cli->get_subcommand();
-    setup_logger_console(1,  // config.verbosity,
-                         subcmd != Cli::subcommand::help);
+    std::visit(
+        [&](const auto& config_) {
+          using T = hictk::remove_cvref_t<decltype(config_)>;
+          constexpr auto is_monostate = std::is_same_v<T, std::monostate>;
+          if constexpr (!is_monostate) {
+            setup_logger_console(config_.verbosity, subcmd != Cli::subcommand::help &&
+                                                        subcmd != Cli::subcommand::dump);
+          }
+        },
+        config);
 
     return std::make_tuple(0, subcmd, config);
   } catch (const CLI::ParseError& e) {
@@ -101,17 +110,17 @@ int main(int argc, char** argv) {
         case sc::dump:
           dump_subcmd(std::get<DumpConfig>(config));
           break;
-        case sc::load:
+        case sc::load:  // NOLINT
           // load_subcmd(std::get<LoadConfig>(config));
           break;
-        case sc::merge:
+        case sc::merge:  // NOLINT
           // merge_subcmd(std::get<MergeConfig>(config));
           break;
-        case sc::help:
+        case sc::help:  // NOLINT
           break;
         default:
           throw std::runtime_error(
-              "Default branch in switch statement in hictk_tools::main() should be unreachable! "
+              "Default branch in switch statement in hictk::main() should be unreachable! "
               "If you see this message, please file an issue on GitHub");
       }
     }
@@ -123,16 +132,16 @@ int main(int argc, char** argv) {
     return 1;
   } catch (const std::exception& e) {
     if (cli) {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk_tools {} encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk {} encountered the following error: {}."),
                  cli->get_printable_subcommand(), e.what());
     } else {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk_tools encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk encountered the following error: {}."),
                  e.what());
     }
     return 1;
   } catch (...) {
     fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk_tools {} encountered the following error: Caught an "
+               FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
                           "unhandled exception! "
                           "If you see this message, please file an issue on GitHub."),
                cli->get_printable_subcommand());

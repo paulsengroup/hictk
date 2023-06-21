@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(fmt CONFIG REQUIRED)
-
 add_library(hictk_fmt INTERFACE)
 add_library(hictk::fmt ALIAS hictk_fmt)
 

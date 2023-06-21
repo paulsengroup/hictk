@@ -37,7 +37,7 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
     return is_cooler(fp, root_path);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Unable to open file") != std::string_view::npos) {
+    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
       throw;
     }
     ValidationStatusCooler s{};
@@ -57,7 +57,7 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
     return is_multires_file(fp, validate_resolutions, min_version);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Unable to open file") != std::string_view::npos) {
+    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
       throw;
     }
     ValidationStatusMultiresCooler s{};
@@ -75,7 +75,7 @@ inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_c
     return is_scool_file(fp, validate_cells);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Unable to open file") != std::string_view::npos) {
+    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
       throw;
     }
     ValidationStatusScool s{};

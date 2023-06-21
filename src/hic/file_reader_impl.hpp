@@ -246,9 +246,9 @@ inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
 
   fs.read(header.version);
   if (header.version < 8) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING(".hic version 7 and older are no longer supported. Found version {}"),
-                    header.version));
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(".hic version 7 and older are no longer supported. Found version {}"),
+        header.version));
   }
   fs.read(header.masterIndexOffset);
   if (header.masterIndexOffset < 0 ||
@@ -405,9 +405,10 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   }
 
   const auto file_offset = _fs->tellg();
-  HiCFooter footer{read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
-                              metadata.resolution),
-                   std::move(metadata)};
+  // NOTE: we read then move index to workaround assertion failures when compiling under MSVC
+  auto index = read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
+                          metadata.resolution);
+  HiCFooter footer{std::move(index), std::move(metadata)};
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 
   if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||

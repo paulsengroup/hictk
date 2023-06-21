@@ -86,10 +86,10 @@ class BinTable {
 
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 
-  [[nodiscard]] constexpr auto begin() const -> iterator;
-  [[nodiscard]] constexpr auto end() const -> iterator;
-  [[nodiscard]] constexpr auto cbegin() const -> iterator;
-  [[nodiscard]] constexpr auto cend() const -> iterator;
+  [[nodiscard]] auto begin() const -> iterator;
+  [[nodiscard]] auto end() const -> iterator;
+  [[nodiscard]] auto cbegin() const -> iterator;
+  [[nodiscard]] auto cend() const -> iterator;
 
   [[nodiscard]] BinTable subset(const Chromosome &chrom) const;
   [[nodiscard]] BinTable subset(std::string_view chrom_name) const;
@@ -141,7 +141,7 @@ class BinTable {
     static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
     static constexpr auto nchrom = (std::numeric_limits<std::uint32_t>::max)();
 
-    constexpr explicit iterator(const BinTable &bin_table) noexcept;
+    explicit iterator(const BinTable &bin_table) noexcept;
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -174,8 +174,7 @@ class BinTable {
     auto operator-(const iterator &other) const -> difference_type;
 
    private:
-    [[nodiscard]] static constexpr auto make_end_iterator(const BinTable &table) noexcept
-        -> iterator;
+    [[nodiscard]] static auto make_end_iterator(const BinTable &table) noexcept -> iterator;
     [[nodiscard]] const Chromosome &chromosome(std::uint32_t chrom_id) const;
     [[nodiscard]] const Chromosome &chromosome() const;
     [[nodiscard]] constexpr std::uint32_t bin_size() const noexcept;
