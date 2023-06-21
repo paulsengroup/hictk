@@ -133,7 +133,6 @@ def hictk_dump(
 
     cmd = shlex.split(" ".join(str(tok) for tok in cmd))
     logging.debug("[hictk dump] Running %s...", cmd)
-    sp.check_output(cmd, stderr=sp.STDOUT)
 
     with sp.Popen(cmd, stdin=None, stderr=sp.PIPE, stdout=sp.PIPE) as hictk_dump:
         df = pd.read_table(
