@@ -134,14 +134,13 @@ def hictk_dump(
     cmd = shlex.split(" ".join(str(tok) for tok in cmd))
     logging.debug("[hictk dump] Running %s...", cmd)
 
-    with sp.Popen(cmd, stdin=None, stderr=sp.PIPE, stdout=sp.PIPE) as hictk_dump:
+    with sp.Popen(cmd, stdin=None, stdout=sp.PIPE) as hictk_dump:
         df = pd.read_table(
             hictk_dump.stdout,
             names=["chrom1", "start1", "end1", "chrom2", "start2", "end2", "count"],
         )
         hictk_dump.communicate()
         if (code := hictk_dump.returncode) != 0:
-            print(hictk_dump.stderr, file=sys.stderr)
             raise RuntimeError(f"{cmd} terminated with code {code}")
 
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])

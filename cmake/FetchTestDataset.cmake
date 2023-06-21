@@ -4,14 +4,14 @@
 
 # cmake-format: off
 file(
-  DOWNLOAD https://www.dropbox.com/s/6svpdoeh29qyebt/seqtk_test_data.tar.xz?dl=1
-  EXPECTED_HASH SHA512=ac65bd5afc6ef76ca8ef1ce8c4cb1028c769cf47e6f78d715c51bd5bc015520f3cb7a0c1a37f6b3ddc85cc4e921ff3d64c03de68130a79e85ff742cc33d8787f
-  ${PROJECT_SOURCE_DIR}/test/data/seqtk_test_data.tar.xz)
+  DOWNLOAD https://www.dropbox.com/s/l6rymg9mezixin6/hictk_test_data.tar.xz?dl=1
+  EXPECTED_HASH SHA256=ff761ffb1de9cf8dd1437573bac7c0242ef3a75c5621646354e203a9cf9c8397
+  ${PROJECT_SOURCE_DIR}/test/data/hictk_test_data.tar.xz)
 # cmake-format: on
 
 file(
   ARCHIVE_EXTRACT
   INPUT
-  ${PROJECT_SOURCE_DIR}/test/data/seqtk_test_data.tar.xz
+  ${PROJECT_SOURCE_DIR}/test/data/hictk_test_data.tar.xz
   DESTINATION
   ${PROJECT_SOURCE_DIR})

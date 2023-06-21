@@ -32,7 +32,9 @@ static bool missing_norm_or_interactions(const std::exception& e, hic::Normaliza
 bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
   return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
     try {
-      std::ignore = f.fetch(chrom.name(), norm);
+      if (!chrom.is_all()) {
+        std::ignore = f.fetch(chrom.name(), norm);
+      }
       return true;
     } catch (const std::exception& e) {
       if (!missing_norm_or_interactions(e, norm)) {
