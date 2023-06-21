@@ -240,7 +240,7 @@ jobs:
             resolution='${{ inputs.resolution }}'
           fi
 
-          if cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp; then
+          if cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp &> /dev/null ; then
             mv test.matrix.tmp test.matrix
           fi
 
