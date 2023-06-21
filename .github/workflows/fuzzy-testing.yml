@@ -170,7 +170,7 @@ jobs:
             sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
             ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
-            balance: 'weights'
+            balance: 'weight'
           }
           - {
             url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
