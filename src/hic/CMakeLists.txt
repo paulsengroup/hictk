@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(libdeflate QUIET REQUIRED)
-find_package(span-lite QUIET REQUIRED)
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)

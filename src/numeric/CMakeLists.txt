@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FastFloat CONFIG REQUIRED)
-
 add_library(hictk_numeric INTERFACE)
 add_library(hictk::numeric ALIAS hictk_numeric)
 target_sources(hictk_numeric INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/numeric_utils_impl.hpp)
