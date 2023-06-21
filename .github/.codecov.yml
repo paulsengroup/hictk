@@ -3,3 +3,4 @@
 
 ignore:
   - "test/"
+  - "src/hictk"
