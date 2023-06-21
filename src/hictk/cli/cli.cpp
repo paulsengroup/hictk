@@ -83,8 +83,8 @@ class Formatter : public CLI::Formatter {
       // Format param domain using open/closed interval notation
       const std::regex pattern(" - ");
       if (const auto& t = opt->get_type_name(); str_contains(t, " in ")) {
-        const auto p1 = t.find("[", t.find(" in "));
-        const auto p2 = t.find("]", t.find(" in "));
+        const auto p1 = t.find('[', t.find(" in "));
+        const auto p2 = t.find(']', t.find(" in "));
         if (p1 != std::string::npos && p2 != std::string::npos && p2 > p1) {
           out += " " + str_replace_all(t.substr(p1, p2), pattern, ", ");
         }
@@ -128,6 +128,7 @@ inline const auto IsValidCoolerFile = CoolerFileValidator();  // NOLINT(cert-err
 inline const auto IsValidHiCFile = HiCFileValidator();        // NOLINT(cert-err58-cpp)
 
 // clang-format off
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::MatrixType>{
         {"observed", hictk::hic::MatrixType::observed},
@@ -135,6 +136,7 @@ inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
         {"expected", hictk::hic::MatrixType::expected}},
     CLI::ignore_case);
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::NormalizationMethod>{
         {"NONE", hictk::hic::NormalizationMethod::NONE},
@@ -698,13 +700,13 @@ void Cli::transform_args() {
     case convert:
       this->transform_args_convert_subcommand();
       break;
-    case dump:
+    case dump:  // NOLINT
       // this->transform_args_dump_subcommand();
       break;
-    case load:
+    case load:  // NOLINT
       // this->transform_args_load_subcommand();
       break;
-    case merge:
+    case merge:  // NOLINT
       // this->transform_args_merge_subcommand();
       break;
     case help:
