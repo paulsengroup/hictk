@@ -247,7 +247,7 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
   const auto default_aprop =
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, read_once_cache_size, 1.0);
   const auto pixels_aprop = Dataset::init_access_props(
-      DEFAULT_HDF5_CHUNK_SIZE, (std::max(read_once_cache_size, pixel_dataset_cache_size)), w0);
+      DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto open_dataset = [&](const auto dataset_uri) {
