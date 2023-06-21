@@ -21,7 +21,7 @@
 namespace hictk {
 
 inline Chromosome::Chromosome(std::uint32_t id, std::string name_, std::uint32_t size_) noexcept
-    : _name(std::move(name_)), _id(id), _size(size_) {
+    : _name(std::make_shared<std::string>(std::move(name_))), _id(id), _size(size_) {
   assert(_id != (std::numeric_limits<std::uint32_t>::max)());
   assert(_size != 0);
 }
@@ -30,7 +30,9 @@ constexpr Chromosome::operator bool() const noexcept { return this->id() != Chro
 
 constexpr std::uint32_t Chromosome::id() const noexcept { return this->_id; }
 
-inline std::string_view Chromosome::name() const noexcept { return this->_name; }
+inline std::string_view Chromosome::name() const noexcept {
+  return !!this->_name ? std::string_view{*this->_name} : "";
+}
 
 constexpr std::uint32_t Chromosome::size() const noexcept { return this->_size; }
 

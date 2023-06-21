@@ -18,7 +18,7 @@ namespace hictk {
 class Chromosome {
   static constexpr std::uint32_t null_id{(std::numeric_limits<std::uint32_t>::max)()};
 
-  std::string _name{};
+  std::shared_ptr<std::string> _name{};
   std::uint32_t _id{null_id};
   std::uint32_t _size{};
 
