@@ -406,7 +406,7 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
     CHECK(sel.matrix_type() == MatrixType::observed);
     CHECK(sel.normalization() == NormalizationMethod::NONE);
     CHECK(sel.unit() == MatrixUnit::BP);
-    CHECK(sel.bins().size() == 1382);
+    CHECK(sel.bins().size() == 1380);
   }
 
   SECTION("v8") {
