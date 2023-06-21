@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
           break;
         default:
           throw std::runtime_error(
-              "Default branch in switch statement in hictk_tools::main() should be unreachable! "
+              "Default branch in switch statement in hictk::main() should be unreachable! "
               "If you see this message, please file an issue on GitHub");
       }
     }
@@ -123,16 +123,16 @@ int main(int argc, char** argv) {
     return 1;
   } catch (const std::exception& e) {
     if (cli) {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk_tools {} encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk {} encountered the following error: {}."),
                  cli->get_printable_subcommand(), e.what());
     } else {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk_tools encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk encountered the following error: {}."),
                  e.what());
     }
     return 1;
   } catch (...) {
     fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk_tools {} encountered the following error: Caught an "
+               FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
                           "unhandled exception! "
                           "If you see this message, please file an issue on GitHub."),
                cli->get_printable_subcommand());
