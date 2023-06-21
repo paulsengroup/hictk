@@ -240,6 +240,8 @@ static void convert_resolution_multi_threaded(
   spdlog::info(FMT_STRING("[{}] Begin processing {}bp matrix..."), hf.resolution(),
                hf.resolution());
 
+  spdlog::debug(FMT_STRING("[{}] Block cache capacity: {}"), hf.resolution(), hf.cache_capacity());
+
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{100'000};
 
@@ -291,27 +293,23 @@ void convert_subcmd(const ConvertConfig& c) {
   }
 
   const auto chroms = generate_reference(c.input_hic.string(), c.resolutions.front());
+  hic::HiCFile hf(c.input_hic.string(), c.resolutions.front(), hic::MatrixType::observed,
+                  hic::MatrixUnit::BP, c.block_cache_size);
 
   if (c.resolutions.size() == 1) {
-    hic::HiCFile hf(c.input_hic.string(), c.resolutions.front(), hic::MatrixType::observed,
-                    hic::MatrixUnit::BP, c.block_cache_size);
     convert_resolution_multi_threaded<std::int32_t>(
         hf, c.output_cooler.string(), chroms, c.resolutions.front(), c.genome,
         c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable, c.quiet);
     return;
   }
 
-  auto cache_size = c.block_cache_size;
   std::for_each(c.resolutions.rbegin(), c.resolutions.rend(), [&](const auto res) {
-    hic::HiCFile hf(c.input_hic.string(), res, hic::MatrixType::observed, hic::MatrixUnit::BP,
-                    cache_size);
-    if (cache_size == 0) {
-      cache_size = hf.cache_capacity();
-    }
+    hf.open(res);
     convert_resolution_multi_threaded<std::int32_t>(
         hf, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_cooler.string(), res), chroms,
         res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable,
         c.quiet);
+    hf.clear_cache();
   });
 
   const auto t1 = std::chrono::steady_clock::now();

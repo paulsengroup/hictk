@@ -129,7 +129,7 @@ inline void BlockCache::clear() noexcept {
   }
 }
 
-constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity; }
+constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity * sizeof(SerializedPixel); }
 constexpr std::size_t BlockCache::size() const noexcept { return _size; }
 inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
 
@@ -145,11 +145,13 @@ constexpr void BlockCache::reset_stats() noexcept {
   _misses = 0;
 }
 
-inline void BlockCache::set_capacity(std::size_t new_capacity) {
-  while (new_capacity < size() && size() != 0) {
-    pop_oldest();
+inline void BlockCache::set_capacity(std::size_t new_capacity, bool shrink_to_fit) {
+  if (shrink_to_fit) {
+    while (new_capacity < size() && size() != 0) {
+      pop_oldest();
+    }
   }
-  _capacity = new_capacity;
+  _capacity = new_capacity / sizeof(SerializedPixel);
 }
 
 constexpr std::size_t BlockCache::hits() const noexcept { return _hits; }

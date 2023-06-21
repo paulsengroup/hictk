@@ -34,8 +34,25 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
   }
 }
 
-inline HiCFile HiCFile::open_resolution(std::uint32_t resolution) const {
-  return HiCFile(url(), resolution, _type, _unit);
+inline HiCFile& HiCFile::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
+                              MatrixUnit unit_, std::uint64_t block_cache_capacity) {
+  if (_fs->url() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
+    _block_cache->set_capacity(block_cache_capacity, false);
+    return *this;
+  }
+
+  const auto prev_block_cache_capacity = _block_cache->capacity();
+  *this = HiCFile(url_, resolution_, type_, unit_, block_cache_capacity);
+
+  if (_block_cache->capacity() < prev_block_cache_capacity) {
+    _block_cache->set_capacity(prev_block_cache_capacity);
+  }
+  return *this;
+}
+
+inline HiCFile& HiCFile::open(std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
+                              std::uint64_t block_cache_capacity) {
+  return open(url(), resolution_, type_, unit_, block_cache_capacity);
 }
 
 inline bool HiCFile::has_resolution(std::uint32_t resolution) const {

@@ -81,7 +81,6 @@ class InteractionBlock {
 
 class BlockCache {
   using Value = std::shared_ptr<const InteractionBlock>;
-  using MapT = phmap::flat_hash_map<BlockID, Value>;
   std::queue<BlockID> _queue{};
   phmap::flat_hash_map<BlockID, Value> _map{};
 
@@ -115,7 +114,7 @@ class BlockCache {
   [[nodiscard]] constexpr std::size_t hits() const noexcept;
   [[nodiscard]] constexpr std::size_t misses() const noexcept;
   constexpr void reset_stats() noexcept;
-  void set_capacity(std::size_t new_capacity);
+  void set_capacity(std::size_t new_capacity, bool shrink_to_fit = false);
 
  private:
   void pop_oldest();
