@@ -129,7 +129,7 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
-  hic::HiCFile const hf(p, res);
+  hic::HiCFile const hf(p.string(), res);
   std::vector<std::string> names;
   std::vector<std::uint32_t> sizes;
   for (const auto& chrom : hf.chromosomes()) {

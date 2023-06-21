@@ -666,7 +666,7 @@ void Cli::transform_args_convert_subcommand() {
   c.normalization_methods = generate_norm_vect(c.normalization_methods_str);
 
   if (c.genome.empty()) {
-    const hic::HiCFile f(c.input_hic, c.resolutions.back());
+    const hic::HiCFile f(c.input_hic.string(), c.resolutions.back());
     c.genome = f.assembly();
   }
 

@@ -207,7 +207,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_sa
     max_blocks_per_row = (std::max)(max_blocks_per_row, buffer.size());
   }
 
-  return (std::max)(10'000'000UL, max_blocks_per_row * max_block_size);
+  return (std::max)(std::size_t(10'000'000), max_blocks_per_row * max_block_size);
 }
 
 inline void PixelSelector::evict_blocks_from_cache() const {
