@@ -20,9 +20,9 @@
 namespace hictk::hic {
 
 struct SerializedPixel {
-  std::int64_t bin1_id{};
-  std::int64_t bin2_id{};
-  float count{};
+  std::int64_t bin1_id{};  // NOLINT
+  std::int64_t bin2_id{};  // NOLINT
+  float count{};           // NOLINT
 
   constexpr bool operator<(const SerializedPixel &other) const noexcept {
     if (bin1_id == other.bin1_id) {
@@ -40,8 +40,8 @@ struct SerializedPixel {
 
 // pointer structure for reading blocks or matrices, holds the size and position
 struct indexEntry {
-  std::int64_t position{-1};
-  std::int64_t size{-1};
+  std::int64_t position{-1};  // NOLINT
+  std::int64_t size{-1};      // NOLINT
 
   constexpr explicit operator bool() const noexcept { return size >= 0 && position >= 0; }
   constexpr bool operator<(const indexEntry &other) const noexcept {
@@ -72,6 +72,22 @@ enum class NormalizationMethod {
 };
 enum class MatrixType { observed, oe, expected };
 enum class MatrixUnit { BP, FRAG };
+
+// clang-format off
+constexpr std::array<NormalizationMethod, 11> NORMALIZATION_METHODS{
+    NormalizationMethod::NONE,
+    NormalizationMethod::VC,
+    NormalizationMethod::VC_SQRT,
+    NormalizationMethod::KR,
+    NormalizationMethod::SCALE,
+    NormalizationMethod::INTER_VC,
+    NormalizationMethod::INTER_KR,
+    NormalizationMethod::INTER_SCALE,
+    NormalizationMethod::GW_VC,
+    NormalizationMethod::GW_KR,
+    NormalizationMethod::GW_SCALE
+};
+// clang-format on
 
 [[nodiscard]] inline NormalizationMethod ParseNormStr(const std::string &s) {
   if (s == "NONE") {

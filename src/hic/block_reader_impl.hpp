@@ -139,8 +139,19 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
   }
 
   return _blk_cache->emplace(chrom1.id(), chrom2.id(), idx.id(),
-                             InteractionBlock{idx.id(), _index.block_bin_count(), _tmp_buffer});
+                             InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
 }
+
+inline void HiCBlockReader::evict(const InteractionBlock &blk) {
+  _blk_cache->try_erase(chrom1().id(), chrom2().id(), blk.id());
+}
+
+inline void HiCBlockReader::evict(const Chromosome &chrom1, const Chromosome &chrom2,
+                                  const BlockIndex &idx) {
+  _blk_cache->try_erase(chrom1.id(), chrom2.id(), idx.id());
+}
+
+inline void HiCBlockReader::clear() noexcept { _blk_cache->clear(); }
 
 inline void HiCBlockReader::read_dispatcher_type1_block(
     bool i16Bin1, bool i16Bin2, bool i16Counts, std::int32_t bin1Offset, std::int32_t bin2Offset,

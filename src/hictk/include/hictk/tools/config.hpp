@@ -1,0 +1,78 @@
+// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+#include <cstdint>
+#include <filesystem>
+#include <string>
+#include <variant>
+
+#include "hictk/cooler.hpp"
+#include "hictk/hic.hpp"
+
+namespace hictk::tools {
+
+struct ConvertConfig {
+  std::filesystem::path input_hic{};
+  std::filesystem::path output_cooler{};
+  std::vector<std::uint32_t> resolutions{};
+  std::vector<std::string> normalization_methods_str{{"ALL"}};
+  std::vector<hic::NormalizationMethod> normalization_methods{};
+  std::string genome{};
+  std::vector<std::string> norm_dset_names{};
+
+  std::size_t block_cache_size{0};
+  bool fail_if_normalization_method_is_not_avaliable{false};
+  bool quiet{false};
+  std::uint8_t verbosity{3};
+  bool force{false};
+};
+
+struct DumpConfig {
+  std::string uri{};
+
+  std::string range1{"all"};
+  std::string range2{"all"};
+  std::filesystem::path query_file{};
+
+  std::string table{"pixels"};
+  bool join{true};
+
+  std::string normalization{"NONE"};
+  std::string weight_type{"infer"};
+  hic::MatrixType matrix_type{hic::MatrixType::observed};
+  hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
+  std::uint32_t resolution{};
+};
+
+struct LoadConfig {
+  std::string uri{};
+
+  std::filesystem::path path_to_chrom_sizes{};
+  std::uint32_t bin_size{};
+  std::string format{"bg2"};
+  std::string assembly{"unknown"};
+  bool count_as_float{false};
+  bool assume_sorted{true};
+  bool force{false};
+};
+
+struct MergeConfig {
+  std::vector<std::string> input_uris{};
+  std::string output_uri{};
+  std::size_t chunk_size{1'000'000};
+
+  bool force{false};
+};
+
+// clang-format off
+using Config = std::variant<std::monostate,
+                            ConvertConfig,
+                            DumpConfig,
+                            LoadConfig,
+                            MergeConfig>;
+// clang-format on
+
+}  // namespace hictk::tools

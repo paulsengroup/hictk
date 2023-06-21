@@ -16,11 +16,12 @@ import shutil
 import subprocess as sp
 import sys
 import time
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
-import cooler
 import numpy as np
 import pandas as pd
+
+import cooler
 
 
 def make_cli():
@@ -45,9 +46,19 @@ def make_cli():
     cli = argparse.ArgumentParser()
 
     cli.add_argument(
-        "cooler",
+        "uri",
         type=pathlib.Path,
-        help="Path to a Cooler file (URI syntax supported).",
+        help="Path to a .cool, .mcool or hic file.",
+    )
+
+    cli.add_argument(
+        "reference-cooler",
+        type=pathlib.Path,
+        help="Path to a .cool or .mcool file to use as reference.",
+    )
+
+    cli.add_argument(
+        "--resolution", type=int, help="HiC matrix resolution to use for testing."
     )
 
     cli.add_argument(
@@ -61,10 +72,10 @@ def make_cli():
         "--duration", type=positive_int, default=60, help="Duration in seconds."
     )
     cli.add_argument(
-        "--path-to-hictk-dump",
+        "--path-to-hictk",
         type=valid_executable,
-        default="hictk_dump",
-        help="Path to hictk_dump binary.",
+        default="hictk",
+        help="Path to hictk's binary.",
     )
     cli.add_argument(
         "--query-length-avg", type=float, default=5_000_000, help="Average query size."
@@ -76,7 +87,10 @@ def make_cli():
         help="Standard deviation for query size.",
     )
     cli.add_argument(
-        "--balance", type=str, help="Name of the dataset to use for balancing."
+        "--balance",
+        type=str,
+        default="NONE",
+        help="Name of the dataset to use for balancing.",
     )
     cli.add_argument("--seed", type=int, default=2074288341)
     cli.add_argument(
@@ -94,30 +108,31 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
     df = selector.fetch(query1, query2)
     if "balanced" in df:
         df["count"] = df["balanced"]
-    return df.drop(columns="balanced", errors="ignore").set_index(
-        ["chrom1", "start1", "end1", "chrom2", "start2", "end2"]
-    )
+    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[
+        ["count"]
+    ]
 
 
 def hictk_dump(
     hictk_bin: pathlib.Path,
-    path_to_cooler_file: pathlib.Path,
-    balance: Union[bool, str],
+    path_to_file: pathlib.Path,
+    resolution: int,
+    balance: str,
     query1: str,
     query2: str,
 ) -> pd.DataFrame:
-    if not balance:
-        balance = "raw"
     cmd = [
         shutil.which(str(hictk_bin)),
-        str(path_to_cooler_file),
-        balance,
-        query1,
-        query2,
+        "dump",
+        str(path_to_file),
+        f"--resolution={resolution}",
+        f"--balance={balance}",
+        f"--range={query1}",
+        f"--range2={query2}",
     ]
 
     cmd = shlex.split(" ".join(str(tok) for tok in cmd))
-    logging.debug("[hictk] Running %s...", cmd)
+    logging.debug("[hictk dump] Running %s...", cmd)
     sp.check_output(cmd, stderr=sp.STDOUT)
 
     with sp.Popen(cmd, stdin=None, stderr=sp.PIPE, stdout=sp.PIPE) as hictk_dump:
@@ -133,7 +148,7 @@ def hictk_dump(
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])
 
 
-def read_chrom_sizes(path_to_cooler_file: pathlib.Path) -> Dict[str, int]:
+def read_chrom_sizes_cooler(path_to_cooler_file: pathlib.Path) -> Dict[str, int]:
     return cooler.Cooler(str(path_to_cooler_file)).chromsizes.to_dict()
 
 
@@ -225,14 +240,16 @@ def seed_prng(worker_id: int, seed):
 
 
 def worker(
-    path_to_cooler: pathlib.Path,
+    path_to_file: pathlib.Path,
+    path_to_reference_file: pathlib.Path,
     path_to_hictk_dump: pathlib.Path,
+    resolution: int,
     chroms_flat,
     chrom_ranks,
     query_length_mu: float,
     query_length_std: float,
     _1d_to_2d_query_ratio: float,
-    balance: Union[str, None],
+    balance: str,
     seed: int,
     worker_id: int,
     end_time,
@@ -242,17 +259,14 @@ def worker(
     num_failures = 0
     num_queries = 0
 
-    if balance is None or balance == "raw":
-        balance = False
-
     try:
         seed_prng(worker_id, seed)
 
         chrom_sizes = np.array([n for _, n in chroms_flat], dtype=int)
         weights = chrom_sizes / chrom_sizes.sum()
 
-        sel = cooler.Cooler(str(path_to_cooler)).matrix(
-            balance=balance, as_pixels=True, join=True
+        sel = cooler.Cooler(str(path_to_reference_file)).matrix(
+            balance=balance if balance != "NONE" else False, as_pixels=True, join=True
         )
 
         while time.time() < end_time:
@@ -282,8 +296,9 @@ def worker(
 
             num_queries += 1
             expected = cooler_dump(sel, q1, q2)
+
             found = hictk_dump(
-                path_to_hictk_dump, path_to_cooler, balance, q1, q2
+                path_to_hictk_dump, path_to_file, resolution, balance, q1, q2
             )
 
             if not results_are_identical(worker_id, q1, q2, expected, found):
@@ -303,7 +318,13 @@ def worker(
 def main():
     args = vars(make_cli().parse_args())
 
-    chroms = read_chrom_sizes(args["cooler"])
+    if cooler.fileops.is_multires_file(str(args["reference-cooler"])):
+        args["reference-cooler"] = pathlib.Path(
+            str(args["reference-cooler"]) + "::/resolutions/" + str(args["resolution"])
+        )
+
+    chroms = read_chrom_sizes_cooler(args["reference-cooler"])
+
     chrom_ranks = {chrom: i for i, chrom in enumerate(chroms.keys())}
     chroms_flat = list(chroms.items())
 
@@ -313,8 +334,10 @@ def main():
         results = pool.starmap(
             worker,
             zip(
-                itertools.repeat(args["cooler"]),
-                itertools.repeat(args["path_to_hictk_dump"]),
+                itertools.repeat(args["uri"]),
+                itertools.repeat(args["reference-cooler"]),
+                itertools.repeat(args["path_to_hictk"]),
+                itertools.repeat(args["resolution"]),
                 itertools.repeat(chroms_flat),
                 itertools.repeat(chrom_ranks),
                 itertools.repeat(args["query_length_avg"]),

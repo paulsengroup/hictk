@@ -37,9 +37,12 @@ class HiCFile {
   using QUERY_TYPE = GenomicInterval::Type;
   explicit HiCFile(std::string url_, std::uint32_t resolution_,
                    MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
-                   std::uint64_t block_cache_capacity = 25'000'000);
-
-  [[nodiscard]] HiCFile open_resolution(std::uint32_t resolution) const;
+                   std::uint64_t block_cache_capacity = 0);
+  HiCFile &open(std::string url_, std::uint32_t resolution_,
+                MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
+                std::uint64_t block_cache_capacity = 0);
+  HiCFile &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
+                MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
   [[nodiscard]] const std::string &url() const noexcept;
@@ -71,6 +74,9 @@ class HiCFile {
 
   [[nodiscard]] double block_cache_hit_rate() const noexcept;
   void reset_cache_stats() const noexcept;
+  void clear_cache() noexcept;
+  void optimize_cache_size(std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
+  [[nodiscard]] std::size_t cache_capacity() const noexcept;
 
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
@@ -85,6 +91,7 @@ class HiCFile {
 
 namespace utils {
 [[nodiscard]] bool is_hic_file(const std::filesystem::path &path);
+[[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &path);
 }  // namespace utils
 
 }  // namespace hictk::hic

@@ -109,8 +109,6 @@ class Index {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
-  [[nodiscard]] std::vector<BlockIndex> find_overlaps(const PixelCoordinates& coords1,
-                                                      const PixelCoordinates& coords2) const;
   void find_overlaps(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
                      std::vector<BlockIndex>& buffer) const;
 

@@ -264,8 +264,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       CHECK_THROWS(hic.fetch("chr123", NormalizationMethod::NONE));
     }
     SECTION("invalid unit") {
-      const HiCFile hic(pathV9, 10'000, MatrixType::observed, MatrixUnit::FRAG);
-      CHECK_THROWS(hic.fetch("chr2L", NormalizationMethod::NONE));
+      CHECK_THROWS(HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::FRAG));
     }
     SECTION("expected + norm") {
       const HiCFile hic(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP);

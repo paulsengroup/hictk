@@ -276,6 +276,9 @@ inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Re
   // I am using transform instead of inclusive_scan because the latter is not always available
   std::transform(chroms.begin(), chroms.end(), prefix_sum.begin() + 1,
                  [&, sum = std::uint64_t(0)](const Chromosome &chrom) mutable {
+                   if (chrom.is_all()) {
+                     return sum;
+                   }
                    const auto num_bins = (chrom.size() + bin_size - 1) / bin_size;
                    return sum += static_cast<std::uint64_t>(num_bins);
                  });

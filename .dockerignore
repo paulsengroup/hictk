@@ -1,0 +1,19 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+# Ignore everything
+**
+
+# Allowed directories
+!cmake/**
+!external/**
+!src/**
+!test/scripts/**
+!test/units/**
+
+# Allowed files
+!CMakeLists.txt
+!LICENSE
+!conanfile.*
+!test/CMakeLists.txt

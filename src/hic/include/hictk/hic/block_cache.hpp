@@ -81,7 +81,6 @@ class InteractionBlock {
 
 class BlockCache {
   using Value = std::shared_ptr<const InteractionBlock>;
-  using MapT = phmap::flat_hash_map<BlockID, Value>;
   std::queue<BlockID> _queue{};
   phmap::flat_hash_map<BlockID, Value> _map{};
 
@@ -93,7 +92,7 @@ class BlockCache {
 
  public:
   BlockCache() = delete;
-  explicit BlockCache(std::size_t capacity);
+  explicit BlockCache(std::size_t capacity_bytes);
 
   [[nodiscard]] auto find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
       -> Value;
@@ -103,6 +102,10 @@ class BlockCache {
   auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
                InteractionBlock&& block) -> Value;
 
+  bool try_erase(const BlockID& key);
+  bool try_erase(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id);
+  void clear() noexcept;
+
   [[nodiscard]] constexpr std::size_t capacity() const noexcept;
   [[nodiscard]] constexpr std::size_t size() const noexcept;
   [[nodiscard]] std::size_t num_blocks() const noexcept;
@@ -111,6 +114,7 @@ class BlockCache {
   [[nodiscard]] constexpr std::size_t hits() const noexcept;
   [[nodiscard]] constexpr std::size_t misses() const noexcept;
   constexpr void reset_stats() noexcept;
+  void set_capacity(std::size_t new_capacity, bool shrink_to_fit = false);
 
  private:
   void pop_oldest();
