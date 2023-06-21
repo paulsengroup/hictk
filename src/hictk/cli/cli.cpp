@@ -55,6 +55,7 @@ class HiCFileValidator : public CLI::Validator {
 }
 
 class Formatter : public CLI::Formatter {
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
   [[nodiscard]] inline std::string make_option_opts(const CLI::Option* opt) const override {
     if (!opt->get_option_text().empty()) {
       return opt->get_option_text();
@@ -123,8 +124,8 @@ class Formatter : public CLI::Formatter {
   }
 };
 
-inline const auto IsValidCoolerFile = CoolerFileValidator();
-inline const auto IsValidHiCFile = HiCFileValidator();
+inline const auto IsValidCoolerFile = CoolerFileValidator();  // NOLINT(cert-err58-cpp)
+inline const auto IsValidHiCFile = HiCFileValidator();        // NOLINT(cert-err58-cpp)
 
 // clang-format off
 inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
@@ -149,6 +150,7 @@ inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
         {"GW_SCALE", hictk::hic::NormalizationMethod::GW_SCALE}},
     CLI::ignore_case);
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
     std::map<std::string, hictk::hic::MatrixUnit>{
         {"BP", hictk::hic::MatrixUnit::BP},
@@ -521,7 +523,7 @@ static void check_normalization_methods(const std::vector<std::string>& norm_met
 }
 
 void Cli::validate_convert_subcommand() const {
-  auto& c = std::get<ConvertConfig>(this->_config);
+  const auto& c = std::get<ConvertConfig>(this->_config);
   std::vector<std::string> errors;
 
   if (!hic::utils::is_hic_file(c.input_hic)) {
@@ -562,15 +564,15 @@ void Cli::validate_dump_subcommand() const {
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
 
   if (is_hic && c.resolution == 0) {
-    errors.push_back("--resolution is mandatory when file is in .hic format.");
+    errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
   if ((is_cooler || is_mcooler) && c.resolution != 0) {
-    warnings.push_back("--resolution is ignored when file is in .cool or .mcool format.");
+    warnings.emplace_back("--resolution is ignored when file is in .cool or .mcool format.");
   }
 
   if (is_hic && c.weight_type == "infer") {
-    warnings.push_back("--weight-type is ignored when file is in .hic format.");
+    warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
   }
 
   const auto matrix_type_parsed =
@@ -579,12 +581,12 @@ void Cli::validate_dump_subcommand() const {
       this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
-    warnings.push_back(
+    warnings.emplace_back(
         "--matrix-type and --matrix-unit are ignored when file is not in .hic format.");
   }
 
   if (is_hic && c.matrix_unit == hic::MatrixUnit::FRAG) {
-    errors.push_back("--matrix-type=FRAG is not yet supported.");
+    errors.emplace_back("--matrix-type=FRAG is not yet supported.");
   }
 
   if (!errors.empty()) {

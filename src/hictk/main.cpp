@@ -101,13 +101,13 @@ int main(int argc, char** argv) {
         case sc::dump:
           dump_subcmd(std::get<DumpConfig>(config));
           break;
-        case sc::load:
+        case sc::load:  // NOLINT
           // load_subcmd(std::get<LoadConfig>(config));
           break;
-        case sc::merge:
+        case sc::merge:  // NOLINT
           // merge_subcmd(std::get<MergeConfig>(config));
           break;
-        case sc::help:
+        case sc::help:  // NOLINT
           break;
         default:
           throw std::runtime_error(

@@ -30,10 +30,7 @@ static bool missing_norm_or_interactions(const std::exception& e, hic::Normaliza
 }
 
 bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
-  for (const auto& chrom : f.chromosomes()) {
-    if (chrom.is_all()) {
-      continue;
-    }
+  return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
     try {
       std::ignore = f.fetch(chrom.name(), norm);
       return true;
@@ -42,8 +39,8 @@ bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
         throw;
       }
     }
-  }
-  return false;
+    return false;
+  });
 }
 
 static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
@@ -66,7 +63,6 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
       }
 
       weights.insert(weights.end(), weights_.begin(), weights_.end());
-      missing_norms = false;
     } catch (const std::exception& e) {
       if (!missing_norm_or_interactions(e, norm)) {
         throw;
@@ -282,7 +278,7 @@ static void convert_resolution_multi_threaded(
 }
 
 void convert_subcmd(const ConvertConfig& c) {
-  assert(c.resolutions.size() > 0);
+  assert(!c.resolutions.empty());
 
   assert(spdlog::default_logger());
   const auto t0 = std::chrono::steady_clock::now();
