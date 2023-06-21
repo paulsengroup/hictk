@@ -160,23 +160,23 @@ jobs:
         include:
           - {
             url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             balance: 'NONE'
           }
           - {
             url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             balance: 'weight'
           }
           - {
             url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
             sha256: 'b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42',
             ref-url: 'https://www.dropbox.com/s/97fidisur8hflar/4DNFI9FVHJZQ.fixed.mcool?dl=1',
-            ref-sha256: '3b220810d7e9434fbebd00eb451e0ff7382b9b6fef88681aa3d6da9db84e818f',
+            ref-sha256: '3d1b84641379f5c7551122c8ee55f225adfeb84fa4d6668e5c07c7054196b0ed',
             balance: 'NONE'
           }
 
