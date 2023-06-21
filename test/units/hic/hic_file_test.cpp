@@ -55,7 +55,7 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
 TEST_CASE("HiC: footer cache", "[hic][short]") {
   HiCFile f(pathV8, 2'500'000);
 
-  CHECK(f.num_cached_footers() == 0);
+  CHECK(f.num_cached_footers() == 1);
   for (const auto& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
       continue;

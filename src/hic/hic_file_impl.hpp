@@ -24,15 +24,35 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
-  assert(block_cache_capacity != 0);
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("file {} does not have interactions for resolution {}"), url(), resolution()));
   }
+
+  if (block_cache_capacity == 0) {
+    optimize_cache_size();
+  }
 }
 
-inline HiCFile HiCFile::open_resolution(std::uint32_t resolution) const {
-  return HiCFile(url(), resolution, _type, _unit);
+inline HiCFile& HiCFile::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
+                              MatrixUnit unit_, std::uint64_t block_cache_capacity) {
+  if (_fs->url() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
+    _block_cache->set_capacity(block_cache_capacity, false);
+    return *this;
+  }
+
+  const auto prev_block_cache_capacity = _block_cache->capacity();
+  *this = HiCFile(url_, resolution_, type_, unit_, block_cache_capacity);
+
+  if (_block_cache->capacity() < prev_block_cache_capacity) {
+    _block_cache->set_capacity(prev_block_cache_capacity);
+  }
+  return *this;
+}
+
+inline HiCFile& HiCFile::open(std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
+                              std::uint64_t block_cache_capacity) {
+  return open(url(), resolution_, type_, unit_, block_cache_capacity);
 }
 
 inline bool HiCFile::has_resolution(std::uint32_t resolution) const {
@@ -159,4 +179,25 @@ inline void HiCFile::purge_footer_cache() { _footers.clear(); }
 
 inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cache->hit_rate(); }
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
+inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
+inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
+  std::size_t cache_size = 0;
+
+  const auto& chrom1 = chromosomes().longest_chromosome();
+
+  for (const auto& chrom2 : chromosomes()) {
+    if (chrom2.is_all()) {
+      continue;
+    }
+    if (chrom1.id() < chrom2.id()) {
+      cache_size += this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+    } else {
+      cache_size += this->fetch(chrom2.name(), chrom1.name()).estimate_optimal_cache_size();
+    }
+  }
+
+  _block_cache->set_capacity((std::min)(upper_bound, cache_size));
+}
+
+inline std::size_t HiCFile::cache_capacity() const noexcept { return _block_cache->capacity(); }
 }  // namespace hictk::hic

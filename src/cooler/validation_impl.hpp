@@ -32,9 +32,18 @@ constexpr ValidationStatusScool::operator bool() const noexcept { return this->i
 inline ValidationStatusCooler is_cooler(std::string_view uri) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   const auto [file_path, root_path] = parse_cooler_uri(uri);
-
-  const HighFive::File fp(file_path, HighFive::File::ReadOnly);
-  return is_cooler(fp, root_path);
+  try {
+    const HighFive::File fp(file_path, HighFive::File::ReadOnly);
+    return is_cooler(fp, root_path);
+  } catch (const std::exception &e) {
+    std::string_view msg{e.what()};
+    if (msg.find("Unable to open file") != std::string_view::npos) {
+      throw;
+    }
+    ValidationStatusCooler s{};
+    s.is_hdf5 = false;
+    return s;
+  }
 }
 
 inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
@@ -43,16 +52,36 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   const auto file_path = parse_cooler_uri(uri).file_path;
 
-  const HighFive::File fp(file_path, HighFive::File::ReadOnly);
-  return is_multires_file(fp, validate_resolutions, min_version);
+  try {
+    const HighFive::File fp(file_path, HighFive::File::ReadOnly);
+    return is_multires_file(fp, validate_resolutions, min_version);
+  } catch (const std::exception &e) {
+    std::string_view msg{e.what()};
+    if (msg.find("Unable to open file") != std::string_view::npos) {
+      throw;
+    }
+    ValidationStatusMultiresCooler s{};
+    s.is_hdf5 = false;
+    return s;
+  }
 }
 
 inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   const auto file_path = parse_cooler_uri(uri).file_path;
 
-  const HighFive::File fp(file_path, HighFive::File::ReadOnly);
-  return is_scool_file(fp, validate_cells);
+  try {
+    const HighFive::File fp(file_path, HighFive::File::ReadOnly);
+    return is_scool_file(fp, validate_cells);
+  } catch (const std::exception &e) {
+    std::string_view msg{e.what()};
+    if (msg.find("Unable to open file") != std::string_view::npos) {
+      throw;
+    }
+    ValidationStatusScool s{};
+    s.is_hdf5 = false;
+    return s;
+  }
 }
 
 inline ValidationStatusCooler is_cooler(const HighFive::File &fp, std::string_view root_path) {

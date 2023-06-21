@@ -132,17 +132,15 @@ inline std::size_t Index::size() const noexcept { return _block_map.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
-inline std::vector<BlockIndex> Index::find_overlaps(const PixelCoordinates &coords1,
-                                                    const PixelCoordinates &coords2) const {
-  std::vector<BlockIndex> buffer{};
-  find_overlaps(coords1, coords2, buffer);
-  return buffer;
-}
-
 inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
                                  std::vector<BlockIndex> &buffer) const {
   assert(coords1.is_intra());
   assert(coords2.is_intra());
+
+  if (this->empty()) {
+    buffer.clear();
+    return;
+  }
 
   assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);

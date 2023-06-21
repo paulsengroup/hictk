@@ -87,7 +87,7 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
   }
   using T = remove_cvref_t<decltype(op(*first_value))>;
   constexpr std::size_t buffer_capacity =
-      is_string_v<T> ? 256 : (16 * 1024 * 1024) / sizeof(std::uint64_t);
+      is_string_v<T> ? 256 : (1ULL << 20U) / sizeof(std::uint64_t);
   if (this->_buff.holds_alternative<T>()) {
     this->_buff.resize<T>(buffer_capacity);
   } else {

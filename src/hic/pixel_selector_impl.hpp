@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -157,6 +158,66 @@ inline N PixelSelector::sum() const noexcept {
 }
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
+inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_samples) const {
+  if (_reader.index().empty()) {
+    return 0;  // should we throw instead?
+  }
+
+  std::seed_seq sseq({_reader.index().size()});
+  std::mt19937_64 rand_eng(sseq);
+
+  // Try to guess the average block size
+  std::size_t max_block_size = 0;
+
+  std::vector<std::size_t> block_sizes{};
+  std::size_t samples = 0;
+  // index is backed by a hashmap, so iteration should be somewhat random
+  for (const auto &idx : _reader.index()) {
+    auto blk = _reader.read(chrom1(), chrom2(), idx);
+    if (blk) {
+      samples++;
+      max_block_size = (std::max)(blk->size(), max_block_size);
+      _reader.evict(*blk);
+    }
+    if (samples == num_samples) {
+      break;
+    }
+  }
+
+  // Try to guess how many blocks overlap a single row of pixels
+  std::size_t max_blocks_per_row = 0;
+  const auto bin_size = bins().bin_size();
+
+  const std::size_t first_bin_id = 0;
+  const std::size_t last_bin_id =
+      bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
+  samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
+  for (std::size_t i = 0; i < samples; ++i) {
+    const auto bin_id =
+        std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
+
+    const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
+    const auto pos2 = (std::min)(pos1 + bin_size, coord1().bin1.chrom().size());
+
+    const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
+                                          bins().at(coord1().bin1.chrom(), pos2));
+
+    std::vector<internal::BlockIndex> buffer{};
+    _reader.index().find_overlaps(coord1_, coord2(), buffer);
+    max_blocks_per_row = (std::max)(max_blocks_per_row, buffer.size());
+  }
+
+  return (std::max)(10'000'000UL, max_blocks_per_row * max_block_size);
+}
+
+inline void PixelSelector::evict_blocks_from_cache() const {
+  std::vector<internal::BlockIndex> buff{};
+  _reader.index().find_overlaps(coord1(), coord2(), buff);
+  for (const auto &idx : buff) {
+    _reader.evict(chrom1(), chrom2(), idx);
+  }
+}
+
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
     : _sel(&sel),
@@ -185,10 +246,16 @@ inline auto PixelSelector::iterator<N>::at_end(const PixelSelector &sel) -> iter
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
-  // clang-format off
-  return _sel == other._sel       &&
-         size() == other.size();
-  // clang-format on
+  if (_sel != other._sel) {
+    return false;
+  }
+
+  const auto bin11 = bin1_id();
+  const auto bin12 = bin2_id();
+  const auto bin21 = other.bin1_id();
+  const auto bin22 = other.bin2_id();
+
+  return bin11 == bin21 && bin12 == bin22;
 }
 
 template <typename N>
@@ -198,9 +265,32 @@ inline bool PixelSelector::iterator<N>::operator!=(const iterator &other) const 
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator<(const iterator &other) const noexcept {
-  assert(_sel == other._sel);
-  assert(!!_sel);
-  return _pixels_processed < other._pixels_processed;
+  const auto bin11 = bin1_id();
+  const auto bin21 = other.bin1_id();
+
+  if (bin11 != bin21) {
+    return bin11 < bin21;
+  }
+
+  const auto bin12 = bin2_id();
+  const auto bin22 = other.bin2_id();
+
+  return bin12 < bin22;
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator>(const iterator &other) const noexcept {
+  const auto bin11 = bin1_id();
+  const auto bin21 = other.bin1_id();
+
+  if (bin11 != bin21) {
+    return bin11 > bin21;
+  }
+
+  const auto bin12 = bin2_id();
+  const auto bin22 = other.bin2_id();
+
+  return bin12 > bin22;
 }
 
 template <typename N>
@@ -221,7 +311,6 @@ template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
-  ++_pixels_processed;
   ++_buffer_i;
   while (!is_at_end() && _buffer_i >= size()) {
     read_next_chunk();
@@ -264,9 +353,18 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
 }
 
 template <typename N>
+inline std::size_t PixelSelector::iterator<N>::bin1_id() const noexcept {
+  return !is_at_end() ? (*this)->coords.bin1.id() : std::numeric_limits<std::size_t>::max();
+}
+template <typename N>
+inline std::size_t PixelSelector::iterator<N>::bin2_id() const noexcept {
+  return !is_at_end() ? (*this)->coords.bin2.id() : std::numeric_limits<std::size_t>::max();
+}
+
+template <typename N>
 inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fraction) const noexcept {
   const auto bin_size = bins().bin_size();
-  const auto num_bins = (coord1().bin1.chrom().size() + bin_size - 1) / bin_size;
+  const auto num_bins = (std::max)(100U, (coord1().bin1.chrom().size() + bin_size - 1) / bin_size);
   const auto max_num_bins =
       (std::max)(1U, static_cast<std::uint32_t>(fraction * static_cast<double>(num_bins)));
 
@@ -278,8 +376,8 @@ inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fractio
 }
 
 template <typename N>
-inline const std::vector<internal::BlockIndex>
-    &PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+inline const std::vector<internal::BlockIndex> &
+PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
   const auto bin_size = bins().bin_size();
 
   const auto end_pos = coord1().bin2.start();
@@ -403,17 +501,37 @@ inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
 inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &sel) : _sel(&sel) {
-  std::vector<PixelSelector::iterator<N>> heads;
-  std::vector<PixelSelector::iterator<N>> tails;
+inline bool PixelSelectorAll::iterator<N>::Pair::operator<(const Pair &other) const noexcept {
+  return first < other.first;
+}
 
-  _it = _sel->_selectors.begin();
-  setup_next_pixel_merger();
+template <typename N>
+inline bool PixelSelectorAll::iterator<N>::Pair::operator>(const Pair &other) const noexcept {
+  return first > other.first;
+}
+
+template <typename N>
+inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector)
+    : _selectors(std::make_shared<SelectorQueue>()),
+      _its(std::make_shared<ItPQueue>()),
+      _buff(std::make_shared<std::vector<Pixel<N>>>()) {
+  std::for_each(selector._selectors.begin(), selector._selectors.end(),
+                [&](const PixelSelector &sel) { _selectors->push(&sel); });
+
+  _chrom1_id = _selectors->front()->chrom1().id();
+  init_iterators();
+  read_next_chunk();
 }
 
 template <typename N>
 inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
-  return _value == other._value;
+  if (!_buff || !other._buff) {
+    return _buff == other._buff;
+  }
+
+  assert(_i < _buff->size());
+  assert(other._i < other._buff->size());
+  return (*_buff)[_i] == (*other._buff)[_i];
 }
 
 template <typename N>
@@ -423,19 +541,21 @@ inline bool PixelSelectorAll::iterator<N>::operator!=(const iterator<N> &other) 
 
 template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator*() const -> const_reference {
-  return _value;
+  assert(_buff);
+  assert(_i < _buff->size());
+  return (*_buff)[_i];
 }
 
 template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
-  return &_value;
+  return &*(*this);
 }
 
 template <typename N>
 inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
-  _value = _merger->next();
-  if (!_value) {
-    setup_next_pixel_merger();
+  assert(_buff);
+  if (++_i == _buff->size()) {
+    read_next_chunk();
   }
   return *this;
 }
@@ -448,49 +568,59 @@ inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
 }
 
 template <typename N>
-inline void PixelSelectorAll::iterator<N>::setup_next_pixel_merger() {
-  assert(_it != _sel->_selectors.end());
-
-  auto chrom1 = _it->chrom1();
-  auto first_sel = _it;
-  auto last_sel = std::find_if(first_sel, _sel->_selectors.end(),
-                               [&](const PixelSelector &s) { return s.chrom1() != chrom1; });
-
-  std::vector<PixelSelector::iterator<N>> heads;
-  std::vector<PixelSelector::iterator<N>> tails;
-
-  while (first_sel != last_sel) {
-    const auto &sel = *first_sel;
-    if (sel.chrom1() != chrom1) {
-      if (!heads.empty()) {
-        break;
-      } else {
-        chrom1 = sel.chrom1();
-      }
-    }
-    auto first = sel.template begin<N>();
-    auto last = sel.template end<N>();
-    if (first != last) {
-      heads.emplace_back(std::move(first));
-      tails.emplace_back(std::move(last));
-    }
-    ++first_sel;
-  }
-
-  _it = last_sel;
-
-  if (heads.empty()) {
-    *this = iterator{};
+inline void PixelSelectorAll::iterator<N>::init_iterators() {
+  assert(_its->empty());
+  if (_selectors->empty()) {
+    _buff = nullptr;
     return;
   }
 
-  _merger = std::make_shared<PixelMerger>(std::move(heads), std::move(tails));
-  _value = _merger->next();
+  if (_its.use_count() != 1) {
+    _its = std::make_shared<ItPQueue>();
+  }
 
-  if (!_value) {
-    *this = iterator{};
+  if (_selectors.use_count() != 1) {
+    _selectors = std::make_shared<SelectorQueue>(*_selectors);
+  }
+
+  while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
+    auto *sel = _selectors->front();
+    _selectors->pop();
+    _its->emplace(Pair{sel->begin<N>(), sel->end<N>()});
+  }
+}
+
+template <typename N>
+inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
+  if (_selectors->empty()) {
+    _buff = nullptr;  // signal end
     return;
   }
+
+  if (_its->empty()) {
+    ++_chrom1_id;
+    init_iterators();
+    return read_next_chunk();
+  }
+
+  auto [first, last] = _its->top();
+  _its->pop();
+
+  if (first == last) {
+    return read_next_chunk();
+  }
+
+  if (_buff.use_count() != 1) {
+    _buff = std::make_shared<std::vector<Pixel<N>>>();
+  }
+  _buff->clear();
+  _i = 0;
+
+  const auto bin1 = first->coords.bin1;
+  while (first != last && first->coords.bin1 == bin1) {
+    _buff->push_back(*first++);
+  }
+  _its->emplace(Pair{first, last});
 }
 
 }  // namespace hictk::hic
