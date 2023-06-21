@@ -39,6 +39,7 @@ inline Weights::Weights(const BinTable& bins, const Dataset& dset, bool rescale)
 
 inline Weights::Weights(const BinTable& bins, const Dataset& dset, Type type, bool rescale)
     : _weights(dset.read_all<std::vector<double>>()), _type(type) {
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{}; // NOLINT
   if (_type == Type::INFER || type == Type::UNKNOWN) {
     if (dset.has_attribute("divisive_weights")) {
       _type = dset.read_attribute<bool>("divisive_weights") ? Type::DIVISIVE : Type::MULTIPLICATIVE;

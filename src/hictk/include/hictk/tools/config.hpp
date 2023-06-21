@@ -45,6 +45,7 @@ struct DumpConfig {
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};
+  std::uint8_t verbosity{3};
 };
 
 struct LoadConfig {
@@ -57,6 +58,7 @@ struct LoadConfig {
   bool count_as_float{false};
   bool assume_sorted{true};
   bool force{false};
+  std::uint8_t verbosity{3};
 };
 
 struct MergeConfig {
@@ -65,6 +67,7 @@ struct MergeConfig {
   std::size_t chunk_size{1'000'000};
 
   bool force{false};
+  std::uint8_t verbosity{3};
 };
 
 // clang-format off
