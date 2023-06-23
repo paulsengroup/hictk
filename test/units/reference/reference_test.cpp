@@ -15,9 +15,9 @@ namespace hictk::test::reference {
 TEST_CASE("Reference", "[reference][short]") {
   // clang-format off
     const std::array<Chromosome, 3> expected{
-            Chromosome{0, "chr1", 50001},
-            Chromosome{1, "chr2", 25017},
-            Chromosome{2, "chr3", 10000}
+            Chromosome{0, "chr1", 50001},  //NOLINT
+            Chromosome{1, "chr2", 25017},  //NOLINT
+            Chromosome{2, "chr3", 10000}   //NOLINT
     };
   // clang-format on
 
