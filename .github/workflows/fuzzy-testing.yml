@@ -248,6 +248,7 @@ jobs:
 
       - name: Download test datasets
         run: |
+          resolution="${{ steps.test-params.outputs.resolution }}"
           echo "${{ matrix.ref-sha256 }} reference.mcool" | tee checksums.sha256
           curl -L "${{ matrix.ref-url }}" -o reference.mcool
           sha256sum -c checksums.sha256
@@ -255,12 +256,17 @@ jobs:
           cooler cp "reference.mcool::/resolutions/$resolution" reference.cool
           rm reference.mcool
 
-          echo "${{ matrix.sha256 }}  test.matrix" | tee checksums.sha256
-          curl -L "${{ matrix.url }}" -o test.matrix
-          sha256sum -c checksums.sha256
+          if [[ ${{ matrix.ref-sha256 }} == ${{ matrix.sha256 }} ]]; then
+            ln -s reference.cool test.matrix
+          else
+            echo "${{ matrix.sha256 }}  test.matrix" | tee checksums.sha256
+            curl -L "${{ matrix.url }}" -o test.matrix
+            sha256sum -c checksums.sha256
 
-          if cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp &> /dev/null ; then
-            mv test.matrix.tmp test.matrix
+            if [[ ${{ matrix.title }} == .cool ]]; then
+              cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp
+              mv test.matrix.tmp test.matrix
+            fi
           fi
 
       - name: Download hictk
@@ -280,7 +286,7 @@ jobs:
             --duration '${{ steps.test-params.outputs.duration }}' \
             --balance ${{ matrix.balance }} \
             test.matrix \
-            reference.mcool
+            reference.cool
 
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
