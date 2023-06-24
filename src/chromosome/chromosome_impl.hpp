@@ -31,7 +31,7 @@ constexpr Chromosome::operator bool() const noexcept { return this->id() != Chro
 constexpr std::uint32_t Chromosome::id() const noexcept { return this->_id; }
 
 inline std::string_view Chromosome::name() const noexcept {
-  return !!this->_name ? std::string_view{*this->_name} : "";
+  return !!this->_name ? std::string_view{*this->_name} : "";  // NOLINT
 }
 
 constexpr std::uint32_t Chromosome::size() const noexcept { return this->_size; }
