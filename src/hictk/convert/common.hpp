@@ -2,16 +2,11 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "./common.hpp"
+#pragma once
+
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
-
-void convert_subcmd(const ConvertConfig& c) {
-  if (c.input_format == "hic") {
-    hic_to_cool(c);
-  } else {
-    cool_to_hic(c);
-  }
-}
+void hic_to_cool(const ConvertConfig& c);
+void cool_to_hic(const ConvertConfig& c);
 }  // namespace hictk::tools

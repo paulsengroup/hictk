@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(Boost QUIET REQUIRED)
 find_package(CLI11 QUIET REQUIRED)
 find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
@@ -17,6 +18,8 @@ target_sources(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/convert.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/convert/cool_to_hic.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp)
 
 target_include_directories(hictk_tools PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -30,10 +33,12 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_tools
   PRIVATE
+  Boost::headers
   CLI11::CLI11
   readerwriterqueue::readerwriterqueue
   std::filesystem
   PUBLIC
+  Boost::filesystem
   fmt::fmt
   spdlog::spdlog
   Threads::Threads)

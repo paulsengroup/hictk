@@ -15,16 +15,22 @@
 namespace hictk::tools {
 
 struct ConvertConfig {
-  std::filesystem::path input_hic{};
-  std::filesystem::path output_cooler{};
+  std::filesystem::path path_to_input{};
+  std::filesystem::path path_to_output{};
+  std::filesystem::path tmp_dir{};
+  std::filesystem::path juicer_tools_jar{};
+  std::string input_format{};
+  std::string output_format{};
+
   std::vector<std::uint32_t> resolutions{};
+  std::string genome{};
+
   std::vector<std::string> normalization_methods_str{{"ALL"}};
   std::vector<hic::NormalizationMethod> normalization_methods{};
-  std::string genome{};
   std::vector<std::string> norm_dset_names{};
+  bool fail_if_normalization_method_is_not_avaliable{false};
 
   std::size_t block_cache_size{0};
-  bool fail_if_normalization_method_is_not_avaliable{false};
   bool quiet{false};
   std::uint8_t verbosity{3};
   bool force{false};

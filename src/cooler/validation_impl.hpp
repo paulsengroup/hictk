@@ -317,33 +317,6 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   return status;
 }
 
-inline std::vector<std::uint32_t> list_resolutions(std::string_view uri, bool sorted) {
-  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-  try {
-    if (!is_multires_file(uri, false)) {
-      throw std::runtime_error("not a valid .mcool file");
-    }
-
-    const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
-    auto root_grp = fp.getGroup("/resolutions");
-
-    const auto resolutions_ = root_grp.listObjectNames();
-    std::vector<std::uint32_t> resolutions(resolutions_.size());
-    std::transform(resolutions_.begin(), resolutions_.end(), resolutions.begin(),
-                   [](const auto &res) {
-                     return hictk::internal::parse_numeric_or_throw<std::uint32_t>(res);
-                   });
-
-    if (sorted) {
-      std::sort(resolutions.begin(), resolutions.end());
-    }
-    return resolutions;
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("failed to read resolutions from \"{}\": {}"), uri, e.what()));
-  }
-}
-
 }  // namespace hictk::cooler::utils
 
 constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::parse(
