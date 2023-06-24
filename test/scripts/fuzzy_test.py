@@ -108,6 +108,9 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
     df = selector.fetch(query1, query2)
     if "balanced" in df:
         df["count"] = df["balanced"]
+
+    df["chrom1"] = df["chrom1"].astype(str)
+    df["chrom2"] = df["chrom2"].astype(str)
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[
         ["count"]
     ]
@@ -143,6 +146,8 @@ def hictk_dump(
         if (code := hictk_dump.returncode) != 0:
             raise RuntimeError(f"{cmd} terminated with code {code}")
 
+    df["chrom1"] = df["chrom1"].astype(str)
+    df["chrom2"] = df["chrom2"].astype(str)
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])
 
 
@@ -191,7 +196,11 @@ def generate_query_2d(
 
 def find_differences(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     df = df1.merge(
-        df2, how="outer", left_index=True, right_index=True, suffixes=("1", "2")
+        df2,
+        how="outer",
+        left_index=True,
+        right_index=True,
+        suffixes=("1", "2"),
     )
     # We're mapping False to None so that we can more easily drop identical rows with dropna()
     df["count_close_enough"] = pd.Series(np.isclose(df["count1"], df["count2"])).map(

@@ -7,6 +7,7 @@ find_package(fmt QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(readerwriterqueue QUIET REQUIRED)
 find_package(spdlog QUIET REQUIRED)
+find_package(Threads REQUIRED)
 
 add_executable(hictk_tools)
 set_target_properties(hictk_tools PROPERTIES OUTPUT_NAME hictk)
@@ -34,7 +35,8 @@ target_link_system_libraries(
   std::filesystem
   PUBLIC
   fmt::fmt
-  spdlog::spdlog)
+  spdlog::spdlog
+  Threads::Threads)
 
 include(GNUInstallDirs)
 install(
