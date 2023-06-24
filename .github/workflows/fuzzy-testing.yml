@@ -18,17 +18,6 @@ on:
     tags:
       - 'v*.*.*'
 
-  pull_request:
-    paths:
-      - ".github/workflows/fuzzy-testing.yml"
-      - "cmake/**"
-      - "examples/**"
-      - "src/**"
-      - "test/scripts/fuzzy_test.py"
-      - "test/scripts/link_h5_dataset.py"
-      - "CMakeLists.txt"
-      - "conanfile.txt"
-
   schedule:
     # Run weekly
     - cron: '15 3 * * 0'
