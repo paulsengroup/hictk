@@ -83,6 +83,8 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = decltype(std::declval<PixelT>().count);
   try {
+    PixelT previous_pixel{};
+
     std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
       if (pixel.count == T{0}) {
         throw std::runtime_error(fmt::format(FMT_STRING("({}) found a pixel of value 0"), pixel));
@@ -116,6 +118,13 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
             fmt::format(FMT_STRING("({}) bin1_id is greater than bin2_id: {} > {}"), pixel,
                         pixel.coords.bin1.id(), pixel.coords.bin2.id()));
       }
+
+      if (previous_pixel && previous_pixel >= pixel) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}; {}) pixels are not sorted in ascending order"),
+                        previous_pixel, pixel));
+      }
+      previous_pixel = pixel;
     });
 
     if (!this->dataset("pixels/bin1_id").empty()) {
@@ -140,8 +149,7 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
       }
     }
   } catch (const std::exception &e) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
+    throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
   }
 }
 

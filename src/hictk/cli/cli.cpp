@@ -431,12 +431,14 @@ void Cli::make_dump_subcommand() {
 }
 
 void Cli::make_load_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("load", "Build .cool files from interactions in various text formats.")
-                  ->fallthrough()
-                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = LoadConfig{};
-                  });
+  auto& sc =
+      *this->_cli
+           .add_subcommand("load", "Build .cool files from interactions in various text formats.")
+           ->fallthrough()
+           ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+             assert(this->_config.index() == 0);
+             this->_config = LoadConfig{};
+           });
 
   this->_config = LoadConfig{};
   auto& c = std::get<LoadConfig>(this->_config);
@@ -467,7 +469,7 @@ void Cli::make_load_subcommand() {
       c.format,
       "Input format.")
       ->check(CLI::IsMember({"4dn", "validpairs", "bg2", "coo"}))
-      ->capture_default_str();
+      ->required();
 
   sc.add_flag(
       "--force",

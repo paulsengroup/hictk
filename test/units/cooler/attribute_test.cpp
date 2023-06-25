@@ -12,6 +12,7 @@
 #include <string>
 
 #include "hictk/suppress_warnings.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk::test {
 inline const internal::TmpDir testdir{true};                            // NOLINT(cert-err58-cpp)

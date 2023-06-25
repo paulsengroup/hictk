@@ -60,7 +60,7 @@ struct LoadConfig {
 
   std::filesystem::path path_to_chrom_sizes{};
   std::uint32_t bin_size{};
-  std::string format{"bg2"};
+  std::string format{};
   std::string assembly{"unknown"};
   bool count_as_float{false};
   bool assume_sorted{true};

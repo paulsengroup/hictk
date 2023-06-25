@@ -99,30 +99,26 @@ int main(int argc, char** argv) {
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
     }
-    cli = std::make_unique<Cli>(argc, argv);
-
-    {
-      using sc = Cli::subcommand;
-      switch (subcmd) {
-        case sc::convert:
-          convert_subcmd(std::get<ConvertConfig>(config));
-          break;
-        case sc::dump:
-          dump_subcmd(std::get<DumpConfig>(config));
-          break;
-        case sc::load:  // NOLINT
-          load_subcmd(std::get<LoadConfig>(config));
-          break;
-        case sc::merge:  // NOLINT
-          // merge_subcmd(std::get<MergeConfig>(config));
-          break;
-        case sc::help:  // NOLINT
-          break;
-        default:
-          throw std::runtime_error(
-              "Default branch in switch statement in hictk::main() should be unreachable! "
-              "If you see this message, please file an issue on GitHub");
-      }
+    using sc = Cli::subcommand;
+    switch (subcmd) {
+      case sc::convert:
+        convert_subcmd(std::get<ConvertConfig>(config));
+        break;
+      case sc::dump:
+        dump_subcmd(std::get<DumpConfig>(config));
+        break;
+      case sc::load:
+        load_subcmd(std::get<LoadConfig>(config));
+        break;
+      case sc::merge:  // NOLINT
+        // merge_subcmd(std::get<MergeConfig>(config));
+        break;
+      case sc::help:  // NOLINT
+        break;
+      default:
+        throw std::runtime_error(
+            "Default branch in switch statement in hictk::main() should be unreachable! "
+            "If you see this message, please file an issue on GitHub");
     }
   } catch (const CLI::ParseError& e) {
     assert(cli);
