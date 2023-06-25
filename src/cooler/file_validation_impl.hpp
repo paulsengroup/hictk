@@ -85,33 +85,36 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
   try {
     std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
       if (pixel.count == T{0}) {
-        throw std::runtime_error("found a pixel of value 0");
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) found a pixel of value 0"), pixel));
       }
 
       if (!this->chromosomes().contains(pixel.coords.bin1.chrom().id())) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("invalid chromosome id {}"), pixel.coords.bin1.chrom().id()));
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) invalid chromosome id {}"), pixel,
+                                             pixel.coords.bin1.chrom().id()));
       }
 
       if (pixel.coords.bin1.chrom().id() != pixel.coords.bin2.chrom().id() &&
           !this->chromosomes().contains(pixel.coords.bin2.chrom().id())) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("invalid chromosome id {}"), pixel.coords.bin2.chrom().id()));
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) invalid chromosome id {}"), pixel,
+                                             pixel.coords.bin2.chrom().id()));
       }
 
       if (const auto bin_id = pixel.coords.bin1.id(); bin_id > this->bins().size()) {
-        throw std::runtime_error(fmt::format(
-            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), bin_id));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"),
+                        pixel, bin_id));
       }
 
       if (const auto bin_id = pixel.coords.bin2.id(); bin_id > this->bins().size()) {
-        throw std::runtime_error(fmt::format(
-            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), bin_id));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"),
+                        pixel, bin_id));
       }
 
       if (pixel.coords.bin1.id() > pixel.coords.bin2.id()) {
-        throw std::runtime_error(fmt::format(FMT_STRING("bin1_id is greater than bin2_id: {} > {}"),
-                                             pixel.coords.bin1.id(), pixel.coords.bin2.id()));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) bin1_id is greater than bin2_id: {} > {}"), pixel,
+                        pixel.coords.bin1.id(), pixel.coords.bin2.id()));
       }
     });
 
@@ -137,7 +140,8 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
       }
     }
   } catch (const std::exception &e) {
-    throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
   }
 }
 

@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
           dump_subcmd(std::get<DumpConfig>(config));
           break;
         case sc::load:  // NOLINT
-          // load_subcmd(std::get<LoadConfig>(config));
+          load_subcmd(std::get<LoadConfig>(config));
           break;
         case sc::merge:  // NOLINT
           // merge_subcmd(std::get<MergeConfig>(config));

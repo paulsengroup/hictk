@@ -32,7 +32,7 @@ struct ConvertConfig {
 
   std::size_t block_cache_size{0};
   bool quiet{false};
-  std::uint8_t verbosity{3};
+  std::uint8_t verbosity{2};
   bool force{false};
 };
 
@@ -51,7 +51,8 @@ struct DumpConfig {
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};
-  std::uint8_t verbosity{3};
+  std::uint8_t verbosity{2};
+  bool force{false};
 };
 
 struct LoadConfig {
@@ -64,16 +65,19 @@ struct LoadConfig {
   bool count_as_float{false};
   bool assume_sorted{true};
   bool force{false};
-  std::uint8_t verbosity{3};
+  std::uint8_t verbosity{2};
+  std::size_t batch_size{10'000'000};
 };
 
 struct MergeConfig {
   std::vector<std::string> input_uris{};
-  std::string output_uri{};
-  std::size_t chunk_size{1'000'000};
+  std::filesystem::path output_uri{};
+  std::filesystem::path tmp_dir{};
+
+  std::size_t chunk_size{5'000'000};
 
   bool force{false};
-  std::uint8_t verbosity{3};
+  std::uint8_t verbosity{2};
 };
 
 // clang-format off

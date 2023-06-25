@@ -12,7 +12,6 @@
 #include <string>
 
 #include "hictk/suppress_warnings.hpp"
-#include "hictk/test/self_deleting_folder.hpp"
 
 namespace hictk::test {
 inline const internal::TmpDir testdir{true};                            // NOLINT(cert-err58-cpp)

@@ -431,7 +431,7 @@ void Cli::make_dump_subcommand() {
 }
 
 void Cli::make_load_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("load", "Build .cool files from interactions in BG2/COO.")
+  auto& sc = *this->_cli.add_subcommand("load", "Build .cool files from interactions in various text formats.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(this->_config.index() == 0);
@@ -466,7 +466,13 @@ void Cli::make_load_subcommand() {
       "-f,--format",
       c.format,
       "Input format.")
-      ->check(CLI::IsMember({"bg2", "coo"}))
+      ->check(CLI::IsMember({"4dn", "validpairs", "bg2", "coo"}))
+      ->capture_default_str();
+
+  sc.add_flag(
+      "--force",
+      c.force,
+      "Force overwrite existing output file(s).")
       ->capture_default_str();
 
   sc.add_option(
@@ -482,9 +488,9 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
-      "--assume-assume_sorted,!--no-assume-sorted",
+      "--assume-sorted,!--assume-unsorted",
       c.assume_sorted,
-      "Assume input files are already assume_sorted.")
+      "Assume input files are already sorted.")
       ->capture_default_str();
   // clang-format on
 
@@ -685,9 +691,13 @@ void Cli::validate_dump_subcommand() const {
 
 void Cli::validate_load_subcommand() const {
   assert(this->_cli.get_subcommand("load")->parsed());
-  /*
+
   std::vector<std::string> errors;
-  const auto& c = std::get<DumpConfig>(this->_config);
+  const auto& c = std::get<LoadConfig>(this->_config);
+
+  if (!c.force && std::filesystem::exists(c.uri)) {
+    errors.emplace_back("Refusing to overwrite file {}. Pass --force to overwrite.");
+  }
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -695,7 +705,6 @@ void Cli::validate_load_subcommand() const {
                                "arguments and input file(s):\n - {}"),
                     fmt::join(errors, "\n - ")));
   }
-  */
 }
 
 void Cli::validate_merge_subcommand() const {

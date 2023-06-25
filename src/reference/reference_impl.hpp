@@ -5,10 +5,13 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
@@ -18,6 +21,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/hash.hpp"
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk {
 
@@ -42,6 +46,29 @@ inline Reference::Reference(ChromosomeNameIt first_chrom_name, ChromosomeNameIt 
 
 inline Reference::Reference(std::initializer_list<Chromosome> chromosomes)
     : Reference(chromosomes.begin(), chromosomes.end()) {}
+
+inline Reference::Reference(const std::filesystem::path& path_to_chrom_sizes) {
+  try {
+    std::string line;
+    std::vector<std::string> chrom_names{};
+    std::vector<std::uint32_t> chrom_sizes{};
+
+    std::ifstream f(path_to_chrom_sizes);
+    while (std::getline(f, line)) {
+      const auto delim_pos = line.find('\t');
+
+      chrom_names.emplace_back(line.substr(0, delim_pos));
+      chrom_sizes.emplace_back(
+          internal::parse_numeric_or_throw<std::uint32_t>(line.substr(delim_pos + 1)));
+    }
+
+    *this = Reference{chrom_names.begin(), chrom_names.end(), chrom_sizes.begin()};
+  } catch (const std::exception& e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while importing chromosomes from {}: {}"),
+                    path_to_chrom_sizes, e.what()));
+  }
+}
 
 inline auto Reference::begin() const -> const_iterator { return this->cbegin(); }
 inline auto Reference::end() const -> const_iterator { return this->cend(); }
@@ -220,11 +247,18 @@ inline void Reference::validate() const {
     throw std::runtime_error("chromosomes are not sorted by ID");
   }
 
+  phmap::flat_hash_set<std::uint32_t> ids{};
   for (const auto& chrom : this->_buff) {
     if (chrom.size() == 0) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("chromosome {} has a size of 0"), chrom.name()));
     }
+    ids.emplace(chrom.id());
+  }
+
+  if (ids.size() != _buff.size()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("found two or more chromosomes with the same ID")));
   }
 }
 

@@ -8,6 +8,7 @@
 #include <parallel_hashmap/phmap.h>
 
 #include <cstdint>
+#include <filesystem>
 #include <initializer_list>
 #include <limits>
 #include <string>
@@ -52,6 +53,7 @@ class Reference {
   template <typename ChromosomeIt>
   Reference(ChromosomeIt first_chrom, ChromosomeIt last_chrom);
   Reference(std::initializer_list<Chromosome> chromosomes);
+  Reference(const std::filesystem::path& path_to_chrom_sizes);
 
   [[nodiscard]] auto begin() const -> const_iterator;
   [[nodiscard]] auto end() const -> const_iterator;
