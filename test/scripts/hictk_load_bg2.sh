@@ -102,7 +102,7 @@ if [[ "$sorted" == true ]]; then
       "$outdir/out.cool"
 else
   cooler dump -t pixels --join "$ref_cooler" |
-    shuf |
+    sort -R |
     "$hictk_bin" load \
       -f bg2 \
       --assume-unsorted \

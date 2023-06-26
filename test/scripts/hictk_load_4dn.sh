@@ -108,7 +108,7 @@ if [[ "$sorted" == true ]]; then
       "$outdir/out.cool"
 else
   xzcat "$pairs" |
-    shuf |
+    sort -R |
     "$hictk_bin" load \
       -f 4dn \
       --assume-unsorted \
