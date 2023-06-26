@@ -801,6 +801,7 @@ void Cli::validate() const {
   return hic::utils::list_resolutions(p);
 }
 
+// NOLINTNEXTLINE
 [[nodiscard]] static std::string infer_assembly(const std::filesystem::path& p,
                                                 std::uint32_t resolution, std::string_view format) {
   if (format == "cool") {
