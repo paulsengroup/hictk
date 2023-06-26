@@ -8,6 +8,7 @@
 #include <string>
 
 #include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
 
 using namespace hictk::hic;
 
