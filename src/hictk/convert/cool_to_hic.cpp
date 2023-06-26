@@ -6,9 +6,8 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+#include <boost/process/child.hpp>
 #include <boost/process/search_path.hpp>
-#include <boost/process/v2/process.hpp>
-#include <boost/process/v2/stdio.hpp>
 
 #include "hictk/fmt.hpp"
 #include "hictk/tmpdir.hpp"
@@ -155,19 +154,17 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
   return cooler_has_weights;
 }
 
-template <typename Ctx>
-[[nodiscard]] static std::unique_ptr<boost::process::v2::process> run_juicer_tools_pre(
-    Ctx& ctx, const ConvertConfig& c, const std::filesystem::path& chrom_sizes,
+[[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_pre(
+    const ConvertConfig& c, const std::filesystem::path& chrom_sizes,
     const std::filesystem::path& pixels) {
   const auto cmd = generate_juicer_tools_pre_args(c, pixels, chrom_sizes);
-  return std::make_unique<boost::process::v2::process>(ctx, find_java().string(), cmd);
+  return std::make_unique<boost::process::child>(find_java().string(), cmd);
 }
 
-template <typename Ctx>
-[[nodiscard]] static std::unique_ptr<boost::process::v2::process> run_juicer_tools_add_norm(
-    Ctx& ctx, const ConvertConfig& c, const std::filesystem::path& path_to_weights) {
+[[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_add_norm(
+    const ConvertConfig& c, const std::filesystem::path& path_to_weights) {
   const auto cmd = generate_juicer_tools_add_norm_args(c, path_to_weights);
-  return std::make_unique<boost::process::v2::process>(ctx, find_java().string(), cmd);
+  return std::make_unique<boost::process::child>(find_java().string(), cmd);
 }
 
 void cool_to_hic(const ConvertConfig& c) {
@@ -177,7 +174,7 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto pixels = tmpdir() / "pixels.tsv";
   const auto weights = tmpdir() / "weights.txt";
 
-  std::unique_ptr<boost::process::v2::process> process{};
+  std::unique_ptr<boost::process::child> process{};
 
   try {
     {
@@ -191,12 +188,9 @@ void cool_to_hic(const ConvertConfig& c) {
       dump_pixels(clr, pixels);
     }
 
-    boost::asio::io_context ctx;
-    boost::asio::cancellation_signal sig;
-
-    process = run_juicer_tools_pre(ctx, c, chrom_sizes, pixels);
-
-    if (process->wait() != 0) {
+    process = run_juicer_tools_pre(c, chrom_sizes, pixels);
+    process->wait();
+    if (process->exit_code() != 0) {
       throw std::runtime_error(fmt::format(FMT_STRING("juicer_tools pre failed with exit code {}"),
                                            process->exit_code()));
     }
@@ -211,8 +205,9 @@ void cool_to_hic(const ConvertConfig& c) {
             : dump_weights(c, weights);
 
     if (weight_file_has_data) {
-      process = run_juicer_tools_add_norm(ctx, c, weights);
-      if (process->wait() != 0) {
+      process = run_juicer_tools_add_norm(c, weights);
+      process->wait();
+      if (process->exit_code() != 0) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("juicer_tools pre failed with exit code {}"), process->exit_code()));
       }
