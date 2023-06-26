@@ -494,6 +494,11 @@ void Cli::make_load_subcommand() {
       c.assume_sorted,
       "Assume input files are already sorted.")
       ->capture_default_str();
+  sc.add_option(
+      "--batch-size",
+      c.batch_size,
+      "Number of pixels to buffer in memory. Only used when processing unsorted interactions or pairs")
+      ->capture_default_str();
   // clang-format on
 
   this->_config = std::monostate{};
