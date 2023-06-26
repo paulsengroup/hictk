@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -94,6 +95,7 @@ static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args)
 
 int main(int argc, char** argv) {
   std::unique_ptr<Cli> cli{nullptr};
+  std::ios::sync_with_stdio(false);
   try {
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(argc, argv);
     if (ec != 0 || subcmd == Cli::subcommand::help) {

@@ -127,13 +127,13 @@ constexpr std::uint32_t BinTable::iterator::bin_size() const noexcept {
 }
 
 inline BinTableConcrete BinTable::concretize() const {
-  std::vector<const Chromosome *> chroms(this->size());
+  std::vector<Chromosome> chroms(this->size());
   std::vector<std::uint32_t> starts(this->size());
   std::vector<std::uint32_t> ends(this->size());
 
   std::size_t i = 0;
   for (const auto &bin : *this) {
-    chroms[i] = &bin.chrom();
+    chroms[i] = bin.chrom();
     starts[i] = bin.start();
     ends[i++] = bin.end();
   }

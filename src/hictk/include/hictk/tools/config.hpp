@@ -65,6 +65,8 @@ struct LoadConfig {
   bool count_as_float{false};
   bool assume_sorted{true};
   bool force{false};
+  bool validate_pixels{true};
+
   std::uint8_t verbosity{2};
   std::size_t batch_size{10'000'000};
 };

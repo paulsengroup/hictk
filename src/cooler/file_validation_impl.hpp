@@ -83,6 +83,8 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = decltype(std::declval<PixelT>().count);
   try {
+    this->validate_pixel_type<T>();
+
     PixelT previous_pixel{};
 
     std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
@@ -119,10 +121,10 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
                         pixel.coords.bin1.id(), pixel.coords.bin2.id()));
       }
 
-      if (previous_pixel && previous_pixel >= pixel) {
+      if (!!previous_pixel && previous_pixel.coords >= pixel.coords) {
         throw std::runtime_error(
             fmt::format(FMT_STRING("({}; {}) pixels are not sorted in ascending order"),
-                        previous_pixel, pixel));
+                        previous_pixel.coords, pixel.coords));
       }
       previous_pixel = pixel;
     });
@@ -131,18 +133,18 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
       const auto last_bin1 = this->dataset("pixels/bin1_id").read_last<std::size_t>();
       const auto last_bin2 = this->dataset("pixels/bin2_id").read_last<std::size_t>();
 
-      const auto new_bin1 = first_pixel->coords.bin1.id();
-      const auto new_bin2 = first_pixel->coords.bin2.id();
+      const auto new_bin1 = first_pixel->coords.bin1;
+      const auto new_bin2 = first_pixel->coords.bin2;
 
-      if (last_bin1 == new_bin1) {
-        if (last_bin2 >= new_bin2) {
-          const auto coord1 = this->bins().at(new_bin2);
+      if (last_bin1 == new_bin1.id()) {
+        if (last_bin2 >= new_bin2.id()) {
+          const auto &coord1 = new_bin2;
           const auto coord2 = this->bins().at(last_bin2);
           throw std::runtime_error(fmt::format(
               FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
         }
-      } else if (last_bin1 >= new_bin1) {
-        const auto coord1 = this->bins().at(new_bin1);
+      } else if (last_bin1 >= new_bin1.id()) {
+        const auto &coord1 = new_bin1;
         const auto coord2 = this->bins().at(last_bin1);
         throw std::runtime_error(fmt::format(
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));

@@ -698,7 +698,8 @@ void Cli::validate_load_subcommand() const {
   const auto& c = std::get<LoadConfig>(this->_config);
 
   if (!c.force && std::filesystem::exists(c.uri)) {
-    errors.emplace_back("Refusing to overwrite file {}. Pass --force to overwrite.");
+    errors.emplace_back(fmt::format(
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
   }
 
   if (!errors.empty()) {
