@@ -23,9 +23,9 @@ inline void print(const Pixel<std::int64_t>& pixel) {
 template <bool join>
 inline void print(const Pixel<double>& pixel) {
   if constexpr (join) {
-    fmt::print(FMT_COMPILE("{:bg2}\t{:g}\n"), pixel.coords, pixel.count);
+    fmt::print(FMT_COMPILE("{:bg2}\t{:.16g}\n"), pixel.coords, pixel.count);
   } else {
-    fmt::print(FMT_COMPILE("{:raw}\t{:g}\n"), pixel.coords, pixel.count);
+    fmt::print(FMT_COMPILE("{:raw}\t{:.16g}\n"), pixel.coords, pixel.count);
   }
 }
 

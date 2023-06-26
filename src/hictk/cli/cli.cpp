@@ -281,8 +281,7 @@ void Cli::make_convert_subcommand() {
       "-j,--juicer-tools-jar",
       c.juicer_tools_jar,
       "Path to juicer_tools or hic_tools JAR.")
-      ->check(CLI::ExistingFile)
-      ->required();
+      ->check(CLI::ExistingFile);
   sc.add_option(
       "-r,--resolutions",
       c.resolutions,
@@ -606,6 +605,11 @@ void Cli::validate_convert_subcommand() const {
         fmt::format(FMT_STRING("{} is not in .hic, .cool or .mcool format"), c.path_to_input));
   }
 
+  if ((is_cool || is_mcool) && c.juicer_tools_jar.empty()) {
+    errors.emplace_back(
+        fmt::format(FMT_STRING("--juicer-tools-jar is required when converting to .hic.")));
+  }
+
   if (!c.output_format.empty()) {
     if ((is_hic && c.output_format == "hic") || (is_cool && c.output_format == "cool") ||
         (is_mcool && c.output_format == "mcool")) {
@@ -649,18 +653,24 @@ void Cli::validate_dump_subcommand() const {
     errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
-  if ((is_cooler || is_mcooler) && c.resolution != 0) {
+  const auto resolution_parsed =
+      !this->_cli.get_subcommand("dump")->get_option("--resolution")->empty();
+
+  if ((is_cooler || is_mcooler) && resolution_parsed) {
     warnings.emplace_back("--resolution is ignored when file is in .cool or .mcool format.");
   }
 
-  if (is_hic && c.weight_type == "infer") {
+  const auto weight_type_parsed =
+      !this->_cli.get_subcommand("dump")->get_option("--weight-type")->empty();
+
+  if (is_hic && weight_type_parsed) {
     warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
   }
 
   const auto matrix_type_parsed =
-      this->_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
+      !this->_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
   const auto matrix_unit_parsed =
-      this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
+      !this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
     warnings.emplace_back(
