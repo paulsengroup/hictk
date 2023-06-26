@@ -86,6 +86,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   std::visit(
       [&](auto& buffer) {
         using N = decltype(buffer.front().count);
+        buffer.clear();
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
           uris.emplace_back(ingest_pixels_unsorted(

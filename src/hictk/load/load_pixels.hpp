@@ -28,10 +28,10 @@ inline void read_batch(const BinTable& bins, std::vector<Pixel<N>>& buffer, Form
       if (line_is_header(line)) {
         continue;
       }
+      buffer.emplace_back(parse_pixel<N>(bins, line, format));
       if (buffer.size() == buffer.capacity()) {
         return;
       }
-      buffer.emplace_back(parse_pixel<N>(bins, line, format));
     }
   } catch (const std::exception& e) {
     throw std::runtime_error(
@@ -72,13 +72,13 @@ inline std::string ingest_pixels_unsorted(cooler::File&& clr, std::vector<Pixel<
   assert(buffer.capacity() != 0);
 
   read_batch(clr.bins(), buffer, format);
-  std::sort(buffer.begin(), buffer.end());
 
   if (buffer.empty()) {
     assert(std::cin.eof());
     return "";
   }
 
+  std::sort(buffer.begin(), buffer.end());
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
   buffer.clear();
 

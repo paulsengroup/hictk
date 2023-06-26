@@ -80,6 +80,7 @@ inline void merge(const std::vector<typename PixelSelector<N>::iterator>& heads,
       if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(10'000'000)) == 0) {
         spdlog::info(FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 10'000'000);
       }
+      buffer.clear();
     }
   }
 
