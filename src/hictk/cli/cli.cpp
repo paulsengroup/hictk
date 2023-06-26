@@ -812,7 +812,7 @@ void Cli::validate() const {
                           resolution, "cool");
   }
   assert(format == "hic");
-  return hic::HiCFile{p, resolution}.assembly();
+  return hic::HiCFile{p.string(), resolution}.assembly();
 }
 
 void Cli::transform_args_convert_subcommand() {
