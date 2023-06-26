@@ -47,7 +47,7 @@ inline Reference::Reference(ChromosomeNameIt first_chrom_name, ChromosomeNameIt 
 inline Reference::Reference(std::initializer_list<Chromosome> chromosomes)
     : Reference(chromosomes.begin(), chromosomes.end()) {}
 
-inline Reference::Reference(const std::filesystem::path& path_to_chrom_sizes) {
+inline Reference Reference::from_chrom_sizes(const std::filesystem::path& path_to_chrom_sizes) {
   try {
     std::string line;
     std::vector<std::string> chrom_names{};
@@ -62,7 +62,7 @@ inline Reference::Reference(const std::filesystem::path& path_to_chrom_sizes) {
           internal::parse_numeric_or_throw<std::uint32_t>(line.substr(delim_pos + 1)));
     }
 
-    *this = Reference{chrom_names.begin(), chrom_names.end(), chrom_sizes.begin()};
+    return {chrom_names.begin(), chrom_names.end(), chrom_sizes.begin()};
   } catch (const std::exception& e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while importing chromosomes from {}: {}"),

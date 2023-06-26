@@ -54,7 +54,7 @@ void merge_coolers(const std::vector<std::string>& sources, std::string_view des
 
 void ingest_pixels_sorted(const LoadConfig& c) {
   assert(c.assume_sorted);
-  auto chroms = Reference(c.path_to_chrom_sizes);
+  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
   c.count_as_float
@@ -68,7 +68,7 @@ void ingest_pixels_sorted(const LoadConfig& c) {
 
 void ingest_pixels_unsorted(const LoadConfig& c) {
   assert(!c.assume_sorted);
-  auto chroms = Reference(c.path_to_chrom_sizes);
+  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
   const internal::TmpDir tmpdir{};
@@ -106,7 +106,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
 
 void ingest_pairs_sorted(const LoadConfig& c) {
   assert(c.assume_sorted);
-  auto chroms = Reference(c.path_to_chrom_sizes);
+  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
   c.count_as_float
@@ -120,7 +120,7 @@ void ingest_pairs_sorted(const LoadConfig& c) {
 
 static void ingest_pairs_unsorted(const LoadConfig& c) {
   assert(!c.assume_sorted);
-  auto chroms = Reference(c.path_to_chrom_sizes);
+  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
   const internal::TmpDir tmpdir{};

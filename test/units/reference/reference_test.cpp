@@ -24,7 +24,7 @@ TEST_CASE("Reference", "[reference][short]") {
   constexpr std::array<std::string_view, 3> expected_names{"chr1", "chr2", "chr3"};
   constexpr std::array<std::uint32_t, 3> expected_sizes{50001, 25017, 10000};
 
-  SECTION("ctor w/ iterator of references") {
+  SECTION("ctor w/ iterator of chromosomes") {
     const Reference chroms(expected.begin(), expected.end());
 
     CHECK(chroms.size() == 3);
@@ -36,7 +36,7 @@ TEST_CASE("Reference", "[reference][short]") {
     CHECK(chroms.size() == 3);
   }
 
-  SECTION("ctor w/ iterator of references (duplicates)") {
+  SECTION("ctor w/ iterator of chromosomes (duplicates)") {
     std::vector<Chromosome> expected_(expected.begin(), expected.end());
     expected_.push_back(expected.back());
 

@@ -53,7 +53,7 @@ class Reference {
   template <typename ChromosomeIt>
   Reference(ChromosomeIt first_chrom, ChromosomeIt last_chrom);
   Reference(std::initializer_list<Chromosome> chromosomes);
-  Reference(const std::filesystem::path& path_to_chrom_sizes);
+  [[nodiscard]] static Reference from_chrom_sizes(const std::filesystem::path& path_to_chrom_sizes);
 
   [[nodiscard]] auto begin() const -> const_iterator;
   [[nodiscard]] auto end() const -> const_iterator;
