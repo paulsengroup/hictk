@@ -58,6 +58,7 @@ jobs:
         run: |
           echo 'conan==${{ matrix.conan-ver }}' > requirements.txt
           echo 'cmake==${{ matrix.cmake-ver }}' >> requirements.txt
+          echo 'cooler>=0.9.2' >> requirements.txt
 
       - uses: actions/setup-python@v4
         with:
@@ -157,6 +158,30 @@ jobs:
                 --no-tests=error    \
                 --timeout 180 2>&1 |
           head -n 1000
+
+      - name: Test hictk load coo sorted
+        run: |
+          test/scripts/hictk_load_coo.sh build/src/hictk/hictk sorted
+
+      - name: Test hictk load coo unsorted
+        run: |
+          test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted
+
+      - name: Test hictk load bg2 sorted
+        run: |
+          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk sorted
+
+      - name: Test hictk load bg2 unsorted
+        run: |
+          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk unsorted
+
+      - name: Test hictk load 4dn sorted
+        run: |
+          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
+
+      - name: Test hictk load 4dn unsorted
+        run: |
+          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk unsorted
 
 
   macos-ci-status-check:
