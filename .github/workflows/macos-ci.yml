@@ -158,6 +158,10 @@ jobs:
                 --timeout 180 2>&1 |
           head -n 1000
 
+      - name: Test hictk convert (hic2cool)
+        run: |
+          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
+
 
   macos-ci-status-check:
     name: Status Check (MacOS CI)

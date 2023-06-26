@@ -264,6 +264,9 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
+      - name: Test hictk convert (hic2cool)
+        run: |
+          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
 
   ubuntu-ci-status-check:
     name: Status Check (Ubuntu CI)
