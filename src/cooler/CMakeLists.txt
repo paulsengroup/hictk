@@ -13,6 +13,8 @@ if(NOT HDF5_FOUND)
   find_package(HDF5 QUIET REQUIRED)
 endif()
 
+find_package(spdlog CONFIG QUIET)
+
 add_library(hictk INTERFACE)
 add_library(hictk::cooler ALIAS hictk)
 target_sources(
@@ -37,12 +39,18 @@ target_sources(
 
 target_include_directories(hictk INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
-# cmake-format: off
 target_link_libraries(
   hictk
-  INTERFACE hictk_project_warnings hictk_project_options hictk::bin_table hictk::chromosome hictk::common hictk::fmt hictk::genomic_interval hictk::pixel hictk::reference hictk::variant
-)
-# cmake-format: on
+  INTERFACE hictk_project_warnings
+            hictk_project_options
+            hictk::bin_table
+            hictk::chromosome
+            hictk::common
+            hictk::fmt
+            hictk::genomic_interval
+            hictk::pixel
+            hictk::reference
+            hictk::variant)
 
 target_link_system_libraries(
   hictk
@@ -51,6 +59,7 @@ target_link_system_libraries(
   fmt::fmt
   HDF5::HDF5
   HighFive
+  spdlog::spdlog
   std::filesystem)
 
 install(TARGETS hictk INCLUDES)

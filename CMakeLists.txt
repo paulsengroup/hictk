@@ -24,7 +24,7 @@ include(cmake/Versioning.cmake)
 
 project(
   hictk
-  LANGUAGES CXX
+  LANGUAGES C CXX
   VERSION ${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}
   HOMEPAGE_URL https://github.com/robomics/hictk
   DESCRIPTION "High-performance C++ library to read and write .cool files.")
