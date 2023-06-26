@@ -124,8 +124,8 @@ class PairsAggregator {
 };
 
 template <typename N>
-inline void read_sort_and_aggregate_batch(PairsAggregator<N>& aggregator, std::vector<Pixel<N>>& buffer,
-                                   std::size_t batch_size) {
+inline void read_sort_and_aggregate_batch(PairsAggregator<N>& aggregator,
+                                          std::vector<Pixel<N>>& buffer, std::size_t batch_size) {
   buffer.reserve(batch_size);
   buffer.clear();
 

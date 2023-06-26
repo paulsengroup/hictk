@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(Filesystem REQUIRED)
+
 add_library(hictk_reference INTERFACE)
 add_library(hictk::reference ALIAS hictk_reference)
 
@@ -14,5 +16,7 @@ target_link_libraries(
             hictk::chromosome
             hictk::common
             hictk::fmt)
+
+target_link_system_libraries(hictk_reference INTERFACT std::filesystem)
 
 install(TARGETS hictk_reference INCLUDES)

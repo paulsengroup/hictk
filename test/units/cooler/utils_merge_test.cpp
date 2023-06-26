@@ -52,7 +52,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
       auto clr = cooler::File::open_read_only(src.string());
 
       for (const auto& chrom : clr.chromosomes()) {
-        sources.emplace_back((testdir() / chrom.name()).string());
+        sources.emplace_back((testdir() / std::string{chrom.name()}).string());
 
         auto clr1 =
             cooler::File::create_new_cooler(sources.back(), clr.chromosomes(), clr.bin_size());
