@@ -119,6 +119,43 @@ TEST_CASE("Pixel", "[pixel][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Pixel: PixelMerger", "[pixel][short]") {
+  const Reference chroms{Chromosome{0, "chr1", 1'000}, Chromosome{1, "chr2", 500}};
+  constexpr std::uint32_t bin_size = 100;
+  const BinTable bins{chroms, bin_size};
+
+  std::vector<Pixel<std::int32_t>> chr1_pixels{};
+  std::vector<Pixel<std::int32_t>> chr2_pixels{};
+
+  using It = decltype(chr1_pixels.begin());
+
+  for (const auto bin : bins.subset("chr1")) {
+    chr1_pixels.emplace_back(bin, bin, 1);
+  }
+  for (const auto bin : bins.subset("chr2")) {
+    chr2_pixels.emplace_back(bin, bin, 1);
+  }
+
+  std::vector<Pixel<std::int32_t>> expected_pixels{};
+  std::copy(chr1_pixels.begin(), chr1_pixels.end(), std::back_inserter(expected_pixels));
+  std::copy(chr2_pixels.begin(), chr2_pixels.end(), std::back_inserter(expected_pixels));
+
+  std::vector<It> heads{};
+  std::vector<It> tails{};
+
+  heads.emplace_back(chr1_pixels.begin());
+  heads.emplace_back(chr2_pixels.begin());
+
+  tails.emplace_back(chr1_pixels.end());
+  tails.emplace_back(chr2_pixels.end());
+
+  internal::PixelMerger<It> merger(heads, tails);
+  for (std::size_t i = 0; i < expected_pixels.size(); ++i) {
+    CHECK(merger.next() == expected_pixels[i]);
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Pixel: parsers", "[pixel][short]") {
   const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
                          Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
