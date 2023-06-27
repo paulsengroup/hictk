@@ -592,7 +592,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
 
 template <typename N>
 inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
-  if (_selectors->empty()) {
+  if (_selectors->empty() && _its->empty()) {
     _buff = nullptr;  // signal end
     return;
   }
