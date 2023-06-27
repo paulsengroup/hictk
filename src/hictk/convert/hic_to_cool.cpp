@@ -146,7 +146,7 @@ static void enqueue_pixels(const hic::HiCFile& hf,
                            std::size_t update_frequency = 10'000'000) {
   try {
     if (quiet) {
-      update_frequency = (std::numeric_limits<std::size_t>::max)();
+      update_frequency = std::numeric_limits<std::size_t>::max();
     }
 
     auto sel = hf.fetch();

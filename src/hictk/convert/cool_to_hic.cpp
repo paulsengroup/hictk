@@ -16,7 +16,7 @@
 namespace std {
 template <>
 struct default_delete<FILE> {
-  void operator()(FILE* file) const { fclose(file); }
+  void operator()(FILE* file) const { std::fclose(file); }  // NOLINT
 };
 }  // namespace std
 
@@ -68,7 +68,7 @@ namespace hictk::tools {
 }
 
 static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::path& dest) {
-  const std::unique_ptr<FILE> f(std::fopen(dest.c_str(), "we"));
+  const std::unique_ptr<FILE> f(std::fopen(dest.string().c_str(), "we"));
 
   if (!bool(f)) {
     throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), dest);
@@ -78,7 +78,7 @@ static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::pat
 }
 
 static void dump_pixels_plain(const cooler::File& clr, const std::filesystem::path& dest) {
-  const std::unique_ptr<FILE> f(std::fopen(dest.c_str(), "we"));
+  const std::unique_ptr<FILE> f(std::fopen(dest.string().c_str(), "we"));
 
   if (!bool(f)) {
     throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), dest);
@@ -115,7 +115,7 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
     return false;
   }
 
-  const std::unique_ptr<FILE> f(std::fopen(weight_file.c_str(), "a"));
+  const std::unique_ptr<FILE> f(std::fopen(weight_file.string().c_str(), "ae"));
   if (!bool(f)) {
     throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), weight_file);
   }
@@ -213,7 +213,7 @@ void cool_to_hic(const ConvertConfig& c) {
       }
       process = nullptr;
     }
-  } catch (const std::exception& e) {
+  } catch (const std::exception&) {
     if (process) {
       process->terminate();
     }

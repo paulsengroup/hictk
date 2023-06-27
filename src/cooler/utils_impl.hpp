@@ -24,7 +24,7 @@ inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &
       throw std::runtime_error("not a valid .mcool file");
     }
 
-    const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
+    const HighFive::File fp(uri.string(), HighFive::File::ReadOnly);
     auto root_grp = fp.getGroup("/resolutions");
 
     const auto resolutions_ = root_grp.listObjectNames();
