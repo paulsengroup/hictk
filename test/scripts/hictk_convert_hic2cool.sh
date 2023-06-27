@@ -64,11 +64,10 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 hic="$data_dir/hic/4DNFIZ1ZVXC8.hic9"
-ref_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
 
 export PATH="$PATH:$script_dir"
 
-if ! check_files_exist "$hic" "$ref_cooler"; then
+if ! check_files_exist "$hic"; then
   exit 1
 fi
 
