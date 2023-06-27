@@ -11,30 +11,29 @@
 
 namespace hictk::tools {
 
+template <bool join, typename PixelIt>
+static void print_pixels(PixelIt first_pixel, PixelIt last_pixel) {
+  std::for_each(first_pixel, last_pixel, [&](const auto& pixel) { print<join>(pixel); });
+}
+
 template <typename N, bool join>
 static void print_pixels(typename cooler::PixelSelector<N>::iterator first_pixel,
                          typename cooler::PixelSelector<N>::iterator last_pixel,
                          const std::shared_ptr<const cooler::Weights>& weights) {
   if (weights != nullptr) {
     const auto sel = cooler::Balancer<N>(first_pixel, last_pixel, weights);
-    std::for_each(sel.begin(), sel.end(), [&](const auto& pixel) { print<join>(pixel); });
+    print_pixels<join>(sel.begin(), sel.end());
     return;
   }
-  std::for_each(first_pixel, last_pixel, [&](const auto& pixel) { print<join>(pixel); });
-}
-
-template <bool join, typename HiCPixelIt>
-static void print_pixels(HiCPixelIt first_pixel, HiCPixelIt last_pixel) {
-  std::for_each(first_pixel, last_pixel, [&](const auto& pixel) { print<join>(pixel); });
+  print_pixels<join>(first_pixel, last_pixel);
 }
 
 template <bool join>
 static void dump_pixels(const cooler::File& clr, std::string_view range1, std::string_view range2,
                         std::string_view normalization) {
   const auto has_int_pixels = clr.has_integral_pixels();
-  const auto weights =  // TODO: pass ptr to dump_pixels
-      normalization == "NONE" ? std::shared_ptr<const cooler::Weights>(nullptr)
-                              : clr.read_weights(normalization);
+  const auto weights = normalization == "NONE" ? std::shared_ptr<const cooler::Weights>(nullptr)
+                                               : clr.read_weights(normalization);
 
   if (range1 == "all") {
     assert(range2 == "all");
@@ -56,12 +55,13 @@ static void dump_pixels(const cooler::File& clr, std::string_view range1, std::s
 template <bool join>
 static void dump_pixels(const hic::HiCFile& f, std::string_view range1,
                         [[maybe_unused]] std::string_view range2, std::string_view normalization) {
+  const auto norm = hic::ParseNormStr(std::string{normalization});
   if (range1 == "all") {
     assert(range2 == "all");
-    auto sel = f.fetch(hic::ParseNormStr(std::string{normalization}));
+    auto sel = f.fetch(norm);
     return print_pixels<join>(sel.begin<double>(), sel.end<double>());
   }
-  auto sel = f.fetch(range1, range2);
+  auto sel = f.fetch(range1, range2, norm);
   return print_pixels<join>(sel.begin<double>(), sel.end<double>());
 }
 
