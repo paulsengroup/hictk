@@ -11,10 +11,10 @@
 #include <random>
 
 #include "hictk/cooler.hpp"
-#include "hictk/test/self_deleting_folder.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk::test {
-inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-err58-cpp)
+inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
@@ -470,7 +470,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
       const auto diff = std::distance(pixel_it, expected.end());
       // Write pixels in chunks of random size
       const auto offset =
-          (std::min)(diff, std::uniform_int_distribution<std::ptrdiff_t>{500, 5000}(rand_eng));
+          std::min(diff, std::uniform_int_distribution<std::ptrdiff_t>{500, 5000}(rand_eng));
       // fmt::print(stderr, FMT_STRING("Processing {}-{} out of {}\n"),
       //            std::distance(expected.begin(), pixel_it),
       //            std::distance(expected.begin(), pixel_it + offset), expected.size());

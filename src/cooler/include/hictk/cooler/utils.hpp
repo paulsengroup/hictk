@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -22,7 +23,11 @@ void merge(Str first_file, Str last_file, std::string_view dest_uri,
                          bool ignore_attributes = true);
 [[nodiscard]] bool equal(const File& clr1, const File& clr2, bool ignore_attributes = true);
 
+[[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path,
+                                                          bool sorted = true);
+
 }  // namespace hictk::cooler::utils
 
 #include "../../../utils_equal_impl.hpp"
+#include "../../../utils_impl.hpp"
 #include "../../../utils_merge_impl.hpp"

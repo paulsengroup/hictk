@@ -105,6 +105,14 @@ target_compile_features(hictk_project_options INTERFACE cxx_std_${CMAKE_CXX_STAN
 # Tweak fmt
 target_compile_definitions(hictk_project_options INTERFACE FMT_ENFORCE_COMPILE_STRING)
 
+if (WIN32)
+  target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
+endif()
+
+if (MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
+
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" ON)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)

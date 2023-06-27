@@ -89,12 +89,6 @@ class HiCFile {
                                     NormalizationMethod norm) const;
 };
 
-namespace utils {
-[[nodiscard]] bool is_hic_file(const std::filesystem::path &path);
-[[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &path);
-}  // namespace utils
-
 }  // namespace hictk::hic
 
 #include "../../hic_file_impl.hpp"
-#include "../../hic_file_utils_impl.hpp"

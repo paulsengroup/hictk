@@ -11,10 +11,10 @@
 #include <random>
 
 #include "hictk/cooler.hpp"
-#include "hictk/test/self_deleting_folder.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk::test {
-inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-err58-cpp)
+inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 

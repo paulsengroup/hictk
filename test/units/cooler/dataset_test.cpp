@@ -11,10 +11,10 @@
 #include <set>
 
 #include "hictk/cooler/group.hpp"
-#include "hictk/test/self_deleting_folder.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk::test {
-inline const SelfDeletingFolder testdir{true};                   // NOLINT(cert-err58-cpp)
+inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
@@ -300,7 +300,7 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
         CHECK(*first == buff[j]);
 
         const auto step = std::uniform_int_distribution<std::size_t>{
-            0, (std::min)(std::size_t(500), buff.size() - j)}(rand_eng);
+            0, std::min(std::size_t(500), buff.size() - j)}(rand_eng);
         first += step;
         j += step;
       }
@@ -316,8 +316,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
       while (first > last) {
         CHECK(*first == buff[j]);
 
-        const auto step = std::uniform_int_distribution<std::size_t>{
-            0, (std::min)(std::size_t(500), j)}(rand_eng);
+        const auto step =
+            std::uniform_int_distribution<std::size_t>{0, std::min(std::size_t(500), j)}(rand_eng);
 
         first -= step;
         j -= step;

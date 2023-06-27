@@ -7,10 +7,7 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #elif defined(_WIN32)
-#include <windows.h>
-#pragma comment(lib, "Rpcrt4.Lib")
-#else
-#error "Unsupported OS"
+#include <random>
 #endif
 
 #include <atomic>
@@ -18,39 +15,45 @@
 #include <filesystem>
 #include <utility>
 
-namespace hictk::test {
+namespace hictk::internal {
 // The point of this class is to provide a reliable way to create a directory that automatically
 // deletes istelf and its content by default.
 // This can be prevented by setting the internal flag to true.
 // The default constructor will create a unique, randomly named directory under the system tmpdir
-class SelfDeletingFolder {
+class TmpDir {
   std::filesystem::path _path;
   std::atomic<bool> _delete_on_destruction{true};
 
+  void delete_at_exit() {
+    if (_delete_on_destruction) {
+      std::filesystem::remove_all(this->_path);
+    }
+  }
+
  public:
-  [[maybe_unused]] SelfDeletingFolder() {
+  [[maybe_unused]] TmpDir() {
     try {
       _path = create_uniq_temp_dir(std::filesystem::temp_directory_path());
     } catch (const std::filesystem::filesystem_error&) {
       // Workaround spurious CI failures due to missing /tmp folder exception
-      _path = create_uniq_temp_dir("test/data/unit_tests/scratch");
+      _path = create_uniq_temp_dir(std::filesystem::current_path());
     }
   }
 
-  [[maybe_unused]] explicit SelfDeletingFolder(std::filesystem::path path,
-                                               bool delete_on_destruction = true)
-      : _path(std::move(path)), _delete_on_destruction(delete_on_destruction) {
+  [[maybe_unused]] explicit TmpDir(const std::filesystem::path& prefix,
+                                   bool delete_on_destruction = true)
+      : _path(create_uniq_temp_dir(prefix)), _delete_on_destruction(delete_on_destruction) {
     std::filesystem::create_directories(_path);
   }
 
-  [[maybe_unused]] explicit SelfDeletingFolder(bool delete_on_destruction) : SelfDeletingFolder() {
+  [[maybe_unused]] explicit TmpDir(bool delete_on_destruction) : TmpDir() {
     this->set_delete_on_destruction(delete_on_destruction);
   }
 
-  SelfDeletingFolder(const SelfDeletingFolder& other) = delete;
-  SelfDeletingFolder(SelfDeletingFolder&& other) = delete;
+  TmpDir(const TmpDir& other) = delete;
+  TmpDir(TmpDir&& other) = delete;
 
-  ~SelfDeletingFolder() {
+  ~TmpDir() {
     if (this->get_delete_on_destruction()) {
       std::filesystem::remove_all(this->_path);
     }
@@ -65,24 +68,23 @@ class SelfDeletingFolder {
     this->_delete_on_destruction = flag;
   }
 
-  SelfDeletingFolder& operator=(const SelfDeletingFolder& other) = delete;
-  SelfDeletingFolder& operator=(SelfDeletingFolder&& other) = delete;
+  TmpDir& operator=(const TmpDir& other) = delete;
+  TmpDir& operator=(TmpDir&& other) = delete;
 
   [[nodiscard]] static std::filesystem::path create_uniq_temp_dir(
       const std::filesystem::path& tmpdir) {
 #ifdef _WIN32
-    UUID uid;
+    std::random_device rd;
+    std::mt19937_64 rand_eng(rd());
     std::filesystem::path dir{};
 
+    const auto lb = static_cast<int>('A');
+    const auto ub = static_cast<int>('Z');
     do {
-      auto status = UuidCreate(&uid);
-      if (status != RPC_S_OK) {
-        continue;
-      }
-      char* str;
-      auto res = UuidToStringA(&uid, reinterpret_cast<RPC_CSTR*>(&str));
-      if (res != RPC_S_OK) {
-        continue;
+      std::string str{10, '\0'};
+
+      for (std::size_t i = 0; i < str.size(); ++i) {
+        str[i] = static_cast<char>(std::uniform_int_distribution<int>{lb, ub}(rand_eng));
       }
 
       dir = tmpdir / std::filesystem::path(std::string{"hictk-tmp-"} + std::string{str});
@@ -94,4 +96,4 @@ class SelfDeletingFolder {
 #endif
   }
 };
-}  // namespace hictk::test
+}  // namespace hictk::internal
