@@ -38,7 +38,7 @@ function compare_coolers {
 
   2>&1 echo "Comparing $clr with $hic..."
   if diff <("$hictk" dump --join "$clr")  \
-          <("$hictk" dump --join "$hic" \
+          <("$hictk" dump --join "$hic"   \
                           --resolution    \
                           "$resolution");  then
     2>&1 echo "Files are identical"
@@ -76,7 +76,10 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 resolutions=(50000 2500000)
 
-"$hictk_bin" convert "$hic" "$outdir/out.mcool" --resolutions ${resolutions[*]}
+"$hictk_bin" convert \
+             "$hic" \
+             "$outdir/out.mcool" \
+             --resolutions ${resolutions[*]}
 
 for resolution in "${resolutions[@]}"; do
   if ! compare_coolers "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then
