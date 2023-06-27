@@ -7,6 +7,8 @@
 #include <fmt/std.h>
 
 #include <boost/process/child.hpp>
+#include <boost/process/io.hpp>
+#include <boost/process/pipe.hpp>
 #include <boost/process/search_path.hpp>
 
 #include "hictk/fmt.hpp"
@@ -36,16 +38,15 @@ namespace hictk::tools {
 
 [[nodiscard]] static std::vector<std::string> generate_juicer_tools_pre_args(
     const ConvertConfig& c, const std::filesystem::path& path_to_pixels,
-    const std::filesystem::path& path_to_chrom_sizes) {
+    const std::filesystem::path& path_to_chrom_sizes, std::size_t processes) {
+  assert(processes != 0);
   const auto heap_size = c.block_cache_size == 0 ? 8000.0 : double(c.block_cache_size) / 1.0e6;
   return {fmt::format(FMT_STRING("-Xmx{:0}M"), heap_size),
           "-jar",
           c.juicer_tools_jar.string(),
           "pre",
           "-j",
-          "1",
-          "--threads",
-          "1",
+          fmt::to_string(processes),
           "-t",
           c.tmp_dir.string(),
           "-n",
@@ -57,12 +58,15 @@ namespace hictk::tools {
 }
 
 [[nodiscard]] static std::vector<std::string> generate_juicer_tools_add_norm_args(
-    const ConvertConfig& c, const std::filesystem::path& path_to_weights) {
+    const ConvertConfig& c, const std::filesystem::path& path_to_weights, std::size_t processes) {
+  assert(processes != 0);
   const auto heap_size = c.block_cache_size == 0 ? 8000.0 : double(c.block_cache_size) / 1.0e6;
   return {fmt::format(FMT_STRING("-Xmx{:0}M"), heap_size),
           "-jar",
           c.juicer_tools_jar.string(),
           "addNorm",
+          "-j",
+          fmt::to_string(processes),
           c.path_to_output.string(),
           path_to_weights.string()};
 }
@@ -102,8 +106,70 @@ static void dump_pixels_plain(const cooler::File& clr, const std::filesystem::pa
   }
 }
 
-static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest) {
-  dump_pixels_plain(clr, dest);
+[[nodiscard]] static std::unique_ptr<boost::process::child> run_pigz(
+    boost::process::opstream& pipe, const std::filesystem::path& dest, std::uint8_t compression_lvl,
+    std::size_t processes) {
+  assert(compression_lvl != 0);
+  assert(processes != 0);
+  // clang-format off
+  return std::make_unique<boost::process::child>(
+      find_pigz().string(),
+      fmt::format(FMT_STRING("-{}"), compression_lvl),
+      "--processes", fmt::to_string(processes),
+      boost::process::std_in < pipe,
+      boost::process::std_out > dest.string()
+  );
+  // clang-format on
+}
+
+static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::path& dest,
+                             std::uint8_t compression_lvl, std::size_t processes) {
+  assert(compression_lvl != 0);
+  assert(processes > 1);
+
+  boost::process::opstream pipe{};
+  const auto pigz = run_pigz(pipe, dest, compression_lvl, processes - 1);
+
+  std::string buffer;
+
+  // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
+  // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
+  for (std::uint32_t i = 0; i < clr.chromosomes().size(); ++i) {
+    for (std::uint32_t j = i; j < clr.chromosomes().size(); ++j) {
+      auto sel =
+          clr.fetch<std::uint32_t>(clr.chromosomes().at(i).name(), clr.chromosomes().at(j).name());
+      std::for_each(sel.begin(), sel.end(), [&](const Pixel<std::uint32_t>& p) {
+        buffer = fmt::format(FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
+                             p.coords.bin1.chrom().name(), p.coords.bin1.start(),
+                             p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
+
+        pipe.write(buffer.data(), static_cast<std::int64_t>(buffer.size()));
+
+        if (!pigz->running()) {
+          throw std::runtime_error(fmt::format(
+              FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
+              pigz->exit_code(), dest));
+        }
+      });
+    }
+  }
+  pipe.flush();
+  pipe.pipe().close();
+  pigz->wait();
+  if (pigz->exit_code() != 0) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("pigz failed with exit code {}"), pigz->exit_code()));
+  }
+}
+
+static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest,
+                        std::uint8_t compression_lvl, std::size_t processes) {
+  if (dest.extension() == ".gz") {
+    assert(compression_lvl != 0);
+    dump_pixels_pigz(clr, dest, compression_lvl, processes);
+  } else {
+    dump_pixels_plain(clr, dest);
+  }
 }
 
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
@@ -156,14 +222,14 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
 
 [[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_pre(
     const ConvertConfig& c, const std::filesystem::path& chrom_sizes,
-    const std::filesystem::path& pixels) {
-  const auto cmd = generate_juicer_tools_pre_args(c, pixels, chrom_sizes);
+    const std::filesystem::path& pixels, std::size_t processes) {
+  const auto cmd = generate_juicer_tools_pre_args(c, pixels, chrom_sizes, processes);
   return std::make_unique<boost::process::child>(find_java().string(), cmd);
 }
 
 [[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_add_norm(
-    const ConvertConfig& c, const std::filesystem::path& path_to_weights) {
-  const auto cmd = generate_juicer_tools_add_norm_args(c, path_to_weights);
+    const ConvertConfig& c, const std::filesystem::path& path_to_weights, std::size_t processes) {
+  const auto cmd = generate_juicer_tools_add_norm_args(c, path_to_weights, processes);
   return std::make_unique<boost::process::child>(find_java().string(), cmd);
 }
 
@@ -171,7 +237,12 @@ void cool_to_hic(const ConvertConfig& c) {
   static const internal::TmpDir tmpdir{};
 
   const auto chrom_sizes = tmpdir() / "reference.chrom.sizes";
-  const auto pixels = tmpdir() / "pixels.tsv";
+  const auto pixels = [&]() {
+    if (c.gzip_compression_lvl == 0 || find_pigz().empty()) {
+      return tmpdir() / "pixels.tsv";
+    }
+    return tmpdir() / "pixels.tsv.gz";
+  }();
   const auto weights = tmpdir() / "weights.txt";
 
   std::unique_ptr<boost::process::child> process{};
@@ -185,10 +256,10 @@ void cool_to_hic(const ConvertConfig& c) {
 
       const auto clr = cooler::File::open_read_only(uri);
       dump_chrom_sizes(clr, chrom_sizes);
-      dump_pixels(clr, pixels);
+      dump_pixels(clr, pixels, c.gzip_compression_lvl, c.processes);
     }
 
-    process = run_juicer_tools_pre(c, chrom_sizes, pixels);
+    process = run_juicer_tools_pre(c, chrom_sizes, pixels, c.processes);
     process->wait();
     if (process->exit_code() != 0) {
       throw std::runtime_error(fmt::format(FMT_STRING("juicer_tools pre failed with exit code {}"),
@@ -205,13 +276,12 @@ void cool_to_hic(const ConvertConfig& c) {
             : dump_weights(c, weights);
 
     if (weight_file_has_data) {
-      process = run_juicer_tools_add_norm(c, weights);
+      process = run_juicer_tools_add_norm(c, weights, c.processes);
       process->wait();
       if (process->exit_code() != 0) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("juicer_tools pre failed with exit code {}"), process->exit_code()));
       }
-      process = nullptr;
     }
   } catch (const std::exception&) {
     if (process) {

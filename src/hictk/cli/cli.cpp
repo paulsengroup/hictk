@@ -329,6 +329,20 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::Range(1, 4))
       ->excludes("--quiet")
       ->capture_default_str();
+  sc.add_option(
+      "-p,--processes",
+      c.processes,
+      "Maximum number of parallel processes to spawn.\n"
+      "When converting from hic to cool, only two processes will be used.")
+      ->check(CLI::Range(2, 1024))
+      ->capture_default_str();
+  sc.add_option(
+      "-l,--compression-level",
+      c.gzip_compression_lvl,
+      "Compression level used to compress temporary files.\n"
+      "Pass 0 to disable compression.")
+      ->check(CLI::Range(0, 9))
+      ->capture_default_str();
   sc.add_flag(
       "-f,--force",
       c.force,
