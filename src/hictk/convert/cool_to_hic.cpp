@@ -6,9 +6,11 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+#include <boost/asio/write.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/io.hpp>
-#include <boost/process/pipe.hpp>
+#include <boost/process/async_pipe.hpp>
 #include <boost/process/search_path.hpp>
 
 #include "hictk/fmt.hpp"
@@ -106,8 +108,9 @@ static void dump_pixels_plain(const cooler::File& clr, const std::filesystem::pa
   }
 }
 
+template <typename Pipe>
 [[nodiscard]] static std::unique_ptr<boost::process::child> run_pigz(
-    boost::process::opstream& pipe, const std::filesystem::path& dest, std::uint8_t compression_lvl,
+    Pipe& pipe, const std::filesystem::path& dest, std::uint8_t compression_lvl,
     std::size_t processes) {
   assert(compression_lvl != 0);
   assert(processes != 0);
@@ -127,7 +130,8 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
   assert(compression_lvl != 0);
   assert(processes > 1);
 
-  boost::process::opstream pipe{};
+  boost::asio::io_context ioc;
+  boost::process::async_pipe pipe{ioc};
   const auto pigz = run_pigz(pipe, dest, compression_lvl, processes - 1);
 
   std::string buffer;
@@ -143,7 +147,7 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
                              p.coords.bin1.chrom().name(), p.coords.bin1.start(),
                              p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
 
-        pipe.write(buffer.data(), static_cast<std::int64_t>(buffer.size()));
+        boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
 
         if (!pigz->running()) {
           throw std::runtime_error(fmt::format(
@@ -153,8 +157,8 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
       });
     }
   }
-  pipe.flush();
-  pipe.pipe().close();
+  pipe.close();
+  ioc.run();
   pigz->wait();
   if (pigz->exit_code() != 0) {
     throw std::runtime_error(
