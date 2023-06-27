@@ -34,7 +34,6 @@ struct ConvertConfig {
   std::size_t processes{2};
 
   std::size_t block_cache_size{0};
-  bool quiet{false};
   std::uint8_t verbosity{3};
   bool force{false};
 };

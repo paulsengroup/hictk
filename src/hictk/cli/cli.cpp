@@ -317,17 +317,11 @@ void Cli::make_convert_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path where to store temporary files.");
-  sc.add_flag(
-      "-q,--quiet",
-      c.quiet,
-      "Suppress console output.")
-      ->capture_default_str();
   sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")
       ->check(CLI::Range(1, 4))
-      ->excludes("--quiet")
       ->capture_default_str();
   sc.add_option(
       "-p,--processes",
@@ -847,13 +841,9 @@ void Cli::transform_args_convert_subcommand() {
                    c.norm_dset_names.begin(), [](const auto norm) { return fmt::to_string(norm); });
   }
 
-  if (c.quiet) {
-    c.verbosity = spdlog::level::err;
-  } else {
-    // in spdlog, high numbers correspond to low log levels
-    assert(c.verbosity > 0 && c.verbosity < 5);
-    c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
-  }
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
   if (c.tmp_dir.empty()) {
     c.tmp_dir = c.path_to_output.parent_path();

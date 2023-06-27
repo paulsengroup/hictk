@@ -5,6 +5,7 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 #include <fmt/std.h>
+#include <spdlog/spdlog.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/write.hpp>
@@ -74,6 +75,7 @@ namespace hictk::tools {
 }
 
 static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::path& dest) {
+  spdlog::info(FMT_STRING("writing chromosomes to file {}..."), dest);
   const std::unique_ptr<FILE> f(std::fopen(dest.string().c_str(), "we"));
 
   if (!bool(f)) {
@@ -81,21 +83,26 @@ static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::pat
   }
 
   fmt::print(f.get(), FMT_STRING("{:tsv}\n"), fmt::join(clr.chromosomes(), "\n"));
+  spdlog::info(FMT_STRING("DONE! Wrote {} chromosomes to file {}"), clr.chromosomes().size(), dest);
 }
 
-static void dump_pixels_plain(const cooler::File& clr, const std::filesystem::path& dest) {
+static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesystem::path& dest,
+                                     std::size_t update_frequency = 10'000'000) {
   const std::unique_ptr<FILE> f(std::fopen(dest.string().c_str(), "we"));
 
   if (!bool(f)) {
     throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), dest);
   }
-  // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
-  // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
-  for (std::uint32_t i = 0; i < clr.chromosomes().size(); ++i) {
-    for (std::uint32_t j = i; j < clr.chromosomes().size(); ++j) {
-      auto sel =
-          clr.fetch<std::uint32_t>(clr.chromosomes().at(i).name(), clr.chromosomes().at(j).name());
+
+  std::size_t i = 0;
+  auto t0 = std::chrono::steady_clock::now();
+  for (std::uint32_t chrom1_id = 0; chrom1_id < clr.chromosomes().size(); ++chrom1_id) {
+    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < clr.chromosomes().size(); ++chrom2_id) {
+      auto sel = clr.fetch<std::uint32_t>(clr.chromosomes().at(chrom1_id).name(),
+                                          clr.chromosomes().at(chrom2_id).name());
       std::for_each(sel.begin(), sel.end(), [&](const Pixel<std::uint32_t>& p) {
+        // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
+        // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
         fmt::print(f.get(), FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
                    p.coords.bin1.chrom().name(), p.coords.bin1.start(),
                    p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
@@ -103,9 +110,24 @@ static void dump_pixels_plain(const cooler::File& clr, const std::filesystem::pa
           throw fmt::system_error(errno, FMT_STRING("an error occurred while pixels to file {}"),
                                   dest);
         }
+
+        if (++i == update_frequency) {
+          const auto t1 = std::chrono::steady_clock::now();
+          const auto delta =
+              static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+              1000.0;
+          spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."),
+                       p.coords.bin1, p.coords.bin2, double(update_frequency) / delta);
+          t0 = t1;
+          i = 0;
+        }
       });
     }
   }
+
+  assert(clr.attributes().nnz);
+  return static_cast<std::size_t>(*clr.attributes().nnz);
 }
 
 template <typename Pipe>
@@ -125,8 +147,9 @@ template <typename Pipe>
   // clang-format on
 }
 
-static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::path& dest,
-                             std::uint8_t compression_lvl, std::size_t processes) {
+static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesystem::path& dest,
+                                    std::uint8_t compression_lvl, std::size_t processes,
+                                    std::size_t update_frequency = 10'000'000) {
   assert(compression_lvl != 0);
   assert(processes > 1);
 
@@ -134,15 +157,16 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
   boost::process::async_pipe pipe{ioc};
   const auto pigz = run_pigz(pipe, dest, compression_lvl, processes - 1);
 
+  auto t0 = std::chrono::steady_clock::now();
   std::string buffer;
-
-  // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
-  // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
-  for (std::uint32_t i = 0; i < clr.chromosomes().size(); ++i) {
-    for (std::uint32_t j = i; j < clr.chromosomes().size(); ++j) {
-      auto sel =
-          clr.fetch<std::uint32_t>(clr.chromosomes().at(i).name(), clr.chromosomes().at(j).name());
+  std::size_t i = 0;
+  for (std::uint32_t chrom1_id = 0; chrom1_id < clr.chromosomes().size(); ++chrom1_id) {
+    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < clr.chromosomes().size(); ++chrom2_id) {
+      auto sel = clr.fetch<std::uint32_t>(clr.chromosomes().at(chrom1_id).name(),
+                                          clr.chromosomes().at(chrom2_id).name());
       std::for_each(sel.begin(), sel.end(), [&](const Pixel<std::uint32_t>& p) {
+        // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
+        // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
         buffer = fmt::format(FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
                              p.coords.bin1.chrom().name(), p.coords.bin1.start(),
                              p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
@@ -154,6 +178,17 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
               FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
               pigz->exit_code(), dest));
         }
+        if (++i == update_frequency) {
+          const auto t1 = std::chrono::steady_clock::now();
+          const auto delta =
+              static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+              1000.0;
+          spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."),
+                       p.coords.bin1, p.coords.bin2, double(update_frequency) / delta);
+          t0 = t1;
+          i = 0;
+        }
       });
     }
   }
@@ -164,24 +199,40 @@ static void dump_pixels_pigz(const cooler::File& clr, const std::filesystem::pat
     throw std::runtime_error(
         fmt::format(FMT_STRING("pigz failed with exit code {}"), pigz->exit_code()));
   }
+
+  assert(clr.attributes().nnz);
+  return static_cast<std::size_t>(*clr.attributes().nnz);
 }
 
 static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest,
                         std::uint8_t compression_lvl, std::size_t processes) {
+  const auto t0 = std::chrono::steady_clock::now();
+
+  spdlog::info(FMT_STRING("writing pixels to file {}..."), dest);
+
+  std::size_t pixels_processed{};
   if (dest.extension() == ".gz") {
     assert(compression_lvl != 0);
-    dump_pixels_pigz(clr, dest, compression_lvl, processes);
+    pixels_processed = dump_pixels_pigz(clr, dest, compression_lvl, processes);
   } else {
-    dump_pixels_plain(clr, dest);
+    pixels_processed = dump_pixels_plain(clr, dest);
   }
+  const auto t1 = std::chrono::steady_clock::now();
+  const auto delta =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()) /
+      1.0e6;
+  spdlog::info(FMT_STRING("wrote {} pixels across {} chromosomes to {} in {:.2f}s"),
+               pixels_processed, clr.chromosomes().size(), dest, delta);
 }
 
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
                          const std::filesystem::path& weight_file) {
+  spdlog::info(FMT_STRING("[{}] writing balancing weights to file {}..."), resolution, weight_file);
   const auto clr = cooler::File::open_read_only(cooler_uri);
   assert(clr.bin_size() == resolution);
 
   if (!clr.has_weights("weight")) {
+    spdlog::warn(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
     return false;
   }
 
@@ -203,13 +254,15 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
       std::isnan(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
                     : fmt::print(f.get(), FMT_COMPILE("{}\n"), 1.0 / w);
       if (!bool(f)) {  // NOLINT
-        throw fmt::system_error(errno, FMT_STRING("an error occurred while weights to file {}"),
-                                weight_file);
+        throw fmt::system_error(
+            errno, FMT_STRING("an error occurred while writing weights to file {}"), weight_file);
       }
     });
 
     i0 = i1;
   }
+  spdlog::info(FMT_STRING("[{}] wrote {} weights to file {}..."), resolution, weights.size(),
+               weight_file);
   return true;
 }
 
@@ -263,6 +316,8 @@ void cool_to_hic(const ConvertConfig& c) {
       dump_pixels(clr, pixels, c.gzip_compression_lvl, c.processes);
     }
 
+    auto t1 = std::chrono::steady_clock::now();
+    spdlog::info(FMT_STRING("running juicer_tools pre..."));
     process = run_juicer_tools_pre(c, chrom_sizes, pixels, c.processes);
     process->wait();
     if (process->exit_code() != 0) {
@@ -270,6 +325,11 @@ void cool_to_hic(const ConvertConfig& c) {
                                            process->exit_code()));
     }
     process = nullptr;
+    auto t2 = std::chrono::steady_clock::now();
+    auto delta = static_cast<double>(
+                     std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) /
+                 1.0e6;
+    spdlog::info(FMT_STRING("DONE! Running juicer_tools pre took {:.2f}s"), delta);
 
     std::filesystem::remove(chrom_sizes);
     std::filesystem::remove(pixels);
@@ -280,12 +340,19 @@ void cool_to_hic(const ConvertConfig& c) {
             : dump_weights(c, weights);
 
     if (weight_file_has_data) {
+      t1 = std::chrono::steady_clock::now();
+      spdlog::info(FMT_STRING("running juicer_tools addNorm..."));
       process = run_juicer_tools_add_norm(c, weights, c.processes);
       process->wait();
       if (process->exit_code() != 0) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("juicer_tools pre failed with exit code {}"), process->exit_code()));
       }
+      t2 = std::chrono::steady_clock::now();
+      delta = static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) /
+              1.0e6;
+      spdlog::info(FMT_STRING("DONE! Running juicer_tools addNorm took {:.2f}s"), delta);
     }
   } catch (const std::exception&) {
     if (process) {
