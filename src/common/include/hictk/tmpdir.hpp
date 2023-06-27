@@ -7,10 +7,7 @@
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #elif defined(_WIN32)
-#include <windows.h>
-#pragma comment(lib, "Rpcrt4.Lib")
-#else
-#error "Unsupported OS"
+#include <random>
 #endif
 
 #include <atomic>
@@ -77,18 +74,17 @@ class TmpDir {
   [[nodiscard]] static std::filesystem::path create_uniq_temp_dir(
       const std::filesystem::path& tmpdir) {
 #ifdef _WIN32
-    UUID uid;
+    std::random_device rd;
+    std::mt19937_64 rand_eng(rd());
     std::filesystem::path dir{};
 
+    const auto lb = static_cast<int>('A');
+    const auto ub = static_cast<int>('Z');
     do {
-      auto status = UuidCreate(&uid);
-      if (status != RPC_S_OK) {
-        continue;
-      }
-      char* str;
-      auto res = UuidToStringA(&uid, reinterpret_cast<RPC_CSTR*>(&str));
-      if (res != RPC_S_OK) {
-        continue;
+      std::string str{10, '\0'};
+
+      for (std::size_t i = 0; i < str.size(); ++i) {
+        str[i] = static_cast<char>(std::uniform_int_distribution<int>{lb, ub}(rand_eng));
       }
 
       dir = tmpdir / std::filesystem::path(std::string{"hictk-tmp-"} + std::string{str});
