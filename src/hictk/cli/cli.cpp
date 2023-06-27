@@ -634,7 +634,7 @@ void Cli::validate_convert_subcommand() const {
 void Cli::validate_dump_subcommand() const {
   assert(this->_cli.get_subcommand("dump")->parsed());
 
-  [[maybe_unused]] std::vector<std::string> warnings;  // TODO issue warnings
+  [[maybe_unused]] std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<DumpConfig>(this->_config);
 
