@@ -30,8 +30,10 @@ struct ConvertConfig {
   std::vector<std::string> norm_dset_names{};
   bool fail_if_normalization_method_is_not_avaliable{false};
 
+  std::uint8_t gzip_compression_lvl{6};
+  std::size_t processes{2};
+
   std::size_t block_cache_size{0};
-  bool quiet{false};
   std::uint8_t verbosity{2};
   bool force{false};
 };

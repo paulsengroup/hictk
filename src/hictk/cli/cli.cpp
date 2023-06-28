@@ -281,8 +281,7 @@ void Cli::make_convert_subcommand() {
       "-j,--juicer-tools-jar",
       c.juicer_tools_jar,
       "Path to juicer_tools or hic_tools JAR.")
-      ->check(CLI::ExistingFile)
-      ->required();
+      ->check(CLI::ExistingFile);
   sc.add_option(
       "-r,--resolutions",
       c.resolutions,
@@ -318,17 +317,25 @@ void Cli::make_convert_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path where to store temporary files.");
-  sc.add_flag(
-      "-q,--quiet",
-      c.quiet,
-      "Suppress console output.")
-      ->capture_default_str();
   sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")
       ->check(CLI::Range(1, 4))
-      ->excludes("--quiet")
+      ->capture_default_str();
+  sc.add_option(
+      "-p,--processes",
+      c.processes,
+      "Maximum number of parallel processes to spawn.\n"
+      "When converting from hic to cool, only two processes will be used.")
+      ->check(CLI::Range(2, 1024))
+      ->capture_default_str();
+  sc.add_option(
+      "-l,--compression-level",
+      c.gzip_compression_lvl,
+      "Compression level used to compress temporary files.\n"
+      "Pass 0 to disable compression.")
+      ->check(CLI::Range(0, 9))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -619,6 +626,11 @@ void Cli::validate_convert_subcommand() const {
         fmt::format(FMT_STRING("{} is not in .hic, .cool or .mcool format"), c.path_to_input));
   }
 
+  if ((is_cool || is_mcool) && c.juicer_tools_jar.empty()) {
+    errors.emplace_back(
+        fmt::format(FMT_STRING("--juicer-tools-jar is required when converting to .hic.")));
+  }
+
   if (!c.output_format.empty()) {
     if ((is_hic && c.output_format == "hic") || (is_cool && c.output_format == "cool") ||
         (is_mcool && c.output_format == "mcool")) {
@@ -643,7 +655,7 @@ void Cli::validate_convert_subcommand() const {
 void Cli::validate_dump_subcommand() const {
   assert(this->_cli.get_subcommand("dump")->parsed());
 
-  [[maybe_unused]] std::vector<std::string> warnings;  // TODO issue warnings
+  [[maybe_unused]] std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<DumpConfig>(this->_config);
 
@@ -662,18 +674,24 @@ void Cli::validate_dump_subcommand() const {
     errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
-  if ((is_cooler || is_mcooler) && c.resolution != 0) {
+  const auto resolution_parsed =
+      !this->_cli.get_subcommand("dump")->get_option("--resolution")->empty();
+
+  if ((is_cooler || is_mcooler) && resolution_parsed) {
     warnings.emplace_back("--resolution is ignored when file is in .cool or .mcool format.");
   }
 
-  if (is_hic && c.weight_type == "infer") {
+  const auto weight_type_parsed =
+      !this->_cli.get_subcommand("dump")->get_option("--weight-type")->empty();
+
+  if (is_hic && weight_type_parsed) {
     warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
   }
 
   const auto matrix_type_parsed =
-      this->_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
+      !this->_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
   const auto matrix_unit_parsed =
-      this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
+      !this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
     warnings.emplace_back(
@@ -801,7 +819,7 @@ void Cli::validate() const {
   return hic::utils::list_resolutions(p);
 }
 
-// NOLINTNEXTLINE
+// NOLINTNEXTLINE(misc-no-recursion)
 [[nodiscard]] static std::string infer_assembly(const std::filesystem::path& p,
                                                 std::uint32_t resolution, std::string_view format) {
   if (format == "cool") {
@@ -840,13 +858,9 @@ void Cli::transform_args_convert_subcommand() {
                    c.norm_dset_names.begin(), [](const auto norm) { return fmt::to_string(norm); });
   }
 
-  if (c.quiet) {
-    c.verbosity = spdlog::level::err;
-  } else {
-    // in spdlog, high numbers correspond to low log levels
-    assert(c.verbosity > 0 && c.verbosity < 5);
-    c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
-  }
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
   if (c.tmp_dir.empty()) {
     c.tmp_dir = c.path_to_output.parent_path();

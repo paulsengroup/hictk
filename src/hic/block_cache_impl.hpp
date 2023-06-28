@@ -51,9 +51,7 @@ constexpr bool operator!=(std::size_t a_id, const InteractionBlock &b) noexcept 
 inline InteractionBlock::InteractionBlock(std::size_t id_,
                                           [[maybe_unused]] std::size_t block_bin_count,
                                           std::vector<SerializedPixel> pixels)
-    : _id(id_), _interactions(std::move(pixels)) {
-  std::sort(_interactions.begin(), _interactions.end());
-}
+    : _id(id_), _interactions(std::move(pixels)) {}
 
 inline auto InteractionBlock::operator()() const noexcept -> const BuffT & { return _interactions; }
 

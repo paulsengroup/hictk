@@ -105,7 +105,7 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
     return;
   }
 
-  spdlog::info(FMT_STRING("[{}] Processing {} normalization vector..."), hf.bins().bin_size(),
+  spdlog::info(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().bin_size(),
                norm);
 
   const auto weights = read_weights(hf, hf.bins(), norm);
@@ -141,14 +141,10 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
 
 template <typename N>
 static void enqueue_pixels(const hic::HiCFile& hf,
-                           moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue, bool quiet,
+                           moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue,
                            std::atomic<bool>& early_return,
                            std::size_t update_frequency = 10'000'000) {
   try {
-    if (quiet) {
-      update_frequency = (std::numeric_limits<std::size_t>::max)();
-    }
-
     auto sel = hf.fetch();
     auto first = sel.begin<N>();
     auto last = sel.end<N>();
@@ -170,7 +166,7 @@ static void enqueue_pixels(const hic::HiCFile& hf,
                 std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
             1000.0;
         spdlog::info(
-            FMT_STRING("[{}] Processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
+            FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
             hf.resolution(), first->coords.bin1, double(update_frequency) / delta,
             hf.block_cache_hit_rate() * 100);
         hf.reset_cache_stats();
@@ -231,19 +227,19 @@ template <typename N>
 static void convert_resolution_multi_threaded(
     hic::HiCFile& hf, std::string_view cooler_uri, const Reference& chromosomes,
     std::uint32_t resolution, std::string_view genome,
-    const std::vector<hic::NormalizationMethod>& normalization_methods, bool fail_if_norm_not_found,
-    bool quiet) {
+    const std::vector<hic::NormalizationMethod>& normalization_methods,
+    bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
 
-  spdlog::info(FMT_STRING("[{}] Begin processing {}bp matrix..."), hf.resolution(),
+  spdlog::info(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(),
                hf.resolution());
 
-  spdlog::debug(FMT_STRING("[{}] Block cache capacity: {}"), hf.resolution(), hf.cache_capacity());
+  spdlog::debug(FMT_STRING("[{}] block cache capacity: {}"), hf.resolution(), hf.cache_capacity());
 
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{100'000};
 
-  auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, quiet, early_return); };
+  auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, early_return); };
   auto producer = std::async(std::launch::async, producer_fx);
 
   auto clr = init_cooler(cooler_uri, resolution, genome, chromosomes);
@@ -283,8 +279,6 @@ void hic_to_cool(const ConvertConfig& c) {
   assert(!c.resolutions.empty());
 
   assert(spdlog::default_logger());
-  const auto t0 = std::chrono::steady_clock::now();
-
   if (c.resolutions.size() > 1) {
     cooler::init_mcool(c.path_to_output.string(), c.resolutions.begin(), c.resolutions.end(),
                        c.force);
@@ -297,7 +291,7 @@ void hic_to_cool(const ConvertConfig& c) {
   if (c.resolutions.size() == 1) {
     convert_resolution_multi_threaded<std::int32_t>(
         hf, c.path_to_output.string(), chroms, c.resolutions.front(), c.genome,
-        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable, c.quiet);
+        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     return;
   }
 
@@ -305,20 +299,8 @@ void hic_to_cool(const ConvertConfig& c) {
     hf.open(res);
     convert_resolution_multi_threaded<std::int32_t>(
         hf, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.path_to_output.string(), res), chroms,
-        res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable,
-        c.quiet);
+        res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     hf.clear_cache();
   });
-
-  const auto t1 = std::chrono::steady_clock::now();
-  const auto delta =
-      static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
-      1000.0;
-  spdlog::info(FMT_STRING("DONE! Processed {} resolution(s) in {:.2f}s!"), c.resolutions.size(),
-               delta);
-  spdlog::info(FMT_STRING("{} size: {:.2f} MB"), c.path_to_input,
-               static_cast<double>(std::filesystem::file_size(c.path_to_input)) / 1.0e6);
-  spdlog::info(FMT_STRING("{} size: {:.2f} MB"), c.path_to_output,
-               static_cast<double>(std::filesystem::file_size(c.path_to_output)) / 1.0e6);
 }
 }  // namespace hictk::tools

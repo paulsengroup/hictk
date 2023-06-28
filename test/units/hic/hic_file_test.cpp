@@ -45,7 +45,7 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.open(2'500'000).resolution() == 2'500'000);
 
   SECTION("invalid") {
-    CHECK_THROWS(HiCFile(pathV8, (std::numeric_limits<std::uint32_t>::max)(), MatrixType::observed,
+    CHECK_THROWS(HiCFile(pathV8, std::numeric_limits<std::uint32_t>::max(), MatrixType::observed,
                          MatrixUnit::BP));
     CHECK_THROWS(HiCFile("non-existing-file", 1));
     CHECK_THROWS(HiCFile("https://localhost:non-existing-url", 1));

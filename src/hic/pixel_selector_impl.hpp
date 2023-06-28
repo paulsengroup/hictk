@@ -421,23 +421,15 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   }
 
   for (const auto &block_idx : blocks) {
-    const auto block = _sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), block_idx);
-    auto first = std::lower_bound(block->begin(), block->end(), _bin1_id,
-                                  [](const SerializedPixel &pixel, std::size_t bin_id) {
-                                    return pixel.bin1_id < static_cast<std::int64_t>(bin_id);
-                                  });
-    auto last = std::lower_bound(first, block->end(), bin1_id_last + 1,
-                                 [](const SerializedPixel &pixel, std::size_t bin_id) {
-                                   return pixel.bin1_id < static_cast<std::int64_t>(bin_id);
-                                 });
-
-    const auto buffer_size = _buffer->size();
-    while (first != last) {
-      const auto p = _sel->transform_pixel(*first++);
-      if (p.bin2_id < coord2().bin1.rel_id() || p.bin2_id > coord2().bin2.rel_id()) {
+    for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), block_idx)) {
+      if (static_cast<std::size_t>(p.bin1_id) < _bin1_id ||
+          static_cast<std::size_t>(p.bin1_id) > bin1_id_last ||
+          static_cast<std::size_t>(p.bin2_id) < coord2().bin1.rel_id() ||
+          static_cast<std::size_t>(p.bin2_id) > coord2().bin2.rel_id()) {
         continue;
       }
 
+      p = _sel->transform_pixel(p);
       const auto pos1 = static_cast<std::uint32_t>(p.bin1_id) * bin_size;
       const auto pos2 = static_cast<std::uint32_t>(p.bin2_id) * bin_size;
       auto coords = PixelCoordinates{bins().at(coord1().bin1.chrom(), pos1),
@@ -448,12 +440,8 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
         _buffer->emplace_back(Pixel<N>{coords, conditional_static_cast<N>(p.count)});
       }
     }
-
-    auto sorted_first = _buffer->begin();
-    auto sorted_last = sorted_first + static_cast<std::ptrdiff_t>(buffer_size);
-    std::inplace_merge(sorted_first, sorted_last, _buffer->end());
   }
-  assert(std::is_sorted(_buffer->begin(), _buffer->end()));
+  std::sort(_buffer->begin(), _buffer->end());
   _bin1_id = bin1_id_last + 1;
 }
 
@@ -592,7 +580,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
 
 template <typename N>
 inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
-  if (_selectors->empty()) {
+  if (_selectors->empty() && _its->empty()) {
     _buff = nullptr;  // signal end
     return;
   }

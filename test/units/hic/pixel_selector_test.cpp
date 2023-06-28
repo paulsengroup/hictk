@@ -64,10 +64,10 @@ static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_
   assert(start2 < end2);
 
   for (const auto& r : buffer) {
-    CHECK(r.coords.bin1.start() >= (std::min)(start1, start2));
-    CHECK(r.coords.bin1.end() < (std::max)(end1, end2));
-    CHECK(r.coords.bin2.start() >= (std::min)(start1, start2));
-    CHECK(r.coords.bin2.end() < (std::max)(end1, end2));
+    CHECK(r.coords.bin1.start() >= std::min(start1, start2));
+    CHECK(r.coords.bin1.end() < std::max(end1, end2));
+    CHECK(r.coords.bin2.start() >= std::min(start1, start2));
+    CHECK(r.coords.bin2.end() < std::max(end1, end2));
   }
 }
 
