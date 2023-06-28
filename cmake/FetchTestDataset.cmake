@@ -5,7 +5,7 @@
 # cmake-format: off
 file(
   DOWNLOAD https://www.dropbox.com/s/l6rymg9mezixin6/hictk_test_data.tar.xz?dl=1
-  EXPECTED_HASH SHA256=ab331a8b37676c1d4284dd59a081e1c470e39abd5cc4b7efff83e4a53b9df840
+  EXPECTED_HASH SHA256=13e9a0d293574ad6a2d88f68a1226c5fd69df3dff8abbc5f89c98a1f11421a46
   ${PROJECT_SOURCE_DIR}/test/data/hictk_test_data.tar.xz)
 # cmake-format: on
 

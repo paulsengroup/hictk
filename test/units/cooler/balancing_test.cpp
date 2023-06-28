@@ -39,6 +39,8 @@ TEST_CASE("Cooler: Balancer", "[cooler][short]") {
   SECTION("read weights") {
     SECTION("valid") {
       CHECK(clr.read_weights("weight")->type() == Weights::Type::MULTIPLICATIVE);
+      CHECK(clr.read_weights("weight", Weights::Type::INFER, true)->type() ==
+            Weights::Type::MULTIPLICATIVE);
       for (const auto* name : {"GW_SCALE", "INTER_SCALE", "SCALE", "VC", "VC_SQRT"}) {
         CHECK(clr.read_weights(name)->type() == Weights::Type::DIVISIVE);
       }
