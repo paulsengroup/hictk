@@ -18,9 +18,9 @@ inline PixelSelector<N, CHUNK_SIZE>::PixelSelector(std::shared_ptr<const Index> 
                                                    const Dataset &pixels_bin1_id,
                                                    const Dataset &pixels_bin2_id,
                                                    const Dataset &pixels_count,
-                                                   PixelCoordinates coords) noexcept
+                                                   const PixelCoordinates &coords) noexcept
     : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords,
-                    std::move(coords)) {}
+                    coords) {}
 
 template <typename N, std::size_t CHUNK_SIZE>
 inline PixelSelector<N, CHUNK_SIZE>::PixelSelector(std::shared_ptr<const Index> index,
