@@ -127,7 +127,7 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
   }
 
   assert(clr.attributes().nnz);
-  return static_cast<std::size_t>(*clr.attributes().nnz);
+  return static_cast<std::size_t>(*clr.attributes().nnz);  // NOLINT
 }
 
 template <typename Pipe>
@@ -201,7 +201,7 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
   }
 
   assert(clr.attributes().nnz);
-  return static_cast<std::size_t>(*clr.attributes().nnz);
+  return static_cast<std::size_t>(*clr.attributes().nnz);  // NOLINT
 }
 
 static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest,
