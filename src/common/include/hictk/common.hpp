@@ -14,6 +14,7 @@
 namespace hictk {
 
 inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
+inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::str_long()};
 
 namespace cooler {
 // Magic values

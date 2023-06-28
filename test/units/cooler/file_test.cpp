@@ -281,7 +281,7 @@ TEST_CASE("Cooler: accessors", "[cooler][short]") {
 
   SECTION("dataset") {
     CHECK(f.dataset("bins/chrom").hdf5_path() == "/bins/chrom");
-    CHECK_THROWS(f.dataset("foo"));
+    CHECK_THROWS(f.dataset("/foo"));
   }
 
   SECTION("pixel type") {
@@ -307,6 +307,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     constexpr std::uint32_t bin_size = 1000;
     std::ignore = File::create_new_cooler(path.string(), chroms, bin_size, true);
     CHECK(utils::is_cooler(path.string()));
+    CHECK(File::open_read_only(path.string()).attributes().generated_by->find("hictk") == 0);
   }
 
   SECTION(".mcool") {

@@ -172,6 +172,10 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
 
   SECTION("overloads return identical results") {
     CHECK(f.fetch<T>("chr1:0-1000") == f.fetch<T>("chr1", 0, 1000));
+    CHECK(f.fetch<T>("chr1\t0\t1000", File::QUERY_TYPE::BED) == f.fetch<T>("chr1", 0, 1000));
+    CHECK(f.fetch<T>("chr1:0-1000", "chr1:0-1000") == f.fetch<T>("chr1", 0, 1000));
+    CHECK(f.fetch<T>("chr1\t0\t1000", "chr2\t0\t99", File::QUERY_TYPE::BED) ==
+          f.fetch<T>("chr1", 0, 1000, "chr2", 0, 99));
   }
 
   SECTION("invalid queries") {

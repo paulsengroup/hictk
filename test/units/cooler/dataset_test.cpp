@@ -211,18 +211,30 @@ TEST_CASE("Cooler: dataset write", "[dataset][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
-  const auto path = datadir / "cooler_test_file.cool";
-  const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
+  const auto path = testdir() / "test_dataset_accessors.cool";
+  std::filesystem::remove(path);
+  std::filesystem::copy_file(datadir / "cooler_test_file.cool", path);
+  SECTION("read-only") {
+    const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
 
-  Dataset dset{grp, "chroms/name"};
+    Dataset dset{grp, "chroms/name"};
 
-  CHECK(dset.size() == 20);
+    CHECK(dset.size() == 20);
 
-  CHECK(dset.get().getFile().getName() == path.string());
+    CHECK(dset.get().getFile().getName() == path.string());
 
-  CHECK(dset.file_name() == path.string());
-  CHECK(dset.uri() == fmt::format(FMT_STRING("{}::/chroms/name"), path.string()));
-  CHECK(dset.hdf5_path() == "/chroms/name");
+    CHECK(dset.file_name() == path.string());
+    CHECK(dset.uri() == fmt::format(FMT_STRING("{}::/chroms/name"), path.string()));
+    CHECK(dset.hdf5_path() == "/chroms/name");
+    CHECK(dset.get_parent().hdf5_path() == "/");
+  }
+  SECTION("read-write") {
+    const RootGroup grp{HighFive::File(path.string(), HighFive::File::ReadWrite).getGroup("/")};
+
+    Dataset dset{grp, "chroms/name"};
+
+    CHECK_NOTHROW(dset().resize(std::vector<std::size_t>{20}));
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
