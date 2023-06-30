@@ -26,7 +26,7 @@ function(ConfigureVersioning input_config_folder output_config_folder)
     FetchContent_Declare(
             _hictk_cmake-git-version-tracking
             URL ${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz
-            URL_HASH SHA512=aa339b9fb5f147c5d88341ed4abf85e88b78173714c3a994860aa81f3b558b674829c17a1567d04642ae9df3ce6ed0e88001ba143bb152e91ed7e75bc607a86b
+            URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365
     )
     # cmake-format: on
     FetchContent_MakeAvailable(_hictk_cmake-git-version-tracking)
@@ -35,7 +35,7 @@ function(ConfigureVersioning input_config_folder output_config_folder)
     include(${_hictk_cmake-git-version-tracking_SOURCE_DIR}/git_watcher.cmake)
   else()
     # Add dummy target
-    add_custom_target(check_git)
+    add_custom_target(_hictk_check_git)
 
     if(NOT DEFINED GIT_RETRIEVED_STATE)
       set(GIT_RETRIEVED_STATE false)
