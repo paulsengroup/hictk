@@ -35,6 +35,6 @@ target_link_system_libraries(
   INTERFACE
   fmt::fmt
   libdeflate::libdeflate
-  phmap
+  _hictk_phmap_tgt
   nonstd::span-lite
   std::filesystem)

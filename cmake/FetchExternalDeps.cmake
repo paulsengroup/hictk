@@ -93,7 +93,8 @@ FetchContent_MakeAvailable(
   _hictk_spanlite
   _hictk_spdlog)
 
-include_directories(SYSTEM ${_hictk_phmap_SOURCE_DIR})
+add_library(_hictk_phmap_tgt INTERFACE)
+target_include_directories(_hictk_phmap_tgt INTERFACE ${_hictk_phmap_SOURCE_DIR})
 include(${_hictk_project_options_SOURCE_DIR}/Index.cmake)
 
 list(APPEND CMAKE_MODULE_PATH ${_hictk_catch2_SOURCE_DIR}/extras)
