@@ -264,6 +264,63 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
   return datasets;
 }
 
+namespace internal {
+template <typename N>
+bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff, bool missing_ok) {
+  if (!Attribute::exists(root_grp(), key) && missing_ok) {
+    return false;
+  }
+
+  try {
+    using T = remove_cvref_t<decltype(*buff)>;
+    buff = Attribute::read<T>(root_grp(), key);
+    return true;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"), key,
+                    root_grp().getPath(), e.what()));
+  }
+}
+
+template <typename N>
+bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff, bool missing_ok) {
+  if (!Attribute::exists(root_grp(), key) && missing_ok) {
+    return false;
+  }
+
+  try {
+    auto sumv = Attribute::read(root_grp(), key);
+    const auto ok = std::visit(
+        [&](auto sum) {
+          using T = remove_cvref_t<decltype(sum)>;
+          if constexpr (std::is_integral_v<T>) {
+            buff = conditional_static_cast<std::int64_t>(sum);
+            return true;
+          }
+          if constexpr (std::is_floating_point_v<T>) {
+            buff = conditional_static_cast<double>(sum);
+            return true;
+          }
+          return false;
+        },
+        sumv);
+
+    if (!ok) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("attribute \"{}{}\" does not have a numeric type"),
+                      root_grp().getPath(), key));
+    }
+
+    return ok;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"), key,
+                    root_grp().getPath(), e.what()));
+  }
+};
+
+}  // namespace internal
+
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
@@ -282,54 +339,6 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initi
     }
   };
 
-  auto read_optional = [&](const auto &key, auto &buff, bool missing_ok) {
-    if (!Attribute::exists(root_grp(), key) && missing_ok) {
-      return false;
-    }
-
-    try {
-      using T = remove_cvref_t<decltype(*buff)>;
-      buff = Attribute::read<T>(root_grp(), key);
-      return true;
-    } catch (const std::exception &e) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"),
-                      key, root_grp().getPath(), e.what()));
-    }
-  };
-
-  auto read_sum_optional = [&](bool missing_ok, std::string_view key, auto &buff) {
-    if (!Attribute::exists(root_grp(), key) && missing_ok) {
-      return false;
-    }
-
-    try {
-      auto sumv = Attribute::read(root_grp(), key);
-      std::visit(
-          [&](auto sum) {
-            using T = remove_cvref_t<decltype(sum)>;
-            if constexpr (std::is_integral_v<T>) {
-              buff = conditional_static_cast<std::int64_t>(sum);
-              return;
-            }
-            if constexpr (std::is_floating_point_v<T>) {
-              buff = conditional_static_cast<double>(sum);
-              return;
-            }
-            throw std::runtime_error(
-                fmt::format(FMT_STRING("Attribute \"{}{}\" as an unexpected type. Expected a "
-                                       "numeric type, found {}"),
-                            root_grp().getPath(), key, hictk::internal::type_name<T>()));
-          },
-          sumv);
-      return true;
-    } catch (const std::exception &e) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"),
-                      key, root_grp().getPath(), e.what()));
-    }
-  };
-
   // Read mandatory attributes
   // We read format-version first because some attributes are mandatory only for cooler v3
   read_or_throw("format-version", attrs.format_version);
@@ -338,28 +347,28 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initi
 
   // Read mandatory attributes for Cooler v3
   auto missing_ok = attrs.format_version < 3;
-  read_optional("bin-type", attrs.bin_type, missing_ok);
-  read_optional("storage-mode", attrs.storage_mode, missing_ok);
+  internal::read_optional(root_grp, "bin-type", attrs.bin_type, missing_ok);
+  internal::read_optional(root_grp, "storage-mode", attrs.storage_mode, missing_ok);
 
   // Try to read reserved attributes
   missing_ok = true;
-  read_optional("creation-date", attrs.creation_date, missing_ok);
-  read_optional("format-url", attrs.format_url, missing_ok);
-  read_optional("generated-by", attrs.generated_by, missing_ok);
+  internal::read_optional(root_grp, "creation-date", attrs.creation_date, missing_ok);
+  internal::read_optional(root_grp, "format-url", attrs.format_url, missing_ok);
+  internal::read_optional(root_grp, "generated-by", attrs.generated_by, missing_ok);
 
-  if (!read_optional("genome-assembly", attrs.assembly, missing_ok)) {
-    read_optional("assembly", attrs.assembly, missing_ok);
+  if (!internal::read_optional(root_grp, "genome-assembly", attrs.assembly, missing_ok)) {
+    internal::read_optional(root_grp, "assembly", attrs.assembly, missing_ok);
   }
 
-  read_optional("metadata", attrs.metadata, missing_ok);
+  internal::read_optional(root_grp, "metadata", attrs.metadata, missing_ok);
 
   // Try to read other common attributes
-  read_optional("nbins", attrs.nbins, missing_ok);
-  read_optional("nchroms", attrs.nchroms, missing_ok);
-  read_optional("nnz", attrs.nnz, missing_ok);
+  internal::read_optional(root_grp, "nbins", attrs.nbins, missing_ok);
+  internal::read_optional(root_grp, "nchroms", attrs.nchroms, missing_ok);
+  internal::read_optional(root_grp, "nnz", attrs.nnz, missing_ok);
 
-  read_sum_optional(missing_ok, "sum", attrs.sum);
-  read_sum_optional(missing_ok, "cis", attrs.cis);
+  internal::read_sum_optional(root_grp, "sum", attrs.sum, missing_ok);
+  internal::read_sum_optional(root_grp, "cis", attrs.cis, missing_ok);
 
   return attrs;
 }

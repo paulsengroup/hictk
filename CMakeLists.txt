@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-cmake_minimum_required(VERSION 3.20)
-cmake_policy(VERSION 3.20...3.26)
+cmake_minimum_required(VERSION 3.25)
+cmake_policy(VERSION 3.25...3.27)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 
