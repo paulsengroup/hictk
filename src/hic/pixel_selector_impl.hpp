@@ -122,6 +122,14 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
+
+inline const std::vector<double> &PixelSelector::weights1() const noexcept {
+  return _footer->c1Norm();
+}
+inline const std::vector<double> &PixelSelector::weights2() const noexcept {
+  return _footer->c2Norm();
+}
+
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
 inline NormalizationMethod PixelSelector::normalization() const noexcept {
   return metadata().normalization;
@@ -487,6 +495,19 @@ inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
 }
 
 inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
+
+inline std::vector<double> PixelSelectorAll::weights() const {
+  std::vector<double> weights_{};
+  weights_.reserve(bins().size());
+
+  std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
+    if (sel.is_intra()) {
+      weights_.insert(weights_.end(), sel.weights1().begin(), sel.weights1().end());
+    }
+  });
+
+  return weights_;
+}
 
 template <typename N>
 inline bool PixelSelectorAll::iterator<N>::Pair::operator<(const Pair &other) const noexcept {

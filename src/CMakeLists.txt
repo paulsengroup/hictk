@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+add_subdirectory(balancing)
 add_subdirectory(bin_table)
 add_subdirectory(chromosome)
 add_subdirectory(common)
