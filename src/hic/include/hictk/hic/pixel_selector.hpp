@@ -60,6 +60,9 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
+  [[nodiscard]] const std::vector<double> &weights1() const noexcept;
+  [[nodiscard]] const std::vector<double> &weights2() const noexcept;
+
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] NormalizationMethod normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
@@ -168,6 +171,7 @@ class PixelSelectorAll {
 
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] std::vector<double> weights() const;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
