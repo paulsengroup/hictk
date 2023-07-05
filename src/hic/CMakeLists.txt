@@ -3,7 +3,13 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
-find_package(libdeflate QUIET REQUIRED)
+find_package(libdeflate)
+if (NOT libdeflate_FOUND)
+  FetchContent_MakeAvailable(
+          _hictk_libdeflate
+  )
+endif()
+
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
@@ -34,7 +40,6 @@ target_link_system_libraries(
   hic
   INTERFACE
   fmt::fmt
-  libdeflate::libdeflate
+  $<IF:$<BOOL:${BUILD_SHARED_LIBS}>,libdeflate::libdeflate_shared,libdeflate::libdeflate_static>
   _hictk_phmap_tgt
-  nonstd::span-lite
   std::filesystem)
