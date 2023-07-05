@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
-find_package(libdeflate)
-if (NOT libdeflate_FOUND)
-  FetchContent_MakeAvailable(
-          _hictk_libdeflate
-  )
-endif()
-
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)

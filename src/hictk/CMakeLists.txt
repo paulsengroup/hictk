@@ -9,7 +9,7 @@ FetchContent_MakeAvailable(
         _hictk_readerwriterqueue
         _hictk_spdlog)
 
-find_package(Boost QUIET REQUIRED COMPONENTS headers filesystem)
+find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 

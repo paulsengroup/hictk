@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
-find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(HDF5 CONFIG REQUIRED COMPONENTS C)
+
 add_library(cooler INTERFACE)
 add_library(hictk::cooler ALIAS cooler)
 target_sources(
