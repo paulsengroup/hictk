@@ -70,6 +70,9 @@ inline const BinTable& HiCFile::bins() const noexcept {
   assert(_bins);
   return *_bins;
 }
+
+inline std::shared_ptr<const BinTable> HiCFile::bins_ptr() const noexcept { return _bins; }
+
 inline const Reference& HiCFile::chromosomes() const noexcept { return bins().chromosomes(); }
 
 inline const std::string& HiCFile::assembly() const noexcept { return _fs->header().genomeID; }

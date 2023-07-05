@@ -12,6 +12,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_cache.hpp"
+#include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"

@@ -13,6 +13,7 @@ add_subdirectory(hic)
 add_subdirectory(numeric)
 add_subdirectory(pixel)
 add_subdirectory(reference)
+add_subdirectory(transformers)
 add_subdirectory(variant)
 
 if(HICTK_BUILD_TOOLS)
