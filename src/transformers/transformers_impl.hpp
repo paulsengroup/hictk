@@ -6,83 +6,87 @@
 
 namespace hictk::transformers {
 
-inline JoinGenomicCoords::JoinGenomicCoords(cooler::PixelSelector<> sel,
-                                            std::shared_ptr<const BinTable> bins)
-    : _sel(std::in_place_type<cooler::PixelSelector<>>, std::move(sel)), _bins(std::move(bins)) {}
-inline JoinGenomicCoords::JoinGenomicCoords(hic::PixelSelector sel,
-                                            std::shared_ptr<const BinTable> bins)
-    : _sel(std::in_place_type<hic::PixelSelector>, std::move(sel)), _bins(std::move(bins)) {}
+template <typename PixelIt>
+inline JoinGenomicCoords<PixelIt>::JoinGenomicCoords(PixelIt first, PixelIt last,
+                                                     std::shared_ptr<const BinTable> bins)
+    : _first(std::move(first)), _last(std::move(last)), _bins(std::move(bins)) {}
 
-template <typename N>
-inline auto JoinGenomicCoords::begin() -> iterator<N> {
-  std::visit([&](auto& sel) { return iterator<N>{sel.template begin<N>(), _bins}; }, _sel);
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::begin() -> iterator {
+  return iterator{_first, _bins};
 }
-template <typename N>
-inline auto JoinGenomicCoords::end() -> iterator<N> {
-  std::visit([&](auto& sel) { return iterator<N>{sel.template end<N>(), _bins}; }, _sel);
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::end() -> iterator {
+  return iterator::at_end(_last, _bins);
 }
 
-template <typename N>
-inline auto JoinGenomicCoords::cbegin() -> iterator<N> {
-  return this->begin<N>();
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::cbegin() -> iterator {
+  return this->begin();
 }
-template <typename N>
-inline auto JoinGenomicCoords::cend() -> iterator<N> {
-  return this->end<N>();
-}
-
-template <typename N>
-inline std::vector<Pixel<N>> JoinGenomicCoords::read_all() const {
-  return std::visit([](const auto& sel) { return sel.template read_all<N>(); }, _sel);
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::cend() -> iterator {
+  return this->end();
 }
 
-template <typename N>
-inline JoinGenomicCoords::iterator<N>::iterator(iterator::HicIt it,
-                                                std::shared_ptr<const BinTable> bins)
-    : _it(std::in_place_type_t<iterator::HicIt>(), std::move(it)), _bins(std::move(bins)) {
-  std::ignore = **this;
-}
-template <typename N>
-inline JoinGenomicCoords::iterator<N>::iterator(iterator::CoolerIt it,
-                                                std::shared_ptr<const BinTable> bins)
-    : _it(std::in_place_type_t<iterator::CoolerIt>(), std::move(it)), _bins(std::move(bins)) {
-  std::ignore = **this;
-}
-
-template <typename N>
-inline bool JoinGenomicCoords::iterator<N>::operator==(const iterator& other) const noexcept {
-  return std::visit([&](const auto& it) {
-    using T = decltype(it);
-    assert(std::holds_alternative<T>(other));
-    auto& other_ = std::get<T>(other);
-
-    return it == other_;
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::read_all() const -> std::vector<Pixel<N>> {
+  assert(_bins);
+  // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
+  // and a second time to copy the actual data)
+  std::vector<Pixel<N>> buff{};
+  std::transform(_first, _last, std::back_inserter(buff), [&](const ThinPixel<N>& p) {
+    return Pixel<N>{{_bins->at(p.bin1_id), _bins->at(p.bin2_id)}, p.count};
   });
+  return buff;
 }
-template <typename N>
-inline bool JoinGenomicCoords::iterator<N>::operator!=(const iterator& other) const noexcept {
+
+template <typename PixelIt>
+inline JoinGenomicCoords<PixelIt>::iterator::iterator(PixelIt it,
+                                                      std::shared_ptr<const BinTable> bins)
+    : _it(std::move(it)), _bins(std::move(bins)) {
+  std::ignore = **this;
+}
+
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::iterator::at_end(PixelIt it,
+                                                         std::shared_ptr<const BinTable> bins)
+    -> iterator {
+  iterator it_{};
+  it_._it = std::move(it);
+  it_._bins = std::move(bins);
+  return it_;
+}
+
+template <typename PixelIt>
+inline bool JoinGenomicCoords<PixelIt>::iterator::operator==(const iterator& other) const noexcept {
+  return _it == other._it;
+}
+template <typename PixelIt>
+inline bool JoinGenomicCoords<PixelIt>::iterator::operator!=(const iterator& other) const noexcept {
   return !(*this == other);
 }
 
-template <typename N>
-inline auto JoinGenomicCoords::iterator<N>::operator*() const -> const_reference {
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::iterator::operator*() const -> const_reference {
   assert(_bins);
-
-  const auto& tp = std::visit([&](const auto& it) { return *it; });
-  _value = Pixel<N>{_bins->at(tp.bin1_id), _bins->at(tp.bin2_id), tp.count};
+  _value = Pixel<N>{_bins->at(_it->bin1_id), _bins->at(_it->bin2_id), _it->count};
   return _value;
 }
-template <typename N>
-inline auto JoinGenomicCoords::iterator<N>::operator->() const -> const_pointer {
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::iterator::operator->() const -> const_pointer {
   return &(**this);
 }
 
-template <typename N>
-inline auto JoinGenomicCoords::iterator<N>::operator++() -> iterator& {
-  return std::visit([&](const auto& it) { return ++it; });
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::iterator::operator++() -> iterator& {
+  ++_it;
+  return *this;
 }
-template <typename N>
-inline auto JoinGenomicCoords::iterator<N>::operator++(int) -> iterator {
-  return std::visit([&](const auto& it) { return it++; });
+template <typename PixelIt>
+inline auto JoinGenomicCoords<PixelIt>::iterator::operator++(int) -> iterator {
+  auto it = *this;
+  std::ignore = ++_it;
+  return it;
 }
 }  // namespace hictk::transformers

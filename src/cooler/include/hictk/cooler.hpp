@@ -207,6 +207,9 @@ class File {
 
   template <std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
   [[nodiscard]] PixelSelector<CHUNK_SIZE> fetch(
+      std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+  template <std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
+  [[nodiscard]] PixelSelector<CHUNK_SIZE> fetch(
       std::string_view query, std::shared_ptr<const balancing::Weights> weights = nullptr,
       QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   template <std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>

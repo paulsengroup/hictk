@@ -23,10 +23,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   auto clr = cooler::File::open_read_only(path.string());
 
   SECTION("join genomic coords") {
-    const auto selector =
-        transformers::JoinGenomicCoords(clr.fetch("chr1", 5'000'000, 10'000'000), clr.bins_ptr());
+    auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
+    const auto jsel = transformers::JoinGenomicCoords(sel.begin<std::int32_t>(),
+                                                      sel.end<std::int32_t>(), clr.bins_ptr());
     constexpr std::array<std::uint32_t, 3> expected{5'000'000, 5'000'000, 7'500'000};
-    const auto pixels = selector.read_all<std::int32_t>();
+    const auto pixels = jsel.read_all();
     REQUIRE(pixels.size() == expected.size());
     for (std::size_t i = 0; i < expected.size(); ++i) {
       CHECK(pixels[i].coords.bin1.start() == expected[i]);
@@ -40,10 +41,11 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   auto hf = hic::HiCFile(path.string(), 2'500'000);
 
   SECTION("join genomic coords") {
-    const auto selector =
-        transformers::JoinGenomicCoords(hf.fetch("chr2L", 5'000'000, 10'000'000), hf.bins_ptr());
+    auto sel = hf.fetch("chr2L", 5'000'000, 10'000'000);
+    const auto jsel = transformers::JoinGenomicCoords(sel.begin<std::int32_t>(),
+                                                      sel.end<std::int32_t>(), hf.bins_ptr());
     constexpr std::array<std::uint32_t, 3> expected{5'000'000, 5'000'000, 7'500'000};
-    const auto pixels = selector.read_all<std::int32_t>();
+    const auto pixels = jsel.read_all();
     REQUIRE(pixels.size() == expected.size());
     for (std::size_t i = 0; i < expected.size(); ++i) {
       CHECK(pixels[i].coords.bin1.start() == expected[i]);

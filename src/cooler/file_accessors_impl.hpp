@@ -130,14 +130,7 @@ inline bool File::has_float_pixels() const noexcept {
 template <typename N, std::size_t CHUNK_SIZE>
 inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::begin(
     std::string_view weight_name) const {
-  // clang-format off
-  return PixelSelector<CHUNK_SIZE>(this->_index,
-                                   this->dataset("pixels/bin1_id"),
-                                   this->dataset("pixels/bin2_id"),
-                                   this->dataset("pixels/count"),
-                                   this->read_weights(weight_name)
-  ).template begin<N>();
-  // clang-format on
+  return this->fetch(this->read_weights(weight_name)).template begin<N>();
 }
 
 template <typename N, std::size_t CHUNK_SIZE>
@@ -149,14 +142,7 @@ inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::cbegin(
 template <typename N, std::size_t CHUNK_SIZE>
 inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::end(
     std::string_view weight_name) const {
-  // clang-format off
-  return PixelSelector<CHUNK_SIZE>(this->_index,
-                                   this->dataset("pixels/bin1_id"),
-                                   this->dataset("pixels/bin2_id"),
-                                   this->dataset("pixels/count"),
-                                   this->read_weights(weight_name)
-  ).template end<N>();
-  // clang-format on
+  return this->fetch(this->read_weights(weight_name)).template end<N>();
 }
 
 template <typename N, std::size_t CHUNK_SIZE>

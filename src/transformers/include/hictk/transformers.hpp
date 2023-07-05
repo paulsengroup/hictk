@@ -13,35 +13,29 @@
 
 namespace hictk::transformers {
 
+template <typename PixelIt>
 class JoinGenomicCoords {
-  std::variant<cooler::PixelSelector<>, hic::PixelSelector> _sel;
+  using PixelT = typename std::iterator_traits<PixelIt>::value_type;
+  using N = decltype(std::declval<PixelT>().count);
+  PixelIt _first{};
+  PixelIt _last{};
   std::shared_ptr<const BinTable> _bins{};
 
  public:
-  template <typename N>
   class iterator;
 
-  JoinGenomicCoords(cooler::PixelSelector<> sel, std::shared_ptr<const BinTable> bins);
-  JoinGenomicCoords(hic::PixelSelector sel, std::shared_ptr<const BinTable> bins);
+  JoinGenomicCoords(PixelIt first, PixelIt last, std::shared_ptr<const BinTable> bins);
 
-  template <typename N>
-  auto begin() -> iterator<N>;
-  template <typename N>
-  auto end() -> iterator<N>;
+  auto begin() -> iterator;
+  auto end() -> iterator;
 
-  template <typename N>
-  auto cbegin() -> iterator<N>;
-  template <typename N>
-  auto cend() -> iterator<N>;
+  auto cbegin() -> iterator;
+  auto cend() -> iterator;
 
-  template <typename N>
-  [[nodiscard]] std::vector<Pixel<N>> read_all() const;
+  [[nodiscard]] auto read_all() const -> std::vector<Pixel<N>>;
 
-  template <typename N>
   class iterator {
-    using CoolerIt = cooler::PixelSelector<>::iterator<N>;
-    using HicIt = hic::PixelSelector::iterator<N>;
-    std::variant<CoolerIt, HicIt> _it{CoolerIt{}};
+    PixelIt _it{};
     std::shared_ptr<const BinTable> _bins{};
     mutable Pixel<N> _value{};
 
@@ -54,8 +48,9 @@ class JoinGenomicCoords {
     using const_reference = const value_type &;
     using iterator_category = std::forward_iterator_tag;
 
-    explicit iterator(CoolerIt it, std::shared_ptr<const BinTable> bins);
-    explicit iterator(HicIt it, std::shared_ptr<const BinTable> bins);
+    iterator() = default;
+    iterator(PixelIt it, std::shared_ptr<const BinTable> bins);
+    static auto at_end(PixelIt it, std::shared_ptr<const BinTable> bins) -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;

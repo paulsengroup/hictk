@@ -98,31 +98,35 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
   auto t0 = std::chrono::steady_clock::now();
   for (std::uint32_t chrom1_id = 0; chrom1_id < clr.chromosomes().size(); ++chrom1_id) {
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < clr.chromosomes().size(); ++chrom2_id) {
-      auto sel = clr.fetch<std::uint32_t>(clr.chromosomes().at(chrom1_id).name(),
-                                          clr.chromosomes().at(chrom2_id).name());
-      std::for_each(sel.begin(), sel.end(), [&](const Pixel<std::uint32_t>& p) {
-        // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
-        // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
-        fmt::print(f.get(), FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
-                   p.coords.bin1.chrom().name(), p.coords.bin1.start(),
-                   p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
-        if (!bool(f)) {  // NOLINT
-          throw fmt::system_error(errno, FMT_STRING("an error occurred while pixels to file {}"),
-                                  dest);
-        }
+      auto sel =
+          clr.fetch(clr.chromosomes().at(chrom1_id).name(), clr.chromosomes().at(chrom2_id).name());
+      std::for_each(
+          sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
+          [&](const ThinPixel<std::int32_t>& p) {
+            const auto bin1 = clr.bins().at(p.bin1_id);
+            const auto bin2 = clr.bins().at(p.bin1_id);
+            // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
+            // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
+            fmt::print(f.get(), FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
+                       bin1.chrom().name(), bin1.start(), bin2.chrom().name(), bin2.start(),
+                       p.count);
+            if (!bool(f)) {  // NOLINT
+              throw fmt::system_error(
+                  errno, FMT_STRING("an error occurred while pixels to file {}"), dest);
+            }
 
-        if (++i == update_frequency) {
-          const auto t1 = std::chrono::steady_clock::now();
-          const auto delta =
-              static_cast<double>(
-                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
-              1000.0;
-          spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."),
-                       p.coords.bin1, p.coords.bin2, double(update_frequency) / delta);
-          t0 = t1;
-          i = 0;
-        }
-      });
+            if (++i == update_frequency) {
+              const auto t1 = std::chrono::steady_clock::now();
+              const auto delta =
+                  static_cast<double>(
+                      std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+                  1000.0;
+              spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
+                           bin2, double(update_frequency) / delta);
+              t0 = t1;
+              i = 0;
+            }
+          });
     }
   }
 
@@ -162,34 +166,38 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
   std::size_t i = 0;
   for (std::uint32_t chrom1_id = 0; chrom1_id < clr.chromosomes().size(); ++chrom1_id) {
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < clr.chromosomes().size(); ++chrom2_id) {
-      auto sel = clr.fetch<std::uint32_t>(clr.chromosomes().at(chrom1_id).name(),
-                                          clr.chromosomes().at(chrom2_id).name());
-      std::for_each(sel.begin(), sel.end(), [&](const Pixel<std::uint32_t>& p) {
-        // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
-        // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
-        buffer = fmt::format(FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
-                             p.coords.bin1.chrom().name(), p.coords.bin1.start(),
-                             p.coords.bin2.chrom().name(), p.coords.bin2.start(), p.count);
+      auto sel =
+          clr.fetch(clr.chromosomes().at(chrom1_id).name(), clr.chromosomes().at(chrom2_id).name());
+      std::for_each(
+          sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
+          [&](const ThinPixel<std::int32_t>& p) {
+            const auto bin1 = clr.bins().at(p.bin1_id);
+            const auto bin2 = clr.bins().at(p.bin1_id);
+            // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
+            // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
+            buffer =
+                fmt::format(FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"), bin1.chrom().name(),
+                            bin1.start(), bin2.chrom().name(), bin2.start(), p.count);
 
-        boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
+            boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
 
-        if (!pigz->running()) {
-          throw std::runtime_error(fmt::format(
-              FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
-              pigz->exit_code(), dest));
-        }
-        if (++i == update_frequency) {
-          const auto t1 = std::chrono::steady_clock::now();
-          const auto delta =
-              static_cast<double>(
-                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
-              1000.0;
-          spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."),
-                       p.coords.bin1, p.coords.bin2, double(update_frequency) / delta);
-          t0 = t1;
-          i = 0;
-        }
-      });
+            if (!pigz->running()) {
+              throw std::runtime_error(fmt::format(
+                  FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
+                  pigz->exit_code(), dest));
+            }
+            if (++i == update_frequency) {
+              const auto t1 = std::chrono::steady_clock::now();
+              const auto delta =
+                  static_cast<double>(
+                      std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+                  1000.0;
+              spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
+                           bin2, double(update_frequency) / delta);
+              t0 = t1;
+              i = 0;
+            }
+          });
     }
   }
   pipe.close();

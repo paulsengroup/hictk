@@ -141,7 +141,7 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
 
 template <typename N>
 static void enqueue_pixels(const hic::HiCFile& hf,
-                           moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue,
+                           moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
                            std::atomic<bool>& early_return,
                            std::size_t update_frequency = 10'000'000) {
   try {
@@ -155,7 +155,6 @@ static void enqueue_pixels(const hic::HiCFile& hf,
         if (early_return) {
           return;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
       }
       ++first;
 
@@ -165,16 +164,17 @@ static void enqueue_pixels(const hic::HiCFile& hf,
             static_cast<double>(
                 std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
             1000.0;
+        const auto bin1 = hf.bins().at(first->bin1_id);
         spdlog::info(
             FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-            hf.resolution(), first->coords.bin1, double(update_frequency) / delta,
+            hf.resolution(), bin1, double(update_frequency) / delta,
             hf.block_cache_hit_rate() * 100);
         hf.reset_cache_stats();
         t0 = t1;
         i = 0;
       }
     }
-    queue.enqueue(Pixel<N>{});
+    queue.enqueue(ThinPixel<N>{});
   } catch (...) {
     early_return = true;
     throw;
@@ -183,18 +183,18 @@ static void enqueue_pixels(const hic::HiCFile& hf,
 
 template <typename N>
 static std::size_t append_pixels(cooler::File& clr,
-                                 moodycamel::BlockingReaderWriterQueue<Pixel<N>>& queue,
+                                 moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
                                  std::atomic<bool>& early_return,
                                  std::size_t buffer_capacity = 100'000) {
   try {
-    std::vector<Pixel<N>> buffer{buffer_capacity};
+    std::vector<ThinPixel<N>> buffer{buffer_capacity};
     buffer.clear();
 
-    Pixel<N> value{};
+    ThinPixel<N> value{};
     std::size_t nnz = 0;
 
     while (!early_return) {
-      while (!queue.wait_dequeue_timed(value, std::chrono::milliseconds(25))) {
+      while (!queue.try_dequeue(value)) {
         if (early_return) {
           return nnz;
         }
@@ -237,7 +237,7 @@ static void convert_resolution_multi_threaded(
   spdlog::debug(FMT_STRING("[{}] block cache capacity: {}"), hf.resolution(), hf.cache_capacity());
 
   std::atomic<bool> early_return = false;
-  moodycamel::BlockingReaderWriterQueue<Pixel<N>> queue{100'000};
+  moodycamel::BlockingReaderWriterQueue<ThinPixel<N>> queue{1'000'000};
 
   auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, early_return); };
   auto producer = std::async(std::launch::async, producer_fx);

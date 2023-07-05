@@ -74,6 +74,19 @@ namespace internal {
 }  // namespace internal
 
 template <std::size_t CHUNK_SIZE>
+inline PixelSelector<CHUNK_SIZE> File::fetch(
+    std::shared_ptr<const balancing::Weights> weights) const {
+  // clang-format off
+  return PixelSelector<CHUNK_SIZE>(
+      this->_index,
+      this->dataset("pixels/bin1_id"),
+      this->dataset("pixels/bin2_id"),
+      this->dataset("pixels/count"),
+      weights);
+  // clang-format on
+}
+
+template <std::size_t CHUNK_SIZE>
 inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view query,
                                              std::shared_ptr<const balancing::Weights> weights,
                                              QUERY_TYPE query_type) const {
