@@ -104,7 +104,7 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
           sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
           [&](const ThinPixel<std::int32_t>& p) {
             const auto bin1 = clr.bins().at(p.bin1_id);
-            const auto bin2 = clr.bins().at(p.bin1_id);
+            const auto bin2 = clr.bins().at(p.bin2_id);
             // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
             // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
             fmt::print(f.get(), FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"),
@@ -172,7 +172,7 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
           sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
           [&](const ThinPixel<std::int32_t>& p) {
             const auto bin1 = clr.bins().at(p.bin1_id);
-            const auto bin2 = clr.bins().at(p.bin1_id);
+            const auto bin2 = clr.bins().at(p.bin2_id);
             // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
             // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
             buffer =
