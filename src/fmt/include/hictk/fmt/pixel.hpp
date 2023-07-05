@@ -79,3 +79,21 @@ struct fmt::formatter<hictk::Pixel<N>> {
     return fmt::format_to(ctx.out(), FMT_STRING("{:bg2}\t{}"), p.coords, p.count);
   }
 };
+
+template <typename N>
+struct fmt::formatter<hictk::ThinPixel<N>> {
+  constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
+    const auto *it = ctx.begin();
+    const auto *end = ctx.end();
+    if (it != end && *it != '}') {
+      throw fmt::format_error("invalid format");
+    }
+
+    return it;
+  }
+
+  template <typename FormatContext>
+  auto format(const hictk::ThinPixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
+    return fmt::format_to(ctx.out(), FMT_STRING("{:d}\t{:d}\t{}"), p.bin1_id, p.bin2_id, p.count);
+  }
+};

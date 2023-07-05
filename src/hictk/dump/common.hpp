@@ -11,22 +11,14 @@
 
 namespace hictk::tools {
 
-template <bool join>
-inline void print(const Pixel<std::int64_t>& pixel) {
-  if constexpr (join) {
-    fmt::print(FMT_COMPILE("{:bg2}\n"), pixel);
-  } else {
-    fmt::print(FMT_COMPILE("{:raw}\n"), pixel);
-  }
-}
+inline void print(const Pixel<std::int64_t>& pixel) { fmt::print(FMT_COMPILE("{:bg2}\n"), pixel); }
+inline void print(const ThinPixel<std::int64_t>& pixel) { fmt::print(FMT_COMPILE("{}\n"), pixel); }
 
-template <bool join>
 inline void print(const Pixel<double>& pixel) {
-  if constexpr (join) {
-    fmt::print(FMT_COMPILE("{:bg2}\t{:.16g}\n"), pixel.coords, pixel.count);
-  } else {
-    fmt::print(FMT_COMPILE("{:raw}\t{:.16g}\n"), pixel.coords, pixel.count);
-  }
+  fmt::print(FMT_COMPILE("{:bg2}\t{:.16g}\n"), pixel.coords, pixel.count);
+}
+inline void print(const ThinPixel<double>& pixel) {
+  fmt::print(FMT_COMPILE("{:d}\t{:d}\t\t{:.16g}\n"), pixel.bin1_id, pixel.bin2_id, pixel.count);
 }
 
 template <typename File>

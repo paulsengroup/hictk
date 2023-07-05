@@ -56,12 +56,12 @@ namespace internal {
 }
 
 template <typename N>
-inline void merge(const std::vector<typename PixelSelector<N>::iterator>& heads,
-                  const std::vector<typename PixelSelector<N>::iterator>& tails, File& dest,
-                  std::size_t queue_capacity, bool quiet) {
+inline void merge(const std::vector<typename PixelSelector<>::template iterator<N>>& heads,
+                  const std::vector<typename PixelSelector<>::template iterator<N>>& tails,
+                  File& dest, std::size_t queue_capacity, bool quiet) {
   hictk::internal::PixelMerger merger{heads, tails};
 
-  std::vector<Pixel<N>> buffer(queue_capacity);
+  std::vector<ThinPixel<N>> buffer(queue_capacity);
   buffer.clear();
 
   std::size_t pixels_processed{};
@@ -88,15 +88,15 @@ inline void merge(const std::vector<typename PixelSelector<N>::iterator>& heads,
 
 template <typename N>
 struct CoolerIteratorPairs {
-  std::vector<typename PixelSelector<N>::iterator> heads{};
-  std::vector<typename PixelSelector<N>::iterator> tails{};
+  std::vector<typename PixelSelector<>::template iterator<N>> heads{};
+  std::vector<typename PixelSelector<>::template iterator<N>> tails{};
 };
 
 template <typename N>
 inline CoolerIteratorPairs<N> collect_iterators(const std::vector<File>& clrs) {
   if constexpr (std::is_floating_point_v<N>) {
-    std::vector<PixelSelector<double>::iterator> heads{};
-    std::vector<PixelSelector<double>::iterator> tails{};
+    std::vector<PixelSelector<>::iterator<double>> heads{};
+    std::vector<PixelSelector<>::iterator<double>> tails{};
 
     for (const auto& clr : clrs) {
       auto first = clr.begin<double>();
@@ -109,8 +109,8 @@ inline CoolerIteratorPairs<N> collect_iterators(const std::vector<File>& clrs) {
 
     return {heads, tails};
   } else {
-    std::vector<PixelSelector<std::int32_t>::iterator> heads{};
-    std::vector<PixelSelector<std::int32_t>::iterator> tails{};
+    std::vector<PixelSelector<>::iterator<std::int32_t>> heads{};
+    std::vector<PixelSelector<>::iterator<std::int32_t>> tails{};
 
     for (const auto& clr : clrs) {
       auto first = clr.begin<std::int32_t>();

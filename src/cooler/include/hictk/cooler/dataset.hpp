@@ -87,6 +87,7 @@ class Dataset {
 
   [[nodiscard]] std::string file_name() const;
   [[nodiscard]] std::string hdf5_path() const;
+  [[nodiscard]] std::string name() const;
   [[nodiscard]] std::string uri() const;
 
   [[nodiscard]] std::size_t size() const;

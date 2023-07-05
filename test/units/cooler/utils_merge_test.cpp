@@ -39,7 +39,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
     REQUIRE(std::distance(first1, last1) == std::distance(first2, last2));
     while (first1 != last1) {
-      CHECK(first1->coords == first2->coords);
+      CHECK(first1->bin1_id == first2->bin1_id);
+      CHECK(first1->bin2_id == first2->bin2_id);
       CHECK(2 * first1->count == first2->count);
       ++first1;
       ++first2;

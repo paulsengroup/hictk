@@ -128,35 +128,27 @@ inline bool File::has_float_pixels() const noexcept {
 }
 
 template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<N, CHUNK_SIZE>::iterator File::begin() const {
-  // clang-format off
-  return PixelSelector<N, CHUNK_SIZE>(this->_index,
-                                      this->dataset("pixels/bin1_id"),
-                                      this->dataset("pixels/bin2_id"),
-                                      this->dataset("pixels/count")
-  ).begin();
-  // clang-format on
+inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::begin(
+    std::string_view weight_name) const {
+  return this->fetch(this->read_weights(weight_name)).template begin<N>();
 }
 
 template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<N, CHUNK_SIZE>::iterator File::cbegin() const {
-  return this->begin<N, CHUNK_SIZE>();
+inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::cbegin(
+    std::string_view weight_name) const {
+  return this->begin<N, CHUNK_SIZE>(weight_name);
 }
 
 template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<N, CHUNK_SIZE>::iterator File::end() const {
-  // clang-format off
-  return PixelSelector<N, CHUNK_SIZE>(this->_index,
-                                      this->dataset("pixels/bin1_id"),
-                                      this->dataset("pixels/bin2_id"),
-                                      this->dataset("pixels/count")
-  ).end();
-  // clang-format on
+inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::end(
+    std::string_view weight_name) const {
+  return this->fetch(this->read_weights(weight_name)).template end<N>();
 }
 
 template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<N, CHUNK_SIZE>::iterator File::cend() const {
-  return this->end<N, CHUNK_SIZE>();
+inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::cend(
+    std::string_view weight_name) const {
+  return this->end<N, CHUNK_SIZE>(weight_name);
 }
 
 inline auto File::index() noexcept -> Index & {
