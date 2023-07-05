@@ -4,6 +4,7 @@
 
 # Ignored directories
 .cache/
+*.egg-info/
 .idea/
 .run/
 .vscode/
