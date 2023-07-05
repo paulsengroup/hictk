@@ -2,14 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-FetchContent_MakeAvailable(
-        _hictk_cli11
-        _hictk_fast_float
-        _hictk_fmt
-        _hictk_readerwriterqueue
-        _hictk_spdlog)
+find_package(Boost COMPONENTS headers filesystem)
+if(NOT boost_FOUND)
+  find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
+endif()
 
-find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 

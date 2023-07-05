@@ -20,7 +20,11 @@ FetchContent_Declare(
   _hictk_fmt
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v9.1.0.tar.xz
   URL_HASH SHA256=d2b242c76dbd3c7e0d763cb8b9021887e4b4e04f4adada24b0f19d4edbf02f96
-  FIND_PACKAGE_ARGS NAMES fmt VERSION 9.1
+  FIND_PACKAGE_ARGS
+  NAMES
+  fmt
+  VERSION
+  9.1
   SYSTEM)
 
 FetchContent_Declare(
@@ -33,19 +37,15 @@ FetchContent_Declare(
   _hictk_libdeflate
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/libdeflate-v1.18.tar.xz
   URL_HASH SHA256=f1e1e2432f9329a5f53939527afb46c417c843520bd526be7f777ab270eb65a0
-  FIND_PACKAGE_ARGS NAMES libdeflate
+  FIND_PACKAGE_ARGS
+  NAMES
+  libdeflate
   SYSTEM)
 
 FetchContent_Declare(
   _hictk_phmap
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/parallel-hashmap-v1.3.11.tar.xz
   URL_HASH SHA256=f8f672e9fefdaa5fba555a77ff1037d9003401344dd651e71c98212e3eaad8cc
-  SYSTEM)
-
-FetchContent_Declare(
-  _hictk_project_options
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/project_options-v0.29.0.tar.xz
-  URL_HASH SHA256=ee2836af616d42e22c61048f4aedafd104fbfd97cf52bdd122a212d98777304c
   SYSTEM)
 
 FetchContent_Declare(
@@ -58,14 +58,28 @@ FetchContent_Declare(
   _hictk_spdlog
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog-v1.11.0.tar.xz
   URL_HASH SHA256=7bb89d5baba54638a2107291c40f2972428ac32a3c65609b2ffedb2d295ca1ad
-  FIND_PACKAGE_ARGS NAMES spdlog VERSION 1.11
+  FIND_PACKAGE_ARGS
+  NAMES
+  spdlog
+  VERSION
+  1.11
   SYSTEM)
 
 FetchContent_MakeAvailable(
   _hictk_fast_float
   _hictk_fmt
+  _hictk_libdeflate
   _hictk_phmap
   _hictk_project_options)
+
+if(HICTK_BUILD_TOOLS)
+  FetchContent_MakeAvailable(
+    _hictk_cli11
+    _hictk_fast_float
+    _hictk_fmt
+    _hictk_readerwriterqueue
+    _hictk_spdlog)
+endif()
 
 set(HIGHFIVE_PARALLEL_HDF5 OFF)
 set(HIGHFIVE_USE_BOOST OFF)
