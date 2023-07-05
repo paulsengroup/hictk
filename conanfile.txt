@@ -12,7 +12,6 @@ highfive/2.7.1
 libdeflate/1.18
 readerwriterqueue/1.0.6
 spdlog/1.11.0
-span-lite/0.10.3
 zlib/1.2.13
 
 [generators]
