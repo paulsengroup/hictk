@@ -11,6 +11,67 @@
 
 namespace hictk {
 
+template <typename N>
+inline ThinPixel<N>::operator bool() const noexcept {
+  constexpr auto null_id = std::numeric_limits<std::size_t>::max();
+  return this->bin1_id != null_id && this->bin2_id != null_id;
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator==(const ThinPixel &other) const noexcept {
+  return this->bin1_id == other.bin1_id && this->bin2_id == other.bin2_id &&
+         this->count == other.count;
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator!=(const ThinPixel &other) const noexcept {
+  return !(*this == other);
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator<(const ThinPixel &other) const noexcept {
+  if (this->bin1_id != other.bin1_id) {
+    return this->bin1_id < other.bin1_id;
+  }
+  if (this->bin2_id != other.bin2_id) {
+    return this->bin2_id < other.bin2_id;
+  }
+  return this->count < other.count;
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator<=(const ThinPixel &other) const noexcept {
+  if (this->bin1_id != other.bin1_id) {
+    return this->bin1_id <= other.bin1_id;
+  }
+  if (this->bin2_id != other.bin2_id) {
+    return this->bin2_id <= other.bin2_id;
+  }
+  return this->count <= other.count;
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator>(const ThinPixel &other) const noexcept {
+  if (this->bin1_id != other.bin1_id) {
+    return this->bin1_id > other.bin1_id;
+  }
+  if (this->bin2_id != other.bin2_id) {
+    return this->bin2_id > other.bin2_id;
+  }
+  return this->count > other.count;
+}
+
+template <typename N>
+inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
+  if (this->bin1_id != other.bin1_id) {
+    return this->bin1_id >= other.bin1_id;
+  }
+  if (this->bin2_id != other.bin2_id) {
+    return this->bin2_id >= other.bin2_id;
+  }
+  return this->count >= other.count;
+}
+
 inline PixelCoordinates::PixelCoordinates(Bin bin1_, Bin bin2_) noexcept
     : bin1(std::move(bin1_)), bin2(std::move(bin2_)) {}
 
@@ -88,6 +149,10 @@ inline Pixel<N>::Pixel(const BinTable &bins, std::uint64_t bin_id, N count_)
     : Pixel(bins.at(bin_id), count_) {}
 
 template <typename N>
+inline Pixel<N>::Pixel(const hictk::BinTable &bins, const hictk::ThinPixel<N> &p)
+    : Pixel(bins, p.bin1_id, p.bin2_id, p.count) {}
+
+template <typename N>
 inline Pixel<N>::Pixel(const BinTable &bins, std::uint64_t bin1_id, std::uint64_t bin2_id, N count_)
     : Pixel(bins.at(bin1_id), bins.at(bin2_id), count_) {}
 
@@ -132,24 +197,35 @@ inline bool Pixel<N>::operator>=(const Pixel<N> &other) const noexcept {
   return this->coords >= other.coords;
 }
 
+template <typename N>
+inline ThinPixel<N> Pixel<N>::to_thin() const noexcept {
+  return ThinPixel<N>{this->coords.bin1.id(), this->coords.bin2.id(), this->count};
+}
+
 namespace internal {
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator<(const Node &other) const noexcept {
   assert(!!this->pixel);
   assert(!!other.pixel);
-  return this->pixel.coords < other.pixel.coords;
+  if (this->pixel.bin1_id != other.pixel.bin1_id) {
+    return this->pixel.bin1_id < other.pixel.bin1_id;
+  }
+  return this->pixel.bin2_id < other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator>(const Node &other) const noexcept {
   assert(!!this->pixel);
   assert(!!other.pixel);
-  return this->pixel.coords > other.pixel.coords;
+  if (this->pixel.bin1_id != other.pixel.bin1_id) {
+    return this->pixel.bin1_id > other.pixel.bin1_id;
+  }
+  return this->pixel.bin2_id > other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator==(const Node &other) const noexcept {
-  return this->pixel.coords == other.pixel.coords;
+  return this->pixel.bin1_id == other.pixel.bin1_id && this->pixel.bin2_id == other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
@@ -181,7 +257,7 @@ inline void PixelMerger<PixelIt>::replace_top_node(std::size_t i) {
 }
 
 template <typename PixelIt>
-inline auto PixelMerger<PixelIt>::next() -> Pixel<N> {
+inline auto PixelMerger<PixelIt>::next() -> ThinPixel<N> {
   if (this->_pqueue.empty()) {
     return {};
   }

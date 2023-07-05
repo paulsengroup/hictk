@@ -20,6 +20,16 @@ inline std::string Dataset::file_name() const { return this->_root_group().getFi
 
 inline std::string Dataset::hdf5_path() const { return this->_dataset.getPath(); }
 
+inline std::string Dataset::name() const {
+  const auto path = hdf5_path();
+  const auto last_slash_pos = path.rfind('/');
+  if (last_slash_pos == std::string::npos) {
+    return path;
+  }
+
+  return path.substr(last_slash_pos + 1);
+}
+
 inline std::string Dataset::uri() const {
   return fmt::format(FMT_STRING("{}::{}"), this->file_name(), this->hdf5_path());
 }

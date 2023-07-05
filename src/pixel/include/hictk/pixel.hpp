@@ -18,9 +18,24 @@ namespace hictk {
 
 class Chromosome;
 
+template <typename N>
+struct ThinPixel {
+  std::size_t bin1_id{std::numeric_limits<std::size_t>::max()};  // NOLINT
+  std::size_t bin2_id{std::numeric_limits<std::size_t>::max()};  // NOLINT
+  N count{};                                                     // NOLINT
+
+  [[nodiscard]] explicit operator bool() const noexcept;
+  [[nodiscard]] bool operator==(const ThinPixel &other) const noexcept;
+  [[nodiscard]] bool operator!=(const ThinPixel &other) const noexcept;
+  [[nodiscard]] bool operator<(const ThinPixel &other) const noexcept;
+  [[nodiscard]] bool operator<=(const ThinPixel &other) const noexcept;
+  [[nodiscard]] bool operator>(const ThinPixel &other) const noexcept;
+  [[nodiscard]] bool operator>=(const ThinPixel &other) const noexcept;
+};
+
 struct PixelCoordinates {
-  Bin bin1;
-  Bin bin2;
+  Bin bin1;  // NOLINT
+  Bin bin2;  // NOLINT
 
   PixelCoordinates() = default;
   PixelCoordinates(Bin bin1_, Bin bin2_) noexcept;
@@ -42,8 +57,8 @@ template <typename N>
 struct Pixel {
   static_assert(std::is_arithmetic_v<N>);
 
-  PixelCoordinates coords{};
-  N count{};
+  PixelCoordinates coords{};  // NOLINT
+  N count{};                  // NOLINT
 
   Pixel() = default;
   explicit Pixel(Bin bin, N count_ = 0) noexcept;
@@ -55,6 +70,7 @@ struct Pixel {
 
   Pixel(const BinTable &bins, std::uint64_t bin1_id, std::uint64_t bin2_id, N count_ = 0);
   Pixel(const BinTable &bins, std::uint64_t bin_id, N count_ = 0);
+  Pixel(const BinTable &bins, const ThinPixel<N> &p);
 
   [[nodiscard]] explicit operator bool() const noexcept;
   [[nodiscard]] bool operator==(const Pixel<N> &other) const noexcept;
@@ -63,6 +79,8 @@ struct Pixel {
   [[nodiscard]] bool operator<=(const Pixel<N> &other) const noexcept;
   [[nodiscard]] bool operator>(const Pixel<N> &other) const noexcept;
   [[nodiscard]] bool operator>=(const Pixel<N> &other) const noexcept;
+
+  [[nodiscard]] ThinPixel<N> to_thin() const noexcept;
 };
 
 namespace internal {
@@ -75,8 +93,8 @@ template <typename PixelIt>
 class PixelMerger {
   using N = decltype(std::declval<PixelIt>()->count);
   struct Node {
-    Pixel<N> pixel{};  // NOLINT
-    std::size_t i{};   // NOLINT
+    ThinPixel<N> pixel{};  // NOLINT
+    std::size_t i{};       // NOLINT
 
     bool operator<(const Node &other) const noexcept;
     bool operator>(const Node &other) const noexcept;
@@ -84,7 +102,7 @@ class PixelMerger {
     bool operator!=(const Node &other) const noexcept;
   };
 
-  std::vector<Pixel<N>> _buffer{};
+  std::vector<ThinPixel<N>> _buffer{};
   std::priority_queue<Node, std::vector<Node>, std::greater<>> _pqueue{};
 
   std::vector<PixelIt> _heads{};
@@ -93,7 +111,7 @@ class PixelMerger {
  public:
   PixelMerger() = delete;
   PixelMerger(std::vector<PixelIt> head, std::vector<PixelIt> tail);
-  [[nodiscard]] auto next() -> Pixel<N>;
+  [[nodiscard]] auto next() -> ThinPixel<N>;
 
  private:
   void replace_top_node(std::size_t i);

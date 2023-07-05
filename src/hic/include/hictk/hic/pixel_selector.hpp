@@ -92,7 +92,7 @@ class PixelSelector {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
     const PixelSelector *_sel{};
-    using BufferT = std::vector<Pixel<N>>;
+    using BufferT = std::vector<ThinPixel<N>>;
     using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
     std::size_t _bin1_id{};
@@ -102,7 +102,7 @@ class PixelSelector {
 
    public:
     using difference_type = std::ptrdiff_t;
-    using value_type = Pixel<N>;
+    using value_type = ThinPixel<N>;
     using pointer = value_type *;
     using const_pointer = const value_type *;
     using reference = value_type &;
@@ -175,8 +175,8 @@ class PixelSelectorAll {
   template <typename N>
   class iterator {
     struct Pair {
-      PixelSelector::iterator<N> first{};
-      PixelSelector::iterator<N> last{};
+      PixelSelector::iterator<N> first{};  // NOLINT
+      PixelSelector::iterator<N> last{};   // NOLINT
       bool operator<(const Pair &other) const noexcept;
       bool operator>(const Pair &other) const noexcept;
     };
@@ -188,12 +188,12 @@ class PixelSelectorAll {
 
     std::uint32_t _chrom1_id{};
 
-    std::shared_ptr<std::vector<Pixel<N>>> _buff{};
+    std::shared_ptr<std::vector<ThinPixel<N>>> _buff{};
     std::size_t _i{};
 
    public:
     using difference_type = std::ptrdiff_t;
-    using value_type = Pixel<N>;
+    using value_type = ThinPixel<N>;
     using pointer = value_type *;
     using const_pointer = const value_type *;
     using reference = value_type &;

@@ -13,7 +13,6 @@ add_library(hictk::cooler ALIAS cooler)
 target_sources(
   cooler
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/balancing_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_iterator_impl.hpp
@@ -36,6 +35,7 @@ target_link_libraries(
   cooler
   INTERFACE hictk_project_warnings
             hictk_project_options
+            hictk::balancing
             hictk::bin_table
             hictk::chromosome
             hictk::common

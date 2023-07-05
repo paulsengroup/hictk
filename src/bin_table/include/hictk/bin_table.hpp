@@ -110,8 +110,8 @@ class BinTable {
   // Map bin_id to Bin
   [[nodiscard]] Bin at(std::uint64_t bin_id) const;
   [[nodiscard]] std::pair<Bin, Bin> at(const GenomicInterval &gi) const;
-  [[nodiscard]] Bin at(const Chromosome &chrom, std::uint32_t pos) const;
-  [[nodiscard]] Bin at(std::string_view chrom_name, std::uint32_t pos) const;
+  [[nodiscard]] Bin at(const Chromosome &chrom, std::uint32_t pos = 0) const;
+  [[nodiscard]] Bin at(std::string_view chrom_name, std::uint32_t pos = 0) const;
   [[nodiscard]] Bin at(std::uint32_t chrom_id, std::uint32_t pos) const;
   [[nodiscard]] Bin at_hint(std::uint64_t bin_id, const Chromosome &chrom) const;
 
