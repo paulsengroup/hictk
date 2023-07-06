@@ -186,6 +186,7 @@ jobs:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.xz
           fail-on-cache-miss: true
+          enableCrossOsArchive: true
 
       - name: Extract test dataset
         run: tar -xf test/data/hictk_test_data.tar.xz

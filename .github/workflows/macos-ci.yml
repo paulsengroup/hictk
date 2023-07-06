@@ -213,7 +213,7 @@ jobs:
       - name: Upload unit tests
         uses: actions/upload-artifact@v3
         with:
-          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler_name }}-${{ matrix.compiler_version }}-${{ matrix.build_type }}
           path: unit-tests.tar.zst
           if-no-files-found: error
           retention-days: 1
@@ -221,7 +221,7 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
-          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler_name }}-${{ matrix.compiler_version }}-${{ matrix.build_type }}
           path: binaries.tar.zst
           if-no-files-found: error
           retention-days: 1
@@ -237,10 +237,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
-
-    container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
-      options: "--user=root"
 
     steps:
       - name: Checkout repo
@@ -260,7 +256,7 @@ jobs:
       - name: Download unit tests artifact
         uses: actions/download-artifact@v3
         with:
-          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler_name }}-${{ matrix.compiler_version }}-${{ matrix.build_type }}
 
       - name: Extract binaries test dataset
         run: |
@@ -283,10 +279,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
-
-    container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
-      options: "--user=root"
 
     steps:
       - name: Checkout repo
@@ -319,7 +311,7 @@ jobs:
       - name: Download binaries artifact
         uses: actions/download-artifact@v3
         with:
-          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler_name }}-${{ matrix.compiler_version }}-${{ matrix.build_type }}
 
       - name: Extract binaries test dataset
         run: |
@@ -328,11 +320,11 @@ jobs:
 
       - name: Test hictk convert (hic2cool)
         run: |
-          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
+          test/scripts/hictk_convert_hic2cool.sh bin/hictk
 
       - name: Test hictk convert (cool2hic)
         run: |
-          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk hic_tools.jar
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
 
 
   macos-ci-status-check:

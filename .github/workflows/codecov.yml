@@ -154,6 +154,9 @@ jobs:
           path: test/data/hictk_test_data.tar.xz
           fail-on-cache-miss: true
 
+      - name: Extract test dataset
+        run: tar -xf test/data/hictk_test_data.tar.xz
+
       - name: Run unit tests
         run: |
           ctest --test-dir build/   \

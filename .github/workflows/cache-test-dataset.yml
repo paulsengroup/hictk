@@ -55,13 +55,6 @@ jobs:
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "checksum=$checksum" >> $GITHUB_OUTPUT
 
-      - name: Cache test datasets
-        id: cache-dataset
-        uses: actions/cache@v3
-        with:
-          key: ${{ steps.generate-cache-key.outputs.key }}
-          path: ${{ env.TEST_DATASET_PATH }}
-
       - name: Download test dataset
         if: steps.cache-dset.outputs.cache-hit != 'true'
         run: |
