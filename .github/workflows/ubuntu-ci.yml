@@ -115,8 +115,11 @@ jobs:
 
             return { include: includes }
 
+  cache-test-dataset:
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+
   build-project:
-    needs: matrix-factory
+    needs: [matrix-factory, cache-test-dataset]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -244,6 +247,7 @@ jobs:
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
                 -S .                                                 \
                 -B build
 
@@ -252,6 +256,17 @@ jobs:
 
       - name: Print Ccache statistics
         run: ccache -s
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-datasets.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Extract test dataset
+        run: |
+          tar -xf test/data/hictk_test_data.tar.xz
 
       - name: Run unit tests
         working-directory: build
