@@ -141,13 +141,12 @@ jobs:
         run: ccache -s
 
       - name: Run unit tests
-        working-directory: build
         run: |
-          ctest --test-dir .        \
+          ctest --test-dir build/   \
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 240       \
+                --timeout 60        \
                 -j $(nproc) |&
           head -n 1000
 
