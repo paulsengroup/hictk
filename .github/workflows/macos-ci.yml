@@ -263,6 +263,18 @@ jobs:
           zstd -dcf unit-tests.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
+      - name: Generate requirements.txt for pip
+        run: |
+          echo 'cmake==${{ matrix.cmake-ver }}' > requirements.txt
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
       - name: Run unit tests
         run: |
           ctest --test-dir build/   \
