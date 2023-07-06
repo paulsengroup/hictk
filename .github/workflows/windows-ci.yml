@@ -44,7 +44,11 @@ defaults:
     shell: bash
 
 jobs:
+  cache-test-dataset:
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+
   build-project:
+    needs: cache-test-dataset
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -175,9 +179,6 @@ jobs:
 
       - name: Print Ccache statistics
         run: ccache -s
-
-      - name: Ensure test dataset is cached
-        uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
 
       - name: Restore test dataset
         uses: actions/cache/restore@v3

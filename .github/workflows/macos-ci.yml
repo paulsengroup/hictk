@@ -83,8 +83,8 @@ jobs:
 
       - name: Generate requirements.txt for pip
         run: |
-          echo 'conan==${{ matrix.conan-ver }}' > requirements.txt
-          echo 'cmake==${{ matrix.cmake-ver }}' >> requirements.txt
+          echo 'conan==${{ matrix.conan }}' > requirements.txt
+          echo 'cmake==${{ matrix.cmake }}' >> requirements.txt
 
       - uses: actions/setup-python@v4
         with:

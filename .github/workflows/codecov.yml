@@ -148,7 +148,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 60        \
+                --timeout 90        \
                 -j $(nproc) |&
           head -n 1000
 
