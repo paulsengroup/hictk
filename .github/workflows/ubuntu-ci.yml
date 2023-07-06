@@ -131,6 +131,7 @@ jobs:
 
     env:
       CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "250M"
       CONAN_HOME: "/opt/conan/"

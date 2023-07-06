@@ -40,6 +40,7 @@ defaults:
 
 env:
   CCACHE_DIR: "/opt/ccache-cache"
+  CCACHE_COMPILERCHECK: "content"
   CCACHE_COMPRESSLEVEL: "13"
   CCACHE_MAXSIZE: "200M"
   CONAN_HOME: "/opt/conan/"

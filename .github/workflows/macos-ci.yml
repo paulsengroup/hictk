@@ -34,6 +34,7 @@ concurrency:
 
 env:
   CCACHE_DIR: "${{ github.workspace }}/ccache-cache"
+  CCACHE_COMPILERCHECK: "content"
   CCACHE_COMPRESSLEVEL: "1"
   CCACHE_MAXSIZE: "250M"
   CONAN_HOME: "${{ github.workspace }}/.conan2"
