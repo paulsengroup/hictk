@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(CLI11 QUIET REQUIRED)
 find_package(Filesystem REQUIRED)
 
 add_executable(hictk_test_compare_coolers)
