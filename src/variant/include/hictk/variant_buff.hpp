@@ -19,16 +19,16 @@ class VariantBuffer {
   // Variants are listed in order from the most common to the least common for perf. reasons
   // clang-format off
   using BuffT = std::variant<
-      std::vector<std::uint32_t>,
-      std::vector<std::uint64_t>,
       std::vector<std::int32_t>,
+      std::vector<std::int64_t>,
       std::vector<double>,
       std::vector<std::string>,
       std::vector<std::uint8_t>,
       std::vector<std::uint16_t>,
+      std::vector<std::uint32_t>,
+      std::vector<std::uint64_t>,
       std::vector<std::int8_t>,
       std::vector<std::int16_t>,
-      std::vector<std::int64_t>,
       std::vector<float>,
       std::vector<long double>>;
   // clang-format on
