@@ -14,7 +14,6 @@ add_subdirectory(pixel)
 add_subdirectory(reference)
 add_subdirectory(variant)
 
-option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 if(HICTK_BUILD_TOOLS)
   message(STATUS "Building cli tools.")
   add_subdirectory(hictk)

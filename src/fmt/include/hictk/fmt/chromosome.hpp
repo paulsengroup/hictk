@@ -33,7 +33,7 @@ struct formatter<hictk::Chromosome> {
     return it;
   }
 
-  format_context::iterator format(const hictk::Chromosome& c, format_context& ctx) const {
+  inline format_context::iterator format(const hictk::Chromosome& c, format_context& ctx) const {
     return this->presentation == Presentation::tsv
                ? fmt::format_to(ctx.out(), FMT_STRING("{}\t{}"), c.name(), c.size())
                : fmt::format_to(ctx.out(), FMT_STRING("{}:{}"), c.name(), c.size());

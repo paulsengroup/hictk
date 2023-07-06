@@ -34,7 +34,7 @@ for compiler in gcc clang; do
 
     conan install \
       --build=missing \
-      --build=cascade \
+      --update \
       -pr "$profile"  \
       -s compiler.cppstd=17 \
       -s build_type="$build_type" \
