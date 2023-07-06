@@ -26,6 +26,7 @@ TEST_CASE("Chromosome", "[chromosome][short]") {
     CHECK_FALSE(chrom1.is_all());
     CHECK(Chromosome{0, "All", 10}.is_all());
     CHECK(Chromosome{0, "aLl", 10}.is_all());
+    CHECK_FALSE(Chromosome{0, "123", 10}.is_all());
   }
 
   SECTION("operators") {
