@@ -39,7 +39,7 @@ target_link_system_libraries(
   std::filesystem
   PUBLIC
   Boost::filesystem
-  fmt::fmt
+  _hictk_fmt_tgt
   spdlog::spdlog
   Threads::Threads)
 
