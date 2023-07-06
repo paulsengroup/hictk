@@ -92,7 +92,8 @@ static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args)
   }
 }
 
-int main(int argc, char** argv) {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
   try {
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(argc, argv);

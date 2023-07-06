@@ -5,37 +5,42 @@
 include(FetchContent)
 
 FetchContent_Declare(
-  _hictk_catch2
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/catch2-v3.3.2.tar.xz
-  URL_HASH SHA256=05ac83d7c65d6ee4a499b8c98b32ef2cb30280d7691037981feffe498992804f
-  SYSTEM)
-
-FetchContent_Declare(
   _hictk_cli11
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/cli11-v2.3.2.tar.xz
   URL_HASH SHA256=009b7e7a29a4c1768760df470f288e79d746532e5f666776edafb52f18960685
-  SYSTEM
-  FIND_PACKAGE_ARGS
-  NAMES
-  CLI11)
+  SYSTEM)
 
 FetchContent_Declare(
   _hictk_fast_float
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fast_float-v5.2.0.tar.xz
   URL_HASH SHA256=4c46c081d2098d1d39f70a003e0ada92959b305c121addab60a92de1cfffaae2
-  SYSTEM
-  FIND_PACKAGE_ARGS
-  NAMES
-  FastFloat)
+  SYSTEM)
 
 FetchContent_Declare(
   _hictk_fmt
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v10.0.0.tar.xz
-  URL_HASH SHA256=8570604ab8bc1c4cf70c3eecd278c88be3acf941373374c4908ddf9e7ae84288
-  SYSTEM
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v9.1.0.tar.xz
+  URL_HASH SHA256=d2b242c76dbd3c7e0d763cb8b9021887e4b4e04f4adada24b0f19d4edbf02f96
   FIND_PACKAGE_ARGS
   NAMES
-  FMT)
+  fmt
+  VERSION
+  9.1
+  SYSTEM)
+
+FetchContent_Declare(
+  _hictk_highfive
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/highfive-v2.7.1.tar.xz
+  URL_HASH SHA256=951596d3e85bbc8c6ea00cd73ee76e2af203dd29febdce827016378d2f0925e8
+  SYSTEM)
+
+FetchContent_Declare(
+  _hictk_libdeflate
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/libdeflate-v1.18.tar.xz
+  URL_HASH SHA256=f1e1e2432f9329a5f53939527afb46c417c843520bd526be7f777ab270eb65a0
+  FIND_PACKAGE_ARGS
+  NAMES
+  libdeflate
+  SYSTEM)
 
 FetchContent_Declare(
   _hictk_phmap
@@ -44,56 +49,52 @@ FetchContent_Declare(
   SYSTEM)
 
 FetchContent_Declare(
-  _hictk_project_options
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/project_options-v0.29.0.tar.xz
-  URL_HASH SHA256=ee2836af616d42e22c61048f4aedafd104fbfd97cf52bdd122a212d98777304c
-  SYSTEM)
-
-FetchContent_Declare(
   _hictk_readerwriterqueue
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/readerwriterqueue-v1.0.6.tar.xz
   URL_HASH SHA256=332dc71267b625e0402515417f0fb63977354d233fc4b04b1f0ad319ad43110c
-  SYSTEM
-  FIND_PACKAGE_ARGS
-  NAMES
-  readerwriterqueue)
-
-FetchContent_Declare(
-  _hictk_spanlite
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/spanlite-v0.10.3.tar.xz
-  URL_HASH SHA256=3bfccb1a2f246da92303185df67de3e57de454e4aa5d861d3bfc81bff9771559
-  SYSTEM
-  FIND_PACKAGE_ARGS
-  NAMES
-  span-lite)
+  SYSTEM)
 
 FetchContent_Declare(
   _hictk_spdlog
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog-v1.11.0.tar.xz
   URL_HASH SHA256=7bb89d5baba54638a2107291c40f2972428ac32a3c65609b2ffedb2d295ca1ad
-  SYSTEM
   FIND_PACKAGE_ARGS
   NAMES
-  spdlog)
+  spdlog
+  VERSION
+  1.11
+  SYSTEM)
+
+FetchContent_MakeAvailable(
+  _hictk_fast_float
+  _hictk_fmt
+  _hictk_libdeflate
+  _hictk_phmap
+  _hictk_project_options)
+
+if(HICTK_BUILD_TOOLS)
+  FetchContent_MakeAvailable(
+    _hictk_cli11
+    _hictk_fast_float
+    _hictk_fmt
+    _hictk_readerwriterqueue
+    _hictk_spdlog)
+endif()
 
 set(HIGHFIVE_PARALLEL_HDF5 OFF)
 set(HIGHFIVE_USE_BOOST OFF)
 set(HIGHFIVE_USE_EIGEN OFF)
 set(HIGHFIVE_USE_XTENSOR OFF)
 set(HIGHFIVE_USE_OPENCV OFF)
+FetchContent_GetProperties(_hictk_highfive)
+if(NOT _hictk_highfive_POPULATED)
+  FetchContent_Populate(_hictk_highfive)
+endif()
 
-FetchContent_MakeAvailable(
-  _hictk_catch2
-  _hictk_cli11
-  _hictk_fast_float
-  _hictk_fmt
-  _hictk_phmap
-  _hictk_project_options
-  _hictk_readerwriterqueue
-  _hictk_spanlite
-  _hictk_spdlog)
+add_library(HighFive INTERFACE)
+target_include_directories(HighFive INTERFACE ${_hictk_highfive_SOURCE_DIR}/include)
 
-include_directories(SYSTEM ${_hictk_phmap_SOURCE_DIR})
+add_library(_hictk_phmap_tgt INTERFACE)
+target_include_directories(_hictk_phmap_tgt INTERFACE ${_hictk_phmap_SOURCE_DIR})
+
 include(${_hictk_project_options_SOURCE_DIR}/Index.cmake)
-
-list(APPEND CMAKE_MODULE_PATH ${_hictk_catch2_SOURCE_DIR}/extras)

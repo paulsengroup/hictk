@@ -5,9 +5,17 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <hdf5/H5Ipublic.h>
-#include <hdf5/H5Ppublic.h>
-#include <hdf5/H5Tpublic.h>
+
+#if __has_include(<hdf5/hdf5.h>)
+    #include <hdf5/H5Ipublic.h>
+    #include <hdf5/H5Ppublic.h>
+    #include <hdf5/H5Tpublic.h>
+#else
+#include <H5Ipublic.h>
+#include <H5Ppublic.h>
+#include <H5Tpublic.h>
+#endif
+
 
 #include <cassert>
 #include <cstdint>

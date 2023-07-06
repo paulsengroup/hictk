@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
-find_package(libdeflate QUIET REQUIRED)
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
@@ -34,7 +33,6 @@ target_link_system_libraries(
   hic
   INTERFACE
   fmt::fmt
-  libdeflate::libdeflate
-  phmap
-  nonstd::span-lite
+  $<IF:$<BOOL:${BUILD_SHARED_LIBS}>,libdeflate::libdeflate_shared,libdeflate::libdeflate_static>
+  _hictk_phmap_tgt
   std::filesystem)

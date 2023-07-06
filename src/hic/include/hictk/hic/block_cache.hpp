@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <nonstd/span.hpp>
 #include <queue>
 #include <vector>
 
