@@ -33,7 +33,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CCACHE_DIR: "${{ github.workspace }}/ccache-cache"
+  CCACHE_COMPRESSLEVEL: "13"
+  CCACHE_MAXSIZE: "200M"
   CONAN_HOME: "${{ github.workspace }}/.conan2"
+  HOMEBREW_NO_AUTO_UPDATE: "1"
 
 defaults:
   run:
@@ -74,6 +78,7 @@ jobs:
       - name: Install deps with PIP
         run: |
           pip install -r requirements.txt
+          brew install ccache
 
       - name: Generate cache key
         id: cache-key
@@ -81,17 +86,30 @@ jobs:
           set -u
 
           os="${{ matrix.os }}"
-          compiler="${{ matrix.compiler-name }}-${{ matrix.compiler-version }}"
+          compiler="${{ matrix.compiler_name }}"
           build_type="${{ matrix.build_type }}"
-          hash="${{ hashFiles('conanfile.txt', '.github/workflows/macos-ci.yml') }}"
 
-          echo "key=$os-$compiler-$hash-$build_type" >> $GITHUB_OUTPUT
+          conanfile_hash="${{ hashFiles('conanfile.txt') }}"
+          workflow_hash="${{ hashFiles('.github/workflows/macos-ci.yml') }}"
+          combined_hash="${{ hashFiles('conanfile.txt', '.github/workflows/macos-ci.yml') }}"
+
+          # This can be used by to always update a cache entry (useful e.g. for ccache)
+          current_date="$(date '+%s')"
+
+          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type"
+
+          echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
+          echo "conan-restore-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
+
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a $GITHUB_OUTPUT
+          echo "ccache-restore-key=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v3
         with:
-          key: conan-${{ steps.cache-key.outputs.key }}
+          key: conan-${{ steps.cache-key.outputs.conan-restore-key }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Configure Conan
@@ -130,8 +148,15 @@ jobs:
         uses: actions/cache/save@v3
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.key }}
+          key: conan-${{ steps.cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}
+
+      - name: Cache Ccache folder
+        uses: actions/cache@v3
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          path: ${{ env.CCACHE_DIR }}
 
       - name: Configure project
         run: |
@@ -147,6 +172,9 @@ jobs:
 
       - name: Build project
         run: cmake --build ${{ github.workspace }}/build
+
+      - name: Print Ccache statistics
+        run: ccache -s
 
       - name: Run unit tests
         working-directory: ${{ github.workspace }}/build
