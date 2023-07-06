@@ -67,8 +67,17 @@ if(HICTK_BUILD_TOOLS)
   FetchContent_MakeAvailable(
     _hictk_cli11
     _hictk_fast_float
-    _hictk_readerwriterqueue
-    _hictk_spdlog)
+    _hictk_readerwriterqueue)
+
+  # Setup fmt
+  FetchContent_GetProperties(_hictk_spdlog)
+  if(NOT _hictk_spdlog_POPULATED)
+    FetchContent_Populate(_hictk_spdlog)
+  endif()
+
+  add_library(_hictk_spdlog_tgt INTERFACE)
+  target_include_directories(_hictk_spdlog_tgt INTERFACE ${_hictk_spdlog_SOURCE_DIR}/include)
+  target_compile_definitions(_hictk_spdlog_tgt INTERFACE SPDLOG_FMT_EXTERNAL)
 endif()
 
 # Setup HighFive
@@ -93,6 +102,7 @@ endif()
 
 add_library(_hictk_fmt_tgt INTERFACE)
 target_include_directories(_hictk_fmt_tgt INTERFACE ${_hictk_fmt_SOURCE_DIR}/include)
+target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
 
 # Setup parallel_hashmap
 add_library(_hictk_phmap_tgt INTERFACE)

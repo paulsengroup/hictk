@@ -40,7 +40,7 @@ target_link_system_libraries(
   PUBLIC
   Boost::filesystem
   _hictk_fmt_tgt
-  spdlog::spdlog
+  _hictk_spdlog_tgt
   Threads::Threads)
 
 include(GNUInstallDirs)
