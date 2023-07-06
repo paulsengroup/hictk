@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <arrow/api.h>
+#include <arrow/python/arrow_to_pandas.h>
+#include <arrow/python/pyarrow.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -10,6 +13,7 @@
 #include "hictk/cooler/utils.hpp"
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 using namespace hictk;
 
 static bool is_cooler(std::string_view uri) { return bool(cooler::utils::is_cooler(uri)); }
@@ -25,7 +29,7 @@ static cooler::File cooler_ctor(std::string_view uri, const py::dict& py_chroms,
     chrom_names.push_back(py::cast<std::string>(it.first));
     chrom_sizes.push_back(py::cast<std::uint32_t>(it.second));
   }
-  Reference chroms(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
+  const Reference chroms(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
   return cooler::File::create_new_cooler(uri, chroms, bin_size, overwrite_if_exists);
 }
 
@@ -39,6 +43,7 @@ static py::dict cooler_chromosomes(const cooler::File& clr) {
   return py_chroms;
 }
 
+/*
 static py::object cooler_bins(const cooler::File& clr) {
   auto pd = py::module::import("pandas");
 
@@ -61,9 +66,76 @@ static py::object cooler_bins(const cooler::File& clr) {
   df.attr("columns") = std::vector<std::string>{"chrom", "start", "end"};
   return df;
 }
+*/
+
+static py::object cooler_bins(const cooler::File& clr) {
+  arrow::StringBuilder names_builder{};
+  arrow::UInt32Builder starts_builder{};
+  arrow::UInt32Builder ends_builder{};
+
+  auto reserve_array = [](auto& builder, auto size) {
+    auto s = builder.Reserve(size);
+    if (!s.ok()) {
+      throw std::runtime_error(s.ToString());
+    }
+  };
+
+  auto append = [](auto& builder, auto&& val) {
+    auto s = builder.Append(val);
+    if (!s.ok()) {
+      throw std::runtime_error(s.ToString());
+    }
+  };
+
+  auto finish = [](auto& builder) {
+    auto res = builder.Finish();
+    if (!res.ok()) {
+      throw std::runtime_error(res.status().ToString());
+    }
+    return *res;
+  };
+
+  const auto num_bins = static_cast<std::int64_t>(clr.bins().size());
+  reserve_array(names_builder, num_bins);
+  reserve_array(starts_builder, num_bins);
+  reserve_array(ends_builder, num_bins);
+
+  for (const auto& bin : clr.bins()) {
+    append(names_builder, bin.chrom().name());
+    append(starts_builder, bin.start());
+    append(ends_builder, bin.end());
+  }
+
+  auto names = finish(names_builder);
+  auto starts = finish(starts_builder);
+  auto ends = finish(ends_builder);
+
+  auto chrom = arrow::field("chrom", arrow::utf8());
+  auto start = arrow::field("start", arrow::int32());
+  auto end = arrow::field("end", arrow::int32());
+
+  auto schema = arrow::schema({chrom, start, end});
+  auto table =
+      arrow::Table::Make(schema,
+                         {std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector({names})),
+                          std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector({starts})),
+                          std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector({ends}))},
+                         num_bins);
+
+  arrow::py::PandasOptions opts{};
+  opts.strings_to_categorical = true;
+  opts.categorical_columns.emplace("chrom");
+  PyObject* df_ptr{};
+  auto s = arrow::py::ConvertTableToPandas(opts, table, &df_ptr);
+  if (!s.ok()) {
+    throw std::runtime_error(s.ToString());
+  }
+  return py::reinterpret_steal<py::object>(df_ptr);
+}
 
 template <typename PixelIt>
-static py::object pixel_iterators_to_df(PixelIt first_pixel, PixelIt last_pixel) {
+static py::object pixel_iterators_to_df(const BinTable& bins, PixelIt first_pixel,
+                                        PixelIt last_pixel) {
   using N = decltype(first_pixel->count);
 
   auto pd = py::module::import("pandas");
@@ -77,7 +149,9 @@ static py::object pixel_iterators_to_df(PixelIt first_pixel, PixelIt last_pixel)
   std::vector<std::int64_t> ends2{};
   std::vector<N> counts{};
 
-  std::for_each(first_pixel, last_pixel, [&](const Pixel<N>& p) {
+  std::for_each(first_pixel, last_pixel, [&](const ThinPixel<N>& tp) {
+    const Pixel<N> p{bins, tp};
+
     chrom_names1.emplace_back(p.coords.bin1.chrom().name());
     starts1.emplace_back(p.coords.bin1.start());
     ends1.emplace_back(p.coords.bin1.end());
@@ -89,21 +163,45 @@ static py::object pixel_iterators_to_df(PixelIt first_pixel, PixelIt last_pixel)
     counts.push_back(p.count);
   });
 
+  py::array_t<std::int64_t> starts1_py(static_cast<std::int64_t>(starts1.size()), starts1.data());
+  py::array_t<std::int64_t> ends1_py(static_cast<std::int64_t>(ends1.size()), ends1.data());
+
+  py::array_t<std::int64_t> starts2_py(static_cast<std::int64_t>(starts2.size()), starts2.data());
+  py::array_t<std::int64_t> ends2_py(static_cast<std::int64_t>(ends2.size()), ends2.data());
+  py::array_t<N> counts_py(static_cast<std::int64_t>(counts.size()), counts.data());
+
   py::dict py_pixels_dict{};
 
+  const auto t0 = std::chrono::steady_clock::now();
   py_pixels_dict["chrom1"] = std::move(chrom_names1);
-  py_pixels_dict["start1"] = std::move(starts1);
-  py_pixels_dict["end1"] = std::move(ends1);
+  const auto t1 = std::chrono::steady_clock::now();
+  py_pixels_dict["start1"] = starts1_py;
 
+  py_pixels_dict["end1"] = ends1_py;
+  const auto t2 = std::chrono::steady_clock::now();
   py_pixels_dict["chrom2"] = std::move(chrom_names2);
-  py_pixels_dict["start2"] = std::move(starts2);
-  py_pixels_dict["end2"] = std::move(ends2);
+  py_pixels_dict["start2"] = starts2_py;
+  py_pixels_dict["end2"] = ends2_py;
 
-  py_pixels_dict["count"] = std::move(counts);
+  py_pixels_dict["count"] = counts_py;
 
-  auto df = pd.attr("DataFrame")(py_pixels_dict);
+  const auto t3 = std::chrono::steady_clock::now();
+  auto df = pd.attr("DataFrame")(py_pixels_dict, "copy"_a = false);
   df.attr("columns") =
       std::vector<std::string>{"chrom1", "start1", "end1", "chrom2", "start2", "end2", "count"};
+  const auto t4 = std::chrono::steady_clock::now();
+
+  const auto delta1 =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()) /
+      1.0e6;
+  const auto delta2 =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) /
+      1.0e6;
+
+  const auto delta3 =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()) /
+      1.0e6;
+  fmt::print(FMT_STRING("{}\n{}\n{}\n"), delta1, delta2, delta3);
   return df;
 }
 
@@ -117,13 +215,13 @@ static py::object cooler_fetch(const cooler::File& clr, std::string_view range1,
       query_type == "UCSC" ? cooler::File::QUERY_TYPE::UCSC : cooler::File::QUERY_TYPE::BED;
 
   if (count_type == "int") {
-    auto sel = range2.empty() || range1 == range2 ? clr.fetch<std::int32_t>(range1, qt)
-                                                  : clr.fetch<std::int32_t>(range1, range2, qt);
-    return pixel_iterators_to_df(sel.begin(), sel.end());
+    auto sel = range2.empty() || range1 == range2 ? clr.fetch(range1, nullptr, qt)
+                                                  : clr.fetch(range1, range2, nullptr, qt);
+    return pixel_iterators_to_df(clr.bins(), sel.begin<std::int32_t>(), sel.end<std::int32_t>());
   }
-  auto sel = range2.empty() || range1 == range2 ? clr.fetch<double>(range1, qt)
-                                                : clr.fetch<double>(range1, range2, qt);
-  return pixel_iterators_to_df(sel.begin(), sel.end());
+  auto sel = range2.empty() || range1 == range2 ? clr.fetch(range1, nullptr, qt)
+                                                : clr.fetch(range1, range2, nullptr, qt);
+  return pixel_iterators_to_df(clr.bins(), sel.begin<double>(), sel.end<double>());
 }
 
 namespace internal {
@@ -134,8 +232,8 @@ static py::array_t<N> cooler_fetch_matrix(const cooler::File& clr, std::string_v
 
   const auto qt =
       query_type == "UCSC" ? cooler::File::QUERY_TYPE::UCSC : cooler::File::QUERY_TYPE::BED;
-  auto sel = range2.empty() || range1 == range2 ? clr.fetch<N>(range1, qt)
-                                                : clr.fetch<N>(range1, range2, qt);
+  auto sel = range2.empty() || range1 == range2 ? clr.fetch(range1, nullptr, qt)
+                                                : clr.fetch(range1, range2, nullptr, qt);
 
   const auto bin11 = sel.coord1().bin1.id();
   const auto bin12 = sel.coord1().bin2.id() + 1;
@@ -149,16 +247,16 @@ static py::array_t<N> cooler_fetch_matrix(const cooler::File& clr, std::string_v
   py::array_t<N> m(static_cast<ssize_t>(rows * cols));
   auto* m_ptr = m.mutable_data();
 
-  for (const auto& p : sel) {
-    const auto i1 = p.coords.bin1.id() - bin11;
-    const auto i2 = p.coords.bin2.id() - bin21;
+  std::for_each(sel.begin<N>(), sel.end<N>(), [&](const ThinPixel<N>& p) {
+    const auto i1 = p.bin1_id - bin11;
+    const auto i2 = p.bin2_id - bin21;
 
     const auto i = (i1 * cols) + i2;
     const auto j = (i2 * cols) + i1;
 
     m_ptr[i] = p.count;
     m_ptr[j] = p.count;
-  }
+  });
 
   return m.reshape({rows, cols});
 }
@@ -179,6 +277,10 @@ static py::object cooler_fetch_matrix(const cooler::File& clr, std::string_view 
 PYBIND11_MODULE(hictkpy, m) {
   [[maybe_unused]] auto np = py::module::import("numpy");
   [[maybe_unused]] auto pd = py::module::import("pandas");
+
+  if (arrow::py::import_pyarrow() != 0) {
+    throw std::runtime_error("failed to initialize pyarrow");
+  }
 
   m.doc() = "Blazing fast toolkit to work with .hic and .cool files";
   auto cooler = m.def_submodule("cooler");

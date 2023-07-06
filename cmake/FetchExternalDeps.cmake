@@ -37,9 +37,6 @@ FetchContent_Declare(
   _hictk_libdeflate
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/libdeflate-v1.18.tar.xz
   URL_HASH SHA256=f1e1e2432f9329a5f53939527afb46c417c843520bd526be7f777ab270eb65a0
-  FIND_PACKAGE_ARGS
-  NAMES
-  libdeflate
   SYSTEM)
 
 FetchContent_Declare(

@@ -40,5 +40,15 @@ for compiler in gcc clang; do
       -s build_type="$build_type" \
       --output-folder="$outdir" \
       "$conanfile"
+
+     conan install \
+       --build=missing \
+       --update \
+       -pr "$profile"  \
+       -s compiler.cppstd=17 \
+       -s build_type="$build_type" \
+       -o shared=True \
+       --output-folder="$outdir" \
+       "$conanfile"
   done
 done

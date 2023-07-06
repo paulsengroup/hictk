@@ -4,8 +4,13 @@ requires = [
   "wheel",
   "ninja",
   "cmake>=3.25",
+  "pyarrow"
 ]
 build-backend = "setuptools.build_meta"
+
+dependencies = [
+  "pyarrow"
+]
 
 [tool.mypy]
 files = "setup.py"
