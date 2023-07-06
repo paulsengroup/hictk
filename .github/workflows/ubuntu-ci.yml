@@ -271,7 +271,12 @@ jobs:
       - name: Upload unit tests
         uses: actions/upload-artifact@v3
         with:
-          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: >
+            unit-tests-${{ matrix.os }}-
+            ${{ matrix.compiler }}-
+            ${{ matrix.generator }}-
+            ${{ matrix.build_type }}-
+            ${{ matrix.developer_mode }}
           path: unit-tests.tar.zst
           if-no-files-found: error
           retention-days: 1
@@ -279,7 +284,12 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
-          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: >
+            binaries-${{ matrix.os }}-
+            ${{ matrix.compiler }}-
+            ${{ matrix.generator }}-
+            ${{ matrix.build_type }}-
+            ${{ matrix.developer_mode }}
           path: binaries.tar.zst
           if-no-files-found: error
           retention-days: 1
@@ -318,7 +328,12 @@ jobs:
       - name: Download unit tests artifact
         uses: actions/download-artifact@v3
         with:
-          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: >
+            unit-tests-${{ matrix.os }}-
+            ${{ matrix.compiler }}-
+            ${{ matrix.generator }}-
+            ${{ matrix.build_type }}-
+            ${{ matrix.developer_mode }}
 
       - name: Extract binaries and test dataset
         run: |
@@ -385,7 +400,12 @@ jobs:
       - name: Download binaries artifact
         uses: actions/download-artifact@v3
         with:
-          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          name: >
+            binaries-${{ matrix.os }}-
+            ${{ matrix.compiler }}-
+            ${{ matrix.generator }}-
+            ${{ matrix.build_type }}-
+            ${{ matrix.developer_mode }}
 
       - name: Extract binaries and test dataset
         run: |
