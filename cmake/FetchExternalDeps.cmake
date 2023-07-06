@@ -20,11 +20,6 @@ FetchContent_Declare(
   _hictk_fmt
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v9.1.0.tar.xz
   URL_HASH SHA256=d2b242c76dbd3c7e0d763cb8b9021887e4b4e04f4adada24b0f19d4edbf02f96
-  FIND_PACKAGE_ARGS
-  NAMES
-  fmt
-  VERSION
-  9.1
   SYSTEM)
 
 FetchContent_Declare(
@@ -37,9 +32,6 @@ FetchContent_Declare(
   _hictk_libdeflate
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/libdeflate-v1.18.tar.xz
   URL_HASH SHA256=f1e1e2432f9329a5f53939527afb46c417c843520bd526be7f777ab270eb65a0
-  FIND_PACKAGE_ARGS
-  NAMES
-  libdeflate
   SYSTEM)
 
 FetchContent_Declare(
@@ -67,7 +59,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(
   _hictk_fast_float
-  _hictk_fmt
   _hictk_libdeflate
   _hictk_phmap
   _hictk_project_options)
@@ -76,11 +67,20 @@ if(HICTK_BUILD_TOOLS)
   FetchContent_MakeAvailable(
     _hictk_cli11
     _hictk_fast_float
-    _hictk_fmt
-    _hictk_readerwriterqueue
-    _hictk_spdlog)
+    _hictk_readerwriterqueue)
+
+  # Setup fmt
+  FetchContent_GetProperties(_hictk_spdlog)
+  if(NOT _hictk_spdlog_POPULATED)
+    FetchContent_Populate(_hictk_spdlog)
+  endif()
+
+  add_library(_hictk_spdlog_tgt INTERFACE)
+  target_include_directories(_hictk_spdlog_tgt INTERFACE ${_hictk_spdlog_SOURCE_DIR}/include)
+  target_compile_definitions(_hictk_spdlog_tgt INTERFACE SPDLOG_FMT_EXTERNAL)
 endif()
 
+# Setup HighFive
 set(HIGHFIVE_PARALLEL_HDF5 OFF)
 set(HIGHFIVE_USE_BOOST OFF)
 set(HIGHFIVE_USE_EIGEN OFF)
@@ -94,7 +94,19 @@ endif()
 add_library(HighFive INTERFACE)
 target_include_directories(HighFive INTERFACE ${_hictk_highfive_SOURCE_DIR}/include)
 
+# Setup fmt
+FetchContent_GetProperties(_hictk_fmt)
+if(NOT _hictk_fmt_POPULATED)
+  FetchContent_Populate(_hictk_fmt)
+endif()
+
+add_library(_hictk_fmt_tgt INTERFACE)
+target_include_directories(_hictk_fmt_tgt INTERFACE ${_hictk_fmt_SOURCE_DIR}/include)
+target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
+
+# Setup parallel_hashmap
 add_library(_hictk_phmap_tgt INTERFACE)
 target_include_directories(_hictk_phmap_tgt INTERFACE ${_hictk_phmap_SOURCE_DIR})
 
+# Setup project_options
 include(${_hictk_project_options_SOURCE_DIR}/Index.cmake)
