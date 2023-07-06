@@ -38,16 +38,16 @@ void File::append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pix
 
   if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
     bin1_dset.append(first_pixel, last_pixel,
-                     [&](const Pixel<T> &pixel) { return pixel.coords.bin1.id(); });
+                     [&](const auto &pixel) { return pixel.coords.bin1.id(); });
 
     bin2_dset.append(first_pixel, last_pixel,
-                     [&](const Pixel<T> &pixel) { return pixel.coords.bin2.id(); });
+                     [&](const auto &pixel) { return pixel.coords.bin2.id(); });
   } else {
     bin1_dset.append(first_pixel, last_pixel,
-                     [&](const ThinPixel<T> &pixel) { return pixel.bin1_id; });
+                     [&](const auto &pixel) { return pixel.bin1_id; });
 
     bin2_dset.append(first_pixel, last_pixel,
-                     [&](const ThinPixel<T> &pixel) { return pixel.bin2_id; });
+                     [&](const auto &pixel) { return pixel.bin2_id; });
   }
 }
 
