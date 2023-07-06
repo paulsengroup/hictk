@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Boost QUIET REQUIRED)
-find_package(CLI11 QUIET REQUIRED)
-find_package(fmt QUIET REQUIRED)
+find_package(Boost COMPONENTS headers filesystem)
+if(NOT boost_FOUND)
+  find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
+endif()
+
 find_package(Filesystem REQUIRED)
-find_package(readerwriterqueue QUIET REQUIRED)
-find_package(spdlog QUIET REQUIRED)
 find_package(Threads REQUIRED)
 
 add_executable(hictk_tools)
@@ -35,7 +35,7 @@ target_link_system_libraries(
   PRIVATE
   Boost::headers
   CLI11::CLI11
-  readerwriterqueue::readerwriterqueue
+  readerwriterqueue
   std::filesystem
   PUBLIC
   Boost::filesystem

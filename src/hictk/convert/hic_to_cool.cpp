@@ -4,7 +4,7 @@
 
 #include <fmt/format.h>
 #include <fmt/std.h>
-#include <readerwriterqueue/readerwriterqueue.h>
+#include <readerwriterqueue.h>
 #include <spdlog/spdlog.h>
 
 #include <future>

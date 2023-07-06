@@ -22,13 +22,11 @@ function(ConfigureVersioning input_config_folder output_config_folder)
   file(TOUCH ${POST_CONFIGURE_FILE})
 
   if(HICTK_ENABLE_GIT_VERSION_TRACKING)
-    # cmake-format: off
+    include(FetchContent)
     FetchContent_Declare(
-            _hictk_cmake-git-version-tracking
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz
-            URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365
-    )
-    # cmake-format: on
+      _hictk_cmake-git-version-tracking
+      URL ${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz
+      URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365)
     FetchContent_MakeAvailable(_hictk_cmake-git-version-tracking)
 
     set(GIT_IGNORE_UNTRACKED ON)

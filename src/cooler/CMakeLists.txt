@@ -3,20 +3,15 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
-find_package(HighFive CONFIG QUIET)
-if(NOT HighFive_FOUND)
-  find_package(HighFive QUIET)
-endif()
-
-find_package(HDF5 CONFIG QUIET)
+find_package(HDF5 COMPONENTS C)
 if(NOT HDF5_FOUND)
-  find_package(HDF5 QUIET REQUIRED)
+  find_package(HDF5 CONFIG REQUIRED COMPONENTS C)
 endif()
 
-add_library(hictk INTERFACE)
-add_library(hictk::cooler ALIAS hictk)
+add_library(cooler INTERFACE)
+add_library(hictk::cooler ALIAS cooler)
 target_sources(
-  hictk
+  cooler
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/balancing_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_impl.hpp
@@ -35,10 +30,10 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/validation_impl.hpp)
 
-target_include_directories(hictk INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(cooler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
 target_link_libraries(
-  hictk
+  cooler
   INTERFACE hictk_project_warnings
             hictk_project_options
             hictk::bin_table
@@ -51,7 +46,7 @@ target_link_libraries(
             hictk::variant)
 
 target_link_system_libraries(
-  hictk
+  cooler
   INTERFACE
   FastFloat::fast_float
   fmt::fmt
@@ -60,4 +55,4 @@ target_link_system_libraries(
   std::filesystem
   _hictk_phmap_tgt)
 
-install(TARGETS hictk INCLUDES)
+install(TARGETS cooler INCLUDES)

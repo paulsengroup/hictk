@@ -70,7 +70,7 @@ struct fmt::formatter<hictk::Pixel<N>> {
   }
 
   template <typename FormatContext>
-  auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
+  inline auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
     if (this->presentation == Presentation::raw) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{}"), p.coords, p.count);
     }

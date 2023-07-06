@@ -19,7 +19,6 @@ set(ENABLE_DEVELOPER_MODE
     OFF
     CACHE BOOL "Enable 'developer mode'")
 
-include(cmake/FetchExternalDeps.cmake)
 include(cmake/Versioning.cmake)
 
 project(
@@ -28,6 +27,14 @@ project(
   VERSION ${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}
   HOMEPAGE_URL https://github.com/robomics/hictk
   DESCRIPTION "High-performance C++ library to read and write .cool files.")
+
+include(FetchContent)
+FetchContent_Declare(
+  _hictk_project_options
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/project_options-v0.29.0.tar.xz
+  URL_HASH SHA256=ee2836af616d42e22c61048f4aedafd104fbfd97cf52bdd122a212d98777304c
+  SYSTEM)
+FetchContent_MakeAvailable(_hictk_project_options)
 
 get_property(BUILDING_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(BUILDING_MULTI_CONFIG)
@@ -103,19 +110,25 @@ dynamic_project_options(
 target_compile_features(hictk_project_options INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
 
 # Tweak fmt
-target_compile_definitions(hictk_project_options INTERFACE FMT_ENFORCE_COMPILE_STRING)
+target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
+# Tweak spdlog
+target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
 
-if (WIN32)
+if(WIN32)
   target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
 endif()
 
-if (MSVC)
+if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif()
 
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" ON)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
+option(HICTK_BUILD_TOOLS "Build cli tools" ON)
+
+include(cmake/FetchExternalDeps.cmake)
 
 add_subdirectory(src)
 
