@@ -51,7 +51,3 @@ boost*:without_timer=True
 boost*:without_type_erasure=True
 boost*:without_url=True
 boost*:without_wave=True
-highfive*:with_boost=False
-highfive*:with_eigen=False
-highfive*:with_opencv=False
-highfive*:with_xtensor=False
