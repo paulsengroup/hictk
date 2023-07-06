@@ -98,7 +98,7 @@ jobs:
           echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
           echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
 
-      - name: Install deps with PIP
+      - name: Install build deps
         run: |
           pip install -r requirements.txt
           brew install ccache
@@ -265,7 +265,7 @@ jobs:
 
       - name: Generate requirements.txt for pip
         run: |
-          echo 'cmake==${{ matrix.cmake-ver }}' > requirements.txt
+          echo 'cmake==${{ matrix.cmake }}' > requirements.txt
 
       - uses: actions/setup-python@v4
         with:
