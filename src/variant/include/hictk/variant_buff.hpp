@@ -32,7 +32,7 @@ class VariantBuffer {
       std::vector<float>,
       std::vector<long double>>;
   // clang-format on
-  BuffT _buff{std::vector<std::uint32_t>{}};
+  BuffT _buff{std::vector<std::int32_t>{}};
 
  public:
   VariantBuffer() = default;

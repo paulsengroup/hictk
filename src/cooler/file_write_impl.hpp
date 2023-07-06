@@ -33,8 +33,8 @@ namespace hictk::cooler {
 template <typename PixelIt>
 void File::append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,
                        PixelIt last_pixel) {
-  using PixelT = remove_cvref_t<decltype(*first_pixel)>;
-  using T = decltype(first_pixel->count);
+  using PixelT = std::decay_t<decltype(*first_pixel)>;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
 
   if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
     bin1_dset.append(first_pixel, last_pixel,
@@ -55,7 +55,7 @@ template <typename PixelIt, typename N>
 void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
                          PixelIt last_pixel, N &sum, N &cis_sum) {
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
-  using T = decltype(first_pixel->count);
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
 
   sum = 0;
   cis_sum = 0;
@@ -92,7 +92,7 @@ void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixe
 template <typename PixelIt, typename>
 inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool validate) {
   using PixelT = std::decay_t<decltype(*first_pixel)>;
-  using T = decltype(first_pixel->count);
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
   if constexpr (ndebug_not_defined()) {
     this->validate_pixel_type<T>();
   }
@@ -351,8 +351,8 @@ inline void File::write_bin_table(Dataset &chrom_dset, Dataset &start_dset, Data
 
 template <typename PixelIt>
 inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
-  using PixelT = remove_cvref_t<decltype(*first_pixel)>;
-  using T = decltype(first_pixel->count);
+  using PixelT = std::decay_t<decltype(*first_pixel)>;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
 
   if (first_pixel == last_pixel) {
     return;
