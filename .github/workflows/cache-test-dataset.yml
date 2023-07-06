@@ -42,14 +42,15 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           key: ${{ steps.generate-cache-key.outputs.key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.TEST_DATASET_PATH }}
+          lookup-only: true
 
       - name: Extract test dataset URL and checksum
         if: steps.cache-dset.outputs.cache-hit != 'true'
         id: test-dataset
         run: |
           url="$(grep -F 'DOWNLOAD' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*DOWNLOAD[[:space:]]\+//')"
-          checksum="$(grep -F 'EXPECTED_HASH' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*SHA512=//')"
+          checksum="$(grep -F 'EXPECTED_HASH' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*SHA256=//')"
 
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "checksum=$checksum" >> $GITHUB_OUTPUT
@@ -73,12 +74,12 @@ jobs:
       - name: Checksum test dataset
         if: steps.cache-dset.outputs.cache-hit != 'true'
         run: |
-          echo "${{ steps.test-dataset.outputs.checksum }} $TEST_DATASET_PATH" > checksum.sha512
-          shasum -c checksum.sha512
+          echo "${{ steps.test-dataset.outputs.checksum }}  $TEST_DATASET_PATH" | tee checksum.sha256
+          shasum -c checksum.sha256
 
       - name: Save cache
         uses: actions/cache/save@v3
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: steps.cache-dset.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.key }}
           path: ${{ env.TEST_DATASET_PATH }}

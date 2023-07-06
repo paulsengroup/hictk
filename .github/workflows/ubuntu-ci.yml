@@ -119,7 +119,7 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
 
   build-project:
-    needs: [matrix-factory, cache-test-dataset]
+    needs: matrix-factory
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -248,24 +248,82 @@ jobs:
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
+                -DCMAKE_INSTALL_PREFIX=dest                          \
                 -S .                                                 \
                 -B build
 
-      - name: Build project
-        run: cmake --build build -j $(nproc)
+      - name: Build hictk tools
+        run: cmake --build build -t hictk -j $(nproc)
+
+      - name: Package binaries
+        run: |
+          cmake --install build
+
+          tar -cf - -C dest/ bin |
+          zstd -T0 -13 -o binaries.tar.zst
+
+      - name: Build test units
+        run: |
+          cmake --build build -t -j $(nproc)
+
+      - name: Package unit tests
+        run: |
+          tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
+
+      - name: Upload unit tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          path: unit-tests.tar.zst
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          path: binaries.tar.zst
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Print Ccache statistics
         run: ccache -s
 
+  run-unit-tests:
+    name: Run unit tests
+    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      options: "--user=root"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
       - name: Restore test dataset
         uses: actions/cache/restore@v3
         with:
-          key: ${{ needs.cache-test-datasets.outputs.cache-key }}
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.xz
           fail-on-cache-miss: true
 
-      - name: Extract test dataset
+      - name: Download unit tests artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+
+      - name: Extract binaries test dataset
         run: |
+          zstd -dcf unit-tests.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
       - name: Run unit tests
@@ -278,6 +336,27 @@ jobs:
                 --timeout 400       \
                 -j $(nproc) |&
           head -n 1000
+
+
+  run-integration-tests:
+    name: Run unit tests
+    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      options: "--user=root"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
 
       - name: Install test dependencies
         run: |
@@ -298,6 +377,23 @@ jobs:
           curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' \
                -o hic_tools.jar
 
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Download unit tests artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+
+      - name: Extract binaries test dataset
+        run: |
+          zstd -dcf binaries.tar.zst | tar -xf -
+          tar -xf test/data/hictk_test_data.tar.xz
+
       - name: Test hictk convert (hic2cool)
         run: |
           test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
@@ -317,6 +413,9 @@ jobs:
     steps:
       - name: Collect job results
         if: |
-          needs.matrix-factory.result != 'success' ||
-          needs.build-project.result != 'success'
+          needs.matrix-factory.result != 'success'    ||
+          needs.cache-test-dataset.result != 'success ||
+          needs.build-project.result != 'success'     ||
+          needs.run-unit-tests.result != 'success'    ||
+          needs.run-integration-tests.result != 'success'
         run: exit 1
