@@ -44,6 +44,9 @@ defaults:
     shell: bash
 
 jobs:
+  cache-test-dataset:
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+
   build-project:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -167,24 +170,110 @@ jobs:
                 -DHICTK_BUILD_EXAMPLES=ON                            \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
+                -DCMAKE_INSTALL_PREFIX=dest                          \
                 -S "${{ github.workspace }}"                         \
                 -B "${{ github.workspace }}/build"
 
       - name: Build project
         run: cmake --build ${{ github.workspace }}/build
 
+      - name: Package binaries
+        run: |
+          cmake --install build
+
+          tar -cf - -C dest/ bin |
+          zstd -T0 -13 -o binaries.tar.zst
+
+      - name: Package unit tests
+        run: |
+          tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
+
+      - name: Upload unit tests
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          path: unit-tests.tar.zst
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+          path: binaries.tar.zst
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Print Ccache statistics
         run: ccache -s
 
-      - name: Run unit tests
-        working-directory: ${{ github.workspace }}/build
+
+  run-unit-tests:
+    name: Run unit tests
+    needs: [ cache-test-dataset, build-project ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      options: "--user=root"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fix permissions
         run: |
-          ctest --test-dir .        \
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Download unit tests artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+
+      - name: Extract binaries test dataset
+        run: |
+          zstd -dcf unit-tests.tar.zst | tar -xf -
+          tar -xf test/data/hictk_test_data.tar.xz
+
+      - name: Run unit tests
+        run: |
+          ctest --test-dir build/   \
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
                 --timeout 180 2>&1 |
           head -n 1000
+
+  run-integration-tests:
+    name: Run integration tests
+    needs: [ cache-test-dataset, build-project ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      options: "--user=root"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
 
       - name: Cache hic_tools
         id: cache-hictools
@@ -198,6 +287,23 @@ jobs:
         run: |
           curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' \
                -o hic_tools.jar
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Download binaries artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
+
+      - name: Extract binaries test dataset
+        run: |
+          zstd -dcf binaries.tar.zst | tar -xf -
+          tar -xf test/data/hictk_test_data.tar.xz
 
       - name: Test hictk convert (hic2cool)
         run: |
@@ -213,9 +319,16 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
+      - cache-test-dataset
       - build-project
+      - run-unit-tests
+      - run-integration-tests
 
     steps:
       - name: Collect job results
-        if: needs.build-project.result != 'success'
+        if: |
+          needs.cache-test-dataset.result != 'success' ||
+          needs.build-project.result != 'success'      ||
+          needs.run-unit-tests.result != 'success'     ||
+          needs.run-integration-tests.result != 'success'
         run: exit 1
