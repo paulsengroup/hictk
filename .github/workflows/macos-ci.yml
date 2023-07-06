@@ -172,6 +172,7 @@ jobs:
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
                 -DCMAKE_INSTALL_PREFIX=dest                          \
                 -S "${{ github.workspace }}"                         \
                 -B "${{ github.workspace }}/build"

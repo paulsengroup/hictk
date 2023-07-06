@@ -249,6 +249,7 @@ jobs:
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
                 -DCMAKE_INSTALL_PREFIX=dest                          \
                 -S .                                                 \
                 -B build

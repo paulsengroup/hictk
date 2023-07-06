@@ -163,6 +163,7 @@ jobs:
                 -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -S .                                                 \
