@@ -108,8 +108,8 @@ jobs:
             includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
             includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
 
-            // Make sure project builds with CMake 3.20
-            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.20.5', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            // Make sure project builds with CMake 3.25
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
             includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.26.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
@@ -252,8 +252,8 @@ jobs:
                 -S .                                                 \
                 -B build
 
-      - name: Build hictk tools
-        run: cmake --build build -t hictk -j $(nproc)
+      - name: Build project
+        run: cmake --build build -j $(nproc)
 
       - name: Package binaries
         run: |
@@ -261,10 +261,6 @@ jobs:
 
           tar -cf - -C dest/ bin |
           zstd -T0 -13 -o binaries.tar.zst
-
-      - name: Build test units
-        run: |
-          cmake --build build -t -j $(nproc)
 
       - name: Package unit tests
         run: |
@@ -288,6 +284,7 @@ jobs:
 
       - name: Print Ccache statistics
         run: ccache -s
+
 
   run-unit-tests:
     name: Run unit tests
@@ -321,15 +318,14 @@ jobs:
         with:
           name: unit-tests-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
 
-      - name: Extract binaries test dataset
+      - name: Extract binaries and test dataset
         run: |
           zstd -dcf unit-tests.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
       - name: Run unit tests
-        working-directory: build
         run: |
-          ctest --test-dir .        \
+          ctest --test-dir build/   \
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
@@ -339,7 +335,7 @@ jobs:
 
 
   run-integration-tests:
-    name: Run unit tests
+    name: Run integration tests
     needs: [ matrix-factory, cache-test-dataset, build-project ]
     runs-on: ubuntu-latest
     strategy:
@@ -384,23 +380,23 @@ jobs:
           path: test/data/hictk_test_data.tar.xz
           fail-on-cache-miss: true
 
-      - name: Download unit tests artifact
+      - name: Download binaries artifact
         uses: actions/download-artifact@v3
         with:
           name: binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.generator }}-${{ matrix.build_type }}
 
-      - name: Extract binaries test dataset
+      - name: Extract binaries and test dataset
         run: |
           zstd -dcf binaries.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
       - name: Test hictk convert (hic2cool)
         run: |
-          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
+          test/scripts/hictk_convert_hic2cool.sh bin/hictk
 
       - name: Test hictk convert (cool2hic)
         run: |
-          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk hic_tools.jar
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
 
   ubuntu-ci-status-check:
     name: Status Check (Ubuntu CI)
@@ -408,14 +404,17 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - matrix-factory
+      - cache-test-dataset
       - build-project
+      - run-unit-tests
+      - run-integration-tests
 
     steps:
       - name: Collect job results
         if: |
-          needs.matrix-factory.result != 'success'    ||
-          needs.cache-test-dataset.result != 'success ||
-          needs.build-project.result != 'success'     ||
-          needs.run-unit-tests.result != 'success'    ||
+          needs.matrix-factory.result != 'success'     ||
+          needs.cache-test-dataset.result != 'success' ||
+          needs.build-project.result != 'success'      ||
+          needs.run-unit-tests.result != 'success'     ||
           needs.run-integration-tests.result != 'success'
         run: exit 1
