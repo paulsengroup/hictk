@@ -40,6 +40,7 @@ struct ConvertConfig {
 
 struct DumpConfig {
   std::string uri{};
+  std::string format{};
 
   std::string range1{"all"};
   std::string range2{"all"};

@@ -670,7 +670,7 @@ void Cli::validate_dump_subcommand() const {
   const auto is_cooler = cooler::utils::is_cooler(c.uri);
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
 
-  if (is_hic && c.resolution == 0) {
+  if (is_hic && c.resolution == 0 && c.table != "chroms") {
     errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
@@ -867,13 +867,27 @@ void Cli::transform_args_convert_subcommand() {
   }
 }
 
+void Cli::transform_args_dump_subcommand() {
+  auto& c = std::get<DumpConfig>(this->_config);
+
+  c.format = infer_input_format(c.uri);
+  if (c.format == "hic" && c.resolution ==  0) {
+    assert(c.table == "chroms");
+    c.resolution = hic::utils::list_resolutions(c.uri).back();
+  }
+
+  if (this->_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
+    c.range2 = c.range1;
+  }
+}
+
 void Cli::transform_args() {
   switch (this->_subcommand) {
     case convert:
       this->transform_args_convert_subcommand();
       break;
     case dump:  // NOLINT
-      // this->transform_args_dump_subcommand();
+      this->transform_args_dump_subcommand();
       break;
     case load:  // NOLINT
       // this->transform_args_load_subcommand();
