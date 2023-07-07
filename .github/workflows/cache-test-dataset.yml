@@ -1,0 +1,78 @@
+# Copyright (C) 2023 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Cache test datasets
+
+on:
+  workflow_call:
+    outputs:
+      cache-key:
+        description: "Test dataset cache key"
+        value: ${{ jobs.cache-test-datasets.outputs.cache-key }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FETCH_TEST_DATASET_CMAKE: cmake/FetchTestDataset.cmake
+  TEST_DATASET_PATH: test/data/hictk_test_data.tar.xz
+
+jobs:
+  cache-test-datasets:
+    name: Cache test datasets
+    runs-on: ubuntu-latest
+
+    outputs:
+      cache-key: ${{ steps.generate-cache-key.outputs.key }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Generate cache key
+        id: generate-cache-key
+        run: |
+          key="test-dataset-${{ hashFiles( 'cmake/FetchTestDataset.cmake' ) }}"
+
+          echo "key=$key" >> $GITHUB_OUTPUT
+
+      - name: Restore cache
+        id: cache-dset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ steps.generate-cache-key.outputs.key }}
+          path: ${{ env.TEST_DATASET_PATH }}
+          lookup-only: true
+
+      - name: Extract test dataset URL and checksum
+        if: steps.cache-dset.outputs.cache-hit != 'true'
+        id: test-dataset
+        run: |
+          url="$(grep -F 'DOWNLOAD' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*DOWNLOAD[[:space:]]\+//')"
+          checksum="$(grep -F 'EXPECTED_HASH' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*SHA256=//')"
+
+          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "checksum=$checksum" >> $GITHUB_OUTPUT
+
+      - name: Download test dataset
+        if: steps.cache-dset.outputs.cache-hit != 'true'
+        run: |
+          src="${{ steps.test-dataset.outputs.url }}"
+          dest="$TEST_DATASET_PATH"
+
+          mkdir -p "$(dirname "$dest")"
+          curl -L "$src" -o "$dest"
+
+      - name: Checksum test dataset
+        if: steps.cache-dset.outputs.cache-hit != 'true'
+        run: |
+          echo "${{ steps.test-dataset.outputs.checksum }}  $TEST_DATASET_PATH" | tee checksum.sha256
+          shasum -c checksum.sha256
+
+      - name: Save cache
+        uses: actions/cache/save@v3
+        if: steps.cache-dset.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.generate-cache-key.outputs.key }}
+          path: ${{ env.TEST_DATASET_PATH }}

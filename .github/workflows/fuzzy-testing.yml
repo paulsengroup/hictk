@@ -123,6 +123,7 @@ jobs:
                 -DHICTK_BUILD_BENCHMARKS=OFF                 \
                 -DHICTK_BUILD_EXAMPLES=OFF                   \
                 -DHICTK_ENABLE_TESTING=OFF                   \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF      \
                 -S .                                         \
                 -B build
 

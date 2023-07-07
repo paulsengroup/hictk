@@ -203,6 +203,127 @@ inline ThinPixel<N> Pixel<N>::to_thin() const noexcept {
 }
 
 namespace internal {
+template <std::size_t N>
+[[nodiscard]] std::array<std::string_view, N> tokenize_n(std::string_view line) {
+  std::array<std::string_view, N> toks{};
+  for (std::size_t i = 0; i < toks.size(); ++i) {
+    const auto pos = line.find('\t');
+    toks[i] = line.substr(0, pos);
+    if (toks[i].empty()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected exactly {} fields, found {}"), N, i));
+    }
+
+    if (pos == std::string_view::npos) {
+      line = "";
+    } else {
+      line.remove_prefix(pos + 1);
+    }
+  }
+
+  if (!line.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("expected exactly {} fields, found {} or more"), N, N + 1));
+  }
+
+  return toks;
+}
+
+template <std::size_t N>
+[[nodiscard]] std::array<std::string_view, N> tokenize_n_or_more(std::string_view line) {
+  std::array<std::string_view, N> toks{};
+  for (std::size_t i = 0; i < toks.size(); ++i) {
+    const auto pos = line.find('\t');
+    toks[i] = line.substr(0, pos);
+    if (toks[i].empty()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected {} or more fields, found {}"), N, i));
+    }
+
+    if (pos == std::string_view::npos) {
+      line = "";
+    } else {
+      line.remove_prefix(pos + 1);
+    }
+  }
+  return toks;
+}
+}  // namespace internal
+
+template <typename N>
+inline auto Pixel<N>::from_coo(const hictk::BinTable &bins, std::string_view line) -> Pixel<N> {
+  try {
+    const auto toks = internal::tokenize_n<3>(line);
+
+    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
+    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
+
+    return {bins.at(bin1_id), bins.at(bin2_id), count};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in coo format: {}"), line, e.what()));
+  }
+}
+
+template <typename N>
+inline auto Pixel<N>::from_bg2(const hictk::BinTable &bins, std::string_view line) -> Pixel<N> {
+  try {
+    const auto toks = internal::tokenize_n_or_more<7>(line);
+
+    const auto &chrom1 = toks[0];
+    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[1]);
+
+    const auto &chrom2 = toks[3];
+    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[4]);
+
+    const auto count = internal::parse_numeric_or_throw<N>(toks[6]);
+    return {bins.at(chrom1, start1), bins.at(chrom2, start2), count};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in bedgraph2 format: {}"), line, e.what()));
+  }
+}
+
+template <typename N>
+inline auto Pixel<N>::from_validpair(const hictk::BinTable &bins, std::string_view line)
+    -> Pixel<N> {
+  try {
+    const auto toks = internal::tokenize_n_or_more<6>(line);
+
+    const auto &chrom1 = toks[1];
+    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[2]);
+
+    const auto &chrom2 = toks[4];
+    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[5]);
+
+    return {bins.at(chrom1, start1), bins.at(chrom2, start2), 1};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in validpair format: {}"), line, e.what()));
+  }
+}
+
+template <typename N>
+inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_view line)
+    -> Pixel<N> {
+  try {
+    const auto toks = internal::tokenize_n_or_more<6>(line);
+
+    const auto &chrom1 = toks[1];
+    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[2]);
+
+    const auto &chrom2 = toks[3];
+    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[4]);
+
+    return {bins.at(chrom1, start1), bins.at(chrom2, start2), 1};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in 4DN-DCIC pair format: {}"), line, e.what()));
+  }
+}
+
+namespace internal {
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator<(const Node &other) const noexcept {
   assert(!!this->pixel);

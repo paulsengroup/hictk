@@ -20,7 +20,8 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/convert.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/cool_to_hic.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp)
+          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp)
 
 target_include_directories(hictk_tools PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
@@ -40,8 +41,8 @@ target_link_system_libraries(
   std::filesystem
   PUBLIC
   Boost::filesystem
-  fmt::fmt
-  spdlog::spdlog
+  _hictk_fmt_tgt
+  _hictk_spdlog_tgt
   Threads::Threads)
 
 include(GNUInstallDirs)

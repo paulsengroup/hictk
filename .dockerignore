@@ -11,9 +11,11 @@
 !src/**
 !test/scripts/**
 !test/units/**
+!test/utils/**
 
 # Allowed files
 !CMakeLists.txt
 !LICENSE
 !conanfile.*
 !test/CMakeLists.txt
+!test/data/hictk_test_data.tar.xz

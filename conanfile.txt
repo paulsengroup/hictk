@@ -4,14 +4,7 @@
 
 [requires]
 boost/1.82.0
-cli11/2.3.2
-fast_float/5.2.0
-fmt/10.0.0
 hdf5/1.14.0
-highfive/2.7.1
-libdeflate/1.18
-readerwriterqueue/1.0.6
-spdlog/1.11.0
 zlib/1.2.13
 
 [generators]
@@ -58,7 +51,3 @@ boost*:without_timer=True
 boost*:without_type_erasure=True
 boost*:without_url=True
 boost*:without_wave=True
-highfive*:with_boost=False
-highfive*:with_eigen=False
-highfive*:with_opencv=False
-highfive*:with_xtensor=False

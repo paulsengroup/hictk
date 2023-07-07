@@ -30,7 +30,7 @@ target_link_system_libraries(
   Catch2::Catch2WithMain
   std::filesystem)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Testing/)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Testing/)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. TEST_PREFIX to
 # whatever you want, or use different for different binaries
@@ -43,7 +43,7 @@ catch_discover_tests(
   WORKING_DIRECTORY
   ${PROJECT_SOURCE_DIR}
   OUTPUT_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/Testing/
+  ${CMAKE_CURRENT_BINARY_DIR}/Testing/
   EXTRA_ARGS
   --success
   --skip-benchmarks)

@@ -1,0 +1,197 @@
+# Copyright (C) 2023 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Build Dockerfile
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/build-dockerfile.yml"
+      - "cmake/**"
+      - "external/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "Dockerfile"
+      - "conanfile.txt"
+    tags:
+      - 'v*.*.*'
+
+  pull_request:
+    paths:
+      - ".github/workflows/build-dockerfile.yml"
+      - "cmake/**"
+      - "external/**"
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+      - "Dockerfile"
+      - "conanfile.txt"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cache-test-dataset:
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+
+  build-dockerfile:
+    name: Build Dockerfile
+    needs: cache-test-dataset
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      packages: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Generate build args
+        id: build-args
+        run: |
+          set -e
+          set -u
+          set -o pipefail
+
+          OS_NAME='ubuntu'
+          OS_VERSION='22.04'
+          C_COMPILER='clang-15'
+          CXX_COMPILER='clang++-15'
+
+          BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
+          TEST_BASE_IMAGE="$BUILD_BASE_IMAGE"
+
+          FINAL_BASE_IMAGE="docker.io/library/$OS_NAME"
+          FINAL_BASE_IMAGE_TAG="$OS_VERSION"
+          sudo docker pull "$FINAL_BASE_IMAGE:$FINAL_BASE_IMAGE_TAG"
+
+          FINAL_BASE_IMAGE_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$FINAL_BASE_IMAGE:$FINAL_BASE_IMAGE_TAG" | grep -o '[[:alnum:]:]\+$')"
+
+          GIT_HASH="$(git rev-parse HEAD)"
+          GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
+          CREATION_DATE="$(date --iso-8601)"
+          GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)"  --points-at HEAD)"
+          if [ -z "$GIT_TAG" ]; then
+            VERSION="sha-$GIT_SHORT_HASH"
+          GIT_TAG=unknown
+          else
+            VERSION="$GIT_TAG"
+          fi
+
+          echo "C_COMPILER=$C_COMPILER" >> $GITHUB_OUTPUT
+          echo "CXX_COMPILER=$CXX_COMPILER" >> $GITHUB_OUTPUT
+          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" >> $GITHUB_OUTPUT
+          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" >> $GITHUB_OUTPUT
+          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" >> $GITHUB_OUTPUT
+          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" >> $GITHUB_OUTPUT
+          echo "GIT_HASH=$GIT_HASH" >> $GITHUB_OUTPUT
+          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" >> $GITHUB_OUTPUT
+          echo "CREATION_DATE=$CREATION_DATE" >> $GITHUB_OUTPUT
+          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: |
+            latest=true
+          tags: |
+            type=semver,priority=1000,pattern={{version}}
+            type=sha,priority=900
+            type=ref,priority=700,event=branch
+            type=ref,priority=600,event=pr
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image and push to registries
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ github.workspace }}
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha,scope=build-dockerfile
+          cache-to: type=gha,mode=min,scope=build-dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
+            BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
+            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
+            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
+            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
+            GIT_IS_DIRTY=false
+            VERSION=${{ steps.build-args.outputs.VERSION }}
+
+
+  test-docker-image:
+    name: Test Docker image
+    needs: build-dockerfile
+    runs-on: ubuntu-latest
+    permissions:
+      packages: 'read'
+
+    if: github.event_name != 'pull_request'
+
+    container:
+      image: ghcr.io/${{ github.repository }}:latest
+      options: '--entrypoint /bin/bash'
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+
+    steps:
+      - name: Test hictk
+        run: |
+          set -o pipefail
+
+          whereis -b hictk
+          ls -lah "$(whereis -b hictk | cut -d$' ' -f 2)"
+
+          hictk --help
+          hictk --version
+
+
+  build-dockerfile-status-check:
+    name: Status Check (Build Dockerfile)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-dockerfile
+      - test-docker-image
+
+    steps:
+      - name: Collect job results
+        if: |
+          needs.build-dockerfile.result != 'success'  ||
+          (needs.test-docker-image.result != 'success'  &&
+           needs.test-docker-image.result != 'skipped')
+        run: exit 1

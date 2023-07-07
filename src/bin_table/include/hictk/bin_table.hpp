@@ -56,7 +56,7 @@ class Bin {
 };
 
 struct BinTableConcrete {
-  std::vector<const Chromosome *> chroms{};
+  std::vector<Chromosome> chroms{};
   std::vector<std::uint32_t> bin_starts{};
   std::vector<std::uint32_t> bin_ends{};
 };

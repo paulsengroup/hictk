@@ -81,6 +81,10 @@ struct Pixel {
   [[nodiscard]] bool operator>=(const Pixel<N> &other) const noexcept;
 
   [[nodiscard]] ThinPixel<N> to_thin() const noexcept;
+  static auto from_coo(const BinTable &bins, std::string_view line) -> Pixel;
+  static auto from_bg2(const BinTable &bins, std::string_view line) -> Pixel;
+  static auto from_validpair(const BinTable &bins, std::string_view line) -> Pixel;
+  static auto from_4dn_pairs(const BinTable &bins, std::string_view line) -> Pixel;
 };
 
 namespace internal {
