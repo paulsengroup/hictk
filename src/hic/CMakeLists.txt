@@ -32,7 +32,7 @@ target_link_libraries(
 target_link_system_libraries(
   hic
   INTERFACE
-  fmt::fmt
+  _hictk_fmt_tgt
   $<IF:$<BOOL:${BUILD_SHARED_LIBS}>,libdeflate::libdeflate_shared,libdeflate::libdeflate_static>
   _hictk_phmap_tgt
   std::filesystem)

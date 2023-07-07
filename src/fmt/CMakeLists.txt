@@ -17,6 +17,6 @@ target_link_libraries(
             hictk::genomic_interval
             hictk::pixel)
 
-target_link_system_libraries(hictk_fmt INTERFACE fmt::fmt)
+target_link_system_libraries(hictk_fmt INTERFACE _hictk_fmt_tgt)
 
 install(TARGETS hictk_fmt INCLUDES)

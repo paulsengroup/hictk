@@ -49,7 +49,7 @@ target_link_system_libraries(
   cooler
   INTERFACE
   FastFloat::fast_float
-  fmt::fmt
+  _hictk_fmt_tgt
   HDF5::HDF5
   HighFive
   std::filesystem
