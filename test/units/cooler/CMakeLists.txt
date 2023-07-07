@@ -15,7 +15,12 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_attributes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_iteration_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_large_rw_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_read_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_write_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_attributes_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp
