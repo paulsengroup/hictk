@@ -175,6 +175,7 @@ jobs:
           compiler="${{ matrix.compiler }}"
           generator="${{ matrix.generator }}"
           build_type="${{ matrix.build_type }}"
+          dev_mode="${{ matrix.developer_mode }}"
 
           conanfile_hash="${{ hashFiles('conanfile.txt') }}"
           workflow_hash="${{ hashFiles('.github/workflows/ubuntu-ci.yml') }}"
@@ -183,8 +184,8 @@ jobs:
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type-$generator"
-          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type-$generator"
+          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type-$generator-$dev_mode"
+          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type-$generator-$dev_mode"
 
           echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
           echo "conan-restore-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT

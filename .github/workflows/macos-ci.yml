@@ -110,6 +110,7 @@ jobs:
 
           os="${{ matrix.os }}"
           compiler="${{ matrix.compiler_name }}"
+          compiler_version="${{ matrix.compiler_version }}"
           build_type="${{ matrix.build_type }}"
 
           conanfile_hash="${{ hashFiles('conanfile.txt') }}"
@@ -119,8 +120,8 @@ jobs:
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type"
-          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type"
+          conan_key_prefix="conan-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
 
           echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
           echo "conan-restore-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
@@ -203,12 +204,12 @@ jobs:
         run: |
           cmake --install build
 
-          tar -cf - -C dest/ bin |
+          gtar -cf - -C dest/ bin |
           zstd -T0 -13 -o binaries.tar.zst
 
       - name: Package unit tests
         run: |
-          tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
+          gtar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
         uses: actions/upload-artifact@v3
@@ -275,8 +276,8 @@ jobs:
 
       - name: Extract binaries test dataset
         run: |
-          zstd -dcf unit-tests.tar.zst | tar -xf -
-          tar -xf test/data/hictk_test_data.tar.xz
+          zstd -dcf unit-tests.tar.zst | gtar -xf -
+          gtar -xf test/data/hictk_test_data.tar.xz
 
       - name: Generate requirements.txt for pip
         run: |
