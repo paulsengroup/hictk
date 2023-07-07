@@ -103,12 +103,6 @@ add_library(_hictk_fmt_tgt INTERFACE)
 target_include_directories(_hictk_fmt_tgt SYSTEM INTERFACE ${_hictk_fmt_SOURCE_DIR}/include)
 target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
 
-# Setup libdeflate
-FetchContent_GetProperties(_hictk_libdeflate)
-if(NOT _hictk_highfive_POPULATED)
-  FetchContent_Populate(_hictk_libdeflate)
-endif()
-
 # Setup parallel_hashmap
 add_library(_hictk_phmap_tgt INTERFACE)
 target_include_directories(_hictk_phmap_tgt SYSTEM INTERFACE ${_hictk_phmap_SOURCE_DIR})
@@ -121,8 +115,9 @@ target_disable_clang_tidy(_hictk_highfive_tgt)
 target_disable_clang_tidy(_hictk_fmt_tgt)
 target_disable_clang_tidy(_hictk_phmap_tgt)
 
-if(BUILD_SHARED)
+if(LIBDEFLATE_BUILD_SHARED_LIB)
   target_disable_clang_tidy(libdeflate_shared)
-else()
+endif()
+if(LIBDEFLATE_BUILD_STATIC_LIB)
   target_disable_clang_tidy(libdeflate_static)
 endif()
