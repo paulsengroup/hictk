@@ -325,7 +325,7 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
         fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"), key,
                     root_grp().getPath(), e.what()));
   }
-};
+}
 
 }  // namespace internal
 

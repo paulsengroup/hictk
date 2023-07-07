@@ -49,10 +49,10 @@ target_link_system_libraries(
   cooler
   INTERFACE
   FastFloat::fast_float
-  _hictk_fmt_tgt
   HDF5::HDF5
-  HighFive
   std::filesystem
+  _hictk_fmt_tgt
+  _hictk_highfive_tgt
   _hictk_phmap_tgt)
 
 install(TARGETS cooler INCLUDES)
