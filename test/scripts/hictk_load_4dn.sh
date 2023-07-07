@@ -102,7 +102,7 @@ if [[ "$sorted" == true ]]; then
     "$hictk_bin" load \
       -f 4dn \
       --assume-sorted \
-      --batch-size 100000 \
+      --batch-size 1000000 \
       "$outdir/chrom.sizes" \
       10000 \
       "$outdir/out.cool"
@@ -112,7 +112,7 @@ else
     "$hictk_bin" load \
       -f 4dn \
       --assume-unsorted \
-      --batch-size 100000 \
+      --batch-size 1000000 \
       "$outdir/chrom.sizes" \
       10000 \
       "$outdir/out.cool"
