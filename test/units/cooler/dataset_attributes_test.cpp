@@ -43,6 +43,6 @@ TEST_CASE("Cooler: dataset attributes", "[dataset][short]") {
     dset.write_attribute("attr", -1, true);
     CHECK(dset.read_attribute<std::int32_t>("attr") == -1);
   }
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 }  // namespace hictk::cooler::test::dataset
