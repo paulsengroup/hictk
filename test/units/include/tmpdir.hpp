@@ -15,14 +15,19 @@ inline const internal::TmpDir testdir{true};  // NOLINT(cert-err58-cpp)
 
 }  // namespace test
 
-namespace cooler::test::cooler_file {
-inline const auto& testdir = hictk::test::testdir;
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace cooler::test::cooler_file
-
 namespace cooler::test::attribute {
 
 inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::attribute
+
+namespace cooler::test::balancing {
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
+}  // namespace cooler::test::attribute
+
+namespace cooler::test::cooler_file {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
+}  // namespace cooler::test::cooler_file
+
 }  // namespace hictk

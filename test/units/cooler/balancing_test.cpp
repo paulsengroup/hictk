@@ -11,13 +11,9 @@
 #include <vector>
 
 #include "hictk/cooler.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+#include "tmpdir.hpp"
 
 namespace hictk::cooler::test::balancing {
-const auto& datadir = hictk::test::datadir;
 
 template <typename N1, std::size_t N2>
 static void balancer_test_helper(const Balancer<N1>& sel,
