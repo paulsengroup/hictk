@@ -81,21 +81,24 @@ constexpr std::uint32_t Bin::end() const noexcept { return this->_interval.end()
 
 constexpr bool Bin::has_null_id() const noexcept { return this->id() == Bin::null_id; }
 
-inline BinTable::BinTable(Reference chroms, std::uint32_t bin_size)
+inline BinTable::BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset)
     : _chroms(std::move(chroms)),
-      _num_bins_prefix_sum(compute_num_bins_prefix_sum(_chroms, bin_size)),
+      _num_bins_prefix_sum(compute_num_bins_prefix_sum(_chroms, bin_size, bin_offset)),
       _bin_size(bin_size) {
   assert(bin_size != 0);
 }
 
 template <typename ChromIt>
-inline BinTable::BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size)
-    : BinTable(Reference(first_chrom, last_chrom), bin_size) {}
+inline BinTable::BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size,
+                          std::size_t bin_offset)
+    : BinTable(Reference(first_chrom, last_chrom), bin_size, bin_offset) {}
 
 template <typename ChromNameIt, typename ChromSizeIt>
 inline BinTable::BinTable(ChromNameIt first_chrom_name, ChromNameIt last_chrom_name,
-                          ChromSizeIt first_chrom_size, std::uint32_t bin_size)
-    : BinTable(Reference(first_chrom_name, last_chrom_name, first_chrom_size), bin_size) {}
+                          ChromSizeIt first_chrom_size, std::uint32_t bin_size,
+                          std::size_t bin_offset)
+    : BinTable(Reference(first_chrom_name, last_chrom_name, first_chrom_size), bin_size,
+               bin_offset) {}
 
 inline std::size_t BinTable::size() const noexcept {
   if (this->_num_bins_prefix_sum.empty()) {
@@ -124,6 +127,10 @@ inline auto BinTable::cend() const -> iterator { return this->end(); }
 constexpr std::uint32_t BinTable::iterator::bin_size() const noexcept {
   assert(this->_bin_table);
   return this->_bin_table->bin_size();
+}
+
+constexpr std::size_t BinTable::iterator::bin_id() const noexcept {
+  return this->_chrom_bin_id + this->_rel_bin_id;
 }
 
 inline BinTableConcrete BinTable::concretize() const {
@@ -155,7 +162,8 @@ inline BinTable BinTable::subset(const Chromosome &chrom) const {
     throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom.name()));
   }
 #endif
-  return {Reference{chrom}, this->_bin_size};
+  const auto offset = this->at(chrom, 0).id();
+  return {Reference{chrom}, this->_bin_size, offset};
 }
 inline BinTable BinTable::subset(std::string_view chrom_name) const {
   return this->subset(this->_chroms.at(chrom_name));
@@ -268,14 +276,16 @@ inline std::uint64_t BinTable::map_to_bin_id(std::uint32_t chrom_id, std::uint32
 }
 
 inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Reference &chroms,
-                                                                        std::uint32_t bin_size) {
+                                                                        std::uint32_t bin_size,
+                                                                        std::size_t bin_offset) {
   assert(bin_size != 0);
 
-  std::vector<std::uint64_t> prefix_sum(chroms.size() + 1, 0);
+  std::vector<std::uint64_t> prefix_sum(chroms.size() + 1);
+  prefix_sum.front() = bin_offset;
 
   // I am using transform instead of inclusive_scan because the latter is not always available
   std::transform(chroms.begin(), chroms.end(), prefix_sum.begin() + 1,
-                 [&, sum = std::uint64_t(0)](const Chromosome &chrom) mutable {
+                 [&, sum = bin_offset](const Chromosome &chrom) mutable {
                    if (chrom.is_all()) {
                      return sum;
                    }
@@ -286,7 +296,8 @@ inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Re
   return prefix_sum;
 }
 
-inline BinTable::iterator::iterator(const BinTable &bin_table) noexcept : _bin_table{&bin_table} {
+inline BinTable::iterator::iterator(const BinTable &bin_table) noexcept
+    : _bin_table{&bin_table}, _chrom_bin_id(this->_bin_table->_num_bins_prefix_sum.front()) {
   if (_bin_table->chromosomes().at(_chrom_id).is_all()) {
     _chrom_id++;
   }
@@ -296,7 +307,7 @@ constexpr bool BinTable::iterator::operator==(const iterator &other) const noexc
   // clang-format off
   return this->_bin_table == other._bin_table &&
          this->_chrom_id == other._chrom_id &&
-         this->_idx == other._idx;
+         this->_rel_bin_id == other._rel_bin_id;
   // clang-format on
 }
 
@@ -305,38 +316,26 @@ constexpr bool BinTable::iterator::operator!=(const iterator &other) const noexc
 }
 
 constexpr bool BinTable::iterator::operator<(const iterator &other) const noexcept {
-  if (this->_chrom_id == other._chrom_id) {
-    return this->_idx < other._idx;
-  }
-  return this->_chrom_id < other._chrom_id;
+  return this->bin_id() < other.bin_id();
 }
 
 constexpr bool BinTable::iterator::operator<=(const iterator &other) const noexcept {
-  if (this->_chrom_id == other._chrom_id) {
-    return this->_idx <= other._idx;
-  }
-  return this->_chrom_id <= other._chrom_id;
+  return this->bin_id() <= other.bin_id();
 }
 
 constexpr bool BinTable::iterator::operator>(const iterator &other) const noexcept {
-  if (this->_chrom_id == other._chrom_id) {
-    return this->_idx > other._idx;
-  }
-  return this->_chrom_id > other._chrom_id;
+  return this->bin_id() > other.bin_id();
 }
 
 constexpr bool BinTable::iterator::operator>=(const iterator &other) const noexcept {
-  if (this->_chrom_id == other._chrom_id) {
-    return this->_idx >= other._idx;
-  }
-  return this->_chrom_id >= other._chrom_id;
+  return this->bin_id() >= other.bin_id();
 }
 
 inline auto BinTable::iterator::make_end_iterator(const BinTable &table) noexcept -> iterator {
   iterator it(table);
 
   it._chrom_id = nchrom;
-  it._idx = npos;
+  it._rel_bin_id = null_rel_bin_id;
   return it;
 }
 
@@ -346,10 +345,10 @@ inline auto BinTable::iterator::operator*() const -> value_type {
   const auto &chrom = this->chromosome();
   const auto bin_size = this->bin_size();
 
-  const auto start = (std::min)(static_cast<std::uint32_t>(this->_idx) * bin_size, chrom.size());
-  const auto end = (std::min)(start + bin_size, chrom.size());
+  const auto start = std::min(this->_rel_bin_id * bin_size, chrom.size());
+  const auto end = std::min(start + bin_size, chrom.size());
 
-  return value_type{chrom, start, end};
+  return value_type{this->bin_id(), _rel_bin_id, chrom, start, end};
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {
@@ -358,12 +357,13 @@ inline auto BinTable::iterator::operator++() -> iterator & {
     return *this;
   }
 
-  if (++this->_idx >= this->compute_num_bins()) {
+  if (++this->_rel_bin_id >= this->compute_num_chrom_bins()) {
     if (this->_chrom_id + 1 >= this->num_chromosomes()) {
       return *this = make_end_iterator(*this->_bin_table);
     }
     ++this->_chrom_id;
-    this->_idx = 0;
+    this->_chrom_bin_id = this->compute_bin_offset();
+    this->_rel_bin_id = 0;
   }
 
   return *this;
@@ -384,15 +384,17 @@ inline auto BinTable::iterator::operator+=(std::size_t i) -> iterator & {
     throw std::out_of_range("BinTable::iterator: caught attempt to increment iterator past end()");
   }
 
-  const auto num_bins = this->compute_num_bins();
-  if (this->_idx + i < num_bins) {
-    this->_idx += i;
+  const auto ii = static_cast<std::uint32_t>(i);
+  const auto num_bins = this->compute_num_chrom_bins();
+  if (this->_rel_bin_id + ii < num_bins) {
+    this->_rel_bin_id += ii;
     return *this;
   }
 
   this->_chrom_id++;
-  i -= (num_bins - this->_idx);
-  this->_idx = 0;
+  this->_chrom_bin_id = this->compute_bin_offset();
+  i -= (num_bins - this->_rel_bin_id);
+  this->_rel_bin_id = 0;
   return *this += i;
 }
 
@@ -403,20 +405,22 @@ inline auto BinTable::iterator::operator+(std::size_t i) const -> iterator {
 
 inline auto BinTable::iterator::operator--() -> iterator & {
   assert(this->_bin_table);
-  if (this->_idx == 0 && this->_chrom_id == 0) {
+  if (this->bin_id() == 0) {
     return *this;
   }
 
-  if (this->_idx == npos) {
+  if (this->_rel_bin_id == null_rel_bin_id) {
     assert(*this == make_end_iterator(*this->_bin_table));
     this->_chrom_id = static_cast<std::uint32_t>(this->num_chromosomes() - 1);
-    this->_idx = this->compute_num_bins() - 1;
+    this->_chrom_bin_id = this->compute_bin_offset();
+    this->_rel_bin_id = this->compute_num_chrom_bins() - 1;
     return *this;
   }
 
-  if (this->_idx-- == 0) {
+  if (this->_rel_bin_id-- == 0) {
     this->_chrom_id--;
-    this->_idx = this->compute_num_bins() - 1;
+    this->_chrom_bin_id = this->compute_bin_offset();
+    this->_rel_bin_id = this->compute_num_chrom_bins() - 1;
   }
 
   return *this;
@@ -431,30 +435,32 @@ inline auto BinTable::iterator::operator--(int) -> iterator {
 inline auto BinTable::iterator::operator-=(std::size_t i) -> iterator & {
   assert(this->_bin_table);
 
-  if (this->_chrom_id == 0 && this->_idx == 0 && i == 0) {
+  if (this->_chrom_id == 0 && this->_rel_bin_id == 0 && i == 0) {
     return *this;
   }
 
-  if (this->_chrom_id == 0 && this->_idx < i) {
+  if (this->_chrom_id == 0 && this->_rel_bin_id < i) {
     throw std::out_of_range(
         "BinTable::iterator: caught attempt to decrement iterator past begin()");
   }
 
-  if (this->_idx == npos) {
+  if (this->_rel_bin_id == null_rel_bin_id) {
     assert(*this == make_end_iterator(*this->_bin_table));
     this->_chrom_id = static_cast<std::uint32_t>(this->num_chromosomes() - 1);
-    this->_idx = this->compute_num_bins();
+    this->_chrom_bin_id = this->compute_bin_offset();
+    this->_rel_bin_id = this->compute_num_chrom_bins();
     return *this -= i;
   }
 
-  if (i <= this->_idx) {
-    this->_idx -= i;
+  if (i <= this->_rel_bin_id) {
+    this->_rel_bin_id -= static_cast<std::uint32_t>(i);
     return *this;
   }
 
   this->_chrom_id--;
-  i -= this->_idx;
-  this->_idx = this->compute_num_bins();
+  this->_chrom_bin_id = this->compute_bin_offset();
+  i -= this->_rel_bin_id;
+  this->_rel_bin_id = this->compute_num_chrom_bins();
   return *this -= i;
 }
 
@@ -467,12 +473,8 @@ inline auto BinTable::iterator::operator-(const iterator &other) const -> differ
   assert(this->_bin_table);
   assert(other._bin_table);
 
-  const auto offset1 = this->_chrom_id == nchrom
-                           ? this->_bin_table->size()
-                           : this->_bin_table->map_to_bin_id(this->_chrom_id, 0) + this->_idx;
-  const auto offset2 = other._chrom_id == nchrom
-                           ? other._bin_table->size()
-                           : other._bin_table->map_to_bin_id(other._chrom_id, 0) + other._idx;
+  const auto offset1 = this->_chrom_id == nchrom ? this->_bin_table->size() : this->bin_id();
+  const auto offset2 = other._chrom_id == nchrom ? other._bin_table->size() : other.bin_id();
 
   return static_cast<difference_type>(offset1) - static_cast<difference_type>(offset2);
 }
@@ -487,13 +489,17 @@ inline const Chromosome &BinTable::iterator::chromosome(std::uint32_t chrom_id) 
   return this->_bin_table->chromosomes().at(chrom_id);
 }
 
-inline std::uint64_t BinTable::iterator::compute_num_bins() const noexcept {
+inline std::uint32_t BinTable::iterator::compute_num_chrom_bins() const noexcept {
   assert(this->_bin_table);
 
   const auto chrom_size = this->chromosome().size();
   const auto bin_size = this->bin_size();
 
-  return static_cast<std::uint64_t>((chrom_size + bin_size - 1) / bin_size);
+  return (chrom_size + bin_size - 1) / bin_size;
+}
+
+inline std::size_t BinTable::iterator::compute_bin_offset() const noexcept {
+  return this->_bin_table->at(_chrom_id, 0).id();
 }
 
 inline std::size_t BinTable::iterator::num_chromosomes() const noexcept {
