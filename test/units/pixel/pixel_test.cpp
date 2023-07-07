@@ -5,6 +5,7 @@
 #include "hictk/pixel.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/fmt/pixel.hpp"
@@ -117,4 +118,97 @@ TEST_CASE("Pixel", "[pixel][short]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Pixel: PixelMerger", "[pixel][short]") {
+  const Reference chroms{Chromosome{0, "chr1", 1'000}, Chromosome{1, "chr2", 500}};
+  constexpr std::uint32_t bin_size = 100;
+  const BinTable bins{chroms, bin_size};
+
+  std::vector<Pixel<std::int32_t>> chr1_pixels{};
+  std::vector<Pixel<std::int32_t>> chr2_pixels{};
+
+  using It = decltype(chr1_pixels.begin());
+
+  for (const auto bin : bins.subset("chr1")) {
+    chr1_pixels.emplace_back(bin, bin, 1);
+  }
+  for (const auto bin : bins.subset("chr2")) {
+    chr2_pixels.emplace_back(bin, bin, 1);
+  }
+
+  std::vector<Pixel<std::int32_t>> expected_pixels{};
+  std::copy(chr1_pixels.begin(), chr1_pixels.end(), std::back_inserter(expected_pixels));
+  std::copy(chr2_pixels.begin(), chr2_pixels.end(), std::back_inserter(expected_pixels));
+
+  std::vector<It> heads{};
+  std::vector<It> tails{};
+
+  heads.emplace_back(chr1_pixels.begin());
+  heads.emplace_back(chr2_pixels.begin());
+
+  tails.emplace_back(chr1_pixels.end());
+  tails.emplace_back(chr2_pixels.end());
+
+  internal::PixelMerger<It> merger(heads, tails);
+  for (std::size_t i = 0; i < expected_pixels.size(); ++i) {
+    CHECK(merger.next() == expected_pixels[i]);
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Pixel: parsers", "[pixel][short]") {
+  const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
+                         Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
+                         Chromosome{4, "chr5", 181'538'259}, Chromosome{5, "chr6", 170'805'979},
+                         Chromosome{6, "chr9", 138'394'717}, Chromosome{7, "chr11", 135'086'622},
+                         Chromosome{8, "chr12", 133'275'309}};
+  constexpr std::uint32_t bin_size = 10;
+  const BinTable bins{chroms, bin_size};
+
+  using N = std::uint32_t;
+  const Pixel<N> expected{{bins.at(0), bins.at(1)}, 1};
+
+  SECTION("coo") {
+    SECTION("valid") { CHECK(Pixel<N>::from_coo(bins, "0\t1\t1") == expected); }
+    SECTION("invalid") {
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, ""),
+                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
+                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "0\t1\tchr"),
+                        Catch::Matchers::ContainsSubstring("Unable to convert field \"chr\""));
+    }
+  }
+
+  SECTION("bg2") {
+    SECTION("valid") {
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1") == expected);
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1\ta\tb\tc") == expected);
+    }
+    SECTION("invalid") {
+      CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr999\t0\t10\tchr1\t0\t10\t1"),
+                        Catch::Matchers::ContainsSubstring("chromosome \"chr999\" not found"));
+      CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, ""),
+                        Catch::Matchers::ContainsSubstring("expected 7 or more fields, found 0"));
+      CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr1\t"),
+                        Catch::Matchers::ContainsSubstring("expected 7 or more fields, found 1"));
+      CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr1\ta\t10\tchr1\t10\t20\t1"),
+                        Catch::Matchers::ContainsSubstring("Unable to convert field \"a\""));
+    }
+  }
+
+  SECTION("validpair") {
+    SECTION("valid") { CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-")); }
+    SECTION("invalid") {
+      CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, ""),
+                        Catch::Matchers::ContainsSubstring("expected 6 or more fields, found 0"));
+      CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr999\t5\t+\tchr1\t15\t-"),
+                        Catch::Matchers::ContainsSubstring("chromosome \"chr999\" not found"));
+      CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1"),
+                        Catch::Matchers::ContainsSubstring("expected 6 or more fields, found 5"));
+      CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr1\tchr1\t+\tchr1\t15\t-"),
+                        Catch::Matchers::ContainsSubstring("Unable to convert field \"chr1\""));
+    }
+  }
+}
 }  // namespace hictk

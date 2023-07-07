@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -21,29 +22,25 @@
 
 using namespace hictk::tools;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static std::atomic<bool> logger_ready{false};
-
-static void setup_logger_console(int verbosity_lvl, bool print_version) {
-  const auto log_lvl = spdlog::level::level_enum(verbosity_lvl);
+static void setup_logger_console() {
   auto stderr_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-  if (log_lvl != spdlog::level::debug) {
-    //                        [2021-08-12 17:49:34.581] [info]: my log msg
-    stderr_sink->set_pattern("[%Y-%m-%d %T.%e] %^[%l]%$: %v");
-  } else {
-    //                        [2021-08-12 17:49:34.581] [tid 18285] [info]: my log msg
-    stderr_sink->set_pattern("[%Y-%m-%d %T.%e] [tid %t] %^[%l]%$: %v");
-  }
+  //                        [2021-08-12 17:49:34.581] [info]: my log msg
+  stderr_sink->set_pattern("[%Y-%m-%d %T.%e] %^[%l]%$: %v");
 
   auto main_logger = std::make_shared<spdlog::logger>("main_logger", stderr_sink);
-  main_logger->set_level(spdlog::level::level_enum(verbosity_lvl));
 
   spdlog::set_default_logger(main_logger);
+}
+
+static void setup_logger_console(int verbosity_lvl, bool print_version) {
+  setup_logger_console();
+  for (auto& sink : spdlog::default_logger()->sinks()) {
+    sink->set_level(spdlog::level::level_enum(verbosity_lvl));
+  }
+
   if (print_version) {
     spdlog::info(FMT_STRING("Running hictk v{}"), hictk::config::version::str());
   }
-
-  logger_ready = true;
 }
 
 static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int argc, char** argv) {
@@ -84,8 +81,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int a
 
 template <typename... Args>
 static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args) {
-  if (logger_ready) {
-    assert(spdlog::default_logger());
+  if (spdlog::default_logger()) {
     spdlog::error(fmt, std::forward<Args>(args)...);
   } else {
     fmt::print(stderr, fmt, std::forward<Args>(args)...);
@@ -95,35 +91,33 @@ static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args)
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
+  std::ios::sync_with_stdio(false);
+
   try {
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(argc, argv);
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
     }
-    cli = std::make_unique<Cli>(argc, argv);
-
-    {
-      using sc = Cli::subcommand;
-      switch (subcmd) {
-        case sc::convert:
-          convert_subcmd(std::get<ConvertConfig>(config));
-          break;
-        case sc::dump:
-          dump_subcmd(std::get<DumpConfig>(config));
-          break;
-        case sc::load:  // NOLINT
-          // load_subcmd(std::get<LoadConfig>(config));
-          break;
-        case sc::merge:  // NOLINT
-          // merge_subcmd(std::get<MergeConfig>(config));
-          break;
-        case sc::help:  // NOLINT
-          break;
-        default:
-          throw std::runtime_error(
-              "Default branch in switch statement in hictk::main() should be unreachable! "
-              "If you see this message, please file an issue on GitHub");
-      }
+    using sc = Cli::subcommand;
+    switch (subcmd) {
+      case sc::convert:
+        convert_subcmd(std::get<ConvertConfig>(config));
+        break;
+      case sc::dump:
+        dump_subcmd(std::get<DumpConfig>(config));
+        break;
+      case sc::load:
+        load_subcmd(std::get<LoadConfig>(config));
+        break;
+      case sc::merge:  // NOLINT
+        // merge_subcmd(std::get<MergeConfig>(config));
+        break;
+      case sc::help:  // NOLINT
+        break;
+      default:
+        throw std::runtime_error(
+            "Default branch in switch statement in hictk::main() should be unreachable! "
+            "If you see this message, please file an issue on GitHub");
     }
   } catch (const CLI::ParseError& e) {
     assert(cli);

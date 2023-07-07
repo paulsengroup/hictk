@@ -11,6 +11,7 @@
 !src/**
 !test/scripts/**
 !test/units/**
+!test/utils/**
 
 # Allowed files
 !CMakeLists.txt

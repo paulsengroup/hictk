@@ -265,7 +265,7 @@ TEST_CASE("BinTable", "[bin-table][short]") {
 
     std::size_t i = 0;
     for (const auto& bin : table) {
-      CHECK(*concrete_table.chroms[i] == bin.chrom());
+      CHECK(concrete_table.chroms[i] == bin.chrom());
       CHECK(concrete_table.bin_starts[i] == bin.start());
       CHECK(concrete_table.bin_ends[i++] == bin.end());
     }
