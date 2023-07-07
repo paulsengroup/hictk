@@ -126,8 +126,8 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
     }
   }
 
-  assert(clr.attributes().nnz);
-  return static_cast<std::size_t>(*clr.attributes().nnz);  // NOLINT
+  assert(clr.attributes().nnz);  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+  return static_cast<std::size_t>(*clr.attributes().nnz);
 }
 
 template <typename Pipe>
@@ -200,8 +200,8 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
         fmt::format(FMT_STRING("pigz failed with exit code {}"), pigz->exit_code()));
   }
 
-  assert(clr.attributes().nnz);
-  return static_cast<std::size_t>(*clr.attributes().nnz);  // NOLINT
+  assert(clr.attributes().nnz);  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+  return static_cast<std::size_t>(*clr.attributes().nnz);
 }
 
 static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest,
