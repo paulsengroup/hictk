@@ -35,4 +35,9 @@ inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::dataset
 
+namespace cooler::test::pixel_selector {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
+}  // namespace hictk::cooler::test::pixel_selector
+
 }  // namespace hictk

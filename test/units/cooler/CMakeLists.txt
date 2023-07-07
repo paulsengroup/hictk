@@ -31,7 +31,8 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp)
 
