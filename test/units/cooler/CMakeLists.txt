@@ -14,7 +14,15 @@ target_sources(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dataset_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_attributes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_chromosomes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_ctors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_format_checking_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_pixels_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
