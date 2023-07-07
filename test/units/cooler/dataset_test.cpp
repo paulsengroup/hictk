@@ -223,6 +223,7 @@ TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
   CHECK(dset.file_name() == path.string());
   CHECK(dset.uri() == fmt::format(FMT_STRING("{}::/chroms/name"), path.string()));
   CHECK(dset.hdf5_path() == "/chroms/name");
+  CHECK(dset.name() == "name");
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
