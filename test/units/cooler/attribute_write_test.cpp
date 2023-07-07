@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/cooler/attribute.hpp"
-
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <highfive/H5File.hpp>
 #include <string>
 
+#include "hictk/cooler/attribute.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::attribute {
