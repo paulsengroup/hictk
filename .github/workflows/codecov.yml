@@ -167,6 +167,25 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
+      - name: Run integration tests
+        run: |
+          test/scripts/hictk_dump_chroms.sh bin/hictk
+          test/scripts/hictk_dump_bins.sh bin/hictk
+          test/scripts/hictk_dump_gw.sh bin/hictk
+          test/scripts/hictk_dump_cis.sh bin/hictk
+          test/scripts/hictk_dump_trans.sh bin/hictk
+          test/scripts/hictk_dump_balanced.sh bin/hictk
+
+          test/scripts/hictk_convert_hic2cool.sh bin/hictk
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+
+          test/scripts/hictk_load_coo.sh bin/hictk sorted
+          test/scripts/hictk_load_coo.sh bin/hictk unsorted
+          test/scripts/hictk_load_bg2.sh bin/hictk sorted
+          test/scripts/hictk_load_bg2.sh bin/hictk unsorted
+          test/scripts/hictk_load_4dn.sh bin/hictk sorted
+          test/scripts/hictk_load_4dn.sh bin/hictk unsorted
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
