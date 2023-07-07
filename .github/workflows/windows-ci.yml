@@ -45,7 +45,7 @@ defaults:
 
 jobs:
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
 
   build-project:
     needs: cache-test-dataset

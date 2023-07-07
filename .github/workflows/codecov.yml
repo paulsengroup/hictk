@@ -47,7 +47,7 @@ env:
 
 jobs:
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
 
   run-codecov:
     name: Codecov

@@ -69,7 +69,7 @@ jobs:
             return { include: includes }
 
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@update-ci
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
 
   build-project:
     needs: matrix-factory
