@@ -37,7 +37,7 @@ class PixelSelector {
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                PixelCoordinates coords) noexcept;
+                const PixelCoordinates &coords) noexcept;
 
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,

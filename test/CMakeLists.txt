@@ -15,6 +15,7 @@ target_disable_clang_tidy(Catch2WithMain)
 list(APPEND CMAKE_MODULE_PATH ${_hictk_catch2_SOURCE_DIR}/extras)
 
 add_subdirectory(units)
+add_subdirectory(utils)
 
 option(HICTK_DOWNLOAD_TEST_DATASET "Download datasets required by unit and integration tests" ON)
 

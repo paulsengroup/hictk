@@ -13,7 +13,7 @@ namespace hictk {
 class GenomicInterval {
   static inline const Chromosome null_chrom{};
 
-  std::reference_wrapper<const Chromosome> _chrom{null_chrom};
+  Chromosome _chrom{null_chrom};
   std::uint32_t _start{};
   std::uint32_t _end{};
 

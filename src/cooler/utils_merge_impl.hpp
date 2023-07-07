@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <queue>
 #include <string_view>
@@ -75,9 +77,10 @@ inline void merge(const std::vector<typename PixelSelector<N>::iterator>& heads,
     if (buffer.size() == queue_capacity) {
       dest.append_pixels(buffer.begin(), buffer.end());
       pixels_processed += buffer.size();
-      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(1'000'000)) == 0) {
-        fmt::print(stderr, FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 1'000'000);
+      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(10'000'000)) == 0) {
+        spdlog::info(FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 10'000'000);
       }
+      buffer.clear();
     }
   }
 
