@@ -8,12 +8,21 @@
 
 #include "hictk/tmpdir.hpp"
 
-namespace hictk::test {
+namespace hictk {
+
+namespace test {
 inline const internal::TmpDir testdir{true};  // NOLINT(cert-err58-cpp)
 
-}  // namespace hictk::test
+}  // namespace test
 
-namespace hictk::cooler::test::cooler_file {
+namespace cooler::test::cooler_file {
 inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::cooler::test::cooler_file
+}  // namespace cooler::test::cooler_file
+
+namespace cooler::test::attribute {
+
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
+}  // namespace cooler::test::attribute
+}  // namespace hictk

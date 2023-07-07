@@ -11,7 +11,9 @@ add_executable(hictk_cooler_tests)
 
 target_sources(
   hictk_cooler_tests
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_test.cpp
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_numeric_conversions_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dataset_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp
