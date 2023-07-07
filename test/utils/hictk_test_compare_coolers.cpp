@@ -8,6 +8,7 @@
 #include "hictk/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) noexcept {
   std::filesystem::path file1{};
   std::filesystem::path file2{};
