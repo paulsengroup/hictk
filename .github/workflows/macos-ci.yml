@@ -85,7 +85,6 @@ jobs:
         run: |
           echo 'conan==${{ matrix.conan }}' > requirements.txt
           echo 'cmake==${{ matrix.cmake }}' >> requirements.txt
-          echo 'cooler>=0.9.2' >> requirements.txt
 
       - uses: actions/setup-python@v4
         with:
@@ -316,6 +315,17 @@ jobs:
       - name: Fix permissions
         run: |
           chown -R $(id -u):$(id -g) $PWD
+
+      - name: Generate requirements.txt for pip
+        run: echo 'cooler>=0.9.2' > requirements.txt
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
 
       - name: Cache hic_tools
         id: cache-hictools

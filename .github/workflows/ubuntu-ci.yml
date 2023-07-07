@@ -379,30 +379,6 @@ jobs:
 
           python3 -m pip install 'cooler>=0.9.2'
 
-      - name: Test hictk load coo sorted
-        run: |
-          test/scripts/hictk_load_coo.sh build/src/hictk/hictk sorted
-
-      - name: Test hictk load coo unsorted
-        run: |
-          test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted
-
-      - name: Test hictk load bg2 sorted
-        run: |
-          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk sorted
-
-      - name: Test hictk load bg2 unsorted
-        run: |
-          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk unsorted
-
-      - name: Test hictk load 4dn sorted
-        run: |
-          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
-
-      - name: Test hictk load 4dn unsorted
-        run: |
-          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk unsorted
-
       - name: Cache hic_tools
         id: cache-hictools
         uses: actions/cache@v3
@@ -446,6 +422,30 @@ jobs:
       - name: Test hictk convert (cool2hic)
         run: |
           test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+
+      - name: Test hictk load coo sorted
+        run: |
+          test/scripts/hictk_load_coo.sh bin/hictk sorted
+
+      - name: Test hictk load coo unsorted
+        run: |
+          test/scripts/hictk_load_coo.sh bin/hictk unsorted
+
+      - name: Test hictk load bg2 sorted
+        run: |
+          test/scripts/hictk_load_bg2.sh bin/hictk sorted
+
+      - name: Test hictk load bg2 unsorted
+        run: |
+          test/scripts/hictk_load_bg2.sh bin/hictk unsorted
+
+      - name: Test hictk load 4dn sorted
+        run: |
+          test/scripts/hictk_load_4dn.sh bin/hictk sorted
+
+      - name: Test hictk load 4dn unsorted
+        run: |
+          test/scripts/hictk_load_4dn.sh bin/hictk unsorted
 
   ubuntu-ci-status-check:
     name: Status Check (Ubuntu CI)
