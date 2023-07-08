@@ -61,7 +61,6 @@ template <std::size_t N>
 
 template <typename N>
 inline ThinPixel<N>::operator bool() const noexcept {
-  constexpr auto null_id = std::numeric_limits<std::size_t>::max();
   return this->bin1_id != null_id && this->bin2_id != null_id;
 }
 

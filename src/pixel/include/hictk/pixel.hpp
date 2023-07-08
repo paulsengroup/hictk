@@ -20,9 +20,10 @@ class Chromosome;
 
 template <typename N>
 struct ThinPixel {
-  std::uint64_t bin1_id{std::numeric_limits<std::uint64_t>::max()};  // NOLINT
-  std::uint64_t bin2_id{std::numeric_limits<std::uint64_t>::max()};  // NOLINT
-  N count{};                                                         // NOLINT
+  static constexpr auto null_id = std::numeric_limits<std::uint64_t>::max();
+  std::uint64_t bin1_id{null_id};  // NOLINT
+  std::uint64_t bin2_id{null_id};  // NOLINT
+  N count{};                       // NOLINT
 
   [[nodiscard]] explicit operator bool() const noexcept;
   [[nodiscard]] bool operator==(const ThinPixel &other) const noexcept;

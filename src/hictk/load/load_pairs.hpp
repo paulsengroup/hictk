@@ -86,7 +86,7 @@ class PairsAggregator {
         _buffer.emplace(pixel);
       }
 
-      if (!!last_bin1 && pixel.bin1_id != last_bin1) {
+      if (last_bin1 != ThinPixel<N>::null_id && pixel.bin1_id != last_bin1) {
         break;
       }
       last_bin1 = pixel.bin1_id;
