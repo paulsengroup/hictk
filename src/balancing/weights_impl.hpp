@@ -100,7 +100,7 @@ inline void Weights::rescale(double scaling_factor) noexcept {
 }
 
 inline void Weights::rescale(const std::vector<double> &scaling_factors,
-                             const std::vector<std::size_t> &offsets) noexcept {
+                             const std::vector<std::uint64_t> &offsets) noexcept {
   for (std::size_t i = 0; i < scaling_factors.size(); ++i) {
     auto first = this->_weights.begin() + std::ptrdiff_t(offsets[i]);
     auto last = this->_weights.begin() + std::ptrdiff_t(offsets[i + 1]);

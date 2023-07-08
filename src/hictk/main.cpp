@@ -33,7 +33,6 @@ static void setup_logger_console() {
 }
 
 static void setup_logger_console(int verbosity_lvl, bool print_version) {
-  setup_logger_console();
   for (auto& sink : spdlog::default_logger()->sinks()) {
     sink->set_level(spdlog::level::level_enum(verbosity_lvl));
   }
@@ -94,6 +93,7 @@ int main(int argc, char** argv) noexcept {
   std::ios::sync_with_stdio(false);
 
   try {
+    setup_logger_console();
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(argc, argv);
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
