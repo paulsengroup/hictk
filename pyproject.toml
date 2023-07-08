@@ -9,7 +9,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 dependencies = [
-  "pyarrow"
+  "numpy",
+  "pandas"
 ]
 
 [tool.mypy]
