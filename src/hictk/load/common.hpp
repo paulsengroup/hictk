@@ -30,7 +30,7 @@ enum class Format { COO, BG2, VP, _4DN };
 
 template <typename N>
 [[nodiscard]] inline ThinPixel<N> parse_pixel(const BinTable& bins, std::string_view line,
-                                          Format format) {
+                                              Format format) {
   switch (format) {
     case Format::COO:
       return ThinPixel<N>::from_coo(bins, line);

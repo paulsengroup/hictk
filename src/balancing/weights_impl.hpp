@@ -50,7 +50,7 @@ inline Pixel<N> Weights::balance(Pixel<N> p) const {
 }
 
 template <typename N1, typename N2>
-inline N1 Weights::balance(std::size_t bin1_id, std::size_t bin2_id, N2 count) const {
+inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const {
   assert(std::is_floating_point_v<N1>);
   const auto w1 = this->_weights[bin1_id];
   const auto w2 = this->_weights[bin2_id];
