@@ -5,7 +5,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "hictk/cooler.hpp"
-#include "hictk/cooler/pixel_selector.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
@@ -18,13 +17,13 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
   SECTION("cis") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch<T>("1:5000000-5500000", "1:5000000-6500000") ==
-            f.fetch<T>("1", 5000000, 5500000, "1", 5000000, 6500000));
+      CHECK(f.fetch("1:5000000-5500000", "1:5000000-6500000") ==
+            f.fetch("1", 5000000, 5500000, "1", 5000000, 6500000));
     }
 
     SECTION("valid") {
-      auto selector = f.fetch<T>("1:5000000-5500000", "1:5000000-6500000");
-      const std::vector<Pixel<T>> pixels(selector.begin(), selector.end());
+      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
+      const auto pixels = selector.read_all<T>();
       REQUIRE(pixels.size() == 8);
 
       CHECK(pixels[0].count == 20);
@@ -38,19 +37,19 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
     }
 
     SECTION("empty") {
-      auto selector = f.fetch<T>("1:0-100000");
-      CHECK(selector.begin() == selector.end());
+      auto selector = f.fetch("1:0-100000");
+      CHECK(selector.begin<T>() == selector.end<T>());
     }
   }
 
   SECTION("trans") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch<T>("1:48000000-50000000", "4:30000000-35000000") ==
-            f.fetch<T>("1", 48000000, 50000000, "4", 30000000, 35000000));
+      CHECK(f.fetch("1:48000000-50000000", "4:30000000-35000000") ==
+            f.fetch("1", 48000000, 50000000, "4", 30000000, 35000000));
     }
     SECTION("valid") {
-      auto selector = f.fetch<T>("1:48000000-50000000", "4:30000000-35000000");
-      const std::vector<Pixel<T>> pixels(selector.begin(), selector.end());
+      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
+      const auto pixels = selector.read_all<T>();
       REQUIRE(pixels.size() == 6);
 
       CHECK(pixels[0].count == 1);
@@ -62,8 +61,8 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
     }
 
     SECTION("empty") {
-      auto selector = f.fetch<T>("1:0-50000", "2:0-50000");
-      CHECK(selector.begin() == selector.end());
+      auto selector = f.fetch("1:0-50000", "2:0-50000");
+      CHECK(selector.begin<T>() == selector.end<T>());
     }
   }
 }

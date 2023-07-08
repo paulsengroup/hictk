@@ -12,6 +12,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_cache.hpp"
+#include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
@@ -92,17 +93,17 @@ class PixelSelector {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
     const PixelSelector *_sel{};
-    using BufferT = std::vector<Pixel<N>>;
+    using BufferT = std::vector<ThinPixel<N>>;
     using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
-    std::size_t _bin1_id{};
+    std::uint64_t _bin1_id{};
     mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
 
    public:
     using difference_type = std::ptrdiff_t;
-    using value_type = Pixel<N>;
+    using value_type = ThinPixel<N>;
     using pointer = value_type *;
     using const_pointer = const value_type *;
     using reference = value_type &;
@@ -131,8 +132,8 @@ class PixelSelector {
     [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
-    [[nodiscard]] std::size_t bin1_id() const noexcept;
-    [[nodiscard]] std::size_t bin2_id() const noexcept;
+    [[nodiscard]] std::uint64_t bin1_id() const noexcept;
+    [[nodiscard]] std::uint64_t bin2_id() const noexcept;
 
     void read_next_chunk();
     [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
@@ -175,8 +176,8 @@ class PixelSelectorAll {
   template <typename N>
   class iterator {
     struct Pair {
-      PixelSelector::iterator<N> first{};
-      PixelSelector::iterator<N> last{};
+      PixelSelector::iterator<N> first{};  // NOLINT
+      PixelSelector::iterator<N> last{};   // NOLINT
       bool operator<(const Pair &other) const noexcept;
       bool operator>(const Pair &other) const noexcept;
     };
@@ -188,12 +189,12 @@ class PixelSelectorAll {
 
     std::uint32_t _chrom1_id{};
 
-    std::shared_ptr<std::vector<Pixel<N>>> _buff{};
+    std::shared_ptr<std::vector<ThinPixel<N>>> _buff{};
     std::size_t _i{};
 
    public:
     using difference_type = std::ptrdiff_t;
-    using value_type = Pixel<N>;
+    using value_type = ThinPixel<N>;
     using pointer = value_type *;
     using const_pointer = const value_type *;
     using reference = value_type &;

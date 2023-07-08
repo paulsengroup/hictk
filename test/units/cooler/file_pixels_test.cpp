@@ -22,7 +22,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   {
     auto f2 = File::create_new_cooler<T>(path2.string(), f1.chromosomes(), f1.bin_size(), true);
 
-    const std::vector<Pixel<T>> expected(f1.begin<T>(), f1.end<T>());
+    const std::vector<ThinPixel<T>> expected(f1.begin<T>(), f1.end<T>());
     REQUIRE(expected.size() == 107041);
 
     std::random_device rd;
@@ -71,8 +71,8 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   }
 
   SECTION("compare pixels") {
-    const std::vector<Pixel<T>> expected_pixels(f1.begin<T>(), f1.end<T>());
-    const std::vector<Pixel<T>> pixels(f2.begin<T>(), f2.end<T>());
+    const std::vector<ThinPixel<T>> expected_pixels(f1.begin<T>(), f1.end<T>());
+    const std::vector<ThinPixel<T>> pixels(f2.begin<T>(), f2.end<T>());
 
     REQUIRE(expected_pixels.size() == pixels.size());
     for (std::size_t i = 0; i < pixels.size(); ++i) {

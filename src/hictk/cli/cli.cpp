@@ -871,7 +871,7 @@ void Cli::transform_args_dump_subcommand() {
   auto& c = std::get<DumpConfig>(this->_config);
 
   c.format = infer_input_format(c.uri);
-  if (c.format == "hic" && c.resolution ==  0) {
+  if (c.format == "hic" && c.resolution == 0) {
     assert(c.table == "chroms");
     c.resolution = hic::utils::list_resolutions(c.uri).back();
   }

@@ -8,66 +8,66 @@
 #include "hictk/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/transformers.hpp"
 
 namespace hictk::tools {
 
-template <bool join, typename PixelIt>
-static void print_pixels(PixelIt first_pixel, PixelIt last_pixel) {
-  std::for_each(first_pixel, last_pixel, [&](const auto& pixel) { print<join>(pixel); });
+template <typename PixelIt>
+static void print_pixels(PixelIt first, PixelIt last) {
+  std::for_each(first, last, [&](const auto& pixel) { print(pixel); });
 }
 
-template <typename N, bool join>
-static void print_pixels(typename cooler::PixelSelector<N>::iterator first_pixel,
-                         typename cooler::PixelSelector<N>::iterator last_pixel,
-                         const std::shared_ptr<const cooler::Weights>& weights) {
-  if (weights != nullptr) {
-    const auto sel = cooler::Balancer<N>(first_pixel, last_pixel, weights);
-    print_pixels<join>(sel.begin(), sel.end());
-    return;
-  }
-  print_pixels<join>(first_pixel, last_pixel);
-}
-
-template <bool join>
-static void dump_pixels(const cooler::File& clr, std::string_view range1, std::string_view range2,
-                        std::string_view normalization) {
-  const auto has_int_pixels = clr.has_integral_pixels();
-  const auto weights = normalization == "NONE" ? std::shared_ptr<const cooler::Weights>(nullptr)
-                                               : clr.read_weights(normalization);
-
+void dump_pixels(const cooler::File& f, std::string_view range1, std::string_view range2,
+                 std::string_view normalization, bool join) {
+  auto weights = f.read_weights(normalization);
   if (range1 == "all") {
     assert(range2 == "all");
-    return has_int_pixels
-               ? print_pixels<std::int64_t, join>(clr.begin<std::int64_t>(),
-                                                  clr.end<std::int64_t>(), weights)
-               : print_pixels<double, join>(clr.begin<double>(), clr.end<double>(), weights);
+    auto sel = f.fetch(weights);
+    if (!join) {
+      return print_pixels(sel.template begin<double>(), sel.template end<double>());
+    }
+
+    auto jsel =
+        transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+    return print_pixels(jsel.begin(), jsel.end());
   }
 
-  if (has_int_pixels) {
-    auto sel = clr.fetch<std::int64_t>(range1, range2);
-    return print_pixels<std::int64_t, join>(sel.begin(), sel.end(), weights);
+  auto sel = f.fetch(range1, range2, weights);
+  if (!join) {
+    return print_pixels(sel.template begin<double>(), sel.template end<double>());
   }
 
-  auto sel = clr.fetch<double>(range1, range2);
-  return print_pixels<double, join>(sel.begin(), sel.end(), weights);
+  auto jsel = transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+  print_pixels(jsel.begin(), jsel.end());
 }
 
-template <bool join>
-static void dump_pixels(const hic::HiCFile& f, std::string_view range1,
-                        [[maybe_unused]] std::string_view range2, std::string_view normalization) {
-  const auto norm = hic::ParseNormStr(std::string{normalization});
+void dump_pixels(const hic::HiCFile& f, std::string_view range1, std::string_view range2,
+                 std::string_view normalization, bool join) {
+  auto norm = hic::ParseNormStr(std::string{normalization});
   if (range1 == "all") {
     assert(range2 == "all");
     auto sel = f.fetch(norm);
-    return print_pixels<join>(sel.begin<double>(), sel.end<double>());
+    if (!join) {
+      return print_pixels(sel.template begin<double>(), sel.template end<double>());
+    }
+
+    auto jsel =
+        transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+    return print_pixels(jsel.begin(), jsel.end());
   }
+
   auto sel = f.fetch(range1, range2, norm);
-  return print_pixels<join>(sel.begin<double>(), sel.end<double>());
+  if (!join) {
+    return print_pixels(sel.template begin<double>(), sel.template end<double>());
+  }
+
+  auto jsel = transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+  print_pixels(jsel.begin(), jsel.end());
 }
 
-template <bool join, typename File>
+template <typename File>
 static void process_query(const File& f, std::string_view table, std::string_view range1,
-                          std::string_view range2, std::string_view normalization) {
+                          std::string_view range2, std::string_view normalization, bool join) {
   if (table == "chroms") {
     return dump_chroms(f, range1);
   }
@@ -76,7 +76,7 @@ static void process_query(const File& f, std::string_view table, std::string_vie
   }
 
   assert(table == "pixels");
-  return dump_pixels<join>(f, range1, range2, normalization);
+  return dump_pixels(f, range1, range2, normalization, join);
 }
 
 using FileVar = std::variant<cooler::File, hic::HiCFile>;
@@ -98,8 +98,7 @@ void dump_subcmd(const DumpConfig& c) {
   std::visit(
       [&](const auto& f) {
         if (c.query_file.empty()) {
-          c.join ? process_query<true>(f, c.table, c.range1, c.range2, c.normalization)
-                 : process_query<false>(f, c.table, c.range1, c.range2, c.normalization);
+          process_query(f, c.table, c.range1, c.range2, c.normalization, c.join);
           return;
         }
 
@@ -115,8 +114,7 @@ void dump_subcmd(const DumpConfig& c) {
         std::string line;
         while (std::getline(read_from_stdin ? std::cin : ifs, line)) {
           const auto [range1, range2] = parse_bedpe(line);
-          c.join ? process_query<true>(f, c.table, range1, range2, c.normalization)
-                 : process_query<false>(f, c.table, range1, range2, c.normalization);
+          process_query(f, c.table, range1, range2, c.normalization, c.join);
         }
       },
       file);

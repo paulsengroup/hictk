@@ -74,8 +74,8 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   const internal::TmpDir tmpdir{};
   std::vector<std::string> uris{};
 
-  using IntBuff = std::vector<Pixel<std::int32_t>>;
-  using FPBuff = std::vector<Pixel<double>>;
+  using IntBuff = std::vector<ThinPixel<std::int32_t>>;
+  using FPBuff = std::vector<ThinPixel<double>>;
   std::variant<IntBuff, FPBuff> write_buffer{};
   if (c.count_as_float) {
     write_buffer = FPBuff(c.batch_size);
@@ -126,8 +126,8 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   const internal::TmpDir tmpdir{};
   std::vector<std::string> uris{};
 
-  using IntBuff = std::vector<Pixel<std::int32_t>>;
-  using FPBuff = std::vector<Pixel<double>>;
+  using IntBuff = std::vector<ThinPixel<std::int32_t>>;
+  using FPBuff = std::vector<ThinPixel<double>>;
   std::variant<IntBuff, FPBuff> write_buffer{};
   if (c.count_as_float) {
     write_buffer = FPBuff{};

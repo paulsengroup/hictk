@@ -50,6 +50,7 @@ class HiCFile {
   [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;

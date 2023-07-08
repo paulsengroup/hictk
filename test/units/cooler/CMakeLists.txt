@@ -14,7 +14,6 @@ target_sources(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_numeric_conversions_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dataset_attributes_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dataset_iteration_test.cpp
@@ -33,6 +32,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp)
 

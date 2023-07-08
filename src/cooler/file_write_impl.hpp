@@ -29,11 +29,68 @@
 #include "hictk/cooler/uri.hpp"
 
 namespace hictk::cooler {
+
+template <typename PixelIt>
+void File::append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,
+                       PixelIt last_pixel) {
+  using PixelT = std::decay_t<decltype(*first_pixel)>;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
+
+  if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
+    bin1_dset.append(first_pixel, last_pixel,
+                     [&](const auto &pixel) { return pixel.coords.bin1.id(); });
+
+    bin2_dset.append(first_pixel, last_pixel,
+                     [&](const auto &pixel) { return pixel.coords.bin2.id(); });
+  } else {
+    bin1_dset.append(first_pixel, last_pixel, [&](const auto &pixel) { return pixel.bin1_id; });
+
+    bin2_dset.append(first_pixel, last_pixel, [&](const auto &pixel) { return pixel.bin2_id; });
+  }
+}
+
+template <typename PixelIt, typename N>
+void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
+                         PixelIt last_pixel, N &sum, N &cis_sum) {
+  using PixelT = typename std::iterator_traits<PixelIt>::value_type;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
+
+  sum = 0;
+  cis_sum = 0;
+
+  dset.append(first_pixel, last_pixel, [&](const auto &pixel) {
+    if (pixel.count == 0) {
+      const auto coords = [&]() {
+        if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
+          return pixel.coords;
+        } else {
+          return PixelCoordinates{bins.at(pixel.bin1_id), bins.at(pixel.bin2_id)};
+        }
+      }();
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("Found pixel with 0 interactions: {}"), coords));
+    }
+
+    sum += pixel.count;
+    if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
+      if (pixel.coords.bin1.chrom().id() == pixel.coords.bin2.chrom().id()) {
+        cis_sum += pixel.count;
+      }
+    } else {
+      const auto chrom1 = bins.at(pixel.bin1_id).chrom();
+      const auto chrom2 = bins.at(pixel.bin2_id).chrom();
+      if (chrom1 == chrom2) {
+        cis_sum += pixel.count;
+      }
+    }
+    return pixel.count;
+  });
+}
+
 template <typename PixelIt, typename>
 inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool validate) {
-  using PixelT = typename std::iterator_traits<PixelIt>::value_type;
-  using T = decltype(std::declval<PixelT>().count);
-
+  using PixelT = std::decay_t<decltype(*first_pixel)>;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
   if constexpr (ndebug_not_defined()) {
     this->validate_pixel_type<T>();
   }
@@ -41,31 +98,19 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
   this->update_indexes(first_pixel, last_pixel);
 
   if (validate) {
-    this->validate_pixels_before_append(first_pixel, last_pixel);
+    if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
+      this->validate_pixels_before_append(first_pixel, last_pixel);
+    } else {
+      this->validate_thin_pixels_before_append(first_pixel, last_pixel);
+    }
   }
 
-  this->dataset("pixels/bin1_id").append(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
-    return pixel.coords.bin1.id();
-  });
+  File::append_bins(this->dataset("pixels/bin1_id"), this->dataset("pixels/bin2_id"), first_pixel,
+                    last_pixel);
 
-  this->dataset("pixels/bin2_id").append(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
-    return pixel.coords.bin2.id();
-  });
-
-  T sum = 0;
-  T cis_sum = 0;
-  this->dataset("pixels/count").append(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
-    if (pixel.count == 0) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("Found pixel with 0 interactions: {}"), pixel.coords));
-    }
-    sum += pixel.count;
-    if (pixel.coords.bin1.chrom().id() == pixel.coords.bin2.chrom().id()) {
-      cis_sum += pixel.count;
-    }
-    return pixel.count;
-  });
-
+  T sum{};
+  T cis_sum{};
+  File::append_counts(this->dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
   this->_attrs.nnz = this->dataset("pixels/bin1_id").size();
 
   this->update_pixel_sum(sum);
@@ -304,8 +349,8 @@ inline void File::write_bin_table(Dataset &chrom_dset, Dataset &start_dset, Data
 
 template <typename PixelIt>
 inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
-  using PixelT = typename std::iterator_traits<PixelIt>::value_type;
-  using T = decltype(std::declval<PixelT>().count);
+  using PixelT = std::decay_t<decltype(*first_pixel)>;
+  using T = remove_cvref_t<decltype(first_pixel->count)>;
 
   if (first_pixel == last_pixel) {
     return;
@@ -314,13 +359,23 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
   auto nnz = static_cast<std::uint64_t>(*this->_attrs.nnz);
   PixelCoordinates first_pixel_in_row(this->get_last_bin_written());
 
-  std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &p) {
-    if (first_pixel_in_row.bin1.start() != p.coords.bin1.start()) {
-      first_pixel_in_row = p.coords;
-      this->index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
-    }
-    nnz++;
-  });
+  if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
+    std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &p) {
+      if (first_pixel_in_row.bin1 != p.coords.bin1) {
+        first_pixel_in_row = p.coords;
+        this->index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
+      }
+      nnz++;
+    });
+  } else {
+    std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &p) {
+      if (first_pixel_in_row.bin1.id() != p.bin1_id) {
+        first_pixel_in_row = {bins().at(p.bin1_id), bins().at(p.bin2_id)};
+        this->index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
+      }
+      nnz++;
+    });
+  }
 }
 
 inline void File::write_indexes() {

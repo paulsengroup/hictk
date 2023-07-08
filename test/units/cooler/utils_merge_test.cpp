@@ -38,7 +38,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
     REQUIRE(std::distance(first1, last1) == std::distance(first2, last2));
     while (first1 != last1) {
-      CHECK(first1->coords == first2->coords);
+      CHECK(first1->bin1_id == first2->bin1_id);
+      CHECK(first1->bin2_id == first2->bin2_id);
       CHECK(2 * first1->count == first2->count);
       ++first1;
       ++first2;
@@ -63,7 +64,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
     REQUIRE(std::distance(first1, last1) == std::distance(first2, last2));
     while (first1 != last1) {
-      CHECK(first1->coords == first2->coords);
+      CHECK(first1->bin1_id == first2->bin1_id);
+      CHECK(first1->bin2_id == first2->bin2_id);
       CHECK(2 * first1->count == first2->count);
       ++first1;
       ++first2;
@@ -82,8 +84,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
         auto clr1 =
             cooler::File::create_new_cooler(sources.back(), clr.chromosomes(), clr.bin_size());
-        const auto sel = clr.fetch<std::int32_t>(chrom.name());
-        clr1.append_pixels(sel.begin(), sel.end());
+        const auto sel = clr.fetch(chrom.name());
+        clr1.append_pixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>());
       }
     }
 
@@ -93,17 +95,18 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto clr2 = File::open_read_only_read_once(dest.string());
 
     for (const auto& chrom : clr1.chromosomes()) {
-      auto sel1 = clr1.fetch<std::int32_t>(chrom.name());
-      auto sel2 = clr2.fetch<std::int32_t>(chrom.name());
+      auto sel1 = clr1.fetch(chrom.name());
+      auto sel2 = clr2.fetch(chrom.name());
 
-      auto first1 = sel1.begin();
-      auto last1 = sel1.end();
-      auto first2 = sel2.begin();
-      auto last2 = sel2.end();
+      auto first1 = sel1.begin<std::int32_t>();
+      auto last1 = sel1.end<std::int32_t>();
+      auto first2 = sel2.begin<std::int32_t>();
+      auto last2 = sel2.end<std::int32_t>();
 
       REQUIRE(std::distance(first1, last1) == std::distance(first2, last2));
       while (first1 != last1) {
-        CHECK(first1->coords == first2->coords);
+        CHECK(first1->bin1_id == first2->bin1_id);
+        CHECK(first1->bin2_id == first2->bin2_id);
         CHECK(first1->count == first2->count);
         ++first1;
         ++first2;

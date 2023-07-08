@@ -116,7 +116,11 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
   // and a second time to copy the actual data)
   std::vector<Pixel<N>> buff{};
-  std::copy(begin<N>(), end<N>(), std::back_inserter(buff));
+  std::transform(begin<N>(), end<N>(), std::back_inserter(buff), [&](const ThinPixel<N> &p) {
+    return Pixel<N>{{bins().at_hint(p.bin1_id, coord1().bin1.chrom()),
+                     bins().at_hint(p.bin2_id, coord2().bin1.chrom())},
+                    p.count};
+  });
   return buff;
 }
 
@@ -353,12 +357,12 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
 }
 
 template <typename N>
-inline std::size_t PixelSelector::iterator<N>::bin1_id() const noexcept {
-  return !is_at_end() ? (*this)->coords.bin1.id() : std::numeric_limits<std::size_t>::max();
+inline std::uint64_t PixelSelector::iterator<N>::bin1_id() const noexcept {
+  return !is_at_end() ? (*this)->bin1_id : std::numeric_limits<std::size_t>::max();
 }
 template <typename N>
-inline std::size_t PixelSelector::iterator<N>::bin2_id() const noexcept {
-  return !is_at_end() ? (*this)->coords.bin2.id() : std::numeric_limits<std::size_t>::max();
+inline std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
+  return !is_at_end() ? (*this)->bin2_id : std::numeric_limits<std::size_t>::max();
 }
 
 template <typename N>
@@ -411,7 +415,6 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   _buffer_i = 0;
 
   const auto chunk_size = compute_chunk_size();
-  const auto bin_size = bins().bin_size();
   const auto bin1_id_last = _bin1_id + chunk_size;
 
   const auto blocks = find_blocks_overlapping_next_chunk(chunk_size);
@@ -430,14 +433,15 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
       }
 
       p = _sel->transform_pixel(p);
-      const auto pos1 = static_cast<std::uint32_t>(p.bin1_id) * bin_size;
-      const auto pos2 = static_cast<std::uint32_t>(p.bin2_id) * bin_size;
-      auto coords = PixelCoordinates{bins().at(coord1().bin1.chrom(), pos1),
-                                     bins().at(coord2().bin1.chrom(), pos2)};
+      const auto bin1_id =
+          static_cast<std::size_t>(p.bin1_id) + bins().at(coord1().bin1.chrom()).id();
+      const auto bin2_id =
+          static_cast<std::size_t>(p.bin2_id) + bins().at(coord2().bin1.chrom()).id();
       if constexpr (std::is_integral_v<N>) {
-        _buffer->emplace_back(Pixel<N>{coords, conditional_static_cast<N>(std::round(p.count))});
+        _buffer->emplace_back(
+            ThinPixel<N>{bin1_id, bin2_id, conditional_static_cast<N>(std::round(p.count))});
       } else {
-        _buffer->emplace_back(Pixel<N>{coords, conditional_static_cast<N>(p.count)});
+        _buffer->emplace_back(ThinPixel<N>{bin1_id, bin2_id, conditional_static_cast<N>(p.count)});
       }
     }
   }
@@ -471,7 +475,10 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
   // and a second time to copy the actual data)
   std::vector<Pixel<N>> buff{};
-  std::copy(begin<N>(), end<N>(), std::back_inserter(buff));
+  std::transform(begin<N>(), end<N>(), std::back_inserter(buff), [&](const ThinPixel<N> &p) {
+    return Pixel<N>{{bins().at(p.bin1_id), bins().at(p.bin2_id)}, p.count};
+  });
+
   return buff;
 }
 
@@ -502,7 +509,7 @@ template <typename N>
 inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector)
     : _selectors(std::make_shared<SelectorQueue>()),
       _its(std::make_shared<ItPQueue>()),
-      _buff(std::make_shared<std::vector<Pixel<N>>>()) {
+      _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
                 [&](const PixelSelector &sel) { _selectors->push(&sel); });
 
@@ -599,13 +606,13 @@ inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
   }
 
   if (_buff.use_count() != 1) {
-    _buff = std::make_shared<std::vector<Pixel<N>>>();
+    _buff = std::make_shared<std::vector<ThinPixel<N>>>();
   }
   _buff->clear();
   _i = 0;
 
-  const auto bin1 = first->coords.bin1;
-  while (first != last && first->coords.bin1 == bin1) {
+  const auto bin1_id = first->bin1_id;
+  while (first != last && first->bin1_id == bin1_id) {
     _buff->push_back(*first++);
   }
   _its->emplace(Pair{first, last});

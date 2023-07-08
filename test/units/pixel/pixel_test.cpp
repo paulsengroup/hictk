@@ -124,19 +124,19 @@ TEST_CASE("Pixel: PixelMerger", "[pixel][short]") {
   constexpr std::uint32_t bin_size = 100;
   const BinTable bins{chroms, bin_size};
 
-  std::vector<Pixel<std::int32_t>> chr1_pixels{};
-  std::vector<Pixel<std::int32_t>> chr2_pixels{};
+  std::vector<ThinPixel<std::int32_t>> chr1_pixels{};
+  std::vector<ThinPixel<std::int32_t>> chr2_pixels{};
 
   using It = decltype(chr1_pixels.begin());
 
   for (const auto bin : bins.subset("chr1")) {
-    chr1_pixels.emplace_back(bin, bin, 1);
+    chr1_pixels.emplace_back(ThinPixel<std::int32_t>{bin.id(), bin.id(), 1});
   }
   for (const auto bin : bins.subset("chr2")) {
-    chr2_pixels.emplace_back(bin, bin, 1);
+    chr2_pixels.emplace_back(ThinPixel<std::int32_t>{bin.id(), bin.id(), 1});
   }
 
-  std::vector<Pixel<std::int32_t>> expected_pixels{};
+  std::vector<ThinPixel<std::int32_t>> expected_pixels{};
   std::copy(chr1_pixels.begin(), chr1_pixels.end(), std::back_inserter(expected_pixels));
   std::copy(chr2_pixels.begin(), chr2_pixels.end(), std::back_inserter(expected_pixels));
 
@@ -150,8 +150,37 @@ TEST_CASE("Pixel: PixelMerger", "[pixel][short]") {
   tails.emplace_back(chr2_pixels.end());
 
   internal::PixelMerger<It> merger(heads, tails);
-  for (const auto& p : expected_pixels) {
-    CHECK(merger.next() == p);
+  for (const auto& expected_pixel : expected_pixels) {
+    CHECK(merger.next() == expected_pixel);
+  }
+}
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
+  const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
+                         Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
+                         Chromosome{4, "chr5", 181'538'259}, Chromosome{5, "chr6", 170'805'979},
+                         Chromosome{6, "chr9", 138'394'717}, Chromosome{7, "chr11", 135'086'622},
+                         Chromosome{8, "chr12", 133'275'309}};
+  constexpr std::uint32_t bin_size = 10;
+  const BinTable bins{chroms, bin_size};
+
+  using N = std::uint32_t;
+  const ThinPixel<N> expected{0, 1, 1};
+
+  SECTION("coo") {
+    SECTION("valid") {
+      CHECK(ThinPixel<N>::from_coo(bins, "0\t1\t1") == expected);
+      CHECK(ThinPixel<N>::from_coo("0\t1\t1") == expected);
+    }
+
+    SECTION("invalid") {
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, ""),
+                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
+                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "0\t1\tchr"),
+                        Catch::Matchers::ContainsSubstring("Unable to convert field \"chr\""));
+    }
   }
 }
 

@@ -20,7 +20,7 @@
 namespace hictk::tools {
 
 template <typename N>
-inline void read_batch(const BinTable& bins, std::vector<Pixel<N>>& buffer, Format format) {
+inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format) {
   buffer.clear();
   std::string line{};
   try {
@@ -45,7 +45,7 @@ inline void read_batch(const BinTable& bins, std::vector<Pixel<N>>& buffer, Form
 template <typename N>
 inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::size_t batch_size,
                                  bool validate_pixels) {
-  std::vector<Pixel<N>> buffer(batch_size);
+  std::vector<ThinPixel<N>> buffer(batch_size);
 
   std::size_t i = 0;
   try {
@@ -67,7 +67,7 @@ inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::size_t 
 }
 
 template <typename N>
-inline std::string ingest_pixels_unsorted(cooler::File&& clr, std::vector<Pixel<N>>& buffer,
+inline std::string ingest_pixels_unsorted(cooler::File&& clr, std::vector<ThinPixel<N>>& buffer,
                                           Format format, bool validate_pixels) {
   assert(buffer.capacity() != 0);
 

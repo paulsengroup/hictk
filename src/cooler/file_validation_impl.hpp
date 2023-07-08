@@ -155,6 +155,58 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
   }
 }
 
+template <typename PixelIt>
+inline void File::validate_thin_pixels_before_append(PixelIt first_pixel,
+                                                     PixelIt last_pixel) const {
+  using T = decltype(first_pixel->count);
+  try {
+    std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &pixel) {
+      if (pixel.count == T{0}) {
+        throw std::runtime_error("found a pixel of value 0");
+      }
+
+      if (pixel.bin1_id >= this->bins().size()) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), pixel.bin1_id));
+      }
+
+      if (pixel.bin2_id >= this->bins().size()) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), pixel.bin2_id));
+      }
+
+      if (pixel.bin1_id > pixel.bin2_id) {
+        throw std::runtime_error(fmt::format(FMT_STRING("bin1_id is greater than bin2_id: {} > {}"),
+                                             pixel.bin1_id, pixel.bin2_id));
+      }
+    });
+
+    if (!this->dataset("pixels/bin1_id").empty()) {
+      const auto last_bin1 = this->dataset("pixels/bin1_id").read_last<std::size_t>();
+      const auto last_bin2 = this->dataset("pixels/bin2_id").read_last<std::size_t>();
+
+      const auto new_bin1 = first_pixel->bin1_id;
+      const auto new_bin2 = first_pixel->bin2_id;
+
+      if (last_bin1 == new_bin1) {
+        if (last_bin2 >= new_bin2) {
+          const auto coord1 = this->bins().at(new_bin2);
+          const auto coord2 = this->bins().at(last_bin2);
+          throw std::runtime_error(fmt::format(
+              FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
+        }
+      } else if (last_bin1 >= new_bin1) {
+        const auto coord1 = this->bins().at(new_bin1);
+        const auto coord2 = this->bins().at(last_bin1);
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
+      }
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
+  }
+}
+
 template <typename PixelT>
 inline void File::validate_pixel_type() const noexcept {
   static_assert(std::is_arithmetic_v<PixelT>);
