@@ -50,6 +50,7 @@ class Cli {
   void validate() const;
 
   void transform_args_convert_subcommand();
+  void transform_args_dump_subcommand();
   void transform_args();
 };
 

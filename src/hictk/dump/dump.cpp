@@ -92,9 +92,8 @@ using FileVar = std::variant<cooler::File, hic::HiCFile>;
 }
 
 void dump_subcmd(const DumpConfig& c) {
-  const auto is_cooler = cooler::utils::is_cooler(c.uri) || cooler::utils::is_multires_file(c.uri);
-  auto file{is_cooler ? open_cooler_file(c.uri)
-                      : open_hic_file(c.uri, c.resolution, c.matrix_type, c.matrix_unit)};
+  auto file{c.format != "hic" ? open_cooler_file(c.uri)
+                              : open_hic_file(c.uri, c.resolution, c.matrix_type, c.matrix_unit)};
 
   std::visit(
       [&](const auto& f) {

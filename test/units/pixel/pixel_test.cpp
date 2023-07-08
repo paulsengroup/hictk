@@ -150,8 +150,8 @@ TEST_CASE("Pixel: PixelMerger", "[pixel][short]") {
   tails.emplace_back(chr2_pixels.end());
 
   internal::PixelMerger<It> merger(heads, tails);
-  for (std::size_t i = 0; i < expected_pixels.size(); ++i) {
-    CHECK(merger.next() == expected_pixels[i]);
+  for (const auto& p : expected_pixels) {
+    CHECK(merger.next() == p);
   }
 }
 

@@ -49,7 +49,7 @@ struct StandardAttributes {
   // Reserved attributes
   std::optional<std::string> creation_date{fmt::format(
       FMT_STRING("{:%FT%T}"), fmt::gmtime(std::time(nullptr)))};  // e.g. 2022-07-26T20:35:19
-  std::optional<std::string> generated_by{HICTK_VERSION_STRING};
+  std::optional<std::string> generated_by{HICTK_VERSION_STRING_LONG};
   std::optional<std::string> assembly{"unknown"};
   std::optional<std::string> metadata{"{}"};
 
@@ -95,6 +95,7 @@ class File {
   GroupMap _groups{};
   DatasetMap _datasets{};
   mutable WeightMap _weights{};
+  mutable WeightMap _weights_scaled{};
   StandardAttributes _attrs{StandardAttributes::init(0)};
   NumericVariant _pixel_variant{};
   std::shared_ptr<const BinTable> _bins{};
@@ -218,8 +219,9 @@ class File {
                                                    std::uint32_t start2, std::uint32_t end2) const;
 
   bool has_weights(std::string_view name) const;
-  std::shared_ptr<const Weights> read_weights(std::string_view name) const;
-  std::shared_ptr<const Weights> read_weights(std::string_view name, Weights::Type type) const;
+  std::shared_ptr<const Weights> read_weights(std::string_view name, bool rescale = false) const;
+  std::shared_ptr<const Weights> read_weights(std::string_view name, Weights::Type type,
+                                              bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 

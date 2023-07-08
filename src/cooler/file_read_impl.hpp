@@ -166,23 +166,26 @@ inline bool File::has_weights(std::string_view name) const {
   return this->_root_group().exist(dset_path);
 }
 
-inline std::shared_ptr<const Weights> File::read_weights(std::string_view name) const {
+inline std::shared_ptr<const Weights> File::read_weights(std::string_view name,
+                                                         bool rescale) const {
   if (name.empty()) {
     throw std::runtime_error("weight dataset name is empty");
   }
 
-  return this->read_weights(name, Weights::infer_type(name));
+  return this->read_weights(name, Weights::infer_type(name), rescale);
 }
 
-inline std::shared_ptr<const Weights> File::read_weights(std::string_view name,
-                                                         Weights::Type type) const {
+inline std::shared_ptr<const Weights> File::read_weights(std::string_view name, Weights::Type type,
+                                                         bool rescale) const {
   if (name.empty()) {
     throw std::runtime_error("weight dataset name is empty");
   }
+
+  auto &weight_map = rescale ? this->_weights_scaled : this->_weights;
 
   const auto dset_path =
       fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
-  if (const auto it = this->_weights.find(dset_path); it != this->_weights.end()) {
+  if (const auto it = weight_map.find(dset_path); it != weight_map.end()) {
     return it->second;
   }
 
@@ -192,14 +195,15 @@ inline std::shared_ptr<const Weights> File::read_weights(std::string_view name,
                     name, dset_path));
   }
 
-  const auto node = this->_weights.emplace(
-      name, std::make_shared<const Weights>(
-                *this->_bins,
-                Dataset{this->_root_group, dset_path,
-                        Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE,
-                                                   DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0)},
-                type));
-  return node.first->second;
+  auto weights = std::make_shared<const Weights>(
+      *this->_bins,
+      Dataset{this->_root_group, dset_path,
+              Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE,
+                                         1.0)},
+      type, rescale);
+
+  weight_map.emplace(name, weights);
+  return weights;
 }
 
 inline bool File::purge_weights(std::string_view name) {
@@ -215,7 +219,11 @@ inline bool File::purge_weights(std::string_view name) {
 
 inline auto File::open_root_group(const HighFive::File &f, std::string_view uri) -> RootGroup {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  return {f.getGroup(parse_cooler_uri(uri).group_path)};
+  RootGroup grp{f.getGroup(parse_cooler_uri(uri).group_path)};
+  if (File::check_sentinel_attr(grp())) {
+    throw std::runtime_error("file was not properly closed");
+  }
+  return grp;
 }
 
 inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {

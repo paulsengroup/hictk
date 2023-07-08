@@ -415,6 +415,30 @@ jobs:
           zstd -dcf binaries.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
+      - name: Test hictk dump chroms
+        run: |
+          test/scripts/hictk_dump_chroms.sh bin/hictk
+
+      - name: Test hictk dump bins
+        run: |
+          test/scripts/hictk_dump_bins.sh bin/hictk
+
+      - name: Test hictk dump genome-wide
+        run: |
+          test/scripts/hictk_dump_gw.sh bin/hictk
+
+      - name: Test hictk dump cis
+        run: |
+          test/scripts/hictk_dump_cis.sh bin/hictk
+
+      - name: Test hictk dump trans
+        run: |
+          test/scripts/hictk_dump_trans.sh bin/hictk
+
+      - name: Test hictk dump balanced
+        run: |
+          test/scripts/hictk_dump_balanced.sh bin/hictk
+
       - name: Test hictk convert (hic2cool)
         run: |
           test/scripts/hictk_convert_hic2cool.sh bin/hictk

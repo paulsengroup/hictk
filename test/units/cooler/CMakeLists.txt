@@ -11,12 +11,28 @@ add_executable(hictk_cooler_tests)
 
 target_sources(
   hictk_cooler_tests
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_test.cpp
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_numeric_conversions_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_attributes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_iteration_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_large_rw_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_read_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/dataset_write_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_attributes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_chromosomes_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_ctors_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_format_checking_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_pixels_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp)
 

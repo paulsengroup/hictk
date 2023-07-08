@@ -31,6 +31,7 @@ TEST_CASE("Cooler: utils equal", "[equal][utils][short]") {
   SECTION("equal") {
     CHECK(cooler::utils::equal(path1.string(), path1.string()));
     CHECK(cooler::utils::equal(path1.string(), path3.string()));
+    CHECK(cooler::utils::equal(path1.string(), path3.string(), false));
   }
 
   SECTION("not equal") { CHECK_FALSE(cooler::utils::equal(path1.string(), path2.string())); }

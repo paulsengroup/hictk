@@ -20,12 +20,37 @@ inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
-  const auto src = datadir / "cooler_test_file.cool";
+  SECTION("merge int") {
+    const auto src = datadir / "cooler_test_file.cool";
+    const auto dest = testdir() / "cooler_merge_test_int.cool";
 
-  SECTION("merge with self") {
-    const auto dest = testdir() / "cooler_merge_test1.cool";
     const std::array<std::string, 2> sources{src.string(), src.string()};
-    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1000);
+    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1'000);
+
+    const auto clr1 = File::open_read_only_read_once(src.string());
+    const auto clr2 = File::open_read_only_read_once(dest.string());
+
+    auto first1 = clr1.begin<std::int32_t>();
+    auto last1 = clr1.end<std::int32_t>();
+
+    auto first2 = clr2.begin<std::int32_t>();
+    auto last2 = clr2.end<std::int32_t>();
+
+    REQUIRE(std::distance(first1, last1) == std::distance(first2, last2));
+    while (first1 != last1) {
+      CHECK(first1->coords == first2->coords);
+      CHECK(2 * first1->count == first2->count);
+      ++first1;
+      ++first2;
+    }
+  }
+
+  SECTION("merge float") {
+    const auto src = datadir / "cooler_test_file_float.cool";
+    const auto dest = testdir() / "cooler_merge_test_float.cool";
+
+    const std::array<std::string, 2> sources{src.string(), src.string()};
+    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
     const auto clr1 = File::open_read_only_read_once(src.string());
     const auto clr2 = File::open_read_only_read_once(dest.string());
@@ -46,6 +71,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge chromosomes") {
+    const auto src = datadir / "cooler_test_file.cool";
     const auto dest = testdir() / "cooler_merge_test2.cool";
     std::vector<std::string> sources{};
     {

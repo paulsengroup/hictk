@@ -33,7 +33,9 @@ template <typename File>
 inline void dump_chroms(const File& f, std::string_view range) {
   if (range == "all") {
     for (const Chromosome& chrom : f.chromosomes()) {
-      fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+      if (!chrom.is_all()) {
+        fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+      }
     }
     return;
   }
