@@ -21,33 +21,37 @@ namespace hictk::tools {
 
 template <typename N>
 struct PixelCmp {
-  [[nodiscard]] inline bool operator()(const Pixel<N>& p1, const Pixel<N>& p2) const noexcept {
-    return p1.coords < p2.coords;
+  [[nodiscard]] inline bool operator()(const ThinPixel<N>& p1,
+                                       const ThinPixel<N>& p2) const noexcept {
+    if (p1.bin1_id != p2.bin1_id) {
+      return p1.bin1_id < p2.bin1_id;
+    }
+    return p1.bin2_id < p2.bin2_id;
   }
 };
 
 template <typename N>
 class PairsAggregator {
-  phmap::btree_set<Pixel<N>, PixelCmp<N>> _buffer{};
-  typename phmap::btree_set<Pixel<N>, PixelCmp<N>>::const_iterator _it{};
+  phmap::btree_set<ThinPixel<N>, PixelCmp<N>> _buffer{};
+  typename phmap::btree_set<ThinPixel<N>, PixelCmp<N>>::const_iterator _it{};
 
   const BinTable& _bins{};
   Format _format{};
-  Pixel<N> _last{};
+  ThinPixel<N> _last{};
 
  public:
   PairsAggregator() = delete;
   inline PairsAggregator(const BinTable& bins, Format format)
       : _it(_buffer.end()), _bins(bins), _format(format) {}
 
-  inline void read_next_chunk(std::vector<Pixel<N>>& buffer) {
+  inline void read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
     buffer.clear();
     read_next_batch(buffer.capacity());
     std::copy(_buffer.begin(), _buffer.end(), std::back_inserter(buffer));
     _buffer.clear();
   }
 
-  [[nodiscard]] inline Pixel<N> next() {
+  [[nodiscard]] inline ThinPixel<N> next() {
     if (_it == _buffer.end()) {
       read_next_batch();
     }
@@ -61,7 +65,7 @@ class PairsAggregator {
 
  private:
   inline void read_next_batch() {
-    auto last_bin1 = _last.coords.bin1;
+    auto last_bin1 = _last.bin1_id;
     std::string line{};
 
     _buffer.clear();
@@ -82,10 +86,10 @@ class PairsAggregator {
         _buffer.emplace(pixel);
       }
 
-      if (!!last_bin1 && pixel.coords.bin1 != last_bin1) {
+      if (!!last_bin1 && pixel.bin1_id != last_bin1) {
         break;
       }
-      last_bin1 = pixel.coords.bin1;
+      last_bin1 = pixel.bin1_id;
     }
 
     _it = _buffer.begin();
@@ -125,7 +129,8 @@ class PairsAggregator {
 
 template <typename N>
 inline void read_sort_and_aggregate_batch(PairsAggregator<N>& aggregator,
-                                          std::vector<Pixel<N>>& buffer, std::size_t batch_size) {
+                                          std::vector<ThinPixel<N>>& buffer,
+                                          std::size_t batch_size) {
   buffer.reserve(batch_size);
   buffer.clear();
 
@@ -146,7 +151,7 @@ template <typename N>
 inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t batch_size,
                                 bool validate_pixels) {
   PairsAggregator<N> aggregator{clr.bins(), format};
-  std::vector<Pixel<N>> buffer{};
+  std::vector<ThinPixel<N>> buffer{};
   buffer.reserve(batch_size);
 
   std::size_t i0 = 0;
@@ -177,7 +182,7 @@ inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t b
 }
 
 template <typename N>
-inline std::string ingest_pairs_unsorted(cooler::File&& clr, std::vector<Pixel<N>>& buffer,
+inline std::string ingest_pairs_unsorted(cooler::File&& clr, std::vector<ThinPixel<N>>& buffer,
                                          std::size_t batch_size, Format format,
                                          bool validate_pixels) {
   buffer.reserve(batch_size);

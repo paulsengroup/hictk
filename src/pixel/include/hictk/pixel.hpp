@@ -31,6 +31,9 @@ struct ThinPixel {
   [[nodiscard]] bool operator<=(const ThinPixel &other) const noexcept;
   [[nodiscard]] bool operator>(const ThinPixel &other) const noexcept;
   [[nodiscard]] bool operator>=(const ThinPixel &other) const noexcept;
+
+  static auto from_coo(std::string_view line) -> ThinPixel;
+  static auto from_coo(const BinTable &bins, std::string_view line) -> ThinPixel;
 };
 
 struct PixelCoordinates {
