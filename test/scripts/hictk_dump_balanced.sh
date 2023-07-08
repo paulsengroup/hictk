@@ -45,7 +45,7 @@ function truncate_counts {
   set -o pipefail
   set -e
 
-  awk -F '\t' '{printf "%s\t%s\t%s\t%s\t%s\t%s\t%.3f", $1, $2, $3, $4, $5, $6, $7}'
+  awk -F '\t' '{printf "%s\t%s\t%s\t%s\t%s\t%s\t%.3f\n", $1, $2, $3, $4, $5, $6, $7}'
 
 }
 
