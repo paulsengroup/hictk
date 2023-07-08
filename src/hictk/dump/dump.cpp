@@ -19,10 +19,10 @@ static void print_pixels(PixelIt first, PixelIt last) {
 
 void dump_pixels(const cooler::File& f, std::string_view range1, std::string_view range2,
                  std::string_view normalization, bool join) {
-  auto weight = f.read_weights(normalization);
+  auto weights = f.read_weights(normalization);
   if (range1 == "all") {
     assert(range2 == "all");
-    auto sel = f.fetch(weight);
+    auto sel = f.fetch(weights);
     if (!join) {
       return print_pixels(sel.template begin<double>(), sel.template end<double>());
     }
@@ -32,7 +32,7 @@ void dump_pixels(const cooler::File& f, std::string_view range1, std::string_vie
     return print_pixels(jsel.begin(), jsel.end());
   }
 
-  auto sel = f.fetch(range1, range2, weight);
+  auto sel = f.fetch(range1, range2, weights);
   if (!join) {
     return print_pixels(sel.template begin<double>(), sel.template end<double>());
   }
