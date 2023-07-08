@@ -357,11 +357,11 @@ inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
 }
 
 template <typename N>
-inline std::size_t PixelSelector::iterator<N>::bin1_id() const noexcept {
+inline std::uint64_t PixelSelector::iterator<N>::bin1_id() const noexcept {
   return !is_at_end() ? (*this)->bin1_id : std::numeric_limits<std::size_t>::max();
 }
 template <typename N>
-inline std::size_t PixelSelector::iterator<N>::bin2_id() const noexcept {
+inline std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
   return !is_at_end() ? (*this)->bin2_id : std::numeric_limits<std::size_t>::max();
 }
 

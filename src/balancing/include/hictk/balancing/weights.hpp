@@ -48,7 +48,7 @@ class Weights {
 
  private:
   template <typename N1, typename N2>
-  [[nodiscard]] N1 balance(std::size_t bin1_id, std::size_t bin2_id, N2 count) const;
+  [[nodiscard]] N1 balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const;
 };
 
 using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weights>>;

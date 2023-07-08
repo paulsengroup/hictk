@@ -29,17 +29,17 @@ enum class Format { COO, BG2, VP, _4DN };
 }
 
 template <typename N>
-[[nodiscard]] inline Pixel<N> parse_pixel(const BinTable& bins, std::string_view line,
-                                          Format format) {
+[[nodiscard]] inline ThinPixel<N> parse_pixel(const BinTable& bins, std::string_view line,
+                                              Format format) {
   switch (format) {
     case Format::COO:
-      return Pixel<N>::from_coo(bins, line);
+      return ThinPixel<N>::from_coo(bins, line);
     case Format::BG2:
-      return Pixel<N>::from_bg2(bins, line);
+      return Pixel<N>::from_bg2(bins, line).to_thin();
     case Format::VP:
-      return Pixel<N>::from_validpair(bins, line);
+      return Pixel<N>::from_validpair(bins, line).to_thin();
     case Format::_4DN:
-      return Pixel<N>::from_4dn_pairs(bins, line);
+      return Pixel<N>::from_4dn_pairs(bins, line).to_thin();
   }
   HICTK_UNREACHABLE_CODE;
 }

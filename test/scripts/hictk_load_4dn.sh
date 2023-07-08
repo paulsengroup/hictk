@@ -46,7 +46,15 @@ function compare_coolers {
   fi
 }
 
-export function readlink_py
+function shuffle {
+  if command -v shuf &> /dev/null; then
+    shuf
+  else
+    sort -R
+  fi
+}
+
+export function readlink_py shuffle
 
 status=0
 
@@ -108,7 +116,7 @@ if [[ "$sorted" == true ]]; then
       "$outdir/out.cool"
 else
   xzcat "$pairs" |
-    sort -R |
+    shuffle |
     "$hictk_bin" load \
       -f 4dn \
       --assume-unsorted \

@@ -11,9 +11,56 @@
 
 namespace hictk {
 
+namespace internal {
+template <std::size_t N>
+[[nodiscard]] std::array<std::string_view, N> tokenize_n(std::string_view line) {
+  std::array<std::string_view, N> toks{};
+  for (std::size_t i = 0; i < toks.size(); ++i) {
+    const auto pos = line.find('\t');
+    toks[i] = line.substr(0, pos);
+    if (toks[i].empty()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected exactly {} fields, found {}"), N, i));
+    }
+
+    if (pos == std::string_view::npos) {
+      line = "";
+    } else {
+      line.remove_prefix(pos + 1);
+    }
+  }
+
+  if (!line.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("expected exactly {} fields, found {} or more"), N, N + 1));
+  }
+
+  return toks;
+}
+
+template <std::size_t N>
+[[nodiscard]] std::array<std::string_view, N> tokenize_n_or_more(std::string_view line) {
+  std::array<std::string_view, N> toks{};
+  for (std::size_t i = 0; i < toks.size(); ++i) {
+    const auto pos = line.find('\t');
+    toks[i] = line.substr(0, pos);
+    if (toks[i].empty()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected {} or more fields, found {}"), N, i));
+    }
+
+    if (pos == std::string_view::npos) {
+      line = "";
+    } else {
+      line.remove_prefix(pos + 1);
+    }
+  }
+  return toks;
+}
+}  // namespace internal
+
 template <typename N>
 inline ThinPixel<N>::operator bool() const noexcept {
-  constexpr auto null_id = std::numeric_limits<std::size_t>::max();
   return this->bin1_id != null_id && this->bin2_id != null_id;
 }
 
@@ -70,6 +117,44 @@ inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
     return this->bin2_id >= other.bin2_id;
   }
   return this->count >= other.count;
+}
+
+template <typename N>
+inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line) -> ThinPixel<N> {
+  try {
+    const auto toks = internal::tokenize_n<3>(line);
+
+    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
+    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
+
+    if (bin1_id > bins.size()) {
+      throw std::out_of_range("invalid bin1_id: out of range");
+    }
+    if (bin2_id > bins.size()) {
+      throw std::out_of_range("invalid bin2_id: out of range");
+    }
+
+    return {bins.at(bin1_id).id(), bins.at(bin2_id).id(), count};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in coo format: {}"), line, e.what()));
+  }
+}
+template <typename N>
+inline auto ThinPixel<N>::from_coo(std::string_view line) -> ThinPixel<N> {
+  try {
+    const auto toks = internal::tokenize_n<3>(line);
+
+    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
+    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
+
+    return {bin1_id, bin2_id, count};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("line \"{}\" is not in coo format: {}"), line, e.what()));
+  }
 }
 
 inline PixelCoordinates::PixelCoordinates(Bin bin1_, Bin bin2_) noexcept
@@ -201,54 +286,6 @@ template <typename N>
 inline ThinPixel<N> Pixel<N>::to_thin() const noexcept {
   return ThinPixel<N>{this->coords.bin1.id(), this->coords.bin2.id(), this->count};
 }
-
-namespace internal {
-template <std::size_t N>
-[[nodiscard]] std::array<std::string_view, N> tokenize_n(std::string_view line) {
-  std::array<std::string_view, N> toks{};
-  for (std::size_t i = 0; i < toks.size(); ++i) {
-    const auto pos = line.find('\t');
-    toks[i] = line.substr(0, pos);
-    if (toks[i].empty()) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("expected exactly {} fields, found {}"), N, i));
-    }
-
-    if (pos == std::string_view::npos) {
-      line = "";
-    } else {
-      line.remove_prefix(pos + 1);
-    }
-  }
-
-  if (!line.empty()) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("expected exactly {} fields, found {} or more"), N, N + 1));
-  }
-
-  return toks;
-}
-
-template <std::size_t N>
-[[nodiscard]] std::array<std::string_view, N> tokenize_n_or_more(std::string_view line) {
-  std::array<std::string_view, N> toks{};
-  for (std::size_t i = 0; i < toks.size(); ++i) {
-    const auto pos = line.find('\t');
-    toks[i] = line.substr(0, pos);
-    if (toks[i].empty()) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("expected {} or more fields, found {}"), N, i));
-    }
-
-    if (pos == std::string_view::npos) {
-      line = "";
-    } else {
-      line.remove_prefix(pos + 1);
-    }
-  }
-  return toks;
-}
-}  // namespace internal
 
 template <typename N>
 inline auto Pixel<N>::from_coo(const hictk::BinTable &bins, std::string_view line) -> Pixel<N> {

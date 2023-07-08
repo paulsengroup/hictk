@@ -96,7 +96,7 @@ class PixelSelector {
     using BufferT = std::vector<ThinPixel<N>>;
     using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
-    std::size_t _bin1_id{};
+    std::uint64_t _bin1_id{};
     mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
@@ -132,8 +132,8 @@ class PixelSelector {
     [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
     [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
     [[nodiscard]] std::size_t size() const noexcept;
-    [[nodiscard]] std::size_t bin1_id() const noexcept;
-    [[nodiscard]] std::size_t bin2_id() const noexcept;
+    [[nodiscard]] std::uint64_t bin1_id() const noexcept;
+    [[nodiscard]] std::uint64_t bin2_id() const noexcept;
 
     void read_next_chunk();
     [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
