@@ -82,7 +82,7 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(
       this->dataset("pixels/bin1_id"),
       this->dataset("pixels/bin2_id"),
       this->dataset("pixels/count"),
-      weights);
+      std::move(weights));
   // clang-format on
 }
 
@@ -128,7 +128,7 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view range1, std::strin
                                              std::shared_ptr<const balancing::Weights> weights,
                                              QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return this->fetch<CHUNK_SIZE>(range1);
+    return this->fetch<CHUNK_SIZE>(range1, std::move(weights));
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
