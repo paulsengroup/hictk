@@ -190,7 +190,8 @@ inline bool File::has_weights(std::string_view name) const {
   return this->_root_group().exist(dset_path);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name) const {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
+                                                                    bool rescale) const {
   if (name == "NONE") {
     return nullptr;
   }
@@ -198,15 +199,18 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     throw std::runtime_error("weight dataset name is empty");
   }
 
-  return this->read_weights(name, balancing::Weights::infer_type(name));
+  return this->read_weights(name, balancing::Weights::infer_type(name), rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(
-    std::string_view name, balancing::Weights::Type type) const {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
+                                                                    balancing::Weights::Type type,
+                                                                    bool rescale) const {
+  if (name == "NONE") {
+    return nullptr;
+  }
   if (name.empty()) {
     throw std::runtime_error("weight dataset name is empty");
   }
-
 
   const auto dset_path =
       fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
@@ -238,8 +242,41 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
     }
   }
 
-  const auto node = this->_weights.emplace(
-      name, std::make_shared<const balancing::Weights>(dset.read_all<std::vector<double>>(), type));
+  balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
+  if (!rescale) {
+    const auto node = this->_weights.emplace(
+        name, std::make_shared<const balancing::Weights>(std::move(weights)));
+    return node.first->second;
+  }
+
+  if (!dset.has_attribute("scale")) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Unable to read scaling factors from {}"), dset.hdf5_path()));
+  }
+
+  const auto cis_only =
+      dset.has_attribute("cis_only") ? dset.read_attribute<bool>("cis_only") : false;
+
+  if (cis_only) {
+    std::vector<double> scaling_factors;
+    dset.read_attribute("scale", scaling_factors);
+
+    const auto bin_offsets = bins().num_bin_prefix_sum();
+
+    assert(!bin_offsets.empty());
+    if (bin_offsets.size() - 1 != scaling_factors.size()) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("failed to read weights from \"{}\": expected {} scale value(s), found {}"),
+          dset.uri(), bin_offsets.size() - 1, scaling_factors.size()));
+    }
+
+    weights.rescale(scaling_factors, bin_offsets);
+  } else {
+    weights.rescale(dset.read_attribute<double>("scale"));
+  }
+
+  const auto node = this->_weights_scaled.emplace(
+      name, std::make_shared<const balancing::Weights>(std::move(weights)));
   return node.first->second;
 }
 

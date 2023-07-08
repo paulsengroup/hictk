@@ -230,9 +230,11 @@ class File {
       std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
   bool has_weights(std::string_view name) const;
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view name) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view name,
-                                                         balancing::Weights::Type type) const;
+                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> read_weights(std::string_view name,
+                                                         balancing::Weights::Type type,
+                                                         bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 

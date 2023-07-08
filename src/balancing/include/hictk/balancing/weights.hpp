@@ -42,6 +42,10 @@ class Weights {
 
   [[nodiscard]] static auto infer_type(std::string_view name) -> Type;
 
+  void rescale(double scaling_factor) noexcept;
+  void rescale(const std::vector<double>& slacing_factors,
+               const std::vector<std::size_t>& offsets) noexcept;
+
  private:
   template <typename N1, typename N2>
   [[nodiscard]] N1 balance(std::size_t bin1_id, std::size_t bin2_id, N2 count) const;
