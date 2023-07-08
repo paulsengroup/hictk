@@ -49,7 +49,7 @@ struct StandardAttributes {
   // Reserved attributes
   std::optional<std::string> creation_date{fmt::format(
       FMT_STRING("{:%FT%T}"), fmt::gmtime(std::time(nullptr)))};  // e.g. 2022-07-26T20:35:19
-  std::optional<std::string> generated_by{HICTK_VERSION_STRING};
+  std::optional<std::string> generated_by{HICTK_VERSION_STRING_LONG};
   std::optional<std::string> assembly{"unknown"};
   std::optional<std::string> metadata{"{}"};
 
@@ -95,6 +95,7 @@ class File {
   GroupMap _groups{};
   DatasetMap _datasets{};
   mutable balancing::WeightMap _weights{};
+  mutable balancing::WeightMap _weights_scaled{};
   StandardAttributes _attrs{StandardAttributes::init(0)};
   NumericVariant _pixel_variant{};
   std::shared_ptr<const BinTable> _bins{};

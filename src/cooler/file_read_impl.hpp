@@ -203,16 +203,14 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
 
 inline std::shared_ptr<const balancing::Weights> File::read_weights(
     std::string_view name, balancing::Weights::Type type) const {
-  if (name == "NONE") {
-    return nullptr;
-  }
   if (name.empty()) {
     throw std::runtime_error("weight dataset name is empty");
   }
 
+
   const auto dset_path =
       fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
-  if (const auto it = this->_weights.find(dset_path); it != this->_weights.end()) {
+  if (const auto it = _weights.find(dset_path); it != _weights.end()) {
     return it->second;
   }
 
@@ -258,7 +256,11 @@ inline bool File::purge_weights(std::string_view name) {
 
 inline auto File::open_root_group(const HighFive::File &f, std::string_view uri) -> RootGroup {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  return {f.getGroup(parse_cooler_uri(uri).group_path)};
+  RootGroup grp{f.getGroup(parse_cooler_uri(uri).group_path)};
+  if (File::check_sentinel_attr(grp())) {
+    throw std::runtime_error("file was not properly closed");
+  }
+  return grp;
 }
 
 inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
