@@ -82,7 +82,7 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(
       this->dataset("pixels/bin1_id"),
       this->dataset("pixels/bin2_id"),
       this->dataset("pixels/count"),
-      weights);
+      std::move(weights));
   // clang-format on
 }
 
@@ -128,7 +128,7 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view range1, std::strin
                                              std::shared_ptr<const balancing::Weights> weights,
                                              QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return this->fetch<CHUNK_SIZE>(range1);
+    return this->fetch<CHUNK_SIZE>(range1, std::move(weights));
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
@@ -190,7 +190,8 @@ inline bool File::has_weights(std::string_view name) const {
   return this->_root_group().exist(dset_path);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name) const {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
+                                                                    bool rescale) const {
   if (name == "NONE") {
     return nullptr;
   }
@@ -198,11 +199,12 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     throw std::runtime_error("weight dataset name is empty");
   }
 
-  return this->read_weights(name, balancing::Weights::infer_type(name));
+  return this->read_weights(name, balancing::Weights::infer_type(name), rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(
-    std::string_view name, balancing::Weights::Type type) const {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
+                                                                    balancing::Weights::Type type,
+                                                                    bool rescale) const {
   if (name == "NONE") {
     return nullptr;
   }
@@ -212,7 +214,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
 
   const auto dset_path =
       fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
-  if (const auto it = this->_weights.find(dset_path); it != this->_weights.end()) {
+  if (const auto it = _weights.find(dset_path); it != _weights.end()) {
     return it->second;
   }
 
@@ -240,8 +242,41 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
     }
   }
 
-  const auto node = this->_weights.emplace(
-      name, std::make_shared<const balancing::Weights>(dset.read_all<std::vector<double>>(), type));
+  balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
+  if (!rescale) {
+    const auto node = this->_weights.emplace(
+        name, std::make_shared<const balancing::Weights>(std::move(weights)));
+    return node.first->second;
+  }
+
+  if (!dset.has_attribute("scale")) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Unable to read scaling factors from {}"), dset.hdf5_path()));
+  }
+
+  const auto cis_only =
+      dset.has_attribute("cis_only") ? dset.read_attribute<bool>("cis_only") : false;
+
+  if (cis_only) {
+    std::vector<double> scaling_factors;
+    dset.read_attribute("scale", scaling_factors);
+
+    const auto bin_offsets = bins().num_bin_prefix_sum();
+
+    assert(!bin_offsets.empty());
+    if (bin_offsets.size() - 1 != scaling_factors.size()) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("failed to read weights from \"{}\": expected {} scale value(s), found {}"),
+          dset.uri(), bin_offsets.size() - 1, scaling_factors.size()));
+    }
+
+    weights.rescale(scaling_factors, bin_offsets);
+  } else {
+    weights.rescale(dset.read_attribute<double>("scale"));
+  }
+
+  const auto node = this->_weights_scaled.emplace(
+      name, std::make_shared<const balancing::Weights>(std::move(weights)));
   return node.first->second;
 }
 
@@ -258,7 +293,11 @@ inline bool File::purge_weights(std::string_view name) {
 
 inline auto File::open_root_group(const HighFive::File &f, std::string_view uri) -> RootGroup {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  return {f.getGroup(parse_cooler_uri(uri).group_path)};
+  RootGroup grp{f.getGroup(parse_cooler_uri(uri).group_path)};
+  if (File::check_sentinel_attr(grp())) {
+    throw std::runtime_error("file was not properly closed");
+  }
+  return grp;
 }
 
 inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
@@ -360,7 +399,7 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
         fmt::format(FMT_STRING("Failed to read attribute \"{}\" from path \"{}\". Reason: {}"), key,
                     root_grp().getPath(), e.what()));
   }
-};
+}
 
 }  // namespace internal
 

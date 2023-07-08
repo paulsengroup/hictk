@@ -83,54 +83,68 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = decltype(std::declval<PixelT>().count);
   try {
+    this->validate_pixel_type<T>();
+
+    PixelT previous_pixel{};
+
     std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &pixel) {
       if (pixel.count == T{0}) {
-        throw std::runtime_error("found a pixel of value 0");
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) found a pixel of value 0"), pixel));
       }
 
       if (!this->chromosomes().contains(pixel.coords.bin1.chrom().id())) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("invalid chromosome id {}"), pixel.coords.bin1.chrom().id()));
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) invalid chromosome id {}"), pixel,
+                                             pixel.coords.bin1.chrom().id()));
       }
 
       if (pixel.coords.bin1.chrom().id() != pixel.coords.bin2.chrom().id() &&
           !this->chromosomes().contains(pixel.coords.bin2.chrom().id())) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("invalid chromosome id {}"), pixel.coords.bin2.chrom().id()));
+        throw std::runtime_error(fmt::format(FMT_STRING("({}) invalid chromosome id {}"), pixel,
+                                             pixel.coords.bin2.chrom().id()));
       }
 
       if (const auto bin_id = pixel.coords.bin1.id(); bin_id > this->bins().size()) {
-        throw std::runtime_error(fmt::format(
-            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), bin_id));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"),
+                        pixel, bin_id));
       }
 
       if (const auto bin_id = pixel.coords.bin2.id(); bin_id > this->bins().size()) {
-        throw std::runtime_error(fmt::format(
-            FMT_STRING("invalid bin id {}: bin maps outside of the bin table"), bin_id));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"),
+                        pixel, bin_id));
       }
 
       if (pixel.coords.bin1.id() > pixel.coords.bin2.id()) {
-        throw std::runtime_error(fmt::format(FMT_STRING("bin1_id is greater than bin2_id: {} > {}"),
-                                             pixel.coords.bin1.id(), pixel.coords.bin2.id()));
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}) bin1_id is greater than bin2_id: {} > {}"), pixel,
+                        pixel.coords.bin1.id(), pixel.coords.bin2.id()));
       }
+
+      if (!!previous_pixel && previous_pixel.coords >= pixel.coords) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}; {}) pixels are not sorted in ascending order"),
+                        previous_pixel.coords, pixel.coords));
+      }
+      previous_pixel = pixel;
     });
 
     if (!this->dataset("pixels/bin1_id").empty()) {
       const auto last_bin1 = this->dataset("pixels/bin1_id").read_last<std::size_t>();
       const auto last_bin2 = this->dataset("pixels/bin2_id").read_last<std::size_t>();
 
-      const auto new_bin1 = first_pixel->coords.bin1.id();
-      const auto new_bin2 = first_pixel->coords.bin2.id();
+      const auto new_bin1 = first_pixel->coords.bin1;
+      const auto new_bin2 = first_pixel->coords.bin2;
 
-      if (last_bin1 == new_bin1) {
-        if (last_bin2 >= new_bin2) {
-          const auto coord1 = this->bins().at(new_bin2);
+      if (last_bin1 == new_bin1.id()) {
+        if (last_bin2 >= new_bin2.id()) {
+          const auto &coord1 = new_bin2;
           const auto coord2 = this->bins().at(last_bin2);
           throw std::runtime_error(fmt::format(
               FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
         }
-      } else if (last_bin1 >= new_bin1) {
-        const auto coord1 = this->bins().at(new_bin1);
+      } else if (last_bin1 >= new_bin1.id()) {
+        const auto &coord1 = new_bin1;
         const auto coord2 = this->bins().at(last_bin1);
         throw std::runtime_error(fmt::format(
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));

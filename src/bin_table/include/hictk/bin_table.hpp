@@ -56,7 +56,7 @@ class Bin {
 };
 
 struct BinTableConcrete {
-  std::vector<const Chromosome *> chroms{};
+  std::vector<Chromosome> chroms{};
   std::vector<std::uint32_t> bin_starts{};
   std::vector<std::uint32_t> bin_ends{};
 };
@@ -71,12 +71,13 @@ class BinTable {
   friend iterator;
 
   BinTable() = default;
-  BinTable(Reference chroms, std::uint32_t bin_size);
+  BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset = 0);
   template <typename ChromIt>
-  BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size);
+  BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size,
+           std::size_t bin_offset = 0);
   template <typename ChromNameIt, typename ChromSizeIt>
   BinTable(ChromNameIt first_chrom_name, ChromNameIt last_chrom_name, ChromSizeIt first_chrom_size,
-           std::uint32_t bin_size);
+           std::uint32_t bin_size, std::size_t bin_offset = 0);
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
@@ -129,16 +130,18 @@ class BinTable {
 
  private:
   [[nodiscard]] static std::vector<std::uint64_t> compute_num_bins_prefix_sum(
-      const Reference &chroms, std::uint32_t bin_size);
+      const Reference &chroms, std::uint32_t bin_size, std::size_t bin_offset);
 
  public:
   class iterator {
     friend BinTable;
     const BinTable *_bin_table{};
-    std::size_t _idx{0};
-    std::uint32_t _chrom_id{0};
+    std::size_t _chrom_bin_id{};
+    std::uint32_t _rel_bin_id{};
+    std::uint32_t _chrom_id{};
 
-    static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
+    static constexpr auto null_rel_bin_id = (std::numeric_limits<std::uint32_t>::max)();
+    static constexpr auto null_bin_id = (std::numeric_limits<std::size_t>::max)();
     static constexpr auto nchrom = (std::numeric_limits<std::uint32_t>::max)();
 
     explicit iterator(const BinTable &bin_table) noexcept;
@@ -178,7 +181,9 @@ class BinTable {
     [[nodiscard]] const Chromosome &chromosome(std::uint32_t chrom_id) const;
     [[nodiscard]] const Chromosome &chromosome() const;
     [[nodiscard]] constexpr std::uint32_t bin_size() const noexcept;
-    [[nodiscard]] std::uint64_t compute_num_bins() const noexcept;
+    [[nodiscard]] constexpr std::size_t bin_id() const noexcept;
+    [[nodiscard]] std::uint32_t compute_num_chrom_bins() const noexcept;
+    [[nodiscard]] std::size_t compute_bin_offset() const noexcept;
     [[nodiscard]] std::size_t num_chromosomes() const noexcept;
   };
 };

@@ -9,6 +9,7 @@
 
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/tmpdir.hpp"
 
 using namespace hictk::hic;
 

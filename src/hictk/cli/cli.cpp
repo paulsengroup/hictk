@@ -438,12 +438,14 @@ void Cli::make_dump_subcommand() {
 }
 
 void Cli::make_load_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("load", "Build .cool files from interactions in BG2/COO.")
-                  ->fallthrough()
-                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = LoadConfig{};
-                  });
+  auto& sc =
+      *this->_cli
+           .add_subcommand("load", "Build .cool files from interactions in various text formats.")
+           ->fallthrough()
+           ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+             assert(this->_config.index() == 0);
+             this->_config = LoadConfig{};
+           });
 
   this->_config = LoadConfig{};
   auto& c = std::get<LoadConfig>(this->_config);
@@ -473,7 +475,13 @@ void Cli::make_load_subcommand() {
       "-f,--format",
       c.format,
       "Input format.")
-      ->check(CLI::IsMember({"bg2", "coo"}))
+      ->check(CLI::IsMember({"4dn", "validpairs", "bg2", "coo"}))
+      ->required();
+
+  sc.add_flag(
+      "--force",
+      c.force,
+      "Force overwrite existing output file(s).")
       ->capture_default_str();
 
   sc.add_option(
@@ -489,9 +497,14 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
-      "--assume-assume_sorted,!--no-assume-sorted",
+      "--assume-sorted,!--assume-unsorted",
       c.assume_sorted,
-      "Assume input files are already assume_sorted.")
+      "Assume input files are already sorted.")
+      ->capture_default_str();
+  sc.add_option(
+      "--batch-size",
+      c.batch_size,
+      "Number of pixels to buffer in memory. Only used when processing unsorted interactions or pairs")
       ->capture_default_str();
   // clang-format on
 
@@ -657,7 +670,7 @@ void Cli::validate_dump_subcommand() const {
   const auto is_cooler = cooler::utils::is_cooler(c.uri);
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
 
-  if (is_hic && c.resolution == 0) {
+  if (is_hic && c.resolution == 0 && c.table != "chroms") {
     errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
@@ -703,9 +716,14 @@ void Cli::validate_dump_subcommand() const {
 
 void Cli::validate_load_subcommand() const {
   assert(this->_cli.get_subcommand("load")->parsed());
-  /*
+
   std::vector<std::string> errors;
-  const auto& c = std::get<DumpConfig>(this->_config);
+  const auto& c = std::get<LoadConfig>(this->_config);
+
+  if (!c.force && std::filesystem::exists(c.uri)) {
+    errors.emplace_back(fmt::format(
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
+  }
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -713,7 +731,6 @@ void Cli::validate_load_subcommand() const {
                                "arguments and input file(s):\n - {}"),
                     fmt::join(errors, "\n - ")));
   }
-  */
 }
 
 void Cli::validate_merge_subcommand() const {
@@ -850,13 +867,27 @@ void Cli::transform_args_convert_subcommand() {
   }
 }
 
+void Cli::transform_args_dump_subcommand() {
+  auto& c = std::get<DumpConfig>(this->_config);
+
+  c.format = infer_input_format(c.uri);
+  if (c.format == "hic" && c.resolution == 0) {
+    assert(c.table == "chroms");
+    c.resolution = hic::utils::list_resolutions(c.uri).back();
+  }
+
+  if (this->_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
+    c.range2 = c.range1;
+  }
+}
+
 void Cli::transform_args() {
   switch (this->_subcommand) {
     case convert:
       this->transform_args_convert_subcommand();
       break;
     case dump:  // NOLINT
-      // this->transform_args_dump_subcommand();
+      this->transform_args_dump_subcommand();
       break;
     case load:  // NOLINT
       // this->transform_args_load_subcommand();

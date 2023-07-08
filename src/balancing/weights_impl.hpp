@@ -66,7 +66,7 @@ inline N1 Weights::balance(std::size_t bin1_id, std::size_t bin2_id, N2 count) c
   return conditional_static_cast<N1>(count_);
 }
 
-inline const std::vector<double>& Weights::operator()() const noexcept { return this->_weights; }
+inline const std::vector<double> &Weights::operator()() const noexcept { return this->_weights; }
 
 constexpr auto Weights::type() const noexcept -> Type { return this->_type; }
 
@@ -92,6 +92,21 @@ inline auto Weights::infer_type(std::string_view name) -> Type {
     return Weights::Type::UNKNOWN;
   }
   return it->second;
+}
+
+inline void Weights::rescale(double scaling_factor) noexcept {
+  std::transform(_weights.begin(), _weights.end(), _weights.begin(),
+                 [&](auto w) { return w * std::sqrt(scaling_factor); });
+}
+
+inline void Weights::rescale(const std::vector<double> &scaling_factors,
+                             const std::vector<std::uint64_t> &offsets) noexcept {
+  for (std::size_t i = 0; i < scaling_factors.size(); ++i) {
+    auto first = this->_weights.begin() + std::ptrdiff_t(offsets[i]);
+    auto last = this->_weights.begin() + std::ptrdiff_t(offsets[i + 1]);
+    std::transform(first, last, first,
+                   [s = scaling_factors[i]](const double w) { return w * std::sqrt(s); });
+  }
 }
 
 }  // namespace hictk::balancing

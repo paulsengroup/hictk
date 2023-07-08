@@ -18,14 +18,16 @@ inline void print(const Pixel<double>& pixel) {
   fmt::print(FMT_COMPILE("{:bg2}\t{:.16g}\n"), pixel.coords, pixel.count);
 }
 inline void print(const ThinPixel<double>& pixel) {
-  fmt::print(FMT_COMPILE("{:d}\t{:d}\t\t{:.16g}\n"), pixel.bin1_id, pixel.bin2_id, pixel.count);
+  fmt::print(FMT_COMPILE("{:d}\t{:d}\t{:.16g}\n"), pixel.bin1_id, pixel.bin2_id, pixel.count);
 }
 
 template <typename File>
 inline void dump_chroms(const File& f, std::string_view range) {
   if (range == "all") {
     for (const Chromosome& chrom : f.chromosomes()) {
-      fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+      if (!chrom.is_all()) {
+        fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+      }
     }
     return;
   }

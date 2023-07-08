@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/cooler/pixel_selector.hpp"
-
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -12,16 +10,10 @@
 #include <random>
 
 #include "hictk/cooler.hpp"
-#include "hictk/tmpdir.hpp"
-
-namespace hictk::test {
-inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+#include "hictk/cooler/pixel_selector.hpp"
+#include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
-const auto& testdir = hictk::test::testdir;
-const auto& datadir = hictk::test::datadir;
 
 template <typename N>
 static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, const Reference& chroms,
@@ -173,6 +165,10 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
 
   SECTION("overloads return identical results") {
     CHECK(f.fetch("chr1:0-1000") == f.fetch("chr1", 0, 1000));
+    CHECK(f.fetch("chr1\t0\t1000", nullptr, File::QUERY_TYPE::BED) == f.fetch("chr1", 0, 1000));
+    CHECK(f.fetch("chr1:0-1000", "chr1:0-1000") == f.fetch("chr1", 0, 1000));
+    CHECK(f.fetch("chr1\t0\t1000", "chr2\t0\t99", nullptr, File::QUERY_TYPE::BED) ==
+          f.fetch("chr1", 0, 1000, "chr2", 0, 99));
   }
 
   SECTION("invalid queries") {
@@ -208,122 +204,6 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
     CHECK_THROWS_WITH(f.fetch("chr1:10-5"),
                       Catch::Matchers::ContainsSubstring(
                           "end position should be greater than the start position"));
-  }
-}
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
-  using T = std::uint32_t;
-  const auto path = datadir / "cooler_test_file.cool";
-  auto f = File::open_read_only(path.string());
-
-  SECTION("cis") {
-    SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:5000000-5500000", "1:5000000-6500000") ==
-            f.fetch("1", 5000000, 5500000, "1", 5000000, 6500000));
-    }
-
-    SECTION("valid") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto pixels = selector.read_all<T>();
-      REQUIRE(pixels.size() == 8);
-
-      CHECK(pixels[0].count == 20);
-      CHECK(pixels[1].count == 1);
-      CHECK(pixels[2].count == 18);
-      CHECK(pixels[3].count == 8);
-      CHECK(pixels[4].count == 1);
-      CHECK(pixels[5].count == 9);
-      CHECK(pixels[6].count == 6);
-      CHECK(pixels[7].count == 2);
-    }
-
-    SECTION("empty") {
-      auto selector = f.fetch("1:0-100000");
-      CHECK(selector.begin<T>() == selector.end<T>());
-    }
-  }
-
-  SECTION("trans") {
-    SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:48000000-50000000", "4:30000000-35000000") ==
-            f.fetch("1", 48000000, 50000000, "4", 30000000, 35000000));
-    }
-    SECTION("valid") {
-      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
-      const auto pixels = selector.read_all<T>();
-      REQUIRE(pixels.size() == 6);
-
-      CHECK(pixels[0].count == 1);
-      CHECK(pixels[1].count == 3);
-      CHECK(pixels[2].count == 1);
-      CHECK(pixels[3].count == 3);
-      CHECK(pixels[4].count == 7);
-      CHECK(pixels[5].count == 1);
-    }
-
-    SECTION("empty") {
-      auto selector = f.fetch("1:0-50000", "2:0-50000");
-      CHECK(selector.begin<T>() == selector.end<T>());
-    }
-  }
-}
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
-  auto path = datadir / "ENCFF993FGR.2500000.cool";
-  auto clr = File::open_read_only(path.string());
-
-  SECTION("read weights") {
-    SECTION("valid") {
-      CHECK(clr.read_weights("weight")->type() == balancing::Weights::Type::MULTIPLICATIVE);
-      for (const auto* name : {"GW_SCALE", "INTER_SCALE", "SCALE", "VC", "VC_SQRT"}) {
-        CHECK(clr.read_weights(name)->type() == balancing::Weights::Type::DIVISIVE);
-      }
-    }
-
-    SECTION("invalid") {
-      CHECK_THROWS(clr.read_weights(""));
-      CHECK_THROWS(clr.read_weights("AAA"));
-    }
-
-    SECTION("purging") {
-      CHECK(clr.purge_weights() == false);
-      CHECK(clr.purge_weights("weight") == false);
-
-      const auto w = clr.read_weights("weight");
-      CHECK(w.use_count() == 2);
-      CHECK(clr.purge_weights("weight") == true);
-      CHECK(w.use_count() == 1);
-
-      clr.read_weights("weight");
-      CHECK(clr.purge_weights() == true);
-    }
-  }
-
-  SECTION("1D query") {
-    const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, clr.read_weights("weight"));
-    constexpr std::array<double, 3> expected{3.345797, 0.328794, 4.456354};
-    const auto pixels = selector.read_all<double>();
-    REQUIRE(pixels.size() == expected.size());
-    for (std::size_t i = 0; i < expected.size(); ++i) {
-      CHECK_THAT(pixels[i].count, Catch::Matchers::WithinAbs(expected[i], 1.0e-6));
-    }
-  }
-
-  SECTION("2D query") {
-    const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, "chr2", 5'000'000, 10'000'000,
-                                    clr.read_weights("weight"));
-    constexpr std::array<double, 4> expected{0.001782, 0.002756, 0.002047, 0.004749};
-    const auto pixels = selector.read_all<double>();
-    REQUIRE(pixels.size() == expected.size());
-    for (std::size_t i = 0; i < expected.size(); ++i) {
-      CHECK_THAT(pixels[i].count, Catch::Matchers::WithinAbs(expected[i], 1.0e-6));
-    }
-  }
-
-  SECTION("invalid iterator type") {
-    const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, "chr2", 5'000'000, 10'000'000,
-                                    clr.read_weights("weight"));
-    CHECK_THROWS(selector.read_all<std::int32_t>());
   }
 }
 

@@ -37,10 +37,15 @@ function compare_coolers {
   hic="$3"
 
   2>&1 echo "Comparing $clr with $hic..."
-  if diff <("$hictk" dump --join "$clr")  \
-          <("$hictk" dump --join "$hic"   \
-                          --resolution    \
-                          "$resolution");  then
+  if diff <("$hictk" dump -t chroms "$clr") \
+          <("$hictk" dump -t chroms "$hic"  \
+                          --resolution      \
+                          "$resolution")    \
+  && diff <("$hictk" dump --join "$clr")    \
+          <("$hictk" dump --join "$hic"     \
+                          --resolution      \
+                          "$resolution");   \
+  then
     2>&1 echo "Files are identical"
     return 0
   else

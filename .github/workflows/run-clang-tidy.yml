@@ -125,6 +125,8 @@ jobs:
                 -DOPT_ENABLE_CLANG_TIDY=ON                    \
                 -DHICTK_BUILD_EXAMPLES=ON                     \
                 -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
                 -S .                                          \
                 -B build
 

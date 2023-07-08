@@ -4,6 +4,7 @@
 
 cmake_minimum_required(VERSION 3.25)
 cmake_policy(VERSION 3.25...3.27)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 
@@ -23,7 +24,7 @@ include(cmake/Versioning.cmake)
 
 project(
   hictk
-  LANGUAGES CXX
+  LANGUAGES C CXX
   VERSION ${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}
   HOMEPAGE_URL https://github.com/robomics/hictk
   DESCRIPTION "High-performance C++ library to read and write .cool files.")
@@ -108,11 +109,6 @@ dynamic_project_options(
   ${CUDA_WARNINGS})
 
 target_compile_features(hictk_project_options INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
-
-# Tweak fmt
-target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
-# Tweak spdlog
-target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
 
 if(WIN32)
   target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
