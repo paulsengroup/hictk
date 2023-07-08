@@ -120,9 +120,9 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
-option(HICTK_BUILD_EXAMPLES "Build examples" ON)
+option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
-option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" ON)
+option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" OFF)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 
 include(cmake/FetchExternalDeps.cmake)
