@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <arrow/api.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -35,7 +34,7 @@ static cooler::File cooler_ctor(std::string_view uri, const py::dict& py_chroms,
 
 template <typename File>
 static py::dict get_chromosomes_from_file(const File& f) {
-  py::dict py_chroms{};
+  py::dict py_chroms{}; // NOLINT
   for (const auto& chrom : f.chromosomes()) {
     const std::string name{chrom.name()};
     py_chroms[name.c_str()] = chrom.size();
@@ -57,7 +56,7 @@ static py::object get_bins_from_file(const File& f) {
     ends.emplace_back(bin.end());
   }
 
-  py::dict py_bins_dict{};
+  py::dict py_bins_dict{};  // NOLINT
 
   py_bins_dict["chrom"] = std::move(chrom_names);
   py_bins_dict["start"] = std::move(starts);
@@ -122,7 +121,7 @@ static py::object pixel_iterators_to_df(const BinTable& bins, PixelIt first_pixe
   ends2.shrink_to_fit();
   counts.shrink_to_fit();
 
-  py::dict py_pixels_dict{};
+  py::dict py_pixels_dict{};  // NOLINT
 
   py_pixels_dict["chrom1"] = py::array(py::cast(chrom_names1));
   py_pixels_dict["start1"] = starts1();
@@ -185,6 +184,7 @@ static py::object hic_fetch(const hic::HiCFile& f, std::string_view range1, std:
 PYBIND11_MODULE(hictkpy, m) {
   [[maybe_unused]] auto np = py::module::import("numpy");
   [[maybe_unused]] auto pd = py::module::import("pandas");
+  m.attr("__version__") = hictk::config::version::str();
 
   m.doc() = "Blazing fast toolkit to work with .hic and .cool files";
   auto cooler = m.def_submodule("cooler");
