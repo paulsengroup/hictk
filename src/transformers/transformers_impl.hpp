@@ -44,9 +44,7 @@ inline auto JoinGenomicCoords<PixelIt>::read_all() const -> std::vector<Pixel<N>
 template <typename PixelIt>
 inline JoinGenomicCoords<PixelIt>::iterator::iterator(PixelIt it,
                                                       std::shared_ptr<const BinTable> bins)
-    : _it(std::move(it)), _bins(std::move(bins)) {
-  std::ignore = **this;
-}
+    : _it(std::move(it)), _bins(std::move(bins)) {}
 
 template <typename PixelIt>
 inline auto JoinGenomicCoords<PixelIt>::iterator::at_end(PixelIt it,
