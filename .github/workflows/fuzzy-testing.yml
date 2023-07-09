@@ -172,12 +172,8 @@ jobs:
 
       - name: Install Python bindings
         run: |
-          CMAKE_ARGS=("-DCMAKE_PREFIX_PATH=$PWD/build"
-                      '-DENABLE_DEVELOPER_MODE=ON'
-                      '-DOPT_ENABLE_CLANG_TIDY=OFF')
-
           pip install --upgrade pip setuptools wheel
-          env CMAKE_ARGS="${CMAKE_ARGS[*]}" \
+          env CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
           pip install . -v
 
       - name: Install test dependencies
@@ -247,7 +243,6 @@ jobs:
 
       - name: Run test
         run: |
-          export ASAN_OPTIONS="verify_asan_link_order=0;detect_leaks=0"
           test/scripts/fuzzy_test.py \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
