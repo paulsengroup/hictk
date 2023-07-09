@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
 import os
 import re
 import subprocess
@@ -131,15 +137,6 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-  name="hictkpy",
-  version="0.0.1",
-  author="Roberto Rossini",
-  author_email="roberros@uio.no",
-  description="Blazing fast toolkit to work with .hic and .cool files",
-  long_description="",
   ext_modules=[CMakeExtension("hictkpy")],
   cmdclass={"build_ext": CMakeBuild},
-  zip_safe=False,
-  extras_require={"test": ["pytest>=6.0"]},
-  python_requires=">=3.7",
 )

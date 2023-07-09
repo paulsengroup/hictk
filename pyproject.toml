@@ -1,17 +1,15 @@
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
 [build-system]
 requires = [
   "setuptools>=42",
   "wheel",
   "ninja",
   "cmake>=3.25",
-  "pyarrow"
 ]
 build-backend = "setuptools.build_meta"
-
-dependencies = [
-  "numpy",
-  "pandas"
-]
 
 [tool.mypy]
 files = "setup.py"
