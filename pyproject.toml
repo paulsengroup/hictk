@@ -54,3 +54,10 @@ extend-ignore = [
   "E501",   # Line too long
 ]
 target-version = "py37"
+
+[tool.black]
+line-length = 120
+target-version = ["py37"]
+
+[tool.isort]
+profile = "black"
