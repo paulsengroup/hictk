@@ -34,7 +34,7 @@ static cooler::File cooler_ctor(std::string_view uri, const py::dict& py_chroms,
 
 template <typename File>
 static py::dict get_chromosomes_from_file(const File& f) {
-  py::dict py_chroms{}; // NOLINT
+  py::dict py_chroms{};  // NOLINT
   for (const auto& chrom : f.chromosomes()) {
     const std::string name{chrom.name()};
     py_chroms[name.c_str()] = chrom.size();
@@ -74,7 +74,7 @@ struct Dynamic1DA {
   std::int64_t _size{};
 
  public:
-  Dynamic1DA(std::size_t size_ = 1000) : _buff({static_cast<std::int64_t>(size_)}) {}
+  explicit Dynamic1DA(std::size_t size_ = 1000) : _buff({static_cast<std::int64_t>(size_)}) {}
   void append(T x) {
     if (_buff.size() == _size) {
       grow();
