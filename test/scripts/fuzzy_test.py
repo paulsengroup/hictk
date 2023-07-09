@@ -11,13 +11,12 @@ import logging
 import multiprocessing as mp
 import pathlib
 import random
-import shlex
 import shutil
-import subprocess as sp
 import sys
 import time
 from typing import Dict, Tuple
 
+import hictkpy
 import numpy as np
 import pandas as pd
 
@@ -54,11 +53,7 @@ def make_cli():
     cli.add_argument(
         "reference-cooler",
         type=pathlib.Path,
-        help="Path to a .cool or .mcool file to use as reference.",
-    )
-
-    cli.add_argument(
-        "--resolution", type=int, help="HiC matrix resolution to use for testing."
+        help="Path to a cooler file to use as reference.",
     )
 
     cli.add_argument(
@@ -68,22 +63,12 @@ def make_cli():
         help="Ratio of 1D to 2D queries. Use 0 or 1 to only test 1D or 2D queries.",
     )
 
-    cli.add_argument(
-        "--duration", type=positive_int, default=60, help="Duration in seconds."
-    )
-    cli.add_argument(
-        "--path-to-hictk",
-        type=valid_executable,
-        default="hictk",
-        help="Path to hictk's binary.",
-    )
-    cli.add_argument(
-        "--query-length-avg", type=float, default=5_000_000, help="Average query size."
-    )
+    cli.add_argument("--duration", type=positive_int, default=60, help="Duration in seconds.")
+    cli.add_argument("--query-length-avg", type=float, default=1_000_000, help="Average query size.")
     cli.add_argument(
         "--query-length-std",
         type=float,
-        default=1_000_000,
+        default=250_000,
         help="Standard deviation for query size.",
     )
     cli.add_argument(
@@ -111,53 +96,20 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
 
     df["chrom1"] = df["chrom1"].astype(str)
     df["chrom2"] = df["chrom2"].astype(str)
-    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[
-        ["count"]
-    ]
+    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
 
 
-def hictk_dump(
-    hictk_bin: pathlib.Path,
-    path_to_file: pathlib.Path,
-    resolution: int,
-    balance: str,
-    query1: str,
-    query2: str,
-) -> pd.DataFrame:
-    cmd = [
-        shutil.which(str(hictk_bin)),
-        "dump",
-        str(path_to_file),
-        f"--resolution={resolution}",
-        f"--balance={balance}",
-        f"--range={query1}",
-        f"--range2={query2}",
-    ]
-
-    cmd = shlex.split(" ".join(str(tok) for tok in cmd))
-    logging.debug("[hictk dump] Running %s...", cmd)
-
-    with sp.Popen(cmd, stdin=None, stdout=sp.PIPE) as hictk_dump:
-        df = pd.read_table(
-            hictk_dump.stdout,
-            names=["chrom1", "start1", "end1", "chrom2", "start2", "end2", "count"],
-        )
-        hictk_dump.communicate()
-        if (code := hictk_dump.returncode) != 0:
-            raise RuntimeError(f"{cmd} terminated with code {code}")
-
-    df["chrom1"] = df["chrom1"].astype(str)
-    df["chrom2"] = df["chrom2"].astype(str)
-    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])
+def hictk_dump(file, query1: str, query2: str, normalization: str = "NONE") -> pd.DataFrame:
+    logging.debug("[hictkpy] running query for %s, %s...", query1, query2)
+    df = file.fetch(query1, query2, normalization)
+    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
 
 
 def read_chrom_sizes_cooler(path_to_cooler_file: pathlib.Path) -> Dict[str, int]:
     return cooler.Cooler(str(path_to_cooler_file)).chromsizes.to_dict()
 
 
-def generate_query_1d(
-    chroms, weights: np.ndarray, mean_length: float, stddev_length: float
-) -> str:
+def generate_query_1d(chroms, weights: np.ndarray, mean_length: float, stddev_length: float) -> str:
     chrom_name, chrom_size = random.choices(chroms, weights=weights, k=1)[0]
 
     query_length = max(2.0, random.gauss(mu=mean_length, sigma=stddev_length))
@@ -203,9 +155,7 @@ def find_differences(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
         suffixes=("1", "2"),
     )
     # We're mapping False to None so that we can more easily drop identical rows with dropna()
-    df["count_close_enough"] = pd.Series(np.isclose(df["count1"], df["count2"])).map(
-        {False: None}
-    )
+    df["count_close_enough"] = pd.Series(np.isclose(df["count1"], df["count2"])).map({False: None})
 
     # We're dropping the counts to avoid incorrectly flagging rows with nan as counts
     return df.drop(columns=["count1", "count2"]).dropna()
@@ -246,11 +196,15 @@ def seed_prng(worker_id: int, seed):
     random.seed(seed)
 
 
+def hictk_open_file(path: str, resolution: int = 0):
+    if hictkpy.cooler.utils.is_cooler(path):
+        return hictkpy.cooler.File(path)
+    return hictkpy.hic.File(path, resolution)
+
+
 def worker(
     path_to_file: pathlib.Path,
     path_to_reference_file: pathlib.Path,
-    path_to_hictk_dump: pathlib.Path,
-    resolution: int,
     chroms_flat,
     chrom_ranks,
     query_length_mu: float,
@@ -272,9 +226,10 @@ def worker(
         chrom_sizes = np.array([n for _, n in chroms_flat], dtype=int)
         weights = chrom_sizes / chrom_sizes.sum()
 
-        sel = cooler.Cooler(str(path_to_reference_file)).matrix(
-            balance=balance if balance != "NONE" else False, as_pixels=True, join=True
-        )
+        clr = cooler.Cooler(str(path_to_reference_file))
+        sel = clr.matrix(balance=balance if balance != "NONE" else False, as_pixels=True, join=True)
+
+        f = hictk_open_file(str(path_to_file), clr.binsize)
 
         while time.time() < end_time:
             if early_return.value:
@@ -302,11 +257,9 @@ def worker(
                 q2 = q1
 
             num_queries += 1
-            expected = cooler_dump(sel, q1, q2)
 
-            found = hictk_dump(
-                path_to_hictk_dump, path_to_file, resolution, balance, q1, q2
-            )
+            expected = cooler_dump(sel, q1, q2)
+            found = hictk_dump(f, q1, q2, balance)
 
             if not results_are_identical(worker_id, q1, q2, expected, found):
                 num_failures += 1
@@ -343,8 +296,6 @@ def main():
             zip(
                 itertools.repeat(args["uri"]),
                 itertools.repeat(args["reference-cooler"]),
-                itertools.repeat(args["path_to_hictk"]),
-                itertools.repeat(args["resolution"]),
                 itertools.repeat(chroms_flat),
                 itertools.repeat(chrom_ranks),
                 itertools.repeat(args["query_length_avg"]),
