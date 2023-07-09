@@ -121,7 +121,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.txt', '.github/workflows/fuzzy-testing.yml') }}"
+          hash="${{ hashFiles('conanfile.txt') }}"
 
           echo "key=fuzzy-testing-$hash" >> $GITHUB_OUTPUT
 
@@ -168,7 +168,7 @@ jobs:
       - name: Install Python
         run: |
           apt-get update
-          apt-get install -y python3 python3-pip
+          apt-get install -y python3.11 python3.11-dev
 
       - name: Install Python bindings
         run: |
@@ -176,7 +176,7 @@ jobs:
                       '-DENABLE_DEVELOPER_MODE=ON'
                       '-DOPT_ENABLE_CLANG_TIDY=OFF')
 
-          pip install --upgrade pip setuptools
+          pip install --upgrade pip setuptools wheel
           env CMAKE_ARGS="${CMAKE_ARGS[*]}" \
           pip install . -vv
 
