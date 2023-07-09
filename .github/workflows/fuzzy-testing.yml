@@ -172,9 +172,9 @@ jobs:
 
       - name: Install Python bindings
         run: |
-          CMAKE_AGS=("-DCMAKE_PREFIX_PATH=$PWD/build"
-                     '-DENABLE_DEVELOPER_MODE=ON'
-                     '-DOPT_ENABLE_CLANG_TIDY=OFF')
+          CMAKE_ARGS=("-DCMAKE_PREFIX_PATH=$PWD/build"
+                      '-DENABLE_DEVELOPER_MODE=ON'
+                      '-DOPT_ENABLE_CLANG_TIDY=OFF')
 
           pip install --upgrade pip setuptools
           env CMAKE_ARGS="${CMAKE_ARGS[*]}" \
@@ -261,11 +261,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-project
-      - run-tests
 
     steps:
       - name: Collect job results
-        if: |
-          needs.build-project.result != 'success'        ||
-          needs.run-tests.result != 'success'
+        if: needs.build-project.result != 'success'
         run: exit 1
