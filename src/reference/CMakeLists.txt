@@ -17,6 +17,10 @@ target_link_libraries(
             hictk::common
             hictk::fmt)
 
-target_link_system_libraries(hictk_reference INTERFACE std::filesystem _hictk_phmap_tgt)
+target_link_system_libraries(
+  hictk_reference
+  INTERFACE
+  std::filesystem
+  _hictk_phmap_tgt)
 
 install(TARGETS hictk_reference INCLUDES)
