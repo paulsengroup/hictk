@@ -178,7 +178,7 @@ jobs:
 
           pip install --upgrade pip setuptools wheel
           env CMAKE_ARGS="${CMAKE_ARGS[*]}" \
-          pip install . -vv
+          pip install . -v
 
       - name: Install test dependencies
         run: |

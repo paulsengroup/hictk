@@ -2,17 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-cmake_minimum_required(VERSION 3.25)
-cmake_policy(VERSION 3.25...3.27)
+FetchContent_Declare(
+  _hictk_pybind11
+  URL ${PROJECT_SOURCE_DIR}/external/pybind11-v2.10.3.tar.xz
+  URL_HASH SHA256=1a0ab8cdfdab3a1e959f67a1f4b231e4dc483b545001051d3411981827031920
+  EXCLUDE_FROM_ALL SYSTEM)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-project(
-        hictkpy
-        LANGUAGES CXX
-        HOMEPAGE_URL https://github.com/paulsengroup/hictk
-        DESCRIPTION "High-performance C++ library to read and write .cool files.")
+FetchContent_MakeAvailable(_hictk_pybind11)
 
 add_subdirectory(src)
