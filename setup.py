@@ -47,20 +47,14 @@ class CMakeBuild(build_ext):
     # Can be set with Conda-Build, for example.
     cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
-    # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
-    # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
-    # from Python.
-
     cmake_args = [
       "-DHICTK_ENABLE_TESTING=OFF",
       "-DHICTK_BUILD_EXAMPLES=OFF",
       "-DHICTK_BUILD_BENCHMARKS=OFF",
       "-DHICTK_BUILD_TOOLS=OFF",
       "-DHICTK_BUILD_PYTHON_BINDINGS=ON",
-      "-DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF",
       "-DBUILD_SHARED_LIBS=ON",
       f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
-      f"-DPYTHON_EXECUTABLE={sys.executable}",
       f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
     ]
     build_args = []
