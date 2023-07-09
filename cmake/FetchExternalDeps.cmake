@@ -64,19 +64,6 @@ FetchContent_MakeAvailable(
 
 if(HICTK_BUILD_TOOLS)
   FetchContent_MakeAvailable(_hictk_cli11 _hictk_fast_float _hictk_readerwriterqueue)
-
-  # Setup fmt
-  FetchContent_GetProperties(_hictk_spdlog)
-  if(NOT _hictk_spdlog_POPULATED)
-    FetchContent_Populate(_hictk_spdlog)
-  endif()
-
-  add_library(_hictk_spdlog_tgt INTERFACE)
-  target_include_directories(_hictk_spdlog_tgt SYSTEM INTERFACE ${_hictk_spdlog_SOURCE_DIR}/include)
-  target_compile_definitions(_hictk_spdlog_tgt INTERFACE SPDLOG_FMT_EXTERNAL)
-
-  # Disable clang-tidy for external projects
-  target_disable_clang_tidy(_hictk_spdlog_tgt)
 endif()
 
 # Setup HighFive
@@ -107,6 +94,16 @@ target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_
 add_library(_hictk_phmap_tgt INTERFACE)
 target_include_directories(_hictk_phmap_tgt SYSTEM INTERFACE ${_hictk_phmap_SOURCE_DIR})
 
+# Setup spdlog
+FetchContent_GetProperties(_hictk_spdlog)
+if(NOT _hictk_spdlog_POPULATED)
+  FetchContent_Populate(_hictk_spdlog)
+endif()
+
+add_library(_hictk_spdlog_tgt INTERFACE)
+target_include_directories(_hictk_spdlog_tgt SYSTEM INTERFACE ${_hictk_spdlog_SOURCE_DIR}/include)
+target_compile_definitions(_hictk_spdlog_tgt INTERFACE SPDLOG_FMT_EXTERNAL)
+
 # Setup project_options
 include(${_hictk_project_options_SOURCE_DIR}/Index.cmake)
 
@@ -114,6 +111,7 @@ include(${_hictk_project_options_SOURCE_DIR}/Index.cmake)
 target_disable_clang_tidy(_hictk_highfive_tgt)
 target_disable_clang_tidy(_hictk_fmt_tgt)
 target_disable_clang_tidy(_hictk_phmap_tgt)
+target_disable_clang_tidy(_hictk_spdlog_tgt)
 
 if(LIBDEFLATE_BUILD_SHARED_LIB)
   target_disable_clang_tidy(libdeflate_shared)

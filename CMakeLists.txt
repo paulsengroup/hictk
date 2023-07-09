@@ -4,6 +4,7 @@
 
 cmake_minimum_required(VERSION 3.25)
 cmake_policy(VERSION 3.25...3.27)
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
@@ -120,8 +121,9 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
-option(HICTK_BUILD_EXAMPLES "Build examples" ON)
+option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
+option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" OFF)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 
 include(cmake/FetchExternalDeps.cmake)
@@ -143,4 +145,9 @@ endif()
 if(HICTK_BUILD_BENCHMARKS)
   message(STATUS "Building benchmarks.")
   add_subdirectory(benchmark)
+endif()
+
+if(HICTK_BUILD_PYTHON_BINDINGS)
+  message(STATUS "Building Python bindings.")
+  add_subdirectory(bindings/python)
 endif()
