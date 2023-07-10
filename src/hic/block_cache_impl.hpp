@@ -87,7 +87,7 @@ inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::
 
 inline auto BlockCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
                                 Value block) -> Value {
-  while (_size + block->size() > capacity() && !_map.empty()) {
+  while (size() + block->size() > capacity() && !_map.empty()) {
     pop_oldest();
   }
 
@@ -127,10 +127,14 @@ inline void BlockCache::clear() noexcept {
   }
 }
 
-constexpr std::size_t BlockCache::capacity() const noexcept {
-  return _capacity * sizeof(SerializedPixel);
-}
+constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity; }
 constexpr std::size_t BlockCache::size() const noexcept { return _size; }
+constexpr std::size_t BlockCache::capacity_bytes() const noexcept {
+  return capacity() * sizeof(SerializedPixel);
+}
+constexpr std::size_t BlockCache::size_bytes() const noexcept {
+  return size() * sizeof(SerializedPixel);
+}
 inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
 
 constexpr double BlockCache::hit_rate() const noexcept {
@@ -147,7 +151,7 @@ constexpr void BlockCache::reset_stats() noexcept {
 
 inline void BlockCache::set_capacity(std::size_t new_capacity, bool shrink_to_fit) {
   if (shrink_to_fit) {
-    while (new_capacity < size() && size() != 0) {
+    while (new_capacity < size_bytes() && size() != 0) {
       pop_oldest();
     }
   }

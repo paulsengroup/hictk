@@ -41,10 +41,10 @@ inline HiCFile& HiCFile::open(std::string url_, std::uint32_t resolution_, Matri
     return *this;
   }
 
-  const auto prev_block_cache_capacity = _block_cache->capacity();
+  const auto prev_block_cache_capacity = _block_cache->capacity_bytes();
   *this = HiCFile(url_, resolution_, type_, unit_, block_cache_capacity);
 
-  if (_block_cache->capacity() < prev_block_cache_capacity) {
+  if (_block_cache->capacity_bytes() < prev_block_cache_capacity) {
     _block_cache->set_capacity(prev_block_cache_capacity);
   }
   return *this;
@@ -199,8 +199,11 @@ inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
     }
   }
 
-  _block_cache->set_capacity((std::min)(upper_bound, cache_size));
+  cache_size = std::max(cache_size, 10'000'000UL);
+  _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
-inline std::size_t HiCFile::cache_capacity() const noexcept { return _block_cache->capacity(); }
+inline std::size_t HiCFile::cache_capacity() const noexcept {
+  return _block_cache->capacity_bytes();
+}
 }  // namespace hictk::hic
