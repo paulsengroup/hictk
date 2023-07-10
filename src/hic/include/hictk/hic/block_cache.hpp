@@ -107,6 +107,8 @@ class BlockCache {
 
   [[nodiscard]] constexpr std::size_t capacity() const noexcept;
   [[nodiscard]] constexpr std::size_t size() const noexcept;
+  [[nodiscard]] constexpr std::size_t capacity_bytes() const noexcept;
+  [[nodiscard]] constexpr std::size_t size_bytes() const noexcept;
   [[nodiscard]] std::size_t num_blocks() const noexcept;
 
   [[nodiscard]] constexpr double hit_rate() const noexcept;

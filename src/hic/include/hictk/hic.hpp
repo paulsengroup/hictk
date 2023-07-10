@@ -77,6 +77,10 @@ class HiCFile {
   void reset_cache_stats() const noexcept;
   void clear_cache() noexcept;
   void optimize_cache_size(std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
+  void optimize_cache_size_for_iteration(
+      std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
+  void optimize_cache_size_for_random_access(
+      std::size_t upper_bound = (std::numeric_limits<std::size_t>::max)());
   [[nodiscard]] std::size_t cache_capacity() const noexcept;
 
  private:
@@ -88,6 +92,8 @@ class HiCFile {
                                     std::uint32_t end1, const Chromosome &chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
                                     NormalizationMethod norm) const;
+  [[nodiscard]] std::size_t estimate_cache_size_cis() const;
+  [[nodiscard]] std::size_t estimate_cache_size_trans() const;
 };
 
 }  // namespace hictk::hic

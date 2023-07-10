@@ -41,10 +41,10 @@ inline HiCFile& HiCFile::open(std::string url_, std::uint32_t resolution_, Matri
     return *this;
   }
 
-  const auto prev_block_cache_capacity = _block_cache->capacity();
+  const auto prev_block_cache_capacity = _block_cache->capacity_bytes();
   *this = HiCFile(url_, resolution_, type_, unit_, block_cache_capacity);
 
-  if (_block_cache->capacity() < prev_block_cache_capacity) {
+  if (_block_cache->capacity_bytes() < prev_block_cache_capacity) {
     _block_cache->set_capacity(prev_block_cache_capacity);
   }
   return *this;
@@ -184,23 +184,58 @@ inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cac
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
 inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
-  std::size_t cache_size = 0;
-
-  const auto& chrom1 = chromosomes().longest_chromosome();
-
-  for (const auto& chrom2 : chromosomes()) {
-    if (chrom2.is_all()) {
-      continue;
-    }
-    if (chrom1.id() < chrom2.id()) {
-      cache_size += this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
-    } else {
-      cache_size += this->fetch(chrom2.name(), chrom1.name()).estimate_optimal_cache_size();
-    }
-  }
-
-  _block_cache->set_capacity((std::min)(upper_bound, cache_size));
+  return this->optimize_cache_size_for_iteration(upper_bound);
 }
 
-inline std::size_t HiCFile::cache_capacity() const noexcept { return _block_cache->capacity(); }
+inline void HiCFile::optimize_cache_size_for_iteration(std::size_t upper_bound) {
+  std::size_t cache_size = this->estimate_cache_size_cis() + this->estimate_cache_size_trans();
+  cache_size = cache_size * 10 / 9;  // Better to slighly overestimate than underestimate
+  cache_size =
+      std::max(cache_size, std::size_t(10'000'000));  // 10MBs seems like a reasonable lower bound
+  _block_cache->set_capacity(std::min(upper_bound, cache_size));
+}
+
+inline void HiCFile::optimize_cache_size_for_random_access(std::size_t upper_bound) {
+  std::size_t cache_size = this->estimate_cache_size_cis();
+  cache_size = cache_size * 10 / 9;  // Better to slighly overestimate than underestimate
+  cache_size =
+      std::max(cache_size, std::size_t(10'000'000));  // 10MBs seems like a reasonable lower bound
+  _block_cache->set_capacity(std::min(upper_bound, cache_size));
+}
+
+inline std::size_t HiCFile::cache_capacity() const noexcept {
+  return _block_cache->capacity_bytes();
+}
+
+inline std::size_t HiCFile::estimate_cache_size_cis() const {
+  if (chromosomes().empty()) {
+    return 0;
+  }
+  const auto& chrom1 = chromosomes().longest_chromosome();
+  return this->fetch(chrom1.name(), chrom1.name()).estimate_optimal_cache_size();
+}
+
+inline std::size_t HiCFile::estimate_cache_size_trans() const {
+  auto chrom1 = chromosomes().longest_chromosome();
+
+  auto it = std::find_if(chromosomes().begin(), chromosomes().end(), [&](const Chromosome& chrom) {
+    return !chrom.is_all() && chrom != chrom1;
+  });
+  if (it == chromosomes().end()) {
+    return 0;
+  }
+
+  auto chrom2 = *it;
+
+  if (chrom1.id() > chrom2.id()) {
+    std::swap(chrom1, chrom2);
+  }
+
+  auto cache_size = this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+  const auto num_trans_bins = bins().size() - bins().subset(chrom1).size();
+  const auto num_chrom2_bins = bins().subset(chrom2).size();
+
+  return ((cache_size + num_chrom2_bins - 1) / num_chrom2_bins) * num_trans_bins;
+}
+
 }  // namespace hictk::hic
