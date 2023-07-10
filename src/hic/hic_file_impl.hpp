@@ -216,7 +216,7 @@ inline std::size_t HiCFile::estimate_cache_size_cis() const {
 }
 
 inline std::size_t HiCFile::estimate_cache_size_trans() const {
-  const auto& chrom1 = chromosomes().longest_chromosome();
+  auto chrom1 = chromosomes().longest_chromosome();
 
   auto it = std::find_if(chromosomes().begin(), chromosomes().end(), [&](const Chromosome& chrom) {
     return !chrom.is_all() && chrom != chrom1;
@@ -225,7 +225,12 @@ inline std::size_t HiCFile::estimate_cache_size_trans() const {
     return 0;
   }
 
-  const auto chrom2 = *it;
+  auto chrom2 = *it;
+
+  if (chrom1.id() > chrom2.id()) {
+    std::swap(chrom1, chrom2);
+  }
+
   auto cache_size = this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
   const auto num_trans_bins = bins().size() - bins().subset(chrom1).size();
   const auto num_chrom2_bins = bins().subset(chrom2).size();
