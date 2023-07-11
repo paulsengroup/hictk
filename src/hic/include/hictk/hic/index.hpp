@@ -73,7 +73,7 @@ struct BlockIndexEq {
 class Index {
   using BlockIndexMap = phmap::flat_hash_set<BlockIndex, BlockIndexHasher, BlockIndexEq>;
   // map block_ids to file offsets
-  const BlockIndexMap _block_map{};
+  BlockIndexMap _block_map{};
   std::int32_t _version{};
   std::size_t _block_bin_count{};
   std::size_t _block_column_count{};  // columns of blocks per matrix?

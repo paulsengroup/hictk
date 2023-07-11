@@ -38,6 +38,41 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
       _coord1(std::move(coord1_)),
       _coord2(std::move(coord2_)) {}
 
+inline PixelSelector::PixelSelector(PixelSelector &&other) noexcept
+    : _reader(std::move(other._reader)),
+      _footer(std::move(other._footer)),
+      _coord1(std::move(other._coord1)),
+      _coord2(std::move(other._coord2)),
+      _clear_cache_on_destruction(other._clear_cache_on_destruction) {
+  other._clear_cache_on_destruction = false;
+}
+
+inline PixelSelector::~PixelSelector() noexcept {
+  if (_clear_cache_on_destruction) {
+    try {
+      this->evict_blocks_from_cache();
+    } catch (...) {
+        // This should never happen, however it's fine if eviction fails.
+        // Cache size is enforced elsewhere anyway
+    }
+  }
+}
+
+inline PixelSelector &PixelSelector::operator=(PixelSelector &&other) {
+  if (this == &other) {
+    return *this;
+  }
+
+  this->_reader = std::move(other._reader);
+  this->_footer = std::move(other._footer);
+  this->_coord1 = std::move(other._coord1);
+  this->_coord2 = std::move(other._coord2);
+  this->_clear_cache_on_destruction = other._clear_cache_on_destruction;
+  other._clear_cache_on_destruction = false;
+
+  return *this;
+}
+
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
          _coord2 == other._coord2;
@@ -380,8 +415,8 @@ inline std::size_t PixelSelector::iterator<N>::compute_chunk_size(double fractio
 }
 
 template <typename N>
-inline const std::vector<internal::BlockIndex>
-    &PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+inline const std::vector<internal::BlockIndex> &
+PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
   const auto bin_size = bins().bin_size();
 
   const auto end_pos = coord1().bin2.start();
