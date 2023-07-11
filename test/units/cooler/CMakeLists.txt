@@ -25,7 +25,6 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_chromosomes_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_ctors_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/file_format_checking_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_pixels_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp
@@ -34,7 +33,8 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp)
+          ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/utils_validation_test.cpp)
 
 target_link_libraries(
   hictk_cooler_tests

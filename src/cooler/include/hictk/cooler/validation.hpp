@@ -70,6 +70,8 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
 [[nodiscard]] ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells = true);
 [[nodiscard]] ValidationStatusScool is_scool_file(const HighFive::File& fp,
                                                   bool validate_cells = true);
+
+[[nodiscard]] bool index_is_valid(std::string_view uri, bool verbose = false);
 }  // namespace hictk::cooler::utils
 
 namespace fmt {

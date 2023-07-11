@@ -317,6 +317,39 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   return status;
 }
 
+[[nodiscard]] inline bool index_is_valid(std::string_view uri, bool verbose) {
+  // See https://github.com/robomics/20221129_4dnucleome_bug_report
+  // and https://github.com/open2c/cooler/issues/319
+  if (!is_cooler(uri)) {
+    return false;
+  }
+
+  auto clr = File::open_read_only(uri, DEFAULT_HDF5_CACHE_SIZE, false);
+  const auto bin1_dset = clr.dataset("indexes/bin1_offset");
+  const auto bin2_dset = clr.dataset("pixels/bin2_id");
+
+  const auto bin1_offset = bin1_dset.read_all<std::vector<std::uint64_t>>();
+  assert(!bin1_offset.empty());
+  for (std::size_t i1 = 1; i1 < bin1_offset.size() - 1; ++i1) {
+    const auto i0 = i1 - 1;
+
+    auto first = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i0]);
+    auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1]);
+
+    if (!std::is_sorted(first, last)) {
+      if (verbose) {
+        fmt::print(
+            stderr,
+            FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
+                       "contain duplicate entries)\n"),
+            bin1_offset[i0], bin1_offset[i1]);
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace hictk::cooler::utils
 
 constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::parse(

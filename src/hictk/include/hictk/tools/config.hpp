@@ -85,12 +85,20 @@ struct MergeConfig {
   std::uint8_t verbosity{2};
 };
 
+struct ValidateConfig {
+  std::string uri{};
+  bool validate_index{false};
+  bool quiet{false};
+  std::uint8_t verbosity{2};
+};
+
 // clang-format off
 using Config = std::variant<std::monostate,
                             ConvertConfig,
                             DumpConfig,
                             LoadConfig,
-                            MergeConfig>;
+                            MergeConfig,
+                            ValidateConfig>;
 // clang-format on
 
 }  // namespace hictk::tools

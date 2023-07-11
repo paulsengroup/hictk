@@ -198,6 +198,8 @@ auto Cli::parse_arguments() -> Config {
       this->_subcommand = subcommand::load;
     } else if (this->_cli.get_subcommand("merge")->parsed()) {
       this->_subcommand = subcommand::merge;
+    } else if (this->_cli.get_subcommand("validate")->parsed()) {
+      this->_subcommand = subcommand::validate;
     } else {
       this->_subcommand = subcommand::help;
     }
@@ -219,7 +221,7 @@ auto Cli::parse_arguments() -> Config {
         "An unknown error occurred while parsing CLI arguments! If you see this message, please "
         "file an issue on GitHub");
   }
-  this->validate();
+  this->validate_args();
   this->transform_args();
 
   this->_exit_code = 0;
@@ -238,6 +240,8 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
       return "load";
     case merge:
       return "merge";
+    case validate:
+      return "validate";
     default:
       assert(s == help);
       return "--help";
@@ -554,6 +558,41 @@ void Cli::make_merge_subcommand() {
   this->_config = std::monostate{};
 }
 
+void Cli::make_validate_subcommand() {
+  auto& sc = *this->_cli.add_subcommand("validate", "Validate .cooler and .hic files.")
+                  ->fallthrough()
+                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+                    assert(this->_config.index() == 0);
+                    this->_config = ValidateConfig{};
+                  });
+
+  this->_config = ValidateConfig{};
+  auto& c = std::get<ValidateConfig>(this->_config);
+
+  // clang-format off
+  sc.add_option(
+      "uri",
+      c.uri,
+      "Path to a .hic, .cool or .mcool file (Cooler URI syntax supported).")
+      ->check(IsValidHiCFile | IsValidCoolerFile)
+      ->required();
+
+  sc.add_flag(
+      "--validate-index",
+      c.validate_index,
+      "Validate Cooler index (may take a long time).")
+      ->capture_default_str();
+
+  sc.add_flag(
+      "--quiet",
+      c.validate_index,
+      "Don't print anything to stdout. Success/failure is reported through exit codes")
+      ->capture_default_str();
+  // clang-format on
+
+  this->_config = std::monostate{};
+}
+
 void Cli::make_cli() {
   this->_cli.name(this->_exec_name);
   this->_cli.description("Coolerpp tools.");
@@ -564,6 +603,7 @@ void Cli::make_cli() {
   this->make_dump_subcommand();
   this->make_load_subcommand();
   this->make_merge_subcommand();
+  this->make_validate_subcommand();
 }
 
 static void check_requested_resolutions_avail(const std::filesystem::path& path_to_input_file,
@@ -748,7 +788,7 @@ void Cli::validate_merge_subcommand() const {
   */
 }
 
-void Cli::validate() const {
+void Cli::validate_args() const {
   switch (this->_subcommand) {
     case convert:
       this->validate_convert_subcommand();
@@ -762,6 +802,8 @@ void Cli::validate() const {
     case merge:
       this->validate_merge_subcommand();
       break;
+    case validate:
+      [[fallthrough]];
     case help:
       break;
   }
@@ -886,15 +928,15 @@ void Cli::transform_args() {
     case convert:
       this->transform_args_convert_subcommand();
       break;
-    case dump:  // NOLINT
+    case dump:
       this->transform_args_dump_subcommand();
       break;
-    case load:  // NOLINT
-      // this->transform_args_load_subcommand();
-      break;
-    case merge:  // NOLINT
-      // this->transform_args_merge_subcommand();
-      break;
+    case load:
+      [[fallthrough]];
+    case merge:
+      [[fallthrough]];
+    case validate:
+      [[fallthrough]];
     case help:
       break;
   }
