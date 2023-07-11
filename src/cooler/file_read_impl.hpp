@@ -508,15 +508,25 @@ inline Index File::import_indexes(const Dataset &chrom_offset_dset, const Datase
     Index idx{bin_table, expected_nnz};
 
     std::size_t bin_id = 0;
-    std::for_each(bin_offset_dset.begin<std::uint64_t>(), bin_offset_dset.end<std::uint64_t>(),
-                  [&](std::uint64_t offset) {
-                    if (bin_id < bin_table->size()) {
-                      idx.set_offset_by_bin_id(bin_id++, offset);
-                    } else {
-                      // Last bin
-                      assert(bin_id == bin_table->size());
-                    }
-                  });
+    auto first = bin_offset_dset.begin<std::uint64_t>();
+    auto last = bin_offset_dset.end<std::uint64_t>();
+
+    assert(first != last);
+    if (const auto o = *first; o != 0) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("{} is corrupted: first offset should be 0, found {}"),
+                      bin_offset_dset.hdf5_path(), o));
+    }
+
+    std::for_each(first, last, [&](std::uint64_t offset) {
+      if (bin_id < bin_table->size()) {
+        idx.set_offset_by_bin_id(bin_id++, offset);
+      } else if (bin_id != bin_table->size()) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("{} is corrupted: last offset should be {}, found {}"),
+                        bin_offset_dset.hdf5_path(), bin_table->size(), bin_id));
+      }
+    });
 
     try {
       idx.validate();
