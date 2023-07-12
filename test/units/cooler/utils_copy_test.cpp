@@ -18,7 +18,7 @@ inline const auto& testdir = hictk::test::testdir;
 inline const auto& datadir = hictk::test::datadir;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Cooler: utils copy", "[merge][utils][long]") {
+TEST_CASE("Cooler: utils copy", "[copy][utils][short]") {
   SECTION("cooler -> cooler") {
     const auto src = datadir / "cooler_test_file.cool";
     const auto dest = testdir() / "cooler_copy_001.cool";
