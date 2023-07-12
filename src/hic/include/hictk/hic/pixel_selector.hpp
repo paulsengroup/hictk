@@ -28,6 +28,8 @@ class PixelSelector {
   PixelCoordinates _coord1{};
   PixelCoordinates _coord2{};
 
+  bool _clear_cache_on_destruction{true};
+
  public:
   template <typename N>
   class iterator;
@@ -42,6 +44,14 @@ class PixelSelector {
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
                 PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
+
+  PixelSelector(const PixelSelector &other) = default;
+  PixelSelector(PixelSelector &&other) noexcept ;
+
+  ~PixelSelector() noexcept;
+
+  [[nodiscard]] PixelSelector& operator=(const PixelSelector &other) = default;
+  [[nodiscard]] PixelSelector& operator=(PixelSelector &&other);
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
