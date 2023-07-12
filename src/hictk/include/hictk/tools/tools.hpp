@@ -8,9 +8,10 @@
 
 namespace hictk::tools {
 
-void convert_subcmd(const ConvertConfig& c);
-void dump_subcmd(const DumpConfig& c);
-void load_subcmd(const LoadConfig& c);
-void merge_subcmd(const MergeConfig& c);
+[[nodiscard]] int convert_subcmd(const ConvertConfig& c);
+[[nodiscard]] int dump_subcmd(const DumpConfig& c);
+[[nodiscard]] int load_subcmd(const LoadConfig& c);
+[[nodiscard]] int merge_subcmd(const MergeConfig& c);
+[[nodiscard]] int zoomify_subcmd(const ZoomifyConfig& c);
 
 }  // namespace hictk::tools

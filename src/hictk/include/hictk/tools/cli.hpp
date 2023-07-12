@@ -5,12 +5,172 @@
 #pragma once
 
 #include <CLI/CLI.hpp>
+#include <regex>
 #include <string>
 #include <string_view>
 
 #include "config.hpp"
+#include "hictk/cooler/utils.hpp"
+#include "hictk/hic/utils.hpp"
 
 namespace hictk::tools {
+
+class CoolerFileValidator : public CLI::Validator {
+ public:
+  inline CoolerFileValidator() : Validator("Cooler") {
+    func_ = [](std::string& uri) -> std::string {
+      if (!hictk::cooler::utils::is_cooler(uri)) {
+        if (hictk::cooler::utils::is_multires_file(uri)) {
+          return "URI points to a .mcool file: " + uri;
+        }
+        return "Not a valid Cooler: " + uri;
+      }
+      return "";
+    };
+  }
+};
+
+class MultiresCoolerFileValidator : public CLI::Validator {
+ public:
+  inline MultiresCoolerFileValidator() : Validator("Multires-cooler") {
+    func_ = [](std::string& uri) -> std::string {
+      if (!hictk::cooler::utils::is_multires_file(uri)) {
+        return "Not a valid multi-resolution cooler: " + uri;
+      }
+      return "";
+    };
+  }
+};
+
+class HiCFileValidator : public CLI::Validator {
+ public:
+  inline HiCFileValidator() : Validator("HiC") {
+    func_ = [](std::string& uri) -> std::string {
+      const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!hictk::hic::utils::is_hic_file(path)) {
+        return "Not a valid .hic file: " + path;
+      }
+      return "";
+    };
+  }
+};
+
+[[nodiscard]] static std::string str_replace_all(std::string s, const std::regex& pattern,
+                                                 const std::string& replacement) {
+  while (std::regex_search(s, pattern)) {
+    s = std::regex_replace(s, pattern, replacement);
+  }
+  return s;
+}
+
+class Formatter : public CLI::Formatter {
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+  [[nodiscard]] inline std::string make_option_opts(const CLI::Option* opt) const override {
+    if (!opt->get_option_text().empty()) {
+      return opt->get_option_text();
+    }
+
+    auto str_contains = [](const auto s, const auto query) {
+      return s.find(query) != decltype(s)::npos;
+    };
+
+    std::string out;
+    if (opt->get_type_size() != 0) {
+      // Format default values so that the help string reads like: --my-option=17.0
+      if (!opt->get_default_str().empty()) {
+        if (internal::starts_with(opt->get_type_name(), "FLOAT")) {
+          auto s = opt->get_default_str();
+          if (s.find('.') == std::string::npos) {
+            s += ".0";
+          }
+          out += fmt::format(FMT_STRING("={}"), s);
+        } else {
+          out += fmt::format(FMT_STRING("={}"), opt->get_default_str());
+        }
+      }
+
+      // Format param domain using open/closed interval notation
+      const std::regex pattern(" - ");
+      if (const auto& t = opt->get_type_name(); str_contains(t, " in ")) {
+        const auto p1 = t.find('[', t.find(" in "));
+        const auto p2 = t.find(']', t.find(" in "));
+        if (p1 != std::string::npos && p2 != std::string::npos && p2 > p1) {
+          out += " " + str_replace_all(t.substr(p1, p2), pattern, ", ");
+        }
+      } else if (str_contains(t, "POSITIVE")) {
+        out += " (0, inf)";
+      } else if (str_contains(t, "NONNEGATIVE") || str_contains(t, "UINT")) {
+        out += " [0, inf)";
+      }
+
+      if (opt->get_expected_max() == CLI::detail::expected_max_vector_size) {
+        out += " ...";
+      } else if (opt->get_expected_min() > 1) {
+        out += fmt::format(FMT_STRING(" x {}"), opt->get_expected());
+      }
+
+      if (opt->get_required()) {
+        out += " REQUIRED";
+      }
+    }
+    if (!opt->get_envname().empty()) {
+      out += fmt::format(FMT_STRING(" ({}: {})"), get_label("env"), opt->get_envname());
+    }
+    if (!opt->get_needs().empty()) {
+      out += fmt::format(FMT_STRING(" {}:"), get_label("needs"));
+      for (const auto* op : opt->get_needs()) {
+        out += fmt::format(FMT_STRING(" {}"), op->get_name());
+      }
+    }
+    if (!opt->get_excludes().empty()) {
+      out += fmt::format(FMT_STRING(" {}:"), get_label("excludes"));
+      for (const auto* op : opt->get_excludes()) {
+        out += fmt::format(FMT_STRING(" {}"), op->get_name());
+      }
+    }
+
+    return out;
+  }
+};
+
+// clang-format off
+    inline const auto IsValidCoolerFile = CoolerFileValidator();                  // NOLINT(cert-err58-cpp)
+    inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();  // NOLINT(cert-err58-cpp)
+    inline const auto IsValidHiCFile = HiCFileValidator();                        // NOLINT(cert-err58-cpp)
+// clang-format on
+
+// clang-format off
+// NOLINTNEXTLINE(cert-err58-cpp)
+    inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
+            std::map<std::string, hictk::hic::MatrixType>{
+                    {"observed", hictk::hic::MatrixType::observed},
+                    {"oe", hictk::hic::MatrixType::oe},
+                    {"expected", hictk::hic::MatrixType::expected}},
+            CLI::ignore_case);
+
+// NOLINTNEXTLINE(cert-err58-cpp)
+    inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
+            std::map<std::string, hictk::hic::NormalizationMethod>{
+                    {"NONE", hictk::hic::NormalizationMethod::NONE},
+                    {"VC", hictk::hic::NormalizationMethod::VC},
+                    {"VC_SQRT", hictk::hic::NormalizationMethod::VC_SQRT},
+                    {"KR", hictk::hic::NormalizationMethod::KR},
+                    {"SCALE", hictk::hic::NormalizationMethod::SCALE},
+                    {"INTER_VC", hictk::hic::NormalizationMethod::INTER_VC},
+                    {"INTER_KR", hictk::hic::NormalizationMethod::INTER_KR},
+                    {"INTER_SCALE", hictk::hic::NormalizationMethod::INTER_SCALE},
+                    {"GW_VC", hictk::hic::NormalizationMethod::GW_VC},
+                    {"GW_KR", hictk::hic::NormalizationMethod::GW_KR},
+                    {"GW_SCALE", hictk::hic::NormalizationMethod::GW_SCALE}},
+            CLI::ignore_case);
+
+// NOLINTNEXTLINE(cert-err58-cpp)
+    inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
+            std::map<std::string, hictk::hic::MatrixUnit>{
+                    {"BP", hictk::hic::MatrixUnit::BP},
+                    {"FRAG", hictk::hic::MatrixUnit::FRAG}},
+            CLI::ignore_case);
+// clang-format on
 
 class Cli {
  public:
@@ -20,6 +180,7 @@ class Cli {
     dump,
     load,
     merge,
+    zoomify,
   };
   Cli(int argc, char** argv);
   [[nodiscard]] subcommand get_subcommand() const noexcept;
@@ -41,6 +202,7 @@ class Cli {
   void make_dump_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
+  void make_zoomify_subcommand();
   void make_cli();
 
   void validate_convert_subcommand() const;
@@ -53,5 +215,44 @@ class Cli {
   void transform_args_dump_subcommand();
   void transform_args();
 };
+
+[[nodiscard]] inline std::string infer_input_format(const std::filesystem::path& p) {
+  if (cooler::utils::is_cooler(p.string())) {
+    return "cool";
+  }
+  if (cooler::utils::is_multires_file(p.string())) {
+    return "mcool";
+  }
+  assert(hic::utils::is_hic_file(p));
+  return "hic";
+}
+
+[[nodiscard]] inline std::string infer_output_format(const std::filesystem::path& p) {
+  const auto ext = p.extension();
+  if (ext == ".hic") {
+    return "hic";
+  }
+  if (ext == ".mcool") {
+    return "mcool";
+  }
+  if (ext == ".cool") {
+    return "cool";
+  }
+
+  throw std::runtime_error(
+      fmt::format(FMT_STRING("unable to infer output file format from file name {}"), p));
+}
+
+[[nodiscard]] inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& p,
+                                                                 std::string_view format) {
+  if (format == "cool") {
+    return {cooler::File::open_read_only(p.string()).bin_size()};
+  }
+  if (format == "mcool") {
+    return cooler::utils::list_resolutions(p);
+  }
+  assert(format == "hic");
+  return hic::utils::list_resolutions(p);
+}
 
 }  // namespace hictk::tools
