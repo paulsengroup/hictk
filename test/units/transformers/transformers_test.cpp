@@ -15,7 +15,9 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
-namespace hictk::test::join_genomic_coords {
+namespace hictk::test::transformers {
+
+using namespace hictk::transformers;
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
@@ -53,4 +55,4 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   }
 }
 
-}  // namespace hictk::test::join_genomic_coords
+}  // namespace hictk::test::transformers
