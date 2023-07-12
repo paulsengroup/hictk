@@ -33,6 +33,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/utils_copy_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp)
 
