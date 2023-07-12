@@ -5,7 +5,8 @@
 add_library(hictk_transformers INTERFACE)
 add_library(hictk::transformers ALIAS hictk_transformers)
 
-target_sources(hictk_transformers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/transformers_impl.hpp)
+target_sources(hictk_transformers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/coarsen_impl.hpp
+                                            ${CMAKE_CURRENT_SOURCE_DIR}/join_genomic_coords_impl.hpp)
 target_include_directories(hictk_transformers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_link_libraries(
   hictk_transformers

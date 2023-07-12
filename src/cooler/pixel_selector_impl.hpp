@@ -136,6 +136,15 @@ inline const PixelCoordinates &PixelSelector<CHUNK_SIZE>::coord2() const noexcep
 }
 
 template <std::size_t CHUNK_SIZE>
+inline const BinTable &PixelSelector<CHUNK_SIZE>::bins() const noexcept {
+  return this->_index->bins();
+}
+template <std::size_t CHUNK_SIZE>
+inline std::shared_ptr<const BinTable> PixelSelector<CHUNK_SIZE>::bins_ptr() const noexcept {
+  return this->_index->bins_ptr();
+}
+
+template <std::size_t CHUNK_SIZE>
 
 template <typename N>
 inline PixelSelector<CHUNK_SIZE>::iterator<N>::iterator(

@@ -4,4 +4,5 @@
 
 #pragma once
 
+#include "hictk/transformers/coarsen.hpp"
 #include "hictk/transformers/join_genomic_coords.hpp"
