@@ -113,4 +113,17 @@ TEST_CASE("Cooler: format checking", "[cooler][short]") {
   }
 }
 
+TEST_CASE("Cooler: index validation", "[cooler][short]") {
+  SECTION("valid index") {
+    const auto path1 = datadir / "ENCFF993FGR.2500000.cool";
+    const auto path2 = datadir / "cooler_test_file.cool";
+    CHECK(cooler::utils::index_is_valid(path1.string()));
+    CHECK(cooler::utils::index_is_valid(path2.string()));
+  }
+  SECTION("broken index") {
+    const auto path = datadir / "invalid_coolers/4DNFI9GMP2J8.1000000.cool";
+    CHECK_FALSE(cooler::utils::index_is_valid(path.string()));
+  }
+}
+
 }  // namespace hictk::cooler::test::cooler_file

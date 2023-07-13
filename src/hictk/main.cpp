@@ -109,6 +109,8 @@ int main(int argc, char** argv) noexcept {
       case sc::merge:  // NOLINT
         // merge_subcmd(std::get<MergeConfig>(config));
         break;
+      case sc::validate:
+        return validate_subcmd(std::get<ValidateConfig>(config));
       case sc::zoomify:
         return zoomify_subcmd(std::get<ZoomifyConfig>(config));
       case sc::help:  // NOLINT

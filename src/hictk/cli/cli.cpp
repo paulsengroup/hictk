@@ -33,6 +33,8 @@ auto Cli::parse_arguments() -> Config {
       this->_subcommand = subcommand::load;
     } else if (this->_cli.get_subcommand("merge")->parsed()) {
       this->_subcommand = subcommand::merge;
+    } else if (this->_cli.get_subcommand("validate")->parsed()) {
+      this->_subcommand = subcommand::validate;
     } else if (this->_cli.get_subcommand("zoomify")->parsed()) {
       this->_subcommand = subcommand::zoomify;
     } else {
@@ -56,7 +58,7 @@ auto Cli::parse_arguments() -> Config {
         "An unknown error occurred while parsing CLI arguments! If you see this message, please "
         "file an issue on GitHub");
   }
-  this->validate();
+  this->validate_args();
   this->transform_args();
 
   this->_exit_code = 0;
@@ -75,6 +77,8 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
       return "load";
     case merge:
       return "merge";
+    case validate:
+      return "validate";
     case zoomify:
       return "zoomify";
     default:
@@ -93,10 +97,11 @@ void Cli::make_cli() {
   this->make_dump_subcommand();
   this->make_load_subcommand();
   this->make_merge_subcommand();
+  this->make_validate_subcommand();
   this->make_zoomify_subcommand();
 }
 
-void Cli::validate() const {
+void Cli::validate_args() const {
   switch (this->_subcommand) {
     case convert:
       this->validate_convert_subcommand();
@@ -109,6 +114,8 @@ void Cli::validate() const {
       break;
     case merge:
       this->validate_merge_subcommand();
+      break;
+    case validate:
       break;
     case zoomify:
       this->validate_zoomify_subcommand();
@@ -126,9 +133,11 @@ void Cli::transform_args() {
     case dump:  // NOLINT
       this->transform_args_dump_subcommand();
       break;
-    case load:   // NOLINT
+    case load:      // NOLINT
       [[fallthrough]];
-    case merge:  // NOLINT
+    case merge:     // NOLINT
+      [[fallthrough]];
+    case validate:  // NOLINT
       break;
     case zoomify:
       this->transform_args_zoomify_subcommand();

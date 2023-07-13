@@ -180,8 +180,10 @@ class Cli {
     dump,
     load,
     merge,
+    validate,
     zoomify,
   };
+
   Cli(int argc, char** argv);
   [[nodiscard]] subcommand get_subcommand() const noexcept;
   [[nodiscard]] std::string_view get_printable_subcommand() const noexcept;
@@ -202,6 +204,7 @@ class Cli {
   void make_dump_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
+  void make_validate_subcommand();
   void make_zoomify_subcommand();
   void make_cli();
 
@@ -210,7 +213,7 @@ class Cli {
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
   void validate_zoomify_subcommand() const;
-  void validate() const;
+  void validate_args() const;
 
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();

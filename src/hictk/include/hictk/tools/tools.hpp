@@ -12,6 +12,7 @@ namespace hictk::tools {
 [[nodiscard]] int dump_subcmd(const DumpConfig& c);
 [[nodiscard]] int load_subcmd(const LoadConfig& c);
 [[nodiscard]] int merge_subcmd(const MergeConfig& c);
+[[nodiscard]] int validate_subcmd(const ValidateConfig& c);
 [[nodiscard]] int zoomify_subcmd(const ZoomifyConfig& c);
 
 }  // namespace hictk::tools

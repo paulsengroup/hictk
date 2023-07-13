@@ -85,6 +85,13 @@ struct MergeConfig {
   std::uint8_t verbosity{2};
 };
 
+struct ValidateConfig {
+  std::string uri{};
+  bool validate_index{false};
+  bool quiet{false};
+  std::uint8_t verbosity{2};
+};
+
 struct ZoomifyConfig {
   std::string input_uri{};
   std::string output_path{};
@@ -101,6 +108,7 @@ using Config = std::variant<std::monostate,
                             DumpConfig,
                             LoadConfig,
                             MergeConfig,
+                            ValidateConfig,
                             ZoomifyConfig>;
 // clang-format on
 
