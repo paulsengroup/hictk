@@ -132,6 +132,7 @@ void Cli::transform_args() {
       break;
     case zoomify:
       this->transform_args_zoomify_subcommand();
+      break;
     case help:
       break;
   }
