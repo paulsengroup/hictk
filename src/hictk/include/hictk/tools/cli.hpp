@@ -209,10 +209,12 @@ class Cli {
   void validate_dump_subcommand() const;
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
+  void validate_zoomify_subcommand() const;
   void validate() const;
 
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();
+  void transform_args_zoomify_subcommand();
   void transform_args();
 };
 

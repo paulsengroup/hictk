@@ -111,7 +111,7 @@ void Cli::validate() const {
       this->validate_merge_subcommand();
       break;
     case zoomify:
-      [[fallthrough]];
+      this->validate_zoomify_subcommand();
     case help:
       break;
   }
@@ -125,12 +125,12 @@ void Cli::transform_args() {
     case dump:  // NOLINT
       this->transform_args_dump_subcommand();
       break;
-    case load:  // NOLINT
+    case load:   // NOLINT
       [[fallthrough]];
     case merge:  // NOLINT
-      [[fallthrough]];
+      break;
     case zoomify:
-      [[fallthrough]];
+      this->transform_args_zoomify_subcommand();
     case help:
       break;
   }
