@@ -65,16 +65,32 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
 
       auto merger = setup_pixel_merger(clr1, res / base_resolution);
 
+      const auto update_frequency =
+          std::max(std::size_t(1'000'000), static_cast<std::size_t>(*clr1.attributes().nnz / 100));
+
       auto pixel = merger.next();
       buffer.clear();
 
-      while (pixel) {
+      auto t0 = std::chrono::steady_clock::now();
+      for (std::size_t j = 0; !!pixel; ++j) {
         buffer.emplace_back(pixel);
         if (buffer.size() == buffer.capacity()) {
           clr2.append_pixels(buffer.begin(), buffer.end());
           buffer.clear();
         }
         pixel = merger.next();
+        if (j == update_frequency) {
+          const auto t1 = std::chrono::steady_clock::now();
+          const auto delta =
+              static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+              1000.0;
+          const auto bin1 = clr2.bins().at(pixel.bin1_id);
+          spdlog::info(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
+                       base_resolution, res, bin1, double(update_frequency) / delta);
+          t0 = t1;
+          j = 0;
+        }
       }
       if (!buffer.empty()) {
         clr2.append_pixels(buffer.begin(), buffer.end());
