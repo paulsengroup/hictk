@@ -21,18 +21,26 @@ class CoarsenPixels {
 
   PixelIt _first{};
   PixelIt _last{};
+  std::shared_ptr<const BinTable> _src_bins{};
+  std::shared_ptr<const BinTable> _dest_bins{};
   std::size_t _factor{};
 
  public:
   class iterator;
 
-  CoarsenPixels(PixelIt first_pixel, PixelIt last_pixel, std::size_t factor);
+  CoarsenPixels(PixelIt first_pixel, PixelIt last_pixel,
+                std::shared_ptr<const BinTable> source_bins, std::size_t factor);
 
   auto begin() const -> iterator;
   auto end() const -> iterator;
 
   auto cbegin() const -> iterator;
   auto cend() const -> iterator;
+
+  [[nodiscard]] const BinTable &src_bins() const noexcept;
+  [[nodiscard]] const BinTable &dest_bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> src_bins_ptr() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> dest_bins_ptr() const noexcept;
 
   [[nodiscard]] auto read_all() const -> std::vector<ThinPixel<N>>;
 
@@ -47,11 +55,12 @@ class CoarsenPixels {
 
     PixelIt _pixel_it{};
     PixelIt _pixel_last{};
+    std::shared_ptr<const BinTable> _src_bins{};
+    std::shared_ptr<const BinTable> _dest_bins{};
     std::shared_ptr<PixelMerger> _merger{};
-    It _it{};
+    It _it{};  // _merger it
 
     std::uint64_t _bin1_id_end{};
-    std::size_t _factor{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -63,8 +72,10 @@ class CoarsenPixels {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    iterator(PixelIt first, PixelIt last, std::size_t factor);
-    static auto at_end(PixelIt last, std::size_t factor) -> iterator;
+    iterator(PixelIt first, PixelIt last, std::shared_ptr<const BinTable> src_bins,
+             std::shared_ptr<const BinTable> dest_bins);
+    static auto at_end(PixelIt last, std::shared_ptr<const BinTable> src_bins,
+                       std::shared_ptr<const BinTable> dest_bins) -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;

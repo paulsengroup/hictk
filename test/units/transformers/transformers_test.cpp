@@ -42,7 +42,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     const auto clr2 = cooler::File::open_read_only(path2.string());
 
     auto sel = clr1.fetch("1");
-    auto sel1 = CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), 2);
+    auto sel1 =
+        CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr1.bins_ptr(), 2);
     auto sel2 = clr2.fetch("1");
 
     const auto v1 = sel1.read_all();
@@ -60,8 +61,9 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     const auto clr2 = cooler::File::open_read_only(path2.string());
 
     auto sel = clr1.fetch("1");
-    auto sel1 = CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), 2);
-    auto sel2 = CoarsenPixels(sel1.begin(), sel1.end(), 2);
+    auto sel1 =
+        CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr1.bins_ptr(), 2);
+    auto sel2 = CoarsenPixels(sel1.begin(), sel1.end(), sel1.dest_bins_ptr(), 2);
     auto sel3 = clr2.fetch("1");
 
     const auto v1 = sel2.read_all();
@@ -95,9 +97,10 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
     const auto hf1 = hic::HiCFile(path.string(), 500'000);
     const auto hf2 = hic::HiCFile(path.string(), 2'500'000);
 
-    auto sel = hf1.fetch("chr2L");
-    auto sel1 = CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), 5);
-    auto sel2 = hf2.fetch("chr2L");
+    auto sel = hf1.fetch("chr2R");
+    auto sel1 =
+        CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), hf1.bins_ptr(), 5);
+    auto sel2 = hf2.fetch("chr2R");
 
     const auto v1 = sel1.read_all();
     const auto v2 = sel2.read_all<std::int32_t>();
