@@ -169,7 +169,7 @@ int load_subcmd(const LoadConfig& c) {
   } else {
     ingest_pairs_unsorted(c);
   }
-  return 1;
+  return 0;
 }
 
 }  // namespace hictk::tools
