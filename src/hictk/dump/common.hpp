@@ -68,7 +68,9 @@ inline void dump_bins(const File& f, std::string_view range) {
     line.remove_prefix(pos3 + 1);
     return tok;
   };
+  const auto range1 = next_token();
+  const auto range2 = next_token();
 
-  return std::make_pair(next_token(), next_token());
+  return std::make_pair(range1, range2);
 }
 }  // namespace hictk::tools
