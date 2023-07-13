@@ -207,6 +207,8 @@ jobs:
           test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
           test/scripts/hictk_load_4dn.sh build/src/hictk/hictk unsorted
 
+          test/scripts/hictk_validate.sh build/src/hictk/hictk
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
