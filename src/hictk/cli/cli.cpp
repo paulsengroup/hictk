@@ -112,6 +112,7 @@ void Cli::validate() const {
       break;
     case zoomify:
       this->validate_zoomify_subcommand();
+      break;
     case help:
       break;
   }
