@@ -37,7 +37,7 @@ static int validate_cooler(std::string_view path, bool validate_index, bool quie
     fmt::print(FMT_STRING("### {}: \"{}\" {} a valid Cooler.\n"),
                cooler_is_valid ? "SUCCESS" : "FAILURE", path, cooler_is_valid ? "is" : "is not");
   }
-  return cooler_is_valid != true;
+  return static_cast<int>(!cooler_is_valid);
 }
 
 int validate_subcmd(const ValidateConfig& c) {

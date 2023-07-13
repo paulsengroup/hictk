@@ -69,7 +69,7 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
       buffer.clear();
 
       while (pixel) {
-        buffer.emplace_back(std::move(pixel));
+        buffer.emplace_back(pixel);
         if (buffer.size() == buffer.capacity()) {
           clr2.append_pixels(buffer.begin(), buffer.end());
           buffer.clear();
