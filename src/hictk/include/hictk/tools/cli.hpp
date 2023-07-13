@@ -20,6 +20,7 @@ class Cli {
     dump,
     load,
     merge,
+    validate,
   };
   Cli(int argc, char** argv);
   [[nodiscard]] subcommand get_subcommand() const noexcept;
@@ -41,13 +42,14 @@ class Cli {
   void make_dump_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
+  void make_validate_subcommand();
   void make_cli();
 
   void validate_convert_subcommand() const;
   void validate_dump_subcommand() const;
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
-  void validate() const;
+  void validate_args() const;
 
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();

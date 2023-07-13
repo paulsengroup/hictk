@@ -418,6 +418,10 @@ jobs:
         run: |
           test/scripts/hictk_load_4dn.sh bin/hictk unsorted
 
+      - name: Test hictk validate
+        run: |
+          test/scripts/hictk_validate.sh bin/hictk
+
 
   macos-ci-status-check:
     name: Status Check (MacOS CI)
