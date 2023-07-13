@@ -128,7 +128,7 @@ void Cli::transform_args_zoomify_subcommand() {
   auto clr = cooler::File::open_read_only(c.input_uri);
 
   if (c.output_path.empty()) {
-    c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool");
+    c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool").string();
   }
 
   std::sort(c.resolutions.begin(), c.resolutions.end());
