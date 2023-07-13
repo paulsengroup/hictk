@@ -10,11 +10,35 @@
 
 namespace hictk::tools {
 
+template <typename N = std::int32_t, typename PixelIt = cooler::PixelSelector<>::iterator<N>,
+          typename CoarsenIt = typename transformers::CoarsenPixels<PixelIt>::iterator>
+internal::PixelMerger<CoarsenIt> setup_pixel_merger(const cooler::File& clr, std::size_t factor) {
+  const auto& chroms = clr.chromosomes();
+  std::vector<CoarsenIt> heads{};
+  std::vector<CoarsenIt> tails{};
+
+  for (std::uint32_t chrom1_id = 0; chrom1_id < chroms.size(); ++chrom1_id) {
+    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chroms.size(); ++chrom2_id) {
+      auto sel = clr.fetch(chroms.at(chrom1_id).name(), chroms.at(chrom2_id).name());
+      auto sel1 = transformers::CoarsenPixels(sel.begin<N>(), sel.end<N>(), clr.bins_ptr(), factor);
+      auto first = sel1.begin();
+      auto last = sel1.end();
+      if (first != last) {
+        heads.emplace_back(std::move(first));
+        tails.emplace_back(std::move(last));
+      }
+    }
+  }
+  return {heads, tails};
+}
+
 int zoomify_subcmd(const ZoomifyConfig& c) {
   cooler::init_mcool(c.output_path, c.resolutions.begin(), c.resolutions.end());
 
   cooler::utils::copy(c.input_uri, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_path,
                                                c.resolutions.front()));
+
+  std::vector<ThinPixel<std::int32_t>> buffer{500'000};
 
   const internal::TmpDir tmpdir{};
   for (std::size_t i = 1; i < c.resolutions.size(); ++i) {
@@ -38,10 +62,22 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
           fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_path, base_resolution));
       auto clr2 = cooler::File::create_new_cooler(tmpcooler.string(), clr1.chromosomes(), res);
 
-      auto sel1 = clr1.fetch();
-      auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
-                                              res / base_resolution);
-      clr2.append_pixels(sel2.begin(), sel2.end());
+      auto merger = setup_pixel_merger(clr1, res / base_resolution);
+
+      auto pixel = merger.next();
+      buffer.clear();
+
+      while (pixel) {
+        buffer.emplace_back(std::move(pixel));
+        if (buffer.size() == buffer.capacity()) {
+          clr2.append_pixels(buffer.begin(), buffer.end());
+          buffer.clear();
+        }
+        pixel = merger.next();
+      }
+      if (!buffer.empty()) {
+        clr2.append_pixels(buffer.begin(), buffer.end());
+      }
     }
     cooler::utils::copy(tmpcooler.string(), outcooler);
   }
