@@ -110,7 +110,6 @@ class PixelMerger {
     bool operator!=(const Node &other) const noexcept;
   };
 
-  std::vector<ThinPixel<N>> _buffer{};
   std::priority_queue<Node, std::vector<Node>, std::greater<>> _pqueue{};
 
   std::vector<PixelIt> _heads{};
