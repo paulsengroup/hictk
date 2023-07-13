@@ -121,7 +121,7 @@ TEST_CASE("Cooler: index validation", "[cooler][short]") {
     CHECK(cooler::utils::index_is_valid(path2.string()));
   }
   SECTION("broken index") {
-    const auto path = datadir / "4DNFI9GMP2J8.1000000.cool";
+    const auto path = datadir / "invalid_coolers/4DNFI9GMP2J8.1000000.cool";
     CHECK_FALSE(cooler::utils::index_is_valid(path.string()));
   }
 }
