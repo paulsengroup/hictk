@@ -234,7 +234,8 @@ static void convert_resolution_multi_threaded(
   spdlog::info(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(),
                hf.resolution());
 
-  spdlog::info(FMT_STRING("[{}] block cache capacity: {:.2f} MBs"), hf.resolution(), double(hf.cache_capacity()) / 1.0e6);
+  spdlog::info(FMT_STRING("[{}] block cache capacity: {:.2f} MBs"), hf.resolution(),
+               double(hf.cache_capacity()) / 1.0e6);
 
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<ThinPixel<N>> queue{1'000'000};
