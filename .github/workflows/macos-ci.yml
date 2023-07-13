@@ -418,6 +418,9 @@ jobs:
         run: |
           test/scripts/hictk_load_4dn.sh bin/hictk unsorted
 
+      - name: Test hictk zoomify
+        run: |
+          test/scripts/hictk_zoomify.sh bin/hictk
 
   macos-ci-status-check:
     name: Status Check (MacOS CI)
