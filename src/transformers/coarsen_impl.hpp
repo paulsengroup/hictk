@@ -87,7 +87,9 @@ inline CoarsenPixels<PixelIt>::iterator::iterator(PixelIt first, PixelIt last,
       _merger(std::make_shared<PixelMerger>()) {
   assert(_dest_bins->bin_size() > _src_bins->bin_size());
 
-  if (_pixel_it != _pixel_last) {
+  if (_pixel_it == _pixel_last) {
+    *this = at_end(_pixel_last, _src_bins, _dest_bins);
+  } else {
     process_next_row();
   }
 }

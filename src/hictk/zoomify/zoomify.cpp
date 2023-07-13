@@ -35,6 +35,7 @@ internal::PixelMerger<CoarsenIt> setup_pixel_merger(const cooler::File& clr, std
 int zoomify_subcmd(const ZoomifyConfig& c) {
   cooler::init_mcool(c.output_path, c.resolutions.begin(), c.resolutions.end(), c.force);
 
+  spdlog::info(FMT_STRING("Copying {} resolution from {}"), c.resolutions.front(), c.input_uri);
   cooler::utils::copy(c.input_uri, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_path,
                                                c.resolutions.front()));
 
