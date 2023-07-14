@@ -66,28 +66,21 @@ constexpr bool BlockIndex::operator!=(const BlockIndex &other) const noexcept {
 }
 
 constexpr bool BlockIndex::operator<(const BlockIndex &other) const noexcept {
-  return _coords < other._coords;
+  return _id < other._id;
 }
 
 constexpr bool BlockIndex::operator==(std::size_t id_) const noexcept { return _id == id_; }
 
 constexpr bool BlockIndex::operator!=(std::size_t id_) const noexcept { return !(*this == id_); }
 
-inline std::size_t BlockIndexHasher::operator()(const BlockIndex &b) const noexcept {
-  return (*this)(b.id());
+constexpr bool BlockIndexCmp::operator()(const BlockIndex &a, const BlockIndex &b) const noexcept {
+  return a < b;
 }
-inline std::size_t BlockIndexHasher::operator()(std::size_t id) const noexcept {
-  return std::hash<std::size_t>{}(id);
+constexpr bool BlockIndexCmp::operator()(std::size_t a_id, const BlockIndex &b) const noexcept {
+  return a_id < b.id();
 }
-
-constexpr bool BlockIndexEq::operator()(const BlockIndex &a, const BlockIndex &b) const noexcept {
-  return a == b;
-}
-constexpr bool BlockIndexEq::operator()(std::size_t a_id, const BlockIndex &b) const noexcept {
-  return a_id == b.id();
-}
-constexpr bool BlockIndexEq::operator()(const BlockIndex &a, std::size_t b_id) const noexcept {
-  return a.id() == b_id;
+constexpr bool BlockIndexCmp::operator()(const BlockIndex &a, std::size_t b_id) const noexcept {
+  return a.id() < b_id;
 }
 
 inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
@@ -115,51 +108,37 @@ constexpr std::size_t Index::block_bin_count() const noexcept { return _block_bi
 
 constexpr std::size_t Index::block_column_count() const noexcept { return _block_column_count; }
 
-inline auto Index::begin() const noexcept -> BlockIndexMap::const_iterator {
-  return _block_map.begin();
-}
-inline auto Index::end() const noexcept -> BlockIndexMap::const_iterator {
-  return _block_map.end();
-}
-inline auto Index::cbegin() const noexcept -> BlockIndexMap::const_iterator {
-  return _block_map.cbegin();
-}
-inline auto Index::cend() const noexcept -> BlockIndexMap::const_iterator {
-  return _block_map.cend();
-}
+inline auto Index::begin() const noexcept -> const_iterator { return _block_map.begin(); }
+inline auto Index::end() const noexcept -> const_iterator { return _block_map.end(); }
+inline auto Index::cbegin() const noexcept -> const_iterator { return _block_map.cbegin(); }
+inline auto Index::cend() const noexcept -> const_iterator { return _block_map.cend(); }
 
 inline std::size_t Index::size() const noexcept { return _block_map.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
-inline void Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
-                                 std::vector<BlockIndex> &buffer) const {
-  assert(coords1.is_intra());
+inline auto Index::find_overlaps(const Bin &bin1, const PixelCoordinates &coords2) const
+    -> std::pair<const_iterator, const_iterator> {
   assert(coords2.is_intra());
 
   if (this->empty()) {
-    buffer.clear();
-    return;
+    return std::make_pair(this->end(), this->end());
   }
 
-  assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
+  assert(bin1.chrom() == _chrom1 || bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
-  auto bin1 = coords1.bin1.rel_id();
-  auto bin2 = coords1.bin2.rel_id() + 1;
-  auto bin3 = coords2.bin1.rel_id();
-  auto bin4 = coords2.bin2.rel_id() + 1;
+  auto bin1_id = bin1.rel_id();
+  auto bin2_id = bin1_id + 1;
+  auto bin3_id = coords2.bin1.rel_id();
+  auto bin4_id = coords2.bin2.rel_id() + 1;
 
-  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
+  const auto is_intra = bin1.chrom() == coords2.bin1.chrom();
 
   if (_version > 8 && is_intra) {
-    generate_block_list_intra_v9plus(bin1, bin2, bin3, bin4, buffer);
-  } else {
-    generate_block_list(bin1, bin2, bin3, bin4, buffer);
+    return generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id);
   }
-
-  std::sort(buffer.begin(), buffer.end());
-  buffer.erase(std::unique(buffer.begin(), buffer.end()), buffer.end());
+  return generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
@@ -172,28 +151,25 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
   return *match;
 }
 
-inline void Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                       std::size_t bin4, std::vector<BlockIndex> &buffer) const {
+inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
+                                       std::size_t bin4) const
+    -> std::pair<const_iterator, const_iterator> {
   const auto col1 = bin1 / _block_bin_count;
   const auto col2 = (bin2 + 1) / _block_bin_count;
   const auto row1 = bin3 / _block_bin_count;
   const auto row2 = (bin4 + 1) / _block_bin_count;
 
-  buffer.clear();
-  for (auto row = row1; row <= row2; ++row) {
-    for (auto col = col1; col <= col2; ++col) {
-      const auto block_id = (row * block_column_count()) + col;
-      const auto match = _block_map.find(block_id);
-      if (match != _block_map.end()) {
-        buffer.emplace_back(*match);
-      }
-    }
-  }
+  const auto first_id = (row1 * block_column_count()) + col1;
+  const auto last_id = (row2 * block_column_count()) + col2;
+  auto it1 = _block_map.lower_bound(first_id);
+  auto it2 = _block_map.upper_bound(last_id);
+
+  return std::make_pair(it1, it2);
 }
 
-inline void Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
-                                                    std::size_t bin3, std::size_t bin4,
-                                                    std::vector<BlockIndex> &buffer) const {
+inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
+                                                    std::size_t bin3, std::size_t bin4) const
+    -> std::pair<const_iterator, const_iterator> {
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
@@ -211,17 +187,15 @@ inline void Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
     return (std::min)(translatedNearerDepth, translatedFurtherDepth);
   }();
 
-  buffer.clear();
   const auto furtherDepth = (std::max)(translatedNearerDepth, translatedFurtherDepth) + 1;
-  for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
-    for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
-      const auto block_id = (depth * block_column_count()) + pad;
-      auto match = _block_map.find(block_id);
-      if (match != _block_map.end()) {
-        buffer.emplace_back(*match);
-      }
-    }
-  }
+
+  const auto first_block = (nearerDepth * block_column_count()) + translatedLowerPAD;
+  const auto last_block = (furtherDepth * block_column_count()) + translatedHigherPAD;
+
+  auto it1 = _block_map.lower_bound(first_block);
+  auto it2 = _block_map.upper_bound(last_block);
+
+  return std::make_pair(it1, it2);
 }
 
 }  // namespace hictk::hic::internal

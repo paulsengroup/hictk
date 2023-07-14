@@ -46,12 +46,12 @@ class PixelSelector {
                 PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
 
   PixelSelector(const PixelSelector &other) = default;
-  PixelSelector(PixelSelector &&other) noexcept ;
+  PixelSelector(PixelSelector &&other) noexcept;
 
   ~PixelSelector() noexcept;
 
-  [[nodiscard]] PixelSelector& operator=(const PixelSelector &other) = default;
-  [[nodiscard]] PixelSelector& operator=(PixelSelector &&other);
+  [[nodiscard]] PixelSelector &operator=(const PixelSelector &other) = default;
+  [[nodiscard]] PixelSelector &operator=(PixelSelector &&other) noexcept;
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
@@ -107,7 +107,6 @@ class PixelSelector {
     using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
     std::uint64_t _bin1_id{};
-    mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
 
@@ -146,9 +145,6 @@ class PixelSelector {
     [[nodiscard]] std::uint64_t bin2_id() const noexcept;
 
     void read_next_chunk();
-    [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
-        std::size_t num_bins);
-    [[nodiscard]] std::size_t compute_chunk_size(double fraction = 0.0005) const noexcept;
   };
 };
 
