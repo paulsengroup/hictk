@@ -63,34 +63,37 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
           fmt::format(FMT_STRING("{}::/resolutions/{}"), c.output_path, base_resolution));
       auto clr2 = cooler::File::create_new_cooler(tmpcooler.string(), clr1.chromosomes(), res);
 
-      auto merger = setup_pixel_merger(clr1, res / base_resolution);
+      auto sel1 = clr1.fetch();
+      auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
+                                              clr1.bins_ptr(), clr2.bin_size() / clr1.bin_size());
 
       const auto update_frequency =
           std::max(std::size_t(1'000'000), static_cast<std::size_t>(*clr1.attributes().nnz / 100));
 
-      auto pixel = merger.next();
+      auto first = sel2.begin();
+      auto last = sel2.end();
       buffer.clear();
 
       auto t0 = std::chrono::steady_clock::now();
-      for (std::size_t j = 0; !!pixel; ++j) {
-        buffer.emplace_back(pixel);
+      for (std::size_t j = 0; first != last; ++j) {
+        buffer.emplace_back(*first);
         if (buffer.size() == buffer.capacity()) {
           clr2.append_pixels(buffer.begin(), buffer.end());
           buffer.clear();
         }
-        pixel = merger.next();
         if (j == update_frequency) {
           const auto t1 = std::chrono::steady_clock::now();
           const auto delta =
               static_cast<double>(
                   std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
               1000.0;
-          const auto bin1 = clr2.bins().at(pixel.bin1_id);
+          const auto bin1 = clr2.bins().at(first->bin1_id);
           spdlog::info(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
                        base_resolution, res, bin1, double(update_frequency) / delta);
           t0 = t1;
           j = 0;
         }
+        ++first;
       }
       if (!buffer.empty()) {
         clr2.append_pixels(buffer.begin(), buffer.end());
