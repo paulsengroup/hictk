@@ -125,7 +125,6 @@ inline auto Index::find_overlaps(const Bin &bin1, const PixelCoordinates &coords
     return std::make_pair(this->end(), this->end());
   }
 
-  assert(bin1.chrom() == _chrom1 || bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
   auto bin1_id = bin1.rel_id();

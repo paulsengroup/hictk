@@ -407,8 +407,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   _buffer->clear();
   _buffer_i = 0;
 
-  auto [first_blki, last_blki] = _sel->_reader.index().find_overlaps(
-      bins().at_hint(_bin1_id, coord1().bin1.chrom()), coord2());
+  auto [first_blki, last_blki] = _sel->_reader.index().find_overlaps(bins().at(_bin1_id), coord2());
   if (first_blki == last_blki) {
     _bin1_id++;
     return;
