@@ -59,6 +59,8 @@ class Index {
   using iterator = BlkIdxBuffer::const_iterator;
   using const_iterator = BlkIdxBuffer::const_iterator;
 
+  using Overlap = BlkIdxBuffer;
+
  private:
   // map block_ids to file offsets
   BlkIdxBuffer _buffer{};
@@ -97,18 +99,17 @@ class Index {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
-  [[nodiscard]] auto find_overlaps(const Bin& bin1, const PixelCoordinates& coords2) const
-      -> std::pair<const_iterator, const_iterator>;
+  [[nodiscard]] auto find_overlaps(const PixelCoordinates& coords1,
+                                   const PixelCoordinates& coords2) const -> Overlap;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
   [[nodiscard]] auto generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                         std::size_t bin4) const
-      -> std::pair<const_iterator, const_iterator>;
+                                         std::size_t bin4) const -> Overlap;
   [[nodiscard]] auto generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                       std::size_t bin3, std::size_t bin4) const
-      -> std::pair<const_iterator, const_iterator>;
+      -> Overlap;
 };
 
 }  // namespace hictk::hic::internal

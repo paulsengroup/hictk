@@ -109,22 +109,24 @@ inline std::size_t Index::size() const noexcept { return _buffer.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
-inline auto Index::find_overlaps(const Bin &bin1, const PixelCoordinates &coords2) const
-    -> std::pair<const_iterator, const_iterator> {
+inline auto Index::find_overlaps(const PixelCoordinates &coords1,
+                                 const PixelCoordinates &coords2) const -> Overlap {
+  assert(coords1.is_intra());
   assert(coords2.is_intra());
 
   if (this->empty()) {
-    return std::make_pair(this->end(), this->end());
+    return {};
   }
 
+  assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
-  auto bin1_id = bin1.rel_id();
-  auto bin2_id = bin1_id + 1;
+  auto bin1_id = coords1.bin1.rel_id();
+  auto bin2_id = coords1.bin2.rel_id() + 1;
   auto bin3_id = coords2.bin1.rel_id();
   auto bin4_id = coords2.bin2.rel_id() + 1;
 
-  const auto is_intra = bin1.chrom() == coords2.bin1.chrom();
+  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
 
   if (_version > 8 && is_intra) {
     return generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id);
@@ -145,8 +147,7 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
 }
 
 inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                       std::size_t bin4) const
-    -> std::pair<const_iterator, const_iterator> {
+                                       std::size_t bin4) const -> Overlap {
   const auto col1 = bin1 / _block_bin_count;
   const auto col2 = (bin2 + 1) / _block_bin_count;
   const auto row1 = bin3 / _block_bin_count;
@@ -159,12 +160,26 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
                               BlockIndex{first_id, 0, 0, _block_column_count});
   auto it2 = std::upper_bound(it1, _buffer.end(), BlockIndex{last_id, 0, 0, _block_column_count});
 
-  return std::make_pair(it1, it2);
+  Overlap buffer{};
+  for (auto row = row1; row <= row2; ++row) {
+    for (auto col = col1; col <= col2; ++col) {
+      const auto block_id = (row * block_column_count()) + col;
+      const auto match =
+          std::equal_range(it1, it2, BlockIndex{block_id, 0, 0, _block_column_count});
+      if (match.first != match.second) {
+        buffer.emplace_back(*match.first);
+      }
+    }
+  }
+  std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
+    return b1.coords().row < b2.coords().row;
+  });
+  return buffer;
 }
 
 inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                     std::size_t bin3, std::size_t bin4) const
-    -> std::pair<const_iterator, const_iterator> {
+    -> Overlap {
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
@@ -192,7 +207,21 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
   auto it2 =
       std::upper_bound(it1, _buffer.end(), BlockIndex{last_block, 0, 0, _block_column_count});
 
-  return std::make_pair(it1, it2);
+  Overlap buffer{};
+  for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
+    for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
+      const auto block_id = (depth * block_column_count()) + pad;
+      const auto match = std::equal_range(it1, it2, BlockIndex{block_id, 0, 0, _block_bin_count});
+      if (match.first != match.second) {
+        buffer.emplace_back(*match.first);
+      }
+    }
+  }
+  std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
+    return b1.coords().col < b2.coords().col;
+  });
+  std::unique(buffer.begin(), buffer.end());
+  return buffer;
 }
 
 }  // namespace hictk::hic::internal

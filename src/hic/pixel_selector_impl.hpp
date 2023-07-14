@@ -36,41 +36,16 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
     : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
       _footer(std::move(footer_)),
       _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)) {}
-
-inline PixelSelector::PixelSelector(PixelSelector &&other) noexcept
-    : _reader(std::move(other._reader)),
-      _footer(std::move(other._footer)),
-      _coord1(std::move(other._coord1)),
-      _coord2(std::move(other._coord2)),
-      _clear_cache_on_destruction(other._clear_cache_on_destruction) {
-  other._clear_cache_on_destruction = false;
-}
-
-inline PixelSelector::~PixelSelector() noexcept {
-  if (_clear_cache_on_destruction) {
-    try {
-      this->evict_blocks_from_cache();
-    } catch (...) {
-      // This should never happen, however it's fine if eviction fails.
-      // Cache size is enforced elsewhere anyway
-    }
-  }
-}
-
-inline PixelSelector &PixelSelector::operator=(PixelSelector &&other) noexcept {
-  if (this == &other) {
-    return *this;
+      _coord2(std::move(coord2_)),
+      _block_idx(std::make_shared<const internal::Index::Overlap>(
+          _reader.index().find_overlaps(coord1(), coord2()))) {
+  for (const auto &bi : *_block_idx) {
+    fmt::print(FMT_STRING("{} ({}:{})\n"), bi.id(), bi.coords().row, bi.coords().col);
   }
 
-  this->_reader = std::move(other._reader);
-  this->_footer = std::move(other._footer);
-  this->_coord1 = std::move(other._coord1);
-  this->_coord2 = std::move(other._coord2);
-  this->_clear_cache_on_destruction = other._clear_cache_on_destruction;
-  other._clear_cache_on_destruction = false;
-
-  return *this;
+  //if (_footer->metadata().url.back() == '9') {
+  //  assert(false);
+  //}
 }
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
@@ -197,7 +172,10 @@ inline N PixelSelector::sum() const noexcept {
 }
 inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
 
-inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_samples) const {
+inline std::size_t PixelSelector::estimate_optimal_cache_size(
+    [[maybe_unused]] std::size_t num_samples) const {
+  return 10'000'000;
+  /*
   if (_reader.index().empty()) {
     return 0;  // should we throw instead?
   }
@@ -227,7 +205,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_sa
   const std::size_t first_bin_id = 0;
   const std::size_t last_bin_id =
       bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
-  samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
+  const auto samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
   for (std::size_t i = 0; i < samples; ++i) {
     const auto bin_id =
         std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
@@ -236,22 +214,18 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_sa
     const auto bin1 = bins().at(coord1().bin1.chrom(), pos1);
 
     std::vector<internal::BlockIndex> buffer{};
-    auto [first, last] = _reader.index().find_overlaps(bin1, coord2());
-    const auto num_blocks = static_cast<std::size_t>(std::distance(first, last));
+    auto overlap = _reader.index().find_overlaps(bin1, coord2());
+    const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.first, overlap.last));
     max_blocks_per_row = (std::max)(max_blocks_per_row, num_blocks);
   }
 
   return max_blocks_per_row * max_block_size * sizeof(SerializedPixel);
-}
-
-inline void PixelSelector::evict_blocks_from_cache() const {
-  auto [first, last] = _reader.index().find_overlaps(coord1().bin1, coord2());
-  std::for_each(first, last, [&](const auto &idx) { _reader.evict(chrom1(), chrom2(), idx); });
+   */
 }
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
-    : _sel(&sel), _bin1_id(coord1().bin1.rel_id()), _buffer(std::make_shared<BufferT>()) {
+    : _sel(&sel), _block_it(_sel->_block_idx->begin()), _buffer(std::make_shared<BufferT>()) {
   if (_sel->_reader.index().empty()) {
     *this = at_end(sel);
     return;
@@ -393,7 +367,7 @@ template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk() {
   assert(!!_sel);
 
-  if (_bin1_id > coord1().bin2.rel_id()) {
+  if (_block_it == _sel->_block_idx->end()) {
     *this = at_end(*_sel);
     return;
   }
@@ -404,15 +378,13 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   _buffer->clear();
   _buffer_i = 0;
 
-  auto [first_blki, last_blki] = _sel->_reader.index().find_overlaps(bins().at(_bin1_id), coord2());
-  if (first_blki == last_blki) {
-    _bin1_id++;
-    return;
-  }
-
-  std::for_each(first_blki, last_blki, [&](const internal::BlockIndex &blki) {
-    for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), blki)) {
-      if (static_cast<std::size_t>(p.bin1_id) != _bin1_id ||
+  auto first_blki = *_block_it;
+  while (_block_it->coords().row == first_blki.coords().row) {
+    // fmt::print(FMT_STRING("Fetching {} ({}:{})\n"), _block_it->id(), _block_it->coords().row,
+    //            _block_it->coords().col);
+    for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it)) {
+      if (static_cast<std::size_t>(p.bin1_id) < coord1().bin1.rel_id() ||
+          static_cast<std::size_t>(p.bin1_id) > coord1().bin2.rel_id() ||
           static_cast<std::size_t>(p.bin2_id) < coord2().bin1.rel_id() ||
           static_cast<std::size_t>(p.bin2_id) > coord2().bin2.rel_id()) {
         continue;
@@ -430,9 +402,13 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
         _buffer->emplace_back(ThinPixel<N>{bin1_id, bin2_id, conditional_static_cast<N>(p.count)});
       }
     }
-  });
+    if (++_block_it == _sel->_block_idx->end()) {
+      break;
+    }
+  }
+
+  // fmt::print(FMT_STRING("Sorting...\n"));
   std::sort(_buffer->begin(), _buffer->end());
-  _bin1_id++;
 }
 
 inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
