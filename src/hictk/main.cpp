@@ -101,19 +101,18 @@ int main(int argc, char** argv) noexcept {
     using sc = Cli::subcommand;
     switch (subcmd) {
       case sc::convert:
-        convert_subcmd(std::get<ConvertConfig>(config));
-        break;
+        return convert_subcmd(std::get<ConvertConfig>(config));
       case sc::dump:
-        dump_subcmd(std::get<DumpConfig>(config));
-        break;
+        return dump_subcmd(std::get<DumpConfig>(config));
       case sc::load:
-        load_subcmd(std::get<LoadConfig>(config));
-        break;
+        return load_subcmd(std::get<LoadConfig>(config));
       case sc::merge:  // NOLINT
         // merge_subcmd(std::get<MergeConfig>(config));
         break;
       case sc::validate:
         return validate_subcmd(std::get<ValidateConfig>(config));
+      case sc::zoomify:
+        return zoomify_subcmd(std::get<ZoomifyConfig>(config));
       case sc::help:  // NOLINT
         break;
       default:

@@ -13,7 +13,7 @@
 
 namespace hictk::tools {
 
-void convert_subcmd(const ConvertConfig& c) {
+int convert_subcmd(const ConvertConfig& c) {
   auto t0 = std::chrono::steady_clock::now();
   spdlog::info(FMT_STRING("Converting {} to {} ({} -> {})..."), c.path_to_input, c.path_to_output,
                c.input_format, c.output_format);
@@ -32,5 +32,7 @@ void convert_subcmd(const ConvertConfig& c) {
                static_cast<double>(std::filesystem::file_size(c.path_to_input)) / 1.0e6);
   spdlog::info(FMT_STRING("{} size: {:.2f} MB"), c.path_to_output,
                static_cast<double>(std::filesystem::file_size(c.path_to_output)) / 1.0e6);
+
+  return 0;
 }
 }  // namespace hictk::tools

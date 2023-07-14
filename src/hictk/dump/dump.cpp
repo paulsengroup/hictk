@@ -91,7 +91,7 @@ using FileVar = std::variant<cooler::File, hic::HiCFile>;
   return {cooler::File::open_read_only_read_once(uri)};
 }
 
-void dump_subcmd(const DumpConfig& c) {
+int dump_subcmd(const DumpConfig& c) {
   auto file{c.format != "hic" ? open_cooler_file(c.uri)
                               : open_hic_file(c.uri, c.resolution, c.matrix_type, c.matrix_unit)};
 
@@ -118,5 +118,6 @@ void dump_subcmd(const DumpConfig& c) {
         }
       },
       file);
+  return 0;
 }
 }  // namespace hictk::tools

@@ -156,7 +156,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   merge_coolers(uris, c.uri, c.force, c.verbosity);
 }
 
-void load_subcmd(const LoadConfig& c) {
+int load_subcmd(const LoadConfig& c) {
   const auto format = format_from_string(c.format);
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
 
@@ -169,6 +169,7 @@ void load_subcmd(const LoadConfig& c) {
   } else {
     ingest_pairs_unsorted(c);
   }
+  return 0;
 }
 
 }  // namespace hictk::tools

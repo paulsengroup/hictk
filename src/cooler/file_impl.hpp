@@ -39,6 +39,12 @@ inline void init_mcool(std::string_view file_path, InputIt first_resolution,
   static_assert(std::is_integral_v<I>,
                 "InputIt should be an iterator over a collection of integral numbers.");
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+
+  if (!force_overwrite && std::filesystem::exists(file_path)) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("unable to initialize file \"{}\": file already exists"), file_path));
+  }
+
   const auto mode = force_overwrite ? HighFive::File::Truncate : HighFive::File::Create;
   HighFive::File fp(std::string{file_path}, mode);
   Attribute::write(fp, "format", std::string{MCOOL_MAGIC});

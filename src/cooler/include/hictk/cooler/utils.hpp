@@ -26,8 +26,11 @@ void merge(Str first_file, Str last_file, std::string_view dest_uri,
 [[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path,
                                                           bool sorted = true);
 
+void copy(std::string_view uri1, std::string_view uri2);
+
 }  // namespace hictk::cooler::utils
 
+#include "../../../utils_copy_impl.hpp"
 #include "../../../utils_equal_impl.hpp"
 #include "../../../utils_impl.hpp"
 #include "../../../utils_merge_impl.hpp"

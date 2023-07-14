@@ -136,6 +136,15 @@ inline const PixelCoordinates &PixelSelector<CHUNK_SIZE>::coord2() const noexcep
 }
 
 template <std::size_t CHUNK_SIZE>
+inline const BinTable &PixelSelector<CHUNK_SIZE>::bins() const noexcept {
+  return this->_index->bins();
+}
+template <std::size_t CHUNK_SIZE>
+inline std::shared_ptr<const BinTable> PixelSelector<CHUNK_SIZE>::bins_ptr() const noexcept {
+  return this->_index->bins_ptr();
+}
+
+template <std::size_t CHUNK_SIZE>
 
 template <typename N>
 inline PixelSelector<CHUNK_SIZE>::iterator<N>::iterator(
@@ -352,7 +361,7 @@ inline void PixelSelector<CHUNK_SIZE>::iterator<N>::jump_to_col(std::uint64_t bi
 
   auto first = this->_bin2_id_it - (current_offset - row_start_offset);
   auto last = first + (row_end_offset - row_start_offset);
-  this->_bin2_id_it = std::find_if(first, last, [&](const auto id) { return id >= bin_id; });
+  this->_bin2_id_it = std::lower_bound(first, last, bin_id);
 
   const auto offset = this->_bin2_id_it.h5_offset() - current_offset;
 

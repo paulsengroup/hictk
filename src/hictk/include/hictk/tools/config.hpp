@@ -92,13 +92,24 @@ struct ValidateConfig {
   std::uint8_t verbosity{2};
 };
 
+struct ZoomifyConfig {
+  std::string input_uri{};
+  std::string output_path{};
+
+  std::vector<std::uint32_t> resolutions{};
+
+  bool force{false};
+  std::uint8_t verbosity{2};
+};
+
 // clang-format off
 using Config = std::variant<std::monostate,
                             ConvertConfig,
                             DumpConfig,
                             LoadConfig,
                             MergeConfig,
-                            ValidateConfig>;
+                            ValidateConfig,
+                            ZoomifyConfig>;
 // clang-format on
 
 }  // namespace hictk::tools
