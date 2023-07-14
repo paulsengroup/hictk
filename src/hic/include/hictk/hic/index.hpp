@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/btree.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -54,14 +54,7 @@ class BlockIndex {
   constexpr bool operator!=(std::size_t id_) const noexcept;
 };
 
-struct BlockIndexHasher {
-  using is_transparent = void;
-
-  std::size_t operator()(const BlockIndex& b) const noexcept;
-  std::size_t operator()(std::size_t id) const noexcept;
-};
-
-struct BlockIndexEq {
+struct BlockIndexCmp {
   using is_transparent = void;
 
   constexpr bool operator()(const BlockIndex& a, const BlockIndex& b) const noexcept;
@@ -71,7 +64,12 @@ struct BlockIndexEq {
 
 // Map coordinates (bp) to block IDs
 class Index {
-  using BlockIndexMap = phmap::flat_hash_set<BlockIndex, BlockIndexHasher, BlockIndexEq>;
+ public:
+  using BlockIndexMap = phmap::btree_set<BlockIndex, BlockIndexCmp>;
+  using iterator = BlockIndexMap::const_iterator;
+  using const_iterator = BlockIndexMap::const_iterator;
+
+ private:
   // map block_ids to file offsets
   BlockIndexMap _block_map{};
   std::int32_t _version{};
@@ -101,24 +99,26 @@ class Index {
   [[nodiscard]] constexpr std::size_t block_bin_count() const noexcept;
   [[nodiscard]] constexpr std::size_t block_column_count() const noexcept;
 
-  [[nodiscard]] auto begin() const noexcept -> BlockIndexMap::const_iterator;
-  [[nodiscard]] auto end() const noexcept -> BlockIndexMap::const_iterator;
-  [[nodiscard]] auto cbegin() const noexcept -> BlockIndexMap::const_iterator;
-  [[nodiscard]] auto cend() const noexcept -> BlockIndexMap::const_iterator;
+  [[nodiscard]] auto begin() const noexcept -> const_iterator;
+  [[nodiscard]] auto end() const noexcept -> const_iterator;
+  [[nodiscard]] auto cbegin() const noexcept -> const_iterator;
+  [[nodiscard]] auto cend() const noexcept -> const_iterator;
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
-  void find_overlaps(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
-                     std::vector<BlockIndex>& buffer) const;
+  [[nodiscard]] auto find_overlaps(const Bin& bin1, const PixelCoordinates& coords2) const
+      -> std::pair<const_iterator, const_iterator>;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
  private:
-  void generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
-                           std::vector<BlockIndex>& buffer) const;
-  void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                        std::size_t bin4, std::vector<BlockIndex>& buffer) const;
+  [[nodiscard]] auto generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
+                                         std::size_t bin4) const
+      -> std::pair<const_iterator, const_iterator>;
+  [[nodiscard]] auto generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
+                                                      std::size_t bin3, std::size_t bin4) const
+      -> std::pair<const_iterator, const_iterator>;
 };
 
 }  // namespace hictk::hic::internal
