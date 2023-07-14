@@ -73,20 +73,10 @@ constexpr bool BlockIndex::operator==(std::size_t id_) const noexcept { return _
 
 constexpr bool BlockIndex::operator!=(std::size_t id_) const noexcept { return !(*this == id_); }
 
-constexpr bool BlockIndexCmp::operator()(const BlockIndex &a, const BlockIndex &b) const noexcept {
-  return a < b;
-}
-constexpr bool BlockIndexCmp::operator()(std::size_t a_id, const BlockIndex &b) const noexcept {
-  return a_id < b.id();
-}
-constexpr bool BlockIndexCmp::operator()(const BlockIndex &a, std::size_t b_id) const noexcept {
-  return a.id() < b_id;
-}
-
 inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
                     std::uint32_t resolution_, std::int32_t version_, std::size_t block_bin_count_,
-                    std::size_t block_column_count_, double sum_count_, BlockIndexMap blocks_)
-    : _block_map(std::move(blocks_)),
+                    std::size_t block_column_count_, double sum_count_, BlkIdxBuffer blocks_)
+    : _buffer(std::move(blocks_)),
       _version(version_),
       _block_bin_count(block_bin_count_),
       _block_column_count(block_column_count_),
@@ -94,7 +84,9 @@ inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
       _unit(unit_),
       _resolution(resolution_),
       _chrom1(std::move(chrom1_)),
-      _chrom2(std::move(chrom2_)) {}
+      _chrom2(std::move(chrom2_)) {
+  std::sort(_buffer.begin(), _buffer.end());
+}
 
 inline MatrixUnit Index::unit() const noexcept { return _unit; }
 inline std::uint32_t Index::resolution() const noexcept { return _resolution; }
@@ -108,12 +100,12 @@ constexpr std::size_t Index::block_bin_count() const noexcept { return _block_bi
 
 constexpr std::size_t Index::block_column_count() const noexcept { return _block_column_count; }
 
-inline auto Index::begin() const noexcept -> const_iterator { return _block_map.begin(); }
-inline auto Index::end() const noexcept -> const_iterator { return _block_map.end(); }
-inline auto Index::cbegin() const noexcept -> const_iterator { return _block_map.cbegin(); }
-inline auto Index::cend() const noexcept -> const_iterator { return _block_map.cend(); }
+inline auto Index::begin() const noexcept -> const_iterator { return _buffer.begin(); }
+inline auto Index::end() const noexcept -> const_iterator { return _buffer.end(); }
+inline auto Index::cbegin() const noexcept -> const_iterator { return _buffer.cbegin(); }
+inline auto Index::cend() const noexcept -> const_iterator { return _buffer.cend(); }
 
-inline std::size_t Index::size() const noexcept { return _block_map.size(); }
+inline std::size_t Index::size() const noexcept { return _buffer.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
@@ -142,12 +134,14 @@ inline auto Index::find_overlaps(const Bin &bin1, const PixelCoordinates &coords
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
   const auto block_id = (col * block_column_count()) + row;
-  auto match = _block_map.find(block_id);
-  if (match == _block_map.end()) {
+  const auto &[first, last] = std::equal_range(_buffer.begin(), _buffer.end(),
+                                               BlockIndex{block_id, 0, 0, _block_column_count});
+  if (first == last) {
     throw std::out_of_range(
         fmt::format(FMT_STRING("unable to find block {}{}: out of range"), row, col));
   }
-  return *match;
+  assert(std::distance(first, last) == 1);
+  return *first;
 }
 
 inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
@@ -160,8 +154,10 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
 
   const auto first_id = (row1 * block_column_count()) + col1;
   const auto last_id = (row2 * block_column_count()) + col2;
-  auto it1 = _block_map.lower_bound(first_id);
-  auto it2 = _block_map.upper_bound(last_id);
+
+  auto it1 = std::lower_bound(_buffer.begin(), _buffer.end(),
+                              BlockIndex{first_id, 0, 0, _block_column_count});
+  auto it2 = std::upper_bound(it1, _buffer.end(), BlockIndex{last_id, 0, 0, _block_column_count});
 
   return std::make_pair(it1, it2);
 }
@@ -191,8 +187,10 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
   const auto first_block = (nearerDepth * block_column_count()) + translatedLowerPAD;
   const auto last_block = (furtherDepth * block_column_count()) + translatedHigherPAD;
 
-  auto it1 = _block_map.lower_bound(first_block);
-  auto it2 = _block_map.upper_bound(last_block);
+  auto it1 = std::lower_bound(_buffer.begin(), _buffer.end(),
+                              BlockIndex{first_block, 0, 0, _block_column_count});
+  auto it2 =
+      std::upper_bound(it1, _buffer.end(), BlockIndex{last_block, 0, 0, _block_column_count});
 
   return std::make_pair(it1, it2);
 }

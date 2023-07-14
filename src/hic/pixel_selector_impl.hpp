@@ -209,17 +209,14 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(std::size_t num_sa
   std::size_t max_block_size = 0;
 
   std::vector<std::size_t> block_sizes{};
-  std::size_t samples = 0;
-  // index is backed by a hashmap, so iteration should be somewhat random
-  for (const auto &idx : _reader.index()) {
-    auto blk = _reader.read(chrom1(), chrom2(), idx);
+  std::vector<internal::BlockIndex> blocks(std::min(_reader.index().size(), num_samples));
+  std::sample(_reader.index().begin(), _reader.index().end(), blocks.begin(), blocks.size(),
+              rand_eng);
+  for (const auto &blki : blocks) {
+    auto blk = _reader.read(chrom1(), chrom2(), blki);
     if (blk) {
-      samples++;
       max_block_size = (std::max)(blk->size(), max_block_size);
       _reader.evict(*blk);
-    }
-    if (samples == num_samples) {
-      break;
     }
   }
 

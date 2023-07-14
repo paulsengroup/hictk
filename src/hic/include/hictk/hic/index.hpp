@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <parallel_hashmap/btree.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -54,24 +52,16 @@ class BlockIndex {
   constexpr bool operator!=(std::size_t id_) const noexcept;
 };
 
-struct BlockIndexCmp {
-  using is_transparent = void;
-
-  constexpr bool operator()(const BlockIndex& a, const BlockIndex& b) const noexcept;
-  constexpr bool operator()(const BlockIndex& a, std::size_t b_id) const noexcept;
-  constexpr bool operator()(std::size_t a_id, const BlockIndex& b) const noexcept;
-};
-
 // Map coordinates (bp) to block IDs
 class Index {
  public:
-  using BlockIndexMap = phmap::btree_set<BlockIndex, BlockIndexCmp>;
-  using iterator = BlockIndexMap::const_iterator;
-  using const_iterator = BlockIndexMap::const_iterator;
+  using BlkIdxBuffer = std::vector<BlockIndex>;
+  using iterator = BlkIdxBuffer::const_iterator;
+  using const_iterator = BlkIdxBuffer::const_iterator;
 
  private:
   // map block_ids to file offsets
-  BlockIndexMap _block_map{};
+  BlkIdxBuffer _buffer{};
   std::int32_t _version{};
   std::size_t _block_bin_count{};
   std::size_t _block_column_count{};  // columns of blocks per matrix?
@@ -88,7 +78,7 @@ class Index {
   Index() = default;
   Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_, std::uint32_t resolution_,
         std::int32_t version_, std::size_t block_bin_count_, std::size_t block_column_count_,
-        double sum_count_, BlockIndexMap blocks_);
+        double sum_count_, BlkIdxBuffer blocks_);
 
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
