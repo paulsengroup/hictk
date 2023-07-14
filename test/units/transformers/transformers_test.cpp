@@ -74,6 +74,26 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(v1[i] == v2[i].to_thin());
     }
   }
+
+  SECTION("coarsen gw") {
+    const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
+    const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
+    const auto clr1 = cooler::File::open_read_only(path1.string());
+    const auto clr2 = cooler::File::open_read_only(path2.string());
+
+    auto sel = clr1.fetch();
+    auto sel1 =
+        CoarsenPixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr1.bins_ptr(), 2);
+    auto sel2 = clr2.fetch();
+
+    const auto v1 = sel1.read_all();
+    const auto v2 = sel2.read_all<std::int32_t>();
+    REQUIRE(v1.size() == v2.size());
+
+    for (std::size_t i = 0; i < v1.size(); ++i) {
+      CHECK(v1[i] == v2[i].to_thin());
+    }
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)

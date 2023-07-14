@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <parallel_hashmap/btree.h>
-
+#include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include "hictk/bin_table.hpp"
 #include "hictk/pixel.hpp"
@@ -45,22 +45,19 @@ class CoarsenPixels {
   [[nodiscard]] auto read_all() const -> std::vector<ThinPixel<N>>;
 
   class iterator {
-    struct PixelCmp {
-      [[nodiscard]] inline bool operator()(const ThinPixel<N> &p1,
-                                           const ThinPixel<N> &p2) const noexcept;
-    };
-
-    using PixelMerger = phmap::btree_set<ThinPixel<N>, PixelCmp>;
-    using It = typename PixelMerger::const_iterator;
+    using BufferT = std::vector<ThinPixel<N>>;
+    using RowIt = typename BufferT::const_iterator;
+    using ColumnMerger = phmap::flat_hash_map<std::uint64_t, BufferT>;
 
     PixelIt _pixel_it{};
     PixelIt _pixel_last{};
     std::shared_ptr<const BinTable> _src_bins{};
     std::shared_ptr<const BinTable> _dest_bins{};
-    std::shared_ptr<PixelMerger> _merger{};
-    It _it{};  // _merger it
+    std::shared_ptr<BufferT> _buffer{};
+    RowIt _it{};
 
-    std::uint64_t _bin1_id_end{};
+    std::uint64_t _bin1_id_chunk_start{};
+    std::uint64_t _bin1_id_chunk_end{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -88,6 +85,8 @@ class CoarsenPixels {
     auto operator++(int) -> iterator;
 
    private:
+    auto coarsen_chunk_pass1() -> ColumnMerger;
+    void coarsen_chunk_pass2(const ColumnMerger &col_merger);
     void process_next_row();
   };
 };
