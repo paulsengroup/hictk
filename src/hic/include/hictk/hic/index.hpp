@@ -82,6 +82,7 @@ class Index {
         std::int32_t version_, std::size_t block_bin_count_, std::size_t block_column_count_,
         double sum_count_, BlkIdxBuffer blocks_);
 
+  [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const Chromosome& chrom1() const noexcept;

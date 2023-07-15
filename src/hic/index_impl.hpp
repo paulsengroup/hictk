@@ -88,6 +88,7 @@ inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
   std::sort(_buffer.begin(), _buffer.end());
 }
 
+inline std::int32_t Index::version() const noexcept { return _version; }
 inline MatrixUnit Index::unit() const noexcept { return _unit; }
 inline std::uint32_t Index::resolution() const noexcept { return _resolution; }
 inline const Chromosome &Index::chrom1() const noexcept { return _chrom1; }
@@ -128,10 +129,9 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1,
 
   const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
 
-  if (_version > 8 && is_intra) {
-    return generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id);
-  }
-  return generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
+  return _version > 8 && is_intra
+             ? generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id)
+             : generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
@@ -223,13 +223,8 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
     }
   }
 
-  // Sort first by padding (ascending) then by depth (descending)
-  std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
-    if (b1.coords().i1 != b2.coords().i1) {
-      return b1.coords().i1 < b2.coords().i1;
-    }
-    return b1.coords().i2 > b2.coords().i2;
-  });
+  std::sort(buffer.begin(), buffer.end());
+  buffer.erase(std::unique(buffer.begin(), buffer.end()), buffer.end());
   return buffer;
 }
 

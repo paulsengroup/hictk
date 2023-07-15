@@ -91,14 +91,14 @@ class PixelSelector {
   class iterator {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
-    const PixelSelector *_sel{};
     using BufferT = std::vector<ThinPixel<N>>;
-    using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
+    const PixelSelector *_sel{};
     std::shared_ptr<const internal::Index::Overlap> _block_idx{};
     internal::Index::Overlap::const_iterator _block_it{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
+    std::uint32_t _bin1_id{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -134,7 +134,11 @@ class PixelSelector {
     [[nodiscard]] std::uint64_t bin1_id() const noexcept;
     [[nodiscard]] std::uint64_t bin2_id() const noexcept;
 
+    [[nodiscard]] std::uint32_t compute_chunk_size() const noexcept;
+    [[nodiscard]] std::vector<internal::BlockIndex> find_blocks_overlapping_next_chunk(
+        std::size_t num_bins);
     void read_next_chunk();
+    void read_next_chunk_v9_intra();
   };
 };
 
