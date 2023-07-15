@@ -36,17 +36,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
     : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
       _footer(std::move(footer_)),
       _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)),
-      _block_idx(std::make_shared<const internal::Index::Overlap>(
-          _reader.index().find_overlaps(coord1(), coord2()))) {
-  for (const auto &bi : *_block_idx) {
-    fmt::print(FMT_STRING("{} ({}:{})\n"), bi.id(), bi.coords().row, bi.coords().col);
-  }
-
-  //if (_footer->metadata().url.back() == '9') {
-  //  assert(false);
-  //}
-}
+      _coord2(std::move(coord2_)) {}
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
@@ -225,7 +215,11 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel)
-    : _sel(&sel), _block_it(_sel->_block_idx->begin()), _buffer(std::make_shared<BufferT>()) {
+    : _sel(&sel),
+      _block_idx(std::make_shared<const internal::Index::Overlap>(
+          sel._reader.index().find_overlaps(coord1(), coord2()))),
+      _block_it(_block_idx->begin()),
+      _buffer(std::make_shared<BufferT>()) {
   if (_sel->_reader.index().empty()) {
     *this = at_end(sel);
     return;
@@ -367,7 +361,7 @@ template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk() {
   assert(!!_sel);
 
-  if (_block_it == _sel->_block_idx->end()) {
+  if (_block_it == _block_idx->end()) {
     *this = at_end(*_sel);
     return;
   }
@@ -379,9 +373,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   _buffer_i = 0;
 
   auto first_blki = *_block_it;
-  while (_block_it->coords().row == first_blki.coords().row) {
-    // fmt::print(FMT_STRING("Fetching {} ({}:{})\n"), _block_it->id(), _block_it->coords().row,
-    //            _block_it->coords().col);
+  while (_block_it->coords().i1 == first_blki.coords().i1) {
     for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it)) {
       if (static_cast<std::size_t>(p.bin1_id) < coord1().bin1.rel_id() ||
           static_cast<std::size_t>(p.bin1_id) > coord1().bin2.rel_id() ||
@@ -402,12 +394,11 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
         _buffer->emplace_back(ThinPixel<N>{bin1_id, bin2_id, conditional_static_cast<N>(p.count)});
       }
     }
-    if (++_block_it == _sel->_block_idx->end()) {
+    if (++_block_it == _block_idx->end()) {
       break;
     }
   }
 
-  // fmt::print(FMT_STRING("Sorting...\n"));
   std::sort(_buffer->begin(), _buffer->end());
 }
 

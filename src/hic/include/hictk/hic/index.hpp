@@ -20,20 +20,20 @@ namespace hictk::hic::internal {
 class BlockIndex {
  public:
   struct GridCoordinates {
-    std::size_t row;  // NOLINT
-    std::size_t col;  // NOLINT
+    std::size_t i1;  // NOLINT
+    std::size_t i2;  // NOLINT
 
     constexpr bool operator==(const GridCoordinates& other) const noexcept;
     constexpr bool operator!=(const GridCoordinates& other) const noexcept;
     constexpr bool operator<(const GridCoordinates& other) const noexcept;
   };
 
-  std::size_t _id{null_id};              // NOLINT
-  std::size_t _file_offset{};            // NOLINT
+  std::uint64_t _id{null_id};            // NOLINT
+  std::uint64_t _file_offset{};          // NOLINT
   std::size_t _compressed_size_bytes{};  // NOLINT
   GridCoordinates _coords{};             // NOLINT
 
-  static constexpr auto null_id = (std::numeric_limits<std::size_t>::max)();
+  static constexpr auto null_id = (std::numeric_limits<std::uint64_t>::max)();
 
   constexpr BlockIndex() = default;
   constexpr BlockIndex(std::size_t id_, std::size_t file_offset_,

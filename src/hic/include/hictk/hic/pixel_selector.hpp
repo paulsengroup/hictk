@@ -27,7 +27,6 @@ class PixelSelector {
 
   PixelCoordinates _coord1{};
   PixelCoordinates _coord2{};
-  std::shared_ptr<const internal::Index::Overlap> _block_idx{};
 
  public:
   template <typename N>
@@ -96,6 +95,7 @@ class PixelSelector {
     using BufferT = std::vector<ThinPixel<N>>;
     using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
+    std::shared_ptr<const internal::Index::Overlap> _block_idx{};
     internal::Index::Overlap::const_iterator _block_it{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};

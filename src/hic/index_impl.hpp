@@ -22,7 +22,7 @@ namespace hictk::hic::internal {
 
 constexpr bool BlockIndex::GridCoordinates::operator==(
     const BlockIndex::GridCoordinates &other) const noexcept {
-  return row == other.row && col == other.col;
+  return i1 == other.i1 && i2 == other.i2;
 }
 
 constexpr bool BlockIndex::GridCoordinates::operator!=(
@@ -32,10 +32,10 @@ constexpr bool BlockIndex::GridCoordinates::operator!=(
 
 constexpr bool BlockIndex::GridCoordinates::operator<(
     const BlockIndex::GridCoordinates &other) const noexcept {
-  if (row == other.row) {
-    return col < other.col;
+  if (i1 == other.i1) {
+    return i2 < other.i2;
   }
-  return row < other.row;
+  return i1 < other.i1;
 }
 
 constexpr BlockIndex::BlockIndex(std::size_t id_, std::size_t file_offset_,
@@ -171,8 +171,13 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
       }
     }
   }
+
+  // Sort first by row, then by column
   std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
-    return b1.coords().row < b2.coords().row;
+    if (b1.coords().i1 != b2.coords().i1) {
+      return b1.coords().i1 < b2.coords().i1;
+    }
+    return b1.coords().i2 < b2.coords().i2;
   });
   return buffer;
 }
@@ -217,10 +222,14 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
       }
     }
   }
+
+  // Sort first by padding (ascending) then by depth (descending)
   std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
-    return b1.coords().col < b2.coords().col;
+    if (b1.coords().i1 != b2.coords().i1) {
+      return b1.coords().i1 < b2.coords().i1;
+    }
+    return b1.coords().i2 > b2.coords().i2;
   });
-  std::unique(buffer.begin(), buffer.end());
   return buffer;
 }
 
