@@ -56,15 +56,15 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
     }
     const auto expected_length = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
     try {
-      const auto weights_ = f.fetch(chrom.name(), norm).chrom1_norm();
-      if (weights_.size() != expected_length) {
+      const auto weights_ = f.fetch(chrom.name(), norm).weights1();
+      if (weights_().size() != expected_length) {
         throw std::runtime_error(
             fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
                                    "expected {} values, found {}"),
-                        norm, chrom.name(), expected_length, weights_.size()));
+                        norm, chrom.name(), expected_length, weights_().size()));
       }
 
-      weights.insert(weights.end(), weights_.begin(), weights_.end());
+      weights.insert(weights.end(), weights_().begin(), weights_().end());
     } catch (const std::exception& e) {
       if (!missing_norm_or_interactions(e, norm)) {
         throw;

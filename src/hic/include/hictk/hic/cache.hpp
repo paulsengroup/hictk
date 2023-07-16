@@ -121,6 +121,21 @@ class BlockCache {
   void pop_oldest();
 };
 
+class WeightCache {
+  using Value = std::shared_ptr<balancing::Weights>;
+  phmap::flat_hash_map<std::pair<std::uint32_t, NormalizationMethod>, Value> _weights{};
+
+ public:
+  WeightCache() = default;
+
+  [[nodiscard]] auto find_or_emplace(std::uint32_t chrom_id, NormalizationMethod norm) -> Value;
+  [[nodiscard]] auto find_or_emplace(const Chromosome& chrom, NormalizationMethod norm) -> Value;
+
+  void clear() noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+};
+
 }  // namespace hictk::hic::internal
 
 #include "../../../block_cache_impl.hpp"
+#include "../../../weight_cache_impl.hpp"

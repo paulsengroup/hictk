@@ -89,8 +89,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     CHECK(f.expectedValues().empty());
   }
 
@@ -103,8 +103,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -117,8 +117,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -131,8 +131,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -145,8 +145,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -159,8 +159,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     REQUIRE(f.expectedValues().size() == 6415);
 
     for (std::size_t i = 0; i < expected1.size(); ++i) {
@@ -179,8 +179,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     REQUIRE(f.expectedValues().size() == 6415);
 
     for (std::size_t i = 0; i < expected1.size(); ++i) {
@@ -213,8 +213,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     CHECK(f.expectedValues().empty());
   }
 
@@ -227,8 +227,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -241,8 +241,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -255,8 +255,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.c1Norm().size() == 4703);
-    CHECK(f.c2Norm().size() == 5058);
+    CHECK(f.weights1()().size() == 4703);
+    CHECK(f.weights2()().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -269,8 +269,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     REQUIRE(f.expectedValues().size() == 6415);
 
     for (std::size_t i = 0; i < expected1.size(); ++i) {
@@ -289,8 +289,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);
-    CHECK(f.c1Norm().empty());
-    CHECK(f.c2Norm().empty());
+    CHECK(!f.weights1());
+    CHECK(!f.weights2());
     REQUIRE(f.expectedValues().size() == 6415);
 
     for (std::size_t i = 0; i < expected1.size(); ++i) {

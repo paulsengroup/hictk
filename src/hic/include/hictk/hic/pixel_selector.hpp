@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/block_reader.hpp"
+#include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
@@ -69,8 +69,8 @@ class PixelSelector {
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
-  [[nodiscard]] const std::vector<double> &chrom1_norm() const noexcept;
-  [[nodiscard]] const std::vector<double> &chrom2_norm() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights1() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
@@ -82,6 +82,7 @@ class PixelSelector {
   [[nodiscard]] double avg() const noexcept;
 
   [[nodiscard]] std::size_t estimate_optimal_cache_size(std::size_t num_samples = 500) const;
+  void clear_cache() const;
 
  private:
   [[nodiscard]] SerializedPixel transform_pixel(SerializedPixel pixel) const;
@@ -185,6 +186,7 @@ class PixelSelectorAll {
     using SelectorQueue = std::queue<const PixelSelector *>;
     using ItPQueue = std::priority_queue<Pair, std::vector<Pair>, std::greater<>>;
     std::shared_ptr<SelectorQueue> _selectors{};
+    std::shared_ptr<SelectorQueue> _active_selectors{};
     std::shared_ptr<ItPQueue> _its{};
 
     std::uint32_t _chrom1_id{};

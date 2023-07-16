@@ -12,7 +12,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
-#include "hictk/hic/block_cache.hpp"
+#include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/footer.hpp"
@@ -68,8 +68,8 @@ inline auto PixelSelector::end() const -> iterator<N> {
 }
 
 inline SerializedPixel PixelSelector::transform_pixel(SerializedPixel pixel) const {
-  const auto &c1Norm = _footer->c1Norm();
-  const auto &c2Norm = _footer->c2Norm();
+  const auto &weights1 = _footer->weights1()();
+  const auto &weights2 = _footer->weights2()();
   const auto &expected = _footer->expectedValues();
 
   const auto bin1 = static_cast<std::size_t>(pixel.bin1_id);
@@ -81,9 +81,9 @@ inline SerializedPixel PixelSelector::transform_pixel(SerializedPixel pixel) con
       normalization() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
-    assert(bin1 < c1Norm.size());
-    assert(bin2 < c2Norm.size());
-    pixel.count /= static_cast<float>(c1Norm[bin1] * c2Norm[bin2]);
+    assert(bin1 < weights1.size());
+    assert(bin2 < weights2.size());
+    pixel.count /= static_cast<float>(weights1[bin1] * weights2[bin2]);
   }
 
   if (matrix_type() == MatrixType::observed) {
@@ -138,11 +138,11 @@ inline std::uint32_t PixelSelector::resolution() const noexcept {
 inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1.bin1.chrom(); }
 inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2.bin1.chrom(); }
 
-inline const std::vector<double> &PixelSelector::chrom1_norm() const noexcept {
-  return _footer->c1Norm();
+inline const balancing::Weights &PixelSelector::weights1() const noexcept {
+  return _footer->weights1();
 }
-inline const std::vector<double> &PixelSelector::chrom2_norm() const noexcept {
-  return _footer->c2Norm();
+inline const balancing::Weights &PixelSelector::weights2() const noexcept {
+  return _footer->weights2();
 }
 
 inline const BinTable &PixelSelector::bins() const noexcept { return _reader.bins(); }
@@ -208,6 +208,12 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
   }
 
   return max_blocks_per_row * avg_block_size * sizeof(SerializedPixel);
+}
+
+inline void PixelSelector::clear_cache() const {
+  for (auto blki : _reader.index().find_overlaps(coord1(), coord2())) {
+    _reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
+  }
 }
 
 template <typename N>
@@ -554,6 +560,7 @@ inline bool PixelSelectorAll::iterator<N>::Pair::operator>(const Pair &other) co
 template <typename N>
 inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector)
     : _selectors(std::make_shared<SelectorQueue>()),
+      _active_selectors(std::make_shared<SelectorQueue>()),
       _its(std::make_shared<ItPQueue>()),
       _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
@@ -624,10 +631,20 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
     _selectors = std::make_shared<SelectorQueue>(*_selectors);
   }
 
+  if (_active_selectors.use_count() != 1) {
+    _active_selectors = std::make_shared<SelectorQueue>(*_active_selectors);
+  }
+
+  while (!_active_selectors->empty()) {
+    _active_selectors->front()->clear_cache();
+    _active_selectors->pop();
+  }
+
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
     auto *sel = _selectors->front();
     _selectors->pop();
     _its->emplace(Pair{sel->begin<N>(), sel->end<N>()});
+    _active_selectors->emplace(sel);
   }
 }
 

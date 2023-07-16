@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
 
@@ -23,6 +24,7 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
       _type(type_),
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
+      _weight_cache(std::make_shared<internal::WeightCache>()),
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
@@ -92,8 +94,12 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
   if (it != _footers.end()) {
     return *it;
   }
-  auto [node, _] = _footers.emplace(
-      _fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm, unit, resolution));
+
+  auto weights1 = _weight_cache->find_or_emplace(chrom1, norm);
+  auto weights2 = _weight_cache->find_or_emplace(chrom2, norm);
+
+  auto [node, _] = _footers.emplace(_fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm,
+                                                     unit, resolution, weights1, weights2));
 
   return *node;
 }
