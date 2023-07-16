@@ -378,7 +378,7 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
   const auto bin_size = bins().bin_size();
 
   const auto end_pos = coord1().bin2.start();
-  const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
+  const auto pos1 = (std::min)(end_pos, _bin1_id * bins().bin_size());
   const auto pos2 = (std::min)(end_pos, pos1 + static_cast<std::uint32_t>((num_bins * bin_size)));
 
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
