@@ -36,23 +36,23 @@ class FooterCache {
     std::size_t operator()(const HiCFooterMetadata& m) const noexcept;
   };
 
-  using MapT =
+  using FooterMap =
       phmap::flat_hash_set<std::shared_ptr<const HiCFooter>, HiCFooterPtrHasher, HiCFooterPtrCmp>;
-  MapT _cache;
+  FooterMap _footers;
 
  public:
-  using difference_type = MapT::difference_type;
-  using iterator = MapT::iterator;
-  using const_iterator = MapT::iterator;
+  using difference_type = FooterMap::difference_type;
+  using iterator = FooterMap::iterator;
+  using const_iterator = FooterMap::iterator;
   FooterCache() = default;
 
-  [[nodiscard]] auto begin() const noexcept -> decltype(_cache.cbegin());
-  [[nodiscard]] auto end() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto begin() const noexcept -> decltype(_footers.cbegin());
+  [[nodiscard]] auto end() const noexcept -> decltype(_footers.cbegin());
 
-  [[nodiscard]] auto cbegin() const noexcept -> decltype(_cache.cbegin());
-  [[nodiscard]] auto cend() const noexcept -> decltype(_cache.cbegin());
+  [[nodiscard]] auto cbegin() const noexcept -> decltype(_footers.cbegin());
+  [[nodiscard]] auto cend() const noexcept -> decltype(_footers.cbegin());
 
-  [[nodiscard]] auto emplace(HiCFooter&& f) -> decltype(_cache.emplace());
+  [[nodiscard]] auto emplace(HiCFooter f) -> decltype(_footers.emplace());
   [[nodiscard]] auto find(const HiCFooterMetadata& m) -> const_iterator;
 
   [[nodiscard]] std::size_t size() const noexcept;

@@ -2,7 +2,6 @@
 // Created by roby on 7/13/23.
 //
 
-
 #include <fmt/format.h>
 #include <fmt/std.h>
 
@@ -49,4 +48,4 @@ void Cli::make_validate_subcommand() {
 
   this->_config = std::monostate{};
 }
-}
+}  // namespace hictk::tools

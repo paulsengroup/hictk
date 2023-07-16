@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
@@ -33,12 +34,14 @@ class HiCFooter {
   Index _index{};
   HiCFooterMetadata _metadata{};
   std::vector<double> _expectedValues{};
-  std::vector<double> _c1Norm{};
-  std::vector<double> _c2Norm{};
+  std::shared_ptr<balancing::Weights> _weights1{};
+  std::shared_ptr<balancing::Weights> _weights2{};
 
  public:
   HiCFooter() = default;
-  explicit HiCFooter(Index index_, HiCFooterMetadata metadata_) noexcept;
+  HiCFooter(Index index_, HiCFooterMetadata metadata_, std::vector<double> expected_values,
+            std::shared_ptr<balancing::Weights> weights1,
+            std::shared_ptr<balancing::Weights> weights2) noexcept;
 
   constexpr explicit operator bool() const noexcept;
   bool operator==(const HiCFooter &other) const noexcept;
@@ -58,12 +61,10 @@ class HiCFooter {
   [[nodiscard]] constexpr std::int64_t fileOffset() const noexcept;
 
   [[nodiscard]] constexpr const std::vector<double> &expectedValues() const noexcept;
-  [[nodiscard]] constexpr const std::vector<double> &c1Norm() const noexcept;
-  [[nodiscard]] constexpr const std::vector<double> &c2Norm() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights1() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   [[nodiscard]] constexpr std::vector<double> &expectedValues() noexcept;
-  [[nodiscard]] constexpr std::vector<double> &c1Norm() noexcept;
-  [[nodiscard]] constexpr std::vector<double> &c2Norm() noexcept;
 };
 }  // namespace hictk::hic::internal
 

@@ -8,6 +8,9 @@ set -e
 set -o pipefail
 set -u
 
+echo "##################################"
+echo "#### hictk convert (cool2hic) ####"
+
 # readlink -f is not available on macos...
 function readlink_py {
   set -eu
@@ -64,7 +67,7 @@ juicer_tools_jar="$2"
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
-ref_cool="$data_dir/cooler/multires_cooler_test_file.mcool"
+ref_cool="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
 
 export PATH="$PATH:$script_dir"
 
@@ -75,7 +78,7 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-resolutions=(100000 6400000)
+resolutions=(100000 2500000)
 
 "$hictk_bin" convert \
              "$ref_cool" \

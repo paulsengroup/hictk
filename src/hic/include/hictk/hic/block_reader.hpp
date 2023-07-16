@@ -11,7 +11,7 @@
 #include <type_traits>
 
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/block_cache.hpp"
+#include "hictk/hic/cache.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
 

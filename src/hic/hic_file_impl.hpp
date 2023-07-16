@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
 
@@ -23,6 +24,7 @@ inline HiCFile::HiCFile(std::string url_, std::uint32_t resolution_, MatrixType 
       _type(type_),
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
+      _weight_cache(std::make_shared<internal::WeightCache>()),
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
@@ -92,8 +94,12 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
   if (it != _footers.end()) {
     return *it;
   }
-  auto [node, _] = _footers.emplace(
-      _fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm, unit, resolution));
+
+  auto weights1 = _weight_cache->find_or_emplace(chrom1, norm);
+  auto weights2 = _weight_cache->find_or_emplace(chrom2, norm);
+
+  auto [node, _] = _footers.emplace(_fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm,
+                                                     unit, resolution, weights1, weights2));
 
   return *node;
 }
@@ -189,17 +195,15 @@ inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
 
 inline void HiCFile::optimize_cache_size_for_iteration(std::size_t upper_bound) {
   std::size_t cache_size = this->estimate_cache_size_cis() + this->estimate_cache_size_trans();
-  cache_size = cache_size * 10 / 9;  // Better to slighly overestimate than underestimate
-  cache_size =
-      std::max(cache_size, std::size_t(10'000'000));  // 10MBs seems like a reasonable lower bound
+  // Better to overestimate than underestimate cache size
+  cache_size = std::max(4 * cache_size / 3, std::size_t(10'000'000));
+
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
 inline void HiCFile::optimize_cache_size_for_random_access(std::size_t upper_bound) {
   std::size_t cache_size = this->estimate_cache_size_cis();
-  cache_size = cache_size * 10 / 9;  // Better to slighly overestimate than underestimate
-  cache_size =
-      std::max(cache_size, std::size_t(10'000'000));  // 10MBs seems like a reasonable lower bound
+  cache_size = std::max(4 * cache_size / 3, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 

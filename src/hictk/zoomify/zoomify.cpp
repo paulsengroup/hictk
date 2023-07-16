@@ -68,7 +68,7 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
                                               clr1.bins_ptr(), clr2.bin_size() / clr1.bin_size());
 
       const auto update_frequency =
-          std::max(std::size_t(1'000'000), static_cast<std::size_t>(*clr1.attributes().nnz / 100));
+          std::max(std::size_t(1'000'000), (clr1.dataset("pixels/bin1_id").size() / 100));
 
       auto first = sel2.begin();
       auto last = sel2.end();

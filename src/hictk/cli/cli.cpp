@@ -133,9 +133,9 @@ void Cli::transform_args() {
     case dump:  // NOLINT
       this->transform_args_dump_subcommand();
       break;
-    case load:      // NOLINT
+    case load:  // NOLINT
       [[fallthrough]];
-    case merge:     // NOLINT
+    case merge:  // NOLINT
       [[fallthrough]];
     case validate:  // NOLINT
       break;

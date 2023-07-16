@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/block_reader.hpp"
+#include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
@@ -28,8 +28,6 @@ class PixelSelector {
   PixelCoordinates _coord1{};
   PixelCoordinates _coord2{};
 
-  bool _clear_cache_on_destruction{true};
-
  public:
   template <typename N>
   class iterator;
@@ -44,14 +42,6 @@ class PixelSelector {
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
                 PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
-
-  PixelSelector(const PixelSelector &other) = default;
-  PixelSelector(PixelSelector &&other) noexcept ;
-
-  ~PixelSelector() noexcept;
-
-  [[nodiscard]] PixelSelector& operator=(const PixelSelector &other) = default;
-  [[nodiscard]] PixelSelector& operator=(PixelSelector &&other);
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
@@ -79,8 +69,8 @@ class PixelSelector {
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
-  [[nodiscard]] const std::vector<double> &chrom1_norm() const noexcept;
-  [[nodiscard]] const std::vector<double> &chrom2_norm() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights1() const noexcept;
+  [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
@@ -92,7 +82,7 @@ class PixelSelector {
   [[nodiscard]] double avg() const noexcept;
 
   [[nodiscard]] std::size_t estimate_optimal_cache_size(std::size_t num_samples = 500) const;
-  void evict_blocks_from_cache() const;
+  void clear_cache() const;
 
  private:
   [[nodiscard]] SerializedPixel transform_pixel(SerializedPixel pixel) const;
@@ -102,14 +92,14 @@ class PixelSelector {
   class iterator {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
-    const PixelSelector *_sel{};
     using BufferT = std::vector<ThinPixel<N>>;
-    using BlockIdxBufferT = std::vector<internal::BlockIndex>;
 
-    std::uint64_t _bin1_id{};
-    mutable std::shared_ptr<BlockIdxBufferT> _block_idx_buffer{};
+    const PixelSelector *_sel{};
+    std::shared_ptr<const internal::Index::Overlap> _block_idx{};
+    internal::Index::Overlap::const_iterator _block_it{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
+    std::uint32_t _bin1_id{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -145,10 +135,11 @@ class PixelSelector {
     [[nodiscard]] std::uint64_t bin1_id() const noexcept;
     [[nodiscard]] std::uint64_t bin2_id() const noexcept;
 
-    void read_next_chunk();
-    [[nodiscard]] const std::vector<internal::BlockIndex> &find_blocks_overlapping_next_chunk(
+    [[nodiscard]] std::uint32_t compute_chunk_size() const noexcept;
+    [[nodiscard]] std::vector<internal::BlockIndex> find_blocks_overlapping_next_chunk(
         std::size_t num_bins);
-    [[nodiscard]] std::size_t compute_chunk_size(double fraction = 0.0005) const noexcept;
+    void read_next_chunk();
+    void read_next_chunk_v9_intra();
   };
 };
 
@@ -195,6 +186,7 @@ class PixelSelectorAll {
     using SelectorQueue = std::queue<const PixelSelector *>;
     using ItPQueue = std::priority_queue<Pair, std::vector<Pair>, std::greater<>>;
     std::shared_ptr<SelectorQueue> _selectors{};
+    std::shared_ptr<SelectorQueue> _active_selectors{};
     std::shared_ptr<ItPQueue> _its{};
 
     std::uint32_t _chrom1_id{};
