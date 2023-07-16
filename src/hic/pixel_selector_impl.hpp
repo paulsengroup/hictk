@@ -643,8 +643,12 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
     auto *sel = _selectors->front();
     _selectors->pop();
-    _its->emplace(Pair{sel->begin<N>(), sel->end<N>()});
-    _active_selectors->emplace(sel);
+    auto first = sel->begin<N>();
+    auto last = sel->end<N>();
+    if (first != last) {
+      _its->emplace(Pair{first, last});
+      _active_selectors->emplace(sel);
+    }
   }
 }
 
