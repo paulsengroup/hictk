@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <parallel_hashmap/phmap.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -55,11 +57,11 @@ class BlockIndex {
 // Map coordinates (bp) to block IDs
 class Index {
  public:
-  using BlkIdxBuffer = std::vector<BlockIndex>;
+  using BlkIdxBuffer = phmap::flat_hash_set<BlockIndex>;
   using iterator = BlkIdxBuffer::const_iterator;
   using const_iterator = BlkIdxBuffer::const_iterator;
 
-  using Overlap = BlkIdxBuffer;
+  using Overlap = std::vector<BlockIndex>;
 
  private:
   // map block_ids to file offsets

@@ -84,9 +84,7 @@ inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
       _unit(unit_),
       _resolution(resolution_),
       _chrom1(std::move(chrom1_)),
-      _chrom2(std::move(chrom2_)) {
-  std::sort(_buffer.begin(), _buffer.end());
-}
+      _chrom2(std::move(chrom2_)) {}
 
 inline std::int32_t Index::version() const noexcept { return _version; }
 inline MatrixUnit Index::unit() const noexcept { return _unit; }
@@ -153,21 +151,13 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
   const auto row1 = bin3 / _block_bin_count;
   const auto row2 = (bin4 + 1) / _block_bin_count;
 
-  const auto first_id = (row1 * block_column_count()) + col1;
-  const auto last_id = (row2 * block_column_count()) + col2;
-
-  auto it1 = std::lower_bound(_buffer.begin(), _buffer.end(),
-                              BlockIndex{first_id, 0, 0, _block_column_count});
-  auto it2 = std::upper_bound(it1, _buffer.end(), BlockIndex{last_id, 0, 0, _block_column_count});
-
   Overlap buffer{};
   for (auto row = row1; row <= row2; ++row) {
     for (auto col = col1; col <= col2; ++col) {
       const auto block_id = (row * block_column_count()) + col;
-      const auto match =
-          std::equal_range(it1, it2, BlockIndex{block_id, 0, 0, _block_column_count});
-      if (match.first != match.second) {
-        buffer.emplace_back(*match.first);
+      const auto match = _buffer.find(BlockIndex{block_id, 0, 0, _block_column_count});
+      if (match != _buffer.end()) {
+        buffer.emplace_back(*match);
       }
     }
   }
@@ -204,21 +194,13 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
 
   const auto furtherDepth = (std::max)(translatedNearerDepth, translatedFurtherDepth) + 1;
 
-  const auto first_block = (nearerDepth * block_column_count()) + translatedLowerPAD;
-  const auto last_block = (furtherDepth * block_column_count()) + translatedHigherPAD;
-
-  auto it1 = std::lower_bound(_buffer.begin(), _buffer.end(),
-                              BlockIndex{first_block, 0, 0, _block_column_count});
-  auto it2 =
-      std::upper_bound(it1, _buffer.end(), BlockIndex{last_block, 0, 0, _block_column_count});
-
   Overlap buffer{};
   for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
     for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
       const auto block_id = (depth * block_column_count()) + pad;
-      const auto match = std::equal_range(it1, it2, BlockIndex{block_id, 0, 0, _block_bin_count});
-      if (match.first != match.second) {
-        buffer.emplace_back(*match.first);
+      const auto match = _buffer.find(BlockIndex{block_id, 0, 0, _block_column_count});
+      if (match != _buffer.end()) {
+        buffer.emplace_back(*match);
       }
     }
   }

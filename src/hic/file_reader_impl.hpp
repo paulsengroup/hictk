@@ -214,11 +214,9 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
         const auto size = static_cast<std::size_t>(_fs->read<std::int32_t>());
         assert(position + size < _fs->size());
         if (size > 0) {
-          buffer.emplace_back(block_id, position, size, blockColumnCount);
+          buffer.emplace(block_id, position, size, blockColumnCount);
         }
       }
-
-      buffer.shrink_to_fit();
 
       return {chrom1,           chrom2,
               wantedUnit,       static_cast<std::uint32_t>(wantedResolution),
