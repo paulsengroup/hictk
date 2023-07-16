@@ -60,7 +60,8 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 ref_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
-ref_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic8"
+ref_hic8="$data_dir/hic/4DNFIZ1ZVXC8.hic8"
+ref_hic9="$data_dir/hic/4DNFIZ1ZVXC8.hic9"
 
 export PATH="$PATH:$script_dir"
 
@@ -77,7 +78,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$ref_cooler"; then
+if ! check_files_exist "$ref_cooler" "$ref_hic8" "$ref_hic9"; then
   exit 1
 fi
 
@@ -86,13 +87,18 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cooler dump --join "$ref_cooler::/resolutions/100000" -r chr2L > "$outdir/expected.pixels"
 "$hictk_bin" dump "$ref_cooler::/resolutions/100000" -r chr2L > "$outdir/out.cooler.pixels"
-"$hictk_bin" dump --resolution 100000 "$ref_hic" -r chr2L > "$outdir/out.hic.pixels"
+"$hictk_bin" dump --resolution 100000 "$ref_hic8" -r chr2L > "$outdir/out.hic8.pixels"
+"$hictk_bin" dump --resolution 100000 "$ref_hic9" -r chr2L > "$outdir/out.hic9.pixels"
 
 if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
   status=1
 fi
 
-if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic.pixels"; then
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic8.pixels"; then
+  status=1
+fi
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic9.pixels"; then
   status=1
 fi
 
