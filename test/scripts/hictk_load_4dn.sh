@@ -8,6 +8,9 @@ set -e
 set -o pipefail
 set -u
 
+echo "##########################"
+echo "#### hictk load (4DN) ####"
+
 # readlink -f is not available on macos...
 function readlink_py {
   set -eu
