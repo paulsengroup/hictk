@@ -176,6 +176,34 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
 inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                     std::size_t bin3, std::size_t bin4) const
     -> Overlap {
+  // When fetching large regions (especially regions where one dimension is much bigger than the
+  // other) the approach outlined here is too conservative (as in, it computes a bound box that is
+  // much larger than the actual query, thus returning many blocks not overlapping the query):
+  // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#grid-structure
+  // https://bcm.app.box.com/v/hic-file-version-9/file/700126501780
+  // Instead, we split the original query into smaller queries, and use the above formula to
+  // compute blocks overlapping the smaller queries.
+  // Blocks are deduplicated using a hashtable and returned as a flat vector.
+  const auto step_size = std::max(std::size_t(1), _block_bin_count / 2);
+  phmap::flat_hash_set<BlockIndex> buffer{};
+
+  for (auto bin1_ = bin1; bin1_ < bin2; bin1_ = std::min(bin2, bin1_ + step_size)) {
+    for (auto bin3_ = bin3; bin3_ < bin4; bin3_ = std::min(bin4, bin3_ + step_size)) {
+      const auto bin2_ = std::min(bin2, bin1_ + step_size);
+      const auto bin4_ = std::min(bin4, bin3_ + step_size);
+
+      generate_block_list_intra_v9plus(bin1_, bin2_, bin3_, bin4_, buffer);
+    }
+  }
+
+  Overlap out_buffer{buffer.size()};
+  std::copy(buffer.begin(), buffer.end(), out_buffer.begin());
+  return out_buffer;
+}
+
+inline void Index::generate_block_list_intra_v9plus(
+    std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
+    phmap::flat_hash_set<BlockIndex> &buffer) const {
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
@@ -190,7 +218,6 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
       query_includes_diagonal ? 0 : std::min(translatedNearerDepth, translatedFurtherDepth);
   const auto furtherDepth = std::max(translatedNearerDepth, translatedFurtherDepth) + 1;
 
-  phmap::flat_hash_set<BlockIndex> buffer{};
   for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
     for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
       const auto block_id = (depth * block_column_count()) + pad;
@@ -200,10 +227,6 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
       }
     }
   }
-
-  Overlap block_idxs{buffer.size()};
-  std::copy(buffer.begin(), buffer.end(), block_idxs.begin());
-  return block_idxs;
 }
 
 }  // namespace hictk::hic::internal

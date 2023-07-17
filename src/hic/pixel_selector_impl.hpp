@@ -391,7 +391,9 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
 template <typename N>
 inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
   const auto bin_size = bins().bin_size();
-  const auto num_bins = 2 * static_cast<std::uint32_t>(_sel->_reader.index().block_bin_count());
+  const auto num_bins = std::min(
+      static_cast<std::uint32_t>(_sel->_reader.index().block_bin_count()),
+      static_cast<std::uint32_t>(0.005 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
 
   const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
