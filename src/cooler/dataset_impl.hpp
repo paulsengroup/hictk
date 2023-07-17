@@ -159,9 +159,10 @@ inline void Dataset::throw_out_of_range_excp(std::size_t offset, std::size_t n) 
                   this->uri(), offset, offset + n, this->size()));
 }
 
-template <typename T, std::size_t CHUNK_SIZE>
-inline auto Dataset::make_iterator_at_offset(std::size_t offset) const -> iterator<T, CHUNK_SIZE> {
-  return iterator<T, CHUNK_SIZE>(*this, offset);
+template <typename T>
+inline auto Dataset::make_iterator_at_offset(std::size_t offset, std::size_t chunk_size) const
+    -> iterator<T> {
+  return iterator<T>(*this, chunk_size, offset);
 }
 
 inline HighFive::Selection Dataset::select(std::size_t i) {

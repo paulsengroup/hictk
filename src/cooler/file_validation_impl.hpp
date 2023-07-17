@@ -44,13 +44,13 @@ inline void File::validate_bins() const {
           fmt::format(FMT_STRING("Expected {} bins, found {}"), this->bins().size(), nchroms));
     }
 
-    auto chrom_it = this->dataset("bins/chrom").begin<std::uint32_t>();
-    auto start_it = this->dataset("bins/start").begin<std::uint32_t>();
-    auto end_it = this->dataset("bins/end").begin<std::uint32_t>();
+    auto chrom_it = this->dataset("bins/chrom").begin<std::uint32_t>(64'000);
+    auto start_it = this->dataset("bins/start").begin<std::uint32_t>(64'000);
+    auto end_it = this->dataset("bins/end").begin<std::uint32_t>(64'000);
 
-    auto last_chrom = this->dataset("bins/chrom").end<std::uint32_t>();
-    auto last_start = this->dataset("bins/start").end<std::uint32_t>();
-    auto last_end = this->dataset("bins/end").end<std::uint32_t>();
+    auto last_chrom = this->dataset("bins/chrom").end<std::uint32_t>(0);
+    auto last_start = this->dataset("bins/start").end<std::uint32_t>(0);
+    auto last_end = this->dataset("bins/end").end<std::uint32_t>(0);
 
     std::size_t i = 0;
     for (const Bin &bin : this->bins()) {

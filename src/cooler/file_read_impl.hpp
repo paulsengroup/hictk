@@ -73,11 +73,9 @@ namespace internal {
 }
 }  // namespace internal
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(
-    std::shared_ptr<const balancing::Weights> weights) const {
+inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights) const {
   // clang-format off
-  return PixelSelector<CHUNK_SIZE>(
+  return PixelSelector(
       this->_index,
       this->dataset("pixels/bin1_id"),
       this->dataset("pixels/bin2_id"),
@@ -86,34 +84,30 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(
   // clang-format on
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view query,
-                                             std::shared_ptr<const balancing::Weights> weights,
-                                             QUERY_TYPE query_type) const {
+inline PixelSelector File::fetch(std::string_view query,
+                                 std::shared_ptr<const balancing::Weights> weights,
+                                 QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(this->chromosomes(), query)
                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{query});
 
-  return this->fetch<CHUNK_SIZE>(PixelCoordinates{this->bins().at(gi)}, std::move(weights));
+  return this->fetch(PixelCoordinates{this->bins().at(gi)}, std::move(weights));
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(
-    std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
-    std::shared_ptr<const balancing::Weights> weights) const {
+inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
+                                 std::uint32_t end,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
   assert(start < end);
 
-  return this->fetch<CHUNK_SIZE>(
-      PixelCoordinates{this->bins().at(chrom_name, start),
-                       this->bins().at(chrom_name, end - (std::min)(end, 1U))},
-      std::move(weights));
+  return this->fetch(PixelCoordinates{this->bins().at(chrom_name, start),
+                                      this->bins().at(chrom_name, end - (std::min)(end, 1U))},
+                     std::move(weights));
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(
-    PixelCoordinates coord, std::shared_ptr<const balancing::Weights> weights) const {
+inline PixelSelector File::fetch(PixelCoordinates coord,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
   // clang-format off
-  return PixelSelector<CHUNK_SIZE>(this->_index,
+  return PixelSelector(this->_index,
                                    this->dataset("pixels/bin1_id"),
                                    this->dataset("pixels/bin2_id"),
                                    this->dataset("pixels/count"),
@@ -123,12 +117,11 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(
   // clang-format on
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view range1, std::string_view range2,
-                                             std::shared_ptr<const balancing::Weights> weights,
-                                             QUERY_TYPE query_type) const {
+inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
+                                 std::shared_ptr<const balancing::Weights> weights,
+                                 QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return this->fetch<CHUNK_SIZE>(range1, std::move(weights));
+    return this->fetch(range1, std::move(weights));
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
@@ -139,19 +132,17 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(std::string_view range1, std::strin
                        ? GenomicInterval::parse_bed(this->chromosomes(), range2)
                        : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range2});
 
-  return this->fetch<CHUNK_SIZE>(PixelCoordinates{this->bins().at(gi1)},
-                                 PixelCoordinates{this->bins().at(gi2)}, std::move(weights));
+  return this->fetch(PixelCoordinates{this->bins().at(gi1)}, PixelCoordinates{this->bins().at(gi2)},
+                     std::move(weights));
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(
-    std::string_view chrom1, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2,
-    std::uint32_t start2, std::uint32_t end2,
-    std::shared_ptr<const balancing::Weights> weights) const {
+inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, std::uint32_t end1,
+                                 std::string_view chrom2, std::uint32_t start2, std::uint32_t end2,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
   assert(start1 < end1);
   assert(start2 < end2);
   // clang-format off
-  return PixelSelector<CHUNK_SIZE>(this->_index,
+  return PixelSelector(this->_index,
                                    this->dataset("pixels/bin1_id"),
                                    this->dataset("pixels/bin2_id"),
                                    this->dataset("pixels/count"),
@@ -164,12 +155,10 @@ inline PixelSelector<CHUNK_SIZE> File::fetch(
   // clang-format on
 }
 
-template <std::size_t CHUNK_SIZE>
-inline PixelSelector<CHUNK_SIZE> File::fetch(
-    PixelCoordinates coord1, PixelCoordinates coord2,
-    std::shared_ptr<const balancing::Weights> weights) const {
+inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
   // clang-format off
-  return PixelSelector<CHUNK_SIZE>(this->_index,
+  return PixelSelector(this->_index,
                                    this->dataset("pixels/bin1_id"),
                                    this->dataset("pixels/bin2_id"),
                                    this->dataset("pixels/count"),
@@ -508,8 +497,8 @@ inline Index File::import_indexes(const Dataset &chrom_offset_dset, const Datase
     Index idx{bin_table, expected_nnz};
 
     std::size_t bin_id = 0;
-    auto first = bin_offset_dset.begin<std::uint64_t>();
-    auto last = bin_offset_dset.end<std::uint64_t>();
+    auto first = bin_offset_dset.begin<std::uint64_t>(64'000);
+    auto last = bin_offset_dset.end<std::uint64_t>(64'000);
 
     assert(first != last);
     if (const auto o = *first; o != 0) {

@@ -84,8 +84,8 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
   if (missing_norms == f.chromosomes().size() - 1) {
-    spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"),
-                 bins.bin_size(), norm);
+    spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), bins.bin_size(),
+                 norm);
   }
 
   assert(weights.size() == bins.size());

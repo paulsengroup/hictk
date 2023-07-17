@@ -17,7 +17,6 @@
 
 namespace hictk::cooler {
 
-template <std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
 class PixelSelector {
  public:
   template <typename N>
@@ -46,10 +45,8 @@ class PixelSelector {
                 PixelCoordinates coord2,
                 std::shared_ptr<const balancing::Weights> weights) noexcept;
 
-  template <std::size_t CHUNK_SIZE_OTHER>
-  [[nodiscard]] bool operator==(const PixelSelector<CHUNK_SIZE_OTHER> &other) const noexcept;
-  template <std::size_t CHUNK_SIZE_OTHER>
-  [[nodiscard]] bool operator!=(const PixelSelector<CHUNK_SIZE_OTHER> &other) const noexcept;
+  [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
+  [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
 
   template <typename N>
   [[nodiscard]] auto begin() const -> iterator<N>;
@@ -73,11 +70,11 @@ class PixelSelector {
   template <typename N>
   class iterator {
     using BinIDT = std::uint64_t;
-    friend PixelSelector<CHUNK_SIZE>;
+    friend PixelSelector;
 
-    Dataset::iterator<BinIDT, CHUNK_SIZE> _bin1_id_it{};
-    Dataset::iterator<BinIDT, CHUNK_SIZE> _bin2_id_it{};
-    Dataset::iterator<N, CHUNK_SIZE> _count_it{};
+    Dataset::iterator<BinIDT> _bin1_id_it{};
+    Dataset::iterator<BinIDT> _bin2_id_it{};
+    Dataset::iterator<N> _count_it{};
 
     mutable ThinPixel<N> _value{};
     std::shared_ptr<const Index> _index{};

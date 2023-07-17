@@ -37,7 +37,7 @@ TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
   REQUIRE(dset.size() == N);
 
   std::mt19937_64 rand_eng{seed};  // NOLINT(cert-msc32-c,cert-msc51-cpp)
-  std::for_each(dset.begin<std::uint8_t>(), dset.end<std::uint8_t>(),
+  std::for_each(dset.begin<std::uint8_t>(256'000), dset.end<std::uint8_t>(256'000),
                 [&](const auto& n) { CHECK(n == static_cast<std::uint8_t>(rand_eng())); });
 }
 

@@ -10,7 +10,7 @@
 
 namespace hictk::tools {
 
-template <typename N = std::int32_t, typename PixelIt = cooler::PixelSelector<>::iterator<N>,
+template <typename N = std::int32_t, typename PixelIt = cooler::PixelSelector::iterator<N>,
           typename CoarsenIt = typename transformers::CoarsenPixels<PixelIt>::iterator>
 internal::PixelMerger<CoarsenIt> setup_pixel_merger(const cooler::File& clr, std::size_t factor) {
   const auto& chroms = clr.chromosomes();

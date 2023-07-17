@@ -28,6 +28,7 @@ class Index {
   std::vector<OffsetVect> _idx{};
   std::size_t _size{};
   std::uint64_t _nnz{};
+  mutable std::size_t _max_row_length{};
 
   static constexpr auto offset_not_set_value = std::numeric_limits<std::uint64_t>::max();
 
@@ -64,6 +65,7 @@ class Index {
   [[nodiscard]] constexpr bool empty() const noexcept { return this->size() == 0; }
 
   [[nodiscard]] std::uint32_t bin_size() const noexcept;
+  [[nodiscard]] constexpr std::size_t max_row_length() const noexcept;
 
   [[nodiscard]] auto begin() const noexcept -> const_iterator;
   [[nodiscard]] auto end() const noexcept -> const_iterator;
@@ -112,6 +114,8 @@ class Index {
   void validate(const Chromosome& chrom) const;
 
   [[nodiscard]] static auto init(const Reference& chroms, std::uint32_t bin_size) -> MapT;
+
+  [[nodiscard]] std::size_t compute_max_row_length() const noexcept;
 
  public:
   class iterator {

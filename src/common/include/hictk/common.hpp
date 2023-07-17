@@ -53,8 +53,6 @@ inline constexpr std::size_t DEFAULT_HDF5_CACHE_SIZE =                          
     (3 * DEFAULT_HDF5_PIXEL_DATASET_CACHE_SIZE) +
     ((MANDATORY_DATASET_NAMES.size() - 3) * DEFAULT_HDF5_DATASET_CACHE_SIZE);
 
-inline constexpr std::size_t DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE = 32ULL << 10U;  // 32K
-
 namespace internal {
 inline constexpr std::string_view SENTINEL_ATTR_NAME{"format-version"};
 inline constexpr std::uint8_t SENTINEL_ATTR_VALUE{255};

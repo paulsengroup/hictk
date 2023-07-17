@@ -38,7 +38,7 @@ inline bool datasets_are_equal(const Dataset& d1, const Dataset& d2) {
     return true;
   }
 
-  return std::equal(d1.begin<T>(), d1.end<T>(), d2.begin<T>());
+  return std::equal(d1.begin<T>(256'000), d1.end<T>(256'000), d2.begin<T>(256'000));
 }
 
 }  // namespace internal
