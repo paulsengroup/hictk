@@ -477,11 +477,12 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra() {
     }
     bool block_overlaps_query = false;
     for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), blki)) {
+      // Using bitwise operators gives a ~5% perf improvement on my machine
       const auto pixel_overlaps_query =
-          (static_cast<std::size_t>(p.bin1_id) >= _bin1_id) &
-          (static_cast<std::size_t>(p.bin1_id) <= coord1().bin2.rel_id()) &
-          (static_cast<std::size_t>(p.bin2_id) >= coord2().bin1.rel_id()) &
-          (static_cast<std::size_t>(p.bin2_id) <= coord2().bin2.rel_id());
+          bool(int(static_cast<std::size_t>(p.bin1_id) >= _bin1_id) &
+               int(static_cast<std::size_t>(p.bin1_id) <= coord1().bin2.rel_id()) &
+               int(static_cast<std::size_t>(p.bin2_id) >= coord2().bin1.rel_id()) &
+               int(static_cast<std::size_t>(p.bin2_id) <= coord2().bin2.rel_id()));
 
       const auto pixel_overlaps_chunk =
           pixel_overlaps_query && static_cast<std::size_t>(p.bin1_id) <= bin1_id_last;
