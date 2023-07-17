@@ -93,9 +93,11 @@ class PixelSelector {
     static_assert(std::is_arithmetic_v<N>);
     friend PixelSelector;
     using BufferT = std::vector<ThinPixel<N>>;
+    using BlockBlacklist = phmap::flat_hash_set<internal::BlockIndex>;
 
     const PixelSelector *_sel{};
     std::shared_ptr<const internal::Index::Overlap> _block_idx{};
+    std::shared_ptr<BlockBlacklist> _block_blacklist{};
     internal::Index::Overlap::const_iterator _block_it{};
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};

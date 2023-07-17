@@ -41,7 +41,7 @@ void dump_pixels(const cooler::File& f, std::string_view range1, std::string_vie
   print_pixels(jsel.begin(), jsel.end());
 }
 
-void dump_pixels(const hic::HiCFile& f, std::string_view range1, std::string_view range2,
+void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view range2,
                  std::string_view normalization, bool join) {
   auto norm = hic::ParseNormStr(std::string{normalization});
   if (range1 == "all") {
@@ -50,12 +50,12 @@ void dump_pixels(const hic::HiCFile& f, std::string_view range1, std::string_vie
     if (!join) {
       return print_pixels(sel.template begin<double>(), sel.template end<double>());
     }
-
     auto jsel =
         transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
     return print_pixels(jsel.begin(), jsel.end());
   }
 
+  f.optimize_cache_size_for_random_access();
   auto sel = f.fetch(range1, range2, norm);
   if (!join) {
     return print_pixels(sel.template begin<double>(), sel.template end<double>());
@@ -66,7 +66,7 @@ void dump_pixels(const hic::HiCFile& f, std::string_view range1, std::string_vie
 }
 
 template <typename File>
-static void process_query(const File& f, std::string_view table, std::string_view range1,
+static void process_query(File& f, std::string_view table, std::string_view range1,
                           std::string_view range2, std::string_view normalization, bool join) {
   if (table == "chroms") {
     return dump_chroms(f, range1);
@@ -96,7 +96,7 @@ int dump_subcmd(const DumpConfig& c) {
                               : open_hic_file(c.uri, c.resolution, c.matrix_type, c.matrix_unit)};
 
   std::visit(
-      [&](const auto& f) {
+      [&](auto& f) {
         if (c.query_file.empty()) {
           process_query(f, c.table, c.range1, c.range2, c.normalization, c.join);
           return;

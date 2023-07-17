@@ -18,6 +18,7 @@
 
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
+#include "hictk/suppress_warnings.hpp"
 
 namespace hictk {  // NOLINT
 
@@ -280,8 +281,11 @@ inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Re
                                                                         std::size_t bin_offset) {
   assert(bin_size != 0);
 
+  DISABLE_WARNING_PUSH
+  DISABLE_WARNING_NULL_DEREF
   std::vector<std::uint64_t> prefix_sum(chroms.size() + 1);
   prefix_sum.front() = bin_offset;
+  DISABLE_WARNING_POP
 
   // I am using transform instead of inclusive_scan because the latter is not always available
   std::transform(chroms.begin(), chroms.end(), prefix_sum.begin() + 1,

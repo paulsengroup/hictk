@@ -127,9 +127,10 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1,
 
   const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
 
-  return _version > 8 && is_intra
-             ? generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id)
-             : generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
+  if (_version > 8 && is_intra) {
+    return generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id);
+  }
+  return generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
@@ -151,7 +152,7 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
   const auto row1 = bin3 / _block_bin_count;
   const auto row2 = (bin4 + 1) / _block_bin_count;
 
-  Overlap buffer{};
+  std::vector<BlockIndex> buffer{};
   for (auto row = row1; row <= row2; ++row) {
     for (auto col = col1; col <= col2; ++col) {
       const auto block_id = (row * block_column_count()) + col;
@@ -175,6 +176,34 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
 inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                     std::size_t bin3, std::size_t bin4) const
     -> Overlap {
+  // When fetching large regions (especially regions where one dimension is much bigger than the
+  // other) the approach outlined here is too conservative (as in, it computes a bound box that is
+  // much larger than the actual query, thus returning many blocks not overlapping the query):
+  // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#grid-structure
+  // https://bcm.app.box.com/v/hic-file-version-9/file/700126501780
+  // Instead, we split the original query into smaller queries, and use the above formula to
+  // compute blocks overlapping the smaller queries.
+  // Blocks are deduplicated using a hashtable and returned as a flat vector.
+  const auto step_size = std::max(std::size_t(1), _block_bin_count / 2);
+  phmap::flat_hash_set<BlockIndex> buffer{};
+
+  for (auto bin1_ = bin1; bin1_ < bin2; bin1_ = std::min(bin2, bin1_ + step_size)) {
+    for (auto bin3_ = bin3; bin3_ < bin4; bin3_ = std::min(bin4, bin3_ + step_size)) {
+      const auto bin2_ = std::min(bin2, bin1_ + step_size);
+      const auto bin4_ = std::min(bin4, bin3_ + step_size);
+
+      generate_block_list_intra_v9plus(bin1_, bin2_, bin3_, bin4_, buffer);
+    }
+  }
+
+  Overlap out_buffer{buffer.size()};
+  std::copy(buffer.begin(), buffer.end(), out_buffer.begin());
+  return out_buffer;
+}
+
+inline void Index::generate_block_list_intra_v9plus(
+    std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
+    phmap::flat_hash_set<BlockIndex> &buffer) const {
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth =
@@ -184,30 +213,20 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
       static_cast<std::size_t>(std::log2(1.0 + double(hictk::internal::abs_diff(bin2, bin3)) /
                                                    std::sqrt(2.0) / double(_block_bin_count)));
 
-  // code above assumes diagonal; but we could be below diagonal
-  const auto nearerDepth = [&]() -> std::size_t {
-    if ((bin1 > bin4 && bin2 < bin3) || (bin2 > bin3 && bin1 < bin4)) {
-      return 0;
-    }
-    return (std::min)(translatedNearerDepth, translatedFurtherDepth);
-  }();
+  const auto query_includes_diagonal = (bin1 > bin4 && bin2 < bin3) || (bin2 > bin3 && bin1 < bin4);
+  const auto nearerDepth =
+      query_includes_diagonal ? 0 : std::min(translatedNearerDepth, translatedFurtherDepth);
+  const auto furtherDepth = std::max(translatedNearerDepth, translatedFurtherDepth) + 1;
 
-  const auto furtherDepth = (std::max)(translatedNearerDepth, translatedFurtherDepth) + 1;
-
-  Overlap buffer{};
   for (auto pad = translatedLowerPAD; pad <= translatedHigherPAD; ++pad) {
     for (auto depth = nearerDepth; depth <= furtherDepth; ++depth) {
       const auto block_id = (depth * block_column_count()) + pad;
       const auto match = _buffer.find(BlockIndex{block_id, 0, 0, _block_column_count});
       if (match != _buffer.end()) {
-        buffer.emplace_back(*match);
+        buffer.emplace(*match);
       }
     }
   }
-
-  std::sort(buffer.begin(), buffer.end());
-  buffer.erase(std::unique(buffer.begin(), buffer.end()), buffer.end());
-  return buffer;
 }
 
 }  // namespace hictk::hic::internal
