@@ -38,6 +38,15 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
       _coord1(std::move(coord1_)),
       _coord2(std::move(coord2_)) {}
 
+inline PixelSelector::~PixelSelector() noexcept {
+  try {
+    if (_reader) {
+      this->clear_cache();
+    }
+  } catch (...) {
+  }
+}
+
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
          _coord2 == other._coord2;
@@ -178,11 +187,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
   std::sample(_reader.index().begin(), _reader.index().end(), blocks.begin(), blocks.size(),
               rand_eng);
   for (const auto &blki : blocks) {
-    auto blk = _reader.read(chrom1(), chrom2(), blki);
-    if (blk) {
-      avg_block_size += blk->size();
-      _reader.evict(*blk);
-    }
+    avg_block_size += _reader.read_size(chrom1(), chrom2(), blki);
   }
   avg_block_size /= blocks.size();
 
@@ -201,7 +206,6 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
     const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
     const auto bin1 = bins().at(coord1().bin1.chrom(), pos1);
 
-    std::vector<internal::BlockIndex> buffer{};
     auto overlap = _reader.index().find_overlaps({bin1, bin1}, coord2());
     const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.begin(), overlap.end()));
     max_blocks_per_row = (std::max)(max_blocks_per_row, num_blocks);

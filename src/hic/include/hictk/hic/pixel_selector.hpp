@@ -43,6 +43,14 @@ class PixelSelector {
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
                 PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
 
+  PixelSelector(const PixelSelector &other) = delete;
+  PixelSelector(PixelSelector &&other) = default;
+
+  ~PixelSelector() noexcept;
+
+  PixelSelector &operator=(const PixelSelector &other) = delete;
+  PixelSelector &operator=(PixelSelector &&other) = default;
+
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
   template <typename N>

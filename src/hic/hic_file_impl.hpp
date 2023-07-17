@@ -190,7 +190,7 @@ inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cac
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
 inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
-  return this->optimize_cache_size_for_iteration(upper_bound);
+  return this->optimize_cache_size_for_random_access(upper_bound);
 }
 
 inline void HiCFile::optimize_cache_size_for_iteration(std::size_t upper_bound) {

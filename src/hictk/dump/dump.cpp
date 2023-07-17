@@ -46,6 +46,7 @@ void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view rang
   auto norm = hic::ParseNormStr(std::string{normalization});
   if (range1 == "all") {
     assert(range2 == "all");
+    f.optimize_cache_size_for_iteration();
     auto sel = f.fetch(norm);
     if (!join) {
       return print_pixels(sel.template begin<double>(), sel.template end<double>());
@@ -55,7 +56,6 @@ void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view rang
     return print_pixels(jsel.begin(), jsel.end());
   }
 
-  f.optimize_cache_size_for_random_access();
   auto sel = f.fetch(range1, range2, norm);
   if (!join) {
     return print_pixels(sel.template begin<double>(), sel.template end<double>());
