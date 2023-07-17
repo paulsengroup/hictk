@@ -12,8 +12,8 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/hic/block_cache.hpp"
 #include "hictk/hic/block_reader.hpp"
+#include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/filestream.hpp"
@@ -31,6 +31,7 @@ class HiCFile {
   MatrixType _type{MatrixType::observed};
   MatrixUnit _unit{MatrixUnit::BP};
   mutable std::shared_ptr<internal::BlockCache> _block_cache{};
+  mutable std::shared_ptr<internal::WeightCache> _weight_cache{};
   std::shared_ptr<const BinTable> _bins{};
 
  public:

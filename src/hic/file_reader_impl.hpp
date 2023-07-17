@@ -16,6 +16,7 @@
 #include <string>
 #include <utility>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
@@ -204,7 +205,8 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
 
     const auto nBlocks = static_cast<std::size_t>(_fs->read<std::int32_t>());
 
-    phmap::flat_hash_set<BlockIndex, BlockIndexHasher, BlockIndexEq> buffer;
+    Index::BlkIdxBuffer buffer;
+    buffer.reserve(nBlocks);
     if (wantedUnit == foundUnit && wantedResolution == foundResolution) {
       for (std::size_t j = 0; j < nBlocks; ++j) {
         const auto block_id = static_cast<std::size_t>(_fs->read<std::int32_t>());
@@ -359,8 +361,9 @@ inline bool HiCFileReader::checkMagicString(std::string url) noexcept {
 
 inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
                                             MatrixType matrix_type, NormalizationMethod wanted_norm,
-                                            MatrixUnit wanted_unit,
-                                            std::uint32_t wanted_resolution) {
+                                            MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
+                                            std::shared_ptr<balancing::Weights> weights1,
+                                            std::shared_ptr<balancing::Weights> weights2) {
   assert(chrom1_id <= chrom2_id);
   assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), wanted_resolution) !=
          _header->resolutions.end());
@@ -395,32 +398,23 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     }
   }
   if (metadata.fileOffset == -1) {
-    const auto num_bins1 = (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution;
-    const auto num_bins2 = (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution;
-
-    auto f = HiCFooter{Index{}, std::move(metadata)};
-    f.c1Norm() = std::vector<double>(num_bins1, std::numeric_limits<double>::quiet_NaN());
-    f.c2Norm() = std::vector<double>(num_bins2, std::numeric_limits<double>::quiet_NaN());
-    return f;
+    return {Index{}, std::move(metadata), {}, std::move(weights1), std::move(weights2)};
   }
 
   const auto file_offset = _fs->tellg();
   // NOTE: we read then move index to workaround assertion failures when compiling under MSVC
   auto index = read_index(metadata.fileOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
                           metadata.resolution);
-  HiCFooter footer{std::move(index), std::move(metadata)};
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 
   if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||
       ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE &&
        chrom1_id != chrom2_id)) {
-    return footer;  // no need to read wanted_norm vector index
+    // no need to read wanted_norm vector index
+    return {std::move(index), std::move(metadata), {}, std::move(weights1), std::move(weights2)};
   }
 
-  auto &expectedValues = footer.expectedValues();
-  auto &c1Norm = footer.c1Norm();
-  auto &c2Norm = footer.c2Norm();
-
+  std::vector<double> expectedValues{};
   auto nExpectedValues = _fs->read<std::int32_t>();
   for (std::int32_t i = 0; i < nExpectedValues; ++i) {
     const auto foundUnit = readMatrixUnit();
@@ -450,7 +444,8 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
                       _header->chromosomes.at(chrom1_id).name(),
                       _header->chromosomes.at(chrom2_id).name(), wanted_resolution, wanted_unit));
     }
-    return footer;
+    return {std::move(index), std::move(metadata), std::move(expectedValues), std::move(weights1),
+            std::move(weights2)};
   }
 
   nExpectedValues = _fs->read<std::int32_t>();
@@ -496,39 +491,48 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     const auto filePosition = _fs->read<std::int64_t>();
     const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
                                            : static_cast<std::int64_t>(_fs->read<std::int32_t>());
-    if (foundChrom == chrom1_id && foundNorm == wanted_norm && foundUnit == wanted_unit &&
-        foundResolution == wanted_resolution) {
+
+    const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
+                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
+    if (store1) {
       const auto numBins = static_cast<std::size_t>(
-          (footer.chrom1().size() + wanted_resolution - 1) / wanted_resolution);
+          (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(this->_fs->tellg());
-      c1Norm = readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins);
+      *weights1 = balancing::Weights{
+          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+          balancing::Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
-    if (chrom1_id != chrom2_id && foundChrom == chrom2_id && foundNorm == wanted_norm &&
-        foundUnit == wanted_unit && foundResolution == wanted_resolution) {
+
+    const auto store2 = !*weights2 && foundChrom == chrom2_id && foundNorm == wanted_norm &&
+                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
+    if (store2) {
       const auto numBins = static_cast<std::size_t>(
-          (footer.chrom2().size() + wanted_resolution - 1) / wanted_resolution);
+          (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(this->_fs->tellg());
-      c2Norm = readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins);
+      *weights2 = balancing::Weights{
+          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+          balancing::Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
   }
 
-  if (footer.c1Norm().empty() && footer.c2Norm().empty()) {
+  if (!*weights1 && !*weights2) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to find {} normalization vectors for {}:{} at {} ({})"),
                     wanted_norm, _header->chromosomes.at(chrom1_id).name(),
                     _header->chromosomes.at(chrom2_id).name(), wanted_resolution, wanted_unit));
   }
 
-  if (footer.c1Norm().empty() || footer.c2Norm().empty()) {
-    const auto chrom_id = footer.c1Norm().empty() ? chrom1_id : chrom2_id;
+  if (!*weights1 || !*weights2) {
+    const auto chrom_id = !*weights1 ? chrom1_id : chrom2_id;
     throw std::runtime_error(fmt::format(
         FMT_STRING("unable to find {} normalization vector for {} at {} ({})"), wanted_norm,
         _header->chromosomes.at(chrom_id).name(), wanted_resolution, wanted_unit));
   }
 
-  return footer;
+  return {std::move(index), std::move(metadata), std::move(expectedValues), std::move(weights1),
+          std::move(weights2)};
 }
 
 }  // namespace hictk::hic::internal

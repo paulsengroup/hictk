@@ -52,25 +52,27 @@ inline std::size_t FooterCache::HiCFooterPtrHasher::operator()(
   return std::hash<HiCFooterMetadata>{}(m);
 }
 
-inline auto FooterCache::begin() const noexcept -> decltype(_cache.cbegin()) {
-  return _cache.begin();
+inline auto FooterCache::begin() const noexcept -> decltype(_footers.cbegin()) {
+  return _footers.begin();
 }
-inline auto FooterCache::end() const noexcept -> decltype(_cache.cbegin()) { return _cache.end(); }
-
-inline auto FooterCache::cbegin() const noexcept -> decltype(_cache.cbegin()) {
-  return _cache.cbegin();
-}
-inline auto FooterCache::cend() const noexcept -> decltype(_cache.cbegin()) {
-  return _cache.cend();
+inline auto FooterCache::end() const noexcept -> decltype(_footers.cbegin()) {
+  return _footers.end();
 }
 
-inline auto FooterCache::emplace(HiCFooter &&f) -> decltype(_cache.emplace()) {
-  return _cache.emplace(std::make_shared<const HiCFooter>(std::move(f)));
+inline auto FooterCache::cbegin() const noexcept -> decltype(_footers.cbegin()) {
+  return _footers.cbegin();
+}
+inline auto FooterCache::cend() const noexcept -> decltype(_footers.cbegin()) {
+  return _footers.cend();
+}
+
+inline auto FooterCache::emplace(HiCFooter f) -> decltype(_footers.emplace()) {
+  return _footers.emplace(std::make_shared<const HiCFooter>(std::move(f)));
 }
 inline auto FooterCache::find(const HiCFooterMetadata &m) -> const_iterator {
-  return _cache.find(m);
+  return _footers.find(m);
 }
-inline std::size_t FooterCache::size() const noexcept { return _cache.size(); }
-inline void FooterCache::clear() { return _cache.clear(); }
+inline std::size_t FooterCache::size() const noexcept { return _footers.size(); }
+inline void FooterCache::clear() { return _footers.clear(); }
 
 }  // namespace hictk::hic::internal

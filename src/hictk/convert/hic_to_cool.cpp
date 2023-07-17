@@ -45,6 +45,27 @@ bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
   });
 }
 
+static std::vector<double> read_weights_or_throw(hic::HiCFile& f, hic::NormalizationMethod norm,
+                                                 const Chromosome& chrom,
+                                                 std::size_t expected_length) {
+  std::vector<double> weights_{};
+  try {
+    auto weights = f.fetch(chrom.name(), norm).weights1();
+    if (!!weights && weights().size() != expected_length) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
+                                 "expected {} values, found {}"),
+                      norm, chrom.name(), expected_length, weights().size()));
+    }
+    weights_ = weights();
+  } catch (const std::exception& e) {
+    if (!missing_norm_or_interactions(e, norm)) {
+      throw;
+    }
+  }
+  return weights_;
+}
+
 static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
                                         hic::NormalizationMethod norm) {
   std::vector<double> weights{};
@@ -55,23 +76,12 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
       continue;
     }
     const auto expected_length = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
-    try {
-      const auto weights_ = f.fetch(chrom.name(), norm).chrom1_norm();
-      if (weights_.size() != expected_length) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
-                                   "expected {} values, found {}"),
-                        norm, chrom.name(), expected_length, weights_.size()));
-      }
-
-      weights.insert(weights.end(), weights_.begin(), weights_.end());
-    } catch (const std::exception& e) {
-      if (!missing_norm_or_interactions(e, norm)) {
-        throw;
-      }
-      weights.resize(weights.size() + expected_length, std::numeric_limits<double>::quiet_NaN());
+    auto chrom_weights = read_weights_or_throw(f, norm, chrom, expected_length);
+    if (chrom_weights.empty()) {
+      chrom_weights.resize(expected_length, std::numeric_limits<double>::quiet_NaN());
       ++missing_norms;
     }
+    weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
   if (missing_norms == f.chromosomes().size() - 1) {
     spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. Filling "

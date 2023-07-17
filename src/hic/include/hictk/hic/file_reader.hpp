@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
@@ -38,9 +39,11 @@ class HiCFileReader {
 
   // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
   // resolution.
-  [[nodiscard]] HiCFooter read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                      MatrixType matrix_type, NormalizationMethod wanted_norm,
-                                      MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+  [[nodiscard]] HiCFooter read_footer(
+      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      NormalizationMethod wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
+      std::shared_ptr<balancing::Weights> weights1 = std::make_shared<balancing::Weights>(),
+      std::shared_ptr<balancing::Weights> weights2 = std::make_shared<balancing::Weights>());
 
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static NormalizationMethod readNormalizationMethod(filestream::FileStream &fs,
