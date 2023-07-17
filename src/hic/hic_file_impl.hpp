@@ -195,15 +195,13 @@ inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
 
 inline void HiCFile::optimize_cache_size_for_iteration(std::size_t upper_bound) {
   std::size_t cache_size = this->estimate_cache_size_cis() + this->estimate_cache_size_trans();
-  // Better to overestimate than underestimate cache size
-  cache_size = std::max(4 * cache_size / 3, std::size_t(10'000'000));
-
+  cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
 inline void HiCFile::optimize_cache_size_for_random_access(std::size_t upper_bound) {
   std::size_t cache_size = this->estimate_cache_size_cis();
-  cache_size = std::max(4 * cache_size / 3, std::size_t(10'000'000));
+  cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
