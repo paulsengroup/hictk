@@ -195,36 +195,36 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> inde
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
   assert(this->_index == other._index);
   return this->_bin2_id_it == other._bin2_id_it;
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator!=(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator!=(const iterator &other) const noexcept {
   return !(*this == other);
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator<(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator<(const iterator &other) const noexcept {
   assert(this->_index == other._index);
   return this->_bin2_id_it < other._bin2_id_it;
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator<=(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator<=(const iterator &other) const noexcept {
   assert(this->_index == other._index);
   return this->_bin2_id_it <= other._bin2_id_it;
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator>(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator>(const iterator &other) const noexcept {
   assert(this->_index == other._index);
   return this->_bin2_id_it > other._bin2_id_it;
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::operator>=(const iterator &other) const noexcept {
+inline bool PixelSelector::iterator<N>::operator>=(const iterator &other) const noexcept {
   assert(this->_index == other._index);
   return this->_bin2_id_it >= other._bin2_id_it;
 }

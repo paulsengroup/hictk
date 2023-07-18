@@ -109,14 +109,14 @@ class PixelSelector {
 
     iterator() = default;
 
-    [[nodiscard]] constexpr bool operator==(const iterator &other) const noexcept;
-    [[nodiscard]] constexpr bool operator!=(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator==(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
 
-    [[nodiscard]] constexpr bool operator<(const iterator &other) const noexcept;
-    [[nodiscard]] constexpr bool operator<=(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator<(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator<=(const iterator &other) const noexcept;
 
-    [[nodiscard]] constexpr bool operator>(const iterator &other) const noexcept;
-    [[nodiscard]] constexpr bool operator>=(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator>(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator>=(const iterator &other) const noexcept;
 
     [[nodiscard]] auto operator*() const -> const_reference;
     [[nodiscard]] auto operator->() const -> const_pointer;
