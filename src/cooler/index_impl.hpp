@@ -61,13 +61,6 @@ inline std::uint32_t Index::bin_size() const noexcept {
   return this->_bins->bin_size();
 }
 
-constexpr std::size_t Index::max_row_length() const noexcept {
-  if (this->_max_row_length == 0) {
-    this->_max_row_length = this->compute_max_row_length();
-  }
-  return this->_max_row_length;
-}
-
 inline auto Index::begin() const noexcept -> const_iterator { return iterator{this}; }
 inline auto Index::end() const noexcept -> const_iterator {
   return iterator::make_end_iterator(this);
@@ -224,16 +217,6 @@ inline auto Index::init(const Reference &chroms, std::uint32_t bin_size) -> MapT
   });
 
   return idx;
-}
-
-inline std::size_t Index::compute_max_row_length() const noexcept {
-  std::size_t max_row_length = 0;
-  for (const auto &v : _idx) {
-    for (std::size_t i = 1; i < v.size(); ++i) {
-      max_row_length = std::max(max_row_length, v[i] - v[i - 1]);
-    }
-  }
-  return max_row_length;
 }
 
 inline void Index::validate(const Chromosome &chrom) const {
