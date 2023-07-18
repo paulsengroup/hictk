@@ -25,8 +25,8 @@ TEST_CASE("Cooler: dataset linear iteration", "[dataset][long]") {
   REQUIRE(pixel_buff.size() == 107'041);
 
   SECTION("forward") {
-    auto it = dset.begin<std::uint32_t>();
-    auto last_pixel = dset.end<std::uint32_t>();
+    auto it = dset.begin<std::uint32_t>(32'000);
+    auto last_pixel = dset.end<std::uint32_t>(32'000);
     REQUIRE(std::distance(it, last_pixel) == 107'041);
 
     for (const auto& expected : pixel_buff) {
@@ -37,8 +37,8 @@ TEST_CASE("Cooler: dataset linear iteration", "[dataset][long]") {
   }
 
   SECTION("backward") {
-    auto it = dset.end<std::uint32_t>();
-    auto first_pixel = dset.begin<std::uint32_t>();
+    auto it = dset.end<std::uint32_t>(32'000);
+    auto first_pixel = dset.begin<std::uint32_t>(32'000);
 
     REQUIRE(std::distance(first_pixel, it) == 107'041);
 
@@ -68,8 +68,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   REQUIRE(dset.size() == N);
 
   SECTION("operator -/+") {
-    auto first = dset.begin<std::uint64_t>();
-    auto last = dset.end<std::uint64_t>();
+    auto first = dset.begin<std::uint64_t>(32'000);
+    auto last = dset.end<std::uint64_t>(32'000);
     for (std::size_t i = 0; i < 100; ++i) {
       const auto j = std::uniform_int_distribution<std::uint64_t>{0, N - 1}(rand_eng);
 
@@ -80,8 +80,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
 
   SECTION("subsequent calls to operator+=") {
     for (std::size_t i = 0; i < 10; ++i) {
-      auto first = dset.begin<std::uint64_t>();
-      auto last = dset.end<std::uint64_t>();
+      auto first = dset.begin<std::uint64_t>(32'000);
+      auto last = dset.end<std::uint64_t>(32'000);
       std::size_t j = 0;
 
       while (first < last) {
@@ -97,8 +97,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
 
   SECTION("subsequent calls to operator-=") {
     for (std::size_t i = 0; i < 10; ++i) {
-      auto first = dset.end<std::uint64_t>() - 1;
-      auto last = dset.begin<std::uint64_t>();
+      auto first = dset.end<std::uint64_t>(32'000) - 1;
+      auto last = dset.begin<std::uint64_t>(32'000);
       std::size_t j = buff.size() - 1;
 
       while (first > last) {

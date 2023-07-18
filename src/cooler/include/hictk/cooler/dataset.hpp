@@ -50,10 +50,10 @@ class Dataset {
   mutable VariantBuffer _buff{};
 
  public:
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
+  template <typename T>
   class iterator;
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  using const_iterator = iterator<T, CHUNK_SIZE>;
+  template <typename T>
+  using const_iterator = iterator<T>;
 
   [[nodiscard]] static HighFive::DataSetCreateProps init_create_props(
       std::uint_fast8_t compression_lvl, std::size_t chunk_size);
@@ -183,18 +183,19 @@ class Dataset {
 
   [[nodiscard]] bool has_attribute(std::string_view key) const;
 
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  [[nodiscard]] auto begin() const -> iterator<T, CHUNK_SIZE>;
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  [[nodiscard]] auto end() const -> iterator<T, CHUNK_SIZE>;
+  template <typename T>
+  [[nodiscard]] auto begin(std::size_t chunk_size) const -> iterator<T>;
+  template <typename T>
+  [[nodiscard]] auto end(std::size_t chunk_size) const -> iterator<T>;
 
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  [[nodiscard]] auto cbegin() const -> iterator<T, CHUNK_SIZE>;
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  [[nodiscard]] auto cend() const -> iterator<T, CHUNK_SIZE>;
+  template <typename T>
+  [[nodiscard]] auto cbegin(std::size_t chunk_size) const -> iterator<T>;
+  template <typename T>
+  [[nodiscard]] auto cend(std::size_t chunk_size) const -> iterator<T>;
 
-  template <typename T, std::size_t CHUNK_SIZE = DEFAULT_HDF5_DATASET_ITERATOR_BUFFER_SIZE>
-  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset) const -> iterator<T, CHUNK_SIZE>;
+  template <typename T>
+  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset, std::size_t chunk_size) const
+      -> iterator<T>;
 
   [[nodiscard]] static std::pair<std::string, std::string> parse_uri(std::string_view uri);
 
@@ -215,19 +216,20 @@ class Dataset {
   [[nodiscard]] HighFive::DataType get_h5type() const;
 
  public:
-  template <typename T, std::size_t CHUNK_SIZE>
+  template <typename T>
   class iterator {
-    static_assert(CHUNK_SIZE != 0);
     friend Dataset;
     mutable std::shared_ptr<std::vector<T>> _buff{};
     const Dataset *_dset{};
     mutable std::size_t _h5_chunk_start{};
     std::size_t _h5_offset{};
+    std::size_t _chunk_size{};
 #ifndef NDEBUG
     std::size_t _h5_size{};
 #endif
 
-    explicit iterator(const Dataset &dset, std::size_t h5_offset = 0, bool init = true);
+    explicit iterator(const Dataset &dset, std::size_t chunk_size, std::size_t h5_offset = 0,
+                      bool init = true);
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -278,7 +280,8 @@ class Dataset {
    private:
     void read_chunk_at_offset(std::size_t new_offset) const;
 
-    [[nodiscard]] static constexpr auto make_end_iterator(const Dataset &dset) -> iterator;
+    [[nodiscard]] static constexpr auto make_end_iterator(const Dataset &dset,
+                                                          std::size_t chunk_size) -> iterator;
   };
 };
 DISABLE_WARNING_POP

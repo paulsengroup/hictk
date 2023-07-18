@@ -85,24 +85,24 @@ inline HighFive::DataType Dataset::get_h5type() const {
   }
 }
 
-template <typename T, std::size_t CHUNK_SIZE>
-inline auto Dataset::cbegin() const -> iterator<T, CHUNK_SIZE> {
-  return iterator<T, CHUNK_SIZE>(*this);
+template <typename T>
+inline auto Dataset::cbegin(std::size_t chunk_size) const -> iterator<T> {
+  return iterator<T>(*this, chunk_size);
 }
 
-template <typename T, std::size_t CHUNK_SIZE>
-inline auto Dataset::cend() const -> iterator<T, CHUNK_SIZE> {
-  return iterator<T, CHUNK_SIZE>::make_end_iterator(*this);
+template <typename T>
+inline auto Dataset::cend(std::size_t chunk_size) const -> iterator<T> {
+  return iterator<T>::make_end_iterator(*this, chunk_size);
 }
 
-template <typename T, std::size_t CHUNK_SIZE>
-inline auto Dataset::begin() const -> iterator<T, CHUNK_SIZE> {
-  return this->cbegin<T, CHUNK_SIZE>();
+template <typename T>
+inline auto Dataset::begin(std::size_t chunk_size) const -> iterator<T> {
+  return this->cbegin<T>(chunk_size);
 }
 
-template <typename T, std::size_t CHUNK_SIZE>
-inline auto Dataset::end() const -> iterator<T, CHUNK_SIZE> {
-  return this->cend<T, CHUNK_SIZE>();
+template <typename T>
+inline auto Dataset::end(std::size_t chunk_size) const -> iterator<T> {
+  return this->cend<T>(chunk_size);
 }
 
 }  // namespace hictk::cooler

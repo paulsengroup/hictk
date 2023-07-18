@@ -127,28 +127,24 @@ inline bool File::has_float_pixels() const noexcept {
   // clang-format on
 }
 
-template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::begin(
-    std::string_view weight_name) const {
+template <typename N>
+inline PixelSelector::iterator<N> File::begin(std::string_view weight_name) const {
   return this->fetch(this->read_weights(weight_name)).template begin<N>();
 }
 
-template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::cbegin(
-    std::string_view weight_name) const {
-  return this->begin<N, CHUNK_SIZE>(weight_name);
+template <typename N>
+inline PixelSelector::iterator<N> File::cbegin(std::string_view weight_name) const {
+  return this->begin<N>(weight_name);
 }
 
-template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::end(
-    std::string_view weight_name) const {
+template <typename N>
+inline PixelSelector::iterator<N> File::end(std::string_view weight_name) const {
   return this->fetch(this->read_weights(weight_name)).template end<N>();
 }
 
-template <typename N, std::size_t CHUNK_SIZE>
-inline typename PixelSelector<CHUNK_SIZE>::template iterator<N> File::cend(
-    std::string_view weight_name) const {
-  return this->end<N, CHUNK_SIZE>(weight_name);
+template <typename N>
+inline PixelSelector::iterator<N> File::cend(std::string_view weight_name) const {
+  return this->end<N>(weight_name);
 }
 
 inline auto File::index() noexcept -> Index & {

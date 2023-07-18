@@ -333,8 +333,8 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   for (std::size_t i1 = 1; i1 < bin1_offset.size() - 1; ++i1) {
     const auto i0 = i1 - 1;
 
-    auto first = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i0]);
-    auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1]);
+    auto first = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i0], 64'000);
+    auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1], 64'000);
 
     if (!std::is_sorted(first, last)) {
       if (verbose) {

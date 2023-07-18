@@ -25,19 +25,19 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
 
   auto f = File::open_read_only(path);
 
-  auto start_it = f.dataset("bins/start").begin<std::uint32_t>();
-  auto end_it = f.dataset("bins/end").begin<std::uint32_t>();
+  auto start_it = f.dataset("bins/start").begin<std::uint32_t>(32'000);
+  auto end_it = f.dataset("bins/end").begin<std::uint32_t>(32'000);
 
-  REQUIRE(start_it != f.dataset("bins/start").end<std::uint32_t>());
-  REQUIRE(end_it != f.dataset("bins/end").end<std::uint32_t>());
+  REQUIRE(start_it != f.dataset("bins/start").end<std::uint32_t>(0));
+  REQUIRE(end_it != f.dataset("bins/end").end<std::uint32_t>(0));
 
   for (const auto bin : table) {
     CHECK(*start_it++ == bin.start());
     CHECK(*end_it++ == bin.end());
   }
 
-  CHECK(start_it == f.dataset("bins/start").end<std::uint32_t>());
-  CHECK(end_it == f.dataset("bins/end").end<std::uint32_t>());
+  CHECK(start_it == f.dataset("bins/start").end<std::uint32_t>(0));
+  CHECK(end_it == f.dataset("bins/end").end<std::uint32_t>(0));
 }
 
 }  // namespace hictk::cooler::test::cooler_file
