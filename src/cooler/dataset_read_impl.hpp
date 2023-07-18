@@ -24,7 +24,6 @@ inline std::size_t Dataset::read(std::vector<N> &buff, std::size_t num, std::siz
     this->throw_out_of_range_excp(offset, num);
   }
 
-  auto h5type = this->get_h5type();
   buff.resize(num);
   this->select(offset, num).read(buff.data(), HighFive::create_datatype<N>());
 
