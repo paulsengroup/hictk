@@ -33,7 +33,7 @@ struct ConvertConfig {
   std::uint8_t gzip_compression_lvl{6};
   std::size_t processes{2};
 
-  std::size_t block_cache_size{0};
+  std::size_t juicer_tools_xmx{32'000'000'000};
   std::uint8_t verbosity{2};
   bool force{false};
 };

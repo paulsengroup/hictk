@@ -295,8 +295,7 @@ void hic_to_cool(const ConvertConfig& c) {
   }
 
   const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
-  hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front(), hic::MatrixType::observed,
-                  hic::MatrixUnit::BP, c.block_cache_size);
+  hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front());
 
   if (c.resolutions.size() == 1) {
     convert_resolution_multi_threaded<std::int32_t>(

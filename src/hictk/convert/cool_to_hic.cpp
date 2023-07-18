@@ -43,8 +43,7 @@ namespace hictk::tools {
     const ConvertConfig& c, const std::filesystem::path& path_to_pixels,
     const std::filesystem::path& path_to_chrom_sizes, std::size_t processes) {
   assert(processes != 0);
-  const auto heap_size = c.block_cache_size == 0 ? 8000.0 : double(c.block_cache_size) / 1.0e6;
-  return {fmt::format(FMT_STRING("-Xmx{:0}M"), heap_size),
+  return {fmt::format(FMT_STRING("-Xmx{}M"), c.juicer_tools_xmx / 1'000'000),
           "-jar",
           c.juicer_tools_jar.string(),
           "pre",
@@ -63,8 +62,7 @@ namespace hictk::tools {
 [[nodiscard]] static std::vector<std::string> generate_juicer_tools_add_norm_args(
     const ConvertConfig& c, const std::filesystem::path& path_to_weights, std::size_t processes) {
   assert(processes != 0);
-  const auto heap_size = c.block_cache_size == 0 ? 8000.0 : double(c.block_cache_size) / 1.0e6;
-  return {fmt::format(FMT_STRING("-Xmx{:0}M"), heap_size),
+  return {fmt::format(FMT_STRING("-Xmx{}M"), c.juicer_tools_xmx / 1'000'000),
           "-jar",
           c.juicer_tools_jar.string(),
           "addNorm",

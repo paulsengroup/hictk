@@ -78,10 +78,10 @@ void Cli::make_convert_subcommand() {
       c.genome,
       "Genome assembly name. By default this is copied from the .hic file metadata.");
   sc.add_option(
-      "--read-cache-size",
-      c.block_cache_size,
-      "Maximum size of the in-memory read cache. Not used when converting to .hic")
-      ->default_str("auto")
+      "--juicer-tools-memory",
+      c.juicer_tools_xmx,
+      "Max heap size used by juicer_tools. Only used when converting from cool to hic")
+      ->default_str(fmt::format(FMT_STRING("{:.0f}GB"), double(c.juicer_tools_xmx) / 1.0e9))
       ->check(CLI::PositiveNumber)
       ->transform(CLI::AsSizeValue(true));
   sc.add_option(
