@@ -125,6 +125,10 @@ void Cli::validate_zoomify_subcommand() const {
 void Cli::transform_args_zoomify_subcommand() {
   auto& c = std::get<ZoomifyConfig>(this->_config);
 
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+
   auto clr = cooler::File::open_read_only(c.input_uri);
 
   if (c.output_path.empty()) {

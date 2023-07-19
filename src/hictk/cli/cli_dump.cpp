@@ -171,6 +171,10 @@ void Cli::validate_dump_subcommand() const {
 void Cli::transform_args_dump_subcommand() {
   auto& c = std::get<DumpConfig>(this->_config);
 
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+
   c.format = infer_input_format(c.uri);
   if (c.format == "hic" && c.resolution == 0) {
     assert(c.table == "chroms");

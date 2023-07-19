@@ -34,7 +34,7 @@ struct ConvertConfig {
   std::size_t processes{2};
 
   std::size_t juicer_tools_xmx{32'000'000'000};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
   bool force{false};
 };
 
@@ -82,14 +82,14 @@ struct MergeConfig {
   std::size_t chunk_size{5'000'000};
 
   bool force{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
   bool quiet{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 struct ZoomifyConfig {
@@ -99,7 +99,7 @@ struct ZoomifyConfig {
   std::vector<std::uint32_t> resolutions{};
 
   bool force{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 // clang-format off

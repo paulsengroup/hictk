@@ -130,14 +130,16 @@ void Cli::transform_args() {
     case convert:
       this->transform_args_convert_subcommand();
       break;
-    case dump:  // NOLINT
+    case dump:
       this->transform_args_dump_subcommand();
       break;
-    case load:  // NOLINT
-      [[fallthrough]];
-    case merge:  // NOLINT
-      [[fallthrough]];
-    case validate:  // NOLINT
+    case load:
+      this->transform_args_load_subcommand();
+      break;
+    case merge:
+      this->transform_args_merge_subcommand();
+      break;
+    case validate:
       break;
     case zoomify:
       this->transform_args_zoomify_subcommand();

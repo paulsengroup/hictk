@@ -108,4 +108,12 @@ void Cli::validate_load_subcommand() const {
   }
 }
 
+void Cli::transform_args_load_subcommand() {
+  auto& c = std::get<LoadConfig>(this->_config);
+
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+}
+
 }  // namespace hictk::tools

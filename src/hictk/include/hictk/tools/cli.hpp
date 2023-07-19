@@ -217,6 +217,8 @@ class Cli {
 
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();
+  void transform_args_load_subcommand();
+  void transform_args_merge_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
 };
