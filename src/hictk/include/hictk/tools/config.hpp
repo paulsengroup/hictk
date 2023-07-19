@@ -66,12 +66,12 @@ struct LoadConfig {
   std::string format{};
   std::string assembly{"unknown"};
   bool count_as_float{false};
-  bool assume_sorted{true};
+  bool assume_sorted{false};
   bool force{false};
   bool validate_pixels{true};
 
-  std::uint8_t verbosity{2};
-  std::size_t batch_size{10'000'000};
+  std::uint8_t verbosity{4};
+  std::size_t batch_size{20'000'000};
 };
 
 struct MergeConfig {

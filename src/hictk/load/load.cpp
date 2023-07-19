@@ -49,7 +49,8 @@ void merge_coolers(const std::vector<std::string>& sources, std::string_view des
   }
 
   spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), sources.size(), dest);
-  cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest, force, 500'000, verbosity != 3);
+  cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest, force, 500'000,
+                                     verbosity != 3);
 }
 
 void ingest_pixels_sorted(const LoadConfig& c) {
@@ -71,7 +72,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  const internal::TmpDir tmpdir{};
+  static const internal::TmpDir tmpdir{std::filesystem::path(c.uri + ".tmp")};
   std::vector<std::string> uris{};
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
@@ -89,6 +90,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
         buffer.clear();
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
+          spdlog::info(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
           uris.emplace_back(ingest_pixels_unsorted(
               cooler::File::create_new_cooler<N>(tmp_uri.string(), chroms, c.bin_size, c.force),
               buffer, format, c.validate_pixels));
@@ -96,7 +98,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
             uris.pop_back();
             break;
           }
-          spdlog::info(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
+          spdlog::info(FMT_STRING("done writing to file {}..."), tmp_uri);
         }
       },
       write_buffer);
@@ -123,7 +125,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  const internal::TmpDir tmpdir{};
+  static const internal::TmpDir tmpdir{std::filesystem::path(c.uri + ".tmp")};
   std::vector<std::string> uris{};
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
@@ -161,12 +163,16 @@ int load_subcmd(const LoadConfig& c) {
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
 
   if (c.assume_sorted && pixel_has_count) {
+    spdlog::info(FMT_STRING("begin loading presorted pixels..."));
     ingest_pixels_sorted(c);
   } else if (!c.assume_sorted && pixel_has_count) {
+    spdlog::info(FMT_STRING("begin loading un-sorted pixels..."));
     ingest_pixels_unsorted(c);
   } else if (c.assume_sorted && !pixel_has_count) {
+    spdlog::info(FMT_STRING("begin loading presorted pairs..."));
     ingest_pairs_sorted(c);
   } else {
+    spdlog::info(FMT_STRING("begin loading un-sorted pairs..."));
     ingest_pairs_unsorted(c);
   }
   return 0;
