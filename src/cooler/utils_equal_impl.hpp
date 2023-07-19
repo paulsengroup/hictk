@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <string_view>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -15,12 +15,11 @@ inline bool equal(std::string_view uri1, std::string_view uri2, bool ignore_attr
   if (uri1 == uri2) {
     return true;
   }
-  return equal(File::open_read_only_read_once(uri1), File::open_read_only_read_once(uri2),
-               ignore_attributes);
+  return equal(File::open_read_once(uri1), File::open_read_once(uri2), ignore_attributes);
 }
 
 namespace internal {
-inline bool attributes_are_equal(StandardAttributes attr1, StandardAttributes attr2) {
+inline bool attributes_are_equal(Attributes attr1, Attributes attr2) {
   attr1.creation_date = "";  // NOLINT
   attr2.creation_date = "";  // NOLINT
   attr1.metadata = "";       // NOLINT

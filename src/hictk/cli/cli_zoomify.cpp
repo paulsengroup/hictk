@@ -48,6 +48,12 @@ void Cli::make_zoomify_subcommand() {
       c.resolutions,
       "One or more resolution to be used for coarsening.")
       ->required(true);
+
+  sc.add_flag(
+      "--copy-base-resolution,!--no-copy-base-resolution",
+      c.copy_base_resolution,
+      "Copy the base resolution to the output file.");
+
   // clang-format on
 
   this->_config = std::monostate{};
@@ -93,7 +99,7 @@ void Cli::validate_zoomify_subcommand() const {
   std::vector<std::string> errors;
   const auto& c = std::get<ZoomifyConfig>(this->_config);
 
-  auto clr = cooler::File::open_read_only(c.input_uri);
+  auto clr = cooler::File::open(c.input_uri);
   const auto output_path = c.output_path.empty()
                                ? std::filesystem::path(clr.path()).replace_extension(".mcool")
                                : std::filesystem::path(c.output_path);
@@ -125,7 +131,7 @@ void Cli::validate_zoomify_subcommand() const {
 void Cli::transform_args_zoomify_subcommand() {
   auto& c = std::get<ZoomifyConfig>(this->_config);
 
-  auto clr = cooler::File::open_read_only(c.input_uri);
+  auto clr = cooler::File::open(c.input_uri);
 
   if (c.output_path.empty()) {
     c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool").string();

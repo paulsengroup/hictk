@@ -9,7 +9,7 @@
 
 #include <future>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/tools/tools.hpp"
 #include "hictk/version.hpp"
@@ -128,11 +128,11 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
 
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,
                                               std::string_view genome, const Reference& chroms) {
-  auto attrs = cooler::StandardAttributes::init(resolution);
+  auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
   attrs.generated_by = fmt::format(FMT_STRING("hictk v{}"), hictk::config::version::str());
 
-  return cooler::File::create_new_cooler(uri, chroms, resolution, true, attrs);
+  return cooler::File::create(uri, chroms, resolution, true, attrs);
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {

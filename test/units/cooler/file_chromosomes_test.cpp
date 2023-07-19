@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
@@ -20,11 +20,11 @@ TEST_CASE("Cooler: read/write chromosomes", "[cooler][short]") {
                          Chromosome{2, "chr3", 10000}};
 
   {
-    auto f = File::create_new_cooler(path, chroms, bin_size, true);
+    auto f = File::create(path, chroms, bin_size, true);
     CHECK(chroms == f.chromosomes());
   }
 
-  const auto f = File::open_read_only(path, DEFAULT_HDF5_CACHE_SIZE, false);
+  const auto f = File::open(path, DEFAULT_HDF5_CACHE_SIZE, false);
   CHECK(chroms == f.chromosomes());
 }
 

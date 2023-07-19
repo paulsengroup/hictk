@@ -40,8 +40,17 @@ class TmpDir {
     }
   }
 
-  [[maybe_unused]] explicit TmpDir(const std::filesystem::path& prefix,
-                                   bool delete_on_destruction = true)
+  [[maybe_unused]] explicit TmpDir(std::filesystem::path path)
+      : _path(std::move(path)), _delete_on_destruction(true) {
+    if (std::filesystem::exists(_path)) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("unable to use path \"{}\" as TmpDir: folder already exists"),
+                      _path.string()));
+    }
+    std::filesystem::create_directories(_path);
+  }
+
+  [[maybe_unused]] explicit TmpDir(const std::filesystem::path& prefix, bool delete_on_destruction)
       : _path(create_uniq_temp_dir(prefix)), _delete_on_destruction(delete_on_destruction) {
     std::filesystem::create_directories(_path);
   }

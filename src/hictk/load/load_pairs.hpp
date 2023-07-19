@@ -14,7 +14,7 @@
 #include "./common.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {

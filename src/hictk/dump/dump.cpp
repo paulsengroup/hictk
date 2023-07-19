@@ -5,7 +5,7 @@
 #include <variant>
 
 #include "./common.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/transformers.hpp"
@@ -88,7 +88,7 @@ using FileVar = std::variant<cooler::File, hic::HiCFile>;
 }
 
 [[nodiscard]] static FileVar open_cooler_file(std::string_view uri) {
-  return {cooler::File::open_read_only_read_once(uri)};
+  return {cooler::File::open_read_once(uri)};
 }
 
 int dump_subcmd(const DumpConfig& c) {

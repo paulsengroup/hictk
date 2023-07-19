@@ -395,8 +395,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
-    -> StandardAttributes {
-  auto attrs = initialize_missing ? StandardAttributes::init(0) : StandardAttributes::init_empty();
+    -> Attributes {
+  auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
 
   auto read_or_throw = [&](const auto &key, auto &buff) {

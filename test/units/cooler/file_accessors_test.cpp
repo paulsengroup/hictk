@@ -8,7 +8,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
@@ -33,7 +33,7 @@ TEST_CASE("Cooler: version", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: accessors", "[cooler][short]") {
   const auto path = datadir / "cooler_test_file.cool";
-  const auto f = File::open_read_only(path.string());
+  const auto f = File::open(path.string());
 
   SECTION("group") {
     CHECK(f.group("bins").group.getPath() == "/bins");

@@ -4,7 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
@@ -13,7 +13,7 @@ namespace hictk::cooler::test::pixel_selector {
 TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
   using T = std::uint32_t;
   const auto path = datadir / "cooler_test_file.cool";
-  auto f = File::open_read_only(path.string());
+  auto f = File::open(path.string());
 
   SECTION("cis") {
     SECTION("overloads return identical results") {

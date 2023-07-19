@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
@@ -17,11 +17,11 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
 
   const auto path = testdir() / "test_sentinel_attr.cool";
   constexpr std::uint32_t bin_size = 1000;
-  auto f = File::create_new_cooler(path.string(), chroms, bin_size, true);
+  auto f = File::create(path.string(), chroms, bin_size, true);
 
   SECTION("Read-only") {
     const auto path1 = datadir / "cooler_test_file.cool";
-    const auto f1 = File::open_read_only(path1.string());
+    const auto f1 = File::open(path1.string());
     CHECK(Attribute::read<std::uint8_t>(f1.group("/")(), internal::SENTINEL_ATTR_NAME) !=
           internal::SENTINEL_ATTR_VALUE);
   }
@@ -30,7 +30,7 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) ==
           internal::SENTINEL_ATTR_VALUE);
     f.close();
-    f = File::open_read_only(path.string());
+    f = File::open(path.string());
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) !=
           internal::SENTINEL_ATTR_VALUE);
   }
@@ -39,8 +39,8 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) ==
           internal::SENTINEL_ATTR_VALUE);
 
-    CHECK_THROWS(f = File::open_read_only(path.string()));
-    CHECK_THROWS(f = File::create_new_cooler(path.string(), chroms, bin_size, true));
+    CHECK_THROWS(f = File::open(path.string()));
+    CHECK_THROWS(f = File::create(path.string(), chroms, bin_size, true));
   }
 }
 
