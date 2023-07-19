@@ -49,7 +49,7 @@ void merge_coolers(const std::vector<std::string>& sources, std::string_view des
   }
 
   spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), sources.size(), dest);
-  cooler::utils::merge(sources.begin(), sources.end(), dest, force, 500'000, verbosity != 3);
+  cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest, force, 500'000, verbosity != 3);
 }
 
 void ingest_pixels_sorted(const LoadConfig& c) {

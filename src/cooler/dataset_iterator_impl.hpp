@@ -20,17 +20,21 @@
 #include "hictk/type_pretty_printer.hpp"
 
 namespace hictk::cooler {
+template <typename T>
+inline Dataset::iterator<T>::iterator(Dataset dset, std::size_t chunk_size, std::size_t h5_offset,
+                                      bool init)
+    : iterator(std::make_shared<const Dataset>(std::move(dset)), chunk_size, h5_offset, init) {}
 
 template <typename T>
-inline Dataset::iterator<T>::iterator(const Dataset &dset, std::size_t chunk_size,
+inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset, std::size_t chunk_size,
                                       std::size_t h5_offset, bool init)
     // clang-format off
-    : _dset(&dset),
+    : _dset(std::move(dset)),
       _h5_chunk_start(h5_offset),
       _h5_offset(h5_offset),
       _chunk_size(chunk_size)
 #ifndef NDEBUG
-     ,_h5_size(dset.size())
+     ,_h5_size(_dset->size())
 #endif
 // clang-format on
 {
@@ -41,7 +45,7 @@ inline Dataset::iterator<T>::iterator(const Dataset &dset, std::size_t chunk_siz
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator==(const iterator &other) const noexcept {
-  assert(this->_dset == other._dset);
+  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset == other._h5_offset;
 }
 template <typename T>
@@ -51,23 +55,23 @@ constexpr bool Dataset::iterator<T>::operator!=(const iterator &other) const noe
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator<(const iterator &other) const noexcept {
-  assert(this->_dset == other._dset);
+  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset < other._h5_offset;
 }
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator<=(const iterator &other) const noexcept {
-  assert(this->_dset == other._dset);
+  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset <= other._h5_offset;
 }
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator>(const iterator &other) const noexcept {
-  assert(this->_dset == other._dset);
+  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset > other._h5_offset;
 }
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator>=(const iterator &other) const noexcept {
-  assert(this->_dset == other._dset);
+  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset >= other._h5_offset;
 }
 
@@ -91,7 +95,6 @@ inline auto Dataset::iterator<T>::operator*() const -> value_type {
   }
 
   assert(this->_buff);
-  assert(this->_dset);
   assert(this->_h5_offset < this->_h5_size);
   assert(this->_h5_chunk_start <= this->_h5_offset);
   assert(this->_h5_offset - this->_h5_chunk_start < this->_buff->size());
@@ -120,7 +123,6 @@ inline auto Dataset::iterator<T>::operator++(int) -> iterator {
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator+=(std::size_t i) -> iterator & {
-  assert(this->_dset);
   assert(this->_h5_offset + i <= this->_h5_size);
   this->_h5_offset += i;
   return *this;
@@ -128,7 +130,6 @@ inline auto Dataset::iterator<T>::operator+=(std::size_t i) -> iterator & {
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator+(std::size_t i) const -> iterator {
-  assert(this->_dset);
   assert(this->_buff);
   const auto new_offset = this->_h5_offset + i;
   assert(new_offset <= this->_h5_size);
@@ -173,7 +174,6 @@ inline auto Dataset::iterator<T>::operator-(std::size_t i) const -> iterator {
     return it -= i;
   }
 
-  assert(this->_dset);
   return iterator(*this->_dset, _chunk_size, new_offset);
 }
 
@@ -241,6 +241,7 @@ constexpr std::size_t Dataset::iterator<T>::underlying_buff_num_available_fwd() 
 
 template <typename T>
 constexpr const Dataset &Dataset::iterator<T>::dataset() const noexcept {
+  assert(this->_dset);
   return *this->_dset;
 }
 
@@ -269,12 +270,18 @@ inline void Dataset::iterator<T>::read_chunk_at_offset(std::size_t new_offset) c
 }
 
 template <typename T>
-constexpr auto Dataset::iterator<T>::make_end_iterator(const Dataset &dset, std::size_t chunk_size)
+inline auto Dataset::iterator<T>::make_end_iterator(Dataset dset, std::size_t chunk_size)
     -> iterator {
+  return iterator::make_end_iterator(std::make_shared<const Dataset>(std::move(dset)), chunk_size);
+}
+
+template <typename T>
+inline auto Dataset::iterator<T>::make_end_iterator(std::shared_ptr<const Dataset> dset,
+                                                    std::size_t chunk_size) -> iterator {
   iterator it{};
   it._buff = nullptr;
-  it._dset = &dset;
-  it._h5_offset = dset.size();
+  it._dset = std::move(dset);
+  it._h5_offset = it._dset->size();
   it._chunk_size = chunk_size;
 #ifndef NDEBUG
   it._h5_size = it._h5_offset;

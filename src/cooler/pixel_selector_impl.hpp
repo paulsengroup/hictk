@@ -28,6 +28,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
     : _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
       _index(std::move(index)),
+      _bins(_index->bins_ptr()),
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
@@ -39,7 +40,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count,
                                     std::shared_ptr<const balancing::Weights> weights) noexcept
-    : _index(std::move(index)),
+    : _bins(index->bins_ptr()),
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
@@ -79,8 +80,8 @@ inline auto PixelSelector::cbegin() const -> iterator<N> {
 
   if (!this->_coord1) {
     assert(!this->_coord2);
-    return iterator<N>{this->_index, *this->_pixels_bin1_id, *this->_pixels_bin2_id,
-                       *this->_pixels_count, this->_weights};
+    return iterator<N>{*this->_pixels_bin1_id, *this->_pixels_bin2_id, *this->_pixels_count,
+                       this->_weights};
   }
 
   return iterator<N>{this->_index,         *this->_pixels_bin1_id, *this->_pixels_bin2_id,
@@ -107,7 +108,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   // and a second time to copy the actual data)
   std::vector<Pixel<N>> buff{};
   std::transform(begin<N>(), end<N>(), std::back_inserter(buff), [&](const ThinPixel<N> &p) {
-    return Pixel<N>{{_index->bins().at(p.bin1_id), _index->bins().at(p.bin2_id)}, p.count};
+    return Pixel<N>{{_bins->at(p.bin1_id), _bins->at(p.bin2_id)}, p.count};
   });
   return buff;
 }
@@ -116,22 +117,20 @@ inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return t
 
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return this->_coord2; }
 
-inline const BinTable &PixelSelector::bins() const noexcept { return this->_index->bins(); }
+inline const BinTable &PixelSelector::bins() const noexcept { return *this->bins_ptr(); }
 
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
-  return this->_index->bins_ptr();
+  return this->_bins;
 }
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
-                                            const Dataset &pixels_bin1_id,
+inline PixelSelector::iterator<N>::iterator(const Dataset &pixels_bin1_id,
                                             const Dataset &pixels_bin2_id,
                                             const Dataset &pixels_count,
                                             std::shared_ptr<const balancing::Weights> weights)
     : _bin1_id_it(pixels_bin1_id.begin<BinIDT>(32'000)),
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>(32'000)),
       _count_it(pixels_count.begin<N>(32'000)),
-      _index(std::move(index)),
       _weights(std::move(weights)),
       _h5_end_offset(pixels_bin2_id.size()) {
   std::ignore = **this;

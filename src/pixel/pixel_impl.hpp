@@ -410,7 +410,8 @@ inline void PixelMerger<PixelIt>::replace_top_node(std::size_t i) {
   assert(this->_pqueue.top().i == i);
   this->_pqueue.pop();
   if (auto &it = this->_heads[i]; it != this->_tails[i]) {
-    this->_pqueue.emplace(Node{*it++, i});
+    this->_pqueue.emplace(Node{*it, i});
+    ++it;
   }
 }
 

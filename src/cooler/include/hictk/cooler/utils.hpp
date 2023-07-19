@@ -15,7 +15,7 @@
 namespace hictk::cooler::utils {
 
 /// Iterable of hictk::File or strings
-template <typename Str>
+template <typename N, typename Str>
 void merge(Str first_file, Str last_file, std::string_view dest_uri,
            bool overwrite_if_exists = false, std::size_t chunk_size = 500'000, bool quiet = true);
 
