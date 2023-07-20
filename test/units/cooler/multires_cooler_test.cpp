@@ -79,7 +79,7 @@ TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
   auto base_clr = File::open(base_path.string());
   const auto base_resolution = base_clr.bin_size();
 
-  const auto path = testdir() / "test_init.mcool";
+  const auto path = testdir() / "test_create_resolutions.mcool";
   const std::array<std::uint32_t, 3> resolutions{
       // clang-format off
       base_resolution * 2,
@@ -88,11 +88,10 @@ TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
       // clang-format on
   };
 
-  auto mclr = MultiResFile::create(path.string(), base_clr.chromosomes());
+  auto mclr = MultiResFile::create(path.string(), base_clr.chromosomes(), true);
+  mclr.copy_resolution(base_clr);
 
   SECTION("valid resolutions") {
-    mclr.copy_resolution(base_clr);
-
     for (const auto res : resolutions) {
       std::ignore = mclr.create_resolution(res);
     }

@@ -168,8 +168,13 @@ inline auto MultiResFile::chromosomes() const noexcept -> const Reference& {
 [[nodiscard]] inline std::uint32_t MultiResFile::compute_base_resolution(
     const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res) {
   assert(!resolutions.empty());
-  assert(target_res >= resolutions.front());
-  assert(target_res % resolutions.front() == 0);
+  const auto base_resolution = resolutions.front();
+
+  if (base_resolution > target_res || target_res % base_resolution != 0) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("resolution {} is not a multiple of base resolution {}"), target_res,
+                    base_resolution));
+  }
 
   return *std::find_if(resolutions.rbegin(), resolutions.rend(),
                        [&](const auto res) { return res <= target_res && target_res % res == 0; });
