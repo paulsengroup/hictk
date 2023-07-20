@@ -18,7 +18,7 @@ static void print_pixels(PixelIt first, PixelIt last) {
 }
 
 void dump_pixels(const cooler::File& f, std::string_view range1, std::string_view range2,
-                 std::string_view normalization, bool join) {
+                 std::string_view normalization, bool join, [[maybe_unused]] bool sorted) {
   auto weights = f.read_weights(normalization);
   if (range1 == "all") {
     assert(range2 == "all");
@@ -42,32 +42,34 @@ void dump_pixels(const cooler::File& f, std::string_view range1, std::string_vie
 }
 
 void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view range2,
-                 std::string_view normalization, bool join) {
+                 std::string_view normalization, bool join, bool sorted) {
   auto norm = hic::ParseNormStr(std::string{normalization});
   if (range1 == "all") {
     assert(range2 == "all");
     f.optimize_cache_size_for_iteration();
     auto sel = f.fetch(norm);
     if (!join) {
-      return print_pixels(sel.template begin<double>(), sel.template end<double>());
+      return print_pixels(sel.template begin<double>(sorted), sel.template end<double>());
     }
     auto jsel =
-        transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+        transformers::JoinGenomicCoords(sel.begin<double>(sorted), sel.end<double>(), f.bins_ptr());
     return print_pixels(jsel.begin(), jsel.end());
   }
 
   auto sel = f.fetch(range1, range2, norm);
   if (!join) {
-    return print_pixels(sel.template begin<double>(), sel.template end<double>());
+    return print_pixels(sel.template begin<double>(sorted), sel.template end<double>());
   }
 
-  auto jsel = transformers::JoinGenomicCoords(sel.begin<double>(), sel.end<double>(), f.bins_ptr());
+  auto jsel =
+      transformers::JoinGenomicCoords(sel.begin<double>(sorted), sel.end<double>(), f.bins_ptr());
   print_pixels(jsel.begin(), jsel.end());
 }
 
 template <typename File>
 static void process_query(File& f, std::string_view table, std::string_view range1,
-                          std::string_view range2, std::string_view normalization, bool join) {
+                          std::string_view range2, std::string_view normalization, bool join,
+                          bool sorted) {
   if (table == "chroms") {
     return dump_chroms(f, range1);
   }
@@ -76,7 +78,7 @@ static void process_query(File& f, std::string_view table, std::string_view rang
   }
 
   assert(table == "pixels");
-  return dump_pixels(f, range1, range2, normalization, join);
+  return dump_pixels(f, range1, range2, normalization, join, sorted);
 }
 
 using FileVar = std::variant<cooler::File, hic::HiCFile>;
@@ -98,7 +100,7 @@ int dump_subcmd(const DumpConfig& c) {
   std::visit(
       [&](auto& f) {
         if (c.query_file.empty()) {
-          process_query(f, c.table, c.range1, c.range2, c.normalization, c.join);
+          process_query(f, c.table, c.range1, c.range2, c.normalization, c.join, c.sorted);
           return;
         }
 
@@ -114,7 +116,7 @@ int dump_subcmd(const DumpConfig& c) {
         std::string line;
         while (std::getline(read_from_stdin ? std::cin : ifs, line)) {
           const auto [range1, range2] = parse_bedpe(line);
-          process_query(f, c.table, range1, range2, c.normalization, c.join);
+          process_query(f, c.table, range1, range2, c.normalization, c.join, c.sorted);
         }
       },
       file);

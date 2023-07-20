@@ -91,6 +91,7 @@ static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
   std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
 
   try {
     setup_logger_console();

@@ -86,6 +86,12 @@ void Cli::make_dump_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
+      "--sorted,!--unsorted",
+      c.sorted,
+      "Return interactions in ascending order.")
+      ->capture_default_str();
+
+  sc.add_flag(
       "--join,!--no-join",
       c.join,
       "Output pixels in BG2 format.")

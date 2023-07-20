@@ -62,7 +62,7 @@ inline auto PixelSelector::cbegin(bool sorted) const -> iterator<N> {
 }
 
 template <typename N>
-inline auto PixelSelector::cend([[maybe_unused]] bool sorted) const -> iterator<N> {
+inline auto PixelSelector::cend() const -> iterator<N> {
   return iterator<N>::at_end(*this);
 }
 
@@ -72,8 +72,8 @@ inline auto PixelSelector::begin(bool sorted) const -> iterator<N> {
 }
 
 template <typename N>
-inline auto PixelSelector::end(bool sorted) const -> iterator<N> {
-  return this->cend<N>(sorted);
+inline auto PixelSelector::end() const -> iterator<N> {
+  return this->cend<N>();
 }
 
 template <typename N>
@@ -530,12 +530,12 @@ inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_)
     : _selectors(std::move(selectors_)) {}
 
 template <typename N>
-inline auto PixelSelectorAll::begin() const -> iterator<N> {
-  return cbegin<N>();
+inline auto PixelSelectorAll::begin(bool sorted) const -> iterator<N> {
+  return cbegin<N>(sorted);
 }
 template <typename N>
-inline auto PixelSelectorAll::cbegin() const -> iterator<N> {
-  return iterator<N>(*this);
+inline auto PixelSelectorAll::cbegin(bool sorted) const -> iterator<N> {
+  return iterator<N>(*this, sorted);
 }
 
 template <typename N>
@@ -583,10 +583,11 @@ inline bool PixelSelectorAll::iterator<N>::Pair::operator>(const Pair &other) co
 }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector)
+inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector, bool sorted)
     : _selectors(std::make_shared<SelectorQueue>()),
       _active_selectors(std::make_shared<SelectorQueue>()),
       _its(std::make_shared<ItPQueue>()),
+      _sorted(sorted),
       _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
                 [&](const PixelSelector &sel) { _selectors->push(&sel); });
@@ -668,7 +669,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
     auto *sel = _selectors->front();
     _selectors->pop();
-    auto first = sel->begin<N>();
+    auto first = sel->begin<N>(_sorted);
     auto last = sel->end<N>();
     if (first != last) {
       _its->emplace(Pair{first, last});

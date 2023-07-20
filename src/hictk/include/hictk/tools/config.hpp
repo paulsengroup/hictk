@@ -47,7 +47,8 @@ struct DumpConfig {
   std::filesystem::path query_file{};
 
   std::string table{"pixels"};
-  bool join{true};
+  bool join{false};
+  bool sorted{true};
 
   std::string normalization{"NONE"};
   std::string weight_type{"infer"};
