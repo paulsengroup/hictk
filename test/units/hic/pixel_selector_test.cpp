@@ -72,7 +72,7 @@ static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_
 }
 
 template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void compareContactRecord(const hictk::Pixel<N>& r1, const SerializedPixel& r2) {
+static void compareContactRecord(const hictk::Pixel<N>& r1, const hictk::ThinPixel<float>& r2) {
   CHECK(r1.coords.bin1.start() == r2.bin1_id);
   CHECK(r1.coords.bin2.start() == r2.bin2_id);
   if constexpr (std::is_floating_point_v<N>) {
@@ -108,7 +108,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     constexpr std::array<std::int32_t, N> tail_expected{119, 34, 281, 53, 193};
 
     constexpr auto expected_value =
-        std::make_pair(std::size_t(1229799), SerializedPixel{15770000, 15770000, 1234.0F});
+        std::make_pair(std::size_t(1229799), hictk::ThinPixel<float>{15770000, 15770000, 1234.0F});
 
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
@@ -158,7 +158,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     constexpr std::array<std::int32_t, N> tail_expected{1, 1, 1, 1, 1};
 
     constexpr auto expected_value =
-        std::make_pair(std::size_t(3541), SerializedPixel{770000, 1300000, 13.0F});
+        std::make_pair(std::size_t(3541), hictk::ThinPixel<float>{770000, 1300000, 13.0F});
 
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
@@ -208,7 +208,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     REQUIRE(buffer.size() == 110);
     CHECK(sumCounts<std::int32_t>(buffer) == 1483112);
 
-    compareContactRecord(buffer[38], SerializedPixel{7500000, 12500000, 16512});
+    compareContactRecord(buffer[38], hictk::ThinPixel<float>{7500000, 12500000, 16512});
     CHECK(std::is_sorted(buffer.begin(), buffer.end()));
   }
 
@@ -219,7 +219,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
                      .fetch("chr2L:100,000-100,001", NormalizationMethod::NONE);
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 1);
-      compareContactRecord(buffer.front(), SerializedPixel{100000, 100000, 13895.0F});
+      compareContactRecord(buffer.front(), hictk::ThinPixel<float>{100000, 100000, 13895.0F});
     }
 
     SECTION("upper-triangle") {
@@ -228,7 +228,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 36);
       CHECK(sumCounts<std::int32_t>(buffer) == 99946);
-      compareContactRecord(buffer[33], SerializedPixel{180000, 180000, 3888});
+      compareContactRecord(buffer[33], hictk::ThinPixel<float>{180000, 180000, 3888});
 
       checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
                                         buffer);
@@ -241,7 +241,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 132);
       CHECK(sumCounts<std::int32_t>(buffer) == 124561);
-      compareContactRecord(buffer[33], SerializedPixel{40000, 130000, 148});
+      compareContactRecord(buffer[33], hictk::ThinPixel<float>{40000, 130000, 148});
       checkContactRecordsAreWithinBound(0, 200000 + resolution, 123456, 200000 + resolution,
                                         buffer);
       CHECK(std::is_sorted(buffer.begin(), buffer.end()));

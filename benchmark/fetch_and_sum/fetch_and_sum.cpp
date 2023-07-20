@@ -40,11 +40,15 @@ using namespace hictk;
 }
 
 template <typename PixelIt>
-[[nodiscard]] static double accumulate_interactions(PixelIt first_pixel, PixelIt last_pixel) {
-  return std::accumulate(first_pixel, last_pixel, 0.0,
-                         [&](const double accumulator, const auto &pixel) {
-                           return accumulator + double(pixel.count);
-                         });
+[[nodiscard]] static std::pair<std::size_t, double> accumulate_interactions(PixelIt first_pixel,
+                                                                            PixelIt last_pixel) {
+  std::size_t nnz = 0;
+  const auto sum = std::accumulate(first_pixel, last_pixel, 0.0,
+                                   [&](const double accumulator, const auto &pixel) {
+                                     ++nnz;
+                                     return accumulator + double(pixel.count);
+                                   });
+  return std::make_pair(nnz, sum);
 }
 
 void fetch_and_sum(const Config &c, cooler::File &&clr) {
@@ -55,12 +59,12 @@ void fetch_and_sum(const Config &c, cooler::File &&clr) {
     const auto [range1, range2] = parse_bedpe(line);
     const auto t0 = std::chrono::system_clock::now();
     auto sel = clr.fetch(range1, range2, weights);
-    const auto sum = accumulate_interactions(sel.begin<double>(), sel.end<double>());
+    const auto [nnz, sum] = accumulate_interactions(sel.begin<double>(), sel.end<double>());
     const auto t1 = std::chrono::system_clock::now();
 
     const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
-    fmt::print(FMT_STRING("{}\t{}\t{}\n"), line, sum, double(delta) / 1.0e9);
+    fmt::print(FMT_STRING("{}\t{}\t{}\t{}\n"), line, nnz, sum, double(delta) / 1.0e9);
   }
 }
 
@@ -73,21 +77,21 @@ void fetch_and_sum(const Config &c, hic::HiCFile &&hf) {
     const auto [range1, range2] = parse_bedpe(line);
     const auto t0 = std::chrono::system_clock::now();
     auto sel = hf.fetch(range1, range2, norm);
-    const auto sum = accumulate_interactions(sel.begin<double>(), sel.end<double>());
+    const auto [nnz, sum] = accumulate_interactions(sel.begin<double>(true), sel.end<double>(true));
     const auto t1 = std::chrono::system_clock::now();
 
     const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
-    fmt::print(FMT_STRING("{}\t{}\t{}\n"), line, sum, double(delta) / 1.0e9);
+    fmt::print(FMT_STRING("{}\t{}\t{}\t{}\n"), line, nnz, sum, double(delta) / 1.0e9);
   }
 }
 
 void fetch_and_sum(const Config &c) {
-  fmt::print(FMT_STRING("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tsum\ttime\n"));
+  fmt::print(FMT_STRING("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tnnz\tsum\ttime\n"));
   if (hic::utils::is_hic_file(c.path)) {
     fetch_and_sum(c, hic::HiCFile(c.path, c.resolution));
   } else {
-    fetch_and_sum(c, cooler::File::open_random_access(c.path));
+    fetch_and_sum(c, cooler::File::open_read_only(c.path));
   }
 }
 
