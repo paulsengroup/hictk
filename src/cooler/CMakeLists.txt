@@ -43,6 +43,7 @@ target_link_libraries(
             hictk::genomic_interval
             hictk::pixel
             hictk::reference
+            hictk::transformers
             hictk::variant)
 
 target_link_system_libraries(

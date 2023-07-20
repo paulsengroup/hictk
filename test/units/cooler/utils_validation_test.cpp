@@ -9,7 +9,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {

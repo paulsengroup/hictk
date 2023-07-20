@@ -103,6 +103,19 @@ for res in "${resolutions[@]}"; do
   fi
 done
 
+"$hictk_bin" zoomify \
+  "$ref_cooler::/resolutions/${resolutions[0]}" \
+  "$outdir/out.cool" \
+  --no-copy-base-resolution \
+  --resolutions "${resolutions[1]}"
+
+if ! compare_coolers \
+     "$outdir/out.cool" \
+     "$ref_cooler::/resolutions/${resolutions[1]}";
+then
+  status=1
+fi
+
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'
 else

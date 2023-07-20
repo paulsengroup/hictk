@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -137,7 +137,7 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
 
   std::vector<File> clrs{};
   std::transform(first_file, last_file, std::back_inserter(clrs),
-                 [&](const auto& uri) { return File::open_read_only_read_once(std::string{uri}); });
+                 [&](const auto& uri) { return File::open_read_once(std::string{uri}); });
 
   if (clrs.size() < 2) {
     throw std::runtime_error("unable to merge less than 2 coolers");
@@ -147,10 +147,9 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
   const auto bin_size = internal::get_bin_size_checked(clrs);
   const auto float_pixels = internal::merging_requires_float_pixels(clrs);
 
-  auto dest =
-      float_pixels
-          ? File::create_new_cooler<double>(dest_uri, chroms, bin_size, overwrite_if_exists)
-          : File::create_new_cooler<std::int32_t>(dest_uri, chroms, bin_size, overwrite_if_exists);
+  auto dest = float_pixels
+                  ? File::create<double>(dest_uri, chroms, bin_size, overwrite_if_exists)
+                  : File::create<std::int32_t>(dest_uri, chroms, bin_size, overwrite_if_exists);
   try {
     if (float_pixels) {
       auto [heads, tails] = internal::collect_iterators<double>(clrs);

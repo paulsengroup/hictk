@@ -32,58 +32,10 @@
 
 namespace hictk::cooler {
 
-template <typename InputIt>
-inline void init_mcool(std::string_view file_path, InputIt first_resolution,
-                       InputIt last_resolution, bool force_overwrite) {
-  using I = remove_cvref_t<decltype(*first_resolution)>;
-  static_assert(std::is_integral_v<I>,
-                "InputIt should be an iterator over a collection of integral numbers.");
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-
-  if (!force_overwrite && std::filesystem::exists(file_path)) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("unable to initialize file \"{}\": file already exists"), file_path));
-  }
-
-  const auto mode = force_overwrite ? HighFive::File::Truncate : HighFive::File::Create;
-  HighFive::File fp(std::string{file_path}, mode);
-  Attribute::write(fp, "format", std::string{MCOOL_MAGIC});
-  Attribute::write(fp, "format-version", std::int64_t(3));
-
-  auto res_group = fp.createGroup("/resolutions");
-  std::for_each(first_resolution, last_resolution, [&](auto res) {
-    assert(res > 0);
-    auto cooler_root = res_group.createGroup(fmt::to_string(res));
-  });
-}
-
-inline void init_mcool(std::string_view file_path, bool force_overwrite) {
-  static constexpr std::array<std::uint64_t, 0> buff{};
-  init_mcool(file_path, buff.begin(), buff.end(), force_overwrite);
-}
-
-// template <typename ChromSizeInputIt, typename CellIDInputIt>
-// inline void init_scool(std::string_view file_path, ChromSizeInputIt first_chrom,
-//                        ChromSizeInputIt last_chrom, CellIDInputIt first_cell_id,
-//                        CellIDInputIt last_cell_id, std::uint32_t bin_size, bool force_overwrite)
-//                        {
-//   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-//   const auto mode = force_overwrite ? IO_MODE::Truncate : IO_MODE::Create;
-//   HighFive::File fp(std::string{file_path}, static_cast<unsigned>(mode));
-//   fp.createAttribute("format", std::string{SCOOL_MAGIC});
-//   fp.createAttribute("format-version", std::int64_t(3));
-//
-//   const auto bin_table = binnify(first_chrom, last_chrom, bin_size);
-//
-//   auto res_group = fp.createGroup("/resolutions");
-//
-// }
-
-inline File::File(std::string_view uri, unsigned mode, std::size_t cache_size_bytes, double w0,
+inline File::File(RootGroup entrypoint, unsigned mode, std::size_t cache_size_bytes, double w0,
                   bool validate)
     : _mode(mode),
-      _fp(std::make_unique<HighFive::File>(open_file(uri, _mode, validate))),
-      _root_group(open_root_group(*_fp, uri)),
+      _root_group(std::move(entrypoint)),
       _groups(open_groups(_root_group)),
       _datasets(open_datasets(_root_group, cache_size_bytes, w0)),
       _attrs(read_standard_attributes(_root_group)),
@@ -102,11 +54,10 @@ inline File::File(std::string_view uri, unsigned mode, std::size_t cache_size_by
 }
 
 template <typename PixelT>
-inline File::File(std::string_view uri, Reference chroms, [[maybe_unused]] PixelT pixel,
-                  StandardAttributes attributes, std::size_t cache_size_bytes, double w0)
+inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] PixelT pixel,
+                  Attributes attributes, std::size_t cache_size_bytes, double w0)
     : _mode(HighFive::File::ReadWrite),
-      _fp(std::make_unique<HighFive::File>(open_file(uri, _mode, false))),
-      _root_group(open_or_create_root_group(*_fp, uri)),
+      _root_group(std::move(entrypoint)),
       _groups(create_groups(_root_group)),
       _datasets(create_datasets<PixelT>(_root_group, chroms, cache_size_bytes, w0)),
       _attrs(std::move(attributes)),
@@ -123,30 +74,28 @@ inline File::File(std::string_view uri, Reference chroms, [[maybe_unused]] Pixel
   this->write_sentinel_attr();
 }
 
-inline File File::open_read_only(std::string_view uri, std::size_t cache_size_bytes,
+inline File File::open(std::string_view uri, std::size_t cache_size_bytes, bool validate) {
+  return File::open_random_access(
+      open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+      cache_size_bytes, validate);
+}
+
+inline File File::open_random_access(std::string_view uri, std::size_t cache_size_bytes,
+                                     bool validate) {
+  return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+              HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate);
+}
+
+inline File File::open_read_once(std::string_view uri, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File::open_read_only_random_access(uri, cache_size_bytes, validate);
-}
-
-inline File File::open_read_only_random_access(std::string_view uri, std::size_t cache_size_bytes,
-                                               bool validate) {
-  return File(uri, HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate);
-}
-
-inline File File::open_read_only_read_once(std::string_view uri, std::size_t cache_size_bytes,
-                                           bool validate) {
-  return File(uri, HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+              HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
 }
 
 template <typename PixelT>
-inline File File::create_new_cooler(std::string_view uri, const Reference &chroms,
-                                    std::uint32_t bin_size, bool overwrite_if_exists,
-                                    StandardAttributes attributes, std::size_t cache_size_bytes) {
-  static_assert(std::is_arithmetic_v<PixelT>);
-  if (bin_size == 0) {
-    throw std::logic_error("bin_size cannot be zero.");
-  }
-  attributes.bin_size = bin_size;
+inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
+                         bool overwrite_if_exists, Attributes attributes,
+                         std::size_t cache_size_bytes) {
   try {
     const auto [file_path, root_path] = parse_cooler_uri(uri);
     const auto uri_is_file_path = root_path.empty() || root_path == "/";
@@ -185,14 +134,52 @@ inline File File::create_new_cooler(std::string_view uri, const Reference &chrom
       }
       assert(!utils::is_cooler(root_group()));
     }
-    // At this point the parent file is guaranteed to exist, so we can always open it in ReadWrite
-    // mode
-    return File(uri, chroms, PixelT(0), attributes, cache_size_bytes);
 
+    return create<PixelT>(
+        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), chroms,
+        bin_size, attributes, cache_size_bytes);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
                     uri, e.what()));
+  }
+}
+
+inline File File::open(RootGroup entrypoint, std::size_t cache_size_bytes, bool validate) {
+  return File::open_random_access(entrypoint, cache_size_bytes, validate);
+}
+
+inline File File::open_random_access(RootGroup entrypoint, std::size_t cache_size_bytes,
+                                     bool validate) {
+  return File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0,
+              validate);
+}
+
+inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes,
+                                 bool validate) {
+  return File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+}
+
+template <typename PixelT>
+inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size,
+                         Attributes attributes, std::size_t cache_size_bytes) {
+  static_assert(std::is_arithmetic_v<PixelT>);
+  if (bin_size == 0) {
+    throw std::logic_error("bin_size cannot be zero.");
+  }
+  attributes.bin_size = bin_size;
+  try {
+    if (utils::is_cooler(entrypoint())) {
+      throw std::runtime_error("URI points to an already existing cooler.");
+    }
+    // At this point the parent file is guaranteed to exist, so we can always open it in ReadWrite
+    // mode
+    return File(entrypoint, chroms, PixelT(0), attributes, cache_size_bytes);
+
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
+                    entrypoint.uri(), e.what()));
   }
 }
 
@@ -209,18 +196,7 @@ inline File::~File() noexcept {
   }
 }
 
-inline File::operator bool() const noexcept { return !!this->_fp; }
-
-inline void File::open(std::string_view uri, bool validate) {
-  *this = File::open_read_only(uri, validate);
-}
-
-template <typename PixelT>
-inline void File::create(std::string_view uri, const hictk::Reference &chroms,
-                         std::uint32_t bin_size, bool overwrite_if_exists,
-                         StandardAttributes attributes) {
-  *this = File::create_new_cooler<PixelT>(uri, chroms, bin_size, overwrite_if_exists, attributes);
-}
+inline File::operator bool() const noexcept { return !!this->_bins; }
 
 inline void File::close() {
   this->finalize();
@@ -228,9 +204,8 @@ inline void File::close() {
 }
 
 inline void File::finalize() {
-  if (!_fp || !_finalize) {
-    assert(!_bins == !_fp);
-    assert(!_index == !_fp);
+  if (!_bins || !_finalize) {
+    assert(!_index == !_bins);
     return;
   }
 
@@ -274,7 +249,7 @@ inline HighFive::File File::open_file(std::string_view uri, unsigned int mode, b
   return f;
 }
 
-inline auto File::open_or_create_root_group(HighFive::File &f, std::string_view uri) -> RootGroup {
+inline auto File::open_or_create_root_group(HighFive::File f, std::string_view uri) -> RootGroup {
   if (f.exist(parse_cooler_uri(uri).group_path)) {
     return open_root_group(f, uri);
   }

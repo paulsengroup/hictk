@@ -9,7 +9,8 @@
 
 #include <future>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/tools/tools.hpp"
 #include "hictk/version.hpp"
@@ -126,13 +127,21 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
   }
 }
 
+[[nodiscard]] static cooler::File init_cooler(cooler::RootGroup entrypoint,
+                                              std::uint32_t resolution, std::string_view genome,
+                                              const Reference& chroms) {
+  auto attrs = cooler::Attributes::init(resolution);
+  attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
+
+  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs);
+}
+
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,
                                               std::string_view genome, const Reference& chroms) {
-  auto attrs = cooler::StandardAttributes::init(resolution);
+  auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
-  attrs.generated_by = fmt::format(FMT_STRING("hictk v{}"), hictk::config::version::str());
 
-  return cooler::File::create_new_cooler(uri, chroms, resolution, true, attrs);
+  return cooler::File::create(uri, chroms, resolution, true, attrs);
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
@@ -234,8 +243,7 @@ static std::size_t append_pixels(cooler::File& clr,
 
 template <typename N>
 static void convert_resolution_multi_threaded(
-    hic::HiCFile& hf, std::string_view cooler_uri, const Reference& chromosomes,
-    std::uint32_t resolution, std::string_view genome,
+    hic::HiCFile& hf, cooler::File&& clr,
     const std::vector<hic::NormalizationMethod>& normalization_methods,
     bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
@@ -252,7 +260,6 @@ static void convert_resolution_multi_threaded(
   auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, early_return); };
   auto producer = std::async(std::launch::async, producer_fx);
 
-  auto clr = init_cooler(cooler_uri, resolution, genome, chromosomes);
   auto consumer_fx = [&]() { return append_pixels<N>(clr, queue, early_return); };
   auto consumer = std::async(std::launch::async, consumer_fx);
 
@@ -277,6 +284,8 @@ static void convert_resolution_multi_threaded(
     copy_weights(hf, clr, norm, fail_if_norm_not_found);
   }
 
+  const auto resolution = clr.bin_size();
+  clr.close();
   const auto t1 = std::chrono::steady_clock::now();
   const auto delta =
       static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
@@ -288,28 +297,27 @@ static void convert_resolution_multi_threaded(
 void hic_to_cool(const ConvertConfig& c) {
   assert(!c.resolutions.empty());
 
-  assert(spdlog::default_logger());
-  if (c.resolutions.size() > 1) {
-    cooler::init_mcool(c.path_to_output.string(), c.resolutions.begin(), c.resolutions.end(),
-                       c.force);
-  }
-
   const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
   hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front(), hic::MatrixType::observed,
                   hic::MatrixUnit::BP, c.block_cache_size);
+  assert(spdlog::default_logger());
 
   if (c.resolutions.size() == 1) {
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, c.path_to_output.string(), chroms, c.resolutions.front(), c.genome,
+        hf, init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms),
         c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     return;
   }
 
-  std::for_each(c.resolutions.rbegin(), c.resolutions.rend(), [&](const auto res) {
+  auto mclr = cooler::MultiResFile::create(c.path_to_output.string(), chroms, c.force);
+
+  std::for_each(c.resolutions.begin(), c.resolutions.end(), [&](const auto res) {
     hf.open(res);
+    auto attrs = cooler::Attributes::init(res);
+    attrs.assembly = c.genome.empty() ? "unknown" : std::string{c.genome};
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.path_to_output.string(), res), chroms,
-        res, c.genome, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
+        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms), c.normalization_methods,
+        c.fail_if_normalization_method_is_not_avaliable);
     hf.clear_cache();
   });
 }

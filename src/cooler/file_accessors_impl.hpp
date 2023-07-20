@@ -28,7 +28,7 @@ inline std::string File::path() const {
   if (!*this) {
     return "";
   }
-  return this->_fp->getName();
+  return this->_root_group().getFile().getName();
 }
 
 inline std::uint32_t File::bin_size() const noexcept { return this->_attrs.bin_size; }
@@ -46,7 +46,7 @@ inline auto File::bins_ptr() const noexcept -> std::shared_ptr<const BinTable> {
   return this->_bins;
 }
 
-inline auto File::attributes() const noexcept -> const StandardAttributes & { return this->_attrs; }
+inline auto File::attributes() const noexcept -> const Attributes & { return this->_attrs; }
 
 inline auto File::group(std::string_view group_name) -> Group & {
   try {

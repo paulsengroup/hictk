@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 

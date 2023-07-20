@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <random>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
 #include "tmpdir.hpp"
 
@@ -18,7 +18,7 @@ namespace hictk::cooler::test::pixel_selector {
 template <typename N>
 static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, const Reference& chroms,
                                          std::uint32_t bin_size) {
-  auto f = File::create_new_cooler<N>(path.string(), chroms, bin_size, true);
+  auto f = File::create<N>(path.string(), chroms, bin_size, true);
 
   const auto num_bins = f.bins().size();
 
@@ -44,7 +44,7 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
 
   const auto expected_nnz = generate_test_data<T>(path1, chroms, bin_size);
 
-  auto f = File::open_read_only(path1.string());
+  auto f = File::open(path1.string());
   REQUIRE(std::distance(f.begin<T>(), f.end<T>()) == expected_nnz);
 
   SECTION("query overlaps chrom start") {

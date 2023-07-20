@@ -11,8 +11,8 @@
 namespace hictk::cooler {
 
 template <typename PixelT, typename>
-inline StandardAttributes StandardAttributes::init(std::uint32_t bin_size_) {
-  StandardAttributes attrs{};
+inline Attributes Attributes::init(std::uint32_t bin_size_) {
+  Attributes attrs{};
   attrs.bin_size = bin_size_;
   if constexpr (std::is_floating_point_v<PixelT>) {
     attrs.sum = 0.0;
@@ -25,8 +25,8 @@ inline StandardAttributes StandardAttributes::init(std::uint32_t bin_size_) {
   return attrs;
 }
 
-inline StandardAttributes StandardAttributes::init_empty() noexcept {
-  StandardAttributes attrs{};
+inline Attributes Attributes::init_empty() noexcept {
+  Attributes attrs{};
 
   attrs.bin_type.reset();
   attrs.creation_date.reset();
@@ -43,7 +43,7 @@ inline StandardAttributes StandardAttributes::init_empty() noexcept {
   return attrs;
 }
 
-inline bool StandardAttributes::operator==(const StandardAttributes& other) const noexcept {
+inline bool Attributes::operator==(const Attributes& other) const noexcept {
   // clang-format off
   return bin_size == other.bin_size &&
          bin_type == other.bin_type &&
@@ -63,7 +63,12 @@ inline bool StandardAttributes::operator==(const StandardAttributes& other) cons
   // clang-format on
 }
 
-inline bool StandardAttributes::operator!=(const StandardAttributes& other) const noexcept {
+inline bool Attributes::operator!=(const Attributes& other) const noexcept {
   return !(*this == other);
+}
+
+inline std::string Attributes::generate_creation_date() {
+  // e.g. 2022-07-26T20:35:19
+  return fmt::format(FMT_STRING("{:%FT%T}"), fmt::gmtime(std::time(nullptr)));
 }
 }  // namespace hictk::cooler

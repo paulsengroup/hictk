@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
@@ -14,7 +14,7 @@ namespace hictk::cooler::test::cooler_file {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read attributes", "[cooler][short]") {
   auto path = datadir / "cooler_test_file.cool";
-  auto f = File::open_read_only(path.string());
+  auto f = File::open(path.string());
 
   SECTION("bin size") { CHECK(f.bin_size() == 100'000); }
 

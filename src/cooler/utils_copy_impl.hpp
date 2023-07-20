@@ -12,28 +12,31 @@
 #include <highfive/H5File.hpp>
 #include <string_view>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 
 inline void copy(std::string_view uri1, std::string_view uri2) {
+  const auto [path2, grp2] = cooler::parse_cooler_uri(uri2);
+  if (std::filesystem::exists(uri2) && utils::is_cooler(uri2)) {
+    throw std::runtime_error("destination already contains a Cooler");
+  }
+  HighFive::File dest(path2, HighFive::File::OpenOrCreate);
+  return copy(uri1, RootGroup{dest.getGroup(grp2)});
+}
+
+inline void copy(std::string_view uri1, RootGroup dest) {
   try {
     if (!utils::is_cooler(uri1)) {
       throw std::runtime_error("input is not a valid Cooler");
-    }
-    if (std::filesystem::exists(uri2) && utils::is_cooler(uri2)) {
-      throw std::runtime_error("destination already contains a Cooler");
     }
 
     /* Attempt to open an existing HDF5 file first. Need to open the dst file
          before the src file just in case that the dst and src are the same file
     */
     const auto [path1, grp1] = cooler::parse_cooler_uri(uri1);
-    const auto [path2, grp2] = cooler::parse_cooler_uri(uri2);
     const HighFive::File fin(path1, HighFive::File::ReadOnly);
 
-    // TODO check --force overwrite
-    HighFive::File fout(path2, HighFive::File::OpenOrCreate);
     /* create property to pass copy options */
     auto ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
     if (ocpl_id < 0) {
@@ -53,10 +56,10 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
           "failed");
     }
 
-    auto copy_h5_object = [&](const auto &src, const auto &dest, const auto &obj) {
+    auto copy_h5_object = [&](const auto &src, const auto &dest_, const auto &obj) {
       if (H5Ocopy(src.getId(),    /* Source file or group identifier */
                   obj.data(),     /* Name of the source object to be copied */
-                  dest.getId(),   /* Destination file or group identifier  */
+                  dest_.getId(),  /* Destination file or group identifier  */
                   obj.data(),     /* Name of the destination object  */
                   ocpl_id,        /* Object copy property list */
                   lcpl_id) < 0) { /* Link creation property list */
@@ -65,10 +68,10 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
       }
     };
 
-    auto copy_h5_attribute = [&](const HighFive::Group &src, HighFive::Group dest,
+    auto copy_h5_attribute = [&](const HighFive::Group &src, HighFive::Group dest_,
                                  const auto &attr_name) {
       auto attr = src.getAttribute(attr_name);
-      auto attr_out = dest.createAttribute(attr_name, attr.getSpace(), attr.getDataType());
+      auto attr_out = dest_.createAttribute(attr_name, attr.getSpace(), attr.getDataType());
 
       std::string buffer(attr.getStorageSize(), '\0');
       if (attr.getDataType().isFixedLenStr() || attr.getDataType().isVariableStr()) {
@@ -82,11 +85,11 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
     };
 
     for (const auto &obj : fin.getGroup(grp1).listObjectNames()) {
-      copy_h5_object(fin.getGroup(grp1), fout.getGroup(grp2), obj);
+      copy_h5_object(fin.getGroup(grp1), dest(), obj);
     }
 
     for (const auto &attr : fin.getGroup(grp1).listAttributeNames()) {
-      copy_h5_attribute(fin.getGroup(grp1), fout.getGroup(grp2), std::string{attr});
+      copy_h5_attribute(fin.getGroup(grp1), dest(), std::string{attr});
     }
 
     /* close propertis */
@@ -97,8 +100,8 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
       throw std::runtime_error("H5Pclose failed");
     }
   } catch (const std::exception &e) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("failed to copy Cooler from {} to {}: {}"), uri1, uri2, e.what()));
+    throw std::runtime_error(fmt::format(FMT_STRING("failed to copy Cooler from {} to {}: {}"),
+                                         uri1, dest.uri(), e.what()));
   }
 }
 

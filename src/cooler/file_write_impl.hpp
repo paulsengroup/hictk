@@ -117,12 +117,13 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
   this->update_pixel_sum<T, true>(cis_sum);
 }
 
-inline void File::flush() { this->_fp->flush(); }
+inline void File::flush() { this->_root_group().getFile().flush(); }
 
 template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
                                 It last_weight, bool overwrite_if_exists, bool divisive) {
-  File(uri, HighFive::File::ReadWrite)
+  File(open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, true), uri),
+       HighFive::File::ReadWrite)
       .write_weights(name, first_weight, last_weight, overwrite_if_exists, divisive);
 }
 
@@ -237,8 +238,7 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
   return datasets;
 }
 
-inline void File::write_standard_attributes(RootGroup &root_grp,
-                                            const StandardAttributes &attributes,
+inline void File::write_standard_attributes(RootGroup &root_grp, const Attributes &attributes,
                                             bool skip_sentinel_attr) {
   assert(attributes.bin_size != 0);
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT

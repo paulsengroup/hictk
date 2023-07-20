@@ -30,6 +30,11 @@ inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::cooler_file
 
+namespace cooler::test::multires_cooler_file {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
+}  // namespace cooler::test::multires_cooler_file
+
 namespace cooler::test::dataset {
 inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)

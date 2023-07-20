@@ -23,8 +23,8 @@ struct Config {
 
 static void dump_genome_wide(const std::string& path_to_hic, std::uint32_t resolution,
                              std::size_t target_num_records, std::size_t block_cache_size) {
-  hic::HiCFile hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
-                  block_cache_size);
+  const hic::HiCFile hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
+                        block_cache_size);
   auto sel = hf.fetch();
 
   const auto t0 = std::chrono::steady_clock::now();
@@ -47,8 +47,8 @@ static void dump_genome_wide(const std::string& path_to_hic, std::uint32_t resol
 
 static void dump(const std::string& path_to_hic, std::uint32_t resolution,
                  std::size_t target_num_records, std::size_t block_cache_size) {
-  hic::HiCFile hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
-                  block_cache_size);
+  const hic::HiCFile hf(path_to_hic, resolution, hic::MatrixType::observed, hic::MatrixUnit::BP,
+                        block_cache_size);
 
   auto sel = hf.fetch(hf.chromosomes().longest_chromosome().name());
 
@@ -70,7 +70,8 @@ static void dump(const std::string& path_to_hic, std::uint32_t resolution,
              delta);
 }
 
-int main(int argc, char** argv) {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+int main(int argc, char** argv) noexcept {
   CLI::App cli{};
 
   Config c{};
