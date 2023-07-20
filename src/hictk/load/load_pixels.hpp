@@ -67,21 +67,24 @@ inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::size_t 
 }
 
 template <typename N>
-inline std::string ingest_pixels_unsorted(cooler::File&& clr, std::vector<ThinPixel<N>>& buffer,
-                                          Format format, bool validate_pixels) {
+[[nodiscard]] inline CoolerChunk<N> ingest_pixels_unsorted(cooler::File&& clr,
+                                                           std::vector<ThinPixel<N>>& buffer,
+                                                           Format format, bool validate_pixels) {
   assert(buffer.capacity() != 0);
 
   read_batch(clr.bins(), buffer, format);
 
   if (buffer.empty()) {
     assert(std::cin.eof());
-    return "";
+    return {};
   }
 
   std::sort(buffer.begin(), buffer.end());
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
   buffer.clear();
 
-  return clr.uri();
+  clr.flush();
+  auto sel = clr.fetch();
+  return {std::move(clr), sel.begin<N>(), sel.end<N>()};
 }
 }  // namespace hictk::tools

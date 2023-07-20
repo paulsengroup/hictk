@@ -182,21 +182,24 @@ inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t b
 }
 
 template <typename N>
-inline std::string ingest_pairs_unsorted(cooler::File&& clr, std::vector<ThinPixel<N>>& buffer,
-                                         std::size_t batch_size, Format format,
-                                         bool validate_pixels) {
+[[nodiscard]] inline CoolerChunk<N> ingest_pairs_unsorted(cooler::File&& clr,
+                                                          std::vector<ThinPixel<N>>& buffer,
+                                                          std::size_t batch_size, Format format,
+                                                          bool validate_pixels) {
   buffer.reserve(batch_size);
   PairsAggregator<N>{clr.bins(), format}.read_next_chunk(buffer);
 
   if (buffer.empty()) {
     assert(std::cin.eof());
-    return "";
+    return {};
   }
 
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
   buffer.clear();
 
-  return clr.uri();
+  clr.flush();
+  auto sel = clr.fetch();
+  return {std::move(clr), sel.begin<N>(), sel.end<N>()};
 }
 
 }  // namespace hictk::tools

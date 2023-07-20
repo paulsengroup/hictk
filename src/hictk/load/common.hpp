@@ -7,6 +7,7 @@
 #include <cassert>
 #include <string_view>
 
+#include "hictk/cooler.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
@@ -47,4 +48,12 @@ template <typename N>
 [[nodiscard]] inline bool line_is_header(std::string_view line) {
   return !line.empty() && line.front() == '#';
 }
+
+template <typename N>
+struct CoolerChunk {
+  cooler::File clr;
+  cooler::PixelSelector::iterator<N> first;
+  cooler::PixelSelector::iterator<N> last;
+};
+
 }  // namespace hictk::tools

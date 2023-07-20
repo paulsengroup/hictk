@@ -45,7 +45,6 @@ inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset, std::
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator==(const iterator &other) const noexcept {
-  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset == other._h5_offset;
 }
 template <typename T>
@@ -55,23 +54,19 @@ constexpr bool Dataset::iterator<T>::operator!=(const iterator &other) const noe
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator<(const iterator &other) const noexcept {
-  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset < other._h5_offset;
 }
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator<=(const iterator &other) const noexcept {
-  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset <= other._h5_offset;
 }
 
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator>(const iterator &other) const noexcept {
-  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset > other._h5_offset;
 }
 template <typename T>
 constexpr bool Dataset::iterator<T>::operator>=(const iterator &other) const noexcept {
-  assert(this->dataset()() == other.dataset()());
   return this->_h5_offset >= other._h5_offset;
 }
 

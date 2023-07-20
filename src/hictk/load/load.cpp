@@ -36,21 +36,37 @@
 
 namespace hictk::tools {
 
-void merge_coolers(const std::vector<std::string>& sources, std::string_view dest, bool force,
-                   std::uint32_t verbosity) {
+template <typename N>
+void merge_coolers(std::vector<CoolerChunk<N>>& coolers, std::string_view dest, bool force) {
   if (force) {
     std::filesystem::remove(dest);
   }
 
-  if (sources.size() == 1) {
+  if (coolers.size() == 1) {
     spdlog::info(FMT_STRING("Moving temporary file to {}..."), dest);
-    std::filesystem::copy_file(sources.front(), dest);
+    const auto path = coolers.front().clr.uri();
+    coolers.front().clr.close();
+    std::filesystem::copy_file(path, dest);
     return;
   }
 
-  spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), sources.size(), dest);
-  cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest, force, 500'000,
-                                     verbosity != 3);
+  spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), coolers.size(), dest);
+  const auto chroms = coolers.front().clr.chromosomes();
+  const auto bin_size = coolers.front().clr.bin_size();
+
+  using PixelIt = decltype(coolers.front().first);
+  std::vector<PixelIt> heads;
+  std::vector<PixelIt> tails;
+
+  heads.reserve(coolers.size());
+  tails.reserve(coolers.size());
+  for (auto&& clr : coolers) {
+    heads.emplace_back(std::move(clr.first));
+    tails.emplace_back(std::move(clr.last));
+  }
+  coolers.clear();
+
+  cooler::utils::merge(heads, tails, chroms, bin_size, dest, force);
 }
 
 void ingest_pixels_sorted(const LoadConfig& c) {
@@ -72,8 +88,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  static const internal::TmpDir tmpdir{std::filesystem::path(c.uri + ".tmp")};
-  std::vector<std::string> uris{};
+  const internal::TmpDir tmpdir{};
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
   using FPBuff = std::vector<ThinPixel<double>>;
@@ -87,23 +102,24 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   std::visit(
       [&](auto& buffer) {
         using N = decltype(buffer.front().count);
+        std::vector<CoolerChunk<N>> chunks{};
         buffer.clear();
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
           spdlog::info(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
-          uris.emplace_back(ingest_pixels_unsorted(
+          chunks.emplace_back(ingest_pixels_unsorted(
               cooler::File::create_new_cooler<N>(tmp_uri.string(), chroms, c.bin_size, c.force),
               buffer, format, c.validate_pixels));
-          if (uris.back().empty()) {
-            uris.pop_back();
+
+          if (chunks.back().first == chunks.back().last) {
+            chunks.pop_back();
             break;
           }
           spdlog::info(FMT_STRING("done writing to file {}..."), tmp_uri);
         }
+        merge_coolers(chunks, c.uri, c.force);
       },
       write_buffer);
-
-  merge_coolers(uris, c.uri, c.force, c.verbosity);
 }
 
 void ingest_pairs_sorted(const LoadConfig& c) {
@@ -125,8 +141,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  static const internal::TmpDir tmpdir{std::filesystem::path(c.uri + ".tmp")};
-  std::vector<std::string> uris{};
+  const internal::TmpDir tmpdir{};
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
   using FPBuff = std::vector<ThinPixel<double>>;
@@ -140,22 +155,23 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   std::visit(
       [&](auto& buffer) {
         using N = decltype(buffer.begin()->count);
+        std::vector<CoolerChunk<N>> chunks{};
 
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
-          uris.emplace_back(ingest_pairs_unsorted(
+          chunks.emplace_back(ingest_pairs_unsorted(
               cooler::File::create_new_cooler<N>(tmp_uri.string(), chroms, c.bin_size, c.force),
               buffer, c.batch_size, format, c.validate_pixels));
-          if (uris.back().empty()) {
-            uris.pop_back();
+
+          if (chunks.back().first == chunks.back().last) {
+            chunks.pop_back();
             break;
           }
           spdlog::info(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
         }
+        merge_coolers(chunks, c.uri, c.force);
       },
       write_buffer);
-
-  merge_coolers(uris, c.uri, c.force, c.verbosity);
 }
 
 int load_subcmd(const LoadConfig& c) {

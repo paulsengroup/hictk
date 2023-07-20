@@ -65,38 +65,6 @@ inline void validate_chromosomes(const std::vector<LightCooler<N>>& coolers) {
   }
 }
 
-template <typename N>
-inline void merge(const std::vector<PixelSelector::iterator<N>>& heads,
-                  const std::vector<PixelSelector::iterator<N>>& tails, File& dest,
-                  std::size_t queue_capacity, bool quiet) {
-  hictk::internal::PixelMerger merger{heads, tails};
-
-  std::vector<ThinPixel<N>> buffer(queue_capacity);
-  buffer.clear();
-
-  std::size_t pixels_processed{};
-  while (true) {
-    auto pixel = merger.next();
-    if (!pixel) {
-      break;
-    }
-
-    buffer.emplace_back(std::move(pixel));
-    if (buffer.size() == queue_capacity) {
-      dest.append_pixels(buffer.begin(), buffer.end());
-      pixels_processed += buffer.size();
-      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(10'000'000)) == 0) {
-        spdlog::info(FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 10'000'000);
-      }
-      buffer.clear();
-    }
-  }
-
-  if (!buffer.empty()) {
-    dest.append_pixels(buffer.begin(), buffer.end());
-  }
-}
-
 }  // namespace internal
 
 template <typename N, typename Str>
@@ -129,10 +97,46 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    internal::merge(heads, tails, dest, chunk_size, quiet);
+    merge(heads, tails, dest, chunk_size, quiet);
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
                                          std::distance(first_uri, last_uri), e.what()));
   }
 }
+
+template <typename PixelIt>
+inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
+                  const Reference& chromosomes, std::uint32_t bin_size, std::string_view dest_uri,
+                  bool overwrite_if_exists, std::size_t queue_capacity) {
+  using N = remove_cvref_t<decltype(heads.front()->count)>;
+
+  hictk::internal::PixelMerger merger{heads, tails};
+  std::vector<ThinPixel<N>> buffer(queue_capacity);
+  buffer.clear();
+
+  auto dest = File::create_new_cooler<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
+
+  std::size_t pixels_processed{};
+  while (true) {
+    auto pixel = merger.next();
+    if (!pixel) {
+      break;
+    }
+
+    buffer.emplace_back(std::move(pixel));
+    if (buffer.size() == queue_capacity) {
+      dest.append_pixels(buffer.begin(), buffer.end());
+      pixels_processed += buffer.size();
+      if (pixels_processed % (std::max)(queue_capacity, std::size_t(10'000'000)) == 0) {
+        spdlog::info(FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 10'000'000);
+      }
+      buffer.clear();
+    }
+  }
+
+  if (!buffer.empty()) {
+    dest.append_pixels(buffer.begin(), buffer.end());
+  }
+}
+
 }  // namespace hictk::cooler::utils
