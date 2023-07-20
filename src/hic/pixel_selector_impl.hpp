@@ -86,8 +86,8 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
   const auto &weights2 = _footer->weights2()();
   const auto &expected = _footer->expectedValues();
 
-  const auto bin1 = static_cast<std::size_t>(pixel.bin1_id);
-  const auto bin2 = static_cast<std::size_t>(pixel.bin2_id);
+  const auto bin1 = pixel.bin1_id;
+  const auto bin2 = pixel.bin2_id;
 
   assert(is_inter() || bin1 <= bin2);
 
