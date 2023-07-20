@@ -53,7 +53,7 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
   if (force_overwrite) {
     std::filesystem::remove(path);
   }
-  HighFive::File fp{std::string{path}, HighFive::File::Create};
+  HighFive::File fp(path.string(), HighFive::File::Create);
 
   MultiResAttributes attrs{};
 
