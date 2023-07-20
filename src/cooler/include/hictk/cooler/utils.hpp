@@ -17,12 +17,12 @@ namespace hictk::cooler::utils {
 /// Iterable of hictk::File or strings
 template <typename N, typename Str>
 void merge(Str first_file, Str last_file, std::string_view dest_uri,
-           bool overwrite_if_exists = false, std::size_t chunk_size = 500'000);
+           bool overwrite_if_exists = false, std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000);
 
 template <typename PixelIt>
 void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
            const Reference& chromosomes, std::uint32_t bin_size, std::string_view dest_uri,
-           bool overwrite_if_exists = false, std::size_t queue_capacity = 500'000);
+           bool overwrite_if_exists = false, std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000);
 
 [[nodiscard]] bool equal(std::string_view uri1, std::string_view uri2,
                          bool ignore_attributes = true);
