@@ -198,8 +198,7 @@ PYBIND11_MODULE(hictkpy, m) {
           .def(py::init(py::overload_cast<std::string_view, const py::dict&, std::uint32_t, bool>(
                    cooler_ctor)),
                py::arg("uri"), py::arg("chromosomes"), py::arg("bin_size"),
-               py::arg("overwrite_if_exists"))
-          .def("open", &cooler::File::open);
+               py::arg("overwrite_if_exists"));
 
   cooler_file.def("uri", &cooler::File::uri);
   cooler_file.def("hdf5_path", &cooler::File::hdf5_path);
