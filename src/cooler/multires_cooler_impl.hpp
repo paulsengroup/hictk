@@ -36,7 +36,7 @@ inline MultiResFile::MultiResFile(HighFive::File fp, Reference chroms,
   if (_chroms.empty() && !_resolutions.empty()) {
     _chroms = open(_resolutions.back()).chromosomes();
   }
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline MultiResFile::MultiResFile(const std::filesystem::path& path, unsigned int mode)
     : MultiResFile(HighFive::File(path.string(), mode), {},
