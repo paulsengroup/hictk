@@ -19,25 +19,6 @@
 
 namespace hictk::hic {
 
-struct SerializedPixel {
-  std::int64_t bin1_id{};  // NOLINT
-  std::int64_t bin2_id{};  // NOLINT
-  float count{};           // NOLINT
-
-  constexpr bool operator<(const SerializedPixel &other) const noexcept {
-    if (bin1_id == other.bin1_id) {
-      return bin2_id < other.bin2_id;
-    }
-    return bin1_id < other.bin1_id;
-  }
-  constexpr bool operator==(const SerializedPixel &other) const noexcept {
-    return bin1_id == other.bin1_id && bin2_id == other.bin2_id && count == other.count;
-  }
-  constexpr bool operator!=(const SerializedPixel &other) const noexcept {
-    return !(*this == other);
-  }
-};
-
 // pointer structure for reading blocks or matrices, holds the size and position
 struct indexEntry {
   std::int64_t position{-1};  // NOLINT

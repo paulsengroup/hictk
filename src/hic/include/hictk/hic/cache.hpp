@@ -38,10 +38,10 @@ namespace hictk::hic::internal {
 
 class InteractionBlock {
  public:
-  using Row = std::vector<SerializedPixel>;
+  using Row = std::vector<ThinPixel<float>>;
 
  private:
-  using BuffT = std::vector<SerializedPixel>;
+  using BuffT = std::vector<ThinPixel<float>>;
   std::size_t _id{};
   BuffT _interactions{};
 
@@ -51,7 +51,7 @@ class InteractionBlock {
 
   InteractionBlock() = default;
   InteractionBlock(std::size_t id_, std::size_t block_bin_count,
-                   std::vector<SerializedPixel> pixels);
+                   std::vector<ThinPixel<float>> pixels);
 
   friend constexpr bool operator<(const InteractionBlock& a, const InteractionBlock& b) noexcept;
   friend constexpr bool operator==(const InteractionBlock& a, const InteractionBlock& b) noexcept;

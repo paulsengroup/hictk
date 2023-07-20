@@ -50,7 +50,7 @@ constexpr bool operator!=(std::size_t a_id, const InteractionBlock &b) noexcept 
 
 inline InteractionBlock::InteractionBlock(std::size_t id_,
                                           [[maybe_unused]] std::size_t block_bin_count,
-                                          std::vector<SerializedPixel> pixels)
+                                          std::vector<ThinPixel<float>> pixels)
     : _id(id_), _interactions(std::move(pixels)) {}
 
 inline auto InteractionBlock::operator()() const noexcept -> const BuffT & { return _interactions; }
@@ -71,7 +71,7 @@ constexpr bool BlockID::operator==(const BlockID &other) const noexcept {
 }
 
 inline BlockCache::BlockCache(std::size_t capacity_bytes)
-    : _capacity(capacity_bytes / sizeof(SerializedPixel)) {}
+    : _capacity(capacity_bytes / sizeof(ThinPixel<float>)) {}
 
 inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
     -> Value {
@@ -130,10 +130,10 @@ inline void BlockCache::clear() noexcept {
 constexpr std::size_t BlockCache::capacity() const noexcept { return _capacity; }
 constexpr std::size_t BlockCache::size() const noexcept { return _size; }
 constexpr std::size_t BlockCache::capacity_bytes() const noexcept {
-  return capacity() * sizeof(SerializedPixel);
+  return capacity() * sizeof(ThinPixel<float>);
 }
 constexpr std::size_t BlockCache::size_bytes() const noexcept {
-  return size() * sizeof(SerializedPixel);
+  return size() * sizeof(ThinPixel<float>);
 }
 inline std::size_t BlockCache::num_blocks() const noexcept { return _map.size(); }
 
@@ -155,7 +155,7 @@ inline void BlockCache::set_capacity(std::size_t new_capacity, bool shrink_to_fi
       pop_oldest();
     }
   }
-  _capacity = new_capacity / sizeof(SerializedPixel);
+  _capacity = new_capacity / sizeof(ThinPixel<float>);
 }
 
 constexpr std::size_t BlockCache::hits() const noexcept { return _hits; }

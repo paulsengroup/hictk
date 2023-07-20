@@ -41,7 +41,7 @@ class HiCBlockReader {
   Index _index{};
 
   BinaryBuffer _bbuffer{};
-  std::vector<SerializedPixel> _tmp_buffer{};
+  std::vector<ThinPixel<float>> _tmp_buffer{};
 
  public:
   HiCBlockReader() = default;
@@ -72,14 +72,14 @@ class HiCBlockReader {
   static void read_dispatcher_type1_block(bool i16Bin1, bool i16Bin2, bool i16Counts,
                                           std::int32_t bin1Offset, std::int32_t bin2Offset,
                                           BinaryBuffer& src,
-                                          std::vector<SerializedPixel>& dest) noexcept;
+                                          std::vector<ThinPixel<float>>& dest) noexcept;
   template <typename Bin1Type, typename Bin2Type, typename CountType>
   static void read_type1_block(std::int32_t bin1Offset, std::int32_t bin2Offset, BinaryBuffer& src,
-                               std::vector<SerializedPixel>& dest) noexcept;
+                               std::vector<ThinPixel<float>>& dest) noexcept;
 
   template <typename CountType>
   static void read_type2_block(std::int32_t bin1Offset, std::int32_t bin2Offset, BinaryBuffer& src,
-                               std::vector<SerializedPixel>& dest) noexcept;
+                               std::vector<ThinPixel<float>>& dest) noexcept;
 };
 
 }  // namespace hictk::hic::internal
