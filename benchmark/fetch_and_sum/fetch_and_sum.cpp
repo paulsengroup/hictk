@@ -77,7 +77,7 @@ void fetch_and_sum(const Config &c, hic::HiCFile &&hf) {
     const auto [range1, range2] = parse_bedpe(line);
     const auto t0 = std::chrono::system_clock::now();
     auto sel = hf.fetch(range1, range2, norm);
-    const auto [nnz, sum] = accumulate_interactions(sel.begin<double>(true), sel.end<double>(true));
+    const auto [nnz, sum] = accumulate_interactions(sel.begin<double>(false), sel.end<double>());
     const auto t1 = std::chrono::system_clock::now();
 
     const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
