@@ -78,9 +78,13 @@ inline auto PixelSelector::end() const -> iterator<N> {
 
 template <typename N>
 inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const {
-  if (matrix_type() == MatrixType::observed && normalization() == NormalizationMethod::NONE) {
-    return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
-  }
+  auto return_pixel = [&]() -> ThinPixel<N> {
+    if constexpr (std::is_floating_point_v<N>) {
+      return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
+    } else {
+      return {pixel.bin1_id, pixel.bin2_id, static_cast<N>(std::round(pixel.count))};
+    }
+  };
 
   const auto &weights1 = _footer->weights1()();
   const auto &weights2 = _footer->weights2()();
@@ -101,7 +105,7 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
   }
 
   if (matrix_type() == MatrixType::observed) {
-    return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
+    return return_pixel();
   }
 
   const auto expectedCount = [&]() {
@@ -116,13 +120,13 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
 
   if (matrix_type() == MatrixType::expected) {
     pixel.count = expectedCount;
-    return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
+    return return_pixel();
   }
 
   assert(matrix_type() == MatrixType::oe);
   pixel.count /= expectedCount;
 
-  return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
+  return return_pixel();
 }
 
 template <typename N>
@@ -401,9 +405,9 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
 template <typename N>
 inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
   const auto bin_size = bins().bin_size();
-  const auto num_bins = std::max(
+  const auto num_bins = std::min(
       static_cast<std::uint32_t>(_sel->_reader.index().block_bin_count()),
-      static_cast<std::uint32_t>(0.01 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
+      static_cast<std::uint32_t>(0.005 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
 
   const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
@@ -444,9 +448,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
         continue;
       }
 
-      p.bin1_id += bin1_offset;
-      p.bin2_id += bin2_offset;
-      _buffer->emplace_back(_sel->transform_pixel<N>(p));
+      auto pt = _sel->transform_pixel<N>(p);
+      pt.bin1_id += bin1_offset;
+      pt.bin2_id += bin2_offset;
+      _buffer->emplace_back(std::move(pt));
     }
     _sel->_reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it);
     if (++_block_it == _block_idx->end()) {
@@ -510,9 +515,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra() {
         continue;
       }
 
-      p.bin1_id += bin1_offset;
-      p.bin2_id += bin2_offset;
-      _buffer->emplace_back(_sel->transform_pixel<N>(p));
+      auto pt = _sel->transform_pixel<N>(p);
+      pt.bin1_id += bin1_offset;
+      pt.bin2_id += bin2_offset;
+      _buffer->emplace_back(std::move(pt));
     }
     if (!block_overlaps_query) {
       _sel->_reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
