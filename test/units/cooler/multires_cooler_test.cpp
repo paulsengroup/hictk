@@ -14,7 +14,7 @@
 namespace hictk::cooler::test::multires_cooler_file {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MultiresCooler: open read-only", "[cooler][short]") {
+TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
   const auto path = datadir / "multires_cooler_test_file.mcool";
 
   auto mclr = MultiResFile(path.string());
@@ -28,7 +28,7 @@ TEST_CASE("MultiresCooler: open read-only", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MultiresCooler: init files", "[cooler][short]") {
+TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
   const auto base_resolution = File::open(base_path.string()).bin_size();
 
@@ -43,10 +43,21 @@ TEST_CASE("MultiresCooler: init files", "[cooler][short]") {
   };
 
   SECTION("coarsen on construction") {
-    std::ignore = MultiResFile::create(path.string(), File::open(base_path.string()),
-                                       resolutions.begin(), resolutions.end(), true);
+    SECTION("valid resolutions") {
+      std::ignore = MultiResFile::create(path.string(), File::open(base_path.string()),
+                                         resolutions.begin(), resolutions.end(), true);
 
-    CHECK(utils::is_multires_file(path.string()));
+      CHECK(utils::is_multires_file(path.string()));
+    }
+
+    SECTION("invalid resolutions") {
+      std::vector<std::uint32_t> resolutions_{base_resolution / 2};
+      CHECK_THROWS(MultiResFile::create(path.string(), File::open(base_path.string()),
+                                        resolutions_.begin(), resolutions_.end(), true));
+      resolutions_ = {base_resolution + 1};
+      CHECK_THROWS(MultiResFile::create(path.string(), File::open(base_path.string()),
+                                        resolutions_.begin(), resolutions_.end(), true));
+    }
   }
 
   SECTION("construct then initialize") {
@@ -63,7 +74,7 @@ TEST_CASE("MultiresCooler: init files", "[cooler][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("MultiresCooler: create resolutions", "[cooler][short]") {
+TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
   auto base_clr = File::open(base_path.string());
   const auto base_resolution = base_clr.bin_size();
@@ -78,13 +89,20 @@ TEST_CASE("MultiresCooler: create resolutions", "[cooler][short]") {
   };
 
   auto mclr = MultiResFile::create(path.string(), base_clr.chromosomes());
-  mclr.copy_resolution(base_clr);
 
-  for (const auto res : resolutions) {
-    std::ignore = mclr.create_resolution(res);
+  SECTION("valid resolutions") {
+    mclr.copy_resolution(base_clr);
+
+    for (const auto res : resolutions) {
+      std::ignore = mclr.create_resolution(res);
+    }
+
+    CHECK(mclr.resolutions().size() == resolutions.size() + 1);
   }
-
-  CHECK(mclr.resolutions().size() == resolutions.size() + 1);
+  SECTION("invalid resolutions") {
+    CHECK_THROWS(mclr.create_resolution(base_resolution / 2));
+    CHECK_THROWS(mclr.create_resolution(base_resolution + 1));
+  }
 }
 
 }  // namespace hictk::cooler::test::multires_cooler_file

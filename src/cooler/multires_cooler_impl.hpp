@@ -38,8 +38,8 @@ inline MultiResFile::MultiResFile(HighFive::File fp, Reference chroms,
   }
 }
 
-inline MultiResFile::MultiResFile(const std::filesystem::path& path)
-    : MultiResFile(HighFive::File(path.string(), HighFive::File::ReadOnly), {},
+inline MultiResFile::MultiResFile(const std::filesystem::path& path, unsigned int mode)
+    : MultiResFile(HighFive::File(path.string(), mode), {},
                    read_resolutions(HighFive::File(path.string())),
                    read_attributes(HighFive::File(path.string()))) {}
 
@@ -72,37 +72,41 @@ template <typename ResolutionIt>
 inline MultiResFile MultiResFile::create(const std::filesystem::path& path, const File& base,
                                          ResolutionIt first_res, ResolutionIt last_res,
                                          bool force_overwrite) {
-  auto mclr = MultiResFile::create(path, base.chromosomes(), force_overwrite);
-  mclr._resolutions = {first_res, last_res};
-  std::sort(mclr._resolutions.begin(), mclr._resolutions.end());
+  std::vector<std::uint32_t> resolutions_{first_res, last_res};
+  std::sort(resolutions_.begin(), resolutions_.end());
   const auto base_res = base.bin_size();
-  const auto tgt_res = mclr._resolutions.front();
-  if (base_res > tgt_res) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("base resolution {} cannot be greater than resolution {}"), base_res, tgt_res));
-  }
+  const auto tgt_res = resolutions_.front();
 
-  for (const auto& res : mclr._resolutions) {
-    if (res % base_res != 0) {
+  for (const auto& res : resolutions_) {
+    if (base_res > tgt_res || res % base_res != 0) {
       throw std::runtime_error(fmt::format(
           FMT_STRING("resolution {} is not a multiple of base resolution {}"), res, base_res));
     }
   }
 
+  auto mclr = MultiResFile::create(path, base.chromosomes(), force_overwrite);
   spdlog::info(FMT_STRING("Copying {} resolution from \"{}\""), base_res, base.path());
   mclr.copy_resolution(base);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
-  for (std::size_t i = 1; i < mclr._resolutions.size(); ++i) {
-    const auto tgt_resolution = mclr._resolutions[i];
+  for (std::size_t i = 1; i < resolutions_.size(); ++i) {
+    const auto tgt_resolution = resolutions_[i];
     const auto base_resolution = compute_base_resolution(mclr._resolutions, tgt_resolution);
 
-    const auto uri = fmt::format(FMT_STRING("{}::/resolutions/{}"), path.string(), tgt_resolution);
-
+    auto attributes = base.has_float_pixels() ? Attributes::init<double>(tgt_resolution)
+                                              : Attributes::init<std::int32_t>(tgt_resolution);
+    attributes.assembly = base.attributes().assembly;
+    auto clr =
+        base.has_float_pixels()
+            ? File::create<double>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
+                                   tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE)
+            : File::create<std::int32_t>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
+                                         tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE);
     spdlog::info(FMT_STRING("Generating {} resolution from {} ({}x)"), tgt_resolution,
                  base_resolution, tgt_resolution / base_resolution);
 
-    MultiResFile::coarsen(mclr.open(base_res), uri, tgt_resolution, buffer);
+    MultiResFile::coarsen(mclr.open(base_res), clr, buffer);
+    mclr._resolutions.push_back(tgt_resolution);
   }
 
   return mclr;
@@ -120,6 +124,7 @@ inline File MultiResFile::open(std::uint32_t resolution) const {
 }
 
 inline File MultiResFile::copy_resolution(const File& clr) {
+  spdlog::info(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
   auto dest = this->init_resolution(clr.bin_size());
 
   cooler::utils::copy(clr.uri(), dest);
@@ -128,14 +133,19 @@ inline File MultiResFile::copy_resolution(const File& clr) {
   return open(clr.bin_size());
 }
 
-inline File MultiResFile::create_resolution(std::uint32_t resolution) {
-  const auto uri = fmt::format(FMT_STRING("{}::/resolutions/{}"), path(), resolution);
+template <typename N>
+inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes attributes) {
+  attributes.bin_size = resolution;
   const auto base_resolution = compute_base_resolution(resolutions(), resolution);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
   auto base_clr = open(base_resolution);
-  init_resolution(resolution);
-  MultiResFile::coarsen(base_clr, uri, resolution, buffer);
+  {
+    auto clr = File::create<N>(init_resolution(resolution), base_clr.chromosomes(), resolution,
+                               attributes, DEFAULT_HDF5_CACHE_SIZE);
+    MultiResFile::coarsen(base_clr, clr, buffer);
+  }
+
   _resolutions.push_back(resolution);
   std::sort(_resolutions.begin(), _resolutions.end());
 
@@ -165,11 +175,10 @@ inline auto MultiResFile::chromosomes() const noexcept -> const Reference& {
                        [&](const auto res) { return res <= target_res && target_res % res == 0; });
 }
 
-inline void MultiResFile::coarsen(const File& clr1, const std::string& dest,
-                                  std::uint32_t resolution,
+inline void MultiResFile::coarsen(const File& clr1, File& clr2,
                                   std::vector<ThinPixel<std::int32_t>>& buffer) {
-  auto clr2 = cooler::File::create(dest, clr1.chromosomes(), resolution);
-
+  spdlog::info(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.bin_size(),
+               clr1.bin_size(), clr2.bin_size() / clr1.bin_size());
   auto sel1 = clr1.fetch();
   auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
                                           clr1.bins_ptr(), clr2.bin_size() / clr1.bin_size());
@@ -196,7 +205,7 @@ inline void MultiResFile::coarsen(const File& clr1, const std::string& dest,
           1000.0;
       const auto bin1 = clr2.bins().at(first->bin1_id);
       spdlog::info(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
-                   clr1.bin_size(), resolution, bin1, double(update_frequency) / delta);
+                   clr1.bin_size(), clr2.bin_size(), bin1, double(update_frequency) / delta);
       t0 = t1;
       j = 0;
     }

@@ -38,7 +38,8 @@ class MultiResFile {
                MultiResAttributes attrs);
 
  public:
-  explicit MultiResFile(const std::filesystem::path& path);
+  explicit MultiResFile(const std::filesystem::path& path,
+                        unsigned int mode = HighFive::File::ReadOnly);
   [[nodiscard]] static MultiResFile create(const std::filesystem::path& path,
                                            const Reference& chroms, bool force_overwrite = false);
   template <typename ResolutionIt>
@@ -50,7 +51,8 @@ class MultiResFile {
   [[nodiscard]] constexpr const MultiResAttributes& attributes() const noexcept;
   [[nodiscard]] File open(std::uint32_t resolution) const;
   File copy_resolution(const cooler::File& clr);
-  File create_resolution(std::uint32_t resolution);
+  template <typename N = DefaultPixelT>
+  File create_resolution(std::uint32_t resolution, Attributes attributes = Attributes::init<N>(0));
   RootGroup init_resolution(std::uint32_t resolution);
 
   [[nodiscard]] explicit operator bool() const noexcept;
@@ -60,8 +62,7 @@ class MultiResFile {
   [[nodiscard]] static std::uint32_t compute_base_resolution(
       const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res);
 
-  static void coarsen(const File& clr1, const std::string& dest, std::uint32_t resolution,
-                      std::vector<ThinPixel<std::int32_t>>& buffer);
+  static void coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<std::int32_t>>& buffer);
 
  private:
   [[nodiscard]] static std::vector<std::uint32_t> read_resolutions(const HighFive::File& f);

@@ -39,6 +39,7 @@ namespace hictk::cooler {
 using DefaultPixelT = std::int32_t;
 
 class File;
+class MultiResFile;
 
 struct Attributes {
   friend File;
@@ -51,8 +52,7 @@ struct Attributes {
   std::optional<std::string> storage_mode{"symmetric-upper"};  // Mandatory in v3
 
   // Reserved attributes
-  std::optional<std::string> creation_date{fmt::format(
-      FMT_STRING("{:%FT%T}"), fmt::gmtime(std::time(nullptr)))};  // e.g. 2022-07-26T20:35:19
+  std::optional<std::string> creation_date{generate_creation_date()};
   std::optional<std::string> generated_by{HICTK_VERSION_STRING_LONG};
   std::optional<std::string> assembly{"unknown"};
   std::optional<std::string> metadata{"{}"};
@@ -72,6 +72,7 @@ struct Attributes {
   [[nodiscard]] static Attributes init_empty() noexcept;
   [[nodiscard]] bool operator==(const Attributes &other) const noexcept;
   [[nodiscard]] bool operator!=(const Attributes &other) const noexcept;
+  [[nodiscard]] static std::string generate_creation_date();
 
  private:
   // Use the init factory methods to construct an Attribute object
@@ -89,6 +90,7 @@ void init_scool(std::string_view file_path, const Reference &chromosomes, std::u
                 bool force_overwrite = false);
 
 class File {
+  friend MultiResFile;
   using NumericVariant = hictk::internal::NumericVariant;
   unsigned int _mode{HighFive::File::ReadOnly};
   RootGroup _root_group{};

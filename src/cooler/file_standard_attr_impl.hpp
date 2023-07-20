@@ -66,4 +66,9 @@ inline bool Attributes::operator==(const Attributes& other) const noexcept {
 inline bool Attributes::operator!=(const Attributes& other) const noexcept {
   return !(*this == other);
 }
+
+inline std::string Attributes::generate_creation_date() {
+  // e.g. 2022-07-26T20:35:19
+  return fmt::format(FMT_STRING("{:%FT%T}"), fmt::gmtime(std::time(nullptr)));
+}
 }  // namespace hictk::cooler
