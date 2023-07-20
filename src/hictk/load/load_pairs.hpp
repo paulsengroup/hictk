@@ -199,7 +199,7 @@ template <typename N>
 
   clr.flush();
   auto sel = clr.fetch();
-  return {std::move(clr), sel.begin<N>(), sel.end<N>()};
+  return {clr.uri(), sel.begin<N>(), sel.end<N>()};
 }
 
 }  // namespace hictk::tools

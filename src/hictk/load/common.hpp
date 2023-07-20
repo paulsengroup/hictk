@@ -51,7 +51,7 @@ template <typename N>
 
 template <typename N>
 struct CoolerChunk {
-  cooler::File clr;
+  std::string uri;
   cooler::PixelSelector::iterator<N> first;
   cooler::PixelSelector::iterator<N> last;
 };

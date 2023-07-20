@@ -84,8 +84,6 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
 
     internal::validate_chromosomes(clrs);
     internal::validate_bin_size(clrs);
-    auto dest = File::create_new_cooler<N>(dest_uri, clrs.front().chroms, clrs.front().bin_size,
-                                           overwrite_if_exists);
 
     std::vector<PixelSelector::iterator<N>> heads;
     std::vector<PixelSelector::iterator<N>> tails;
@@ -97,7 +95,11 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    merge(heads, tails, dest, chunk_size, update_frequency);
+    const auto clr = cooler::File::open_read_only(clrs.front().uri);
+    const auto chroms = clr.chromosomes();
+    const auto bin_size = clr.bin_size();
+    merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,
+          update_frequency);
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
                                          std::distance(first_uri, last_uri), e.what()));

@@ -37,22 +37,20 @@
 namespace hictk::tools {
 
 template <typename N>
-void merge_coolers(std::vector<CoolerChunk<N>>& coolers, std::string_view dest, bool force) {
+void merge_coolers(std::vector<CoolerChunk<N>>& coolers, const Reference& chroms,
+                   std::uint32_t bin_size, std::string_view dest, bool force) {
   if (force) {
     std::filesystem::remove(dest);
   }
 
   if (coolers.size() == 1) {
     spdlog::info(FMT_STRING("Moving temporary file to {}..."), dest);
-    const auto path = coolers.front().clr.uri();
-    coolers.front().clr.close();
+    const auto path = coolers.front().uri;
     std::filesystem::copy_file(path, dest);
     return;
   }
 
   spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), coolers.size(), dest);
-  const auto chroms = coolers.front().clr.chromosomes();
-  const auto bin_size = coolers.front().clr.bin_size();
 
   using PixelIt = decltype(coolers.front().first);
   std::vector<PixelIt> heads;
@@ -117,7 +115,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
           }
           spdlog::info(FMT_STRING("done writing to file {}..."), tmp_uri);
         }
-        merge_coolers(chunks, c.uri, c.force);
+        merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
       },
       write_buffer);
 }
@@ -169,7 +167,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
           }
           spdlog::info(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
         }
-        merge_coolers(chunks, c.uri, c.force);
+        merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
       },
       write_buffer);
 }
