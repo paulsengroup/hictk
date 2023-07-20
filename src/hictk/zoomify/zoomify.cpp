@@ -35,7 +35,7 @@ internal::PixelMerger<CoarsenIt> setup_pixel_merger(const cooler::File& clr, std
 
 void zoomify_once(const cooler::File& clr1, cooler::RootGroup entrypoint2,
                   std::uint32_t resolution) {
-  auto clr2 = cooler::File::create(entrypoint2, clr1.chromosomes(), resolution);
+  auto clr2 = cooler::File::create(std::move(entrypoint2), clr1.chromosomes(), resolution);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
   cooler::MultiResFile::coarsen(clr1, clr2, buffer);
@@ -51,7 +51,7 @@ void zoomify_once(std::string_view uri1, std::string_view uri2, std::uint32_t re
   auto mode = force ? HighFive::File::Overwrite : HighFive::File::Create;
   cooler::RootGroup entrypoint2{HighFive::File(std::string{uri2}, mode).getGroup("/")};
 
-  return zoomify_once(clr1, entrypoint2, resolution);
+  return zoomify_once(clr1, std::move(entrypoint2), resolution);
 }
 
 void zoomify_many(std::string_view in_uri, std::string_view out_path,
@@ -68,7 +68,7 @@ void zoomify_many(std::string_view in_uri, std::string_view out_path,
     assert(resolutions.front() == clr.bin_size());
     mclr.copy_resolution(clr);
   } else {
-    assert(resolutions.size() >= 1);
+    assert(resolutions.size() > 1);
     zoomify_once(cooler::File::open(in_uri), mclr.init_resolution(resolutions[1]), resolutions[1]);
   }
 

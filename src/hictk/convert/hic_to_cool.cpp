@@ -133,7 +133,7 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
   auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(entrypoint, chroms, resolution, attrs);
+  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs);
 }
 
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,

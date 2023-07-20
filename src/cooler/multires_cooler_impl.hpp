@@ -121,7 +121,7 @@ constexpr const MultiResAttributes& MultiResFile::attributes() const noexcept { 
 inline File MultiResFile::open(std::uint32_t resolution) const {
   return File::open(
       RootGroup{(*_root_grp)().getGroup(fmt::format(FMT_STRING("/resolutions/{}"), resolution))});
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline File MultiResFile::copy_resolution(const File& clr) {
   spdlog::info(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
@@ -155,7 +155,7 @@ inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes
 inline RootGroup MultiResFile::init_resolution(std::uint32_t resolution) {
   const auto grp = fmt::format(FMT_STRING("/resolutions/{}"), resolution);
   return RootGroup{(*_root_grp)().createGroup(grp, false)};
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline MultiResFile::operator bool() const noexcept { return !!this->_root_grp; }
 
