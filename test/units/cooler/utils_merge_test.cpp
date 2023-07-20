@@ -27,8 +27,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const std::array<std::string, 2> sources{src.string(), src.string()};
     cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
-    const auto clr1 = File::open_read_only_read_once(src.string());
-    const auto clr2 = File::open_read_only_read_once(dest.string());
+    const auto clr1 = File::open_read_once(src.string());
+    const auto clr2 = File::open_read_once(dest.string());
 
     auto first1 = clr1.begin<std::int32_t>();
     auto last1 = clr1.end<std::int32_t>();
@@ -53,8 +53,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const std::array<std::string, 2> sources{src.string(), src.string()};
     cooler::utils::merge<double>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
-    const auto clr1 = File::open_read_only_read_once(src.string());
-    const auto clr2 = File::open_read_only_read_once(dest.string());
+    const auto clr1 = File::open_read_once(src.string());
+    const auto clr2 = File::open_read_once(dest.string());
 
     auto first1 = clr1.begin<std::int32_t>();
     auto last1 = clr1.end<std::int32_t>();
@@ -77,13 +77,12 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto dest = testdir() / "cooler_merge_test2.cool";
     std::vector<std::string> sources{};
     {
-      auto clr = cooler::File::open_read_only(src.string());
+      auto clr = cooler::File::open(src.string());
 
       for (const auto& chrom : clr.chromosomes()) {
         sources.emplace_back((testdir() / std::string{chrom.name()}).string());
 
-        auto clr1 =
-            cooler::File::create_new_cooler(sources.back(), clr.chromosomes(), clr.bin_size());
+        auto clr1 = cooler::File::create(sources.back(), clr.chromosomes(), clr.bin_size());
         const auto sel = clr.fetch(chrom.name());
         clr1.append_pixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>());
       }
@@ -91,8 +90,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
     cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest.string(), true, 1000);
 
-    const auto clr1 = File::open_read_only_read_once(src.string());
-    const auto clr2 = File::open_read_only_read_once(dest.string());
+    const auto clr1 = File::open_read_once(src.string());
+    const auto clr2 = File::open_read_once(dest.string());
 
     for (const auto& chrom : clr1.chromosomes()) {
       auto sel1 = clr1.fetch(chrom.name());

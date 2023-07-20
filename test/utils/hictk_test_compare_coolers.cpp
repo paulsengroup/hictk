@@ -5,7 +5,7 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 
 // NOLINTNEXTLINE(bugprone-exception-escape)

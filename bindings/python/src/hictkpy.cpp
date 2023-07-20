@@ -6,7 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
@@ -17,7 +17,7 @@ using namespace hictk;
 
 static bool is_cooler(std::string_view uri) { return bool(cooler::utils::is_cooler(uri)); }
 
-static cooler::File cooler_ctor(std::string_view uri) { return cooler::File::open_read_only(uri); }
+static cooler::File cooler_ctor(std::string_view uri) { return cooler::File::open(uri); }
 
 static cooler::File cooler_ctor(std::string_view uri, const py::dict& py_chroms,
                                 std::uint32_t bin_size, bool overwrite_if_exists = false) {
@@ -29,7 +29,7 @@ static cooler::File cooler_ctor(std::string_view uri, const py::dict& py_chroms,
     chrom_sizes.push_back(py::cast<std::uint32_t>(it.second));
   }
   const Reference chroms(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
-  return cooler::File::create_new_cooler(uri, chroms, bin_size, overwrite_if_exists);
+  return cooler::File::create(uri, chroms, bin_size, overwrite_if_exists);
 }
 
 template <typename File>
@@ -198,8 +198,7 @@ PYBIND11_MODULE(hictkpy, m) {
           .def(py::init(py::overload_cast<std::string_view, const py::dict&, std::uint32_t, bool>(
                    cooler_ctor)),
                py::arg("uri"), py::arg("chromosomes"), py::arg("bin_size"),
-               py::arg("overwrite_if_exists"))
-          .def("open_read_only", &cooler::File::open_read_only);
+               py::arg("overwrite_if_exists"));
 
   cooler_file.def("uri", &cooler::File::uri);
   cooler_file.def("hdf5_path", &cooler::File::hdf5_path);

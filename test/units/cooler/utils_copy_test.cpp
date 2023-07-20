@@ -5,6 +5,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/tmpdir.hpp"
 
@@ -32,8 +34,10 @@ TEST_CASE("Cooler: utils copy", "[copy][utils][short]") {
     const auto dest = testdir() / "cooler_copy_002.mcool";
     const auto dest_uri = fmt::format(FMT_STRING("{}::/resolutions/1000"), dest.string());
 
-    std::vector<std::uint32_t> resolutions{1000};
-    cooler::init_mcool(dest.string(), resolutions.begin(), resolutions.end());
+    {
+      auto mclr = MultiResFile::create(dest, File::open(src.string()).chromosomes(), true);
+      mclr.init_resolution(1000);
+    }
 
     cooler::utils::copy(src.string(), dest_uri);
     CHECK(cooler::utils::equal(src.string(), dest_uri));

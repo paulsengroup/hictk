@@ -7,7 +7,7 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::tools {
 

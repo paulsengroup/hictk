@@ -5,14 +5,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
   auto path = datadir / "ENCFF993FGR.2500000.cool";
-  auto clr = File::open_read_only(path.string());
+  auto clr = File::open(path.string());
 
   SECTION("read weights") {
     SECTION("valid") {

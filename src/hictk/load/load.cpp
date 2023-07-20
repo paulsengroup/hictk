@@ -27,7 +27,7 @@
 #include "./load_pixels.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/tmpdir.hpp"
@@ -72,13 +72,12 @@ void ingest_pixels_sorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  c.count_as_float
-      ? ingest_pixels_sorted<double>(
-            cooler::File::create_new_cooler<double>(c.uri, chroms, c.bin_size, c.force), format,
-            c.batch_size, c.validate_pixels)
-      : ingest_pixels_sorted<std::int32_t>(
-            cooler::File::create_new_cooler<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
-            format, c.batch_size, c.validate_pixels);
+  c.count_as_float ? ingest_pixels_sorted<double>(
+                         cooler::File::create<double>(c.uri, chroms, c.bin_size, c.force), format,
+                         c.batch_size, c.validate_pixels)
+                   : ingest_pixels_sorted<std::int32_t>(
+                         cooler::File::create<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
+                         format, c.batch_size, c.validate_pixels);
 }
 
 void ingest_pixels_unsorted(const LoadConfig& c) {
@@ -106,8 +105,8 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
           spdlog::info(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
           chunks.emplace_back(ingest_pixels_unsorted(
-              cooler::File::create_new_cooler<N>(tmp_uri.string(), chroms, c.bin_size, c.force),
-              buffer, format, c.validate_pixels));
+              cooler::File::create<N>(tmp_uri.string(), chroms, c.bin_size, c.force), buffer,
+              format, c.validate_pixels));
 
           if (chunks.back().first == chunks.back().last) {
             chunks.pop_back();
@@ -125,13 +124,12 @@ void ingest_pairs_sorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  c.count_as_float
-      ? ingest_pairs_sorted<double>(
-            cooler::File::create_new_cooler<double>(c.uri, chroms, c.bin_size, c.force), format,
-            c.batch_size, c.validate_pixels)
-      : ingest_pairs_sorted<std::int32_t>(
-            cooler::File::create_new_cooler<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
-            format, c.batch_size, c.validate_pixels);
+  c.count_as_float ? ingest_pairs_sorted<double>(
+                         cooler::File::create<double>(c.uri, chroms, c.bin_size, c.force), format,
+                         c.batch_size, c.validate_pixels)
+                   : ingest_pairs_sorted<std::int32_t>(
+                         cooler::File::create<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
+                         format, c.batch_size, c.validate_pixels);
 }
 
 static void ingest_pairs_unsorted(const LoadConfig& c) {
@@ -158,8 +156,8 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
           chunks.emplace_back(ingest_pairs_unsorted(
-              cooler::File::create_new_cooler<N>(tmp_uri.string(), chroms, c.bin_size, c.force),
-              buffer, c.batch_size, format, c.validate_pixels));
+              cooler::File::create<N>(tmp_uri.string(), chroms, c.bin_size, c.force), buffer,
+              c.batch_size, format, c.validate_pixels));
 
           if (chunks.back().first == chunks.back().last) {
             chunks.pop_back();

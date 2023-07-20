@@ -9,7 +9,7 @@
 #include <string>
 #include <variant>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 
 namespace hictk::tools {
@@ -98,6 +98,7 @@ struct ZoomifyConfig {
   std::string output_path{};
 
   std::vector<std::uint32_t> resolutions{};
+  bool copy_base_resolution{true};
 
   bool force{false};
   std::uint8_t verbosity{4};

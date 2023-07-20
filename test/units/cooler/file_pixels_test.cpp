@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <random>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
@@ -18,9 +18,9 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   auto path2 = testdir() / "cooler_test_read_write_pixels.cool";
 
   using T = std::int32_t;
-  auto f1 = File::open_read_only(path1.string());
+  auto f1 = File::open(path1.string());
   {
-    auto f2 = File::create_new_cooler<T>(path2.string(), f1.chromosomes(), f1.bin_size(), true);
+    auto f2 = File::create<T>(path2.string(), f1.chromosomes(), f1.bin_size(), true);
 
     const std::vector<ThinPixel<T>> expected(f1.begin<T>(), f1.end<T>());
     REQUIRE(expected.size() == 107041);
@@ -43,7 +43,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
     } while (pixel_it != expected.end());
   }
 
-  auto f2 = File::open_read_only(path2.string());
+  auto f2 = File::open(path2.string());
 
   SECTION("compare chromosomes") { CHECK(f1.chromosomes() == f2.chromosomes()); }
 
@@ -94,7 +94,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
     CHECK(f1.attributes().nbins == f2.attributes().nbins);
     CHECK(f1.attributes().nnz == f2.attributes().nnz);
     CHECK(f1.attributes().sum == f2.attributes().sum);
-    CHECK(f2.attributes().cis == StandardAttributes::SumVar(std::int64_t(329276)));
+    CHECK(f2.attributes().cis == Attributes::SumVar(std::int64_t(329276)));
   }
 }
 

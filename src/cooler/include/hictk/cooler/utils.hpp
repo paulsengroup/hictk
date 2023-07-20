@@ -10,7 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -33,7 +34,8 @@ void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
 [[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path,
                                                           bool sorted = true);
 
-void copy(std::string_view uri1, std::string_view uri2);
+void copy(std::string_view uri1, std::string_view uri2, bool force_overwrite);
+void copy(std::string_view uri1, RootGroup dest);
 
 }  // namespace hictk::cooler::utils
 

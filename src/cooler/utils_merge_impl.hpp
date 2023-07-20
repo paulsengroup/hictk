@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -29,7 +29,7 @@ struct LightCooler {
 
 template <typename N>
 [[nodiscard]] inline LightCooler<N> preprocess_cooler(const std::string& uri) {
-  auto clr = File::open_read_only_read_once(std::string{uri});
+  auto clr = File::open_read_once(std::string{uri});
   auto sel = clr.fetch();
   return {uri, clr.chromosomes(), clr.bin_size(), sel.begin<N>(), sel.end<N>()};
 }
@@ -95,7 +95,7 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    const auto clr = cooler::File::open_read_only(clrs.front().uri);
+    const auto clr = cooler::File::open(clrs.front().uri);
     const auto chroms = clr.chromosomes();
     const auto bin_size = clr.bin_size();
     merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,
@@ -116,7 +116,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
-  auto dest = File::create_new_cooler<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
+  auto dest = File::create<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
 
   std::size_t pixels_processed{};
   auto t0 = std::chrono::steady_clock::now();
