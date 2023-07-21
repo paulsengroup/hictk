@@ -16,15 +16,15 @@
 namespace hictk::tools {
 
 void Cli::make_convert_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("convert", "Convert HiC matrices to a different format.")
+  auto& sc = *_cli.add_subcommand("convert", "Convert HiC matrices to a different format.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = ConvertConfig{};
+                    assert(_config.index() == 0);
+                    _config = ConvertConfig{};
                   });
 
-  this->_config = ConvertConfig{};
-  auto& c = std::get<ConvertConfig>(this->_config);
+  _config = ConvertConfig{};
+  auto& c = std::get<ConvertConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -78,10 +78,10 @@ void Cli::make_convert_subcommand() {
       c.genome,
       "Genome assembly name. By default this is copied from the .hic file metadata.");
   sc.add_option(
-      "--read-cache-size",
-      c.block_cache_size,
-      "Maximum size of the in-memory read cache. Not used when converting to .hic")
-      ->default_str("auto")
+      "--juicer-tools-memory",
+      c.juicer_tools_xmx,
+      "Max heap size used by juicer_tools. Only used when converting from cool to hic")
+      ->default_str(fmt::format(FMT_STRING("{:.0f}GB"), double(c.juicer_tools_xmx) / 1.0e9))
       ->check(CLI::PositiveNumber)
       ->transform(CLI::AsSizeValue(true));
   sc.add_option(
@@ -164,7 +164,7 @@ static void check_normalization_methods(const std::vector<std::string>& norm_met
 }
 
 void Cli::validate_convert_subcommand() const {
-  const auto& c = std::get<ConvertConfig>(this->_config);
+  const auto& c = std::get<ConvertConfig>(_config);
   std::vector<std::string> errors;
 
   const auto is_hic = hic::utils::is_hic_file(c.path_to_input);
@@ -231,7 +231,7 @@ void Cli::validate_convert_subcommand() const {
 }
 
 void Cli::transform_args_convert_subcommand() {
-  auto& c = std::get<ConvertConfig>(this->_config);
+  auto& c = std::get<ConvertConfig>(_config);
 
   c.input_format = infer_input_format(c.path_to_input);
   if (c.output_format.empty()) {

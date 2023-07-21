@@ -11,18 +11,17 @@
 namespace hictk::tools {
 
 void Cli::make_zoomify_subcommand() {
-  auto& sc = *this->_cli
-                  .add_subcommand("zoomify",
+  auto& sc = *_cli.add_subcommand("zoomify",
                                   "Convert single-resolution cooler file to multi-resolution "
                                   "cooler file by coarsening.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = ZoomifyConfig{};
+                    assert(_config.index() == 0);
+                    _config = ZoomifyConfig{};
                   });
 
-  this->_config = ZoomifyConfig{};
-  auto& c = std::get<ZoomifyConfig>(this->_config);
+  _config = ZoomifyConfig{};
+  auto& c = std::get<ZoomifyConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -56,7 +55,7 @@ void Cli::make_zoomify_subcommand() {
 
   // clang-format on
 
-  this->_config = std::monostate{};
+  _config = std::monostate{};
 }
 
 [[nodiscard]] static std::vector<std::uint32_t> detect_duplicate_resolutions(
@@ -94,10 +93,10 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
 }
 
 void Cli::validate_zoomify_subcommand() const {
-  assert(this->_cli.get_subcommand("zoomify")->parsed());
+  assert(_cli.get_subcommand("zoomify")->parsed());
 
   std::vector<std::string> errors;
-  const auto& c = std::get<ZoomifyConfig>(this->_config);
+  const auto& c = std::get<ZoomifyConfig>(_config);
 
   auto clr = cooler::File::open(c.input_uri);
   const auto output_path = c.output_path.empty()
@@ -129,8 +128,11 @@ void Cli::validate_zoomify_subcommand() const {
 }
 
 void Cli::transform_args_zoomify_subcommand() {
-  auto& c = std::get<ZoomifyConfig>(this->_config);
+  auto& c = std::get<ZoomifyConfig>(_config);
 
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
   auto clr = cooler::File::open(c.input_uri);
 
   if (c.output_path.empty()) {

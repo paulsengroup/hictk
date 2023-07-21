@@ -9,6 +9,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
+#include "hictk/cooler.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {
@@ -47,4 +48,12 @@ template <typename N>
 [[nodiscard]] inline bool line_is_header(std::string_view line) {
   return !line.empty() && line.front() == '#';
 }
+
+template <typename N>
+struct CoolerChunk {
+  std::string uri;
+  cooler::PixelSelector::iterator<N> first;
+  cooler::PixelSelector::iterator<N> last;
+};
+
 }  // namespace hictk::tools

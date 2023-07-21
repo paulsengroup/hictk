@@ -27,7 +27,7 @@ TEST_CASE("Cooler: index ctor", "[index][short]") {
   const Index idx(bins);
 
   CHECK(idx.bin_size() == bin_size);
-  CHECK(idx.num_chromosomes() == 2);
+  CHECK(idx.chromosomes().size() == 2);
   CHECK(idx.size() == 151);
 
   CHECK(idx.size("chr1") == 101);
@@ -36,22 +36,22 @@ TEST_CASE("Cooler: index ctor", "[index][short]") {
   CHECK(idx.size("chr2") == 50);
   CHECK(idx.size(1) == 50);
 
-  CHECK_THROWS_WITH(idx.size("chr3"), Catch::Matchers::Equals("chromosome \"chr3\" not found"));
-  CHECK_THROWS_WITH(idx.size(99), Catch::Matchers::Equals("chromosome with id 99 not found"));
+  CHECK_THROWS(idx.size("chr3"));
+  CHECK_THROWS(idx.size(99));
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
   constexpr std::uint32_t bin_size = 10;
-  const auto bins =
-      std::make_shared<const BinTable>(Reference{Chromosome{0, "chr1", 100}}, bin_size);
+  const Chromosome chrom1{0, "chr1", 100};
+  const auto bins = std::make_shared<const BinTable>(Reference{chrom1}, bin_size);
 
   constexpr auto fill_value = std::numeric_limits<std::uint64_t>::max();
 
   Index idx(bins);
 
   SECTION("by pos") {
-    idx.set_offset_by_pos("chr1", 22, 1);
+    idx.set_offset_by_pos(chrom1, 22, 1);
     idx.set_offset_by_pos(0, 55, 1);
 
     for (std::uint32_t pos = 0; pos < 100; ++pos) {
@@ -60,7 +60,7 @@ TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
 
       CHECK(idx.get_offset_by_row_idx(0, row_idx) == expected);
 
-      CHECK(idx.get_offset_by_pos("chr1", pos) == expected);
+      CHECK(idx.get_offset_by_pos(chrom1, pos) == expected);
       CHECK(idx.get_offset_by_pos(0, pos) == expected);
     }
   }
@@ -75,19 +75,19 @@ TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
 
       CHECK(idx.get_offset_by_row_idx(0, row_idx) == expected);
 
-      CHECK(idx.get_offset_by_pos("chr1", pos) == expected);
+      CHECK(idx.get_offset_by_pos(chrom1, pos) == expected);
       CHECK(idx.get_offset_by_pos(0, pos) == expected);
     }
   }
 
   SECTION("by bin ID") {
     idx.set_offset_by_bin_id(9, 9);
-    CHECK(idx.get_offset_by_pos("chr1", 99) == 9);
+    CHECK(idx.get_offset_by_pos(chrom1, 99) == 9);
     CHECK(idx.get_offset_by_bin_id(9) == 9);
   }
 
   SECTION("out of bound access") {
-    CHECK_THROWS_WITH(idx.get_offset_by_pos("chr1", 999),
+    CHECK_THROWS_WITH(idx.get_offset_by_pos(chrom1, 999),
                       Catch::Matchers::ContainsSubstring("row maps outside of chromosome"));
 
     CHECK_THROWS_WITH(idx.get_offset_by_row_idx(0, 999),

@@ -85,8 +85,8 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
   if (missing_norms == f.chromosomes().size() - 1) {
-    spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), bins.bin_size(),
-                 norm);
+    SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), bins.bin_size(),
+                norm);
   }
 
   assert(weights.size() == bins.size());
@@ -110,13 +110,12 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMet
                       hf.bins().bin_size()));
     }
 
-    spdlog::warn(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"),
-                 hf.bins().bin_size(), norm);
+    SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"),
+                hf.bins().bin_size(), norm);
     return;
   }
 
-  spdlog::info(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().bin_size(),
-               norm);
+  SPDLOG_INFO(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().bin_size(), norm);
 
   const auto weights = read_weights(hf, hf.bins(), norm);
   using T = std::remove_reference_t<decltype(cf)>;
@@ -183,7 +182,7 @@ static void enqueue_pixels(const hic::HiCFile& hf,
                 std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
             1000.0;
         const auto bin1 = hf.bins().at(first->bin1_id);
-        spdlog::info(
+        SPDLOG_INFO(
             FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
             hf.resolution(), bin1, double(update_frequency) / delta,
             hf.block_cache_hit_rate() * 100);
@@ -248,11 +247,10 @@ static void convert_resolution_multi_threaded(
     bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
 
-  spdlog::info(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(),
-               hf.resolution());
+  SPDLOG_INFO(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(), hf.resolution());
 
-  spdlog::info(FMT_STRING("[{}] block cache capacity: {:.2f} MBs"), hf.resolution(),
-               double(hf.cache_capacity()) / 1.0e6);
+  SPDLOG_INFO(FMT_STRING("[{}] block cache capacity: {:.2f} MBs"), hf.resolution(),
+              double(hf.cache_capacity()) / 1.0e6);
 
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<ThinPixel<N>> queue{1'000'000};
@@ -290,16 +288,15 @@ static void convert_resolution_multi_threaded(
   const auto delta =
       static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
       1000.0;
-  spdlog::info(FMT_STRING("[{}] DONE! Processed {} pixels across {} chromosomes in {:.2f}s"),
-               resolution, nnz, hf.chromosomes().size() - 1, delta);
+  SPDLOG_INFO(FMT_STRING("[{}] DONE! Processed {} pixels across {} chromosomes in {:.2f}s"),
+              resolution, nnz, hf.chromosomes().size() - 1, delta);
 }
 
 void hic_to_cool(const ConvertConfig& c) {
   assert(!c.resolutions.empty());
 
   const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
-  hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front(), hic::MatrixType::observed,
-                  hic::MatrixUnit::BP, c.block_cache_size);
+  hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front());
   assert(spdlog::default_logger());
 
   if (c.resolutions.size() == 1) {

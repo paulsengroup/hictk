@@ -38,7 +38,7 @@ static void setup_logger_console(int verbosity_lvl, bool print_version) {
   }
 
   if (print_version) {
-    spdlog::info(FMT_STRING("Running hictk v{}"), hictk::config::version::str());
+    SPDLOG_INFO(FMT_STRING("Running hictk v{}"), hictk::config::version::str());
   }
 }
 
@@ -66,7 +66,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int a
     return std::make_tuple(cli->exit(e), Cli::subcommand::help, Config());
 
   } catch (const std::filesystem::filesystem_error& e) {
-    spdlog::error(FMT_STRING("FAILURE! {}"), e.what());
+    SPDLOG_ERROR(FMT_STRING("FAILURE! {}"), e.what());
     return std::make_tuple(1, Cli::subcommand::help, Config());
   } catch (const spdlog::spdlog_ex& e) {
     fmt::print(
@@ -81,7 +81,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int a
 template <typename... Args>
 static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args) {
   if (spdlog::default_logger()) {
-    spdlog::error(fmt, std::forward<Args>(args)...);
+    SPDLOG_ERROR(fmt, std::forward<Args>(args)...);
   } else {
     fmt::print(stderr, fmt, std::forward<Args>(args)...);
   }
@@ -91,6 +91,7 @@ static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
   std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
 
   try {
     setup_logger_console();

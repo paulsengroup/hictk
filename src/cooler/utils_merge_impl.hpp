@@ -17,69 +17,134 @@ namespace hictk::cooler::utils {
 
 namespace internal {
 
-[[nodiscard]] inline std::uint32_t get_bin_size_checked(const std::vector<File>& coolers) {
-  assert(coolers.size() > 1);
-  const auto& clr1 = coolers.front();
+template <typename N>
+struct LightCooler {
+  std::string uri{};
+  Reference chroms{};
+  std::uint32_t bin_size{};
 
-  for (std::size_t i = 1; i < coolers.size(); ++i) {
-    const auto& clr2 = coolers[i];
-    if (clr1.bin_size() != clr2.bin_size()) {
-      throw std::runtime_error(fmt::format(
-          FMT_STRING(
-              "cooler \"{}\" and \"{}\" have different resolutions ({}  and {} respectively)"),
-          clr1.uri(), clr2.uri(), clr1.bin_size(), clr2.bin_size()));
-    }
-  }
-  return clr1.bin_size();
-}
+  PixelSelector::iterator<N> first_pixel{};
+  PixelSelector::iterator<N> last_pixel{};
+};
 
-[[nodiscard]] inline Reference get_chromosomes_checked(const std::vector<File>& coolers) {
-  assert(coolers.size() > 1);
-  const auto& clr1 = coolers.front();
-
-  for (std::size_t i = 1; i < coolers.size(); ++i) {
-    const auto& clr2 = coolers[i];
-    if (clr1.chromosomes() != clr2.chromosomes()) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("cooler \"{}\" and \"{}\" use different reference genomes"),
-                      clr1.uri(), clr2.uri()));
-    }
-  }
-  return clr1.chromosomes();
-}
-
-[[nodiscard]] inline bool merging_requires_float_pixels(const std::vector<File>& coolers) {
-  for (const auto& clr : coolers) {
-    if (clr.has_float_pixels()) {
-      return true;
-    }
-  }
-  return false;
+template <typename N>
+[[nodiscard]] inline LightCooler<N> preprocess_cooler(const std::string& uri) {
+  auto clr = File::open_read_once(std::string{uri});
+  auto sel = clr.fetch();
+  return {uri, clr.chromosomes(), clr.bin_size(), sel.begin<N>(), sel.end<N>()};
 }
 
 template <typename N>
-inline void merge(const std::vector<PixelSelector::iterator<N>>& heads,
-                  const std::vector<PixelSelector::iterator<N>>& tails, File& dest,
-                  std::size_t queue_capacity, bool quiet) {
-  hictk::internal::PixelMerger merger{heads, tails};
+inline void validate_bin_size(const std::vector<LightCooler<N>>& coolers) {
+  assert(coolers.size() > 1);
+  const auto& clr1 = coolers.front();
 
-  std::vector<ThinPixel<N>> buffer(queue_capacity);
+  for (std::size_t i = 1; i < coolers.size(); ++i) {
+    const auto& clr2 = coolers[i];
+    if (clr1.bin_size != clr2.bin_size) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING(
+              "cooler \"{}\" and \"{}\" have different resolutions ({}  and {} respectively)"),
+          clr1.uri, clr2.uri, clr1.bin_size, clr2.bin_size));
+    }
+  }
+}
+
+template <typename N>
+inline void validate_chromosomes(const std::vector<LightCooler<N>>& coolers) {
+  assert(coolers.size() > 1);
+  const auto& clr1 = coolers.front();
+
+  for (std::size_t i = 1; i < coolers.size(); ++i) {
+    const auto& clr2 = coolers[i];
+    if (clr1.chroms != clr2.chroms) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("cooler \"{}\" and \"{}\" use different reference genomes"),
+                      clr1.uri, clr2.uri));
+    }
+  }
+}
+
+}  // namespace internal
+
+template <typename N, typename Str>
+inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool overwrite_if_exists,
+                  std::size_t chunk_size, std::size_t update_frequency) {
+  static_assert(std::is_constructible_v<std::string, decltype(*first_uri)>);
+  assert(chunk_size != 0);
+  try {
+    std::vector<internal::LightCooler<N>> clrs{};
+    std::transform(first_uri, last_uri, std::back_inserter(clrs), [&](const auto& uri) {
+      return internal::preprocess_cooler<N>(std::string{uri});
+    });
+
+    if (clrs.size() < 2) {
+      throw std::runtime_error("cannot merge less than 2 coolers");
+    }
+
+    internal::validate_chromosomes(clrs);
+    internal::validate_bin_size(clrs);
+
+    std::vector<PixelSelector::iterator<N>> heads;
+    std::vector<PixelSelector::iterator<N>> tails;
+
+    for (auto& clr : clrs) {
+      if (clr.first_pixel != clr.last_pixel) {
+        heads.emplace_back(std::move(clr.first_pixel));
+        tails.emplace_back(std::move(clr.last_pixel));
+      }
+    }
+
+    const auto clr = cooler::File::open(clrs.front().uri);
+    const auto chroms = clr.chromosomes();
+    const auto bin_size = clr.bin_size();
+    merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,
+          update_frequency);
+  } catch (const std::exception& e) {
+    throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
+                                         std::distance(first_uri, last_uri), e.what()));
+  }
+}
+
+template <typename PixelIt>
+inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
+                  const Reference& chromosomes, std::uint32_t bin_size, std::string_view dest_uri,
+                  bool overwrite_if_exists, std::size_t chunk_size, std::size_t update_frequency) {
+  using N = remove_cvref_t<decltype(heads.front()->count)>;
+
+  hictk::internal::PixelMerger merger{heads, tails};
+  std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
+  auto dest = File::create<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
+
   std::size_t pixels_processed{};
-  while (true) {
+  auto t0 = std::chrono::steady_clock::now();
+  for (std::size_t i = 0; true; ++i) {
     auto pixel = merger.next();
     if (!pixel) {
       break;
     }
 
+    if (i == update_frequency) {
+      const auto bin1 = dest.bins().at(pixel.bin1_id);
+      const auto bin2 = dest.bins().at(pixel.bin2_id);
+
+      const auto t1 = std::chrono::steady_clock::now();
+      const auto delta =
+          static_cast<double>(
+              std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+          1000.0;
+      SPDLOG_INFO(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1, bin2,
+                  double(update_frequency) / delta);
+      t0 = t1;
+      i = 0;
+    }
+
     buffer.emplace_back(std::move(pixel));
-    if (buffer.size() == queue_capacity) {
+    if (buffer.size() == chunk_size) {
       dest.append_pixels(buffer.begin(), buffer.end());
       pixels_processed += buffer.size();
-      if (!quiet && pixels_processed % (std::max)(queue_capacity, std::size_t(10'000'000)) == 0) {
-        spdlog::info(FMT_STRING("Procesed {}M pixels...\n"), pixels_processed / 10'000'000);
-      }
       buffer.clear();
     }
   }
@@ -89,78 +154,4 @@ inline void merge(const std::vector<PixelSelector::iterator<N>>& heads,
   }
 }
 
-template <typename N>
-struct CoolerIteratorPairs {
-  std::vector<PixelSelector::iterator<N>> heads{};
-  std::vector<PixelSelector::iterator<N>> tails{};
-};
-
-template <typename N>
-inline CoolerIteratorPairs<N> collect_iterators(const std::vector<File>& clrs) {
-  if constexpr (std::is_floating_point_v<N>) {
-    std::vector<PixelSelector::iterator<double>> heads{};
-    std::vector<PixelSelector::iterator<double>> tails{};
-
-    for (const auto& clr : clrs) {
-      auto first = clr.begin<double>();
-      auto last = clr.end<double>();
-      if (first != last) {
-        heads.emplace_back(std::move(first));
-        tails.emplace_back(std::move(last));
-      }
-    }
-
-    return {heads, tails};
-  } else {
-    std::vector<PixelSelector::iterator<std::int32_t>> heads{};
-    std::vector<PixelSelector::iterator<std::int32_t>> tails{};
-
-    for (const auto& clr : clrs) {
-      auto first = clr.begin<std::int32_t>();
-      auto last = clr.end<std::int32_t>();
-      if (first != last) {
-        heads.emplace_back(std::move(first));
-        tails.emplace_back(std::move(last));
-      }
-    }
-    return {heads, tails};
-  }
-}
-
-}  // namespace internal
-
-template <typename Str>
-inline void merge(Str first_file, Str last_file, std::string_view dest_uri,
-                  bool overwrite_if_exists, std::size_t chunk_size, bool quiet) {
-  static_assert(std::is_constructible_v<std::string, decltype(*first_file)>);
-  assert(chunk_size != 0);
-
-  std::vector<File> clrs{};
-  std::transform(first_file, last_file, std::back_inserter(clrs),
-                 [&](const auto& uri) { return File::open_read_once(std::string{uri}); });
-
-  if (clrs.size() < 2) {
-    throw std::runtime_error("unable to merge less than 2 coolers");
-  }
-
-  const auto chroms = internal::get_chromosomes_checked(clrs);
-  const auto bin_size = internal::get_bin_size_checked(clrs);
-  const auto float_pixels = internal::merging_requires_float_pixels(clrs);
-
-  auto dest = float_pixels
-                  ? File::create<double>(dest_uri, chroms, bin_size, overwrite_if_exists)
-                  : File::create<std::int32_t>(dest_uri, chroms, bin_size, overwrite_if_exists);
-  try {
-    if (float_pixels) {
-      auto [heads, tails] = internal::collect_iterators<double>(clrs);
-      internal::merge<double>(heads, tails, dest, chunk_size, quiet);
-    } else {
-      auto [heads, tails] = internal::collect_iterators<std::int32_t>(clrs);
-      internal::merge<std::int32_t>(heads, tails, dest, chunk_size, quiet);
-    }
-  } catch (const std::exception& e) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("failed to merge {} cooler files: {}"), clrs.size(), e.what()));
-  }
-}
 }  // namespace hictk::cooler::utils

@@ -16,15 +16,15 @@
 namespace hictk::tools {
 
 void Cli::make_merge_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("merge", "Merge coolers.")
+  auto& sc = *_cli.add_subcommand("merge", "Merge coolers.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = MergeConfig{};
+                    assert(_config.index() == 0);
+                    _config = MergeConfig{};
                   });
 
-  this->_config = MergeConfig{};
-  auto& c = std::get<MergeConfig>(this->_config);
+  _config = MergeConfig{};
+  auto& c = std::get<MergeConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -55,14 +55,14 @@ void Cli::make_merge_subcommand() {
 
   // clang-format on
 
-  this->_config = std::monostate{};
+  _config = std::monostate{};
 }
 
 void Cli::validate_merge_subcommand() const {
-  assert(this->_cli.get_subcommand("merge")->parsed());
+  assert(_cli.get_subcommand("merge")->parsed());
   /*
   std::vector<std::string> errors;
-  const auto& c = std::get<MergeConfig>(this->_config);
+  const auto& c = std::get<MergeConfig>(_config);
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -71,6 +71,14 @@ void Cli::validate_merge_subcommand() const {
                     fmt::join(errors, "\n - ")));
   }
   */
+}
+
+void Cli::transform_args_merge_subcommand() {
+  auto& c = std::get<MergeConfig>(_config);
+
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

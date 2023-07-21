@@ -85,9 +85,9 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 cooler dump --join "$ref_cooler::/resolutions/100000" --range chr2L --range2 chrX > "$outdir/expected.pixels"
-"$hictk_bin" dump "$ref_cooler::/resolutions/100000" --range chr2L --range2 chrX > "$outdir/out.cooler.pixels"
-"$hictk_bin" dump --resolution 100000 "$ref_hic8" --range chr2L --range2 chrX > "$outdir/out.hic8.pixels"
-"$hictk_bin" dump --resolution 100000 "$ref_hic9" --range chr2L --range2 chrX > "$outdir/out.hic9.pixels"
+"$hictk_bin" dump --join "$ref_cooler::/resolutions/100000" --range chr2L --range2 chrX > "$outdir/out.cooler.pixels"
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic8" --range chr2L --range2 chrX > "$outdir/out.hic8.pixels"
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic9" --range chr2L --range2 chrX > "$outdir/out.hic9.pixels"
 
 if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
   status=1

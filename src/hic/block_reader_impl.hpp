@@ -174,7 +174,7 @@ inline void HiCBlockReader::clear() noexcept { _blk_cache->clear(); }
 
 inline void HiCBlockReader::read_dispatcher_type1_block(
     bool i16Bin1, bool i16Bin2, bool i16Counts, std::int32_t bin1Offset, std::int32_t bin2Offset,
-    BinaryBuffer &src, std::vector<SerializedPixel> &dest) noexcept {
+    BinaryBuffer &src, std::vector<ThinPixel<float>> &dest) noexcept {
   using BS = std::int16_t;  // Short type for bins
   using CS = std::int16_t;  // Short type for count
 
@@ -216,7 +216,7 @@ inline void HiCBlockReader::read_dispatcher_type1_block(
 template <typename Bin1Type, typename Bin2Type, typename CountType>
 inline void HiCBlockReader::read_type1_block(std::int32_t bin1Offset, std::int32_t bin2Offset,
                                              BinaryBuffer &src,
-                                             std::vector<SerializedPixel> &dest) noexcept {
+                                             std::vector<ThinPixel<float>> &dest) noexcept {
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
@@ -241,7 +241,8 @@ inline void HiCBlockReader::read_type1_block(std::int32_t bin1Offset, std::int32
       const auto bin1 = bin1Offset + static_cast<i32>(src.read<Bin1Type>());
 
       const auto counts = static_cast<f32>(src.read<CountType>());
-      dest.push_back(SerializedPixel{bin1, bin2, counts});
+      dest.push_back(ThinPixel<float>{static_cast<std::uint64_t>(bin1),
+                                      static_cast<std::uint64_t>(bin2), counts});
     }
   }
 
@@ -252,7 +253,7 @@ inline void HiCBlockReader::read_type1_block(std::int32_t bin1Offset, std::int32
 template <typename CountType>
 inline void HiCBlockReader::read_type2_block(std::int32_t bin1Offset, std::int32_t bin2Offset,
                                              BinaryBuffer &src,
-                                             std::vector<SerializedPixel> &dest) noexcept {
+                                             std::vector<ThinPixel<float>> &dest) noexcept {
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
@@ -278,10 +279,10 @@ inline void HiCBlockReader::read_type2_block(std::int32_t bin1Offset, std::int32
     }
     const auto row = i / w;
     const auto col = i - row * w;
-    const auto bin1 = bin1Offset + col;
-    const auto bin2 = bin2Offset + row;
+    const auto bin1 = static_cast<std::uint64_t>(bin1Offset + col);
+    const auto bin2 = static_cast<std::uint64_t>(bin2Offset + row);
 
-    dest.emplace_back(SerializedPixel{bin1, bin2, static_cast<f32>(count)});
+    dest.emplace_back(ThinPixel<float>{bin1, bin2, static_cast<f32>(count)});
   }
 }
 

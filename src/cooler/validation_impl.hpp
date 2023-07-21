@@ -21,13 +21,13 @@
 
 namespace hictk::cooler::utils {
 
-constexpr ValidationStatusCooler::operator bool() const noexcept { return this->is_cooler; }
+constexpr ValidationStatusCooler::operator bool() const noexcept { return is_cooler; }
 
 constexpr ValidationStatusMultiresCooler::operator bool() const noexcept {
-  return this->is_multires_file;
+  return is_multires_file;
 }
 
-constexpr ValidationStatusScool::operator bool() const noexcept { return this->is_scool_file; }
+constexpr ValidationStatusScool::operator bool() const noexcept { return is_scool_file; }
 
 inline ValidationStatusCooler is_cooler(std::string_view uri) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT

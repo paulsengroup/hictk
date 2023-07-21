@@ -91,7 +91,7 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 cooler dump --balanced --na-rep nan --join "$ref_cooler::/resolutions/100000" -r chr2L | cut -f 1-6,8 | truncate_counts > "$outdir/expected.pixels"
-"$hictk_bin" dump --balance "weight" "$ref_cooler::/resolutions/100000" -r chr2L | truncate_counts > "$outdir/out.cooler.pixels"
+"$hictk_bin" dump --join --balance "weight" "$ref_cooler::/resolutions/100000" -r chr2L | truncate_counts > "$outdir/out.cooler.pixels"
 
 if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
   status=1

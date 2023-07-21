@@ -54,12 +54,12 @@ class PixelSelector {
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
   template <typename N>
-  [[nodiscard]] auto begin() const -> iterator<N>;
+  [[nodiscard]] auto begin(bool sorted = true) const -> iterator<N>;
   template <typename N>
   [[nodiscard]] auto end() const -> iterator<N>;
 
   template <typename N>
-  [[nodiscard]] auto cbegin() const -> iterator<N>;
+  [[nodiscard]] auto cbegin(bool sorted = true) const -> iterator<N>;
   template <typename N>
   [[nodiscard]] auto cend() const -> iterator<N>;
 
@@ -93,7 +93,8 @@ class PixelSelector {
   void clear_cache() const;
 
  private:
-  [[nodiscard]] SerializedPixel transform_pixel(SerializedPixel pixel) const;
+  template <typename N>
+  [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
 
  public:
   template <typename N>
@@ -110,6 +111,7 @@ class PixelSelector {
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
     std::uint32_t _bin1_id{};
+    bool _sorted{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -121,7 +123,7 @@ class PixelSelector {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const PixelSelector &sel);
+    explicit iterator(const PixelSelector &sel, bool sorted);
     [[nodiscard]] static auto at_end(const PixelSelector &sel) -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
@@ -166,12 +168,12 @@ class PixelSelectorAll {
   explicit PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept;
 
   template <typename N>
-  [[nodiscard]] auto begin() const -> iterator<N>;
+  [[nodiscard]] auto begin(bool sorted = true) const -> iterator<N>;
   template <typename N>
   [[nodiscard]] auto end() const -> iterator<N>;
 
   template <typename N>
-  [[nodiscard]] auto cbegin() const -> iterator<N>;
+  [[nodiscard]] auto cbegin(bool sorted = true) const -> iterator<N>;
   template <typename N>
   [[nodiscard]] auto cend() const -> iterator<N>;
 
@@ -198,6 +200,7 @@ class PixelSelectorAll {
     std::shared_ptr<SelectorQueue> _selectors{};
     std::shared_ptr<SelectorQueue> _active_selectors{};
     std::shared_ptr<ItPQueue> _its{};
+    bool _sorted{};
 
     std::uint32_t _chrom1_id{};
 
@@ -214,7 +217,7 @@ class PixelSelectorAll {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const PixelSelectorAll &selector);
+    explicit iterator(const PixelSelectorAll &selector, bool sorted);
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;

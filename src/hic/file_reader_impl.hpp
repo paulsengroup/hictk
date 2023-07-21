@@ -497,7 +497,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     if (store1) {
       const auto numBins = static_cast<std::size_t>(
           (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(this->_fs->tellg());
+      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
       *weights1 = balancing::Weights{
           readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
           balancing::Weights::Type::DIVISIVE};
@@ -509,7 +509,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     if (store2) {
       const auto numBins = static_cast<std::size_t>(
           (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(this->_fs->tellg());
+      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
       *weights2 = balancing::Weights{
           readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
           balancing::Weights::Type::DIVISIVE};

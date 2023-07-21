@@ -12,13 +12,13 @@
 
 namespace hictk::cooler {
 
-inline HighFive::DataSet Dataset::operator()() { return this->_dataset; }
+inline HighFive::DataSet Dataset::operator()() { return _dataset; }
 
-inline const HighFive::DataSet &Dataset::operator()() const noexcept { return this->_dataset; }
+inline const HighFive::DataSet &Dataset::operator()() const noexcept { return _dataset; }
 
-inline std::string Dataset::file_name() const { return this->_root_group().getFile().getName(); }
+inline std::string Dataset::file_name() const { return _root_group().getFile().getName(); }
 
-inline std::string Dataset::hdf5_path() const { return this->_dataset.getPath(); }
+inline std::string Dataset::hdf5_path() const { return _dataset.getPath(); }
 
 inline std::string Dataset::name() const {
   const auto path = hdf5_path();
@@ -31,24 +31,24 @@ inline std::string Dataset::name() const {
 }
 
 inline std::string Dataset::uri() const {
-  return fmt::format(FMT_STRING("{}::{}"), this->file_name(), this->hdf5_path());
+  return fmt::format(FMT_STRING("{}::{}"), file_name(), hdf5_path());
 }
 
-inline std::size_t Dataset::size() const { return this->_dataset.getElementCount(); }
+inline std::size_t Dataset::size() const { return _dataset.getElementCount(); }
 
-inline bool Dataset::empty() const { return this->size() == 0; }
+inline bool Dataset::empty() const { return size() == 0; }
 
-inline HighFive::DataSet Dataset::get() { return this->_dataset; }
-inline const HighFive::DataSet &Dataset::get() const { return this->_dataset; }
+inline HighFive::DataSet Dataset::get() { return _dataset; }
+inline const HighFive::DataSet &Dataset::get() const { return _dataset; }
 
-inline RootGroup Dataset::get_parent() const { return this->_root_group; }
+inline RootGroup Dataset::get_parent() const { return _root_group; }
 
 inline bool Dataset::has_attribute(std::string_view key) const {
-  return Attribute::exists(this->_dataset, key);
+  return Attribute::exists(_dataset, key);
 }
 
 inline HighFive::DataType Dataset::get_h5type() const {
-  auto h5type = this->_dataset.getDataType();
+  auto h5type = _dataset.getDataType();
   if (h5type.isFixedLenStr()) {
     return h5type;
   }
@@ -97,12 +97,12 @@ inline auto Dataset::cend(std::size_t chunk_size) const -> iterator<T> {
 
 template <typename T>
 inline auto Dataset::begin(std::size_t chunk_size) const -> iterator<T> {
-  return this->cbegin<T>(chunk_size);
+  return cbegin<T>(chunk_size);
 }
 
 template <typename T>
 inline auto Dataset::end(std::size_t chunk_size) const -> iterator<T> {
-  return this->cend<T>(chunk_size);
+  return cend<T>(chunk_size);
 }
 
 }  // namespace hictk::cooler

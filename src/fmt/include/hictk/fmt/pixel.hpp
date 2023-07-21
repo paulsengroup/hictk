@@ -20,10 +20,10 @@ struct fmt::formatter<hictk::PixelCoordinates> {
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      this->presentation = Presentation::bg2;
+      presentation = Presentation::bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      this->presentation = Presentation::raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
@@ -36,11 +36,11 @@ struct fmt::formatter<hictk::PixelCoordinates> {
 
   template <typename FormatContext>
   auto format(const hictk::PixelCoordinates &c, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (this->presentation == Presentation::bg2) {
+    if (presentation == Presentation::bg2) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:bed}\t{:bed}"), c.bin1, c.bin2);
     }
 
-    assert(this->presentation == Presentation::raw);
+    assert(presentation == Presentation::raw);
     return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{:raw}"), c.bin1, c.bin2);
   }
 };
@@ -55,10 +55,10 @@ struct fmt::formatter<hictk::Pixel<N>> {
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      this->presentation = Presentation::bg2;
+      presentation = Presentation::bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      this->presentation = Presentation::raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
@@ -71,11 +71,11 @@ struct fmt::formatter<hictk::Pixel<N>> {
 
   template <typename FormatContext>
   inline auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (this->presentation == Presentation::raw) {
+    if (presentation == Presentation::raw) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{}"), p.coords, p.count);
     }
 
-    assert(this->presentation == Presentation::bg2);
+    assert(presentation == Presentation::bg2);
     return fmt::format_to(ctx.out(), FMT_STRING("{:bg2}\t{}"), p.coords, p.count);
   }
 };

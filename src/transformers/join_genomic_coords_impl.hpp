@@ -22,11 +22,11 @@ inline auto JoinGenomicCoords<PixelIt>::end() -> iterator {
 
 template <typename PixelIt>
 inline auto JoinGenomicCoords<PixelIt>::cbegin() -> iterator {
-  return this->begin();
+  return begin();
 }
 template <typename PixelIt>
 inline auto JoinGenomicCoords<PixelIt>::cend() -> iterator {
-  return this->end();
+  return end();
 }
 
 template <typename PixelIt>

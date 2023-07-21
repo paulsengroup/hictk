@@ -33,8 +33,8 @@ struct ConvertConfig {
   std::uint8_t gzip_compression_lvl{6};
   std::size_t processes{2};
 
-  std::size_t block_cache_size{0};
-  std::uint8_t verbosity{2};
+  std::size_t juicer_tools_xmx{32'000'000'000};
+  std::uint8_t verbosity{4};
   bool force{false};
 };
 
@@ -47,7 +47,8 @@ struct DumpConfig {
   std::filesystem::path query_file{};
 
   std::string table{"pixels"};
-  bool join{true};
+  bool join{false};
+  bool sorted{true};
 
   std::string normalization{"NONE"};
   std::string weight_type{"infer"};
@@ -66,12 +67,12 @@ struct LoadConfig {
   std::string format{};
   std::string assembly{"unknown"};
   bool count_as_float{false};
-  bool assume_sorted{true};
+  bool assume_sorted{false};
   bool force{false};
   bool validate_pixels{true};
 
-  std::uint8_t verbosity{2};
-  std::size_t batch_size{10'000'000};
+  std::uint8_t verbosity{4};
+  std::size_t batch_size{20'000'000};
 };
 
 struct MergeConfig {
@@ -82,14 +83,14 @@ struct MergeConfig {
   std::size_t chunk_size{5'000'000};
 
   bool force{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
   bool quiet{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 struct ZoomifyConfig {
@@ -100,7 +101,7 @@ struct ZoomifyConfig {
   bool copy_base_resolution{true};
 
   bool force{false};
-  std::uint8_t verbosity{2};
+  std::uint8_t verbosity{4};
 };
 
 // clang-format off

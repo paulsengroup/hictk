@@ -28,47 +28,47 @@ inline Weights::Weights(std::vector<double> weights, std::string_view name)
   }
 }
 
-inline Weights::operator bool() const noexcept { return !this->_weights.empty(); }
+inline Weights::operator bool() const noexcept { return !_weights.empty(); }
 
 inline double Weights::operator[](std::size_t i) const noexcept {
-  assert(i < this->_weights.size());
-  return this->_weights[i];
+  assert(i < _weights.size());
+  return _weights[i];
 }
 
-inline double Weights::at(std::size_t i) const { return this->_weights.at(i); }
+inline double Weights::at(std::size_t i) const { return _weights.at(i); }
 
 template <typename N>
 inline ThinPixel<N> Weights::balance(ThinPixel<N> p) const {
-  p.count = this->balance<N>(p.bin1_id, p.bin2_id, p.count);
+  p.count = balance<N>(p.bin1_id, p.bin2_id, p.count);
   return p;
 }
 
 template <typename N>
 inline Pixel<N> Weights::balance(Pixel<N> p) const {
-  p.count = this->balance<N>(p.coords.bin1().id(), p.coords.bin2().id(), p.count);
+  p.count = balance<N>(p.coords.bin1().id(), p.coords.bin2().id(), p.count);
   return p;
 }
 
 template <typename N1, typename N2>
 inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const {
   assert(std::is_floating_point_v<N1>);
-  const auto w1 = this->_weights[bin1_id];
-  const auto w2 = this->_weights[bin2_id];
+  const auto w1 = _weights[bin1_id];
+  const auto w2 = _weights[bin2_id];
 
   auto count_ = conditional_static_cast<double>(count);
 
-  if (this->type() == Weights::Type::MULTIPLICATIVE) {
+  if (type() == Weights::Type::MULTIPLICATIVE) {
     count_ *= w1 * w2;
   } else {
-    assert(this->type() == Weights::Type::DIVISIVE);
+    assert(type() == Weights::Type::DIVISIVE);
     count_ *= (1.0 / w1) * (1.0 / w2);
   }
   return conditional_static_cast<N1>(count_);
 }
 
-inline const std::vector<double> &Weights::operator()() const noexcept { return this->_weights; }
+inline const std::vector<double> &Weights::operator()() const noexcept { return _weights; }
 
-constexpr auto Weights::type() const noexcept -> Type { return this->_type; }
+constexpr auto Weights::type() const noexcept -> Type { return _type; }
 
 inline auto Weights::infer_type(std::string_view name) -> Type {
   const static phmap::flat_hash_map<std::string_view, Type> mappings{
@@ -102,8 +102,8 @@ inline void Weights::rescale(double scaling_factor) noexcept {
 inline void Weights::rescale(const std::vector<double> &scaling_factors,
                              const std::vector<std::uint64_t> &offsets) noexcept {
   for (std::size_t i = 0; i < scaling_factors.size(); ++i) {
-    auto first = this->_weights.begin() + std::ptrdiff_t(offsets[i]);
-    auto last = this->_weights.begin() + std::ptrdiff_t(offsets[i + 1]);
+    auto first = _weights.begin() + std::ptrdiff_t(offsets[i]);
+    auto last = _weights.begin() + std::ptrdiff_t(offsets[i + 1]);
     std::transform(first, last, first,
                    [s = scaling_factors[i]](const double w) { return w * std::sqrt(s); });
   }

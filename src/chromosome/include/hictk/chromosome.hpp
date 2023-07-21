@@ -61,6 +61,14 @@ class Chromosome {
   friend constexpr bool operator!=(std::uint32_t a_id, const Chromosome& b) noexcept;
 };
 
+struct ChromosomeCmp {
+  using is_transparent = void;
+
+  constexpr bool operator()(const Chromosome& c1, const Chromosome& c2) const noexcept;
+  constexpr bool operator()(std::uint32_t id1, const Chromosome& c2) const noexcept;
+  constexpr bool operator()(const Chromosome& c1, std::uint32_t id2) const noexcept;
+};
+
 }  // namespace hictk
 
 namespace std {

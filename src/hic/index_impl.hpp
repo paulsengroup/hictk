@@ -113,7 +113,7 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1,
   assert(coords1.is_intra());
   assert(coords2.is_intra());
 
-  if (this->empty()) {
+  if (empty()) {
     return {};
   }
 

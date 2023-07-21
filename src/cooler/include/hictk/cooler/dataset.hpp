@@ -220,7 +220,7 @@ class Dataset {
   class iterator {
     friend Dataset;
     mutable std::shared_ptr<std::vector<T>> _buff{};
-    const Dataset *_dset{};
+    std::shared_ptr<const Dataset> _dset{};
     mutable std::size_t _h5_chunk_start{};
     std::size_t _h5_offset{};
     std::size_t _chunk_size{};
@@ -228,8 +228,9 @@ class Dataset {
     std::size_t _h5_size{};
 #endif
 
-    explicit iterator(const Dataset &dset, std::size_t chunk_size, std::size_t h5_offset = 0,
-                      bool init = true);
+    iterator(Dataset dset, std::size_t chunk_size, std::size_t h5_offset = 0, bool init = true);
+    iterator(std::shared_ptr<const Dataset> dset, std::size_t chunk_size, std::size_t h5_offset = 0,
+             bool init = true);
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -280,8 +281,9 @@ class Dataset {
    private:
     void read_chunk_at_offset(std::size_t new_offset) const;
 
-    [[nodiscard]] static constexpr auto make_end_iterator(const Dataset &dset,
-                                                          std::size_t chunk_size) -> iterator;
+    [[nodiscard]] static auto make_end_iterator(Dataset dset, std::size_t chunk_size) -> iterator;
+    [[nodiscard]] static auto make_end_iterator(std::shared_ptr<const Dataset> dset,
+                                                std::size_t chunk_size) -> iterator;
   };
 };
 DISABLE_WARNING_POP

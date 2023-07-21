@@ -92,32 +92,31 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
   using PixelT = std::decay_t<decltype(*first_pixel)>;
   using T = remove_cvref_t<decltype(first_pixel->count)>;
   if constexpr (ndebug_not_defined()) {
-    this->validate_pixel_type<T>();
+    validate_pixel_type<T>();
   }
 
-  this->update_indexes(first_pixel, last_pixel);
+  update_indexes(first_pixel, last_pixel);
 
   if (validate) {
     if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
-      this->validate_pixels_before_append(first_pixel, last_pixel);
+      validate_pixels_before_append(first_pixel, last_pixel);
     } else {
-      this->validate_thin_pixels_before_append(first_pixel, last_pixel);
+      validate_thin_pixels_before_append(first_pixel, last_pixel);
     }
   }
 
-  File::append_bins(this->dataset("pixels/bin1_id"), this->dataset("pixels/bin2_id"), first_pixel,
-                    last_pixel);
+  File::append_bins(dataset("pixels/bin1_id"), dataset("pixels/bin2_id"), first_pixel, last_pixel);
 
   T sum{};
   T cis_sum{};
-  File::append_counts(this->dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
-  this->_attrs.nnz = this->dataset("pixels/bin1_id").size();
+  File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
+  _attrs.nnz = dataset("pixels/bin1_id").size();
 
-  this->update_pixel_sum(sum);
-  this->update_pixel_sum<T, true>(cis_sum);
+  update_pixel_sum(sum);
+  update_pixel_sum<T, true>(cis_sum);
 }
 
-inline void File::flush() { this->_root_group().getFile().flush(); }
+inline void File::flush() { _root_group().getFile().flush(); }
 
 template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
@@ -134,12 +133,12 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     throw std::runtime_error("weight name is empty");
   }
 
-  if (this->_mode == HighFive::File::ReadOnly) {
+  if (_mode == HighFive::File::ReadOnly) {
     throw std::runtime_error("File::write_weights() was called on a file open in read-only mode");
   }
 
   const auto weights_shape = static_cast<std::size_t>(std::distance(first_weight, last_weight));
-  const auto expected_weights_shape = this->bins().size();
+  const auto expected_weights_shape = bins().size();
   if (weights_shape != expected_weights_shape) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Invalid weight shape, expected {} values, found {}"),
@@ -147,14 +146,14 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
   }
 
   const auto path = fmt::format(FMT_STRING("bins/{}"), name);
-  const auto existing = this->_root_group().exist(path);
+  const auto existing = _root_group().exist(path);
   if (!overwrite_if_exists && existing) {
     throw std::runtime_error(fmt::format(FMT_STRING("dataset \"{}\" already exists"), path));
   }
 
   typename std::iterator_traits<It>::value_type buff{};
-  auto dset = existing ? Dataset(this->_root_group, this->_root_group().getDataSet(path))
-                       : Dataset(this->_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
+  auto dset = existing ? Dataset(_root_group, _root_group().getDataSet(path))
+                       : Dataset(_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
 
   dset.resize(weights_shape);
   if (weights_shape != 0) {
@@ -267,30 +266,30 @@ inline void File::write_standard_attributes(RootGroup &root_grp, const Attribute
 }
 
 inline void File::write_attributes(bool skip_sentinel_attr) {
-  assert(this->_attrs.nbins == this->bins().size());
-  assert(this->_attrs.nchroms == this->chromosomes().size());
-  assert(this->_attrs.nnz == this->_datasets.at("pixels/count").size());
+  assert(_attrs.nbins == bins().size());
+  assert(_attrs.nchroms == chromosomes().size());
+  assert(_attrs.nnz == _datasets.at("pixels/count").size());
 
-  File::write_standard_attributes(this->_root_group, this->_attrs, skip_sentinel_attr);
-  this->flush();
+  File::write_standard_attributes(_root_group, _attrs, skip_sentinel_attr);
+  flush();
   if (skip_sentinel_attr) {
     using T [[maybe_unused]] = remove_cvref_t<decltype(internal::SENTINEL_ATTR_VALUE)>;
-    assert(Attribute::read<T>(this->_root_group(), internal::SENTINEL_ATTR_NAME) ==
+    assert(Attribute::read<T>(_root_group(), internal::SENTINEL_ATTR_NAME) ==
            internal::SENTINEL_ATTR_VALUE);
-    Attribute::write(this->_root_group(), "format-version", this->_attrs.format_version, true);
-    this->flush();
+    Attribute::write(_root_group(), "format-version", _attrs.format_version, true);
+    flush();
   }
 }
 
 inline void File::write_chromosomes() {
-  assert(this->_datasets.contains("chroms/name"));
-  assert(this->_datasets.contains("chroms/length"));
-  assert(!this->chromosomes().empty());
+  assert(_datasets.contains("chroms/name"));
+  assert(_datasets.contains("chroms/length"));
+  assert(!chromosomes().empty());
 
-  File::write_chromosomes(this->dataset("chroms/name"), this->dataset("chroms/length"),
-                          this->chromosomes().begin(), this->chromosomes().end());
+  File::write_chromosomes(dataset("chroms/name"), dataset("chroms/length"), chromosomes().begin(),
+                          chromosomes().end());
 
-  this->_attrs.nchroms = static_cast<std::int32_t>(this->chromosomes().size());
+  _attrs.nchroms = static_cast<std::int32_t>(chromosomes().size());
 }
 
 template <typename ChromIt, typename UnaryOperation, typename>
@@ -323,10 +322,9 @@ inline void File::write_chromosomes(Dataset &name_dset, Dataset &size_dset, Chro
 }
 
 inline void File::write_bin_table() {
-  File::write_bin_table(this->dataset("bins/chrom"), this->dataset("bins/start"),
-                        this->dataset("bins/end"), this->bins());
+  File::write_bin_table(dataset("bins/chrom"), dataset("bins/start"), dataset("bins/end"), bins());
 
-  this->_attrs.nbins = this->bins().size();
+  _attrs.nbins = bins().size();
 }
 
 inline void File::write_bin_table(Dataset &chrom_dset, Dataset &start_dset, Dataset &end_dset,
@@ -356,14 +354,14 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
     return;
   }
 
-  auto nnz = static_cast<std::uint64_t>(*this->_attrs.nnz);
-  PixelCoordinates first_pixel_in_row(this->get_last_bin_written());
+  auto nnz = static_cast<std::uint64_t>(*_attrs.nnz);
+  PixelCoordinates first_pixel_in_row(get_last_bin_written());
 
   if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
     std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &p) {
       if (first_pixel_in_row.bin1 != p.coords.bin1) {
         first_pixel_in_row = p.coords;
-        this->index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
+        index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
       }
       nnz++;
     });
@@ -371,7 +369,7 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
     std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &p) {
       if (first_pixel_in_row.bin1.id() != p.bin1_id) {
         first_pixel_in_row = {bins().at(p.bin1_id), bins().at(p.bin2_id)};
-        this->index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
+        index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
       }
       nnz++;
     });
@@ -379,10 +377,9 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
 }
 
 inline void File::write_indexes() {
-  assert(this->_attrs.nnz.has_value());
-  this->index().finalize(static_cast<std::uint64_t>(*this->_attrs.nnz));
-  File::write_indexes(this->dataset("indexes/chrom_offset"), this->dataset("indexes/bin1_offset"),
-                      this->index());
+  assert(_attrs.nnz.has_value());
+  index().finalize(static_cast<std::uint64_t>(*_attrs.nnz));
+  File::write_indexes(dataset("indexes/chrom_offset"), dataset("indexes/bin1_offset"), index());
 }
 
 inline void File::write_indexes(Dataset &chrom_offset_dset, Dataset &bin_offset_dset,
@@ -391,7 +388,7 @@ inline void File::write_indexes(Dataset &chrom_offset_dset, Dataset &bin_offset_
 
   bin_offset_dset.write(idx.begin(), idx.end(), 0, true);
 
-  assert(chrom_offset_dset.size() == idx.num_chromosomes() + 1);
+  assert(chrom_offset_dset.size() == idx.chromosomes().size() + 1);
   assert(bin_offset_dset.size() == idx.size() + 1);
 }
 
@@ -402,6 +399,6 @@ inline void File::write_sentinel_attr(HighFive::Group grp) {
   grp.getFile().flush();
 }
 
-inline void File::write_sentinel_attr() { File::write_sentinel_attr(this->_root_group()); }
+inline void File::write_sentinel_attr() { File::write_sentinel_attr(_root_group()); }
 
 }  // namespace hictk::cooler

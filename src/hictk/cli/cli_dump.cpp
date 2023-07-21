@@ -15,15 +15,15 @@
 namespace hictk::tools {
 
 void Cli::make_dump_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("dump", "Dump Cooler data to stdout.")
+  auto& sc = *_cli.add_subcommand("dump", "Dump Cooler data to stdout.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = DumpConfig{};
+                    assert(_config.index() == 0);
+                    _config = DumpConfig{};
                   });
 
-  this->_config = DumpConfig{};
-  auto& c = std::get<DumpConfig>(this->_config);
+  _config = DumpConfig{};
+  auto& c = std::get<DumpConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -86,6 +86,12 @@ void Cli::make_dump_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
+      "--sorted,!--unsorted",
+      c.sorted,
+      "Return interactions in ascending order.")
+      ->capture_default_str();
+
+  sc.add_flag(
       "--join,!--no-join",
       c.join,
       "Output pixels in BG2 format.")
@@ -103,15 +109,15 @@ void Cli::make_dump_subcommand() {
   sc.get_option("--query-file")->excludes(sc.get_option("--range"));
   sc.get_option("--query-file")->excludes(sc.get_option("--range2"));
 
-  this->_config = std::monostate{};
+  _config = std::monostate{};
 }
 
 void Cli::validate_dump_subcommand() const {
-  assert(this->_cli.get_subcommand("dump")->parsed());
+  assert(_cli.get_subcommand("dump")->parsed());
 
   [[maybe_unused]] std::vector<std::string> warnings;
   std::vector<std::string> errors;
-  const auto& c = std::get<DumpConfig>(this->_config);
+  const auto& c = std::get<DumpConfig>(_config);
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -128,24 +134,23 @@ void Cli::validate_dump_subcommand() const {
     errors.emplace_back("--resolution is mandatory when file is in .hic format.");
   }
 
-  const auto resolution_parsed =
-      !this->_cli.get_subcommand("dump")->get_option("--resolution")->empty();
+  const auto resolution_parsed = !_cli.get_subcommand("dump")->get_option("--resolution")->empty();
 
   if ((is_cooler || is_mcooler) && resolution_parsed) {
     warnings.emplace_back("--resolution is ignored when file is in .cool or .mcool format.");
   }
 
   const auto weight_type_parsed =
-      !this->_cli.get_subcommand("dump")->get_option("--weight-type")->empty();
+      !_cli.get_subcommand("dump")->get_option("--weight-type")->empty();
 
   if (is_hic && weight_type_parsed) {
     warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
   }
 
   const auto matrix_type_parsed =
-      !this->_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
+      !_cli.get_subcommand("dump")->get_option("--matrix-type")->empty();
   const auto matrix_unit_parsed =
-      !this->_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
+      !_cli.get_subcommand("dump")->get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
     warnings.emplace_back(
@@ -157,7 +162,7 @@ void Cli::validate_dump_subcommand() const {
   }
 
   for (const auto& w : warnings) {
-    spdlog::warn(FMT_STRING("{}"), w);
+    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {
@@ -169,7 +174,11 @@ void Cli::validate_dump_subcommand() const {
 }
 
 void Cli::transform_args_dump_subcommand() {
-  auto& c = std::get<DumpConfig>(this->_config);
+  auto& c = std::get<DumpConfig>(_config);
+
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);
+  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
   c.format = infer_input_format(c.uri);
   if (c.format == "hic" && c.resolution == 0) {
@@ -177,7 +186,7 @@ void Cli::transform_args_dump_subcommand() {
     c.resolution = hic::utils::list_resolutions(c.uri).back();
   }
 
-  if (this->_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
+  if (_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
     c.range2 = c.range1;
   }
 }

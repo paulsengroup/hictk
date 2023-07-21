@@ -40,4 +40,13 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
   CHECK(end_it == f.dataset("bins/end").end<std::uint32_t>(0));
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Cooler: validate bin table", "[cooler][short]") {
+  auto path = datadir / "ENCFF993FGR.2500000.cool";
+
+  auto f = File::open(path.string());
+
+  CHECK_NOTHROW(f.validate_bins(true));
+}
+
 }  // namespace hictk::cooler::test::cooler_file

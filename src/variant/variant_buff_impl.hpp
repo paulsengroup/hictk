@@ -22,96 +22,96 @@ inline VariantBuffer::VariantBuffer(std::size_t size, T default_value)
 
 template <typename T>
 inline VariantBuffer &VariantBuffer::operator=(std::vector<T> buff) noexcept {
-  this->_buff = std::move(buff);
+  _buff = std::move(buff);
 
   return *this;
 }
 
 template <typename T>
 inline typename std::vector<T>::iterator VariantBuffer::VariantBuffer::begin() {
-  return std::get<std::vector<T>>(this->_buff).begin();
+  return std::get<std::vector<T>>(_buff).begin();
 }
 template <typename T>
 inline typename std::vector<T>::iterator VariantBuffer::VariantBuffer::end() {
-  return std::get<std::vector<T>>(this->_buff).end();
+  return std::get<std::vector<T>>(_buff).end();
 }
 template <typename T>
 inline typename std::vector<T>::const_iterator VariantBuffer::VariantBuffer::begin() const {
-  return std::get<std::vector<T>>(this->_buff).begin();
+  return std::get<std::vector<T>>(_buff).begin();
 }
 template <typename T>
 inline typename std::vector<T>::const_iterator VariantBuffer::VariantBuffer::end() const {
-  return std::get<std::vector<T>>(this->_buff).end();
+  return std::get<std::vector<T>>(_buff).end();
 }
 template <typename T>
 inline typename std::vector<T>::const_iterator VariantBuffer::VariantBuffer::cbegin() const {
-  return std::get<std::vector<T>>(this->_buff).begin();
+  return std::get<std::vector<T>>(_buff).begin();
 }
 template <typename T>
 inline typename std::vector<T>::const_iterator VariantBuffer::VariantBuffer::cend() const {
-  return std::get<std::vector<T>>(this->_buff).end();
+  return std::get<std::vector<T>>(_buff).end();
 }
 
 inline std::size_t VariantBuffer::VariantBuffer::size() const noexcept {
   std::size_t size{};
-  std::visit([&](const auto &buff) { size = buff.size(); }, this->_buff);
+  std::visit([&](const auto &buff) { size = buff.size(); }, _buff);
   return size;
 }
 
 template <typename T>
 inline std::size_t VariantBuffer::VariantBuffer::size() const {
-  return std::get<std::vector<T>>(this->_buff).size();
+  return std::get<std::vector<T>>(_buff).size();
 }
 
 inline std::size_t VariantBuffer::VariantBuffer::capacity() const noexcept {
   std::size_t capacity{};
-  std::visit([&](const auto &buff) { capacity = buff.capacity(); }, this->_buff);
+  std::visit([&](const auto &buff) { capacity = buff.capacity(); }, _buff);
   return capacity;
 }
 
 template <typename T>
 inline std::size_t VariantBuffer::VariantBuffer::capacity() const {
-  return std::get<std::vector<T>>(this->_buff).capacity();
+  return std::get<std::vector<T>>(_buff).capacity();
 }
 
 template <typename T>
 inline void VariantBuffer::VariantBuffer::reserve(std::size_t new_size) {
-  std::get<std::vector<T>>(this->_buff).reserve(new_size);
+  std::get<std::vector<T>>(_buff).reserve(new_size);
 }
 
 template <typename T>
 inline void VariantBuffer::VariantBuffer::resize(std::size_t new_size) {
-  std::get<std::vector<T>>(this->_buff).resize(new_size);
+  std::get<std::vector<T>>(_buff).resize(new_size);
 }
 
-inline bool VariantBuffer::VariantBuffer::empty() const noexcept { return this->size() == 0; }
+inline bool VariantBuffer::VariantBuffer::empty() const noexcept { return size() == 0; }
 
 template <typename T>
 inline bool VariantBuffer::VariantBuffer::empty() const {
-  return std::get<std::vector<T>>(this->_buff).empty();
+  return std::get<std::vector<T>>(_buff).empty();
 }
 
 inline void VariantBuffer::VariantBuffer::clear() noexcept {
-  std::visit([](auto &buff) { buff.clear(); }, this->_buff);
+  std::visit([](auto &buff) { buff.clear(); }, _buff);
 }
 
 template <typename T>
 inline void VariantBuffer::VariantBuffer::clear() noexcept {
-  std::get<std::vector<T>>(this->_buff).clear();
+  std::get<std::vector<T>>(_buff).clear();
 }
 
 template <typename T>
 [[nodiscard]] inline T &VariantBuffer::at(std::size_t i) {
-  return std::get<std::vector<T>>(this->_buff).at(i);
+  return std::get<std::vector<T>>(_buff).at(i);
 }
 template <typename T>
 [[nodiscard]] inline const T &VariantBuffer::at(std::size_t i) const {
-  return std::get<std::vector<T>>(this->_buff).at(i);
+  return std::get<std::vector<T>>(_buff).at(i);
 }
 
 [[nodiscard]] inline GenericVariant VariantBuffer::at(std::size_t i) const {
   GenericVariant n{};
-  std::visit([&](const auto &buff) { n = buff.at(i); }, this->_buff);
+  std::visit([&](const auto &buff) { n = buff.at(i); }, _buff);
   return n;
 }
 
@@ -122,52 +122,52 @@ template <typename T>
         assert(i < buff.size());
         n = buff[i];
       },
-      this->_buff);
+      _buff);
   return n;
 }
 
 template <typename T>
 inline T &VariantBuffer::front() {
-  return std::get<std::vector<T>>(this->_buff).front();
+  return std::get<std::vector<T>>(_buff).front();
 }
 template <typename T>
 inline const T &VariantBuffer::front() const {
-  return std::get<std::vector<T>>(this->_buff).front();
+  return std::get<std::vector<T>>(_buff).front();
 }
 
 template <typename T>
 inline T &VariantBuffer::back() {
-  return std::get<std::vector<T>>(this->_buff).back();
+  return std::get<std::vector<T>>(_buff).back();
 }
 template <typename T>
 inline const T &VariantBuffer::back() const {
-  return std::get<std::vector<T>>(this->_buff).back();
+  return std::get<std::vector<T>>(_buff).back();
 }
 
 template <typename T>
 inline T *VariantBuffer::data() {
-  return std::get<std::vector<T>>(this->_buff).data();
+  return std::get<std::vector<T>>(_buff).data();
 }
 template <typename T>
 inline const T *VariantBuffer::data() const {
-  return std::get<std::vector<T>>(this->_buff).data();
+  return std::get<std::vector<T>>(_buff).data();
 }
 
 template <typename T>
 inline std::vector<T> &VariantBuffer::get() {
-  return std::get<std::vector<T>>(this->_buff);
+  return std::get<std::vector<T>>(_buff);
 }
 template <typename T>
 inline const std::vector<T> &VariantBuffer::get() const {
-  return std::get<std::vector<T>>(this->_buff);
+  return std::get<std::vector<T>>(_buff);
 }
 
-constexpr auto VariantBuffer::get() -> BuffT & { return this->_buff; }
-constexpr auto VariantBuffer::get() const -> const BuffT & { return this->_buff; }
+constexpr auto VariantBuffer::get() -> BuffT & { return _buff; }
+constexpr auto VariantBuffer::get() const -> const BuffT & { return _buff; }
 
 template <typename T>
 bool VariantBuffer::holds_alternative() const noexcept {
-  return std::holds_alternative<std::vector<T>>(this->_buff);
+  return std::holds_alternative<std::vector<T>>(_buff);
 }
 
 }  // namespace hictk::internal

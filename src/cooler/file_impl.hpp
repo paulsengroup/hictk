@@ -42,14 +42,13 @@ inline File::File(RootGroup entrypoint, unsigned mode, std::size_t cache_size_by
       _pixel_variant(detect_pixel_type(_root_group)),
       _bins(std::make_shared<BinTable>(
           import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false),
-          this->bin_size())),
-      _index(std::make_shared<Index>(
-          import_indexes(_datasets.at("indexes/chrom_offset"), _datasets.at("indexes/bin1_offset"),
-                         // NOLINTNEXTLINE
-                         chromosomes(), _bins, static_cast<std::uint64_t>(*_attrs.nnz), false))) {
+          bin_size())),
+      _index(std::make_shared<Index>(init_index(_datasets.at("indexes/chrom_offset"),
+                                                _datasets.at("indexes/bin1_offset"), _bins,
+                                                _datasets.at("pixels/count").size(), false))) {
   assert(mode == HighFive::File::ReadOnly || mode == HighFive::File::ReadWrite);
   if (validate) {
-    this->validate_bins();
+    validate_bins();
   }
 }
 
@@ -62,16 +61,16 @@ inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] Pixel
       _datasets(create_datasets<PixelT>(_root_group, chroms, cache_size_bytes, w0)),
       _attrs(std::move(attributes)),
       _pixel_variant(PixelT(0)),
-      _bins(std::make_shared<const BinTable>(std::move(chroms), this->bin_size())),
+      _bins(std::make_shared<const BinTable>(std::move(chroms), bin_size())),
       _index(std::make_shared<Index>(_bins)),
       _finalize(true) {
-  assert(this->bin_size() != 0);
+  assert(bin_size() != 0);
   assert(!_bins->empty());
   assert(!chromosomes().empty());
   assert(!_index->empty());
-  assert(std::holds_alternative<PixelT>(this->_pixel_variant));
+  assert(std::holds_alternative<PixelT>(_pixel_variant));
 
-  this->write_sentinel_attr();
+  write_sentinel_attr();
 }
 
 inline File File::open(std::string_view uri, std::size_t cache_size_bytes, bool validate) {
@@ -185,21 +184,21 @@ inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uin
 
 inline File::~File() noexcept {
   try {
-    this->finalize();
+    finalize();
   } catch (const std::exception &e) {
     fmt::print(stderr, FMT_STRING("{}\n"), e.what());
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("An unknown error occurred while closing file {}. File is likely "
                           "corrupted or incomplete."),
-               this->path());
+               path());
   }
 }
 
-inline File::operator bool() const noexcept { return !!this->_bins; }
+inline File::operator bool() const noexcept { return !!_bins; }
 
 inline void File::close() {
-  this->finalize();
+  finalize();
   *this = File{};
 }
 
@@ -209,22 +208,22 @@ inline void File::finalize() {
     return;
   }
 
-  assert(this->_bins);
-  assert(this->_index);
+  assert(_bins);
+  assert(_index);
   try {
-    this->write_chromosomes();
-    this->write_bin_table();
+    write_chromosomes();
+    write_bin_table();
 
     assert(_attrs.nnz.has_value());
-    _index->nnz() = static_cast<std::uint64_t>(*_attrs.nnz);
-    this->write_indexes();
-    this->write_attributes();
+    _index->set_nnz(static_cast<std::uint64_t>(*_attrs.nnz));
+    write_indexes();
+    write_attributes();
 
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("The following error occurred while closing file {}: {}\n"
                                "File is likely corrupted or incomplete"),
-                    this->path(), e.what()));
+                    path(), e.what()));
   }
 }
 
@@ -292,7 +291,7 @@ template <typename N, bool cis>
 inline void File::update_pixel_sum(N partial_sum) {
   static_assert(std::is_arithmetic_v<N>);
 
-  auto &buff = cis ? this->_attrs.cis : this->_attrs.sum;
+  auto &buff = cis ? _attrs.cis : _attrs.sum;
   assert(buff.has_value());
   if constexpr (std::is_floating_point_v<N>) {
     std::get<double>(*buff) += conditional_static_cast<double>(partial_sum);

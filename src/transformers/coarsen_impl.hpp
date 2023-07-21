@@ -42,7 +42,7 @@ inline auto CoarsenPixels<PixelIt>::begin() const -> iterator {
 
 template <typename PixelIt>
 inline auto CoarsenPixels<PixelIt>::cbegin() const -> iterator {
-  return this->begin();
+  return begin();
 }
 
 template <typename PixelIt>
@@ -52,24 +52,24 @@ inline auto CoarsenPixels<PixelIt>::end() const -> iterator {
 
 template <typename PixelIt>
 inline auto CoarsenPixels<PixelIt>::cend() const -> iterator {
-  return this->end();
+  return end();
 }
 
 template <typename PixelIt>
 inline const BinTable &CoarsenPixels<PixelIt>::src_bins() const noexcept {
-  return *this->src_bins_ptr();
+  return *src_bins_ptr();
 }
 template <typename PixelIt>
 inline const BinTable &CoarsenPixels<PixelIt>::dest_bins() const noexcept {
-  return *this->dest_bins_ptr();
+  return *dest_bins_ptr();
 }
 template <typename PixelIt>
 inline std::shared_ptr<const BinTable> CoarsenPixels<PixelIt>::src_bins_ptr() const noexcept {
-  return this->_src_bins;
+  return _src_bins;
 }
 template <typename PixelIt>
 inline std::shared_ptr<const BinTable> CoarsenPixels<PixelIt>::dest_bins_ptr() const noexcept {
-  return this->_dest_bins;
+  return _dest_bins;
 }
 
 template <typename PixelIt>
@@ -77,7 +77,7 @@ inline auto CoarsenPixels<PixelIt>::read_all() const -> std::vector<ThinPixel<N>
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
   // and a second time to copy the actual data)
   std::vector<ThinPixel<N>> buff{};
-  std::copy(this->begin(), this->end(), std::back_inserter(buff));
+  std::copy(begin(), end(), std::back_inserter(buff));
   return buff;
 }
 
@@ -227,8 +227,8 @@ inline void CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass2(const ColumnMe
 template <typename PixelIt>
 inline bool CoarsenPixels<PixelIt>::iterator::operator==(
     const CoarsenPixels::iterator &other) const noexcept {
-  return this->_buffer == other._buffer && this->_it == other._it &&
-         this->_src_bins == other._src_bins && this->_dest_bins == other._dest_bins;
+  return _buffer == other._buffer && _it == other._it && _src_bins == other._src_bins &&
+         _dest_bins == other._dest_bins;
 }
 
 template <typename PixelIt>
@@ -239,7 +239,7 @@ inline bool CoarsenPixels<PixelIt>::iterator::operator!=(
 
 template <typename PixelIt>
 inline auto CoarsenPixels<PixelIt>::iterator::operator*() const -> const_reference {
-  return *this->_it;
+  return *_it;
 }
 
 template <typename PixelIt>
@@ -252,7 +252,7 @@ inline auto CoarsenPixels<PixelIt>::iterator::operator++() -> iterator & {
   assert(_buffer);
 
   if (++_it == _buffer->end()) {
-    this->process_next_row();
+    process_next_row();
   }
   return *this;
 }

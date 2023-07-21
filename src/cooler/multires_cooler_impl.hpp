@@ -85,7 +85,7 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
   }
 
   auto mclr = MultiResFile::create(path, base.chromosomes(), force_overwrite);
-  spdlog::info(FMT_STRING("Copying {} resolution from \"{}\""), base_res, base.path());
+  SPDLOG_INFO(FMT_STRING("Copying {} resolution from \"{}\""), base_res, base.path());
   mclr.copy_resolution(base);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
@@ -102,8 +102,8 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
                                    tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE)
             : File::create<std::int32_t>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
                                          tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE);
-    spdlog::info(FMT_STRING("Generating {} resolution from {} ({}x)"), tgt_resolution,
-                 base_resolution, tgt_resolution / base_resolution);
+    SPDLOG_INFO(FMT_STRING("Generating {} resolution from {} ({}x)"), tgt_resolution,
+                base_resolution, tgt_resolution / base_resolution);
 
     MultiResFile::coarsen(mclr.open(base_res), clr, buffer);
     mclr._resolutions.push_back(tgt_resolution);
@@ -124,8 +124,8 @@ inline File MultiResFile::open(std::uint32_t resolution) const {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline File MultiResFile::copy_resolution(const File& clr) {
-  spdlog::info(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
-  auto dest = this->init_resolution(clr.bin_size());
+  SPDLOG_INFO(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
+  auto dest = init_resolution(clr.bin_size());
 
   cooler::utils::copy(clr.uri(), dest);
   _resolutions.push_back(clr.bin_size());
@@ -157,7 +157,7 @@ inline RootGroup MultiResFile::init_resolution(std::uint32_t resolution) {
   return RootGroup{(*_root_grp)().createGroup(grp, false)};
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-inline MultiResFile::operator bool() const noexcept { return !!this->_root_grp; }
+inline MultiResFile::operator bool() const noexcept { return !!_root_grp; }
 
 inline std::string MultiResFile::path() const { return (*_root_grp)().getFile().getName(); }
 
@@ -182,8 +182,8 @@ inline auto MultiResFile::chromosomes() const noexcept -> const Reference& {
 
 inline void MultiResFile::coarsen(const File& clr1, File& clr2,
                                   std::vector<ThinPixel<std::int32_t>>& buffer) {
-  spdlog::info(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.bin_size(),
-               clr1.bin_size(), clr2.bin_size() / clr1.bin_size());
+  SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.bin_size(),
+              clr1.bin_size(), clr2.bin_size() / clr1.bin_size());
   auto sel1 = clr1.fetch();
   auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
                                           clr1.bins_ptr(), clr2.bin_size() / clr1.bin_size());
@@ -209,8 +209,8 @@ inline void MultiResFile::coarsen(const File& clr1, File& clr2,
               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
           1000.0;
       const auto bin1 = clr2.bins().at(first->bin1_id);
-      spdlog::info(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
-                   clr1.bin_size(), clr2.bin_size(), bin1, double(update_frequency) / delta);
+      SPDLOG_INFO(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
+                  clr1.bin_size(), clr2.bin_size(), bin1, double(update_frequency) / delta);
       t0 = t1;
       j = 0;
     }

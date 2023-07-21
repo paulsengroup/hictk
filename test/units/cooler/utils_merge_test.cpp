@@ -25,7 +25,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto dest = testdir() / "cooler_merge_test_int.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
-    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1'000);
+    cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
     const auto clr1 = File::open_read_once(src.string());
     const auto clr2 = File::open_read_once(dest.string());
@@ -51,7 +51,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto dest = testdir() / "cooler_merge_test_float.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
-    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1'000);
+    cooler::utils::merge<double>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
     const auto clr1 = File::open_read_once(src.string());
     const auto clr2 = File::open_read_once(dest.string());
@@ -88,7 +88,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
       }
     }
 
-    cooler::utils::merge(sources.begin(), sources.end(), dest.string(), true, 1000);
+    cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest.string(), true, 1000);
 
     const auto clr1 = File::open_read_once(src.string());
     const auto clr2 = File::open_read_once(dest.string());
@@ -121,8 +121,9 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
         fmt::format(FMT_STRING("{}::/resolutions/100000"), mclr.string()),
         fmt::format(FMT_STRING("{}::/resolutions/200000"), mclr.string())};
 
-    CHECK_THROWS_WITH(cooler::utils::merge(sources1.begin(), sources1.end(), dest1.string(), true),
-                      Catch::Matchers::ContainsSubstring("have different resolutions"));
+    CHECK_THROWS_WITH(
+        cooler::utils::merge<std::int32_t>(sources1.begin(), sources1.end(), dest1.string(), true),
+        Catch::Matchers::ContainsSubstring("have different resolutions"));
   }
 
   SECTION("merge - different reference") {
@@ -132,8 +133,9 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
 
     const std::array<std::string, 2> sources2{clr1.string(), clr2.string()};
 
-    CHECK_THROWS_WITH(cooler::utils::merge(sources2.begin(), sources2.end(), dest2.string(), true),
-                      Catch::Matchers::ContainsSubstring("use different reference genomes"));
+    CHECK_THROWS_WITH(
+        cooler::utils::merge<std::int32_t>(sources2.begin(), sources2.end(), dest2.string(), true),
+        Catch::Matchers::ContainsSubstring("use different reference genomes"));
   }
 }
 }  // namespace hictk::cooler::test::utils

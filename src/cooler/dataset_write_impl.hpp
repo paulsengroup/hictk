@@ -37,20 +37,20 @@ inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::siz
     return offset;
   }
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset + buff.size() > this->size()) {
+  if (offset + buff.size() > size()) {
     if (allow_dataset_resize) {
-      this->resize(offset + buff.size());
+      resize(offset + buff.size());
     } else {
-      this->throw_out_of_range_excp(offset, buff.size());
+      throw_out_of_range_excp(offset, buff.size());
     }
   }
 
-  const auto str_length = this->get_h5type().getSize();
+  const auto str_length = get_h5type().getSize();
   std::string strbuff(str_length * buff.size(), '\0');
   for (std::size_t i = 0; i < buff.size(); ++i) {
     strbuff.insert(i * str_length, buff[i]);
   }
-  auto dspace = this->select(offset, buff.size());
+  auto dspace = select(offset, buff.size());
   dspace.write_raw(strbuff.data(), dspace.getDataType());
 
   return offset + buff.size();
@@ -63,24 +63,23 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
     return offset;
   }
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset + buff.size() > this->size()) {
+  if (offset + buff.size() > size()) {
     if (allow_dataset_resize) {
-      this->resize(offset + buff.size());
+      resize(offset + buff.size());
     } else {
-      this->throw_out_of_range_excp(offset, buff.size());
+      throw_out_of_range_excp(offset, buff.size());
     }
   }
 
-  this->select(offset, buff.size()).write(buff);
+  select(offset, buff.size()).write(buff);
   return offset + buff.size();
 }
 
 inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
-  std::visit(
-      [&](const auto &buff) { new_offset = this->write(buff, offset, allow_dataset_resize); },
-      vbuff.get());
+  std::visit([&](const auto &buff) { new_offset = write(buff, offset, allow_dataset_resize); },
+             vbuff.get());
 
   return new_offset;
 }
@@ -95,18 +94,18 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
   using T = remove_cvref_t<decltype(op(*first_value))>;
   constexpr std::size_t buffer_capacity =
       is_string_v<T> ? 256 : (1ULL << 20U) / sizeof(std::uint64_t);
-  if (this->_buff.holds_alternative<T>()) {
-    this->_buff.resize<T>(buffer_capacity);
+  if (_buff.holds_alternative<T>()) {
+    _buff.resize<T>(buffer_capacity);
   } else {
-    this->_buff = std::vector<T>(buffer_capacity);
+    _buff = std::vector<T>(buffer_capacity);
   }
 
-  auto &buff = this->_buff.get<T>();
+  auto &buff = _buff.get<T>();
   buff.clear();
 
   while (first_value != last_value) {
     if (buff.size() == buff.capacity()) {
-      this->write(buff, offset, allow_dataset_resize);
+      write(buff, offset, allow_dataset_resize);
       offset += buff.size();
       buff.clear();
     }
@@ -115,7 +114,7 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
   }
 
   if (!buff.empty()) {
-    this->write(buff, offset, allow_dataset_resize);
+    write(buff, offset, allow_dataset_resize);
     offset += buff.size();
   }
 
@@ -125,35 +124,35 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
 template <typename InputIt, typename UnaryOperation,
           typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int> *>
 inline std::size_t Dataset::append(InputIt first_value, InputIt last_value, UnaryOperation op) {
-  return this->write(first_value, last_value, this->size(), true, op);
+  return write(first_value, last_value, size(), true, op);
 }
 
 template <typename N, typename>
 inline std::size_t Dataset::write(N buff, std::size_t offset, bool allow_dataset_resize) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset >= this->size()) {
+  if (offset >= size()) {
     if (allow_dataset_resize) {
-      this->resize(offset + 1);
+      resize(offset + 1);
     } else {
-      this->throw_out_of_range_excp(offset);
+      throw_out_of_range_excp(offset);
     }
   }
 
-  this->select(offset).write(buff);
+  select(offset).write(buff);
   return offset + 1;
 }
 
 inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool allow_dataset_resize) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset >= this->size()) {
+  if (offset >= size()) {
     if (allow_dataset_resize) {
-      this->resize(offset + 1);
+      resize(offset + 1);
     } else {
-      this->throw_out_of_range_excp(offset);
+      throw_out_of_range_excp(offset);
     }
   }
 
-  auto dspace = this->select(offset);
+  auto dspace = select(offset);
 
   const auto str_length = dspace.getDataType().getSize();
   buff.resize(str_length, '\0');
@@ -166,22 +165,21 @@ inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool all
 inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
-  std::visit(
-      [&](const auto &buff) { new_offset = this->write(buff, offset, allow_dataset_resize); },
-      vbuff);
+  std::visit([&](const auto &buff) { new_offset = write(buff, offset, allow_dataset_resize); },
+             vbuff);
 
   return new_offset;
 }
 
 template <typename BuffT>
 inline std::size_t Dataset::append(const BuffT &buff) {
-  return this->write(buff, this->size(), true);
+  return write(buff, size(), true);
 }
 
 template <typename T>
 inline void Dataset::write_attribute(std::string_view key, const T &value,
                                      bool overwrite_if_exists) {
-  Attribute::write(this->_dataset, key, value, overwrite_if_exists);
+  Attribute::write(_dataset, key, value, overwrite_if_exists);
 }
 
 inline HighFive::DataSet Dataset::create_fixed_str_dataset(

@@ -26,48 +26,48 @@ inline Chromosome::Chromosome(std::uint32_t id, std::string name_, std::uint32_t
   assert(_size != 0);
 }
 
-constexpr Chromosome::operator bool() const noexcept { return this->id() != Chromosome::null_id; }
+constexpr Chromosome::operator bool() const noexcept { return id() != Chromosome::null_id; }
 
-constexpr std::uint32_t Chromosome::id() const noexcept { return this->_id; }
+constexpr std::uint32_t Chromosome::id() const noexcept { return _id; }
 
 inline std::string_view Chromosome::name() const noexcept {
-  return !!this->_name ? std::string_view{*this->_name} : "";  // NOLINT
+  return !!_name ? std::string_view{*_name} : "";  // NOLINT
 }
 
-constexpr std::uint32_t Chromosome::size() const noexcept { return this->_size; }
+constexpr std::uint32_t Chromosome::size() const noexcept { return _size; }
 
 inline bool Chromosome::is_all() const noexcept {
   constexpr std::string_view all{"All"};
-  if (this->name() == all) {
+  if (name() == all) {
     return true;
   }
 
-  if (this->name().size() != all.size()) {
+  if (name().size() != all.size()) {
     return false;
   }
 
-  return std::equal(this->name().begin(), this->name().end(), all.begin(),
+  return std::equal(name().begin(), name().end(), all.begin(),
                     [](const char a, const char b) { return std::tolower(a) == std::tolower(b); });
 }
 
 constexpr bool Chromosome::operator<(const Chromosome& other) const noexcept {
-  return this->id() < other.id();
+  return id() < other.id();
 }
 
 constexpr bool Chromosome::operator>(const Chromosome& other) const noexcept {
-  return this->id() > other.id();
+  return id() > other.id();
 }
 
 constexpr bool Chromosome::operator<=(const Chromosome& other) const noexcept {
-  return this->id() <= other.id();
+  return id() <= other.id();
 }
 
 constexpr bool Chromosome::operator>=(const Chromosome& other) const noexcept {
-  return this->id() >= other.id();
+  return id() >= other.id();
 }
 
 inline bool Chromosome::operator==(const Chromosome& other) const noexcept {
-  return this->id() == other.id() && this->name() == other.name() && this->size() == other.size();
+  return id() == other.id() && name() == other.name() && size() == other.size();
 }
 
 inline bool Chromosome::operator!=(const Chromosome& other) const noexcept {
@@ -109,6 +109,17 @@ constexpr bool operator<=(std::uint32_t a_id, const Chromosome& b) noexcept { re
 constexpr bool operator>=(std::uint32_t a_id, const Chromosome& b) noexcept { return b <= a_id; }
 constexpr bool operator==(std::uint32_t a_id, const Chromosome& b) noexcept { return b == a_id; }
 constexpr bool operator!=(std::uint32_t a_id, const Chromosome& b) noexcept { return b != a_id; }
+
+constexpr bool ChromosomeCmp::operator()(const Chromosome& c1,
+                                         const Chromosome& c2) const noexcept {
+  return c1 < c2;
+}
+constexpr bool ChromosomeCmp::operator()(std::uint32_t id1, const Chromosome& c2) const noexcept {
+  return id1 < c2.id();
+}
+constexpr bool ChromosomeCmp::operator()(const Chromosome& c1, std::uint32_t id2) const noexcept {
+  return c1.id() < id2;
+}
 
 }  // namespace hictk
 

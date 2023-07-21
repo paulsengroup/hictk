@@ -26,7 +26,7 @@ class TmpDir {
 
   void delete_at_exit() {
     if (_delete_on_destruction) {
-      std::filesystem::remove_all(this->_path);
+      std::filesystem::remove_all(_path);
     }
   }
 
@@ -56,25 +56,25 @@ class TmpDir {
   }
 
   [[maybe_unused]] explicit TmpDir(bool delete_on_destruction) : TmpDir() {
-    this->set_delete_on_destruction(delete_on_destruction);
+    set_delete_on_destruction(delete_on_destruction);
   }
 
   TmpDir(const TmpDir& other) = delete;
   TmpDir(TmpDir&& other) = delete;
 
   ~TmpDir() {
-    if (this->get_delete_on_destruction()) {
-      std::filesystem::remove_all(this->_path);
+    if (get_delete_on_destruction()) {
+      std::filesystem::remove_all(_path);
     }
   }
 
-  [[nodiscard]] const std::filesystem::path& operator()() const noexcept { return this->_path; }
+  [[nodiscard]] const std::filesystem::path& operator()() const noexcept { return _path; }
   [[maybe_unused]] [[nodiscard]] bool get_delete_on_destruction() const noexcept {
-    return this->_delete_on_destruction;
+    return _delete_on_destruction;
   }
 
   [[maybe_unused]] void set_delete_on_destruction(const bool flag) noexcept {
-    this->_delete_on_destruction = flag;
+    _delete_on_destruction = flag;
   }
 
   TmpDir& operator=(const TmpDir& other) = delete;

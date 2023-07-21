@@ -31,7 +31,7 @@ inline Reference::Reference(ChromosomeIt first_chrom, ChromosomeIt last_chrom)
       _map(construct_chrom_map(_buff)),
       _longest_chrom(find_longest_chromosome(_buff)),
       _chrom_with_longest_name(find_chromosome_with_longest_name(_buff)) {
-  this->validate();
+  validate();
 }
 
 template <typename ChromosomeNameIt, typename ChromosomeSizeIt>
@@ -41,7 +41,7 @@ inline Reference::Reference(ChromosomeNameIt first_chrom_name, ChromosomeNameIt 
       _map(construct_chrom_map(_buff)),
       _longest_chrom(find_longest_chromosome(_buff)),
       _chrom_with_longest_name(find_chromosome_with_longest_name(_buff)) {
-  this->validate();
+  validate();
 }
 
 inline Reference::Reference(std::initializer_list<Chromosome> chromosomes)
@@ -70,86 +70,84 @@ inline Reference Reference::from_chrom_sizes(const std::filesystem::path& path_t
   }
 }
 
-inline auto Reference::begin() const -> const_iterator { return this->cbegin(); }
-inline auto Reference::end() const -> const_iterator { return this->cend(); }
-inline auto Reference::cbegin() const -> const_iterator { return this->_buff.cbegin(); }
-inline auto Reference::cend() const -> const_iterator { return this->_buff.cend(); }
+inline auto Reference::begin() const -> const_iterator { return cbegin(); }
+inline auto Reference::end() const -> const_iterator { return cend(); }
+inline auto Reference::cbegin() const -> const_iterator { return _buff.cbegin(); }
+inline auto Reference::cend() const -> const_iterator { return _buff.cend(); }
 
-inline auto Reference::rbegin() const -> const_reverse_iterator { return this->rcbegin(); }
-inline auto Reference::rend() const -> const_reverse_iterator { return this->rcend(); }
-inline auto Reference::rcbegin() const -> const_reverse_iterator { return this->_buff.rbegin(); }
-inline auto Reference::rcend() const -> const_reverse_iterator { return this->_buff.rend(); }
+inline auto Reference::rbegin() const -> const_reverse_iterator { return rcbegin(); }
+inline auto Reference::rend() const -> const_reverse_iterator { return rcend(); }
+inline auto Reference::rcbegin() const -> const_reverse_iterator { return _buff.rbegin(); }
+inline auto Reference::rcend() const -> const_reverse_iterator { return _buff.rend(); }
 
-inline bool Reference::empty() const noexcept { return this->size() == 0; }
-inline std::size_t Reference::size() const noexcept { return this->_buff.size(); }
+inline bool Reference::empty() const noexcept { return size() == 0; }
+inline std::size_t Reference::size() const noexcept { return _buff.size(); }
 
 inline auto Reference::find(std::uint32_t id) const -> const_iterator {
-  if (static_cast<std::size_t>(id) > this->size()) {
-    return this->end();
+  if (static_cast<std::size_t>(id) > size()) {
+    return end();
   }
-  return this->_buff.begin() + static_cast<std::ptrdiff_t>(id);
+  return _buff.begin() + static_cast<std::ptrdiff_t>(id);
 }
 
 inline auto Reference::find(std::string_view chrom_name) const -> const_iterator {
-  auto it = this->_map.find(chrom_name);
-  if (it == this->_map.end()) {
-    return this->end();
+  auto it = _map.find(chrom_name);
+  if (it == _map.end()) {
+    return end();
   }
 
-  return this->_buff.begin() + static_cast<std::ptrdiff_t>(it->second);
+  return _buff.begin() + static_cast<std::ptrdiff_t>(it->second);
 }
 
 inline auto Reference::find(const Chromosome& chrom) const -> const_iterator {
-  auto match = this->find(chrom.id());
-  if (match != this->end() && *match != chrom) {
-    match = this->end();
+  auto match = find(chrom.id());
+  if (match != end() && *match != chrom) {
+    match = end();
   }
   return match;
 }
 
 inline const Chromosome& Reference::at(std::uint32_t id) const {
-  this->validate_chrom_id(id);
-  return *this->find(id);
+  validate_chrom_id(id);
+  return *find(id);
 }
 
 inline const Chromosome& Reference::at(std::string_view chrom_name) const {
-  if (const auto match = this->find(chrom_name); match != this->end()) {
+  if (const auto match = find(chrom_name); match != end()) {
     return *match;
   }
   throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom_name));
 }
 
 inline const Chromosome& Reference::operator[](std::uint32_t id) const noexcept {
-  auto it = this->find(id);
-  assert(it != this->end());
+  auto it = find(id);
+  assert(it != end());
   return *it;
 }
 inline const Chromosome& Reference::operator[](std::string_view chrom_name) const noexcept {
-  auto it = this->find(chrom_name);
-  assert(it != this->end());
+  auto it = find(chrom_name);
+  assert(it != end());
   return *it;
 }
 
-inline bool Reference::contains(std::uint32_t id) const { return this->find(id) != this->end(); }
-inline bool Reference::contains(const Chromosome& chrom) const {
-  return this->find(chrom) != this->end();
-}
+inline bool Reference::contains(std::uint32_t id) const { return find(id) != end(); }
+inline bool Reference::contains(const Chromosome& chrom) const { return find(chrom) != end(); }
 inline bool Reference::contains(std::string_view chrom_name) const {
-  return this->find(chrom_name) != this->end();
+  return find(chrom_name) != end();
 }
 
 inline std::uint32_t Reference::get_id(std::string_view chrom_name) const {
-  if (const auto match = this->find(chrom_name); match != this->end()) {
-    return static_cast<std::uint32_t>(std::distance(this->begin(), match));
+  if (const auto match = find(chrom_name); match != end()) {
+    return static_cast<std::uint32_t>(std::distance(begin(), match));
   }
   throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom_name));
 }
 
 inline bool Reference::operator==(const Reference& other) const {
-  if (this->size() != other.size()) {
+  if (size() != other.size()) {
     return false;
   }
-  return std::equal(this->_buff.begin(), this->_buff.end(), other.begin(),
+  return std::equal(_buff.begin(), _buff.end(), other.begin(),
                     [](const Chromosome& chrom1, const Chromosome& chrom2) {
                       return chrom1.id() == chrom2.id() && chrom1.name() == chrom2.name() &&
                              chrom1.size() == chrom2.size();
@@ -159,22 +157,22 @@ inline bool Reference::operator==(const Reference& other) const {
 inline bool Reference::operator!=(const Reference& other) const { return !(*this == other); }
 
 inline const Chromosome& Reference::longest_chromosome() const {
-  if (this->empty()) {
+  if (empty()) {
     throw std::runtime_error("longest_chromosome() was called on an empty Reference");
   }
-  assert(this->_longest_chrom < this->_buff.size());
-  return this->_buff[this->_longest_chrom];
+  assert(_longest_chrom < _buff.size());
+  return _buff[_longest_chrom];
 }
 inline const Chromosome& Reference::chromosome_with_longest_name() const {
-  if (this->empty()) {
+  if (empty()) {
     throw std::runtime_error("chromosome_with_longest_name() was called on an empty Reference");
   }
-  assert(this->_chrom_with_longest_name < this->_buff.size());
-  return this->_buff[this->_chrom_with_longest_name];
+  assert(_chrom_with_longest_name < _buff.size());
+  return _buff[_chrom_with_longest_name];
 }
 
 inline void Reference::validate_chrom_id(std::uint32_t chrom_id) const {
-  if (static_cast<std::size_t>(chrom_id) >= this->size()) {
+  if (static_cast<std::size_t>(chrom_id) >= size()) {
     throw std::out_of_range(fmt::format(FMT_STRING("chromosome with id {} not found"), chrom_id));
   }
 }
@@ -236,19 +234,19 @@ inline std::size_t Reference::find_chromosome_with_longest_name(const ChromBuff&
 }
 
 inline void Reference::validate() const {
-  if (this->empty()) {
+  if (empty()) {
     return;
   }
 
-  assert(this->_longest_chrom < this->_buff.size());
-  assert(this->_chrom_with_longest_name < this->_buff.size());
+  assert(_longest_chrom < _buff.size());
+  assert(_chrom_with_longest_name < _buff.size());
 
-  if (!std::is_sorted(this->_buff.begin(), this->_buff.end())) {
+  if (!std::is_sorted(_buff.begin(), _buff.end())) {
     throw std::runtime_error("chromosomes are not sorted by ID");
   }
 
   phmap::flat_hash_set<std::uint32_t> ids{};
-  for (const auto& chrom : this->_buff) {
+  for (const auto& chrom : _buff) {
     if (chrom.size() == 0) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("chromosome {} has a size of 0"), chrom.name()));

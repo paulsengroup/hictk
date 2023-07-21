@@ -26,15 +26,13 @@ DISABLE_WARNING_DEPRECATED_DECLARATIONS
 struct RootGroup {
   HighFive::Group group{};
 
-  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return this->group; };
-  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept {
-    return this->group;
-  };
+  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return group; };
+  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept { return group; };
 
-  [[nodiscard]] inline std::string file_name() const { return this->group.getFile().getName(); }
-  [[nodiscard]] inline std::string hdf5_path() const { return this->group.getPath(); }
+  [[nodiscard]] inline std::string file_name() const { return group.getFile().getName(); }
+  [[nodiscard]] inline std::string hdf5_path() const { return group.getPath(); }
   [[nodiscard]] inline std::string uri() const {
-    return fmt::format(FMT_STRING("{}::{}"), this->file_name(), this->hdf5_path());
+    return fmt::format(FMT_STRING("{}::{}"), file_name(), hdf5_path());
   }
 };
 
@@ -42,10 +40,8 @@ struct Group {
   RootGroup root_group{};
   HighFive::Group group{};
 
-  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return this->group; };
-  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept {
-    return this->group;
-  };
+  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return group; };
+  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept { return group; };
 };
 DISABLE_WARNING_POP
 

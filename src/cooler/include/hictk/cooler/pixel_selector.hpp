@@ -26,6 +26,7 @@ class PixelSelector {
   PixelCoordinates _coord1{};
   PixelCoordinates _coord2{};
   std::shared_ptr<const Index> _index{};
+  std::shared_ptr<const BinTable> _bins{};
   const Dataset *_pixels_bin1_id{};
   const Dataset *_pixels_bin2_id{};
   const Dataset *_pixels_count{};
@@ -85,8 +86,8 @@ class PixelSelector {
     std::shared_ptr<const balancing::Weights> _weights{};
     std::uint64_t _h5_end_offset{};
 
-    explicit iterator(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
-                      const Dataset &pixels_bin2_id, const Dataset &pixels_count,
+    explicit iterator(const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
+                      const Dataset &pixels_count,
                       std::shared_ptr<const balancing::Weights> weights);
 
     explicit iterator(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
