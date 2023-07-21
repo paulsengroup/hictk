@@ -23,6 +23,10 @@ class CoolerFileValidator : public CLI::Validator {
         if (hictk::cooler::utils::is_multires_file(uri)) {
           return "URI points to a .mcool file: " + uri;
         }
+        const auto path = cooler::parse_cooler_uri(uri).file_path;
+        if (!std::filesystem::exists(path)) {
+          return "No such file: " + path;
+        }
         return "Not a valid Cooler: " + uri;
       }
       return "";
@@ -34,6 +38,10 @@ class MultiresCoolerFileValidator : public CLI::Validator {
  public:
   inline MultiresCoolerFileValidator() : Validator("Multires-cooler") {
     func_ = [](std::string& uri) -> std::string {
+      const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
       if (!hictk::cooler::utils::is_multires_file(uri)) {
         return "Not a valid multi-resolution cooler: " + uri;
       }
@@ -47,6 +55,9 @@ class HiCFileValidator : public CLI::Validator {
   inline HiCFileValidator() : Validator("HiC") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
       if (!hictk::hic::utils::is_hic_file(path)) {
         return "Not a valid .hic file: " + path;
       }
