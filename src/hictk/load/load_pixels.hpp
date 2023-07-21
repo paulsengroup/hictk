@@ -50,7 +50,7 @@ inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::size_t 
   std::size_t i = 0;
   try {
     for (; !std::cin.eof(); ++i) {
-      spdlog::info(FMT_STRING("processing chunk #{}..."), i + 1);
+      SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
       read_batch(clr.bins(), buffer, format);
       clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();

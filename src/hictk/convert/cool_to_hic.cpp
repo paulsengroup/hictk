@@ -73,7 +73,7 @@ namespace hictk::tools {
 }
 
 static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::path& dest) {
-  spdlog::info(FMT_STRING("writing chromosomes to file {}..."), dest);
+  SPDLOG_INFO(FMT_STRING("writing chromosomes to file {}..."), dest);
   const std::unique_ptr<FILE> f(std::fopen(dest.string().c_str(), "we"));
 
   if (!bool(f)) {
@@ -81,7 +81,7 @@ static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::pat
   }
 
   fmt::print(f.get(), FMT_STRING("{:tsv}\n"), fmt::join(clr.chromosomes(), "\n"));
-  spdlog::info(FMT_STRING("DONE! Wrote {} chromosomes to file {}"), clr.chromosomes().size(), dest);
+  SPDLOG_INFO(FMT_STRING("DONE! Wrote {} chromosomes to file {}"), clr.chromosomes().size(), dest);
 }
 
 static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesystem::path& dest,
@@ -119,8 +119,8 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
                   static_cast<double>(
                       std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
                   1000.0;
-              spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
-                           bin2, double(update_frequency) / delta);
+              SPDLOG_INFO(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
+                          bin2, double(update_frequency) / delta);
               t0 = t1;
               i = 0;
             }
@@ -190,8 +190,8 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
                   static_cast<double>(
                       std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
                   1000.0;
-              spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
-                           bin2, double(update_frequency) / delta);
+              SPDLOG_INFO(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1,
+                          bin2, double(update_frequency) / delta);
               t0 = t1;
               i = 0;
             }
@@ -214,7 +214,7 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
                         std::uint8_t compression_lvl, std::size_t processes) {
   const auto t0 = std::chrono::steady_clock::now();
 
-  spdlog::info(FMT_STRING("writing pixels to file {}..."), dest);
+  SPDLOG_INFO(FMT_STRING("writing pixels to file {}..."), dest);
 
   std::size_t pixels_processed{};
   if (dest.extension() == ".gz") {
@@ -227,18 +227,18 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
   const auto delta =
       static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()) /
       1.0e6;
-  spdlog::info(FMT_STRING("wrote {} pixels across {} chromosomes to {} in {:.2f}s"),
-               pixels_processed, clr.chromosomes().size(), dest, delta);
+  SPDLOG_INFO(FMT_STRING("wrote {} pixels across {} chromosomes to {} in {:.2f}s"),
+              pixels_processed, clr.chromosomes().size(), dest, delta);
 }
 
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
                          const std::filesystem::path& weight_file) {
-  spdlog::info(FMT_STRING("[{}] writing balancing weights to file {}..."), resolution, weight_file);
+  SPDLOG_INFO(FMT_STRING("[{}] writing balancing weights to file {}..."), resolution, weight_file);
   const auto clr = cooler::File::open(cooler_uri);
   assert(clr.bin_size() == resolution);
 
   if (!clr.has_weights("weight")) {
-    spdlog::warn(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
+    SPDLOG_WARN(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
     return false;
   }
 
@@ -267,8 +267,8 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
 
     i0 = i1;
   }
-  spdlog::info(FMT_STRING("[{}] wrote {} weights to file {}..."), resolution, weights.size(),
-               weight_file);
+  SPDLOG_INFO(FMT_STRING("[{}] wrote {} weights to file {}..."), resolution, weights.size(),
+              weight_file);
   return true;
 }
 
@@ -323,7 +323,7 @@ void cool_to_hic(const ConvertConfig& c) {
     }
 
     auto t1 = std::chrono::steady_clock::now();
-    spdlog::info(FMT_STRING("running juicer_tools pre..."));
+    SPDLOG_INFO(FMT_STRING("running juicer_tools pre..."));
     process = run_juicer_tools_pre(c, chrom_sizes, pixels, c.processes);
     process->wait();
     if (process->exit_code() != 0) {
@@ -335,7 +335,7 @@ void cool_to_hic(const ConvertConfig& c) {
     auto delta = static_cast<double>(
                      std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) /
                  1.0e6;
-    spdlog::info(FMT_STRING("DONE! Running juicer_tools pre took {:.2f}s"), delta);
+    SPDLOG_INFO(FMT_STRING("DONE! Running juicer_tools pre took {:.2f}s"), delta);
 
     std::filesystem::remove(chrom_sizes);
     std::filesystem::remove(pixels);
@@ -347,7 +347,7 @@ void cool_to_hic(const ConvertConfig& c) {
 
     if (weight_file_has_data) {
       t1 = std::chrono::steady_clock::now();
-      spdlog::info(FMT_STRING("running juicer_tools addNorm..."));
+      SPDLOG_INFO(FMT_STRING("running juicer_tools addNorm..."));
       process = run_juicer_tools_add_norm(c, weights, c.processes);
       process->wait();
       if (process->exit_code() != 0) {
@@ -358,7 +358,7 @@ void cool_to_hic(const ConvertConfig& c) {
       delta = static_cast<double>(
                   std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()) /
               1.0e6;
-      spdlog::info(FMT_STRING("DONE! Running juicer_tools addNorm took {:.2f}s"), delta);
+      SPDLOG_INFO(FMT_STRING("DONE! Running juicer_tools addNorm took {:.2f}s"), delta);
     }
   } catch (const std::exception&) {
     if (process) {

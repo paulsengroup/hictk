@@ -159,7 +159,7 @@ inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t b
   try {
     for (; true; ++i1) {
       if (buffer.size() == batch_size) {
-        spdlog::info(FMT_STRING("processing chunk {}-{}..."), i0, i1);
+        SPDLOG_INFO(FMT_STRING("processing chunk {}-{}..."), i0, i1);
         clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
         buffer.clear();
         i0 = i1;

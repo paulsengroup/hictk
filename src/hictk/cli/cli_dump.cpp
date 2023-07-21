@@ -163,7 +163,7 @@ void Cli::validate_dump_subcommand() const {
   }
 
   for (const auto& w : warnings) {
-    spdlog::warn(FMT_STRING("{}"), w);
+    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {

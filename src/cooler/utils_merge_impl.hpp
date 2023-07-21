@@ -135,8 +135,8 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
           static_cast<double>(
               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
           1000.0;
-      spdlog::info(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1, bin2,
-                   double(update_frequency) / delta);
+      SPDLOG_INFO(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1, bin2,
+                  double(update_frequency) / delta);
       t0 = t1;
       i = 0;
     }

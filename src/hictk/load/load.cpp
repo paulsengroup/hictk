@@ -44,13 +44,13 @@ void merge_coolers(std::vector<CoolerChunk<N>>& coolers, const Reference& chroms
   }
 
   if (coolers.size() == 1) {
-    spdlog::info(FMT_STRING("Moving temporary file to {}..."), dest);
+    SPDLOG_INFO(FMT_STRING("Moving temporary file to {}..."), dest);
     const auto path = coolers.front().uri;
     std::filesystem::copy_file(path, dest);
     return;
   }
 
-  spdlog::info(FMT_STRING("Merging {} intermediate files into {}..."), coolers.size(), dest);
+  SPDLOG_INFO(FMT_STRING("Merging {} intermediate files into {}..."), coolers.size(), dest);
 
   using PixelIt = decltype(coolers.front().first);
   std::vector<PixelIt> heads;
@@ -103,7 +103,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
         buffer.clear();
         for (std::size_t i = 0; true; ++i) {
           const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
-          spdlog::info(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
+          SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
           chunks.emplace_back(ingest_pixels_unsorted(
               cooler::File::create<N>(tmp_uri.string(), chroms, c.bin_size, c.force), buffer,
               format, c.validate_pixels));
@@ -112,7 +112,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
             chunks.pop_back();
             break;
           }
-          spdlog::info(FMT_STRING("done writing to file {}..."), tmp_uri);
+          SPDLOG_INFO(FMT_STRING("done writing to file {}..."), tmp_uri);
         }
         merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
       },
@@ -163,7 +163,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
             chunks.pop_back();
             break;
           }
-          spdlog::info(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
+          SPDLOG_INFO(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
         }
         merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
       },
@@ -175,16 +175,16 @@ int load_subcmd(const LoadConfig& c) {
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
 
   if (c.assume_sorted && pixel_has_count) {
-    spdlog::info(FMT_STRING("begin loading presorted pixels..."));
+    SPDLOG_INFO(FMT_STRING("begin loading presorted pixels..."));
     ingest_pixels_sorted(c);
   } else if (!c.assume_sorted && pixel_has_count) {
-    spdlog::info(FMT_STRING("begin loading un-sorted pixels..."));
+    SPDLOG_INFO(FMT_STRING("begin loading un-sorted pixels..."));
     ingest_pixels_unsorted(c);
   } else if (c.assume_sorted && !pixel_has_count) {
-    spdlog::info(FMT_STRING("begin loading presorted pairs..."));
+    SPDLOG_INFO(FMT_STRING("begin loading presorted pairs..."));
     ingest_pairs_sorted(c);
   } else {
-    spdlog::info(FMT_STRING("begin loading un-sorted pairs..."));
+    SPDLOG_INFO(FMT_STRING("begin loading un-sorted pairs..."));
     ingest_pairs_unsorted(c);
   }
   return 0;

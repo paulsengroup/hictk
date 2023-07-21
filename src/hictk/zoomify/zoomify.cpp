@@ -45,8 +45,8 @@ void zoomify_once(std::string_view uri1, std::string_view uri2, std::uint32_t re
                   bool force) {
   auto clr1 = cooler::File::open(uri1);
 
-  spdlog::info(FMT_STRING("coarsening cooler at {} once ({} -> {})"), clr1.uri(), clr1.bin_size(),
-               resolution);
+  SPDLOG_INFO(FMT_STRING("coarsening cooler at {} once ({} -> {})"), clr1.uri(), clr1.bin_size(),
+              resolution);
 
   auto mode = force ? HighFive::File::Overwrite : HighFive::File::Create;
   cooler::RootGroup entrypoint2{HighFive::File(std::string{uri2}, mode).getGroup("/")};
@@ -61,8 +61,8 @@ void zoomify_many(std::string_view in_uri, std::string_view out_path,
   auto mclr =
       cooler::MultiResFile::create(out_path, cooler::File::open(in_uri).chromosomes(), force);
 
-  spdlog::info(FMT_STRING("coarsening cooler at {} {} times ({} -> {})"), clr.uri(),
-               resolutions.size(), clr.bin_size(), fmt::join(resolutions, " -> "));
+  SPDLOG_INFO(FMT_STRING("coarsening cooler at {} {} times ({} -> {})"), clr.uri(),
+              resolutions.size(), clr.bin_size(), fmt::join(resolutions, " -> "));
 
   if (copy_base_resolution) {
     assert(resolutions.front() == clr.bin_size());

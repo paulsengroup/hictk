@@ -15,8 +15,8 @@ namespace hictk::tools {
 
 int convert_subcmd(const ConvertConfig& c) {
   auto t0 = std::chrono::steady_clock::now();
-  spdlog::info(FMT_STRING("Converting {} to {} ({} -> {})..."), c.path_to_input, c.path_to_output,
-               c.input_format, c.output_format);
+  SPDLOG_INFO(FMT_STRING("Converting {} to {} ({} -> {})..."), c.path_to_input, c.path_to_output,
+              c.input_format, c.output_format);
   if (c.input_format == "hic") {
     hic_to_cool(c);
   } else {
@@ -26,12 +26,12 @@ int convert_subcmd(const ConvertConfig& c) {
   const auto delta =
       static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
       1000.0;
-  spdlog::info(FMT_STRING("DONE! Processed {} resolution(s) in {:.2f}s!"), c.resolutions.size(),
-               delta);
-  spdlog::info(FMT_STRING("{} size: {:.2f} MB"), c.path_to_input,
-               static_cast<double>(std::filesystem::file_size(c.path_to_input)) / 1.0e6);
-  spdlog::info(FMT_STRING("{} size: {:.2f} MB"), c.path_to_output,
-               static_cast<double>(std::filesystem::file_size(c.path_to_output)) / 1.0e6);
+  SPDLOG_INFO(FMT_STRING("DONE! Processed {} resolution(s) in {:.2f}s!"), c.resolutions.size(),
+              delta);
+  SPDLOG_INFO(FMT_STRING("{} size: {:.2f} MB"), c.path_to_input,
+              static_cast<double>(std::filesystem::file_size(c.path_to_input)) / 1.0e6);
+  SPDLOG_INFO(FMT_STRING("{} size: {:.2f} MB"), c.path_to_output,
+              static_cast<double>(std::filesystem::file_size(c.path_to_output)) / 1.0e6);
 
   return 0;
 }
