@@ -139,8 +139,7 @@ inline std::streampos FileStream::new_pos(std::streamoff offset, std::ios::seekd
     case std::ios::end:
       return std::int64_t(file_size_) + offset;
     default:
-      assert(false);
-      std::abort();
+      HICTK_UNREACHABLE_CODE;
   }
 }
 
