@@ -30,6 +30,7 @@ TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
 
     CHECK(dset.file_name() == path.string());
     CHECK(dset.uri() == fmt::format(FMT_STRING("{}::/chroms/name"), path.string()));
+    CHECK(dset.name() == "name");
     CHECK(dset.hdf5_path() == "/chroms/name");
     CHECK(dset.get_parent().hdf5_path() == "/");
   }
