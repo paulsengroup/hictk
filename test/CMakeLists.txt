@@ -4,8 +4,8 @@
 
 FetchContent_Declare(
   _hictk_catch2
-  URL ${PROJECT_SOURCE_DIR}/external/catch2-v3.3.2.tar.xz
-  URL_HASH SHA256=05ac83d7c65d6ee4a499b8c98b32ef2cb30280d7691037981feffe498992804f
+  URL ${PROJECT_SOURCE_DIR}/external/catch2-v3.4.0.tar.xz
+  URL_HASH SHA256=757d1b29b836e2c816784e062785e57ad852317de6242465129d4acb65b58b4d
   EXCLUDE_FROM_ALL SYSTEM)
 
 FetchContent_MakeAvailable(_hictk_catch2)

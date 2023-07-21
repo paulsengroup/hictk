@@ -18,21 +18,21 @@ FetchContent_Declare(
 
 FetchContent_Declare(
   _hictk_fmt
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v9.1.0.tar.xz
-  URL_HASH SHA256=d2b242c76dbd3c7e0d763cb8b9021887e4b4e04f4adada24b0f19d4edbf02f96
-  SYSTEM)
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/fmt-v10.0.0.tar.xz
+  URL_HASH SHA256=8570604ab8bc1c4cf70c3eecd278c88be3acf941373374c4908ddf9e7ae84288
+  EXCLUDE_FROM_ALL SYSTEM)
 
 FetchContent_Declare(
   _hictk_highfive
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/highfive-v2.7.1.tar.xz
   URL_HASH SHA256=951596d3e85bbc8c6ea00cd73ee76e2af203dd29febdce827016378d2f0925e8
-  SYSTEM)
+  EXCLUDE_FROM_ALL SYSTEM)
 
 FetchContent_Declare(
   _hictk_libdeflate
   URL ${CMAKE_CURRENT_SOURCE_DIR}/external/libdeflate-v1.18.tar.xz
   URL_HASH SHA256=f1e1e2432f9329a5f53939527afb46c417c843520bd526be7f777ab270eb65a0
-  SYSTEM)
+  EXCLUDE_FROM_ALL SYSTEM)
 
 FetchContent_Declare(
   _hictk_phmap
@@ -48,9 +48,9 @@ FetchContent_Declare(
 
 FetchContent_Declare(
   _hictk_spdlog
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog-v1.11.0.tar.xz
-  URL_HASH SHA256=7bb89d5baba54638a2107291c40f2972428ac32a3c65609b2ffedb2d295ca1ad
-  SYSTEM)
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog-v1.12.0.tar.xz
+  URL_HASH SHA256=a37bb250032861c468716861f76aa97192a31107308aea8bf21cb0ad23e8693a
+  EXCLUDE_FROM_ALL SYSTEM)
 
 set(LIBDEFLATE_BUILD_SHARED_LIB ${BUILD_SHARED_LIBS})
 set(LIBDEFLATE_BUILD_STATIC_LIB NOT ${BUILD_SHARED_LIBS})
