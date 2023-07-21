@@ -415,24 +415,28 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   }
 
   std::vector<double> expectedValues{};
-  auto nExpectedValues = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nExpectedValues; ++i) {
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    const auto nValues = readNValues();
 
-    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-                 wanted_norm == NM::NONE && foundUnit == wanted_unit &&
-                 foundResolution == wanted_resolution;
+  if (_fs->tellg() != _fs->size()) {
+    auto nExpectedValues = _fs->read<std::int32_t>();
+    for (std::int32_t i = 0; i < nExpectedValues; ++i) {
+      const auto foundUnit = readMatrixUnit();
+      const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+      const auto nValues = readNValues();
 
-    if (store) {
-      expectedValues = readExpectedVector(nValues);
-      const auto normFactors = readNormalizationFactors(chrom1_id);
-      applyNormalizationFactors(expectedValues, normFactors);
+      bool store = chrom1_id == chrom2_id &&
+                   (matrix_type == MT::oe || matrix_type == MT::expected) &&
+                   wanted_norm == NM::NONE && foundUnit == wanted_unit &&
+                   foundResolution == wanted_resolution;
 
-    } else {
-      discardExpectedVector(nValues);
-      discardNormalizationFactors(chrom1_id);
+      if (store) {
+        expectedValues = readExpectedVector(nValues);
+        const auto normFactors = readNormalizationFactors(chrom1_id);
+        applyNormalizationFactors(expectedValues, normFactors);
+
+      } else {
+        discardExpectedVector(nValues);
+        discardNormalizationFactors(chrom1_id);
+      }
     }
   }
 
@@ -448,24 +452,27 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
             std::move(weights2)};
   }
 
-  nExpectedValues = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nExpectedValues; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+  if (_fs->tellg() != _fs->size()) {
+    const auto nExpectedValues = _fs->read<std::int32_t>();
+    for (std::int32_t i = 0; i < nExpectedValues; i++) {
+      const auto foundNorm = readNormalizationMethod();
+      const auto foundUnit = readMatrixUnit();
+      const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
 
-    const auto nValues = readNValues();
-    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-                 foundNorm == wanted_norm && foundUnit == wanted_unit &&
-                 foundResolution == wanted_resolution;
+      const auto nValues = readNValues();
+      bool store = chrom1_id == chrom2_id &&
+                   (matrix_type == MT::oe || matrix_type == MT::expected) &&
+                   foundNorm == wanted_norm && foundUnit == wanted_unit &&
+                   foundResolution == wanted_resolution;
 
-    if (store) {
-      expectedValues = readExpectedVector(nValues);
-      const auto normFactors = readNormalizationFactors(chrom1_id);
-      applyNormalizationFactors(expectedValues, normFactors);
-    } else {
-      discardExpectedVector(nValues);
-      discardNormalizationFactors(chrom1_id);
+      if (store) {
+        expectedValues = readExpectedVector(nValues);
+        const auto normFactors = readNormalizationFactors(chrom1_id);
+        applyNormalizationFactors(expectedValues, normFactors);
+      } else {
+        discardExpectedVector(nValues);
+        discardNormalizationFactors(chrom1_id);
+      }
     }
   }
 
@@ -480,40 +487,42 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
     }
   }
 
-  // Index of normalization vectors
-  nEntries = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nEntries; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    const auto foundChrom = _fs->read_as_unsigned<std::int32_t>();
-    const auto foundUnit = readMatrixUnit();
+  if (_fs->tellg() != _fs->size()) {
+    // Index of normalization vectors
+    nEntries = _fs->read<std::int32_t>();
+    for (std::int32_t i = 0; i < nEntries; i++) {
+      const auto foundNorm = readNormalizationMethod();
+      const auto foundChrom = _fs->read_as_unsigned<std::int32_t>();
+      const auto foundUnit = readMatrixUnit();
 
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    const auto filePosition = _fs->read<std::int64_t>();
-    const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
-                                           : static_cast<std::int64_t>(_fs->read<std::int32_t>());
+      const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+      const auto filePosition = _fs->read<std::int64_t>();
+      const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
+                                             : static_cast<std::int64_t>(_fs->read<std::int32_t>());
 
-    const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
-                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
-    if (store1) {
-      const auto numBins = static_cast<std::size_t>(
-          (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights1 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
-      _fs->seekg(currentPos);
-    }
+      const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
+                          foundUnit == wanted_unit && foundResolution == wanted_resolution;
+      if (store1) {
+        const auto numBins = static_cast<std::size_t>(
+            (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution);
+        const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
+        *weights1 = balancing::Weights{
+            readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+            balancing::Weights::Type::DIVISIVE};
+        _fs->seekg(currentPos);
+      }
 
-    const auto store2 = !*weights2 && foundChrom == chrom2_id && foundNorm == wanted_norm &&
-                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
-    if (store2) {
-      const auto numBins = static_cast<std::size_t>(
-          (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights2 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
-      _fs->seekg(currentPos);
+      const auto store2 = !*weights2 && foundChrom == chrom2_id && foundNorm == wanted_norm &&
+                          foundUnit == wanted_unit && foundResolution == wanted_resolution;
+      if (store2) {
+        const auto numBins = static_cast<std::size_t>(
+            (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution);
+        const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
+        *weights2 = balancing::Weights{
+            readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+            balancing::Weights::Type::DIVISIVE};
+        _fs->seekg(currentPos);
+      }
     }
   }
 
