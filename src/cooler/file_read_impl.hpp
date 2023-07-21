@@ -106,13 +106,14 @@ inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t star
 
 inline PixelSelector File::fetch(PixelCoordinates coord,
                                  std::shared_ptr<const balancing::Weights> weights) const {
+  this->read_index_chunk(coord.bin1.chrom());
   // clang-format off
   return PixelSelector(this->_index,
-                                   this->dataset("pixels/bin1_id"),
-                                   this->dataset("pixels/bin2_id"),
-                                   this->dataset("pixels/count"),
-                                   std::move(coord),
-                                   std::move(weights)
+                       this->dataset("pixels/bin1_id"),
+                       this->dataset("pixels/bin2_id"),
+                       this->dataset("pixels/count"),
+                       std::move(coord),
+                       std::move(weights)
   );
   // clang-format on
 }
@@ -141,30 +142,32 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
                                  std::shared_ptr<const balancing::Weights> weights) const {
   assert(start1 < end1);
   assert(start2 < end2);
+  this->read_index_chunk(chromosomes().at(chrom1));
   // clang-format off
   return PixelSelector(this->_index,
-                                   this->dataset("pixels/bin1_id"),
-                                   this->dataset("pixels/bin2_id"),
-                                   this->dataset("pixels/count"),
-                                   PixelCoordinates{this->bins().at(chrom1, start1),
-                                                    this->bins().at(chrom1, end1 - (std::min)(end1, 1U))},
-                                   PixelCoordinates{this->bins().at(chrom2, start2),
-                                                    this->bins().at(chrom2, end2 - (std::min)(end2, 1U))},
-                                   std::move(weights)
+                       this->dataset("pixels/bin1_id"),
+                       this->dataset("pixels/bin2_id"),
+                       this->dataset("pixels/count"),
+                       PixelCoordinates{this->bins().at(chrom1, start1),
+                                        this->bins().at(chrom1, end1 - (std::min)(end1, 1U))},
+                       PixelCoordinates{this->bins().at(chrom2, start2),
+                                        this->bins().at(chrom2, end2 - (std::min)(end2, 1U))},
+                       std::move(weights)
   );
   // clang-format on
 }
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
+  this->read_index_chunk(coord1.bin1.chrom());
   // clang-format off
   return PixelSelector(this->_index,
-                                   this->dataset("pixels/bin1_id"),
-                                   this->dataset("pixels/bin2_id"),
-                                   this->dataset("pixels/count"),
-                                   std::move(coord1),
-                                   std::move(coord2),
-                                   std::move(weights)
+                       this->dataset("pixels/bin1_id"),
+                       this->dataset("pixels/bin2_id"),
+                       this->dataset("pixels/count"),
+                       std::move(coord1),
+                       std::move(coord2),
+                       std::move(weights)
   );
   // clang-format on
 }
@@ -472,14 +475,12 @@ inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom
   }
 }
 
-inline Index File::import_indexes(const Dataset &chrom_offset_dset, const Dataset &bin_offset_dset,
-                                  const Reference &chroms,
-                                  std::shared_ptr<const BinTable> bin_table,
-                                  std::uint64_t expected_nnz, bool missing_ok) {
+inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &bin_offset_dset,
+                              std::shared_ptr<const BinTable> bin_table, std::uint64_t expected_nnz,
+                              bool missing_ok) {
   assert(bin_table);
   try {
     if (bin_offset_dset.empty()) {
-      assert(chrom_offset_dset.empty());
       if (missing_ok) {
         return Index{bin_table};
       }
@@ -492,43 +493,63 @@ inline Index File::import_indexes(const Dataset &chrom_offset_dset, const Datase
                       bin_offset_dset.hdf5_path(), bin_table->size() + 1, bin_offset_dset.size()));
     }
 
-    const auto chrom_offsets = internal::import_chrom_offsets(chrom_offset_dset, chroms.size() + 1);
-
-    Index idx{bin_table, expected_nnz};
-
-    std::size_t bin_id = 0;
     auto first = bin_offset_dset.begin<std::uint64_t>(64'000);
     auto last = bin_offset_dset.end<std::uint64_t>(64'000);
 
     assert(first != last);
-    if (const auto o = *first; o != 0) {
+    if (const auto offset = *first; offset != 0) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("{} is corrupted: first offset should be 0, found {}"),
-                      bin_offset_dset.hdf5_path(), o));
+                      bin_offset_dset.hdf5_path(), offset));
+    }
+    if (const auto offset = *(last - 1); offset != expected_nnz) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("{} is corrupted: last offset should be {}, found {}"),
+                      bin_offset_dset.hdf5_path(), expected_nnz, offset));
+    }
+    std::vector<std::uint64_t> chrom_offsets{};
+    for (const auto &chrom_offset :
+         internal::import_chrom_offsets(chrom_offset_dset, bin_table->chromosomes().size() + 1)) {
+      const auto bin1_offset = bin_offset_dset.read<std::uint64_t>(chrom_offset);
+      chrom_offsets.push_back(bin1_offset);
     }
 
-    std::for_each(first, last, [&](std::uint64_t offset) {
-      if (bin_id < bin_table->size()) {
-        idx.set_offset_by_bin_id(bin_id++, offset);
-      } else if (bin_id != bin_table->size()) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("{} is corrupted: last offset should be {}, found {}"),
-                        bin_offset_dset.hdf5_path(), bin_table->size(), bin_id));
-      }
-    });
+    return Index{bin_table, chrom_offsets, expected_nnz, false};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Unable to initialize index for cooler at URI: \"{}\": {}"),
+                    bin_offset_dset.get_parent().uri(), e.what()));
+  }
+}
+
+inline bool File::read_index_chunk(const Chromosome &chrom) const {
+  assert(_index);
+  try {
+    if (!_index->empty(chrom.id())) {
+      return false;
+    }
+
+    auto chrom_offset_dset = dataset("indexes/chrom_offset");
+    auto bin_offset_dset = dataset("indexes/bin1_offset");
+    const auto chrom_offsets =
+        internal::import_chrom_offsets(chrom_offset_dset, chromosomes().size() + 1);
+
+    auto offset1 = chrom_offsets[chrom.id()];
+    auto offset2 = chrom_offsets[chrom.id() + 1];
+    auto first = bin_offset_dset.begin<std::uint64_t>(64'000) + offset1;
+    auto last = bin_offset_dset.begin<std::uint64_t>(64'000) + offset2;
+    this->_index->set(chrom, {first, last});
 
     try {
-      idx.validate();
+      _index->validate(chrom);
     } catch (const std::exception &e) {
       throw std::runtime_error(fmt::format(FMT_STRING("index validation failed: {}"), e.what()));
     }
-
-    return idx;
-
+    return true;
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Unable to import indexes for cooler at URI: \"{}\": {}"),
-                    bin_offset_dset.get_parent().uri(), e.what()));
+                    dataset("indexes/bin1_offset").get_parent().uri(), e.what()));
   }
 }
 

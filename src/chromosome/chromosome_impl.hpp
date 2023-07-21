@@ -110,6 +110,17 @@ constexpr bool operator>=(std::uint32_t a_id, const Chromosome& b) noexcept { re
 constexpr bool operator==(std::uint32_t a_id, const Chromosome& b) noexcept { return b == a_id; }
 constexpr bool operator!=(std::uint32_t a_id, const Chromosome& b) noexcept { return b != a_id; }
 
+constexpr bool ChromosomeCmp::operator()(const Chromosome& c1,
+                                         const Chromosome& c2) const noexcept {
+  return c1 < c2;
+}
+constexpr bool ChromosomeCmp::operator()(std::uint32_t id1, const Chromosome& c2) const noexcept {
+  return id1 < c2.id();
+}
+constexpr bool ChromosomeCmp::operator()(const Chromosome& c1, std::uint32_t id2) const noexcept {
+  return c1.id() < id2;
+}
+
 }  // namespace hictk
 
 inline std::size_t std::hash<hictk::Chromosome>::operator()(const hictk::Chromosome& c) const {

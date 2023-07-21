@@ -101,7 +101,7 @@ class File {
   Attributes _attrs{Attributes::init(0)};
   NumericVariant _pixel_variant{};
   std::shared_ptr<const BinTable> _bins{};
-  std::shared_ptr<Index> _index{};
+  mutable std::shared_ptr<Index> _index{};
   bool _finalize{false};
 
   // Constructors are private. Cooler files are opened using factory methods
@@ -285,10 +285,11 @@ class File {
   [[nodiscard]] static auto import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                           bool missing_ok) -> Reference;
 
-  [[nodiscard]] static Index import_indexes(const Dataset &chrom_offset_dset,
-                                            const Dataset &bin_offset_dset, const Reference &chroms,
-                                            std::shared_ptr<const BinTable> bin_table,
-                                            std::uint64_t expected_nnz, bool missing_ok);
+  [[nodiscard]] static Index init_index(const Dataset &chrom_offset_dset,
+                                        const Dataset &bin_offset_dset,
+                                        std::shared_ptr<const BinTable> bin_table,
+                                        std::uint64_t expected_nnz, bool missing_ok);
+  bool read_index_chunk(const Chromosome &chrom) const;
 
   template <typename PixelIt>
   static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,

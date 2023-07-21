@@ -391,7 +391,7 @@ inline void File::write_indexes(Dataset &chrom_offset_dset, Dataset &bin_offset_
 
   bin_offset_dset.write(idx.begin(), idx.end(), 0, true);
 
-  assert(chrom_offset_dset.size() == idx.num_chromosomes() + 1);
+  assert(chrom_offset_dset.size() == idx.chromosomes().size() + 1);
   assert(bin_offset_dset.size() == idx.size() + 1);
 }
 

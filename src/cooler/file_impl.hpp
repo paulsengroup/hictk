@@ -43,10 +43,9 @@ inline File::File(RootGroup entrypoint, unsigned mode, std::size_t cache_size_by
       _bins(std::make_shared<BinTable>(
           import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false),
           this->bin_size())),
-      _index(std::make_shared<Index>(
-          import_indexes(_datasets.at("indexes/chrom_offset"), _datasets.at("indexes/bin1_offset"),
-                         // NOLINTNEXTLINE
-                         chromosomes(), _bins, static_cast<std::uint64_t>(*_attrs.nnz), false))) {
+      _index(std::make_shared<Index>(init_index(_datasets.at("indexes/chrom_offset"),
+                                                _datasets.at("indexes/bin1_offset"), _bins,
+                                                _datasets.at("pixels/count").size(), false))) {
   assert(mode == HighFive::File::ReadOnly || mode == HighFive::File::ReadWrite);
   if (validate) {
     this->validate_bins();
@@ -216,7 +215,7 @@ inline void File::finalize() {
     this->write_bin_table();
 
     assert(_attrs.nnz.has_value());
-    _index->nnz() = static_cast<std::uint64_t>(*_attrs.nnz);
+    _index->set_nnz(static_cast<std::uint64_t>(*_attrs.nnz));
     this->write_indexes();
     this->write_attributes();
 
