@@ -17,16 +17,15 @@ namespace hictk::tools {
 
 void Cli::make_load_subcommand() {
   auto& sc =
-      *this->_cli
-           .add_subcommand("load", "Build .cool files from interactions in various text formats.")
+      *_cli.add_subcommand("load", "Build .cool files from interactions in various text formats.")
            ->fallthrough()
            ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-             assert(this->_config.index() == 0);
-             this->_config = LoadConfig{};
+             assert(_config.index() == 0);
+             _config = LoadConfig{};
            });
 
-  this->_config = LoadConfig{};
-  auto& c = std::get<LoadConfig>(this->_config);
+  _config = LoadConfig{};
+  auto& c = std::get<LoadConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -86,14 +85,14 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
   // clang-format on
 
-  this->_config = std::monostate{};
+  _config = std::monostate{};
 }
 
 void Cli::validate_load_subcommand() const {
-  assert(this->_cli.get_subcommand("load")->parsed());
+  assert(_cli.get_subcommand("load")->parsed());
 
   std::vector<std::string> errors;
-  const auto& c = std::get<LoadConfig>(this->_config);
+  const auto& c = std::get<LoadConfig>(_config);
 
   if (!c.force && std::filesystem::exists(c.uri)) {
     errors.emplace_back(fmt::format(
@@ -109,7 +108,7 @@ void Cli::validate_load_subcommand() const {
 }
 
 void Cli::transform_args_load_subcommand() {
-  auto& c = std::get<LoadConfig>(this->_config);
+  auto& c = std::get<LoadConfig>(_config);
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

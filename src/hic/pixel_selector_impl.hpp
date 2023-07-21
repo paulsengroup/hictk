@@ -41,7 +41,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
 inline PixelSelector::~PixelSelector() noexcept {
   try {
     if (_reader) {
-      this->clear_cache();
+      clear_cache();
     }
   } catch (...) {
   }
@@ -68,12 +68,12 @@ inline auto PixelSelector::cend() const -> iterator<N> {
 
 template <typename N>
 inline auto PixelSelector::begin(bool sorted) const -> iterator<N> {
-  return this->cbegin<N>(sorted);
+  return cbegin<N>(sorted);
 }
 
 template <typename N>
 inline auto PixelSelector::end() const -> iterator<N> {
-  return this->cend<N>();
+  return cend<N>();
 }
 
 template <typename N>
@@ -166,8 +166,8 @@ inline const balancing::Weights &PixelSelector::weights2() const noexcept {
 inline const BinTable &PixelSelector::bins() const noexcept { return _reader.bins(); }
 
 inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexcept {
-  assert(!!this->_footer);
-  return this->_footer->metadata();
+  assert(!!_footer);
+  return _footer->metadata();
 }
 
 inline bool PixelSelector::is_intra() const noexcept { return chrom1() == chrom2(); }

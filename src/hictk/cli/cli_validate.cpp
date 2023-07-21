@@ -15,15 +15,15 @@
 
 namespace hictk::tools {
 void Cli::make_validate_subcommand() {
-  auto& sc = *this->_cli.add_subcommand("validate", "Validate .cooler and .hic files.")
+  auto& sc = *_cli.add_subcommand("validate", "Validate .cooler and .hic files.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(this->_config.index() == 0);
-                    this->_config = ValidateConfig{};
+                    assert(_config.index() == 0);
+                    _config = ValidateConfig{};
                   });
 
-  this->_config = ValidateConfig{};
-  auto& c = std::get<ValidateConfig>(this->_config);
+  _config = ValidateConfig{};
+  auto& c = std::get<ValidateConfig>(_config);
 
   // clang-format off
   sc.add_option(
@@ -46,6 +46,6 @@ void Cli::make_validate_subcommand() {
       ->capture_default_str();
   // clang-format on
 
-  this->_config = std::monostate{};
+  _config = std::monostate{};
 }
 }  // namespace hictk::tools

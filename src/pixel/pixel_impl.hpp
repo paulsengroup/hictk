@@ -61,13 +61,12 @@ template <std::size_t N>
 
 template <typename N>
 inline ThinPixel<N>::operator bool() const noexcept {
-  return this->bin1_id != null_id && this->bin2_id != null_id;
+  return bin1_id != null_id && bin2_id != null_id;
 }
 
 template <typename N>
 inline bool ThinPixel<N>::operator==(const ThinPixel &other) const noexcept {
-  return this->bin1_id == other.bin1_id && this->bin2_id == other.bin2_id &&
-         this->count == other.count;
+  return bin1_id == other.bin1_id && bin2_id == other.bin2_id && count == other.count;
 }
 
 template <typename N>
@@ -77,46 +76,46 @@ inline bool ThinPixel<N>::operator!=(const ThinPixel &other) const noexcept {
 
 template <typename N>
 inline bool ThinPixel<N>::operator<(const ThinPixel &other) const noexcept {
-  if (this->bin1_id != other.bin1_id) {
-    return this->bin1_id < other.bin1_id;
+  if (bin1_id != other.bin1_id) {
+    return bin1_id < other.bin1_id;
   }
-  if (this->bin2_id != other.bin2_id) {
-    return this->bin2_id < other.bin2_id;
+  if (bin2_id != other.bin2_id) {
+    return bin2_id < other.bin2_id;
   }
-  return this->count < other.count;
+  return count < other.count;
 }
 
 template <typename N>
 inline bool ThinPixel<N>::operator<=(const ThinPixel &other) const noexcept {
-  if (this->bin1_id != other.bin1_id) {
-    return this->bin1_id <= other.bin1_id;
+  if (bin1_id != other.bin1_id) {
+    return bin1_id <= other.bin1_id;
   }
-  if (this->bin2_id != other.bin2_id) {
-    return this->bin2_id <= other.bin2_id;
+  if (bin2_id != other.bin2_id) {
+    return bin2_id <= other.bin2_id;
   }
-  return this->count <= other.count;
+  return count <= other.count;
 }
 
 template <typename N>
 inline bool ThinPixel<N>::operator>(const ThinPixel &other) const noexcept {
-  if (this->bin1_id != other.bin1_id) {
-    return this->bin1_id > other.bin1_id;
+  if (bin1_id != other.bin1_id) {
+    return bin1_id > other.bin1_id;
   }
-  if (this->bin2_id != other.bin2_id) {
-    return this->bin2_id > other.bin2_id;
+  if (bin2_id != other.bin2_id) {
+    return bin2_id > other.bin2_id;
   }
-  return this->count > other.count;
+  return count > other.count;
 }
 
 template <typename N>
 inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
-  if (this->bin1_id != other.bin1_id) {
-    return this->bin1_id >= other.bin1_id;
+  if (bin1_id != other.bin1_id) {
+    return bin1_id >= other.bin1_id;
   }
-  if (this->bin2_id != other.bin2_id) {
-    return this->bin2_id >= other.bin2_id;
+  if (bin2_id != other.bin2_id) {
+    return bin2_id >= other.bin2_id;
   }
-  return this->count >= other.count;
+  return count >= other.count;
 }
 
 template <typename N>
@@ -165,10 +164,10 @@ inline PixelCoordinates::PixelCoordinates(std::pair<Bin, Bin> bins) noexcept
 
 inline PixelCoordinates::PixelCoordinates(Bin bin) noexcept : bin1(bin), bin2(std::move(bin)) {}
 
-inline PixelCoordinates::operator bool() const noexcept { return !!this->bin1 && !!this->bin2; }
+inline PixelCoordinates::operator bool() const noexcept { return !!bin1 && !!bin2; }
 
 inline bool PixelCoordinates::operator==(const PixelCoordinates &other) const noexcept {
-  return this->bin1 == other.bin1 && this->bin2 == other.bin2;
+  return bin1 == other.bin1 && bin2 == other.bin2;
 }
 
 inline bool PixelCoordinates::operator!=(const PixelCoordinates &other) const noexcept {
@@ -176,36 +175,34 @@ inline bool PixelCoordinates::operator!=(const PixelCoordinates &other) const no
 }
 
 inline bool PixelCoordinates::operator<(const PixelCoordinates &other) const noexcept {
-  if (this->bin1 == other.bin1) {
-    return this->bin2 < other.bin2;
+  if (bin1 == other.bin1) {
+    return bin2 < other.bin2;
   }
-  return this->bin1 < other.bin1;
+  return bin1 < other.bin1;
 }
 
 inline bool PixelCoordinates::operator<=(const PixelCoordinates &other) const noexcept {
-  if (this->bin1 == other.bin1) {
-    return this->bin2 <= other.bin2;
+  if (bin1 == other.bin1) {
+    return bin2 <= other.bin2;
   }
-  return this->bin1 <= other.bin1;
+  return bin1 <= other.bin1;
 }
 
 inline bool PixelCoordinates::operator>(const PixelCoordinates &other) const noexcept {
-  if (this->bin1 == other.bin1) {
-    return this->bin2 > other.bin2;
+  if (bin1 == other.bin1) {
+    return bin2 > other.bin2;
   }
-  return this->bin1 > other.bin1;
+  return bin1 > other.bin1;
 }
 
 inline bool PixelCoordinates::operator>=(const PixelCoordinates &other) const noexcept {
-  if (this->bin1 == other.bin1) {
-    return this->bin2 >= other.bin2;
+  if (bin1 == other.bin1) {
+    return bin2 >= other.bin2;
   }
-  return this->bin1 >= other.bin1;
+  return bin1 >= other.bin1;
 }
 
-inline bool PixelCoordinates::is_intra() const noexcept {
-  return this->bin1.chrom() == this->bin2.chrom();
-}
+inline bool PixelCoordinates::is_intra() const noexcept { return bin1.chrom() == bin2.chrom(); }
 
 template <typename N>
 inline Pixel<N>::Pixel(Bin bin, N count_) noexcept : Pixel(bin, std::move(bin), count_) {}
@@ -243,11 +240,11 @@ inline Pixel<N>::Pixel(const BinTable &bins, std::uint64_t bin1_id, std::uint64_
 
 template <typename N>
 inline Pixel<N>::operator bool() const noexcept {
-  return !!this->coords;
+  return !!coords;
 }
 template <typename N>
 inline bool Pixel<N>::operator==(const Pixel<N> &other) const noexcept {
-  return this->coords == other.coords && this->count == other.count;
+  return coords == other.coords && count == other.count;
 }
 template <typename N>
 inline bool Pixel<N>::operator!=(const Pixel<N> &other) const noexcept {
@@ -255,36 +252,36 @@ inline bool Pixel<N>::operator!=(const Pixel<N> &other) const noexcept {
 }
 template <typename N>
 inline bool Pixel<N>::operator<(const Pixel<N> &other) const noexcept {
-  if (this->coords == other.coords) {
-    return this->count < other.count;
+  if (coords == other.coords) {
+    return count < other.count;
   }
-  return this->coords < other.coords;
+  return coords < other.coords;
 }
 template <typename N>
 inline bool Pixel<N>::operator<=(const Pixel<N> &other) const noexcept {
-  if (this->coords == other.coords) {
-    return this->count <= other.count;
+  if (coords == other.coords) {
+    return count <= other.count;
   }
-  return this->coords <= other.coords;
+  return coords <= other.coords;
 }
 template <typename N>
 inline bool Pixel<N>::operator>(const Pixel<N> &other) const noexcept {
-  if (this->coords == other.coords) {
-    return this->count > other.count;
+  if (coords == other.coords) {
+    return count > other.count;
   }
-  return this->coords > other.coords;
+  return coords > other.coords;
 }
 template <typename N>
 inline bool Pixel<N>::operator>=(const Pixel<N> &other) const noexcept {
-  if (this->coords == other.coords) {
-    return this->count >= other.count;
+  if (coords == other.coords) {
+    return count >= other.count;
   }
-  return this->coords >= other.coords;
+  return coords >= other.coords;
 }
 
 template <typename N>
 inline ThinPixel<N> Pixel<N>::to_thin() const noexcept {
-  return ThinPixel<N>{this->coords.bin1.id(), this->coords.bin2.id(), this->count};
+  return ThinPixel<N>{coords.bin1.id(), coords.bin2.id(), count};
 }
 
 template <typename N>
@@ -363,27 +360,27 @@ inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_vi
 namespace internal {
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator<(const Node &other) const noexcept {
-  assert(!!this->pixel);
+  assert(!!pixel);
   assert(!!other.pixel);
-  if (this->pixel.bin1_id != other.pixel.bin1_id) {
-    return this->pixel.bin1_id < other.pixel.bin1_id;
+  if (pixel.bin1_id != other.pixel.bin1_id) {
+    return pixel.bin1_id < other.pixel.bin1_id;
   }
-  return this->pixel.bin2_id < other.pixel.bin2_id;
+  return pixel.bin2_id < other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator>(const Node &other) const noexcept {
-  assert(!!this->pixel);
+  assert(!!pixel);
   assert(!!other.pixel);
-  if (this->pixel.bin1_id != other.pixel.bin1_id) {
-    return this->pixel.bin1_id > other.pixel.bin1_id;
+  if (pixel.bin1_id != other.pixel.bin1_id) {
+    return pixel.bin1_id > other.pixel.bin1_id;
   }
-  return this->pixel.bin2_id > other.pixel.bin2_id;
+  return pixel.bin2_id > other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
 inline bool PixelMerger<PixelIt>::Node::operator==(const Node &other) const noexcept {
-  return this->pixel.bin1_id == other.pixel.bin1_id && this->pixel.bin2_id == other.pixel.bin2_id;
+  return pixel.bin1_id == other.pixel.bin1_id && pixel.bin2_id == other.pixel.bin2_id;
 }
 
 template <typename PixelIt>
@@ -407,30 +404,30 @@ inline PixelMerger<PixelIt>::PixelMerger(std::vector<PixelIt> heads, std::vector
 
 template <typename PixelIt>
 inline void PixelMerger<PixelIt>::replace_top_node(std::size_t i) {
-  assert(this->_pqueue.top().i == i);
-  this->_pqueue.pop();
-  if (auto &it = this->_heads[i]; it != this->_tails[i]) {
-    this->_pqueue.emplace(Node{*it, i});
+  assert(_pqueue.top().i == i);
+  _pqueue.pop();
+  if (auto &it = _heads[i]; it != _tails[i]) {
+    _pqueue.emplace(Node{*it, i});
     ++it;
   }
 }
 
 template <typename PixelIt>
 inline auto PixelMerger<PixelIt>::next() -> ThinPixel<N> {
-  if (this->_pqueue.empty()) {
+  if (_pqueue.empty()) {
     return {};
   }
 
-  auto current_node = this->_pqueue.top();
-  this->replace_top_node(current_node.i);
+  auto current_node = _pqueue.top();
+  replace_top_node(current_node.i);
 
-  while (!this->_pqueue.empty()) {
-    const auto next_node = this->_pqueue.top();
+  while (!_pqueue.empty()) {
+    const auto next_node = _pqueue.top();
     if (next_node != current_node) {
       break;
     }
     current_node.pixel.count += next_node.pixel.count;
-    this->replace_top_node(next_node.i);
+    replace_top_node(next_node.i);
   }
   return current_node.pixel;
 }

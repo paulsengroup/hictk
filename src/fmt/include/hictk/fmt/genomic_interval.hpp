@@ -20,10 +20,10 @@ struct formatter<hictk::GenomicInterval> {
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bed")) {
-      this->presentation = Presentation::bed;
+      presentation = Presentation::bed;
       it += std::string_view{"bed"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "ucsc")) {
-      this->presentation = Presentation::ucsc;
+      presentation = Presentation::ucsc;
       it += std::string_view{"ucsc"}.size();  // NOLINT
     }
 
@@ -37,10 +37,10 @@ struct formatter<hictk::GenomicInterval> {
                                          format_context &ctx) const {
     const std::string_view name = !gi ? "null" : gi.chrom().name();
 
-    if (this->presentation == Presentation::bed) {
+    if (presentation == Presentation::bed) {
       return fmt::format_to(ctx.out(), FMT_STRING("{}\t{}\t{}"), name, gi.start(), gi.end());
     }
-    assert(this->presentation == Presentation::ucsc);
+    assert(presentation == Presentation::ucsc);
     return fmt::format_to(ctx.out(), FMT_STRING("{}:{}-{}"), name, gi.start(), gi.end());
   }
 };

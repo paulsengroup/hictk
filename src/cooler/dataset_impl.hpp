@@ -107,8 +107,8 @@ inline Dataset::Dataset(RootGroup root_group, std::string_view path_to_dataset,
                                                    max_dim, aprops, cprops)) {}
 
 inline void Dataset::resize(std::size_t new_size) {
-  if (new_size > this->_dataset.getElementCount()) {
-    this->_dataset.resize({new_size});
+  if (new_size > _dataset.getElementCount()) {
+    _dataset.resize({new_size});
   }
 }
 
@@ -130,33 +130,33 @@ inline std::pair<std::string, std::string> Dataset::parse_uri(std::string_view u
 }
 
 inline void Dataset::throw_out_of_range_excp(std::size_t offset) const {
-  assert(offset >= this->size());
+  assert(offset >= size());
 
-  if (this->empty()) {
+  if (empty()) {
     throw std::out_of_range(fmt::format(
-        FMT_STRING("Caught an attempt to access an element of dataset {}, which is empty"),
-        this->uri(), offset, this->size()));
+        FMT_STRING("Caught an attempt to access an element of dataset {}, which is empty"), uri(),
+        offset, size()));
   }
 
   throw std::out_of_range(fmt::format(
       FMT_STRING("Caught an attempt to access an element past the end of dataset {} ({} > {})"),
-      this->uri(), offset, this->size()));
+      uri(), offset, size()));
 }
 
 inline void Dataset::throw_out_of_range_excp(std::size_t offset, std::size_t n) const {
-  assert(offset + n >= this->size());
+  assert(offset + n >= size());
 
-  if (this->empty()) {
+  if (empty()) {
     throw std::out_of_range(
         fmt::format(FMT_STRING("Caught an attempt to access one or more element(s) of dataset {}, "
                                "which is empty ([{}, {}])"),
-                    this->uri(), offset, offset + n));
+                    uri(), offset, offset + n));
   }
 
   throw std::out_of_range(
       fmt::format(FMT_STRING("Caught an attempt to access one or more element(s) past the end of "
                              "dataset {} ([{}-{}] >= {})"),
-                  this->uri(), offset, offset + n, this->size()));
+                  uri(), offset, offset + n, size()));
 }
 
 template <typename T>
@@ -166,19 +166,19 @@ inline auto Dataset::make_iterator_at_offset(std::size_t offset, std::size_t chu
 }
 
 inline HighFive::Selection Dataset::select(std::size_t i) {
-  return this->_dataset.select(std::vector<std::size_t>{i});
+  return _dataset.select(std::vector<std::size_t>{i});
 }
 
 inline HighFive::Selection Dataset::select(std::size_t i) const {
-  return this->_dataset.select(std::vector<std::size_t>{i});
+  return _dataset.select(std::vector<std::size_t>{i});
 }
 
 inline HighFive::Selection Dataset::select(std::size_t i1, std::size_t i2) {
-  return this->_dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
+  return _dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
 }
 
 inline HighFive::Selection Dataset::select(std::size_t i1, std::size_t i2) const {
-  return this->_dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
+  return _dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
 }
 
 }  // namespace hictk::cooler

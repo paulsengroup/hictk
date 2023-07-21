@@ -30,13 +30,13 @@ inline GenomicInterval::GenomicInterval(const Chromosome &chrom_, std::uint32_t 
   assert(_start <= _end);
 }
 
-inline GenomicInterval::operator bool() const noexcept { return !!this->chrom(); }
+inline GenomicInterval::operator bool() const noexcept { return !!chrom(); }
 
 inline bool GenomicInterval::operator==(const GenomicInterval &other) const noexcept {
   // clang-format off
-  return this->chrom() == other.chrom() &&
-         this->start() == other.start() &&
-         this->end() == other.end();
+  return chrom() == other.chrom() &&
+         start() == other.start() &&
+         end() == other.end();
   // clang-format on
 }
 inline bool GenomicInterval::operator!=(const GenomicInterval &other) const noexcept {
@@ -44,56 +44,56 @@ inline bool GenomicInterval::operator!=(const GenomicInterval &other) const noex
 }
 
 inline bool GenomicInterval::operator<(const GenomicInterval &other) const noexcept {
-  if (this->chrom() != other.chrom()) {
-    return this->chrom() < other.chrom();
+  if (chrom() != other.chrom()) {
+    return chrom() < other.chrom();
   }
 
-  if (this->start() != other.start()) {
-    return this->start() < other.start();
+  if (start() != other.start()) {
+    return start() < other.start();
   }
 
-  return this->end() < other.end();
+  return end() < other.end();
 }
 
 inline bool GenomicInterval::operator<=(const GenomicInterval &other) const noexcept {
-  if (this->chrom() != other.chrom()) {
-    return this->chrom() <= other.chrom();
+  if (chrom() != other.chrom()) {
+    return chrom() <= other.chrom();
   }
 
-  if (this->start() != other.start()) {
-    return this->start() <= other.start();
+  if (start() != other.start()) {
+    return start() <= other.start();
   }
 
-  return this->end() <= other.end();
+  return end() <= other.end();
 }
 
 inline bool GenomicInterval::operator>(const GenomicInterval &other) const noexcept {
-  if (this->chrom() != other.chrom()) {
-    return this->chrom() > other.chrom();
+  if (chrom() != other.chrom()) {
+    return chrom() > other.chrom();
   }
 
-  if (this->start() != other.start()) {
-    return this->start() > other.start();
+  if (start() != other.start()) {
+    return start() > other.start();
   }
 
-  return this->end() > other.end();
+  return end() > other.end();
 }
 
 inline bool GenomicInterval::operator>=(const GenomicInterval &other) const noexcept {
-  if (this->chrom() != other.chrom()) {
-    return this->chrom() >= other.chrom();
+  if (chrom() != other.chrom()) {
+    return chrom() >= other.chrom();
   }
 
-  if (this->start() != other.start()) {
-    return this->start() >= other.start();
+  if (start() != other.start()) {
+    return start() >= other.start();
   }
 
-  return this->end() >= other.end();
+  return end() >= other.end();
 }
 
-inline const Chromosome &GenomicInterval::chrom() const noexcept { return this->_chrom; }
-constexpr std::uint32_t GenomicInterval::start() const noexcept { return this->_start; }
-constexpr std::uint32_t GenomicInterval::end() const noexcept { return this->_end; }
+inline const Chromosome &GenomicInterval::chrom() const noexcept { return _chrom; }
+constexpr std::uint32_t GenomicInterval::start() const noexcept { return _start; }
+constexpr std::uint32_t GenomicInterval::end() const noexcept { return _end; }
 
 inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::string query,
                                               Type type) {

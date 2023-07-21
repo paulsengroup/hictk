@@ -127,15 +127,15 @@ inline PixelSelectorAll HiCFile::fetch(NormalizationMethod norm) const {
 inline PixelSelector HiCFile::fetch(std::string_view query, NormalizationMethod norm,
                                     QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
-                      ? GenomicInterval::parse_bed(this->chromosomes(), query)
-                      : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{query});
+                      ? GenomicInterval::parse_bed(chromosomes(), query)
+                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{query});
 
-  return this->fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm);
+  return fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view chrom_name, std::uint32_t start,
                                     std::uint32_t end, NormalizationMethod norm) const {
-  return this->fetch(chrom_name, start, end, chrom_name, start, end, norm);
+  return fetch(chrom_name, start, end, chrom_name, start, end, norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view range2,
@@ -148,16 +148,15 @@ inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view ra
                        ? GenomicInterval::parse_bed(chromosomes(), range2)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range2});
 
-  return this->fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(),
-                     norm);
+  return fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(), norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
                                     NormalizationMethod norm) const {
-  return this->fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name),
-                     start2, end2, norm);
+  return fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name), start2,
+               end2, norm);
 }
 
 inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t start1,
@@ -190,17 +189,17 @@ inline double HiCFile::block_cache_hit_rate() const noexcept { return _block_cac
 inline void HiCFile::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 inline void HiCFile::clear_cache() noexcept { _block_cache->clear(); }
 inline void HiCFile::optimize_cache_size(std::size_t upper_bound) {
-  return this->optimize_cache_size_for_random_access(upper_bound);
+  return optimize_cache_size_for_random_access(upper_bound);
 }
 
 inline void HiCFile::optimize_cache_size_for_iteration(std::size_t upper_bound) {
-  std::size_t cache_size = this->estimate_cache_size_cis() + this->estimate_cache_size_trans();
+  std::size_t cache_size = estimate_cache_size_cis() + estimate_cache_size_trans();
   cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
 inline void HiCFile::optimize_cache_size_for_random_access(std::size_t upper_bound) {
-  std::size_t cache_size = this->estimate_cache_size_cis();
+  std::size_t cache_size = estimate_cache_size_cis();
   cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
@@ -214,7 +213,7 @@ inline std::size_t HiCFile::estimate_cache_size_cis() const {
     return 0;
   }
   const auto& chrom1 = chromosomes().longest_chromosome();
-  return this->fetch(chrom1.name(), chrom1.name()).estimate_optimal_cache_size();
+  return fetch(chrom1.name(), chrom1.name()).estimate_optimal_cache_size();
 }
 
 inline std::size_t HiCFile::estimate_cache_size_trans() const {
@@ -233,7 +232,7 @@ inline std::size_t HiCFile::estimate_cache_size_trans() const {
     std::swap(chrom1, chrom2);
   }
 
-  auto cache_size = this->fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
+  auto cache_size = fetch(chrom1.name(), chrom2.name()).estimate_optimal_cache_size();
   const auto num_trans_bins = bins().size() - bins().subset(chrom1).size();
   const auto num_chrom2_bins = bins().subset(chrom2).size();
 

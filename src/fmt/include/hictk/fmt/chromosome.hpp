@@ -19,10 +19,10 @@ struct formatter<hictk::Chromosome> {
     const auto* end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "ucsc")) {
-      this->presentation = Presentation::ucsc;
+      presentation = Presentation::ucsc;
       it += std::string_view{"ucsc"}.size();
     } else if (hictk::internal::starts_with(ctx, "tsv")) {
-      this->presentation = Presentation::tsv;
+      presentation = Presentation::tsv;
       it += std::string_view{"tsv"}.size();
     }
 
@@ -34,7 +34,7 @@ struct formatter<hictk::Chromosome> {
   }
 
   inline format_context::iterator format(const hictk::Chromosome& c, format_context& ctx) const {
-    return this->presentation == Presentation::tsv
+    return presentation == Presentation::tsv
                ? fmt::format_to(ctx.out(), FMT_STRING("{}\t{}"), c.name(), c.size())
                : fmt::format_to(ctx.out(), FMT_STRING("{}:{}"), c.name(), c.size());
   }

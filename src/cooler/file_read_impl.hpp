@@ -76,10 +76,10 @@ namespace internal {
 inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights) const {
   // clang-format off
   return PixelSelector(
-      this->_index,
-      this->dataset("pixels/bin1_id"),
-      this->dataset("pixels/bin2_id"),
-      this->dataset("pixels/count"),
+      _index,
+      dataset("pixels/bin1_id"),
+      dataset("pixels/bin2_id"),
+      dataset("pixels/count"),
       std::move(weights));
   // clang-format on
 }
@@ -88,10 +88,10 @@ inline PixelSelector File::fetch(std::string_view query,
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
-                      ? GenomicInterval::parse_bed(this->chromosomes(), query)
-                      : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{query});
+                      ? GenomicInterval::parse_bed(chromosomes(), query)
+                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{query});
 
-  return this->fetch(PixelCoordinates{this->bins().at(gi)}, std::move(weights));
+  return fetch(PixelCoordinates{bins().at(gi)}, std::move(weights));
 }
 
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
@@ -99,19 +99,19 @@ inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t star
                                  std::shared_ptr<const balancing::Weights> weights) const {
   assert(start < end);
 
-  return this->fetch(PixelCoordinates{this->bins().at(chrom_name, start),
-                                      this->bins().at(chrom_name, end - (std::min)(end, 1U))},
-                     std::move(weights));
+  return fetch(PixelCoordinates{bins().at(chrom_name, start),
+                                bins().at(chrom_name, end - (std::min)(end, 1U))},
+               std::move(weights));
 }
 
 inline PixelSelector File::fetch(PixelCoordinates coord,
                                  std::shared_ptr<const balancing::Weights> weights) const {
-  this->read_index_chunk(coord.bin1.chrom());
+  read_index_chunk(coord.bin1.chrom());
   // clang-format off
-  return PixelSelector(this->_index,
-                       this->dataset("pixels/bin1_id"),
-                       this->dataset("pixels/bin2_id"),
-                       this->dataset("pixels/count"),
+  return PixelSelector(_index,
+                       dataset("pixels/bin1_id"),
+                       dataset("pixels/bin2_id"),
+                       dataset("pixels/count"),
                        std::move(coord),
                        std::move(weights)
   );
@@ -122,19 +122,19 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return this->fetch(range1, std::move(weights));
+    return fetch(range1, std::move(weights));
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
-                       ? GenomicInterval::parse_bed(this->chromosomes(), range1)
-                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range1});
+                       ? GenomicInterval::parse_bed(chromosomes(), range1)
+                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
 
   const auto gi2 = query_type == QUERY_TYPE::BED
-                       ? GenomicInterval::parse_bed(this->chromosomes(), range2)
-                       : GenomicInterval::parse_ucsc(this->chromosomes(), std::string{range2});
+                       ? GenomicInterval::parse_bed(chromosomes(), range2)
+                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{range2});
 
-  return this->fetch(PixelCoordinates{this->bins().at(gi1)}, PixelCoordinates{this->bins().at(gi2)},
-                     std::move(weights));
+  return fetch(PixelCoordinates{bins().at(gi1)}, PixelCoordinates{bins().at(gi2)},
+               std::move(weights));
 }
 
 inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, std::uint32_t end1,
@@ -142,16 +142,16 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
                                  std::shared_ptr<const balancing::Weights> weights) const {
   assert(start1 < end1);
   assert(start2 < end2);
-  this->read_index_chunk(chromosomes().at(chrom1));
+  read_index_chunk(chromosomes().at(chrom1));
   // clang-format off
-  return PixelSelector(this->_index,
-                       this->dataset("pixels/bin1_id"),
-                       this->dataset("pixels/bin2_id"),
-                       this->dataset("pixels/count"),
-                       PixelCoordinates{this->bins().at(chrom1, start1),
-                                        this->bins().at(chrom1, end1 - (std::min)(end1, 1U))},
-                       PixelCoordinates{this->bins().at(chrom2, start2),
-                                        this->bins().at(chrom2, end2 - (std::min)(end2, 1U))},
+  return PixelSelector(_index,
+                       dataset("pixels/bin1_id"),
+                       dataset("pixels/bin2_id"),
+                       dataset("pixels/count"),
+                       PixelCoordinates{bins().at(chrom1, start1),
+                                        bins().at(chrom1, end1 - (std::min)(end1, 1U))},
+                       PixelCoordinates{bins().at(chrom2, start2),
+                                        bins().at(chrom2, end2 - (std::min)(end2, 1U))},
                        std::move(weights)
   );
   // clang-format on
@@ -159,12 +159,12 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
-  this->read_index_chunk(coord1.bin1.chrom());
+  read_index_chunk(coord1.bin1.chrom());
   // clang-format off
-  return PixelSelector(this->_index,
-                       this->dataset("pixels/bin1_id"),
-                       this->dataset("pixels/bin2_id"),
-                       this->dataset("pixels/count"),
+  return PixelSelector(_index,
+                       dataset("pixels/bin1_id"),
+                       dataset("pixels/bin2_id"),
+                       dataset("pixels/count"),
                        std::move(coord1),
                        std::move(coord2),
                        std::move(weights)
@@ -173,13 +173,12 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
 }
 
 inline bool File::has_weights(std::string_view name) const {
-  const auto dset_path =
-      fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
-  if (this->_weights.contains(dset_path)) {
+  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(), name);
+  if (_weights.contains(dset_path)) {
     return true;
   }
 
-  return this->_root_group().exist(dset_path);
+  return _root_group().exist(dset_path);
 }
 
 inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
@@ -191,7 +190,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     throw std::runtime_error("weight dataset name is empty");
   }
 
-  return this->read_weights(name, balancing::Weights::infer_type(name), rescale);
+  return read_weights(name, balancing::Weights::infer_type(name), rescale);
 }
 
 inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
@@ -204,20 +203,19 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     throw std::runtime_error("weight dataset name is empty");
   }
 
-  const auto dset_path =
-      fmt::format(FMT_STRING("{}/{}"), this->_groups.at("bins").group.getPath(), name);
+  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(), name);
   if (const auto it = _weights.find(dset_path); it != _weights.end()) {
     return it->second;
   }
 
-  if (!this->_root_group().exist(dset_path)) {
+  if (!_root_group().exist(dset_path)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to read \"{}\" weights: dataset \"{}\" does not exist"),
                     name, dset_path));
   }
 
   Dataset dset{
-      this->_root_group, dset_path,
+      _root_group, dset_path,
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0)};
 
   if (type == balancing::Weights::Type::INFER || type == balancing::Weights::Type::UNKNOWN) {
@@ -236,8 +234,8 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
 
   balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
   if (!rescale) {
-    const auto node = this->_weights.emplace(
-        name, std::make_shared<const balancing::Weights>(std::move(weights)));
+    const auto node =
+        _weights.emplace(name, std::make_shared<const balancing::Weights>(std::move(weights)));
     return node.first->second;
   }
 
@@ -267,20 +265,20 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     weights.rescale(dset.read_attribute<double>("scale"));
   }
 
-  const auto node = this->_weights_scaled.emplace(
-      name, std::make_shared<const balancing::Weights>(std::move(weights)));
+  const auto node =
+      _weights_scaled.emplace(name, std::make_shared<const balancing::Weights>(std::move(weights)));
   return node.first->second;
 }
 
 inline bool File::purge_weights(std::string_view name) {
-  if (this->_weights.empty()) {
+  if (_weights.empty()) {
     return false;
   }
   if (name == "") {
-    this->_weights.clear();
+    _weights.clear();
     return true;
   }
-  return this->_weights.erase(std::string{name});
+  return _weights.erase(std::string{name});
 }
 
 inline auto File::open_root_group(const HighFive::File &f, std::string_view uri) -> RootGroup {
@@ -538,7 +536,7 @@ inline bool File::read_index_chunk(const Chromosome &chrom) const {
     auto offset2 = chrom_offsets[chrom.id() + 1];
     auto first = bin_offset_dset.begin<std::uint64_t>(64'000) + offset1;
     auto last = bin_offset_dset.begin<std::uint64_t>(64'000) + offset2;
-    this->_index->set(chrom, {first, last});
+    _index->set(chrom, {first, last});
 
     try {
       _index->validate(chrom);
@@ -553,15 +551,15 @@ inline bool File::read_index_chunk(const Chromosome &chrom) const {
   }
 }
 
-inline bool File::check_sentinel_attr() { return File::check_sentinel_attr(this->_root_group()); }
+inline bool File::check_sentinel_attr() { return File::check_sentinel_attr(_root_group()); }
 
 inline Bin File::get_last_bin_written() const {
-  const auto &dset = this->dataset("pixels/bin1_id");
+  const auto &dset = dataset("pixels/bin1_id");
   if (dset.empty()) {
-    return this->bins().at(0);
+    return bins().at(0);
   }
   const auto bin1_id = dset.read_last<std::uint64_t>();
-  return this->bins().at(bin1_id);
+  return bins().at(bin1_id);
 }
 
 }  // namespace hictk::cooler

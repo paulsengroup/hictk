@@ -125,7 +125,7 @@ inline File MultiResFile::open(std::uint32_t resolution) const {
 
 inline File MultiResFile::copy_resolution(const File& clr) {
   SPDLOG_INFO(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
-  auto dest = this->init_resolution(clr.bin_size());
+  auto dest = init_resolution(clr.bin_size());
 
   cooler::utils::copy(clr.uri(), dest);
   _resolutions.push_back(clr.bin_size());
@@ -157,7 +157,7 @@ inline RootGroup MultiResFile::init_resolution(std::uint32_t resolution) {
   return RootGroup{(*_root_grp)().createGroup(grp, false)};
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-inline MultiResFile::operator bool() const noexcept { return !!this->_root_grp; }
+inline MultiResFile::operator bool() const noexcept { return !!_root_grp; }
 
 inline std::string MultiResFile::path() const { return (*_root_grp)().getFile().getName(); }
 

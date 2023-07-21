@@ -21,13 +21,13 @@ struct formatter<hictk::Bin> {
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bed")) {
-      this->presentation = Presentation::bed;
+      presentation = Presentation::bed;
       it += std::string_view{"bed"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      this->presentation = Presentation::raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "ucsc")) {
-      this->presentation = Presentation::ucsc;
+      presentation = Presentation::ucsc;
       it += std::string_view{"ucsc"}.size();  // NOLINT
     }
 
@@ -38,13 +38,13 @@ struct formatter<hictk::Bin> {
     return it;
   }
   inline format_context::iterator format(const hictk::Bin &b, format_context &ctx) const {
-    if (this->presentation == Presentation::bed) {
+    if (presentation == Presentation::bed) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:bed}"), b.interval());
     }
-    if (this->presentation == Presentation::raw) {
+    if (presentation == Presentation::raw) {
       return fmt::format_to(ctx.out(), FMT_STRING("{}"), b.id());
     }
-    assert(this->presentation == Presentation::ucsc);
+    assert(presentation == Presentation::ucsc);
     return fmt::format_to(ctx.out(), FMT_STRING("{:ucsc}"), b.interval());
   }
 };
