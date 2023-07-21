@@ -45,6 +45,19 @@ class HiCFileReader {
       std::shared_ptr<balancing::Weights> weights1 = std::make_shared<balancing::Weights>(),
       std::shared_ptr<balancing::Weights> weights2 = std::make_shared<balancing::Weights>());
 
+  [[nodiscard]] std::int64_t read_footer_file_offset(std::string_view key);
+  [[nodiscard]] std::vector<double> read_footer_expected_values(
+      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      NormalizationMethod wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+  [[nodiscard]] std::vector<double> read_footer_expected_values_norm(
+      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      NormalizationMethod wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+  void read_footer_norm(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                        NormalizationMethod wanted_norm, MatrixUnit wanted_unit,
+                        std::uint32_t wanted_resolution, const Chromosome &chrom1,
+                        const Chromosome &chrom2, std::shared_ptr<balancing::Weights> &weights1,
+                        std::shared_ptr<balancing::Weights> &weights2);
+
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static NormalizationMethod readNormalizationMethod(filestream::FileStream &fs,
                                                                    std::string &buff);
