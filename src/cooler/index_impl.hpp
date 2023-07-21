@@ -185,7 +185,6 @@ inline void Index::finalize(std::uint64_t nnz) {
       return fill_value = offset;
     });
   });
-  assert(_idx.begin()->second[0] == 0 || _idx.begin()->second[0] == _idx.begin()->second[1]);
   _idx.begin()->second.front() = 0;
 }
 

@@ -152,6 +152,9 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
       }
     }
+    if (!std::is_sorted(first_pixel, last_pixel)) {
+      throw std::runtime_error("pixels are not sorted in ascending order.");
+    }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
   }
@@ -203,6 +206,9 @@ inline void File::validate_thin_pixels_before_append(PixelIt first_pixel,
         throw std::runtime_error(fmt::format(
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
       }
+    }
+    if (!std::is_sorted(first_pixel, last_pixel)) {
+      throw std::runtime_error("pixels are not sorted in ascending order.");
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));

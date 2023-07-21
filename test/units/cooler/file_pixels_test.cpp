@@ -98,4 +98,43 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Cooler: validate pixels before append", "[cooler][long]") {
+  auto path1 = datadir / "cooler_test_file.cool";
+  auto path2 = testdir() / "cooler_test_validate_before_append.cool";
+
+  const auto clr1 = cooler::File::open(path1.string());
+  auto clr2 = cooler::File::create(path2.string(), clr1.chromosomes(), 1000, true);
+
+  SECTION("pixel wo/ interactions") {
+    const std::vector<ThinPixel<std::int32_t>> buff{{0, 0, 0}};
+    CHECK_THROWS(clr2.append_pixels(buff.begin(), buff.end(), true));
+  }
+
+  SECTION("invalid bins") {
+    const std::vector<ThinPixel<std::int32_t>> buff1{{99999999, 0, 1}};
+    const std::vector<ThinPixel<std::int32_t>> buff2{{0, 99999999, 1}};
+    const std::vector<ThinPixel<std::int32_t>> buff3{{1, 0, 1}};
+    CHECK_THROWS(clr2.append_pixels(buff1.begin(), buff1.end(), true));
+    CHECK_THROWS(clr2.append_pixels(buff2.begin(), buff2.end(), true));
+    CHECK_THROWS(clr2.append_pixels(buff3.begin(), buff3.end(), true));
+  }
+
+  SECTION("pixels not sorted") {
+    // out of order
+    const std::vector<ThinPixel<std::int32_t>> buff1{{0, 0, 1}, {0, 1, 1}, {0, 0, 1}};
+    CHECK_THROWS(clr2.append_pixels(buff1.begin(), buff1.end(), true));
+
+    // ok
+    const std::vector<ThinPixel<std::int32_t>> buff2{{10, 10, 1}, {10, 12, 1}};
+    clr2.append_pixels(buff2.begin(), buff2.end(), true);
+
+    // pixels are upstream of last pixel written to file
+    const std::vector<ThinPixel<std::int32_t>> buff3{{0, 0, 1}};
+    CHECK_THROWS(clr2.append_pixels(buff3.begin(), buff3.end(), true));
+    const std::vector<ThinPixel<std::int32_t>> buff4{{10, 11, 1}};
+    CHECK_THROWS(clr2.append_pixels(buff4.begin(), buff4.end(), true));
+  }
+}
+
 }  // namespace hictk::cooler::test::cooler_file
