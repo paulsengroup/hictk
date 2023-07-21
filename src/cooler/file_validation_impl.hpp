@@ -23,7 +23,7 @@
 
 namespace hictk::cooler {
 
-inline void File::validate_bins() const {
+inline void File::validate_bins(bool full) const {
   try {
     assert(_attrs.bin_type == "fixed");
     auto nchroms = dataset("bins/chrom").size();
@@ -52,23 +52,25 @@ inline void File::validate_bins() const {
     auto last_start = dataset("bins/start").end<std::uint32_t>(0);
     auto last_end = dataset("bins/end").end<std::uint32_t>(0);
 
-    std::size_t i = 0;
-    for (const Bin &bin : bins()) {
-      if (chrom_it == last_chrom || start_it == last_start || end_it == last_end) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("Expected {} bins, found {}"), bins().size(), i));
-      }
+    if (full) {
+      std::size_t i = 0;
+      for (const Bin &bin : bins()) {
+        if (chrom_it == last_chrom || start_it == last_start || end_it == last_end) {
+          throw std::runtime_error(
+              fmt::format(FMT_STRING("Expected {} bins, found {}"), bins().size(), i));
+        }
 
-      if (chromosomes().at(*chrom_it).name() != bin.chrom().name() || *start_it != bin.start() ||
-          *end_it != bin.end()) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("GenomicInterval #{}: expected {}:{}-{}, found {:ucsc}"), i,
-                        chromosomes().at(*chrom_it).name(), *start_it, *end_it, bin));
+        if (chromosomes().at(*chrom_it).name() != bin.chrom().name() || *start_it != bin.start() ||
+            *end_it != bin.end()) {
+          throw std::runtime_error(
+              fmt::format(FMT_STRING("GenomicInterval #{}: expected {}:{}-{}, found {:ucsc}"), i,
+                          chromosomes().at(*chrom_it).name(), *start_it, *end_it, bin));
+        }
+        ++chrom_it;
+        ++start_it;
+        ++end_it;
+        ++i;
       }
-      ++chrom_it;
-      ++start_it;
-      ++end_it;
-      ++i;
     }
 
   } catch (const HighFive::Exception &e) {

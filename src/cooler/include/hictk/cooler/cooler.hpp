@@ -253,6 +253,8 @@ class File {
   void write_weights(std::string_view name, It first_weight, It last_weight,
                      bool overwrite_if_exists = false, bool divisive = false);
 
+  void validate_bins(bool full = false) const;
+
  private:
   [[nodiscard]] auto index() const noexcept -> const Index &;
   [[nodiscard]] auto index() noexcept -> Index &;
@@ -297,8 +299,6 @@ class File {
   template <typename PixelIt, typename N>
   static void append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
                             PixelIt last_pixel, N &sum, N &cis_sum);
-
-  void validate_bins() const;
 
   template <typename PixelIt>
   void validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
