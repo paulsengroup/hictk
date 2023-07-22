@@ -251,10 +251,10 @@ class Cli {
     return {cooler::File::open(p.string()).bin_size()};
   }
   if (format == "mcool") {
-    return cooler::utils::list_resolutions(p);
+    return cooler::utils::list_resolutions(p, true);
   }
   assert(format == "hic");
-  return hic::utils::list_resolutions(p);
+  return hic::utils::list_resolutions(p, true);
 }
 
 }  // namespace hictk::tools
