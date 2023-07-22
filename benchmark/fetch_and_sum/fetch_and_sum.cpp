@@ -70,7 +70,7 @@ void fetch_and_sum(const Config &c, cooler::File &&clr) {
 
 void fetch_and_sum(const Config &c, hic::HiCFile &&hf) {
   hf.optimize_cache_size_for_random_access();
-  const auto norm = hic::ParseNormStr(c.weights);
+  const auto norm = balancing::Method(c.weights);
 
   std::string line;
   while (std::getline(std::cin, line)) {
