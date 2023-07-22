@@ -173,8 +173,8 @@ static py::object hic_fetch(const hic::HiCFile& f, std::string_view range1, std:
       query_type == "UCSC" ? cooler::File::QUERY_TYPE::UCSC : cooler::File::QUERY_TYPE::BED;
 
   auto sel = range2.empty() || range1 == range2
-                 ? f.fetch(range1, hic::ParseNormStr(std::string{normalization}), qt)
-                 : f.fetch(range1, range2, hic::ParseNormStr(std::string{normalization}), qt);
+                 ? f.fetch(range1, balancing::Method(std::string{normalization}), qt)
+                 : f.fetch(range1, range2, balancing::Method(std::string{normalization}), qt);
   if (normalization == "NONE") {
     return pixel_iterators_to_df(f.bins(), sel.begin<std::int32_t>(), sel.end<std::int32_t>());
   }

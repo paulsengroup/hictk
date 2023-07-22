@@ -583,7 +583,7 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   phmap::flat_hash_set<balancing::Method> methods{};
   _fs->seekg(masterOffset());
-  const auto offset = read_footer_file_offset("1_1");
+  [[maybe_unused]] const auto offset = read_footer_file_offset("1_1");
   assert(offset != -1);
 
   std::ignore = read_footer_expected_values(1, 1, matrix_type, balancing::Method::NONE(),
