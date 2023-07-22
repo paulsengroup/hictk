@@ -579,4 +579,35 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
           std::move(weights2)};
 }
 
+inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
+    MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  phmap::flat_hash_set<balancing::Method> methods{};
+  _fs->seekg(masterOffset());
+  const auto offset = read_footer_file_offset("1_1");
+  assert(offset != -1);
+
+  std::ignore = read_footer_expected_values(1, 1, matrix_type, balancing::Method::NONE(),
+                                            wanted_unit, wanted_resolution);
+  if (_fs->tellg() == _fs->size()) {
+    return {};
+  }
+
+  const auto nExpectedValues = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nExpectedValues; i++) {
+    const auto foundNorm = readNormalizationMethod();
+    methods.emplace(foundNorm);
+    [[maybe_unused]] const auto foundUnit = readMatrixUnit();
+    [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+
+    [[maybe_unused]] const auto nValues = readNValues();
+
+    discardExpectedVector(nValues);
+    discardNormalizationFactors(1);
+  }
+
+  std::vector<balancing::Method> methods_{methods.size()};
+  std::copy(methods.begin(), methods.end(), methods_.begin());
+  return methods_;
+}
+
 }  // namespace hictk::hic::internal

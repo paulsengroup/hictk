@@ -59,6 +59,9 @@ class HiCFileReader {
                         const Chromosome &chrom2, std::shared_ptr<balancing::Weights> &weights1,
                         std::shared_ptr<balancing::Weights> &weights2);
 
+  [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations(
+      MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static balancing::Method readNormalizationMethod(filestream::FileStream &fs,
                                                                  std::string &buff);

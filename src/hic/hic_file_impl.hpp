@@ -83,6 +83,10 @@ inline const std::vector<std::uint32_t>& HiCFile::avail_resolutions() const noex
   return _fs->header().resolutions;
 }
 
+inline std::vector<balancing::Method> HiCFile::avail_normalizations() const noexcept {
+  return _fs->list_avail_normalizations(_type, _unit, _bins->bin_size());
+}
+
 inline std::uint32_t HiCFile::resolution() const noexcept { return _bins->bin_size(); }
 
 inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(

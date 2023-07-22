@@ -54,6 +54,7 @@ class HiCFile {
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
+  [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   [[nodiscard]] PixelSelectorAll fetch(balancing::Method norm = balancing::Method::NONE()) const;
