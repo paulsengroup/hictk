@@ -42,7 +42,7 @@ void dump_pixels(const cooler::File& f, std::string_view range1, std::string_vie
   print_pixels(jsel.begin(), jsel.end());
 }
 
-void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view range2,
+void dump_pixels(hic::File& f, std::string_view range1, std::string_view range2,
                  std::string_view normalization, bool join, bool sorted) {
   auto norm = balancing::Method{std::string{normalization}};
   if (range1 == "all") {
@@ -82,12 +82,12 @@ static void process_query(File& f, std::string_view table, std::string_view rang
   return dump_pixels(f, range1, range2, normalization, join, sorted);
 }
 
-using FileVar = std::variant<cooler::File, hic::HiCFile>;
+using FileVar = std::variant<cooler::File, hic::File>;
 
 [[nodiscard]] static FileVar open_hic_file(std::string_view path, std::uint32_t resolution,
                                            hic::MatrixType matrix_type,
                                            hic::MatrixUnit matrix_unit) {
-  return {hic::HiCFile(std::string{path}, resolution, matrix_type, matrix_unit)};
+  return {hic::File(std::string{path}, resolution, matrix_type, matrix_unit)};
 }
 
 [[nodiscard]] static FileVar open_cooler_file(std::string_view uri) {

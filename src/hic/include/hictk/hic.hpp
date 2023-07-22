@@ -25,7 +25,7 @@
 
 namespace hictk::hic {
 
-class HiCFile {
+class File {
   mutable std::shared_ptr<internal::HiCFileReader> _fs{};
   mutable internal::FooterCache _footers{};
   MatrixType _type{MatrixType::observed};
@@ -36,13 +36,13 @@ class HiCFile {
 
  public:
   using QUERY_TYPE = GenomicInterval::Type;
-  explicit HiCFile(std::string url_, std::uint32_t resolution_,
+  explicit File(std::string url_, std::uint32_t resolution_,
                    MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
                    std::uint64_t block_cache_capacity = 0);
-  HiCFile &open(std::string url_, std::uint32_t resolution_,
+  File &open(std::string url_, std::uint32_t resolution_,
                 MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
                 std::uint64_t block_cache_capacity = 0);
-  HiCFile &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
+  File &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
                 MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 

@@ -30,7 +30,7 @@ static bool missing_norm_or_interactions(const std::exception& e, balancing::Met
   return missing_interactions || missing_norm_vect;
 }
 
-bool check_if_norm_exists(hic::HiCFile& f, balancing::Method norm) {
+bool check_if_norm_exists(hic::File& f, balancing::Method norm) {
   return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
     try {
       if (!chrom.is_all()) {
@@ -46,7 +46,7 @@ bool check_if_norm_exists(hic::HiCFile& f, balancing::Method norm) {
   });
 }
 
-static std::vector<double> read_weights_or_throw(hic::HiCFile& f, balancing::Method norm,
+static std::vector<double> read_weights_or_throw(hic::File& f, balancing::Method norm,
                                                  const Chromosome& chrom,
                                                  std::size_t expected_length) {
   std::vector<double> weights_{};
@@ -67,7 +67,7 @@ static std::vector<double> read_weights_or_throw(hic::HiCFile& f, balancing::Met
   return weights_;
 }
 
-static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
+static std::vector<double> read_weights(hic::File& f, const BinTable& bins,
                                         balancing::Method norm) {
   std::vector<double> weights{};
   weights.reserve(bins.size());
@@ -94,7 +94,7 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
 }
 
 template <typename CoolerFile>
-static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, balancing::Method norm,
+static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
                          bool fail_if_missing) {
   if (norm == balancing::Method::NONE()) {
     return;
@@ -144,7 +144,7 @@ static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, balancing::Method nor
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
-  hic::HiCFile const hf(p.string(), res);
+  hic::File const hf(p.string(), res);
   std::vector<std::string> names;
   std::vector<std::uint32_t> sizes;
   for (const auto& chrom : hf.chromosomes()) {
@@ -157,7 +157,7 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
 }
 
 template <typename N>
-static void enqueue_pixels(const hic::HiCFile& hf,
+static void enqueue_pixels(const hic::File& hf,
                            moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
                            std::atomic<bool>& early_return,
                            std::size_t update_frequency = 10'000'000) {
@@ -241,7 +241,7 @@ static std::size_t append_pixels(cooler::File& clr,
 }
 
 template <typename N>
-static void convert_resolution_multi_threaded(hic::HiCFile& hf, cooler::File&& clr,
+static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
                                               std::vector<balancing::Method> normalization_methods,
                                               bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
@@ -296,7 +296,7 @@ void hic_to_cool(const ConvertConfig& c) {
   assert(!c.resolutions.empty());
 
   const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
-  hic::HiCFile hf(c.path_to_input.string(), c.resolutions.front());
+  hic::File hf(c.path_to_input.string(), c.resolutions.front());
   assert(spdlog::default_logger());
 
   if (c.resolutions.size() == 1) {

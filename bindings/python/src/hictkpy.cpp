@@ -160,14 +160,14 @@ static py::object cooler_fetch(const cooler::File& clr, std::string_view range1,
   return pixel_iterators_to_df(clr.bins(), sel.begin<double>(), sel.end<double>());
 }
 
-[[nodiscard]] hic::HiCFile hic_ctor(std::string_view path, std::int32_t resolution,
+[[nodiscard]] hic::File hic_ctor(std::string_view path, std::int32_t resolution,
                                     std::string_view matrix_type, std::string_view matrix_unit) {
-  return hic::HiCFile{std::string{path}, static_cast<std::uint32_t>(resolution),
+  return hic::File{std::string{path}, static_cast<std::uint32_t>(resolution),
                       hic::ParseMatrixTypeStr(std::string{matrix_type}),
                       hic::ParseUnitStr(std::string{matrix_unit})};
 }
 
-static py::object hic_fetch(const hic::HiCFile& f, std::string_view range1, std::string_view range2,
+static py::object hic_fetch(const hic::File& f, std::string_view range1, std::string_view range2,
                             std::string_view normalization, std::string_view query_type) {
   const auto qt =
       query_type == "UCSC" ? cooler::File::QUERY_TYPE::UCSC : cooler::File::QUERY_TYPE::BED;
@@ -217,17 +217,17 @@ PYBIND11_MODULE(hictkpy, m) {
 
   hic_utils.def("is_hic_file", &hic::utils::is_hic_file, "test whether path points to a .hic file");
 
-  auto hic_file = py::class_<hic::HiCFile>(hic, "File")
+  auto hic_file = py::class_<hic::File>(hic, "File")
                       .def(py::init(&hic_ctor), py::arg("path"), py::arg("resolution"),
                            py::arg("matrix_type") = "observed", py::arg("matrix_unit") = "BP");
 
-  hic_file.def("path", &hic::HiCFile::url);
-  hic_file.def("name", &hic::HiCFile::name);
-  hic_file.def("version", &hic::HiCFile::version);
+  hic_file.def("path", &hic::File::url);
+  hic_file.def("name", &hic::File::name);
+  hic_file.def("version", &hic::File::version);
 
-  hic_file.def("bin_size", &hic::HiCFile::resolution);
-  hic_file.def("chromosomes", &get_chromosomes_from_file<hic::HiCFile>);
-  hic_file.def("bins", &get_bins_from_file<hic::HiCFile>);
+  hic_file.def("bin_size", &hic::File::resolution);
+  hic_file.def("chromosomes", &get_chromosomes_from_file<hic::File>);
+  hic_file.def("bins", &get_bins_from_file<hic::File>);
 
   hic_file.def("fetch", &hic_fetch, py::arg("range1"), py::arg("range2") = "",
                py::arg("normalization") = "NONE", py::arg("query_type") = "UCSC");

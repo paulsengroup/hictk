@@ -193,7 +193,7 @@ void Cli::validate_convert_subcommand() const {
                           resolution, "cool");
   }
   assert(format == "hic");
-  return hic::HiCFile{p.string(), resolution}.assembly();
+  return hic::File{p.string(), resolution}.assembly();
 }
 
 void Cli::transform_args_convert_subcommand() {

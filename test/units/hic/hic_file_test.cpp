@@ -30,7 +30,7 @@ TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: file accessors", "[hic][short]") {
-  HiCFile f(pathV8, 1'000);
+  File f(pathV8, 1'000);
 
   CHECK(f.url() == pathV8);
   CHECK(f.name() == pathV8);
@@ -45,17 +45,17 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.open(2'500'000).resolution() == 2'500'000);
 
   SECTION("invalid") {
-    CHECK_THROWS(HiCFile(pathV8, std::numeric_limits<std::uint32_t>::max(), MatrixType::observed,
+    CHECK_THROWS(File(pathV8, std::numeric_limits<std::uint32_t>::max(), MatrixType::observed,
                          MatrixUnit::BP));
-    CHECK_THROWS(HiCFile("non-existing-file", 1));
-    CHECK_THROWS(HiCFile("https://localhost:non-existing-url", 1));
-    CHECK_THROWS(HiCFile("test/CMakeLists.txt", 1));
+    CHECK_THROWS(File("non-existing-file", 1));
+    CHECK_THROWS(File("https://localhost:non-existing-url", 1));
+    CHECK_THROWS(File("test/CMakeLists.txt", 1));
   }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: footer cache", "[hic][short]") {
-  HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP, 1);
+  File f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP, 1);
 
   CHECK(f.num_cached_footers() == 0);
   for (const auto& chrom : f.chromosomes()) {
@@ -86,7 +86,7 @@ TEST_CASE("HiC: footer cache", "[hic][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: fetch", "[hic][short]") {
   const auto norm = hictk::balancing::Method::NONE();
-  const HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
+  const File f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
 
   REQUIRE(f.chromosomes().size() == 9);
 
@@ -116,11 +116,12 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
 
   SECTION("malformed") {
     CHECK_THROWS(f.fetch(chrom2, chrom1, norm));  // NOLINT
-    CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
+    CHECK_THROWS(File(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
                      .fetch(chrom1, hictk::balancing::Method::VC()));
 
     // Matrix does not have contacts for fragments
-    CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG)
+    CHECK_THROWS(
+        File(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG)
                      .fetch(chrom1, norm));
   }
 }
