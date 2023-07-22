@@ -68,9 +68,9 @@ void fetch_and_sum(const Config &c, cooler::File &&clr) {
   }
 }
 
-void fetch_and_sum(const Config &c, hic::HiCFile &&hf) {
+void fetch_and_sum(const Config &c, hic::File &&hf) {
   hf.optimize_cache_size_for_random_access();
-  const auto norm = hic::ParseNormStr(c.weights);
+  const auto norm = balancing::Method(c.weights);
 
   std::string line;
   while (std::getline(std::cin, line)) {
@@ -89,7 +89,7 @@ void fetch_and_sum(const Config &c, hic::HiCFile &&hf) {
 void fetch_and_sum(const Config &c) {
   fmt::print(FMT_STRING("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tnnz\tsum\ttime\n"));
   if (hic::utils::is_hic_file(c.path)) {
-    fetch_and_sum(c, hic::HiCFile(c.path, c.resolution));
+    fetch_and_sum(c, hic::File(c.path, c.resolution));
   } else {
     fetch_and_sum(c, cooler::File::open(c.path));
   }

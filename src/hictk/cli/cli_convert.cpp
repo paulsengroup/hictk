@@ -59,14 +59,10 @@ void Cli::make_convert_subcommand() {
       "One or more resolution to be converted. By default all resolutions are converted.")
       ->check(CLI::PositiveNumber);
   sc.add_option(
-       "--normalization-methods",
-       c.normalization_methods_str,
-       fmt::format(FMT_STRING("Name of one or more normalization methods to be copied.\n"
-                              "By default vectors for all known normalization methods are copied.\n"
-                              "Supported methods:\n"
-                              "- weights\n"
-                              "- {}"),
-                   fmt::join(hic::NORMALIZATION_METHODS, "\n - ")))
+      "--normalization-methods",
+      c.normalization_methods,
+      "Name of one or more normalization methods to be copied.\n"
+      "By default, vectors for all known normalization methods are copied.\n")
       ->default_str("ALL");
   sc.add_flag(
       "--fail-if-norm-not-found",
@@ -148,21 +144,6 @@ static void check_requested_resolutions_avail(const std::filesystem::path& path_
   }
 }
 
-static void check_normalization_methods(const std::vector<std::string>& norm_methods,
-                                        std::vector<std::string>& errors) {
-  assert(!norm_methods.empty());
-  if (norm_methods.size() > 1 && norm_methods.front() != "ALL") {
-    for (const auto& n : norm_methods) {
-      try {
-        std::ignore = hic::ParseNormStr(n);
-      } catch (...) {
-        errors.emplace_back(
-            fmt::format(FMT_STRING("\"{}\" is not a known normalization method"), n));
-      }
-    }
-  }
-}
-
 void Cli::validate_convert_subcommand() const {
   const auto& c = std::get<ConvertConfig>(_config);
   std::vector<std::string> errors;
@@ -192,27 +173,12 @@ void Cli::validate_convert_subcommand() const {
     check_requested_resolutions_avail(c.path_to_input, c.resolutions, errors);
   }
 
-  check_normalization_methods(c.normalization_methods_str, errors);
-
   if (!errors.empty()) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
             "The following error(s) where encountered while validating CLI arguments:\n - {}"),
         fmt::join(errors, "\n - ")));
   }
-}
-
-[[nodiscard]] static std::vector<hic::NormalizationMethod> generate_norm_vect(
-    const std::vector<std::string>& norms_str) {
-  assert(!norms_str.empty());
-  if (norms_str.size() == 1 && norms_str.front() == "ALL") {
-    return {hic::NORMALIZATION_METHODS.begin(), hic::NORMALIZATION_METHODS.end()};
-  }
-
-  std::vector<hic::NormalizationMethod> norms(norms_str.size());
-  std::transform(norms_str.begin(), norms_str.end(), norms.begin(),
-                 [&](const auto& s) { return hic::ParseNormStr(s); });
-  return norms;
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
@@ -227,7 +193,7 @@ void Cli::validate_convert_subcommand() const {
                           resolution, "cool");
   }
   assert(format == "hic");
-  return hic::HiCFile{p.string(), resolution}.assembly();
+  return hic::File{p.string(), resolution}.assembly();
 }
 
 void Cli::transform_args_convert_subcommand() {
@@ -242,16 +208,8 @@ void Cli::transform_args_convert_subcommand() {
     c.resolutions = list_resolutions(c.path_to_input, c.input_format);
   }
 
-  c.normalization_methods = generate_norm_vect(c.normalization_methods_str);
-
   if (c.genome.empty()) {
     c.genome = infer_assembly(c.path_to_input, c.resolutions.back(), c.input_format);
-  }
-
-  if (c.norm_dset_names.empty()) {
-    c.norm_dset_names.resize(c.normalization_methods.size());
-    std::transform(c.normalization_methods.begin(), c.normalization_methods.end(),
-                   c.norm_dset_names.begin(), [](const auto norm) { return fmt::to_string(norm); });
   }
 
   // in spdlog, high numbers correspond to low log levels

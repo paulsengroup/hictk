@@ -131,10 +131,10 @@ inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream &fs, std:
   return ParseMatrixTypeStr(buff);
 }
 
-inline NormalizationMethod HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
-                                                                  std::string &buff) {
+inline balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
+                                                                std::string &buff) {
   fs.getline(buff, '\0');
-  return ParseNormStr(buff);
+  return balancing::Method{buff};
 }
 
 inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
@@ -146,7 +146,7 @@ inline MatrixType HiCFileReader::readMatrixType() {
   return HiCFileReader::readMatrixType(*_fs, _strbuff);
 }
 
-inline NormalizationMethod HiCFileReader::readNormalizationMethod() {
+inline balancing::Method HiCFileReader::readNormalizationMethod() {
   return HiCFileReader::readNormalizationMethod(*_fs, _strbuff);
 }
 
@@ -195,9 +195,9 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
     const auto foundUnit = readMatrixUnit();
     std::ignore = _fs->read<std::int32_t>();  // oldIndex
     const auto sumCount = _fs->read<float>();
-    std::ignore = _fs->read<float>();  // occupiedCellCount
-    std::ignore = _fs->read<float>();  // stdDev
-    std::ignore = _fs->read<float>();  // percent95
+    std::ignore = _fs->read<float>();         // occupiedCellCount
+    std::ignore = _fs->read<float>();         // stdDev
+    std::ignore = _fs->read<float>();         // percent95
 
     const auto foundResolution = static_cast<std::int64_t>(_fs->read<std::int32_t>());
     const auto blockBinCount = static_cast<std::size_t>(_fs->read<std::int32_t>());
@@ -359,8 +359,134 @@ inline bool HiCFileReader::checkMagicString(std::string url) noexcept {
   }
 }
 
+inline std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key) {
+  std::ignore = readNValues();  // nBytes
+
+  std::int64_t pos = -1;
+  auto nEntries = _fs->read<std::int32_t>();
+  for (int i = 0; i < nEntries; i++) {
+    const auto strbuff = _fs->getline('\0');
+    const auto fpos = _fs->read<std::int64_t>();
+    std::ignore = _fs->read<std::int32_t>();  // sizeInBytes
+    if (strbuff == key) {
+      pos = fpos;
+    }
+  }
+  return pos;
+}
+
+inline std::vector<double> HiCFileReader::read_footer_expected_values(
+    std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+    balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  std::vector<double> expectedValues{};
+  auto nExpectedValues = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nExpectedValues; ++i) {
+    const auto foundUnit = readMatrixUnit();
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    const auto nValues = readNValues();
+
+    using MT = MatrixType;
+    using NM = balancing::Method;
+    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
+                 wanted_norm == NM::NONE() && foundUnit == wanted_unit &&
+                 foundResolution == wanted_resolution;
+
+    if (store) {
+      expectedValues = readExpectedVector(nValues);
+      const auto normFactors = readNormalizationFactors(chrom1_id);
+      applyNormalizationFactors(expectedValues, normFactors);
+
+    } else {
+      discardExpectedVector(nValues);
+      discardNormalizationFactors(chrom1_id);
+    }
+  }
+  return expectedValues;
+}
+
+inline std::vector<double> HiCFileReader::read_footer_expected_values_norm(
+    std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+    balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  if (_fs->tellg() == _fs->size()) {
+    return {};
+  }
+
+  std::vector<double> expectedValues{};
+  const auto nExpectedValues = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nExpectedValues; i++) {
+    const auto foundNorm = readNormalizationMethod();
+    const auto foundUnit = readMatrixUnit();
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+
+    const auto nValues = readNValues();
+
+    using MT = MatrixType;
+    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
+                 foundNorm == wanted_norm && foundUnit == wanted_unit &&
+                 foundResolution == wanted_resolution;
+
+    if (store) {
+      expectedValues = readExpectedVector(nValues);
+      const auto normFactors = readNormalizationFactors(chrom1_id);
+      applyNormalizationFactors(expectedValues, normFactors);
+    } else {
+      discardExpectedVector(nValues);
+      discardNormalizationFactors(chrom1_id);
+    }
+  }
+  return expectedValues;
+}
+
+inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                            balancing::Method wanted_norm, MatrixUnit wanted_unit,
+                                            std::uint32_t wanted_resolution,
+                                            const Chromosome &chrom1, const Chromosome &chrom2,
+                                            std::shared_ptr<balancing::Weights> &weights1,
+                                            std::shared_ptr<balancing::Weights> &weights2) {
+  if (_fs->tellg() == _fs->size()) {
+    return;
+  }
+
+  // Index of normalization vectors
+  const auto nEntries = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nEntries; i++) {
+    const auto foundNorm = readNormalizationMethod();
+    const auto foundChrom = _fs->read_as_unsigned<std::int32_t>();
+    const auto foundUnit = readMatrixUnit();
+
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    const auto filePosition = _fs->read<std::int64_t>();
+    const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
+                                           : static_cast<std::int64_t>(_fs->read<std::int32_t>());
+
+    const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
+                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
+    if (store1) {
+      const auto numBins =
+          static_cast<std::size_t>((chrom1.size() + wanted_resolution - 1) / wanted_resolution);
+      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
+      *weights1 = balancing::Weights{
+          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+          balancing::Weights::Type::DIVISIVE};
+      _fs->seekg(currentPos);
+    }
+
+    const auto store2 = !*weights2 && foundChrom == chrom2_id && foundNorm == wanted_norm &&
+                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
+    if (store2) {
+      const auto numBins =
+          static_cast<std::size_t>((chrom2.size() + wanted_resolution - 1) / wanted_resolution);
+      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
+      *weights2 = balancing::Weights{
+          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+          balancing::Weights::Type::DIVISIVE};
+      _fs->seekg(currentPos);
+    }
+  }
+}
+
 inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                            MatrixType matrix_type, NormalizationMethod wanted_norm,
+                                            MatrixType matrix_type, balancing::Method wanted_norm,
                                             MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
                                             std::shared_ptr<balancing::Weights> weights1,
                                             std::shared_ptr<balancing::Weights> weights2) {
@@ -369,7 +495,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
          _header->resolutions.end());
 
   using MT = MatrixType;
-  using NM = NormalizationMethod;
+  using NM = balancing::Method;
 
   // clang-format off
     HiCFooterMetadata metadata{
@@ -386,17 +512,8 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   const auto key = fmt::format(FMT_COMPILE("{}_{}"), chrom1_id, chrom2_id);
 
   _fs->seekg(masterOffset());
-  std::ignore = readNValues();  // nBytes
 
-  auto nEntries = _fs->read<std::int32_t>();
-  for (int i = 0; i < nEntries; i++) {
-    const auto strbuff = _fs->getline('\0');
-    const auto fpos = _fs->read<std::int64_t>();
-    std::ignore = _fs->read<std::int32_t>();  // sizeInBytes
-    if (strbuff == key) {
-      metadata.fileOffset = fpos;
-    }
-  }
+  metadata.fileOffset = read_footer_file_offset(key);
   if (metadata.fileOffset == -1) {
     return {Index{}, std::move(metadata), {}, std::move(weights1), std::move(weights2)};
   }
@@ -407,37 +524,17 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
                           metadata.resolution);
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 
-  if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||
-      ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE &&
+  if ((matrix_type == MT::observed && wanted_norm == NM::NONE()) ||
+      ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE() &&
        chrom1_id != chrom2_id)) {
     // no need to read wanted_norm vector index
     return {std::move(index), std::move(metadata), {}, std::move(weights1), std::move(weights2)};
   }
 
-  std::vector<double> expectedValues{};
-  auto nExpectedValues = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nExpectedValues; ++i) {
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    const auto nValues = readNValues();
-
-    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-                 wanted_norm == NM::NONE && foundUnit == wanted_unit &&
-                 foundResolution == wanted_resolution;
-
-    if (store) {
-      expectedValues = readExpectedVector(nValues);
-      const auto normFactors = readNormalizationFactors(chrom1_id);
-      applyNormalizationFactors(expectedValues, normFactors);
-
-    } else {
-      discardExpectedVector(nValues);
-      discardNormalizationFactors(chrom1_id);
-    }
-  }
-
+  auto expectedValues = read_footer_expected_values(chrom1_id, chrom2_id, matrix_type, wanted_norm,
+                                                    wanted_unit, wanted_resolution);
   if (chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-      wanted_norm == NM::NONE) {
+      wanted_norm == NM::NONE()) {
     if (expectedValues.empty()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("unable to find expected values for {}:{} at {} ({})"),
@@ -448,74 +545,21 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
             std::move(weights2)};
   }
 
-  nExpectedValues = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nExpectedValues; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-
-    const auto nValues = readNValues();
-    bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-                 foundNorm == wanted_norm && foundUnit == wanted_unit &&
-                 foundResolution == wanted_resolution;
-
-    if (store) {
-      expectedValues = readExpectedVector(nValues);
-      const auto normFactors = readNormalizationFactors(chrom1_id);
-      applyNormalizationFactors(expectedValues, normFactors);
-    } else {
-      discardExpectedVector(nValues);
-      discardNormalizationFactors(chrom1_id);
-    }
-  }
-
+  expectedValues = read_footer_expected_values_norm(chrom1_id, chrom2_id, matrix_type, wanted_norm,
+                                                    wanted_unit, wanted_resolution);
   if (chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-      wanted_norm != NM::NONE) {
+      wanted_norm != NM::NONE()) {
     if (expectedValues.empty()) {
-      throw std::runtime_error(fmt::format(
-          FMT_STRING("unable to find expected values normalization factors for {}:{} at "
-                     "{} ({})"),
-          _header->chromosomes.at(chrom1_id).name(), _header->chromosomes.at(chrom2_id).name(),
-          wanted_resolution, wanted_unit));
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("unable to find normalization factors for {}:{} at "
+                                 "{} ({})"),
+                      _header->chromosomes.at(chrom1_id).name(),
+                      _header->chromosomes.at(chrom2_id).name(), wanted_resolution, wanted_unit));
     }
   }
 
-  // Index of normalization vectors
-  nEntries = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nEntries; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    const auto foundChrom = _fs->read_as_unsigned<std::int32_t>();
-    const auto foundUnit = readMatrixUnit();
-
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    const auto filePosition = _fs->read<std::int64_t>();
-    const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
-                                           : static_cast<std::int64_t>(_fs->read<std::int32_t>());
-
-    const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
-                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
-    if (store1) {
-      const auto numBins = static_cast<std::size_t>(
-          (metadata.chrom1.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights1 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
-      _fs->seekg(currentPos);
-    }
-
-    const auto store2 = !*weights2 && foundChrom == chrom2_id && foundNorm == wanted_norm &&
-                        foundUnit == wanted_unit && foundResolution == wanted_resolution;
-    if (store2) {
-      const auto numBins = static_cast<std::size_t>(
-          (metadata.chrom2.size() + wanted_resolution - 1) / wanted_resolution);
-      const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights2 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
-      _fs->seekg(currentPos);
-    }
-  }
+  read_footer_norm(chrom1_id, chrom2_id, wanted_norm, wanted_unit, wanted_resolution,
+                   metadata.chrom1, metadata.chrom2, weights1, weights2);
 
   if (!*weights1 && !*weights2) {
     throw std::runtime_error(
@@ -533,6 +577,37 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
 
   return {std::move(index), std::move(metadata), std::move(expectedValues), std::move(weights1),
           std::move(weights2)};
+}
+
+inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
+    MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  phmap::flat_hash_set<balancing::Method> methods{};
+  _fs->seekg(masterOffset());
+  [[maybe_unused]] const auto offset = read_footer_file_offset("1_1");
+  assert(offset != -1);
+
+  std::ignore = read_footer_expected_values(1, 1, matrix_type, balancing::Method::NONE(),
+                                            wanted_unit, wanted_resolution);
+  if (_fs->tellg() == _fs->size()) {
+    return {};
+  }
+
+  const auto nExpectedValues = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nExpectedValues; i++) {
+    const auto foundNorm = readNormalizationMethod();
+    methods.emplace(foundNorm);
+    [[maybe_unused]] const auto foundUnit = readMatrixUnit();
+    [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+
+    [[maybe_unused]] const auto nValues = readNValues();
+
+    discardExpectedVector(nValues);
+    discardNormalizationFactors(1);
+  }
+
+  std::vector<balancing::Method> methods_{methods.size()};
+  std::copy(methods.begin(), methods.end(), methods_.begin());
+  return methods_;
 }
 
 }  // namespace hictk::hic::internal

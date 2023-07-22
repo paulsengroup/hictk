@@ -13,6 +13,7 @@
 #include <queue>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
@@ -123,13 +124,13 @@ class BlockCache {
 
 class WeightCache {
   using Value = std::shared_ptr<balancing::Weights>;
-  phmap::flat_hash_map<std::pair<std::uint32_t, NormalizationMethod>, Value> _weights{};
+  phmap::flat_hash_map<std::pair<std::uint32_t, balancing::Method>, Value> _weights{};
 
  public:
   WeightCache() = default;
 
-  [[nodiscard]] auto find_or_emplace(std::uint32_t chrom_id, NormalizationMethod norm) -> Value;
-  [[nodiscard]] auto find_or_emplace(const Chromosome& chrom, NormalizationMethod norm) -> Value;
+  [[nodiscard]] auto find_or_emplace(std::uint32_t chrom_id, balancing::Method norm) -> Value;
+  [[nodiscard]] auto find_or_emplace(const Chromosome& chrom, balancing::Method norm) -> Value;
 
   void clear() noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

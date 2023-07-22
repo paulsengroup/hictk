@@ -101,7 +101,7 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
   SECTION("join genomic coords") {
-    auto hf = hic::HiCFile(path.string(), 2'500'000);
+    auto hf = hic::File(path.string(), 2'500'000);
     auto sel = hf.fetch("chr2L", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), hf.bins_ptr());
@@ -114,8 +114,8 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   }
 
   SECTION("coarsen") {
-    const auto hf1 = hic::HiCFile(path.string(), 500'000);
-    const auto hf2 = hic::HiCFile(path.string(), 2'500'000);
+    const auto hf1 = hic::File(path.string(), 500'000);
+    const auto hf2 = hic::File(path.string(), 2'500'000);
 
     auto sel = hf1.fetch("chr2R");
     auto sel1 =

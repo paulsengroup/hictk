@@ -23,6 +23,10 @@ class CoolerFileValidator : public CLI::Validator {
         if (hictk::cooler::utils::is_multires_file(uri)) {
           return "URI points to a .mcool file: " + uri;
         }
+        const auto path = cooler::parse_cooler_uri(uri).file_path;
+        if (!std::filesystem::exists(path)) {
+          return "No such file: " + path;
+        }
         return "Not a valid Cooler: " + uri;
       }
       return "";
@@ -34,6 +38,10 @@ class MultiresCoolerFileValidator : public CLI::Validator {
  public:
   inline MultiresCoolerFileValidator() : Validator("Multires-cooler") {
     func_ = [](std::string& uri) -> std::string {
+      const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
       if (!hictk::cooler::utils::is_multires_file(uri)) {
         return "Not a valid multi-resolution cooler: " + uri;
       }
@@ -47,6 +55,9 @@ class HiCFileValidator : public CLI::Validator {
   inline HiCFileValidator() : Validator("HiC") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
       if (!hictk::hic::utils::is_hic_file(path)) {
         return "Not a valid .hic file: " + path;
       }
@@ -149,22 +160,6 @@ class Formatter : public CLI::Formatter {
             CLI::ignore_case);
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-    inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
-            std::map<std::string, hictk::hic::NormalizationMethod>{
-                    {"NONE", hictk::hic::NormalizationMethod::NONE},
-                    {"VC", hictk::hic::NormalizationMethod::VC},
-                    {"VC_SQRT", hictk::hic::NormalizationMethod::VC_SQRT},
-                    {"KR", hictk::hic::NormalizationMethod::KR},
-                    {"SCALE", hictk::hic::NormalizationMethod::SCALE},
-                    {"INTER_VC", hictk::hic::NormalizationMethod::INTER_VC},
-                    {"INTER_KR", hictk::hic::NormalizationMethod::INTER_KR},
-                    {"INTER_SCALE", hictk::hic::NormalizationMethod::INTER_SCALE},
-                    {"GW_VC", hictk::hic::NormalizationMethod::GW_VC},
-                    {"GW_KR", hictk::hic::NormalizationMethod::GW_KR},
-                    {"GW_SCALE", hictk::hic::NormalizationMethod::GW_SCALE}},
-            CLI::ignore_case);
-
-// NOLINTNEXTLINE(cert-err58-cpp)
     inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
             std::map<std::string, hictk::hic::MatrixUnit>{
                     {"BP", hictk::hic::MatrixUnit::BP},
@@ -256,10 +251,10 @@ class Cli {
     return {cooler::File::open(p.string()).bin_size()};
   }
   if (format == "mcool") {
-    return cooler::utils::list_resolutions(p);
+    return cooler::utils::list_resolutions(p, true);
   }
   assert(format == "hic");
-  return hic::utils::list_resolutions(p);
+  return hic::utils::list_resolutions(p, true);
 }
 
 }  // namespace hictk::tools

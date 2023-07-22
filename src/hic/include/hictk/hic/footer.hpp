@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
@@ -18,7 +19,7 @@ namespace hictk::hic::internal {
 struct HiCFooterMetadata {
   std::string url{};
   MatrixType matrix_type{MatrixType::observed};
-  NormalizationMethod normalization{NormalizationMethod::NONE};
+  balancing::Method normalization{balancing::Method::NONE()};
   MatrixUnit unit{MatrixUnit::BP};
   std::uint32_t resolution{std::numeric_limits<std::uint32_t>::max()};
   Chromosome chrom1{};
@@ -53,7 +54,7 @@ class HiCFooter {
 
   [[nodiscard]] constexpr const std::string &url() const noexcept;
   [[nodiscard]] constexpr MatrixType matrix_type() const noexcept;
-  [[nodiscard]] constexpr NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] constexpr MatrixUnit unit() const noexcept;
   [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   [[nodiscard]] constexpr const Chromosome &chrom1() const noexcept;
