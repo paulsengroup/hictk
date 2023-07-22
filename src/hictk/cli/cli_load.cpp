@@ -78,6 +78,14 @@ void Cli::make_load_subcommand() {
       c.assume_sorted,
       "Assume input files are already sorted.")
       ->capture_default_str();
+
+  sc.add_option(
+      "-v,--verbosity",
+      c.verbosity,
+      "Set verbosity of output to the console.")
+      ->check(CLI::Range(1, 4))
+      ->capture_default_str();
+
   sc.add_option(
       "--batch-size",
       c.batch_size,

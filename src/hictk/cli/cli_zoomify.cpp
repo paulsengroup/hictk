@@ -53,6 +53,13 @@ void Cli::make_zoomify_subcommand() {
       c.copy_base_resolution,
       "Copy the base resolution to the output file.");
 
+  sc.add_option(
+      "-v,--verbosity",
+      c.verbosity,
+      "Set verbosity of output to the console.")
+      ->check(CLI::Range(1, 4))
+      ->capture_default_str();
+
   // clang-format on
 
   _config = std::monostate{};

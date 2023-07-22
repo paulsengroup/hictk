@@ -53,6 +53,13 @@ void Cli::make_merge_subcommand() {
       "Number of pixels to store in memory before writing to disk.")
       ->capture_default_str();
 
+  sc.add_option(
+      "-v,--verbosity",
+      c.verbosity,
+      "Set verbosity of output to the console.")
+      ->check(CLI::Range(1, 4))
+      ->capture_default_str();
+
   // clang-format on
 
   _config = std::monostate{};
