@@ -17,7 +17,7 @@
 
 namespace hictk::tools {
 
-static bool missing_norm_or_interactions(const std::exception& e, hic::NormalizationMethod norm) {
+static bool missing_norm_or_interactions(const std::exception& e, balancing::Method norm) {
   const std::string_view msg{e.what()};
 
   const auto missing_interactions =
@@ -30,7 +30,7 @@ static bool missing_norm_or_interactions(const std::exception& e, hic::Normaliza
   return missing_interactions || missing_norm_vect;
 }
 
-bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
+bool check_if_norm_exists(hic::HiCFile& f, balancing::Method norm) {
   return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
     try {
       if (!chrom.is_all()) {
@@ -46,7 +46,7 @@ bool check_if_norm_exists(hic::HiCFile& f, hic::NormalizationMethod norm) {
   });
 }
 
-static std::vector<double> read_weights_or_throw(hic::HiCFile& f, hic::NormalizationMethod norm,
+static std::vector<double> read_weights_or_throw(hic::HiCFile& f, balancing::Method norm,
                                                  const Chromosome& chrom,
                                                  std::size_t expected_length) {
   std::vector<double> weights_{};
@@ -68,7 +68,7 @@ static std::vector<double> read_weights_or_throw(hic::HiCFile& f, hic::Normaliza
 }
 
 static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
-                                        hic::NormalizationMethod norm) {
+                                        balancing::Method norm) {
   std::vector<double> weights{};
   weights.reserve(bins.size());
   std::size_t missing_norms = 0;
@@ -94,9 +94,9 @@ static std::vector<double> read_weights(hic::HiCFile& f, const BinTable& bins,
 }
 
 template <typename CoolerFile>
-static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, hic::NormalizationMethod norm,
+static void copy_weights(hic::HiCFile& hf, CoolerFile& cf, balancing::Method norm,
                          bool fail_if_missing) {
-  if (norm == hic::NormalizationMethod::NONE) {
+  if (norm == balancing::Method::NONE()) {
     return;
   }
   const auto dset_name = fmt::to_string(norm);
@@ -243,7 +243,7 @@ static std::size_t append_pixels(cooler::File& clr,
 template <typename N>
 static void convert_resolution_multi_threaded(
     hic::HiCFile& hf, cooler::File&& clr,
-    const std::vector<hic::NormalizationMethod>& normalization_methods,
+    const std::vector<balancing::Method>& normalization_methods,
     bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
 
@@ -275,7 +275,7 @@ static void convert_resolution_multi_threaded(
         FMT_STRING("exception raised while writing interactions to output file: {}"), e.what()));
   }
 
-  for (const auto norm : normalization_methods) {
+  for (const auto& norm : normalization_methods) {
     copy_weights(hf, clr, norm, fail_if_norm_not_found);
   }
 

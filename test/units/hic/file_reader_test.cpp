@@ -82,10 +82,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed NONE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::observed,
-                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
@@ -96,10 +96,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed VC BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::VC, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::VC(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::VC);
+    CHECK(f.normalization() == "VC");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
@@ -110,10 +110,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed VC_SQRT BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::VC_SQRT, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::VC_SQRT);
+    CHECK(f.normalization() == hictk::balancing::Method::VC_SQRT());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
@@ -124,10 +124,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed KR BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::KR, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::KR(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::KR);
+    CHECK(f.normalization() == hictk::balancing::Method::KR());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
@@ -138,10 +138,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed SCALE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::SCALE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::SCALE);
+    CHECK(f.normalization() == hictk::balancing::Method::SCALE());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
@@ -151,11 +151,11 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::oe, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 5000);
+    const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::oe,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::oe);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
@@ -172,10 +172,10 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("expected NONE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::expected,
-                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::expected);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340697);
@@ -206,10 +206,10 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("observed NONE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::observed,
-                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);
@@ -220,10 +220,10 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("observed VC BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::VC, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::VC(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::VC);
+    CHECK(f.normalization() == hictk::balancing::Method::VC());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
@@ -234,10 +234,10 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("observed VC_SQRT BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::VC_SQRT, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::VC_SQRT);
+    CHECK(f.normalization() == hictk::balancing::Method::VC_SQRT());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
@@ -248,10 +248,10 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("observed SCALE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2R.id(), MatrixType::observed,
-                                 NormalizationMethod::SCALE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::observed);
-    CHECK(f.normalization() == NormalizationMethod::SCALE);
+    CHECK(f.normalization() == hictk::balancing::Method::SCALE());
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
@@ -261,11 +261,11 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::oe, NormalizationMethod::NONE,
-                                 MatrixUnit::BP, 5000);
+    const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::oe,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::oe);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);
@@ -282,10 +282,10 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("expected NONE BP 5000") {
     const auto f = s.read_footer(chr2L.id(), chr2L.id(), MatrixType::expected,
-                                 NormalizationMethod::NONE, MatrixUnit::BP, 5000);
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000);
 
     CHECK(f.matrix_type() == MatrixType::expected);
-    CHECK(f.normalization() == NormalizationMethod::NONE);
+    CHECK(f.normalization() == "NONE");
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 340696);

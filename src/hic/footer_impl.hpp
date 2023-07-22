@@ -46,7 +46,7 @@ constexpr HiCFooterMetadata &HiCFooter::metadata() noexcept { return _metadata; 
 inline const Index &HiCFooter::index() const noexcept { return _index; }
 constexpr const std::string &HiCFooter::url() const noexcept { return metadata().url; }
 constexpr MatrixType HiCFooter::matrix_type() const noexcept { return metadata().matrix_type; }
-constexpr NormalizationMethod HiCFooter::normalization() const noexcept {
+inline balancing::Method HiCFooter::normalization() const noexcept {
   return metadata().normalization;
 }
 constexpr MatrixUnit HiCFooter::unit() const noexcept { return metadata().unit; }
@@ -74,7 +74,7 @@ constexpr std::vector<double> &HiCFooter::expectedValues() noexcept { return _ex
 
 inline std::size_t std::hash<hictk::hic::internal::HiCFooterMetadata>::operator()(
     hictk::hic::internal::HiCFooterMetadata const &m) const noexcept {
-  return hictk::internal::hash_combine(0, m.url, m.matrix_type, m.normalization, m.unit,
+  return hictk::internal::hash_combine(0, m.url, m.matrix_type, m.normalization.to_string(), m.unit,
                                        m.resolution, m.chrom1, m.chrom2);
 }
 

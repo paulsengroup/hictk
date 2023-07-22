@@ -85,12 +85,12 @@ static void compareContactRecord(const hictk::Pixel<N>& r1, const hictk::ThinPix
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector accessors", "[hic][short]") {
   const auto sel = HiCFile(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP)
-                       .fetch("chr2L", NormalizationMethod::NONE);
+                       .fetch("chr2L", hictk::balancing::Method::NONE());
 
   CHECK(sel.chrom1().name() == "chr2L");
   CHECK(sel.chrom2().name() == "chr2L");
   CHECK(sel.matrix_type() == MatrixType::observed);
-  CHECK(sel.normalization() == NormalizationMethod::NONE);
+  CHECK(sel.normalization() == hictk::balancing::Method::NONE());
   CHECK(sel.unit() == MatrixUnit::BP);
   CHECK(sel.resolution() == 2500000);
 
@@ -162,7 +162,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == expected_size);
 
@@ -182,7 +182,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == expected_size);
 
@@ -203,7 +203,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
   SECTION("cover type 2 interactions") {
     auto sel = HiCFile(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP)
-                   .fetch("chr2L", "chr2R", NormalizationMethod::NONE);
+                   .fetch("chr2L", "chr2R", hictk::balancing::Method::NONE());
     const auto buffer = sel.read_all<std::int32_t>();
     REQUIRE(buffer.size() == 110);
     CHECK(sumCounts<std::int32_t>(buffer) == 1483112);
@@ -216,15 +216,16 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     const std::uint32_t resolution = 10'000;
     SECTION("single pixel") {
       auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L:100,000-100,001", NormalizationMethod::NONE);
+                     .fetch("chr2L:100,000-100,001", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 1);
       compareContactRecord(buffer.front(), hictk::ThinPixel<float>{100000, 100000, 13895.0F});
     }
 
     SECTION("upper-triangle") {
-      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L:123,456-200,000", "chr2L:0-200,000", NormalizationMethod::NONE);
+      auto sel =
+          HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+              .fetch("chr2L:123,456-200,000", "chr2L:0-200,000", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 36);
       CHECK(sumCounts<std::int32_t>(buffer) == 99946);
@@ -236,8 +237,9 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     }
 
     SECTION("lower-triangle") {
-      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L:0-200,000", "chr2L:123,456-200,000", NormalizationMethod::NONE);
+      auto sel =
+          HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+              .fetch("chr2L:0-200,000", "chr2L:123,456-200,000", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 132);
       CHECK(sumCounts<std::int32_t>(buffer) == 124561);
@@ -248,8 +250,9 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     }
 
     SECTION("inter-chromosomal") {
-      auto sel = HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L:123,456-200,000", "chr4:0-200,000", NormalizationMethod::NONE);
+      auto sel =
+          HiCFile(pathV9, resolution, MatrixType::observed, MatrixUnit::BP)
+              .fetch("chr2L:123,456-200,000", "chr4:0-200,000", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<std::int32_t>();
       REQUIRE(buffer.size() == 57);
       CHECK(sumCounts<std::int32_t>(buffer) == 74);
@@ -261,14 +264,14 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
   SECTION("invalid") {
     SECTION("invalid chromosome") {
       const HiCFile hic(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP);
-      CHECK_THROWS(hic.fetch("chr123", NormalizationMethod::NONE));
+      CHECK_THROWS(hic.fetch("chr123", hictk::balancing::Method::NONE()));
     }
     SECTION("invalid unit") {
       CHECK_THROWS(HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::FRAG));
     }
     SECTION("expected + norm") {
       const HiCFile hic(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP);
-      CHECK_THROWS(hic.fetch("chr2L", NormalizationMethod::VC));
+      CHECK_THROWS(hic.fetch("chr2L", hictk::balancing::Method::VC()));
     }
   }
 }
@@ -280,14 +283,14 @@ TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 20391277.41514;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::VC);
+                     .fetch("chr2L", hictk::balancing::Method::VC());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
     }
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::VC);
+                     .fetch("chr2L", hictk::balancing::Method::VC());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -298,7 +301,7 @@ TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 96690.056244753;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::VC);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::VC());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -306,7 +309,7 @@ TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
 
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::observed, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::VC);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::VC());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -321,14 +324,14 @@ TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 18314748.068024;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::expected, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::NONE);
+                     .fetch("chr2L", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
     }
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::NONE);
+                     .fetch("chr2L", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -339,7 +342,7 @@ TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 12610.80619812;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::expected, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -347,7 +350,7 @@ TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
 
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::expected, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -362,14 +365,14 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 2785506.2274201;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::oe, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::NONE);
+                     .fetch("chr2L", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
     }
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::oe, MatrixUnit::BP)
-                     .fetch("chr2L", NormalizationMethod::NONE);
+                     .fetch("chr2L", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -380,7 +383,7 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
     constexpr double expected_sum = 317520.00459671;
     SECTION("v8") {
       auto sel = HiCFile(pathV8, 10'000, MatrixType::oe, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -388,7 +391,7 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
 
     SECTION("v9") {
       auto sel = HiCFile(pathV9, 10'000, MatrixType::oe, MatrixUnit::BP)
-                     .fetch("chr2L", "chr4", NormalizationMethod::NONE);
+                     .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
       REQUIRE(buffer.size() == expected_size);
       CHECK_THAT(sumCounts<double>(buffer), Catch::Matchers::WithinRel(expected_sum, 1.0e-6));
@@ -403,7 +406,7 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
 
     CHECK(sel.resolution() == 100'000);
     CHECK(sel.matrix_type() == MatrixType::observed);
-    CHECK(sel.normalization() == NormalizationMethod::NONE);
+    CHECK(sel.normalization() == hictk::balancing::Method::NONE());
     CHECK(sel.unit() == MatrixUnit::BP);
     CHECK(sel.bins().size() == 1380);
   }

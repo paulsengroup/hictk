@@ -160,22 +160,6 @@ class Formatter : public CLI::Formatter {
             CLI::ignore_case);
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-    inline const auto ParseHiCNormalization = CLI::CheckedTransformer(
-            std::map<std::string, hictk::hic::NormalizationMethod>{
-                    {"NONE", hictk::hic::NormalizationMethod::NONE},
-                    {"VC", hictk::hic::NormalizationMethod::VC},
-                    {"VC_SQRT", hictk::hic::NormalizationMethod::VC_SQRT},
-                    {"KR", hictk::hic::NormalizationMethod::KR},
-                    {"SCALE", hictk::hic::NormalizationMethod::SCALE},
-                    {"INTER_VC", hictk::hic::NormalizationMethod::INTER_VC},
-                    {"INTER_KR", hictk::hic::NormalizationMethod::INTER_KR},
-                    {"INTER_SCALE", hictk::hic::NormalizationMethod::INTER_SCALE},
-                    {"GW_VC", hictk::hic::NormalizationMethod::GW_VC},
-                    {"GW_KR", hictk::hic::NormalizationMethod::GW_KR},
-                    {"GW_SCALE", hictk::hic::NormalizationMethod::GW_SCALE}},
-            CLI::ignore_case);
-
-// NOLINTNEXTLINE(cert-err58-cpp)
     inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
             std::map<std::string, hictk::hic::MatrixUnit>{
                     {"BP", hictk::hic::MatrixUnit::BP},

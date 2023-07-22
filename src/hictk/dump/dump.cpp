@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "./common.hpp"
+#include "hictk/balancing/methods.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/tools/config.hpp"
@@ -43,7 +44,7 @@ void dump_pixels(const cooler::File& f, std::string_view range1, std::string_vie
 
 void dump_pixels(hic::HiCFile& f, std::string_view range1, std::string_view range2,
                  std::string_view normalization, bool join, bool sorted) {
-  auto norm = hic::ParseNormStr(std::string{normalization});
+  auto norm = balancing::Method{std::string{normalization}};
   if (range1 == "all") {
     assert(range2 == "all");
     f.optimize_cache_size_for_iteration();

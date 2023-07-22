@@ -10,6 +10,7 @@
 #include <queue>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/cache.hpp"
@@ -70,7 +71,7 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
   [[nodiscard]] MatrixType matrix_type() const noexcept;
-  [[nodiscard]] NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
@@ -181,7 +182,7 @@ class PixelSelectorAll {
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
   [[nodiscard]] MatrixType matrix_type() const noexcept;
-  [[nodiscard]] NormalizationMethod normalization() const noexcept;
+  [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;

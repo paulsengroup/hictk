@@ -85,7 +85,7 @@ TEST_CASE("HiC: footer cache", "[hic][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: fetch", "[hic][short]") {
-  constexpr auto norm = NormalizationMethod::NONE;
+  const auto norm = hictk::balancing::Method::NONE();
   const HiCFile f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
 
   REQUIRE(f.chromosomes().size() == 9);
@@ -117,7 +117,7 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
   SECTION("malformed") {
     CHECK_THROWS(f.fetch(chrom2, chrom1, norm));  // NOLINT
     CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
-                     .fetch(chrom1, NormalizationMethod::VC));
+                     .fetch(chrom1, hictk::balancing::Method::VC()));
 
     // Matrix does not have contacts for fragments
     CHECK_THROWS(HiCFile(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG)

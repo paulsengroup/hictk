@@ -96,7 +96,7 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
   assert(is_inter() || bin1 <= bin2);
 
   const auto skipNormalization =
-      normalization() == NormalizationMethod::NONE || matrix_type() == MatrixType::expected;
+      normalization() == balancing::Method::NONE() || matrix_type() == MatrixType::expected;
 
   if (!skipNormalization) {
     assert(bin1 < weights1.size());
@@ -145,7 +145,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
-inline NormalizationMethod PixelSelector::normalization() const noexcept {
+inline balancing::Method PixelSelector::normalization() const noexcept {
   return metadata().normalization;
 }
 inline MatrixUnit PixelSelector::unit() const noexcept { return _reader.index().unit(); }
@@ -568,7 +568,7 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
 inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
   return _selectors.front().matrix_type();
 }
-inline NormalizationMethod PixelSelectorAll::normalization() const noexcept {
+inline balancing::Method PixelSelectorAll::normalization() const noexcept {
   return _selectors.front().normalization();
 }
 inline MatrixUnit PixelSelectorAll::unit() const noexcept { return _selectors.front().unit(); }

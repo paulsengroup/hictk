@@ -13,7 +13,7 @@
 
 namespace hictk::hic::internal {
 
-inline auto WeightCache::find_or_emplace(std::uint32_t chrom_id, NormalizationMethod norm)
+inline auto WeightCache::find_or_emplace(std::uint32_t chrom_id, balancing::Method norm)
     -> Value {
   auto key = std::make_pair(chrom_id, norm);
   auto it = _weights.find(key);
@@ -24,7 +24,7 @@ inline auto WeightCache::find_or_emplace(std::uint32_t chrom_id, NormalizationMe
   return _weights.emplace(key, std::make_shared<balancing::Weights>()).first->second;
 }
 
-inline auto WeightCache::find_or_emplace(const Chromosome &chrom, NormalizationMethod norm)
+inline auto WeightCache::find_or_emplace(const Chromosome &chrom, balancing::Method norm)
     -> Value {
   return find_or_emplace(chrom.id(), norm);
 }

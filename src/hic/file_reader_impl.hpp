@@ -131,10 +131,10 @@ inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream &fs, std:
   return ParseMatrixTypeStr(buff);
 }
 
-inline NormalizationMethod HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
-                                                                  std::string &buff) {
+inline balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
+                                                                std::string &buff) {
   fs.getline(buff, '\0');
-  return ParseNormStr(buff);
+  return balancing::Method{buff};
 }
 
 inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
@@ -146,7 +146,7 @@ inline MatrixType HiCFileReader::readMatrixType() {
   return HiCFileReader::readMatrixType(*_fs, _strbuff);
 }
 
-inline NormalizationMethod HiCFileReader::readNormalizationMethod() {
+inline balancing::Method HiCFileReader::readNormalizationMethod() {
   return HiCFileReader::readNormalizationMethod(*_fs, _strbuff);
 }
 
@@ -377,7 +377,7 @@ inline std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key)
 
 inline std::vector<double> HiCFileReader::read_footer_expected_values(
     std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
-    NormalizationMethod wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+    balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   std::vector<double> expectedValues{};
   auto nExpectedValues = _fs->read<std::int32_t>();
   for (std::int32_t i = 0; i < nExpectedValues; ++i) {
@@ -386,9 +386,9 @@ inline std::vector<double> HiCFileReader::read_footer_expected_values(
     const auto nValues = readNValues();
 
     using MT = MatrixType;
-    using NM = NormalizationMethod;
+    using NM = balancing::Method;
     bool store = chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-                 wanted_norm == NM::NONE && foundUnit == wanted_unit &&
+                 wanted_norm == NM::NONE() && foundUnit == wanted_unit &&
                  foundResolution == wanted_resolution;
 
     if (store) {
@@ -406,7 +406,7 @@ inline std::vector<double> HiCFileReader::read_footer_expected_values(
 
 inline std::vector<double> HiCFileReader::read_footer_expected_values_norm(
     std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
-    NormalizationMethod wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+    balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (_fs->tellg() == _fs->size()) {
     return {};
   }
@@ -438,7 +438,7 @@ inline std::vector<double> HiCFileReader::read_footer_expected_values_norm(
 }
 
 inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                            NormalizationMethod wanted_norm, MatrixUnit wanted_unit,
+                                            balancing::Method wanted_norm, MatrixUnit wanted_unit,
                                             std::uint32_t wanted_resolution,
                                             const Chromosome &chrom1, const Chromosome &chrom2,
                                             std::shared_ptr<balancing::Weights> &weights1,
@@ -486,7 +486,7 @@ inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32
 }
 
 inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                            MatrixType matrix_type, NormalizationMethod wanted_norm,
+                                            MatrixType matrix_type, balancing::Method wanted_norm,
                                             MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
                                             std::shared_ptr<balancing::Weights> weights1,
                                             std::shared_ptr<balancing::Weights> weights2) {
@@ -495,7 +495,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
          _header->resolutions.end());
 
   using MT = MatrixType;
-  using NM = NormalizationMethod;
+  using NM = balancing::Method;
 
   // clang-format off
     HiCFooterMetadata metadata{
@@ -524,8 +524,8 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
                           metadata.resolution);
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 
-  if ((matrix_type == MT::observed && wanted_norm == NM::NONE) ||
-      ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE &&
+  if ((matrix_type == MT::observed && wanted_norm == NM::NONE()) ||
+      ((matrix_type == MT::oe || matrix_type == MT::expected) && wanted_norm == NM::NONE() &&
        chrom1_id != chrom2_id)) {
     // no need to read wanted_norm vector index
     return {std::move(index), std::move(metadata), {}, std::move(weights1), std::move(weights2)};
@@ -534,7 +534,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   auto expectedValues = read_footer_expected_values(chrom1_id, chrom2_id, matrix_type, wanted_norm,
                                                     wanted_unit, wanted_resolution);
   if (chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-      wanted_norm == NM::NONE) {
+      wanted_norm == NM::NONE()) {
     if (expectedValues.empty()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("unable to find expected values for {}:{} at {} ({})"),
@@ -548,7 +548,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   expectedValues = read_footer_expected_values_norm(chrom1_id, chrom2_id, matrix_type, wanted_norm,
                                                     wanted_unit, wanted_resolution);
   if (chrom1_id == chrom2_id && (matrix_type == MT::oe || matrix_type == MT::expected) &&
-      wanted_norm != NM::NONE) {
+      wanted_norm != NM::NONE()) {
     if (expectedValues.empty()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("unable to find normalization factors for {}:{} at "

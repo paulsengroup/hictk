@@ -87,7 +87,7 @@ inline std::uint32_t HiCFile::resolution() const noexcept { return _bins->bin_si
 
 inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
     const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
-    NormalizationMethod norm, MatrixUnit unit, std::uint32_t resolution) const {
+    balancing::Method norm, MatrixUnit unit, std::uint32_t resolution) const {
   const internal::HiCFooterMetadata metadata{url(),      matrix_type, norm,  unit,
                                              resolution, chrom1,      chrom2};
   auto it = _footers.find(metadata);
@@ -104,7 +104,7 @@ inline std::shared_ptr<const internal::HiCFooter> HiCFile::get_footer(
   return *node;
 }
 
-inline PixelSelectorAll HiCFile::fetch(NormalizationMethod norm) const {
+inline PixelSelectorAll HiCFile::fetch(balancing::Method norm) const {
   std::vector<PixelSelector> selectors;
 
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
@@ -124,7 +124,7 @@ inline PixelSelectorAll HiCFile::fetch(NormalizationMethod norm) const {
   return PixelSelectorAll{std::move(selectors)};
 }
 
-inline PixelSelector HiCFile::fetch(std::string_view query, NormalizationMethod norm,
+inline PixelSelector HiCFile::fetch(std::string_view query, balancing::Method norm,
                                     QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(chromosomes(), query)
@@ -134,12 +134,12 @@ inline PixelSelector HiCFile::fetch(std::string_view query, NormalizationMethod 
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view chrom_name, std::uint32_t start,
-                                    std::uint32_t end, NormalizationMethod norm) const {
+                                    std::uint32_t end, balancing::Method norm) const {
   return fetch(chrom_name, start, end, chrom_name, start, end, norm);
 }
 
 inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view range2,
-                                    NormalizationMethod norm, QUERY_TYPE query_type) const {
+                                    balancing::Method norm, QUERY_TYPE query_type) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
                        ? GenomicInterval::parse_bed(chromosomes(), range1)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
@@ -154,7 +154,7 @@ inline PixelSelector HiCFile::fetch(std::string_view range1, std::string_view ra
 inline PixelSelector HiCFile::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm) const {
+                                    balancing::Method norm) const {
   return fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name), start2,
                end2, norm);
 }
@@ -162,13 +162,13 @@ inline PixelSelector HiCFile::fetch(std::string_view chrom1_name, std::uint32_t 
 inline PixelSelector HiCFile::fetch(const Chromosome& chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome& chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    NormalizationMethod norm) const {
+                                    balancing::Method norm) const {
   if (chrom1 > chrom2) {
     throw std::runtime_error(
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
   }
 
-  if (_type == MatrixType::expected && norm != NormalizationMethod::NONE) {
+  if (_type == MatrixType::expected && norm != balancing::Method::NONE()) {
     throw std::logic_error(fmt::format(
         FMT_STRING("matrix type {} is incompatible with normalization method {}"), _type, norm));
   }
