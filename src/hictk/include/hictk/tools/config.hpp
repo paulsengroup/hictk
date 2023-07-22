@@ -26,7 +26,6 @@ struct ConvertConfig {
   std::string genome{};
 
   std::vector<balancing::Method> normalization_methods{};
-  std::vector<std::string> norm_dset_names{};
   bool fail_if_normalization_method_is_not_avaliable{false};
 
   std::uint8_t gzip_compression_lvl{6};

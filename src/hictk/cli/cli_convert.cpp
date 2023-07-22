@@ -62,7 +62,7 @@ void Cli::make_convert_subcommand() {
       "--normalization-methods",
       c.normalization_methods,
       "Name of one or more normalization methods to be copied.\n"
-      "By default vectors for all known normalization methods are copied.\n")
+      "By default, vectors for all known normalization methods are copied.\n")
       ->default_str("ALL");
   sc.add_flag(
       "--fail-if-norm-not-found",
@@ -210,13 +210,6 @@ void Cli::transform_args_convert_subcommand() {
 
   if (c.genome.empty()) {
     c.genome = infer_assembly(c.path_to_input, c.resolutions.back(), c.input_format);
-  }
-
-  if (c.norm_dset_names.empty()) {
-    c.norm_dset_names.resize(c.normalization_methods.size());
-    std::transform(c.normalization_methods.begin(), c.normalization_methods.end(),
-                   c.norm_dset_names.begin(),
-                   [](const auto& norm) { return std::string{norm.to_string()}; });
   }
 
   // in spdlog, high numbers correspond to low log levels

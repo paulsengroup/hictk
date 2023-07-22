@@ -241,11 +241,14 @@ static std::size_t append_pixels(cooler::File& clr,
 }
 
 template <typename N>
-static void convert_resolution_multi_threaded(
-    hic::HiCFile& hf, cooler::File&& clr,
-    const std::vector<balancing::Method>& normalization_methods,
-    bool fail_if_norm_not_found) {
+static void convert_resolution_multi_threaded(hic::HiCFile& hf, cooler::File&& clr,
+                                              std::vector<balancing::Method> normalization_methods,
+                                              bool fail_if_norm_not_found) {
   const auto t0 = std::chrono::steady_clock::now();
+
+  if (normalization_methods.empty()) {
+    normalization_methods = hf.avail_normalizations();
+  }
 
   SPDLOG_INFO(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(), hf.resolution());
 
