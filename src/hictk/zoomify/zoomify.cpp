@@ -78,6 +78,7 @@ void zoomify_many(std::string_view in_uri, std::string_view out_path,
 }
 
 int zoomify_subcmd(const ZoomifyConfig& c) {
+  const auto t0 = std::chrono::system_clock::now();
   const auto output_is_multires = c.copy_base_resolution || c.resolutions.size() > 2;
 
   if (output_is_multires) {
@@ -85,6 +86,12 @@ int zoomify_subcmd(const ZoomifyConfig& c) {
   } else {
     zoomify_once(c.input_uri, c.output_path, c.resolutions.back(), c.force);
   }
+  const auto t1 = std::chrono::system_clock::now();
+  const auto delta =
+      static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+      1000.0;
+  SPDLOG_INFO(FMT_STRING("DONE! Processed {} resolution(s) in {:.2f}s!"),
+              c.resolutions.size() - !output_is_multires, delta);
 
   return 0;
 }
