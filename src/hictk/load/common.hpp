@@ -50,6 +50,7 @@ template <typename N>
   if (pixel.bin1_id > pixel.bin2_id) {
     std::swap(pixel.bin1_id, pixel.bin2_id);
   }
+  return pixel;
 }
 
 [[nodiscard]] inline bool line_is_header(std::string_view line) {
