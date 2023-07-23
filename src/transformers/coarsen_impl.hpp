@@ -151,8 +151,9 @@ inline auto CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass1() -> ColumnMer
     // the same coarse bin
     const PixelCoordinates src_coords{_src_bins->at(_pixel_it->bin1_id),
                                       _src_bins->at(_pixel_it->bin2_id)};
-    const PixelCoordinates dest_coords{_dest_bins->at(src_coords.bin1.interval()).first,
-                                       _dest_bins->at(src_coords.bin2.interval()).first};
+    const PixelCoordinates dest_coords{
+        _dest_bins->at(src_coords.bin1.chrom(), src_coords.bin1.start()),
+        _dest_bins->at(src_coords.bin2.chrom(), src_coords.bin2.start())};
 
     if (const auto id = src_coords.bin1.rel_id();
         id < _bin1_id_chunk_start || id >= _bin1_id_chunk_end) {

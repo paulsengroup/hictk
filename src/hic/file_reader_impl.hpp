@@ -195,9 +195,9 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
     const auto foundUnit = readMatrixUnit();
     std::ignore = _fs->read<std::int32_t>();  // oldIndex
     const auto sumCount = _fs->read<float>();
-    std::ignore = _fs->read<float>();         // occupiedCellCount
-    std::ignore = _fs->read<float>();         // stdDev
-    std::ignore = _fs->read<float>();         // percent95
+    std::ignore = _fs->read<float>();  // occupiedCellCount
+    std::ignore = _fs->read<float>();  // stdDev
+    std::ignore = _fs->read<float>();  // percent95
 
     const auto foundResolution = static_cast<std::int64_t>(_fs->read<std::int32_t>());
     const auto blockBinCount = static_cast<std::size_t>(_fs->read<std::int32_t>());

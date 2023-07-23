@@ -202,10 +202,11 @@ inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
 inline Bin BinTable::at(std::uint64_t bin_id) const {
   // I tried benchmarking linear search as well as std::set (including third-party implementations).
   // Binary search and find on flat vectors are always faster for a reasonable number of chromosomes
-  // (e.g. 5-100). and have fairly similar performance, thus I decided to use binary search over
-  // linear search to avoid severe perf. degradation for genomes with many chromosomes (e.g. draft
-  // assemblies)
-  auto match = std::upper_bound(_num_bins_prefix_sum.begin(), _num_bins_prefix_sum.end(), bin_id);
+  // (e.g. 5-100) and have fairly similar performanc.
+  // Linear search is however better in practice because chromosomes are usually sorted by (approx.)
+  // size, with unplaced scaffolds etc. ending up last.
+  auto match = std::find_if(_num_bins_prefix_sum.begin(), _num_bins_prefix_sum.end(),
+                            [&](const auto n) { return n > bin_id; });
 
   if (match == _num_bins_prefix_sum.end()) {
     throw std::out_of_range(fmt::format(FMT_STRING("bin id {} not found: out of range"), bin_id));
