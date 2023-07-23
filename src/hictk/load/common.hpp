@@ -32,17 +32,24 @@ enum class Format { COO, BG2, VP, _4DN };
 template <typename N>
 [[nodiscard]] inline ThinPixel<N> parse_pixel(const BinTable& bins, std::string_view line,
                                               Format format) {
+  ThinPixel<N> pixel{};
   switch (format) {
     case Format::COO:
-      return ThinPixel<N>::from_coo(bins, line);
+      pixel = ThinPixel<N>::from_coo(bins, line);
+      break;
     case Format::BG2:
-      return Pixel<N>::from_bg2(bins, line).to_thin();
+      pixel = Pixel<N>::from_bg2(bins, line).to_thin();
+      break;
     case Format::VP:
-      return Pixel<N>::from_validpair(bins, line).to_thin();
+      pixel = Pixel<N>::from_validpair(bins, line).to_thin();
+      break;
     case Format::_4DN:
-      return Pixel<N>::from_4dn_pairs(bins, line).to_thin();
+      pixel = Pixel<N>::from_4dn_pairs(bins, line).to_thin();
+      break;
   }
-  HICTK_UNREACHABLE_CODE;
+  if (pixel.bin1_id > pixel.bin2_id) {
+    std::swap(pixel.bin1_id, pixel.bin2_id);
+  }
 }
 
 [[nodiscard]] inline bool line_is_header(std::string_view line) {
