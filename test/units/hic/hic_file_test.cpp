@@ -46,7 +46,7 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
 
   SECTION("invalid") {
     CHECK_THROWS(File(pathV8, std::numeric_limits<std::uint32_t>::max(), MatrixType::observed,
-                         MatrixUnit::BP));
+                      MatrixUnit::BP));
     CHECK_THROWS(File("non-existing-file", 1));
     CHECK_THROWS(File("https://localhost:non-existing-url", 1));
     CHECK_THROWS(File("test/CMakeLists.txt", 1));
@@ -121,7 +121,6 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
 
     // Matrix does not have contacts for fragments
     CHECK_THROWS(
-        File(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG)
-                     .fetch(chrom1, norm));
+        File(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG).fetch(chrom1, norm));
   }
 }

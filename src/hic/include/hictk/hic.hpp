@@ -37,13 +37,12 @@ class File {
  public:
   using QUERY_TYPE = GenomicInterval::Type;
   explicit File(std::string url_, std::uint32_t resolution_,
-                   MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
-                   std::uint64_t block_cache_capacity = 0);
-  File &open(std::string url_, std::uint32_t resolution_,
                 MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
                 std::uint64_t block_cache_capacity = 0);
+  File &open(std::string url_, std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
+             MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   File &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
-                MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
+             MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
   [[nodiscard]] const std::string &url() const noexcept;

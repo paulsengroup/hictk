@@ -18,8 +18,8 @@
 
 namespace hictk::hic {
 
-inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
-                        MatrixUnit unit_, std::uint64_t block_cache_capacity)
+inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
+                  std::uint64_t block_cache_capacity)
     : _fs(std::make_shared<internal::HiCFileReader>(std::move(url_))),
       _type(type_),
       _unit(unit_),
@@ -37,7 +37,7 @@ inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
 }
 
 inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
-                              MatrixUnit unit_, std::uint64_t block_cache_capacity) {
+                        MatrixUnit unit_, std::uint64_t block_cache_capacity) {
   if (_fs->url() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
     _block_cache->set_capacity(block_cache_capacity, false);
     return *this;
@@ -53,7 +53,7 @@ inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType 
 }
 
 inline File& File::open(std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
-                              std::uint64_t block_cache_capacity) {
+                        std::uint64_t block_cache_capacity) {
   return open(url(), resolution_, type_, unit_, block_cache_capacity);
 }
 
@@ -129,7 +129,7 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
 }
 
 inline PixelSelector File::fetch(std::string_view query, balancing::Method norm,
-                                    QUERY_TYPE query_type) const {
+                                 QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(chromosomes(), query)
                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{query});
@@ -138,12 +138,12 @@ inline PixelSelector File::fetch(std::string_view query, balancing::Method norm,
 }
 
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
-                                    std::uint32_t end, balancing::Method norm) const {
+                                 std::uint32_t end, balancing::Method norm) const {
   return fetch(chrom_name, start, end, chrom_name, start, end, norm);
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
-                                    balancing::Method norm, QUERY_TYPE query_type) const {
+                                 balancing::Method norm, QUERY_TYPE query_type) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
                        ? GenomicInterval::parse_bed(chromosomes(), range1)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
@@ -156,17 +156,16 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
 }
 
 inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
-                                    std::uint32_t end1, std::string_view chrom2_name,
-                                    std::uint32_t start2, std::uint32_t end2,
-                                    balancing::Method norm) const {
+                                 std::uint32_t end1, std::string_view chrom2_name,
+                                 std::uint32_t start2, std::uint32_t end2,
+                                 balancing::Method norm) const {
   return fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name), start2,
                end2, norm);
 }
 
-inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
-                                    std::uint32_t end1, const Chromosome& chrom2,
-                                    std::uint32_t start2, std::uint32_t end2,
-                                    balancing::Method norm) const {
+inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1, std::uint32_t end1,
+                                 const Chromosome& chrom2, std::uint32_t start2, std::uint32_t end2,
+                                 balancing::Method norm) const {
   if (chrom1 > chrom2) {
     throw std::runtime_error(
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
@@ -208,9 +207,7 @@ inline void File::optimize_cache_size_for_random_access(std::size_t upper_bound)
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
-inline std::size_t File::cache_capacity() const noexcept {
-  return _block_cache->capacity_bytes();
-}
+inline std::size_t File::cache_capacity() const noexcept { return _block_cache->capacity_bytes(); }
 
 inline std::size_t File::estimate_cache_size_cis() const {
   if (chromosomes().empty()) {
