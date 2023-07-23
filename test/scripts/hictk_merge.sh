@@ -64,7 +64,7 @@ hictk_bin="$1"
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
-input_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.cool"
+input_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
 
 export PATH="$PATH:$script_dir"
 
@@ -88,8 +88,8 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-cooler merge "$outdir/expected.cool" "$input_cooler" "$input_cooler"
-"$hictk_bin" merge -o "$outdir/out.cool" "$input_cooler" "$input_cooler"
+cooler merge "$outdir/expected.cool" "$input_cooler::/resolutions/10000" "$input_cooler::/resolutions/10000"
+"$hictk_bin" merge -o "$outdir/out.cool" "$input_cooler::/resolutions/10000" "$input_cooler::/resolutions/10000"
 
 if ! compare_coolers "$outdir/expected.cool" "$outdir/out.cool"; then
   status=1
