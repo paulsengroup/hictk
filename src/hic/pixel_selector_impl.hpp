@@ -142,6 +142,41 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
+template <typename N>
+inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
+  const auto bin_size = bins().bin_size();
+  const auto num_rows =
+      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto num_cols =
+      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+
+  Eigen::SparseMatrix<N> matrix(num_rows, num_cols);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    matrix.insert(static_cast<std::int64_t>(p.bin1_id), static_cast<std::int64_t>(p.bin2_id)) =
+        p.count;
+  });
+  matrix.makeCompressed();
+  return matrix;
+}
+
+template <typename N>
+[[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
+  const auto bin_size = bins().bin_size();
+  const auto num_rows =
+      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto num_cols =
+      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  MatrixT matrix = MatrixT::Zero(num_rows, num_cols);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    const auto i1 = static_cast<std::int64_t>(p.bin1_id);
+    const auto i2 = static_cast<std::int64_t>(p.bin2_id);
+    matrix(i1, i2) = p.count;
+  });
+  return matrix;
+}
+
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
@@ -563,6 +598,32 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   });
 
   return buff;
+}
+
+template <typename N>
+inline Eigen::SparseMatrix<N> PixelSelectorAll::read_sparse() const {
+  const auto num_bins = static_cast<std::int64_t>(bins().size());
+  Eigen::SparseMatrix<N> matrix(num_bins, num_bins);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    matrix.insert(static_cast<std::int64_t>(p.bin1_id), static_cast<std::int64_t>(p.bin2_id)) =
+        p.count;
+  });
+  matrix.makeCompressed();
+  return matrix;
+}
+
+template <typename N>
+[[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelectorAll::read_dense()
+    const {
+  const auto num_bins = static_cast<std::int64_t>(bins().size());
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  MatrixT matrix = MatrixT::Zero(num_bins, num_bins);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    const auto i1 = static_cast<std::int64_t>(p.bin1_id);
+    const auto i2 = static_cast<std::int64_t>(p.bin2_id);
+    matrix(i1, i2) = p.count;
+  });
+  return matrix;
 }
 
 inline MatrixType PixelSelectorAll::matrix_type() const noexcept {

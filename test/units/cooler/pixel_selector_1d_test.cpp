@@ -158,6 +158,18 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
     CHECK(sum == 334'290);
   }
 
+  SECTION("query as sparse matrix") {
+    auto selector = f.fetch("chr1");
+    const auto matrix = selector.read_sparse<T>();
+    CHECK(matrix.sum() == 14'420'275);
+  }
+
+  SECTION("query as dense matrix") {
+    auto selector = f.fetch("chr1");
+    const auto matrix = selector.read_dense<T>();
+    CHECK(matrix.sum() == 14'420'275);
+  }
+
   SECTION("equality operator") {
     CHECK(f.fetch("chr1:0-1000") == f.fetch("chr1:0-1000"));
     CHECK(f.fetch("chr1:10-1000") != f.fetch("chr1:0-1000"));

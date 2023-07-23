@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
+find_package(Eigen3 QUIET)
+if(NOT Eigen3_FOUND)
+  find_package(Eigen3 CONFIG QUIET REQUIRED)
+endif()
 
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
@@ -34,6 +38,7 @@ target_link_libraries(
 target_link_system_libraries(
   hic
   INTERFACE
+  Eigen3::Eigen
   _hictk_fmt_tgt
   $<IF:$<BOOL:${BUILD_SHARED_LIBS}>,libdeflate::libdeflate_shared,libdeflate::libdeflate_static>
   _hictk_phmap_tgt
