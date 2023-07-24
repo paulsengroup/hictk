@@ -17,7 +17,7 @@ class Method {
 
  public:
   Method() = default;
-  explicit Method(std::string name) : _name(std::move(name)) {
+  explicit Method(std::string_view name) : _name(std::string{name}) {
     if (_name.empty()) {
       throw std::runtime_error("weight dataset name is empty");
     }

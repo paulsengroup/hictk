@@ -256,6 +256,12 @@ class File {
       std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
       const balancing::Method &normalization = balancing::Method::NONE()) const;
 
+  bool has_weights(std::string_view normalization) const;
+  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
+                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
+                                                         balancing::Weights::Type type,
+                                                         bool rescale = false) const;
   bool has_weights(const balancing::Method &normalization) const;
   std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
                                                          bool rescale = false) const;
