@@ -5,12 +5,23 @@
 find_package(Filesystem REQUIRED)
 find_package(HDF5 QUIET COMPONENTS C)
 if(NOT HDF5_FOUND)
-  find_package(HDF5 CONFIG QUIET REQUIRED COMPONENTS C)
+  find_package(
+    HDF5
+    CONFIG
+    QUIET
+    REQUIRED
+    COMPONENTS C)
 endif()
 
-find_package(Eigen3 QUIET)
-if(NOT Eigen3_FOUND)
-  find_package(Eigen3 CONFIG QUIET REQUIRED)
+if(HICTK_WITH_EIGEN)
+  find_package(Eigen3 QUIET)
+  if(NOT Eigen3_FOUND)
+    find_package(
+      Eigen3
+      CONFIG
+      QUIET
+      REQUIRED)
+  endif()
 endif()
 
 add_library(cooler INTERFACE)
@@ -54,7 +65,7 @@ target_link_libraries(
 target_link_system_libraries(
   cooler
   INTERFACE
-  Eigen3::Eigen
+  $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
   FastFloat::fast_float
   HDF5::HDF5
   std::filesystem

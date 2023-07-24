@@ -142,6 +142,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
+#ifdef HICTK_WITH_EIGEN
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
   const auto bin_size = bins().bin_size();
@@ -176,6 +177,7 @@ template <typename N>
   });
   return matrix;
 }
+#endif
 
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
@@ -600,6 +602,7 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   return buff;
 }
 
+#ifdef HICTK_WITH_EIGEN
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelectorAll::read_sparse() const {
   const auto num_bins = static_cast<std::int64_t>(bins().size());
@@ -625,6 +628,7 @@ template <typename N>
   });
   return matrix;
 }
+#endif
 
 inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
   return _selectors.front().matrix_type();

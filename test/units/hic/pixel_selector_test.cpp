@@ -148,6 +148,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
 
+#ifdef HICTK_WITH_EIGEN
     SECTION("as sparse matrix") {
       auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
       const auto matrix = sel.read_sparse<std::int32_t>();
@@ -159,6 +160,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       const auto matrix = sel.read_dense<std::int32_t>();
       CHECK(matrix.sum() == expected_sum);
     }
+#endif
   }
 
   SECTION("inter-chromosomal") {
@@ -440,6 +442,8 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
     CHECK_THAT(sumCounts(buffer), Catch::Matchers::WithinRel(119208613, 1.0e-6));
     CHECK(std::is_sorted(buffer.begin(), buffer.end()));
   }
+
+#ifdef HICTK_WITH_EIGEN
   SECTION("as sparse matrix") {
     auto sel = File(pathV9, 1'000'000, MatrixType::observed, MatrixUnit::BP).fetch();
     const auto matrix = sel.read_sparse<std::int32_t>();
@@ -451,4 +455,5 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
     const auto matrix = sel.read_dense<std::int32_t>();
     CHECK(matrix.sum() == 119'208'613);
   }
+#endif
 }

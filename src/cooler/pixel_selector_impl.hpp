@@ -110,6 +110,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
+#ifdef HICTK_WITH_EIGEN
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
   const auto bin_size = _bins->bin_size();
@@ -144,6 +145,7 @@ template <typename N>
   });
   return matrix;
 }
+#endif
 
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 

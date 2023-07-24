@@ -124,7 +124,12 @@ option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" OFF)
+option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
+
+if(HICTK_WITH_EIGEN)
+  target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_EIGEN)
+endif()
 
 include(cmake/FetchExternalDeps.cmake)
 
