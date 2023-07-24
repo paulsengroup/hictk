@@ -24,7 +24,7 @@ TEST_CASE("File", "[file][short]") {
 
   const auto uri_cooler = fmt::format(FMT_STRING("{}::/resolutions/{}"), path_cooler, resolution);
 
-  const auto ref = cooler::File::open(uri_cooler);
+  const cooler::File ref(uri_cooler);
 
   SECTION("ctors") {
     CHECK(File(path_hic, resolution).path() == path_hic);

@@ -91,7 +91,7 @@ void fetch_and_sum(const Config &c) {
   if (hic::utils::is_hic_file(c.path)) {
     fetch_and_sum(c, hic::File(c.path, c.resolution));
   } else {
-    fetch_and_sum(c, cooler::File::open(c.path));
+    fetch_and_sum(c, cooler::File(c.path));
   }
 }
 

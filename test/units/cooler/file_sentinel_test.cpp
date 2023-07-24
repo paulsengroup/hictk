@@ -21,7 +21,7 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
 
   SECTION("Read-only") {
     const auto path1 = datadir / "cooler_test_file.cool";
-    const auto f1 = File::open(path1.string());
+    const File f1(path1.string());
     CHECK(Attribute::read<std::uint8_t>(f1.group("/")(), internal::SENTINEL_ATTR_NAME) !=
           internal::SENTINEL_ATTR_VALUE);
   }
@@ -30,7 +30,7 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) ==
           internal::SENTINEL_ATTR_VALUE);
     f.close();
-    f = File::open(path.string());
+    f = File(path.string());
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) !=
           internal::SENTINEL_ATTR_VALUE);
   }
@@ -39,7 +39,7 @@ TEST_CASE("Cooler: sentinel attribute", "[cooler][short]") {
     CHECK(Attribute::read<std::uint8_t>(f.group("/")(), internal::SENTINEL_ATTR_NAME) ==
           internal::SENTINEL_ATTR_VALUE);
 
-    CHECK_THROWS(f = File::open(path.string()));
+    CHECK_THROWS(f = File(path.string()));
     CHECK_THROWS(f = File::create(path.string(), chroms, bin_size, true));
   }
 }

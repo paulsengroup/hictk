@@ -23,7 +23,7 @@ using namespace hictk::transformers;
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
-    auto clr = cooler::File::open(path.string());
+    cooler::File clr(path.string());
     auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
@@ -38,8 +38,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch("1");
     auto sel1 =
@@ -57,8 +57,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen recursive") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/400000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch("1");
     auto sel1 =
@@ -78,8 +78,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen gw") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch();
     auto sel1 =

@@ -32,7 +32,7 @@
 
 namespace hictk::cooler {
 
-inline File::File(RootGroup entrypoint, unsigned mode, std::size_t cache_size_bytes, double w0,
+inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0,
                   bool validate)
     : _mode(mode),
       _root_group(std::move(entrypoint)),
@@ -73,16 +73,17 @@ inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] Pixel
   write_sentinel_attr();
 }
 
-inline File File::open(std::string_view uri, std::size_t cache_size_bytes, bool validate) {
-  return File::open_random_access(
-      open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
-      cache_size_bytes, validate);
-}
+inline File::File(std::string_view uri, std::size_t cache_size_bytes, bool validate)
+    : File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+           HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate) {}
+
+inline File::File(RootGroup entrypoint, std::size_t cache_size_bytes, bool validate)
+    : File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0,
+           validate) {}
 
 inline File File::open_random_access(std::string_view uri, std::size_t cache_size_bytes,
                                      bool validate) {
-  return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
-              HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate);
+  return File(uri, cache_size_bytes, validate);
 }
 
 inline File File::open_read_once(std::string_view uri, std::size_t cache_size_bytes,
@@ -144,14 +145,9 @@ inline File File::create(std::string_view uri, const Reference &chroms, std::uin
   }
 }
 
-inline File File::open(RootGroup entrypoint, std::size_t cache_size_bytes, bool validate) {
-  return File::open_random_access(entrypoint, cache_size_bytes, validate);
-}
-
 inline File File::open_random_access(RootGroup entrypoint, std::size_t cache_size_bytes,
                                      bool validate) {
-  return File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0,
-              validate);
+  return File(entrypoint, cache_size_bytes, validate);
 }
 
 inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes,
@@ -173,7 +169,7 @@ inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uin
     }
     // At this point the parent file is guaranteed to exist, so we can always open it in ReadWrite
     // mode
-    return File(entrypoint, chroms, PixelT(0), attributes, cache_size_bytes);
+    return File(entrypoint, chroms, PixelT(0), attributes, cache_size_bytes, true);
 
   } catch (const std::exception &e) {
     throw std::runtime_error(

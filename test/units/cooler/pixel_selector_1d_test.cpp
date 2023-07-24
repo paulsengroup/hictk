@@ -44,7 +44,7 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
 
   const auto expected_nnz = generate_test_data<T>(path1, chroms, bin_size);
 
-  auto f = File::open(path1.string());
+  File f(path1.string());
   REQUIRE(std::distance(f.begin<T>(), f.end<T>()) == expected_nnz);
 
   SECTION("query overlaps chrom start") {

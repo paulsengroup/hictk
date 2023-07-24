@@ -106,14 +106,11 @@ class File {
   bool _finalize{false};
 
   // Constructors are private. Cooler files are opened using factory methods
-  explicit File(RootGroup entrypoint, unsigned mode = HighFive::File::ReadOnly,
-                std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                double w0 = DEFAULT_HDF5_CACHE_W0, bool validate = true);
+  File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0, bool validate);
 
   template <typename PixelT>
-  explicit File(RootGroup entrypoint, Reference chroms, PixelT pixel, Attributes attributes,
-                std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                double w0 = DEFAULT_HDF5_CACHE_W0);
+  File(RootGroup entrypoint, Reference chroms, PixelT pixel, Attributes attributes,
+       std::size_t cache_size_bytes, double w0);
 
  public:
   using QUERY_TYPE = hictk::GenomicInterval::Type;
@@ -123,9 +120,13 @@ class File {
   File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
-  [[nodiscard]] static File open(std::string_view uri,
-                                 std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                                 bool validate = true);
+  [[nodiscard]] explicit File(std::string_view uri,
+                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                              bool validate = true);
+  [[nodiscard]] explicit File(RootGroup entrypoint,
+                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                              bool validate = true);
+
   [[nodiscard]] static File open_random_access(
       std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
       bool validate = true);
@@ -138,9 +139,6 @@ class File {
                                    Attributes attributes = Attributes::init<PixelT>(0),
                                    std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
 
-  [[nodiscard]] static File open(RootGroup entrypoint,
-                                 std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                                 bool validate = true);
   [[nodiscard]] static File open_random_access(
       RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
       bool validate = true);

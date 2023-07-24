@@ -43,7 +43,7 @@ void zoomify_once(const cooler::File& clr1, cooler::RootGroup entrypoint2,
 
 void zoomify_once(std::string_view uri1, std::string_view uri2, std::uint32_t resolution,
                   bool force) {
-  auto clr1 = cooler::File::open(uri1);
+  cooler::File clr1(uri1);
 
   SPDLOG_INFO(FMT_STRING("coarsening cooler at {} once ({} -> {})"), clr1.uri(), clr1.bin_size(),
               resolution);
@@ -57,9 +57,9 @@ void zoomify_once(std::string_view uri1, std::string_view uri2, std::uint32_t re
 void zoomify_many(std::string_view in_uri, std::string_view out_path,
                   const std::vector<std::uint32_t>& resolutions, bool copy_base_resolution,
                   bool force) {
-  auto clr = cooler::File::open(in_uri);
+  cooler::File clr(in_uri);
   auto mclr =
-      cooler::MultiResFile::create(out_path, cooler::File::open(in_uri).chromosomes(), force);
+      cooler::MultiResFile::create(out_path, cooler::File(in_uri).chromosomes(), force);
 
   SPDLOG_INFO(FMT_STRING("coarsening cooler at {} {} times ({} -> {})"), clr.uri(),
               resolutions.size(), clr.bin_size(), fmt::join(resolutions, " -> "));
@@ -69,7 +69,7 @@ void zoomify_many(std::string_view in_uri, std::string_view out_path,
     mclr.copy_resolution(clr);
   } else {
     assert(resolutions.size() > 1);
-    zoomify_once(cooler::File::open(in_uri), mclr.init_resolution(resolutions[1]), resolutions[1]);
+    zoomify_once(cooler::File(in_uri), mclr.init_resolution(resolutions[1]), resolutions[1]);
   }
 
   for (std::size_t i = 1; i < resolutions.size(); ++i) {

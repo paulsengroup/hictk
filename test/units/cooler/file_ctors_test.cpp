@@ -22,7 +22,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
   constexpr std::uint32_t bin_size = 1000;
   std::ignore = File::create(path.string(), chroms, bin_size, true);
   CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
-  CHECK(File::open(path.string()).attributes().generated_by->find("hictk") == 0);
+  CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -34,7 +34,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
     File f{};
     CHECK(!f);
-    f = File::open(path.string());
+    f = File(path.string());
 
     CHECK(f.chromosomes().size() == 20);
     CHECK(f.bins().size() == 26'398);
@@ -64,7 +64,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
   SECTION("open .cool") {
     const auto path = datadir / "cooler_test_file.cool";
-    const auto f = File::open(path.string());
+    const File f(path.string());
 
     CHECK(f.path() == path);
     CHECK(f.uri() == path);
@@ -79,14 +79,14 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
     SECTION("missing suffix") {
       CHECK_THROWS_WITH(
-          File::open(path.string()),
+          File(path.string()),
           Catch::Matchers::ContainsSubstring("does not look like a valid Cooler file") &&
               Catch::Matchers::ContainsSubstring("missing_groups=[pixels, indexes]"));
     }
 
     SECTION("with suffix") {
       constexpr auto suffix{"::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool"};
-      const auto f = File::open(path.string() + suffix);
+      const File f(path.string() + suffix);
 
       CHECK(f.path() == path);
       CHECK(f.uri() == path.string() + suffix);
@@ -97,7 +97,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     const auto path = datadir / "multires_cooler_test_file.mcool";
     SECTION("missing suffix") {
       CHECK_THROWS_WITH(
-          File::open(path.string()),
+          File(path.string()),
           Catch::Matchers::ContainsSubstring("does not look like a valid Cooler file") &&
               Catch::Matchers::ContainsSubstring("missing_groups=[chroms, bins, pixels, indexes]"));
     }
@@ -105,7 +105,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     SECTION("with suffix") {
       constexpr auto suffix = "::/resolutions/400000";
 
-      const auto f = File::open(path.string() + suffix);
+      const File f(path.string() + suffix);
       CHECK(f.path() == path);
       CHECK(f.uri() == path.string() + suffix);
     }
@@ -113,20 +113,20 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
   SECTION("open empty .h5") {
     const auto path = datadir / "empty_test_file.h5";
-    CHECK_THROWS_WITH(File::open(path.string()),
+    CHECK_THROWS_WITH(File(path.string()),
                       Catch::Matchers::ContainsSubstring("does not look like a valid Cooler file"));
   }
 
   SECTION("non existent") {
     const auto path = datadir / "cooler_test_file.cool.nonexistent";
-    CHECK_THROWS_WITH(File::open(path.string()),
+    CHECK_THROWS_WITH(File(path.string()),
                       Catch::Matchers::ContainsSubstring("Unable to open file"));
   }
 
   SECTION("open corrupted .cool") {
     SECTION("corrupted bin table") {
       const auto path = datadir / "invalid_coolers/corrupted_bins.cool";
-      CHECK_THROWS_WITH(File::open(path.string()),
+      CHECK_THROWS_WITH(File(path.string()),
                         Catch::Matchers::ContainsSubstring("Datasets have inconsistent sizes") &&
                             Catch::Matchers::ContainsSubstring("bins/chrom") &&
                             Catch::Matchers::ContainsSubstring("bins/start") &&
@@ -135,7 +135,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
     SECTION("corrupted chrom table") {
       const auto path = datadir / "invalid_coolers/corrupted_chroms.cool";
-      CHECK_THROWS_WITH(File::open(path.string()),
+      CHECK_THROWS_WITH(File(path.string()),
                         Catch::Matchers::ContainsSubstring("/chroms/name and") &&
                             Catch::Matchers::ContainsSubstring("/chroms/length shape mismatch"));
     }

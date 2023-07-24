@@ -234,7 +234,7 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
                          const std::filesystem::path& weight_file) {
   SPDLOG_INFO(FMT_STRING("[{}] writing balancing weights to file {}..."), resolution, weight_file);
-  const auto clr = cooler::File::open(cooler_uri);
+  const cooler::File clr(cooler_uri);
   assert(clr.bin_size() == resolution);
 
   if (!clr.has_weights("weight")) {
@@ -321,7 +321,7 @@ void cool_to_hic(const ConvertConfig& c) {
                            : fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                          c.path_to_input.string(), c.resolutions.front());
 
-      const auto clr = cooler::File::open(uri);
+      const cooler::File clr(uri);
       dump_chrom_sizes(clr, chrom_sizes);
       dump_pixels(clr, pixels, c.gzip_compression_lvl, c.processes);
     }

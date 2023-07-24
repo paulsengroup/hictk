@@ -179,11 +179,11 @@ inline File::File(std::string uri, std::uint32_t resolution, hic::MatrixType typ
   }
 
   if (cooler::utils::is_cooler(uri)) {
-    *this = File(cooler::File::open(uri));
+    *this = File(cooler::File(uri));
     return;
   }
 
-  *this = File(cooler::File::open(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, resolution)));
+  *this = File(cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, resolution)));
 }
 
 inline std::string File::uri() const {

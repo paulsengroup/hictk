@@ -122,7 +122,7 @@ template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
                                 It last_weight, bool overwrite_if_exists, bool divisive) {
   File(open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, true), uri),
-       HighFive::File::ReadWrite)
+       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0, true)
       .write_weights(name, first_weight, last_weight, overwrite_if_exists, divisive);
 }
 
@@ -248,7 +248,7 @@ inline void File::write_standard_attributes(RootGroup &root_grp, const Attribute
   Attribute::write(root_grp(), "bin-type", *attributes.bin_type);            // NOLINT
   Attribute::write(root_grp(), "creation-date", *attributes.creation_date);  // NOLINT
   Attribute::write(root_grp(), "format", std::string{COOL_MAGIC});
-  Attribute::write(root_grp(), "format-url", *attributes.format_url);  // NOLINT
+  Attribute::write(root_grp(), "format-url", *attributes.format_url);        // NOLINT
   if (!skip_sentinel_attr) {
     static_assert(internal::SENTINEL_ATTR_NAME == "format-version");
     Attribute::write(root_grp(), "format-version", attributes.format_version);

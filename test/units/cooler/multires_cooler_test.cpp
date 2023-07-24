@@ -30,7 +30,7 @@ TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
-  const auto base_resolution = File::open(base_path.string()).bin_size();
+  const auto base_resolution = File(base_path.string()).bin_size();
 
   const auto path = testdir() / "test_init.mcool";
   const std::array<std::uint32_t, 4> resolutions{
@@ -44,7 +44,7 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 
   SECTION("coarsen on construction") {
     SECTION("valid resolutions") {
-      std::ignore = MultiResFile::create(path.string(), File::open(base_path.string()),
+      std::ignore = MultiResFile::create(path.string(), File(base_path.string()),
                                          resolutions.begin(), resolutions.end(), true);
 
       CHECK(utils::is_multires_file(path.string()));
@@ -52,10 +52,10 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 
     SECTION("invalid resolutions") {
       std::vector<std::uint32_t> resolutions_{base_resolution / 2};
-      CHECK_THROWS(MultiResFile::create(path.string(), File::open(base_path.string()),
+      CHECK_THROWS(MultiResFile::create(path.string(), File(base_path.string()),
                                         resolutions_.begin(), resolutions_.end(), true));
       resolutions_ = {base_resolution + 1};
-      CHECK_THROWS(MultiResFile::create(path.string(), File::open(base_path.string()),
+      CHECK_THROWS(MultiResFile::create(path.string(), File(base_path.string()),
                                         resolutions_.begin(), resolutions_.end(), true));
     }
   }
@@ -76,7 +76,7 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
-  auto base_clr = File::open(base_path.string());
+  File base_clr(base_path.string());
   const auto base_resolution = base_clr.bin_size();
 
   const auto path = testdir() / "test_create_resolutions.mcool";
