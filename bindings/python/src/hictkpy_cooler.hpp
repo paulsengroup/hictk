@@ -103,53 +103,9 @@ inline hictk::cooler::File cooler_ctor(std::string_view uri, const py::dict& py_
   return py_attrs;
 }
 
-inline py::object fetch_all(const hictk::cooler::File& clr, std::string_view normalization,
-                            std::string_view count_type, bool join) {
-  if (count_type != "int" && count_type != "float") {
-    throw std::runtime_error("invalid count type. Allowed types: int, float.");
-  }
-
-  const auto weights = clr.read_weights(normalization);
-  if (weights) {
-    count_type = "float";
-  }
-
-  auto sel = clr.fetch(weights);
-  if (count_type == "int") {
-    return pixel_iterators_to_df(clr.bins(), sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
-                                 join);
-  }
-  return pixel_iterators_to_df(clr.bins(), sel.begin<double>(), sel.end<double>(), join);
-}
-
-inline py::object fetch(const hictk::cooler::File& clr, std::string_view range1,
+inline py::object fetch(const hictk::cooler::File& f, std::string_view range1,
                         std::string_view range2, std::string_view normalization,
                         std::string_view count_type, bool join, std::string_view query_type) {
-  if (range1.empty()) {
-    return fetch_all(clr, normalization, count_type, join);
-  }
-
-  if (count_type != "int" && count_type != "float") {
-    throw std::runtime_error("invalid count type. Allowed types: int, float.");
-  }
-
-  const auto weights = clr.read_weights(normalization);
-  if (weights) {
-    count_type = "float";
-  }
-
-  const auto qt = query_type == "UCSC" ? hictk::cooler::File::QUERY_TYPE::UCSC
-                                       : hictk::cooler::File::QUERY_TYPE::BED;
-
-  if (count_type == "int") {
-    auto sel = range2.empty() || range1 == range2 ? clr.fetch(range1, weights, qt)
-                                                  : clr.fetch(range1, range2, weights, qt);
-    return pixel_iterators_to_df(clr.bins(), sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
-                                 join);
-  }
-  auto sel = range2.empty() || range1 == range2 ? clr.fetch(range1, weights, qt)
-                                                : clr.fetch(range1, range2, weights, qt);
-  return pixel_iterators_to_df(clr.bins(), sel.begin<double>(), sel.end<double>(), join);
+  return file_fetch(f, range1, range2, normalization, count_type, join, query_type);
 }
-
 }  // namespace hictkpy::cooler

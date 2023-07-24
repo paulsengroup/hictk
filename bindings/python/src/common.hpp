@@ -12,7 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictkpy {
@@ -71,8 +73,8 @@ inline py::object get_bins_from_file(const File& f) {
   py::dict py_bins_dict{};  // NOLINT
 
   py_bins_dict["chrom"] = std::move(chrom_names);
-  py_bins_dict["start"] = std::move(starts);
-  py_bins_dict["end"] = std::move(ends);
+  py_bins_dict["start"] = starts();
+  py_bins_dict["end"] = ends();
 
   auto df = pd.attr("DataFrame")(py_bins_dict);
   df.attr("columns") = std::vector<std::string>{"chrom", "start", "end"};
@@ -164,6 +166,52 @@ static py::object pixel_iterators_to_df(const hictk::BinTable& bins, PixelIt fir
     return pixel_iterators_to_bg2(bins, first_pixel, last_pixel);
   }
   return pixel_iterators_to_coo(first_pixel, last_pixel);
+}
+
+template <typename File>
+inline py::object file_fetch_all(File& f, std::string_view normalization,
+                                 std::string_view count_type, bool join) {
+  if (count_type != "int" && count_type != "float") {
+    throw std::runtime_error("invalid count type. Allowed types: int, float.");
+  }
+
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  auto sel = f.fetch(hictk::balancing::Method{normalization});
+  if (count_type == "int") {
+    return pixel_iterators_to_df(f.bins(), sel.template begin<std::int32_t>(),
+                                 sel.template end<std::int32_t>(), join);
+  }
+  return pixel_iterators_to_df(f.bins(), sel.template begin<double>(), sel.template end<double>(),
+                               join);
+}
+
+template <typename File>
+inline py::object file_fetch(const File& f, std::string_view range1, std::string_view range2,
+                             std::string_view normalization, std::string_view count_type, bool join,
+                             std::string_view query_type) {
+  if (range1.empty()) {
+    return file_fetch_all(f, normalization, count_type, join);
+  }
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  const auto qt =
+      query_type == "UCSC" ? hictk::GenomicInterval::Type::UCSC : hictk::GenomicInterval::Type::BED;
+
+  auto sel = range2.empty() || range1 == range2
+                 ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
+                 : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
+
+  if (count_type == "int") {
+    return pixel_iterators_to_df(f.bins(), sel.template begin<std::int32_t>(),
+                                 sel.template end<std::int32_t>(), join);
+  }
+  return pixel_iterators_to_df(f.bins(), sel.template begin<double>(), sel.template end<double>(),
+                               join);
 }
 
 }  // namespace hictkpy

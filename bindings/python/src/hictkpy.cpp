@@ -34,6 +34,10 @@ static pybind11::module_ declare_cooler_submodule(pybind11::module_& m) {
   cooler_file.def("path", &hictk::cooler::File::path);
 
   cooler_file.def("bin_size", &hictk::cooler::File::bin_size);
+  cooler_file.def("nbins", &hictk::cooler::File::nbins);
+  cooler_file.def("nchroms", &hictk::cooler::File::nchroms);
+  cooler_file.def("nnz", &hictk::cooler::File::nnz);
+
   cooler_file.def("chromosomes", &get_chromosomes_from_file<hictk::cooler::File>);
   cooler_file.def("bins", &get_bins_from_file<hictk::cooler::File>);
   cooler_file.def("attributes", &cooler::get_cooler_attrs);
@@ -61,12 +65,15 @@ static pybind11::module_ declare_hic_submodule(pybind11::module_& m) {
   hic_file.def("version", &hictk::hic::File::version);
 
   hic_file.def("bin_size", &hictk::hic::File::resolution);
+  hic_file.def("nbins", &hictk::hic::File::nbins);
+  hic_file.def("nchroms", &hictk::hic::File::nchroms);
+
   hic_file.def("chromosomes", &get_chromosomes_from_file<hictk::hic::File>);
   hic_file.def("bins", &get_bins_from_file<hictk::hic::File>);
 
-  hic_file.def("fetch", &hic::fetch, py::arg("range1"), py::arg("range2") = "",
-               py::arg("normalization") = "NONE", py::arg("join") = false,
-               py::arg("query_type") = "UCSC");
+  hic_file.def("fetch", &hic::fetch, py::arg("range1") = "", py::arg("range2") = "",
+               py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+               py::arg("join") = false, py::arg("query_type") = "UCSC");
 
   return hic;
 }
@@ -89,9 +96,9 @@ static void declare_file_class(pybind11::module_& m) {
   file.def("nbins", &hictk::File::nbins);
   file.def("nchroms", &hictk::File::nchroms);
 
-  file.def("fetch", &file::fetch, py::arg("range1"), py::arg("range2") = "",
-           py::arg("normalization") = "NONE", py::arg("join") = false,
-           py::arg("query_type") = "UCSC");
+  file.def("fetch", &file::fetch, py::arg("range1") = "", py::arg("range2") = "",
+           py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+           py::arg("join") = false, py::arg("query_type") = "UCSC");
 }
 
 namespace py = pybind11;

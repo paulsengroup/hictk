@@ -19,18 +19,10 @@ namespace hictkpy::file {
                      hictk::hic::ParseUnitStr(std::string{matrix_unit})};
 }
 
-static py::object fetch(const hictk::File& f, std::string_view range1, std::string_view range2,
-                        std::string_view normalization, bool join, std::string_view query_type) {
-  const auto qt =
-      query_type == "UCSC" ? hictk::File::QUERY_TYPE::UCSC : hictk::File::QUERY_TYPE::BED;
-
-  auto sel = range2.empty() || range1 == range2
-                 ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
-                 : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
-  if (normalization == "NONE") {
-    return pixel_iterators_to_df(f.bins(), sel.begin<std::int32_t>(), sel.end<std::int32_t>(),
-                                 join);
-  }
-  return pixel_iterators_to_df(f.bins(), sel.begin<double>(), sel.end<double>(), join);
+inline py::object fetch(const hictk::File& f, std::string_view range1, std::string_view range2,
+                        std::string_view normalization, std::string_view count_type, bool join,
+                        std::string_view query_type) {
+  return file_fetch(f, range1, range2, normalization, count_type, join, query_type);
 }
+
 }  // namespace hictkpy::file
