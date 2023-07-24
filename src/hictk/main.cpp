@@ -107,9 +107,8 @@ int main(int argc, char** argv) noexcept {
         return dump_subcmd(std::get<DumpConfig>(config));
       case sc::load:
         return load_subcmd(std::get<LoadConfig>(config));
-      case sc::merge:  // NOLINT
-        // merge_subcmd(std::get<MergeConfig>(config));
-        break;
+      case sc::merge:
+        return merge_subcmd(std::get<MergeConfig>(config));
       case sc::validate:
         return validate_subcmd(std::get<ValidateConfig>(config));
       case sc::zoomify:
@@ -125,14 +124,14 @@ int main(int argc, char** argv) noexcept {
     assert(cli);
     return cli->exit(e);  //  This takes care of formatting and printing error messages (if any)
   } catch (const std::bad_alloc& err) {
-    fmt::print(stderr, FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), err.what());
+    fmt::print(stderr, FMT_STRING("FAILURE! Unable to allocate enough memory: {}\n"), err.what());
     return 1;
   } catch (const std::exception& e) {
     if (cli) {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk {} encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk {} encountered the following error: {}\n"),
                  cli->get_printable_subcommand(), e.what());
     } else {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk encountered the following error: {}."),
+      fmt::print(stderr, FMT_STRING("FAILURE! hictk encountered the following error: {}\n"),
                  e.what());
     }
     return 1;
@@ -140,7 +139,7 @@ int main(int argc, char** argv) noexcept {
     fmt::print(stderr,
                FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
                           "unhandled exception! "
-                          "If you see this message, please file an issue on GitHub."),
+                          "If you see this message, please file an issue on GitHub.\n"),
                cli->get_printable_subcommand());
     return 1;
   }

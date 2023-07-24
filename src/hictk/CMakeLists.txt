@@ -28,6 +28,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 

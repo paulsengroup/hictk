@@ -67,9 +67,14 @@ void Cli::make_merge_subcommand() {
 
 void Cli::validate_merge_subcommand() const {
   assert(_cli.get_subcommand("merge")->parsed());
-  /*
+
   std::vector<std::string> errors;
   const auto& c = std::get<MergeConfig>(_config);
+
+  if (!c.force && std::filesystem::exists(c.output_uri)) {
+    errors.emplace_back(fmt::format(
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_uri));
+  }
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -77,7 +82,6 @@ void Cli::validate_merge_subcommand() const {
                                "arguments and input file(s):\n - {}"),
                     fmt::join(errors, "\n - ")));
   }
-  */
 }
 
 void Cli::transform_args_merge_subcommand() {
