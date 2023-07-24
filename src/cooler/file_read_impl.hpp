@@ -84,12 +84,12 @@ inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weigh
   // clang-format on
 }
 
-inline PixelSelector File::fetch(std::string_view query,
+inline PixelSelector File::fetch(std::string_view range,
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
-                      ? GenomicInterval::parse_bed(chromosomes(), query)
-                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{query});
+                      ? GenomicInterval::parse_bed(chromosomes(), range)
+                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{range});
 
   return fetch(PixelCoordinates{bins().at(gi)}, std::move(weights));
 }
@@ -156,6 +156,29 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   );
   // clang-format on
 }
+inline PixelSelector File::fetch(const balancing::Method &normalization) const {
+  return fetch(read_weights(normalization));
+}
+inline PixelSelector File::fetch(std::string_view range, const balancing::Method &normalization,
+                                 QUERY_TYPE query_type) const {
+  return fetch(range, read_weights(normalization), query_type);
+}
+inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
+                                 std::uint32_t end, const balancing::Method &normalization) const {
+  return fetch(chrom_name, start, end, read_weights(normalization));
+}
+
+inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
+                                 const balancing::Method &normalization,
+                                 QUERY_TYPE query_type) const {
+  return fetch(range1, range2, read_weights(normalization), query_type);
+}
+inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
+                                 std::uint32_t end1, std::string_view chrom2_name,
+                                 std::uint32_t start2, std::uint32_t end2,
+                                 const balancing::Method &normalization) const {
+  return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, read_weights(normalization));
+}
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
@@ -172,8 +195,9 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
   // clang-format on
 }
 
-inline bool File::has_weights(std::string_view name) const {
-  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(), name);
+inline bool File::has_weights(const balancing::Method &normalization) const {
+  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
+                                     normalization.to_string());
   if (_weights.contains(dset_path)) {
     return true;
   }
@@ -181,29 +205,24 @@ inline bool File::has_weights(std::string_view name) const {
   return _root_group().exist(dset_path);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
-                                                                    bool rescale) const {
-  if (name == "NONE") {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(
+    const balancing::Method &normalization, bool rescale) const {
+  if (normalization == "NONE") {
     return nullptr;
   }
-  if (name.empty()) {
-    throw std::runtime_error("weight dataset name is empty");
-  }
 
-  return read_weights(name, balancing::Weights::infer_type(name), rescale);
+  return read_weights(normalization, balancing::Weights::infer_type(normalization.to_string()),
+                      rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view name,
-                                                                    balancing::Weights::Type type,
-                                                                    bool rescale) const {
-  if (name == "NONE") {
+inline std::shared_ptr<const balancing::Weights> File::read_weights(
+    const balancing::Method &normalization, balancing::Weights::Type type, bool rescale) const {
+  if (normalization == "NONE") {
     return nullptr;
   }
-  if (name.empty()) {
-    throw std::runtime_error("weight dataset name is empty");
-  }
 
-  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(), name);
+  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
+                                     normalization.to_string());
   if (const auto it = _weights.find(dset_path); it != _weights.end()) {
     return it->second;
   }
@@ -211,7 +230,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
   if (!_root_group().exist(dset_path)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to read \"{}\" weights: dataset \"{}\" does not exist"),
-                    name, dset_path));
+                    normalization.to_string(), dset_path));
   }
 
   Dataset dset{
@@ -234,8 +253,8 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
 
   balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
   if (!rescale) {
-    const auto node =
-        _weights.emplace(name, std::make_shared<const balancing::Weights>(std::move(weights)));
+    const auto node = _weights.emplace(
+        normalization.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
     return node.first->second;
   }
 
@@ -265,8 +284,8 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
     weights.rescale(dset.read_attribute<double>("scale"));
   }
 
-  const auto node =
-      _weights_scaled.emplace(name, std::make_shared<const balancing::Weights>(std::move(weights)));
+  const auto node = _weights_scaled.emplace(
+      normalization.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
   return node.first->second;
 }
 

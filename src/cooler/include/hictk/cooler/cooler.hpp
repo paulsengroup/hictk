@@ -24,6 +24,7 @@ DISABLE_WARNING_POP
 #include <variant>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
@@ -180,10 +181,14 @@ class File {
   [[nodiscard]] std::string hdf5_path() const;
   [[nodiscard]] std::string path() const;
 
-  [[nodiscard]] std::uint32_t bin_size() const noexcept;
   [[nodiscard]] auto chromosomes() const noexcept -> const Reference &;
   [[nodiscard]] auto bins() const noexcept -> const BinTable &;
   [[nodiscard]] auto bins_ptr() const noexcept -> std::shared_ptr<const BinTable>;
+
+  [[nodiscard]] std::uint32_t bin_size() const noexcept;
+  [[nodiscard]] std::uint64_t nbins() const;
+  [[nodiscard]] std::uint64_t nchroms() const;
+  [[nodiscard]] std::uint64_t nnz() const;
 
   [[nodiscard]] auto attributes() const noexcept -> const Attributes &;
   [[nodiscard]] auto group(std::string_view group_name) -> Group &;
@@ -217,27 +222,44 @@ class File {
   [[nodiscard]] typename PixelSelector::iterator<N> cend(
       std::string_view weight_name = "NONE") const;
 
-  [[nodiscard]] PixelSelector fetch(
-      std::shared_ptr<const balancing::Weights> weights = nullptr) const;
-  [[nodiscard]] PixelSelector fetch(std::string_view query,
-                                    std::shared_ptr<const balancing::Weights> weights = nullptr,
+  [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view range,
+                                    std::shared_ptr<const balancing::Weights> weights,
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  [[nodiscard]] PixelSelector fetch(
-      std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
-      std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
+                                    std::uint32_t end,
+                                    std::shared_ptr<const balancing::Weights> weights) const;
 
   [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
-                                    std::shared_ptr<const balancing::Weights> weights = nullptr,
+                                    std::shared_ptr<const balancing::Weights> weights,
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
+                                    std::uint32_t end1, std::string_view chrom2_name,
+                                    std::uint32_t start2, std::uint32_t end2,
+                                    std::shared_ptr<const balancing::Weights> weights) const;
+
+  [[nodiscard]] PixelSelector fetch(
+      const balancing::Method &normalization = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::string_view range, const balancing::Method &normalization = balancing::Method::NONE(),
+      QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
+      const balancing::Method &normalization = balancing::Method::NONE()) const;
+
+  [[nodiscard]] PixelSelector fetch(
+      std::string_view range1, std::string_view range2,
+      const balancing::Method &normalization = balancing::Method::NONE(),
+      QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   [[nodiscard]] PixelSelector fetch(
       std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1,
       std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
-      std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+      const balancing::Method &normalization = balancing::Method::NONE()) const;
 
-  bool has_weights(std::string_view name) const;
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view name,
+  bool has_weights(const balancing::Method &normalization) const;
+  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
                                                          bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view name,
+  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
                                                          balancing::Weights::Type type,
                                                          bool rescale = false) const;
 

@@ -31,8 +31,6 @@ inline std::string File::path() const {
   return _root_group().getFile().getName();
 }
 
-inline std::uint32_t File::bin_size() const noexcept { return _attrs.bin_size; }
-
 inline auto File::chromosomes() const noexcept -> const Reference & { return bins().chromosomes(); }
 
 inline auto File::bins() const noexcept -> const BinTable & {
@@ -41,6 +39,11 @@ inline auto File::bins() const noexcept -> const BinTable & {
 }
 
 inline auto File::bins_ptr() const noexcept -> std::shared_ptr<const BinTable> { return _bins; }
+
+inline std::uint32_t File::bin_size() const noexcept { return _attrs.bin_size; }
+inline std::uint64_t File::nbins() const { return bins().size(); }
+inline std::uint64_t File::nchroms() const { return chromosomes().size(); }
+inline std::uint64_t File::nnz() const { return dataset("pixels/count").size(); }
 
 inline auto File::attributes() const noexcept -> const Attributes & { return _attrs; }
 
@@ -125,7 +128,7 @@ inline bool File::has_float_pixels() const noexcept {
 
 template <typename N>
 inline PixelSelector::iterator<N> File::begin(std::string_view weight_name) const {
-  return fetch(read_weights(weight_name)).template begin<N>();
+  return fetch(read_weights(balancing::Method(std::string{weight_name}))).template begin<N>();
 }
 
 template <typename N>
@@ -135,7 +138,7 @@ inline PixelSelector::iterator<N> File::cbegin(std::string_view weight_name) con
 
 template <typename N>
 inline PixelSelector::iterator<N> File::end(std::string_view weight_name) const {
-  return fetch(read_weights(weight_name)).template end<N>();
+  return fetch(read_weights(balancing::Method(std::string{weight_name}))).template end<N>();
 }
 
 template <typename N>

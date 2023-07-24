@@ -17,7 +17,11 @@ class Method {
 
  public:
   Method() = default;
-  explicit Method(std::string name) : _name(std::move(name)) {}
+  explicit Method(std::string name) : _name(std::move(name)) {
+    if (_name.empty()) {
+      throw std::runtime_error("weight dataset name is empty");
+    }
+  }
 
   [[nodiscard]] friend bool operator==(const Method &a, const Method &b) {
     return a._name == b._name;
