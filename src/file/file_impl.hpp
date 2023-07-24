@@ -83,9 +83,17 @@ inline const BinTable& PixelSelector::bins() const {
 }
 
 template <typename PixelSelectorT>
-constexpr PixelSelectorT& PixelSelector::get() const noexcept {
+constexpr const PixelSelectorT& PixelSelector::get() const noexcept {
   return std::get<PixelSelectorT>(_sel);
 }
+
+template <typename PixelSelectorT>
+constexpr PixelSelectorT& PixelSelector::get() noexcept {
+  return std::get<PixelSelectorT>(_sel);
+}
+
+constexpr auto PixelSelector::get() const noexcept -> const PixelSelectorVar& { return _sel; }
+constexpr auto PixelSelector::get() noexcept -> PixelSelectorVar& { return _sel; }
 
 template <typename N>
 template <typename It>
@@ -132,8 +140,23 @@ inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
 
 template <typename N>
 template <typename IteratorT>
-[[nodiscard]] constexpr IteratorT& PixelSelector::iterator<N>::get() const noexcept {
+[[nodiscard]] constexpr const IteratorT& PixelSelector::iterator<N>::get() const noexcept {
   return std::get<IteratorT>(_it);
+}
+
+template <typename N>
+template <typename IteratorT>
+[[nodiscard]] constexpr IteratorT& PixelSelector::iterator<N>::get() noexcept {
+  return std::get<IteratorT>(_it);
+}
+
+template <typename N>
+constexpr auto PixelSelector::iterator<N>::get() const noexcept -> const IteratorVar& {
+  return _it;
+}
+template <typename N>
+constexpr auto PixelSelector::iterator<N>::get() noexcept -> IteratorVar& {
+  return _it;
 }
 
 inline File::File(cooler::File clr) : _fp(std::move(clr)) {}
@@ -250,8 +273,16 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
 }
 
 template <typename FileT>
-constexpr FileT& File::get() const noexcept {
+constexpr const FileT& File::get() const noexcept {
   return std::get<FileT>(_fp);
 }
+
+template <typename FileT>
+constexpr FileT& File::get() noexcept {
+  return std::get<FileT>(_fp);
+}
+
+constexpr auto File::get() const noexcept -> const FileVar& { return _fp; }
+constexpr auto File::get() noexcept -> FileVar& { return _fp; }
 
 }  // namespace hictk

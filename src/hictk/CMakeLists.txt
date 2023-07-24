@@ -37,6 +37,7 @@ target_link_libraries(
   PRIVATE hictk_project_options
           hictk_project_warnings
           hictk::cooler
+          hictk::file
           hictk::hic
           hictk::transformers)
 

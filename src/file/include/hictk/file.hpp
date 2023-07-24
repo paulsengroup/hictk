@@ -13,13 +13,9 @@
 namespace hictk {
 
 class PixelSelector {
-  // clang-format off
-  std::variant<
-      cooler::PixelSelector,
-      hic::PixelSelector,
-      hic::PixelSelectorAll>
-      _sel{cooler::PixelSelector{}};
-  // clang-format on
+  using PixelSelectorVar =
+      std::variant<cooler::PixelSelector, hic::PixelSelector, hic::PixelSelectorAll>;
+  PixelSelectorVar _sel{cooler::PixelSelector{}};
 
  public:
   template <typename N>
@@ -47,13 +43,18 @@ class PixelSelector {
   [[nodiscard]] const BinTable &bins() const;
 
   template <typename PixelSelectorT>
-  [[nodiscard]] constexpr PixelSelectorT &get() const noexcept;
+  [[nodiscard]] constexpr const PixelSelectorT &get() const noexcept;
+  template <typename PixelSelectorT>
+  [[nodiscard]] constexpr PixelSelectorT &get() noexcept;
+  [[nodiscard]] constexpr auto get() const noexcept -> const PixelSelectorVar &;
+  [[nodiscard]] constexpr auto get() noexcept -> PixelSelectorVar &;
 
   template <typename N>
   class iterator {
-    std::variant<cooler::PixelSelector::iterator<N>, hic::PixelSelector::iterator<N>,
-                 hic::PixelSelectorAll::iterator<N>>
-        _it{};
+    using IteratorVar =
+        std::variant<cooler::PixelSelector::iterator<N>, hic::PixelSelector::iterator<N>,
+                     hic::PixelSelectorAll::iterator<N>>;
+    IteratorVar _it{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -78,12 +79,17 @@ class PixelSelector {
     auto operator++(int) -> iterator;
 
     template <typename IteratorT>
-    [[nodiscard]] constexpr IteratorT &get() const noexcept;
+    [[nodiscard]] constexpr const IteratorT &get() const noexcept;
+    template <typename IteratorT>
+    [[nodiscard]] constexpr IteratorT &get() noexcept;
+    [[nodiscard]] constexpr auto get() const noexcept -> const IteratorVar &;
+    [[nodiscard]] constexpr auto get() noexcept -> IteratorVar &;
   };
 };
 
 class File {
-  std::variant<cooler::File, hic::File> _fp{cooler::File{}};
+  using FileVar = std::variant<cooler::File, hic::File>;
+  FileVar _fp{cooler::File{}};
 
  public:
   using QUERY_TYPE = hictk::GenomicInterval::Type;
@@ -97,8 +103,8 @@ class File {
   [[nodiscard]] std::string uri() const;
   [[nodiscard]] std::string path() const;
 
-  [[nodiscard]] constexpr bool is_hic() const noexcept ;
-  [[nodiscard]] constexpr bool is_cooler() const noexcept ;
+  [[nodiscard]] constexpr bool is_hic() const noexcept;
+  [[nodiscard]] constexpr bool is_cooler() const noexcept;
 
   [[nodiscard]] auto chromosomes() const -> const Reference &;
   [[nodiscard]] auto bins() const -> const BinTable &;
@@ -126,7 +132,11 @@ class File {
       const balancing::Method &normalization = balancing::Method::NONE()) const;
 
   template <typename FileT>
-  [[nodiscard]] constexpr FileT &get() const noexcept;
+  [[nodiscard]] constexpr const FileT &get() const noexcept;
+  template <typename FileT>
+  [[nodiscard]] constexpr FileT &get() noexcept;
+  [[nodiscard]] constexpr auto get() const noexcept -> const FileVar &;
+  [[nodiscard]] constexpr auto get() noexcept -> FileVar &;
 };
 
 }  // namespace hictk
