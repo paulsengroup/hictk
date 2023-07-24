@@ -58,8 +58,7 @@ void zoomify_many(std::string_view in_uri, std::string_view out_path,
                   const std::vector<std::uint32_t>& resolutions, bool copy_base_resolution,
                   bool force) {
   cooler::File clr(in_uri);
-  auto mclr =
-      cooler::MultiResFile::create(out_path, cooler::File(in_uri).chromosomes(), force);
+  auto mclr = cooler::MultiResFile::create(out_path, cooler::File(in_uri).chromosomes(), force);
 
   SPDLOG_INFO(FMT_STRING("coarsening cooler at {} {} times ({} -> {})"), clr.uri(),
               resolutions.size(), clr.bin_size(), fmt::join(resolutions, " -> "));

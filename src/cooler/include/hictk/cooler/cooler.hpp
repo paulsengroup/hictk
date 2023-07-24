@@ -106,7 +106,8 @@ class File {
   bool _finalize{false};
 
   // Constructors are private. Cooler files are opened using factory methods
-  File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0, bool validate);
+  File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0,
+       bool validate);
 
   template <typename PixelT>
   File(RootGroup entrypoint, Reference chroms, PixelT pixel, Attributes attributes,

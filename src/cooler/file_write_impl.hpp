@@ -248,7 +248,7 @@ inline void File::write_standard_attributes(RootGroup &root_grp, const Attribute
   Attribute::write(root_grp(), "bin-type", *attributes.bin_type);            // NOLINT
   Attribute::write(root_grp(), "creation-date", *attributes.creation_date);  // NOLINT
   Attribute::write(root_grp(), "format", std::string{COOL_MAGIC});
-  Attribute::write(root_grp(), "format-url", *attributes.format_url);        // NOLINT
+  Attribute::write(root_grp(), "format-url", *attributes.format_url);  // NOLINT
   if (!skip_sentinel_attr) {
     static_assert(internal::SENTINEL_ATTR_NAME == "format-version");
     Attribute::write(root_grp(), "format-version", attributes.format_version);
