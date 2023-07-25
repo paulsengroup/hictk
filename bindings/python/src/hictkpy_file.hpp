@@ -22,7 +22,11 @@ namespace hictkpy::file {
 inline py::object fetch(const hictk::File& f, std::string_view range1, std::string_view range2,
                         std::string_view normalization, std::string_view count_type, bool join,
                         std::string_view query_type) {
-  return file_fetch(f, range1, range2, normalization, count_type, join, query_type);
+  return std::visit(
+      [&](const auto& ff) -> py::object {
+        return file_fetch(ff, range1, range2, normalization, count_type, join, query_type);
+      },
+      f.get());
 }
 
 }  // namespace hictkpy::file
