@@ -211,12 +211,6 @@ inline bool PixelSelector::is_intra() const noexcept { return chrom1() == chrom2
 
 inline bool PixelSelector::is_inter() const noexcept { return !is_intra(); }
 
-template <typename N>
-inline N PixelSelector::sum() const noexcept {
-  return _reader.sum();
-}
-inline double PixelSelector::avg() const noexcept { return _reader.avg(); }
-
 inline std::size_t PixelSelector::estimate_optimal_cache_size(
     [[maybe_unused]] std::size_t num_samples) const {
   if (_reader.index().empty()) {
