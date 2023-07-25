@@ -72,12 +72,11 @@ inline py::object get_bins_from_file(const File& f) {
 
   py::dict py_bins_dict{};  // NOLINT
 
-  py_bins_dict["chrom"] = std::move(chrom_names);
-  py_bins_dict["start"] = starts();
-  py_bins_dict["end"] = ends();
+  py_bins_dict["chrom"] = pd.attr("Series")(py::array(py::cast(chrom_names)), "copy"_a = false);
+  py_bins_dict["start"] = pd.attr("Series")(starts(), "copy"_a = false);
+  py_bins_dict["end"] = pd.attr("Series")(ends(), "copy"_a = false);
 
-  auto df = pd.attr("DataFrame")(py_bins_dict);
-  df.attr("columns") = std::vector<std::string>{"chrom", "start", "end"};
+  auto df = pd.attr("DataFrame")(py_bins_dict, "copy"_a = false);
   return df;
 }
 
@@ -103,11 +102,11 @@ inline py::object pixel_iterators_to_coo(PixelIt first_pixel, PixelIt last_pixel
 
   py::dict py_pixels_dict{};  // NOLINT
 
-  py_pixels_dict["bin1_id"] = bin1_ids();
-  py_pixels_dict["bin2_id"] = bin2_ids();
-  py_pixels_dict["count"] = counts();
+  py_pixels_dict["bin1_id"] = pd.attr("Series")(bin1_ids(), "copy"_a = false);
+  py_pixels_dict["bin2_id"] = pd.attr("Series")(bin2_ids(), "copy"_a = false);
+  py_pixels_dict["count"] = pd.attr("Series")(counts(), "copy"_a = false);
 
-  return pd.attr("DataFrame").attr("from_dict")(py_pixels_dict);
+  return pd.attr("DataFrame")(py_pixels_dict, "copy"_a = false);
 }
 
 template <typename PixelIt>
@@ -147,16 +146,16 @@ inline py::object pixel_iterators_to_bg2(const hictk::BinTable& bins, PixelIt fi
 
   py::dict py_pixels_dict{};  // NOLINT
 
-  py_pixels_dict["chrom1"] = py::array(py::cast(chrom_names1));
-  py_pixels_dict["start1"] = starts1();
-  py_pixels_dict["end1"] = ends1();
-  py_pixels_dict["chrom2"] = py::array(py::cast(chrom_names2));
-  py_pixels_dict["start2"] = starts2();
-  py_pixels_dict["end2"] = ends2();
+  py_pixels_dict["chrom1"] = pd.attr("Series")(py::array(py::cast(chrom_names1)), "copy"_a = false);
+  py_pixels_dict["start1"] = pd.attr("Series")(starts1(), "copy"_a = false);
+  py_pixels_dict["end1"] = pd.attr("Series")(ends1(), "copy"_a = false);
+  py_pixels_dict["chrom2"] = pd.attr("Series")(py::array(py::cast(chrom_names2)), "copy"_a = false);
+  py_pixels_dict["start2"] = pd.attr("Series")(starts2(), "copy"_a = false);
+  py_pixels_dict["end2"] = pd.attr("Series")(ends2(), "copy"_a = false);
 
-  py_pixels_dict["count"] = counts();
+  py_pixels_dict["count"] = pd.attr("Series")(counts(), "copy"_a = false);
 
-  return pd.attr("DataFrame").attr("from_dict")(py_pixels_dict);
+  return pd.attr("DataFrame")(py_pixels_dict, "copy"_a=false);
 }
 
 template <typename PixelIt>
