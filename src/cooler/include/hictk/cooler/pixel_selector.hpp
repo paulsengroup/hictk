@@ -4,6 +4,10 @@
 
 #pragma once
 
+#ifdef HICTK_WITH_EIGEN
+#include <Eigen/Dense>
+#include <Eigen/SparseCore>
+#endif
 #include <cstdint>
 #include <memory>
 #include <type_traits>
@@ -61,6 +65,12 @@ class PixelSelector {
 
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
+#ifdef HICTK_WITH_EIGEN
+  template <typename N>
+  [[nodiscard]] Eigen::SparseMatrix<N> read_sparse() const;
+  template <typename N>
+  [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> read_dense() const;
+#endif
 
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;

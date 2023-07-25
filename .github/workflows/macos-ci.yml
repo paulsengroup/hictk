@@ -418,6 +418,10 @@ jobs:
         run: |
           test/scripts/hictk_load_4dn.sh bin/hictk unsorted
 
+      - name: Test hictk merge
+        run: |
+          test/scripts/hictk_merge.sh bin/hictk
+
       - name: Test hictk validate
         run: |
           test/scripts/hictk_validate.sh bin/hictk

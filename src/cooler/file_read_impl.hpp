@@ -523,8 +523,8 @@ inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &b
                       bin_offset_dset.hdf5_path(), bin_table->size() + 1, bin_offset_dset.size()));
     }
 
-    auto first = bin_offset_dset.begin<std::uint64_t>(64'000);
-    auto last = bin_offset_dset.end<std::uint64_t>(64'000);
+    auto first = bin_offset_dset.begin<std::uint64_t>();
+    auto last = bin_offset_dset.end<std::uint64_t>();
 
     assert(first != last);
     if (const auto offset = *first; offset != 0) {
@@ -566,8 +566,8 @@ inline bool File::read_index_chunk(const Chromosome &chrom) const {
 
     auto offset1 = chrom_offsets[chrom.id()];
     auto offset2 = chrom_offsets[chrom.id() + 1];
-    auto first = bin_offset_dset.begin<std::uint64_t>(64'000) + offset1;
-    auto last = bin_offset_dset.begin<std::uint64_t>(64'000) + offset2;
+    auto first = bin_offset_dset.begin<std::uint64_t>() + offset1;
+    auto last = bin_offset_dset.begin<std::uint64_t>() + offset2;
     _index->set(chrom, {first, last});
 
     try {

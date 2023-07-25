@@ -110,6 +110,43 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
+#ifdef HICTK_WITH_EIGEN
+template <typename N>
+inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
+  const auto bin_size = _bins->bin_size();
+  const auto num_rows =
+      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto num_cols =
+      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+
+  Eigen::SparseMatrix<N> matrix(num_rows, num_cols);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    matrix.insert(static_cast<std::int64_t>(p.bin1_id), static_cast<std::int64_t>(p.bin2_id)) =
+        p.count;
+  });
+  matrix.makeCompressed();
+  return matrix;
+}
+
+template <typename N>
+[[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
+  const auto bin_size = _bins->bin_size();
+  const auto num_rows =
+      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto num_cols =
+      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  MatrixT matrix = MatrixT::Zero(num_rows, num_cols);
+  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+    const auto i1 = static_cast<std::int64_t>(p.bin1_id);
+    const auto i2 = static_cast<std::int64_t>(p.bin2_id);
+    matrix(i1, i2) = p.count;
+  });
+  return matrix;
+}
+#endif
+
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
 
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
@@ -123,9 +160,9 @@ inline PixelSelector::iterator<N>::iterator(const Dataset &pixels_bin1_id,
                                             const Dataset &pixels_bin2_id,
                                             const Dataset &pixels_count,
                                             std::shared_ptr<const balancing::Weights> weights)
-    : _bin1_id_it(pixels_bin1_id.begin<BinIDT>(32'000)),
-      _bin2_id_it(pixels_bin2_id.begin<BinIDT>(32'000)),
-      _count_it(pixels_count.begin<N>(32'000)),
+    : _bin1_id_it(pixels_bin1_id.begin<BinIDT>()),
+      _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
+      _count_it(pixels_count.begin<N>()),
       _weights(std::move(weights)),
       _h5_end_offset(pixels_bin2_id.size()) {
   std::ignore = **this;
@@ -148,12 +185,11 @@ inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
   assert(_coord1.bin1.id() <= _coord1.bin2.id());
   assert(_coord2.bin1.id() <= _coord2.bin2.id());
 
-  const auto chunk_size = 32'000;
   // Set iterator to the first row overlapping the query (i.e. the first bin overlapping coord1)
   auto offset = _index->get_offset_by_bin_id(_coord1.bin1.id());
-  _bin1_id_it = pixels_bin1_id.make_iterator_at_offset<BinIDT>(offset, chunk_size);
-  _bin2_id_it = pixels_bin2_id.make_iterator_at_offset<BinIDT>(offset, chunk_size);
-  _count_it = pixels_count.make_iterator_at_offset<N>(offset, chunk_size);
+  _bin1_id_it = pixels_bin1_id.make_iterator_at_offset<BinIDT>(offset);
+  _bin2_id_it = pixels_bin2_id.make_iterator_at_offset<BinIDT>(offset);
+  _count_it = pixels_count.make_iterator_at_offset<N>(offset);
 
   // Now that last it is set, we can call jump_to_col() to seek to the first pixel actually
   // overlapping the query. Calling jump_to_next_overlap() is required to deal with rows that are
@@ -318,20 +354,14 @@ inline void PixelSelector::iterator<N>::jump_to_col(std::uint64_t bin_id) {
     return;  // Row is empty
   }
 
-  // Doing binary search on iterators can be expensive.
-  // Reading an entire row on bin_ids into a vector,
-  // and then doing the binary search on the vector is in practice ~15% faster
-  const auto &dset = _bin2_id_it.dataset();
   const auto chunk_size = row_end_offset - row_start_offset;
-  const auto offset1 = _bin2_id_it.h5_offset() - (current_offset - row_start_offset);
-  auto first = dset.template make_iterator_at_offset<BinIDT>(offset1, chunk_size);
-  auto last = dset.template make_iterator_at_offset<BinIDT>(offset1 + chunk_size, 0);
+  const auto offset = _bin2_id_it.h5_offset() - (current_offset - row_start_offset);
+  auto first = _bin2_id_it.seek(offset);
+  auto last = _bin2_id_it.seek(offset + chunk_size);
   _bin2_id_it = std::lower_bound(first, last, bin_id);
 
-  const auto offset = _bin2_id_it.h5_offset() - current_offset;
-
-  _bin1_id_it += offset;
-  _count_it += offset;
+  _bin1_id_it.seek(_bin2_id_it.h5_offset());
+  _count_it.seek(_bin2_id_it.h5_offset());
 
   assert(*_bin1_id_it == current_row);
 }
@@ -412,10 +442,9 @@ inline void PixelSelector::iterator<N>::refresh() {
   const auto &bin2_dset = _bin2_id_it.dataset();
   const auto &count_dset = _count_it.dataset();
 
-  const auto chunk_size = 32'000;
-  _bin1_id_it = bin1_dset.template make_iterator_at_offset<BinIDT>(h5_offset, chunk_size);
-  _bin2_id_it = bin2_dset.template make_iterator_at_offset<BinIDT>(h5_offset, chunk_size);
-  _count_it = count_dset.template make_iterator_at_offset<N>(h5_offset, chunk_size);
+  _bin1_id_it = bin1_dset.template make_iterator_at_offset<BinIDT>(h5_offset);
+  _bin2_id_it = bin2_dset.template make_iterator_at_offset<BinIDT>(h5_offset);
+  _count_it = count_dset.template make_iterator_at_offset<N>(h5_offset);
 }
 
 template <typename N>
