@@ -84,7 +84,10 @@ inline HighFive::DataSetAccessProps Dataset::default_access_props() {
 }
 
 inline Dataset::Dataset(RootGroup root_group, HighFive::DataSet dset)
-    : _root_group(std::move(root_group)), _dataset(std::move(dset)) {}
+    : _root_group(std::move(root_group)),
+      _dataset(std::move(dset)),
+      _chunk_size(get_chunk_size(_dataset)),
+      _dataset_size(_dataset.getElementCount()) {}
 
 inline Dataset::Dataset(RootGroup root_group, std::string_view path_to_dataset,
                         const HighFive::DataSetAccessProps &aprops)
@@ -109,6 +112,7 @@ inline Dataset::Dataset(RootGroup root_group, std::string_view path_to_dataset,
 inline void Dataset::resize(std::size_t new_size) {
   if (new_size > _dataset.getElementCount()) {
     _dataset.resize({new_size});
+    _dataset_size = new_size;
   }
 }
 
@@ -165,20 +169,18 @@ inline auto Dataset::make_iterator_at_offset(std::size_t offset, std::size_t chu
   return iterator<T>(*this, chunk_size, offset);
 }
 
-inline HighFive::Selection Dataset::select(std::size_t i) {
-  return _dataset.select(std::vector<std::size_t>{i});
+inline const HighFive::Selection &Dataset::select(std::size_t offset, std::size_t count) const {
+  _offsets.front() = offset;
+  _counts.front() = count;
+  _selection.emplace(_dataset.select(_offsets, _counts));
+  return *_selection;
 }
 
-inline HighFive::Selection Dataset::select(std::size_t i) const {
-  return _dataset.select(std::vector<std::size_t>{i});
-}
-
-inline HighFive::Selection Dataset::select(std::size_t i1, std::size_t i2) {
-  return _dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
-}
-
-inline HighFive::Selection Dataset::select(std::size_t i1, std::size_t i2) const {
-  return _dataset.select(std::vector<std::size_t>{i1}, std::vector<std::size_t>{i2});
+inline HighFive::Selection &Dataset::select(std::size_t offset, std::size_t count) {
+  _offsets.front() = offset;
+  _counts.front() = count;
+  _selection.emplace(_dataset.select(_offsets, _counts));
+  return *_selection;
 }
 
 }  // namespace hictk::cooler

@@ -53,7 +53,7 @@ inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::siz
   auto dspace = select(offset, buff.size());
   dspace.write_raw(strbuff.data(), dspace.getDataType());
 
-  return offset + buff.size();
+  return size();
 }
 
 template <typename N, typename>
@@ -72,7 +72,7 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
   }
 
   select(offset, buff.size()).write(buff);
-  return offset + buff.size();
+  return size();
 }
 
 inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
@@ -139,7 +139,7 @@ inline std::size_t Dataset::write(N buff, std::size_t offset, bool allow_dataset
   }
 
   select(offset).write(buff);
-  return offset + 1;
+  return ++_dataset_size;
 }
 
 inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool allow_dataset_resize) {
@@ -152,14 +152,14 @@ inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool all
     }
   }
 
-  auto dspace = select(offset);
+  auto selector = select(offset);
 
-  const auto str_length = dspace.getDataType().getSize();
+  const auto str_length = selector.getDataType().getSize();
   buff.resize(str_length, '\0');
 
-  dspace.write_raw(buff.data(), dspace.getDataType());
+  selector.write_raw(buff.data(), selector.getDataType());
 
-  return offset + 1;
+  return ++_dataset_size;
 }
 
 inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,

@@ -25,9 +25,8 @@ inline std::size_t Dataset::read(std::vector<N> &buff, std::size_t num, std::siz
   }
 
   buff.resize(num);
-  select(offset, num).read(buff.data(), HighFive::create_datatype<N>());
 
-  return offset + num;
+  return read(buff.data(), buff.size(), offset);
 }
 
 inline std::size_t Dataset::read(std::vector<std::string> &buff, std::size_t num,
@@ -124,8 +123,7 @@ inline std::size_t Dataset::read(N &buff, std::size_t offset) const {
     throw_out_of_range_excp(offset);
   }
 
-  select(offset, 1).read(&buff, HighFive::create_datatype<N>());
-  return offset + 1;
+  return read(&buff, 1, offset);
 }
 
 inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
@@ -225,6 +223,12 @@ inline void Dataset::read_attribute(std::string_view key, std::vector<T> &buff) 
 inline auto Dataset::read_attribute(std::string_view key, bool missing_ok) const
     -> Attribute::AttributeVar {
   return Attribute::read(_dataset, key, missing_ok);
+}
+
+template <typename T>
+inline std::size_t Dataset::read(T *buffer, std::size_t buff_size, std::size_t offset) const {
+  select(offset, buff_size).read(buffer, HighFive::create_datatype<T>());
+  return offset + buff_size;
 }
 
 }  // namespace hictk::cooler
