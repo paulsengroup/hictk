@@ -81,7 +81,47 @@ inline py::object get_bins_from_file(const File& f) {
 }
 
 template <typename PixelIt>
-inline py::object pixel_iterators_to_coo(PixelIt first_pixel, PixelIt last_pixel) {
+inline py::object pixel_iterators_to_coo(PixelIt first_pixel, PixelIt last_pixel,
+                                         std::size_t num_rows, std::size_t num_cols) {
+  using N = decltype(first_pixel->count);
+  auto ss = py::module::import("scipy.sparse");
+
+  Dynamic1DA<std::int64_t> bin1_ids{};
+  Dynamic1DA<std::int64_t> bin2_ids{};
+  Dynamic1DA<N> counts{};
+
+  std::for_each(first_pixel, last_pixel, [&](const hictk::ThinPixel<N>& tp) {
+    bin1_ids.append(static_cast<std::int64_t>(tp.bin1_id));
+    bin2_ids.append(static_cast<std::int64_t>(tp.bin2_id));
+    counts.append(tp.count);
+  });
+
+  bin1_ids.shrink_to_fit();
+  bin2_ids.shrink_to_fit();
+  counts.shrink_to_fit();
+
+  // See
+  // https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.coo_matrix.html#scipy.sparse.coo_matrix
+  // Building a sparse COO from an array triplet is much faster than converting an Eigen matrix
+
+  py::list shape{};
+  shape.append(num_rows);
+  shape.append(num_cols);
+
+  py::list coords{};
+  coords.append(bin1_ids());
+  coords.append(bin2_ids());
+
+  py::list data{};
+  data.append(counts());
+  data.append(py::tuple(coords));
+
+  auto m = ss.attr("coo_matrix")(py::tuple(data), "shape"_a = shape);
+  return m;
+}
+
+template <typename PixelIt>
+inline py::object pixel_iterators_to_coo_df(PixelIt first_pixel, PixelIt last_pixel) {
   using N = decltype(first_pixel->count);
 
   auto pd = py::module::import("pandas");
@@ -155,7 +195,7 @@ inline py::object pixel_iterators_to_bg2(const hictk::BinTable& bins, PixelIt fi
 
   py_pixels_dict["count"] = pd.attr("Series")(counts(), "copy"_a = false);
 
-  return pd.attr("DataFrame")(py_pixels_dict, "copy"_a=false);
+  return pd.attr("DataFrame")(py_pixels_dict, "copy"_a = false);
 }
 
 template <typename PixelIt>
@@ -164,7 +204,7 @@ static py::object pixel_iterators_to_df(const hictk::BinTable& bins, PixelIt fir
   if (join) {
     return pixel_iterators_to_bg2(bins, first_pixel, last_pixel);
   }
-  return pixel_iterators_to_coo(first_pixel, last_pixel);
+  return pixel_iterators_to_coo_df(first_pixel, last_pixel);
 }
 
 template <typename File>
@@ -211,6 +251,63 @@ inline py::object file_fetch(const File& f, std::string_view range1, std::string
   }
   return pixel_iterators_to_df(f.bins(), sel.template begin<double>(), sel.template end<double>(),
                                join);
+}
+
+template <typename File>
+inline py::object file_fetch_all_sparse(File& f, std::string_view normalization,
+                                        std::string_view count_type) {
+  if (count_type != "int" && count_type != "float") {
+    throw std::runtime_error("invalid count type. Allowed types: int, float.");
+  }
+
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  auto sel = f.fetch(hictk::balancing::Method{normalization});
+  if (count_type == "int") {
+    return pixel_iterators_to_coo(sel.template begin<std::int32_t>(),
+                                  sel.template end<std::int32_t>(), f.bins().size(),
+                                  f.bins().size());
+  }
+  return pixel_iterators_to_coo(sel.template begin<double>(), sel.template end<double>(),
+                                f.bins().size(), f.bins().size());
+}
+
+template <typename File>
+inline py::object file_fetch_sparse(const File& f, std::string_view range1, std::string_view range2,
+                                    std::string_view normalization, std::string_view count_type,
+                                    std::string_view query_type) {
+  if (range1.empty()) {
+    return file_fetch_all_sparse(f, normalization, count_type);
+  }
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  const auto qt =
+      query_type == "UCSC" ? hictk::GenomicInterval::Type::UCSC : hictk::GenomicInterval::Type::BED;
+
+  const auto gi1 = hictk::GenomicInterval::parse(f.chromosomes(), std::string{range1}, qt);
+  const auto gi2 = range2.empty()
+                       ? gi1
+                       : hictk::GenomicInterval::parse(f.chromosomes(), std::string{range2}, qt);
+
+  const auto bin_size = f.bin_size();
+
+  const auto num_rows = (gi1.size() + bin_size - 1) / bin_size;
+  const auto num_cols = (gi2.size() + bin_size - 1) / bin_size;
+
+  auto sel = range2.empty() || range1 == range2
+                 ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
+                 : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
+
+  if (count_type == "int") {
+    return pixel_iterators_to_coo(sel.template begin<std::int32_t>(),
+                                  sel.template end<std::int32_t>(), num_rows, num_cols);
+  }
+  return pixel_iterators_to_coo(sel.template begin<double>(), sel.template end<double>(), num_rows,
+                                num_cols);
 }
 
 }  // namespace hictkpy

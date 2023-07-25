@@ -43,6 +43,7 @@ class GenomicInterval {
   [[nodiscard]] const Chromosome &chrom() const noexcept;
   [[nodiscard]] constexpr std::uint32_t start() const noexcept;
   [[nodiscard]] constexpr std::uint32_t end() const noexcept;
+  [[nodiscard]] constexpr std::uint32_t size() const noexcept;
 };
 }  // namespace hictk
 

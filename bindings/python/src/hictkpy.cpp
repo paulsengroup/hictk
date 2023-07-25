@@ -45,6 +45,9 @@ static pybind11::module_ declare_cooler_submodule(pybind11::module_& m) {
   cooler_file.def("fetch", &cooler::fetch, py::arg("range1") = "", py::arg("range2") = "",
                   py::arg("normalization") = "NONE", py::arg("count_type") = "int",
                   py::arg("join") = false, py::arg("query_type") = "UCSC");
+  cooler_file.def("fetch_sparse", &cooler::fetch_sparse, py::arg("range1") = "",
+                  py::arg("range2") = "", py::arg("normalization") = "NONE",
+                  py::arg("count_type") = "int", py::arg("query_type") = "UCSC");
 
   return cooler;
 }
@@ -74,6 +77,9 @@ static pybind11::module_ declare_hic_submodule(pybind11::module_& m) {
   hic_file.def("fetch", &hic::fetch, py::arg("range1") = "", py::arg("range2") = "",
                py::arg("normalization") = "NONE", py::arg("count_type") = "int",
                py::arg("join") = false, py::arg("query_type") = "UCSC");
+  hic_file.def("fetch_sparse", &hic::fetch_sparse, py::arg("range1") = "", py::arg("range2") = "",
+               py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+               py::arg("query_type") = "UCSC");
 
   return hic;
 }
@@ -99,6 +105,9 @@ static void declare_file_class(pybind11::module_& m) {
   file.def("fetch", &file::fetch, py::arg("range1") = "", py::arg("range2") = "",
            py::arg("normalization") = "NONE", py::arg("count_type") = "int",
            py::arg("join") = false, py::arg("query_type") = "UCSC");
+  file.def("fetch_sparse", &file::fetch_sparse, py::arg("range1") = "", py::arg("range2") = "",
+           py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+           py::arg("query_type") = "UCSC");
 }
 
 namespace py = pybind11;
@@ -107,6 +116,7 @@ using namespace pybind11::literals;
 PYBIND11_MODULE(hictkpy, m) {
   [[maybe_unused]] auto np = py::module::import("numpy");
   [[maybe_unused]] auto pd = py::module::import("pandas");
+  [[maybe_unused]] auto ss = py::module::import("scipy.sparse");
   m.attr("__version__") = hictk::config::version::str();
 
   m.doc() = "Blazing fast toolkit to work with .hic and .cool files";

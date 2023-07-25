@@ -94,6 +94,7 @@ inline bool GenomicInterval::operator>=(const GenomicInterval &other) const noex
 inline const Chromosome &GenomicInterval::chrom() const noexcept { return _chrom; }
 constexpr std::uint32_t GenomicInterval::start() const noexcept { return _start; }
 constexpr std::uint32_t GenomicInterval::end() const noexcept { return _end; }
+constexpr std::uint32_t GenomicInterval::size() const noexcept { return _end - _start; }
 
 inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::string query,
                                               Type type) {

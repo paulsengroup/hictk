@@ -25,4 +25,10 @@ inline py::object fetch(const hictk::hic::File& f, std::string_view range1, std:
                         std::string_view query_type) {
   return file_fetch(f, range1, range2, normalization, count_type, join, query_type);
 }
+
+inline py::object fetch_sparse(const hictk::hic::File& f, std::string_view range1,
+                               std::string_view range2, std::string_view normalization,
+                               std::string_view count_type, std::string_view query_type) {
+  return file_fetch_sparse(f, range1, range2, normalization, count_type, query_type);
+}
 }  // namespace hictkpy::hic
