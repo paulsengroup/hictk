@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -308,6 +309,48 @@ inline py::object file_fetch_sparse(const File& f, std::string_view range1, std:
   }
   return pixel_iterators_to_coo(sel.template begin<double>(), sel.template end<double>(), num_rows,
                                 num_cols);
+}
+
+template <typename File>
+inline py::object file_fetch_all_dense(File& f, std::string_view normalization,
+                                       std::string_view count_type) {
+  if (count_type != "int" && count_type != "float") {
+    throw std::runtime_error("invalid count type. Allowed types: int, float.");
+  }
+
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  auto sel = f.fetch(hictk::balancing::Method{normalization});
+  if (count_type == "int") {
+    return py::cast(sel.template read_dense<std::int32_t>());
+  }
+  return py::cast(sel.template read_dense<double>());
+}
+
+template <typename File>
+inline py::object file_fetch_dense(const File& f, std::string_view range1, std::string_view range2,
+                                   std::string_view normalization, std::string_view count_type,
+                                   std::string_view query_type) {
+  if (range1.empty()) {
+    return file_fetch_all_sparse(f, normalization, count_type);
+  }
+  if (normalization != "NONE") {
+    count_type = "float";
+  }
+
+  const auto qt =
+      query_type == "UCSC" ? hictk::GenomicInterval::Type::UCSC : hictk::GenomicInterval::Type::BED;
+
+  auto sel = range2.empty() || range1 == range2
+                 ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
+                 : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
+
+  if (count_type == "int") {
+    return py::cast(sel.template read_dense<std::int32_t>());
+  }
+  return py::cast(sel.template read_dense<double>());
 }
 
 }  // namespace hictkpy

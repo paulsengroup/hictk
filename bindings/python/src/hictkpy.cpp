@@ -48,6 +48,9 @@ static pybind11::module_ declare_cooler_submodule(pybind11::module_& m) {
   cooler_file.def("fetch_sparse", &cooler::fetch_sparse, py::arg("range1") = "",
                   py::arg("range2") = "", py::arg("normalization") = "NONE",
                   py::arg("count_type") = "int", py::arg("query_type") = "UCSC");
+  cooler_file.def("fetch_dense", &cooler::fetch_dense, py::arg("range1") = "",
+                  py::arg("range2") = "", py::arg("normalization") = "NONE",
+                  py::arg("count_type") = "int", py::arg("query_type") = "UCSC");
 
   return cooler;
 }
@@ -80,6 +83,9 @@ static pybind11::module_ declare_hic_submodule(pybind11::module_& m) {
   hic_file.def("fetch_sparse", &hic::fetch_sparse, py::arg("range1") = "", py::arg("range2") = "",
                py::arg("normalization") = "NONE", py::arg("count_type") = "int",
                py::arg("query_type") = "UCSC");
+  hic_file.def("fetch_dense", &hic::fetch_dense, py::arg("range1") = "", py::arg("range2") = "",
+               py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+               py::arg("query_type") = "UCSC");
 
   return hic;
 }
@@ -106,6 +112,9 @@ static void declare_file_class(pybind11::module_& m) {
            py::arg("normalization") = "NONE", py::arg("count_type") = "int",
            py::arg("join") = false, py::arg("query_type") = "UCSC");
   file.def("fetch_sparse", &file::fetch_sparse, py::arg("range1") = "", py::arg("range2") = "",
+           py::arg("normalization") = "NONE", py::arg("count_type") = "int",
+           py::arg("query_type") = "UCSC");
+  file.def("fetch_dense", &file::fetch_dense, py::arg("range1") = "", py::arg("range2") = "",
            py::arg("normalization") = "NONE", py::arg("count_type") = "int",
            py::arg("query_type") = "UCSC");
 }
