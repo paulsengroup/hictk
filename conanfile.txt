@@ -4,6 +4,7 @@
 
 [requires]
 boost/1.82.0
+eigen/3.4.0
 hdf5/1.14.1
 zlib/1.2.13
 

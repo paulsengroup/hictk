@@ -161,10 +161,10 @@ static py::object cooler_fetch(const cooler::File& clr, std::string_view range1,
 }
 
 [[nodiscard]] hic::File hic_ctor(std::string_view path, std::int32_t resolution,
-                                    std::string_view matrix_type, std::string_view matrix_unit) {
+                                 std::string_view matrix_type, std::string_view matrix_unit) {
   return hic::File{std::string{path}, static_cast<std::uint32_t>(resolution),
-                      hic::ParseMatrixTypeStr(std::string{matrix_type}),
-                      hic::ParseUnitStr(std::string{matrix_unit})};
+                   hic::ParseMatrixTypeStr(std::string{matrix_type}),
+                   hic::ParseUnitStr(std::string{matrix_unit})};
 }
 
 static py::object hic_fetch(const hic::File& f, std::string_view range1, std::string_view range2,
