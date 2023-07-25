@@ -184,6 +184,22 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
           coord1,       coord2};
 }
 
+inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
+                                 balancing::Method norm) const {
+  return fetch(first_bin, last_bin, first_bin, last_bin, std::move(norm));
+}
+
+inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
+                                 std::uint64_t first_bin2, std::uint64_t last_bin2,
+                                 balancing::Method norm) const {
+  PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1 - 1)};
+  PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2 - 1)};
+
+  return fetch(coord1.bin1.chrom().name(), coord1.bin1.start(), coord1.bin2.end() - 1,
+               coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1,
+               std::move(norm));
+}
+
 inline std::size_t File::num_cached_footers() const noexcept { return _footers.size(); }
 
 inline void File::purge_footer_cache() { _footers.clear(); }

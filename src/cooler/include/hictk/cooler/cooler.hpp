@@ -234,6 +234,14 @@ class File {
       std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
       std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
+  [[nodiscard]] PixelSelector fetch(
+      std::uint64_t first_bin, std::uint64_t last_bin,
+      std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+
+  [[nodiscard]] PixelSelector fetch(
+      std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
+      std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+
   bool has_weights(std::string_view name) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view name,
                                                          bool rescale = false) const;
