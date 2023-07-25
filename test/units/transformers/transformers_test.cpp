@@ -98,7 +98,7 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
 
   SECTION("stats") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
-    auto clr = cooler::File::open(path.string());
+    const cooler::File clr(path.string());
     auto sel = clr.fetch("chr1");
     auto first = sel.begin<std::int32_t>();
     auto last = sel.end<std::int32_t>();
