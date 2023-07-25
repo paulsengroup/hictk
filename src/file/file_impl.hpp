@@ -224,6 +224,11 @@ inline auto File::bins() const -> const BinTable& {
   return std::visit([&](const auto& fp) -> const BinTable& { return fp.bins(); }, _fp);
 }
 
+inline std::shared_ptr<const BinTable> File::bins_ptr() const {
+  return std::visit([&](const auto& f) -> std::shared_ptr<const BinTable> { return f.bins_ptr(); },
+                    _fp);
+}
+
 inline std::uint32_t File::bin_size() const {
   return std::visit([&](const auto& fp) { return fp.bin_size(); }, _fp);
 }

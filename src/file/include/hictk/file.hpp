@@ -108,6 +108,7 @@ class File {
 
   [[nodiscard]] auto chromosomes() const -> const Reference &;
   [[nodiscard]] auto bins() const -> const BinTable &;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const;
 
   [[nodiscard]] std::uint32_t bin_size() const;
   [[nodiscard]] std::uint64_t nbins() const;
