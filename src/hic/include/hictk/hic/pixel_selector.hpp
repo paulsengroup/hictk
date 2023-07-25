@@ -97,9 +97,6 @@ class PixelSelector {
 
   [[nodiscard]] bool is_inter() const noexcept;
   [[nodiscard]] bool is_intra() const noexcept;
-  template <typename N = double>
-  [[nodiscard]] N sum() const noexcept;
-  [[nodiscard]] double avg() const noexcept;
 
   [[nodiscard]] std::size_t estimate_optimal_cache_size(std::size_t num_samples = 500) const;
   void clear_cache() const;

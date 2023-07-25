@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
@@ -93,6 +94,19 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     for (std::size_t i = 0; i < v1.size(); ++i) {
       CHECK(v1[i] == v2[i].to_thin());
     }
+  }
+
+  SECTION("stats") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    auto clr = cooler::File::open(path.string());
+    auto sel = clr.fetch("chr1");
+    auto first = sel.begin<std::int32_t>();
+    auto last = sel.end<std::int32_t>();
+
+    CHECK_THAT(avg(first, last), Catch::Matchers::WithinRel(25231.981858902574));
+    CHECK(nnz(first, last) == 4'465);
+    CHECK(max(first, last) == 1'357'124);
+    CHECK(sum(first, last) == 112'660'799);
   }
 }
 
