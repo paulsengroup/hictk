@@ -16,6 +16,7 @@ DISABLE_WARNING_POP
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -47,7 +48,12 @@ class Dataset {
   using GenericVariant = hictk::internal::GenericVariant;
   RootGroup _root_group{};
   HighFive::DataSet _dataset{};
+  mutable std::vector<std::size_t> _offsets{0};
+  mutable std::vector<std::size_t> _counts{0};
+  mutable std::optional<HighFive::Selection> _selection{};
   mutable VariantBuffer _buff{};
+  std::size_t _chunk_size{};
+  std::size_t _dataset_size{};
 
  public:
   template <typename T>
@@ -92,6 +98,8 @@ class Dataset {
 
   [[nodiscard]] std::size_t size() const;
   [[nodiscard]] bool empty() const;
+
+  [[nodiscard]] std::size_t get_chunk_size() const noexcept;
 
   [[nodiscard]] HighFive::DataSet get();
   [[nodiscard]] const HighFive::DataSet &get() const;
@@ -184,27 +192,24 @@ class Dataset {
   [[nodiscard]] bool has_attribute(std::string_view key) const;
 
   template <typename T>
-  [[nodiscard]] auto begin(std::size_t chunk_size) const -> iterator<T>;
+  [[nodiscard]] auto begin(std::size_t chunk_size = 0) const -> iterator<T>;
   template <typename T>
-  [[nodiscard]] auto end(std::size_t chunk_size) const -> iterator<T>;
+  [[nodiscard]] auto end(std::size_t chunk_size = 0) const -> iterator<T>;
 
   template <typename T>
-  [[nodiscard]] auto cbegin(std::size_t chunk_size) const -> iterator<T>;
+  [[nodiscard]] auto cbegin(std::size_t chunk_size = 0) const -> iterator<T>;
   template <typename T>
-  [[nodiscard]] auto cend(std::size_t chunk_size) const -> iterator<T>;
+  [[nodiscard]] auto cend(std::size_t chunk_size = 0) const -> iterator<T>;
 
   template <typename T>
-  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset, std::size_t chunk_size) const
+  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset, std::size_t chunk_size = 0) const
       -> iterator<T>;
 
   [[nodiscard]] static std::pair<std::string, std::string> parse_uri(std::string_view uri);
 
  private:
-  [[nodiscard]] HighFive::Selection select(std::size_t i);
-  [[nodiscard]] HighFive::Selection select(std::size_t i) const;
-
-  [[nodiscard]] HighFive::Selection select(std::size_t i1, std::size_t i2);
-  [[nodiscard]] HighFive::Selection select(std::size_t i1, std::size_t i2) const;
+  [[nodiscard]] const HighFive::Selection &select(std::size_t offset, std::size_t count = 1) const;
+  [[nodiscard]] HighFive::Selection &select(std::size_t offset, std::size_t count = 1);
 
   [[nodiscard]] static HighFive::DataSet create_fixed_str_dataset(
       RootGroup &root_grp, std::string_view path, std::size_t max_str_length, std::size_t max_dim,
@@ -214,6 +219,10 @@ class Dataset {
   [[noreturn]] void throw_out_of_range_excp(std::size_t offset, std::size_t n) const;
 
   [[nodiscard]] HighFive::DataType get_h5type() const;
+  [[nodiscard]] static std::size_t get_chunk_size(const HighFive::DataSet &dset);
+
+  template <typename T>
+  std::size_t read(T *buffer, std::size_t buff_size, std::size_t offset) const;
 
  public:
   template <typename T>
@@ -266,6 +275,7 @@ class Dataset {
     [[nodiscard]] auto operator-(std::size_t i) const -> iterator;
     [[nodiscard]] auto operator-(const iterator &other) const -> difference_type;
 
+    auto seek(std::size_t offset) -> iterator &;
     [[nodiscard]] constexpr std::uint64_t h5_offset() const noexcept;
     [[nodiscard]] constexpr std::size_t underlying_buff_capacity() const noexcept;
 

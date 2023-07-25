@@ -38,6 +38,9 @@ inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset, std::
 #endif
 // clang-format on
 {
+  if (_chunk_size == 0) {
+    _chunk_size = _dset->get_chunk_size();
+  }
   if (init) {
     read_chunk_at_offset(_h5_chunk_start);
   }
@@ -177,6 +180,15 @@ inline auto Dataset::iterator<T>::operator-(const iterator &other) const -> diff
 }
 
 template <typename T>
+inline auto Dataset::iterator<T>::seek(std::size_t offset) -> iterator<T> & {
+  assert(offset < _h5_size);
+  if (offset >= h5_offset()) {
+    return *this += offset - h5_offset();
+  }
+  return *this -= h5_offset() - offset;
+}
+
+template <typename T>
 constexpr std::uint64_t Dataset::iterator<T>::h5_offset() const noexcept {
   return _h5_offset;
 }
@@ -275,7 +287,7 @@ inline auto Dataset::iterator<T>::make_end_iterator(std::shared_ptr<const Datase
   it._buff = nullptr;
   it._dset = std::move(dset);
   it._h5_offset = it._dset->size();
-  it._chunk_size = chunk_size;
+  it._chunk_size = chunk_size == 0 ? it._dset->get_chunk_size() : chunk_size;
 #ifndef NDEBUG
   it._h5_size = it._h5_offset;
 #endif
