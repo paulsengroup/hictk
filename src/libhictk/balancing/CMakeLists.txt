@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(phmap CONFIG REQUIRED)
+
 add_library(hictk_balancing INTERFACE)
 add_library(hictk::balancing ALIAS hictk_balancing)
 
@@ -21,6 +23,6 @@ target_link_libraries(
             hictk::common
             hictk::pixel)
 
-target_link_system_libraries(hictk_balancing INTERFACE _hictk_phmap_tgt)
+target_link_system_libraries(hictk_balancing INTERFACE phmap)
 
 install(TARGETS hictk_balancing FILE_SET HEADERS EXCLUDE_FROM_ALL)

@@ -39,7 +39,7 @@ target_link_system_libraries(
   PRIVATE
   Boost::headers
   CLI11::CLI11
-  readerwriterqueue
+  readerwriterqueue::readerwriterqueue
   std::filesystem
   PUBLIC
   Boost::filesystem

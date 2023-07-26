@@ -12,14 +12,14 @@ namespace hictk::config::git {
 
 // clang-format off
 [[nodiscard]] constexpr bool state_available() noexcept { return true; }
-[[nodiscard]] constexpr std::string_view head_sha1() noexcept { return "fc50422d004e96bfb16bb9b0ab6cb6f1246822a1"; }
+[[nodiscard]] constexpr std::string_view head_sha1() noexcept { return "53339ba40a2f2d7e054c269c6c45c2bd85567d31"; }
 [[nodiscard]] constexpr bool is_dirty() noexcept { return true; }
 [[nodiscard]] constexpr std::string_view author_name() noexcept { return "Roberto Rossini"; }
 [[nodiscard]] constexpr std::string_view author_email() noexcept { return "71787608+robomics@users.noreply.github.com"; }
-[[nodiscard]] constexpr std::string_view commit_date() noexcept { return "2023-07-26 11:48:18 +0200"; }
-[[nodiscard]] constexpr std::string_view commit_subject() noexcept { return "Avoid inclusing external header-only libs with add_subdirectory"; }
-[[nodiscard]] constexpr std::string_view commit_body() noexcept { return "This makes it easier to exclude headers from install targets."; }
-[[nodiscard]] constexpr std::string_view describe() noexcept { return "fc50422"; }
+[[nodiscard]] constexpr std::string_view commit_date() noexcept { return "2023-07-26 13:12:49 +0200"; }
+[[nodiscard]] constexpr std::string_view commit_subject() noexcept { return "Let Conan manage external deps"; }
+[[nodiscard]] constexpr std::string_view commit_body() noexcept { return ""; }
+[[nodiscard]] constexpr std::string_view describe() noexcept { return "53339ba"; }
 [[nodiscard]] constexpr std::string_view branch() noexcept { return "update-build-system"; }
 [[nodiscard]] constexpr std::string_view tag() noexcept { return ""; }
 // clang-format on

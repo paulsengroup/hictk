@@ -77,6 +77,7 @@ target_link_system_libraries(
   FastFloat::fast_float
   fmt::fmt
   HDF5::HDF5
+  HighFive
   phmap
   spdlog::spdlog
   std::filesystem)
