@@ -10,11 +10,10 @@ endif()
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(hictk_tools)
-set_target_properties(hictk_tools PROPERTIES OUTPUT_NAME hictk)
+add_executable(hictk)
 
 target_sources(
-  hictk_tools
+  hictk
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_convert.cpp
@@ -32,23 +31,17 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 
-target_include_directories(hictk_tools PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(
-  hictk_tools
-  PRIVATE hictk_project_options
-          hictk_project_warnings
-          hictk::cooler
-          hictk::hic
-          hictk::transformers)
+target_include_directories(hictk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(hictk PRIVATE hictk_project_options hictk_project_warnings hictk::hictk)
 
 target_link_system_libraries(
-  hictk_tools
+  hictk
   PRIVATE
   Boost::headers
   CLI11::CLI11
-  readerwriterqueue
   std::filesystem
   _hictk_fmt_tgt
+  _hictk_readerwriterqueue_tgt
   _hictk_spdlog_tgt
   PUBLIC
   Boost::filesystem
@@ -56,10 +49,11 @@ target_link_system_libraries(
 
 include(GNUInstallDirs)
 install(
-  TARGETS hictk_tools
+  TARGETS hictk
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  PUBLIC_HEADER DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/scratch/
+  PRIVATE_HEADER DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/scratch/)
 
 install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/hictk/)

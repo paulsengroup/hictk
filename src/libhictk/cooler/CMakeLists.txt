@@ -28,6 +28,10 @@ add_library(cooler INTERFACE)
 add_library(hictk::cooler ALIAS cooler)
 target_sources(
   cooler
+  PUBLIC FILE_SET
+         HEADERS
+         BASE_DIRS
+         ${CMAKE_CURRENT_SOURCE_DIR}/include
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/attribute_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/dataset_impl.hpp
@@ -41,8 +45,13 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/file_validation_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/file_write_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/index_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/multires_cooler_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/uri_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/utils_copy_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/utils_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/validation_impl.hpp)
 
 target_include_directories(cooler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
@@ -74,4 +83,4 @@ target_link_system_libraries(
   _hictk_phmap_tgt
   _hictk_spdlog_tgt)
 
-install(TARGETS cooler INCLUDES)
+install(TARGETS cooler FILE_SET HEADERS EXCLUDE_FROM_ALL)

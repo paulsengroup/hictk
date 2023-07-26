@@ -20,13 +20,18 @@ add_library(hictk::hic ALIAS hic)
 
 target_sources(
   hic
+  PUBLIC FILE_SET
+         HEADERS
+         BASE_DIRS
+         ${CMAKE_CURRENT_SOURCE_DIR}/include
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/block_cache_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/block_reader_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/file_reader_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/footer_cache_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/footer_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/header_impl.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/index_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/utils_impl.hpp

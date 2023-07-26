@@ -5,6 +5,13 @@
 add_library(hictk_fmt INTERFACE)
 add_library(hictk::fmt ALIAS hictk_fmt)
 
+target_sources(
+  hictk_fmt
+  PUBLIC FILE_SET
+         HEADERS
+         BASE_DIRS
+         ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 target_include_directories(hictk_fmt INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
 target_link_libraries(
@@ -19,4 +26,4 @@ target_link_libraries(
 
 target_link_system_libraries(hictk_fmt INTERFACE _hictk_fmt_tgt)
 
-install(TARGETS hictk_fmt INCLUDES)
+install(TARGETS hictk_fmt FILE_SET HEADERS EXCLUDE_FROM_ALL)
