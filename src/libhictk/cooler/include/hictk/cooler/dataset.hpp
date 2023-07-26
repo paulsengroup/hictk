@@ -302,8 +302,8 @@ using DatasetMap = phmap::flat_hash_map<std::string, Dataset>;
 
 }  // namespace hictk::cooler
 
-#include "../../../dataset_accessors_impl.hpp"
-#include "../../../dataset_impl.hpp"
-#include "../../../dataset_iterator_impl.hpp"
-#include "../../../dataset_read_impl.hpp"
-#include "../../../dataset_write_impl.hpp"
+#include "./impl/dataset_accessors_impl.hpp"
+#include "./impl/dataset_impl.hpp"
+#include "./impl/dataset_iterator_impl.hpp"
+#include "./impl/dataset_read_impl.hpp"
+#include "./impl/dataset_write_impl.hpp"

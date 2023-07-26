@@ -138,5 +138,5 @@ class WeightCache {
 
 }  // namespace hictk::hic::internal
 
-#include "../../../block_cache_impl.hpp"
-#include "../../../weight_cache_impl.hpp"
+#include "./impl/block_cache_impl.hpp"
+#include "./impl/weight_cache_impl.hpp"

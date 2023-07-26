@@ -103,4 +103,4 @@ class HiCFileReader {
 };
 }  // namespace hictk::hic::internal
 
-#include "../../../file_reader_impl.hpp"
+#include "./impl/file_reader_impl.hpp"

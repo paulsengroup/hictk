@@ -19,6 +19,7 @@ Testing/
 venv/
 
 # Ignored files
+*.bak
 gmon.out
 perf.*
 compile_commands.json

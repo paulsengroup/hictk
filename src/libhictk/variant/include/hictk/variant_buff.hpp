@@ -125,4 +125,4 @@ class VariantBuffer {
 
 }  // namespace hictk::internal
 
-#include "../../variant_buff_impl.hpp"
+#include "./impl/variant_buff_impl.hpp"

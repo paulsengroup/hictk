@@ -65,4 +65,4 @@ class JoinGenomicCoords {
 
 }  // namespace hictk::transformers
 
-#include "../../../join_genomic_coords_impl.hpp"
+#include "./impl/join_genomic_coords_impl.hpp"

@@ -53,4 +53,4 @@ struct hash<hictk::GenomicInterval> {
 };
 }  // namespace std
 
-#include "../../genomic_interval_impl.hpp"
+#include "./impl/genomic_interval_impl.hpp"

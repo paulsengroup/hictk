@@ -93,4 +93,4 @@ class CoarsenPixels {
 
 }  // namespace hictk::transformers
 
-#include "../../../coarsen_impl.hpp"
+#include "./impl/coarsen_impl.hpp"

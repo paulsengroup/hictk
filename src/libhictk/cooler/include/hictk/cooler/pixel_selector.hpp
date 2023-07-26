@@ -155,4 +155,4 @@ class PixelSelector {
 
 }  // namespace hictk::cooler
 
-#include "../../../pixel_selector_impl.hpp"
+#include "./impl/pixel_selector_impl.hpp"

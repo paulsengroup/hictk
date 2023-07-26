@@ -14,4 +14,4 @@ namespace hictk::hic::utils {
                                                           bool sorted = true);
 }  // namespace hictk::hic::utils
 
-#include "../../../utils_impl.hpp"
+#include "./impl/utils_impl.hpp"

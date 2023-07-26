@@ -23,29 +23,16 @@ add_library(hictk::hic ALIAS hictk_hic)
 
 target_sources(
   hictk_hic
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include
-  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/block_cache_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/block_reader_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/file_reader_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/filestream_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/footer_cache_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/footer_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/header_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/hic_file_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/index_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/utils_impl.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/weight_cache_impl.hpp)
+  INTERFACE FILE_SET
+            HEADERS
+            BASE_DIRS
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(hictk_hic INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(hictk_hic INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                               $<INSTALL_INTERFACE:include>)
 target_link_libraries(
   hictk_hic
-  INTERFACE hictk_project_options
-            hictk_project_warnings
-            hictk::balancing
+  INTERFACE hictk::balancing
             hictk::common
             hictk::chromosome
             hictk::reference)
@@ -58,3 +45,6 @@ target_link_system_libraries(
   libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>
   phmap
   std::filesystem)
+
+include(GNUInstallDirs)
+install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

@@ -78,4 +78,4 @@ struct hash<hictk::Chromosome> {
 };
 }  // namespace std
 
-#include "../../chromosome_impl.hpp"
+#include "./impl/chromosome_impl.hpp"

@@ -84,4 +84,4 @@ class HiCBlockReader {
 
 }  // namespace hictk::hic::internal
 
-#include "../../../block_reader_impl.hpp"
+#include "./impl/block_reader_impl.hpp"

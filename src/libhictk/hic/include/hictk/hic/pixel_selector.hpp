@@ -255,4 +255,4 @@ class PixelSelectorAll {
 
 }  // namespace hictk::hic
 
-#include "../../../pixel_selector_impl.hpp"
+#include "./impl/pixel_selector_impl.hpp"

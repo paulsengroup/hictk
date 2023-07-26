@@ -105,4 +105,4 @@ class File {
 
 }  // namespace hictk::hic
 
-#include "../../hic_file_impl.hpp"
+#include "./hic/impl/hic_file_impl.hpp"

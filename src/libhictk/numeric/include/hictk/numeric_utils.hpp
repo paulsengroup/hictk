@@ -28,4 +28,4 @@ template <typename N>
 constexpr N abs_diff(N n1, N n2) noexcept;
 }  // namespace hictk::internal
 
-#include "../../numeric_utils_impl.hpp"
+#include "./impl/numeric_utils_impl.hpp"

@@ -67,4 +67,4 @@ class FileStream {
 };
 }  // namespace hictk::hic::internal::filestream
 
-#include "../../../filestream_impl.hpp"
+#include "./impl/filestream_impl.hpp"

@@ -71,4 +71,4 @@ class MultiResFile {
 
 }  // namespace hictk::cooler
 
-#include "../../../multires_cooler_impl.hpp"
+#include "./impl/multires_cooler_impl.hpp"

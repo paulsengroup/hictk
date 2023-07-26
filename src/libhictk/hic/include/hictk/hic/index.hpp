@@ -126,4 +126,4 @@ struct std::hash<hictk::hic::internal::BlockIndex> {
     return std::hash<std::size_t>{}(b.id());
   }
 };
-#include "../../../index_impl.hpp"
+#include "./impl/index_impl.hpp"

@@ -34,3 +34,23 @@ target_link_libraries(
             hictk::reference
             hictk::transformers
             hictk::variant)
+
+install(TARGETS
+        libhictk
+        hictk_balancing
+        hictk_bin_table
+        hictk_chromosome
+        hictk_common
+        hictk_cooler
+        hictk_fmt
+        hictk_genomic_interval
+        hictk_hic
+        hictk_numeric
+        hictk_pixel
+        hictk_reference
+        hictk_transformers
+        hictk_variant
+        EXPORT libhictk_target
+        FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT libhictk_target FILE hictkConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hictk)

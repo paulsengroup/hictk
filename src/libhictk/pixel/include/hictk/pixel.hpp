@@ -127,4 +127,4 @@ class PixelMerger {
 
 }  // namespace hictk
 
-#include "../../pixel_impl.hpp"
+#include "./impl/pixel_impl.hpp"

@@ -197,4 +197,4 @@ struct hash<hictk::Bin> {
 };
 }  // namespace std
 
-#include "../../bin_table_impl.hpp"
+#include "./impl/bin_table_impl.hpp"

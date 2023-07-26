@@ -10,19 +10,13 @@ add_library(hictk::reference ALIAS hictk_reference)
 
 target_sources(
   hictk_reference
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include
-  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/reference_impl.hpp)
-target_include_directories(hictk_reference INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-target_link_libraries(
-  hictk_reference
-  INTERFACE hictk_project_warnings
-            hictk_project_options
-            hictk::chromosome
-            hictk::common
-            hictk::fmt)
+  INTERFACE FILE_SET
+            HEADERS
+            BASE_DIRS
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(hictk_reference INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                                     $<INSTALL_INTERFACE:include>)
+target_link_libraries(hictk_reference INTERFACE hictk::chromosome hictk::common hictk::fmt)
 
 target_link_system_libraries(
   hictk_reference
@@ -30,4 +24,5 @@ target_link_system_libraries(
   std::filesystem
   phmap)
 
-install(TARGETS hictk_reference FILE_SET HEADERS EXCLUDE_FROM_ALL)
+include(GNUInstallDirs)
+install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

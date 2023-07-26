@@ -7,12 +7,12 @@ add_library(hictk::variant ALIAS hictk_variant)
 
 target_sources(
   hictk_variant
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include
-  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/variant_buff_impl.hpp)
-target_include_directories(hictk_variant INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-target_link_libraries(hictk_variant INTERFACE hictk_project_warnings hictk_project_options)
+  INTERFACE FILE_SET
+            HEADERS
+            BASE_DIRS
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(hictk_variant INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                                   $<INSTALL_INTERFACE:include>)
 
-install(TARGETS hictk_variant FILE_SET HEADERS EXCLUDE_FROM_ALL)
+include(GNUInstallDirs)
+install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

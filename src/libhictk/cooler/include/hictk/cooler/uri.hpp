@@ -25,4 +25,4 @@ struct CoolerURI {
 [[nodiscard]] CoolerURI parse_cooler_uri(std::string_view uri);
 }  // namespace hictk::cooler
 
-#include "../../../uri_impl.hpp"
+#include "./impl/uri_impl.hpp"

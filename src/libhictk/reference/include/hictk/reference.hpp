@@ -109,4 +109,4 @@ class Reference {
 };
 }  // namespace hictk
 
-#include "../../reference_impl.hpp"
+#include "./impl/reference_impl.hpp"

@@ -57,4 +57,4 @@ struct Attribute {
 };
 }  // namespace hictk::cooler
 
-#include "../../../attribute_impl.hpp"
+#include "./impl/attribute_impl.hpp"

@@ -150,4 +150,4 @@ class Index {
 
 }  // namespace hictk
 
-#include "../../../index_impl.hpp"
+#include "./impl/index_impl.hpp"

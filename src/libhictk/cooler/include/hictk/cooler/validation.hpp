@@ -100,4 +100,4 @@ struct formatter<hictk::cooler::utils::ValidationStatusScool> {
 };
 }  // namespace fmt
 
-#include "../../../validation_impl.hpp"
+#include "./impl/validation_impl.hpp"

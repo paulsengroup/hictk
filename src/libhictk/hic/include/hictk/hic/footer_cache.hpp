@@ -61,4 +61,4 @@ class FooterCache {
 
 }  // namespace hictk::hic::internal
 
-#include "../../../footer_cache_impl.hpp"
+#include "./impl/footer_cache_impl.hpp"

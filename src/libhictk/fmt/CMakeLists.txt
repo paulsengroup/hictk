@@ -9,18 +9,17 @@ add_library(hictk::fmt ALIAS hictk_fmt)
 
 target_sources(
   hictk_fmt
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  INTERFACE FILE_SET
+            HEADERS
+            BASE_DIRS
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(hictk_fmt INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(hictk_fmt INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                               $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(
   hictk_fmt
-  INTERFACE hictk_project_warnings
-            hictk_project_options
-            hictk::bin_table
+  INTERFACE hictk::bin_table
             hictk::chromosome
             hictk::common
             hictk::genomic_interval
@@ -28,4 +27,5 @@ target_link_libraries(
 
 target_link_system_libraries(hictk_fmt INTERFACE fmt::fmt)
 
-install(TARGETS hictk_fmt FILE_SET HEADERS EXCLUDE_FROM_ALL)
+include(GNUInstallDirs)
+install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

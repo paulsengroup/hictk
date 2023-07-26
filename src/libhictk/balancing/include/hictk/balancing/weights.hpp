@@ -55,4 +55,4 @@ using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weight
 
 }  // namespace hictk::balancing
 
-#include "../../../weights_impl.hpp"
+#include "./impl/weights_impl.hpp"

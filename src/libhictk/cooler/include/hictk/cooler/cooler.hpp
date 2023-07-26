@@ -356,9 +356,9 @@ class File {
 
 }  // namespace hictk::cooler
 
-#include "../../../file_accessors_impl.hpp"
-#include "../../../file_impl.hpp"
-#include "../../../file_read_impl.hpp"
-#include "../../../file_standard_attr_impl.hpp"
-#include "../../../file_validation_impl.hpp"
-#include "../../../file_write_impl.hpp"
+#include "./impl/file_accessors_impl.hpp"
+#include "./impl/file_impl.hpp"
+#include "./impl/file_read_impl.hpp"
+#include "./impl/file_standard_attr_impl.hpp"
+#include "./impl/file_validation_impl.hpp"
+#include "./impl/file_write_impl.hpp"
