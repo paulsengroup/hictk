@@ -23,10 +23,10 @@ if(HICTK_WITH_EIGEN)
     QUIET)
 endif()
 
-add_library(cooler INTERFACE)
-add_library(hictk::cooler ALIAS cooler)
+add_library(hictk_cooler INTERFACE)
+add_library(hictk::cooler ALIAS hictk_cooler)
 target_sources(
-  cooler
+  hictk_cooler
   PUBLIC FILE_SET
          HEADERS
          BASE_DIRS
@@ -53,10 +53,10 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/validation_impl.hpp)
 
-target_include_directories(cooler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(hictk_cooler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
 target_link_libraries(
-  cooler
+  hictk_cooler
   INTERFACE hictk_project_warnings
             hictk_project_options
             hictk::balancing
@@ -71,7 +71,7 @@ target_link_libraries(
             hictk::variant)
 
 target_link_system_libraries(
-  cooler
+  hictk_cooler
   INTERFACE
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
   FastFloat::fast_float
@@ -82,4 +82,4 @@ target_link_system_libraries(
   spdlog::spdlog
   std::filesystem)
 
-install(TARGETS cooler FILE_SET HEADERS EXCLUDE_FROM_ALL)
+install(TARGETS hictk_cooler FILE_SET HEADERS EXCLUDE_FROM_ALL)

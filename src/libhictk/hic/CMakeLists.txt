@@ -18,11 +18,11 @@ if(HICTK_WITH_EIGEN)
   endif()
 endif()
 
-add_library(hic INTERFACE)
-add_library(hictk::hic ALIAS hic)
+add_library(hictk_hic INTERFACE)
+add_library(hictk::hic ALIAS hictk_hic)
 
 target_sources(
-  hic
+  hictk_hic
   PUBLIC FILE_SET
          HEADERS
          BASE_DIRS
@@ -40,9 +40,9 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/utils_impl.hpp
             ${CMAKE_CURRENT_SOURCE_DIR}/weight_cache_impl.hpp)
 
-target_include_directories(hic INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(hictk_hic INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(
-  hic
+  hictk_hic
   INTERFACE hictk_project_options
             hictk_project_warnings
             hictk::balancing
@@ -51,7 +51,7 @@ target_link_libraries(
             hictk::reference)
 
 target_link_system_libraries(
-  hic
+  hictk_hic
   INTERFACE
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
   fmt::fmt
