@@ -74,6 +74,12 @@ class File {
                                     std::uint32_t end1, std::string_view chrom2_name,
                                     std::uint32_t start2, std::uint32_t end2,
                                     balancing::Method norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin,
+                                    balancing::Method norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
+                                    std::uint64_t first_bin2, std::uint64_t last_bin2,
+                                    balancing::Method norm = balancing::Method::NONE()) const;
+
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
 

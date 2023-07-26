@@ -183,6 +183,8 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
     CHECK(f.fetch("chr1:0-1000", "chr1:0-1000") == f.fetch("chr1", 0, 1000));
     CHECK(f.fetch("chr1\t0\t1000", "chr2\t0\t99", nullptr, File::QUERY_TYPE::BED) ==
           f.fetch("chr1", 0, 1000, "chr2", 0, 99));
+    CHECK(f.fetch(0, 100) == f.fetch("chr1", 0, 1000));
+    CHECK(f.fetch(0, 100, 20, 30) == f.fetch("chr1", 0, 1000, "chr1", 200, 300));
   }
 
   SECTION("invalid queries") {

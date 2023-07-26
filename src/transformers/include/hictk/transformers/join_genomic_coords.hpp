@@ -26,11 +26,11 @@ class JoinGenomicCoords {
 
   JoinGenomicCoords(PixelIt first, PixelIt last, std::shared_ptr<const BinTable> bins);
 
-  auto begin() -> iterator;
-  auto end() -> iterator;
+  auto begin() const -> iterator;
+  auto end() const -> iterator;
 
-  auto cbegin() -> iterator;
-  auto cend() -> iterator;
+  auto cbegin() const -> iterator;
+  auto cend() const -> iterator;
 
   [[nodiscard]] auto read_all() const -> std::vector<Pixel<N>>;
 

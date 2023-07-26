@@ -180,6 +180,21 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
   return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, read_weights(normalization));
 }
 
+inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
+  return fetch(first_bin, last_bin, first_bin, last_bin, std::move(weights));
+}
+
+inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
+                                 std::uint64_t first_bin2, std::uint64_t last_bin2,
+                                 std::shared_ptr<const balancing::Weights> weights) const {
+  PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
+  PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
+
+  read_index_chunk(coord1.bin1.chrom());
+  return fetch(coord1, coord2, std::move(weights));
+}
+
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
   read_index_chunk(coord1.bin1.chrom());

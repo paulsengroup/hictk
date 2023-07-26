@@ -161,6 +161,18 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       CHECK(matrix.sum() == expected_sum);
     }
 #endif
+    SECTION("overloads return identical results") {
+      const File f(pathV9, 1'000, MatrixType::observed, MatrixUnit::BP);
+      CHECK(f.fetch("chr2L:0-100,000") == f.fetch("chr2L", 0, 100'000));
+      CHECK(f.fetch("chr2L\t0\t100000", hictk::balancing::Method{"NONE"}, File::QUERY_TYPE::BED) ==
+            f.fetch("chr2L", 0, 100'000));
+      CHECK(f.fetch("chr2L:0-100,000", "chr2L:0-100,000") == f.fetch("chr2L", 0, 100'000));
+      CHECK(f.fetch("chr2L\t0\t100000", "chr2L\t20000\t50000", hictk::balancing::Method{"NONE"},
+                    File::QUERY_TYPE::BED) ==
+            f.fetch("chr2L", 0, 100'000, "chr2L", 20'000, 50'000));
+      CHECK(f.fetch(0, 100) == f.fetch("chr2L", 0, 100'000));
+      CHECK(f.fetch(0, 100, 20, 30) == f.fetch("chr2L", 0, 100'000, "chr2L", 20'000, 30'000));
+    }
   }
 
   SECTION("inter-chromosomal") {

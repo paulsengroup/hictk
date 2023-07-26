@@ -12,20 +12,20 @@ inline JoinGenomicCoords<PixelIt>::JoinGenomicCoords(PixelIt first, PixelIt last
     : _first(std::move(first)), _last(std::move(last)), _bins(std::move(bins)) {}
 
 template <typename PixelIt>
-inline auto JoinGenomicCoords<PixelIt>::begin() -> iterator {
+inline auto JoinGenomicCoords<PixelIt>::begin() const -> iterator {
   return iterator{_first, _bins};
 }
 template <typename PixelIt>
-inline auto JoinGenomicCoords<PixelIt>::end() -> iterator {
+inline auto JoinGenomicCoords<PixelIt>::end() const -> iterator {
   return iterator::at_end(_last, _bins);
 }
 
 template <typename PixelIt>
-inline auto JoinGenomicCoords<PixelIt>::cbegin() -> iterator {
+inline auto JoinGenomicCoords<PixelIt>::cbegin() const -> iterator {
   return begin();
 }
 template <typename PixelIt>
-inline auto JoinGenomicCoords<PixelIt>::cend() -> iterator {
+inline auto JoinGenomicCoords<PixelIt>::cend() const -> iterator {
   return end();
 }
 
