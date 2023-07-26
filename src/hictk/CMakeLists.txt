@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Boost COMPONENTS headers filesystem)
-if(NOT boost_FOUND)
-  find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
-endif()
-
+find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
+find_package(CLI11 CONFIG REQUIRED)
+find_package(FMT CONFIG REQUIRED)
+find_package(readerwriterqueue CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -39,12 +39,12 @@ target_link_system_libraries(
   PRIVATE
   Boost::headers
   CLI11::CLI11
+  readerwriterqueue
   std::filesystem
-  _hictk_fmt_tgt
-  _hictk_readerwriterqueue_tgt
-  _hictk_spdlog_tgt
   PUBLIC
   Boost::filesystem
+  fmt::fmt
+  spdlog::spdlog
   Threads::Threads)
 
 include(GNUInstallDirs)

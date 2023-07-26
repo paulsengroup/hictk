@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(FMT CONFIG REQUIRED)
+
 add_library(hictk_fmt INTERFACE)
 add_library(hictk::fmt ALIAS hictk_fmt)
 
@@ -24,6 +26,6 @@ target_link_libraries(
             hictk::genomic_interval
             hictk::pixel)
 
-target_link_system_libraries(hictk_fmt INTERFACE _hictk_fmt_tgt)
+target_link_system_libraries(hictk_fmt INTERFACE fmt::fmt)
 
 install(TARGETS hictk_fmt FILE_SET HEADERS EXCLUDE_FROM_ALL)

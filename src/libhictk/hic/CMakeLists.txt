@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
+find_package(FMT CONFIG REQUIRED)
+find_package(libdeflate CONFIG REQUIRED)
+find_package(phmap CONFIG REQUIRED)
 
 if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET)
@@ -51,7 +54,7 @@ target_link_system_libraries(
   hic
   INTERFACE
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
-  _hictk_fmt_tgt
-  $<IF:$<BOOL:${BUILD_SHARED_LIBS}>,libdeflate::libdeflate_shared,libdeflate::libdeflate_static>
-  _hictk_phmap_tgt
+  fmt::fmt
+  libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>
+  phmap
   std::filesystem)

@@ -79,4 +79,5 @@ function(ConfigureVersioning input_config_folder output_config_folder)
   configure_file(${PRE_CONFIGURE_FILE} ${POST_CONFIGURE_FILE} @ONLY)
 endfunction()
 
-configureversioning("${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config" "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk")
+configureversioning("${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk")

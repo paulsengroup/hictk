@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 find_package(Filesystem REQUIRED)
+find_package(phmap CONFIG REQUIRED)
 
 add_library(hictk_reference INTERFACE)
 add_library(hictk::reference ALIAS hictk_reference)
@@ -27,6 +28,6 @@ target_link_system_libraries(
   hictk_reference
   INTERFACE
   std::filesystem
-  _hictk_phmap_tgt)
+  phmap)
 
 install(TARGETS hictk_reference FILE_SET HEADERS EXCLUDE_FROM_ALL)
