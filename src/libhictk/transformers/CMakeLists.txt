@@ -2,18 +2,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-add_library(hictk_transformers INTERFACE)
-add_library(hictk::transformers ALIAS hictk_transformers)
+add_library(transformers INTERFACE)
+add_library(hictk::transformers ALIAS transformers)
 
 target_sources(
-  hictk_transformers
+  transformers
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(hictk_transformers INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                        $<INSTALL_INTERFACE:include>)
-target_link_libraries(hictk_transformers INTERFACE hictk::cooler hictk::hic)
+target_include_directories(transformers INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                                  $<INSTALL_INTERFACE:include>)
+target_link_libraries(transformers INTERFACE hictk::cooler hictk::hic)
 
 include(GNUInstallDirs)
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

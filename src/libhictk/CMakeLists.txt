@@ -17,7 +17,7 @@ add_subdirectory(transformers)
 add_subdirectory(variant)
 
 add_library(libhictk INTERFACE)
-add_library(hictk::hictk ALIAS libhictk)
+add_library(hictk::libhictk ALIAS libhictk)
 
 target_link_libraries(
   libhictk
@@ -26,7 +26,7 @@ target_link_libraries(
             hictk::chromosome
             hictk::common
             hictk::cooler
-            hictk::fmt
+            hictk::format
             hictk::genomic_interval
             hictk::hic
             hictk::numeric
@@ -35,22 +35,37 @@ target_link_libraries(
             hictk::transformers
             hictk::variant)
 
-install(TARGETS
-        libhictk
-        hictk_balancing
-        hictk_bin_table
-        hictk_chromosome
-        hictk_common
-        hictk_cooler
-        hictk_fmt
-        hictk_genomic_interval
-        hictk_hic
-        hictk_numeric
-        hictk_pixel
-        hictk_reference
-        hictk_transformers
-        hictk_variant
-        EXPORT libhictk_target
-        FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+target_include_directories(
+  libhictk
+  INTERFACE
+  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 
-install(EXPORT libhictk_target FILE hictkConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hictk)
+install(
+  TARGETS libhictk
+          balancing
+          bin_table
+          chromosome
+          common
+          cooler
+          formatting
+          genomic_interval
+          hic
+          numeric
+          pixel
+          reference
+          transformers
+          variant
+        EXPORT libhictk-config
+        FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PRIVATE_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(
+  EXPORT libhictk-config
+  FILE hictkConfig.cmake
+  NAMESPACE hictk::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hictk)

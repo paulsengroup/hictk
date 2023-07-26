@@ -5,21 +5,21 @@
 find_package(Filesystem REQUIRED)
 find_package(phmap CONFIG REQUIRED)
 
-add_library(hictk_reference INTERFACE)
-add_library(hictk::reference ALIAS hictk_reference)
+add_library(reference INTERFACE)
+add_library(hictk::reference ALIAS reference)
 
 target_sources(
-  hictk_reference
+  reference
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(hictk_reference INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                     $<INSTALL_INTERFACE:include>)
-target_link_libraries(hictk_reference INTERFACE hictk::chromosome hictk::common hictk::fmt)
+target_include_directories(reference INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                               $<INSTALL_INTERFACE:include>)
+target_link_libraries(reference INTERFACE hictk::chromosome hictk::common hictk::format)
 
 target_link_system_libraries(
-  hictk_reference
+  reference
   INTERFACE
   std::filesystem
   phmap)

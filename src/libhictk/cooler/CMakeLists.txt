@@ -23,25 +23,25 @@ if(HICTK_WITH_EIGEN)
     QUIET)
 endif()
 
-add_library(hictk_cooler INTERFACE)
-add_library(hictk::cooler ALIAS hictk_cooler)
+add_library(cooler INTERFACE)
+add_library(hictk::cooler ALIAS cooler)
 target_sources(
-  hictk_cooler
+  cooler
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(hictk_cooler INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                  $<INSTALL_INTERFACE:include>)
+target_include_directories(cooler INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                            $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(
-  hictk_cooler
+  cooler
   INTERFACE hictk::balancing
             hictk::bin_table
             hictk::chromosome
             hictk::common
-            hictk::fmt
+            hictk::format
             hictk::genomic_interval
             hictk::pixel
             hictk::reference
@@ -49,7 +49,7 @@ target_link_libraries(
             hictk::variant)
 
 target_link_system_libraries(
-  hictk_cooler
+  cooler
   INTERFACE
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
   FastFloat::fast_float

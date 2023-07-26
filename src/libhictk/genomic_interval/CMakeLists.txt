@@ -2,19 +2,19 @@
 #
 # SPDX-License-Identifier: MIT
 
-add_library(hictk_genomic_interval INTERFACE)
-add_library(hictk::genomic_interval ALIAS hictk_genomic_interval)
+add_library(genomic_interval INTERFACE)
+add_library(hictk::genomic_interval ALIAS genomic_interval)
 
 target_sources(
-  hictk_genomic_interval
+  genomic_interval
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(hictk_genomic_interval INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(hictk_genomic_interval INTERFACE hictk::chromosome hictk::common hictk::numeric)
+target_include_directories(genomic_interval INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                                      $<INSTALL_INTERFACE:include>)
+target_link_libraries(genomic_interval INTERFACE hictk::chromosome hictk::common hictk::numeric)
 
 include(GNUInstallDirs)
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

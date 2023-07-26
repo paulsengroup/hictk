@@ -2,18 +2,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-add_library(hictk_common INTERFACE)
-add_library(hictk::common ALIAS hictk_common)
+add_library(common INTERFACE)
+add_library(hictk::common ALIAS common)
 
 target_sources(
-  hictk_common
+  common
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
             ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(hictk_common INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                  $<INSTALL_INTERFACE:include>)
+target_include_directories(common INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                                            $<INSTALL_INTERFACE:include>)
 
 include(GNUInstallDirs)
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
