@@ -17,16 +17,16 @@
 namespace hictk::config::version {
 
 // clang-format off
-[[nodiscard]] constexpr std::uint_fast8_t major() noexcept { return 0; }
-[[nodiscard]] constexpr std::uint_fast8_t minor() noexcept { return 0; }
-[[nodiscard]] constexpr std::uint_fast8_t patch() noexcept { return 1; }
+[[nodiscard]] constexpr std::uint_fast8_t major() noexcept { return @HICTK_PROJECT_VERSION_MAJOR@; }
+[[nodiscard]] constexpr std::uint_fast8_t minor() noexcept { return @HICTK_PROJECT_VERSION_MINOR@; }
+[[nodiscard]] constexpr std::uint_fast8_t patch() noexcept { return @HICTK_PROJECT_VERSION_PATCH@; }
 // clang-format on
 
 namespace internal {
 
 [[nodiscard]] inline std::string generate_suffix() {
   namespace git = hictk::config::git;
-  constexpr std::string_view raw_suffix{""};
+  constexpr std::string_view raw_suffix{"@HICTK_PROJECT_VERSION_SUFFIX@"};
   if (!git::state_available()) {
     return std::string{raw_suffix};
   }
