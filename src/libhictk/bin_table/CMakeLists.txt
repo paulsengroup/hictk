@@ -22,4 +22,4 @@ target_link_libraries(
             hictk::reference)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

@@ -28,4 +28,4 @@ target_link_libraries(
 target_link_system_libraries(formatting INTERFACE fmt::fmt)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

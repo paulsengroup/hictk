@@ -16,4 +16,4 @@ target_include_directories(transformers INTERFACE $<BUILD_INTERFACE:${CMAKE_CURR
 target_link_libraries(transformers INTERFACE hictk::cooler hictk::hic)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

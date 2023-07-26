@@ -15,4 +15,4 @@ target_include_directories(variant INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_S
                                              $<INSTALL_INTERFACE:include>)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

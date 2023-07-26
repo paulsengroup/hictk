@@ -19,4 +19,4 @@ target_include_directories(numeric INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_S
 target_link_system_libraries(numeric INTERFACE FastFloat::fast_float)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

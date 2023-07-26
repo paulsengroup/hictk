@@ -17,4 +17,4 @@ target_include_directories(chromosome INTERFACE $<BUILD_INTERFACE:${CMAKE_CURREN
 target_link_libraries(chromosome INTERFACE hictk::common)
 
 include(GNUInstallDirs)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
