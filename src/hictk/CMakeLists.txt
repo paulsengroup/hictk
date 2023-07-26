@@ -48,10 +48,10 @@ target_link_system_libraries(
   CLI11::CLI11
   readerwriterqueue
   std::filesystem
-  PUBLIC
-  Boost::filesystem
   _hictk_fmt_tgt
   _hictk_spdlog_tgt
+  PUBLIC
+  Boost::filesystem
   Threads::Threads)
 
 include(GNUInstallDirs)

@@ -57,14 +57,32 @@ set(LIBDEFLATE_BUILD_STATIC_LIB NOT ${BUILD_SHARED_LIBS})
 set(LIBDEFLATE_COMPRESSION_SUPPORT OFF)
 set(LIBDEFLATE_BUILD_GZIP OFF)
 FetchContent_MakeAvailable(
-  _hictk_fast_float
   _hictk_libdeflate
   _hictk_phmap
   _hictk_project_options)
 
 if(HICTK_BUILD_TOOLS)
-  FetchContent_MakeAvailable(_hictk_cli11 _hictk_fast_float _hictk_readerwriterqueue)
+  FetchContent_MakeAvailable(_hictk_cli11)
 endif()
+
+# Setup fast_float
+FetchContent_GetProperties(_hictk_fast_float)
+if(NOT _hictk_fast_float_POPULATED)
+  FetchContent_Populate(_hictk_fast_float)
+endif()
+
+add_library(_hictk_fast_float_tgt INTERFACE)
+target_include_directories(_hictk_fast_float_tgt SYSTEM INTERFACE ${_hictk_fast_float_SOURCE_DIR}/include)
+
+# Setup fmt
+FetchContent_GetProperties(_hictk_fmt)
+if(NOT _hictk_fmt_POPULATED)
+  FetchContent_Populate(_hictk_fmt)
+endif()
+
+add_library(_hictk_fmt_tgt INTERFACE)
+target_include_directories(_hictk_fmt_tgt SYSTEM INTERFACE ${_hictk_fmt_SOURCE_DIR}/include)
+target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
 
 # Setup HighFive
 set(HIGHFIVE_PARALLEL_HDF5 OFF)
@@ -80,19 +98,18 @@ endif()
 add_library(_hictk_highfive_tgt INTERFACE)
 target_include_directories(_hictk_highfive_tgt SYSTEM INTERFACE ${_hictk_highfive_SOURCE_DIR}/include)
 
-# Setup fmt
-FetchContent_GetProperties(_hictk_fmt)
-if(NOT _hictk_fmt_POPULATED)
-  FetchContent_Populate(_hictk_fmt)
-endif()
-
-add_library(_hictk_fmt_tgt INTERFACE)
-target_include_directories(_hictk_fmt_tgt SYSTEM INTERFACE ${_hictk_fmt_SOURCE_DIR}/include)
-target_compile_definitions(_hictk_fmt_tgt INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
-
 # Setup parallel_hashmap
 add_library(_hictk_phmap_tgt INTERFACE)
 target_include_directories(_hictk_phmap_tgt SYSTEM INTERFACE ${_hictk_phmap_SOURCE_DIR})
+
+# Setup fast_float
+FetchContent_GetProperties(_hictk_readerwriterqueue)
+if(NOT _hictk_readerwriterqueue_POPULATED)
+  FetchContent_Populate(_hictk_readerwriterqueue)
+endif()
+
+add_library(_hictk_readerwriterqueue_tgt INTERFACE)
+target_include_directories(_hictk_readerwriterqueue_tgt SYSTEM INTERFACE ${_hictk_readerwriterqueue_SOURCE_DIR})
 
 # Setup spdlog
 FetchContent_GetProperties(_hictk_spdlog)

@@ -66,9 +66,9 @@ target_link_system_libraries(
   cooler
   INTERFACE
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
-  FastFloat::fast_float
   HDF5::HDF5
   std::filesystem
+  _hictk_fast_float_tgt
   _hictk_fmt_tgt
   _hictk_highfive_tgt
   _hictk_phmap_tgt
