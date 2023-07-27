@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
 find_package(FMT CONFIG REQUIRED)
 find_package(libdeflate CONFIG REQUIRED)
 find_package(phmap CONFIG REQUIRED)
@@ -43,8 +42,7 @@ target_link_system_libraries(
   $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
   fmt::fmt
   libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>
-  phmap
-  std::filesystem)
+  phmap)
 
 include(GNUInstallDirs)
 install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

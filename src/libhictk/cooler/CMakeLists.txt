@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
 find_package(FastFloat CONFIG REQUIRED)
 find_package(FMT CONFIG REQUIRED)
 find_package(
@@ -57,8 +56,7 @@ target_link_system_libraries(
   HDF5::HDF5
   HighFive
   phmap
-  spdlog::spdlog
-  std::filesystem)
+  spdlog::spdlog)
 
 include(GNUInstallDirs)
 install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

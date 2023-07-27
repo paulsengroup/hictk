@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
 find_package(phmap CONFIG REQUIRED)
 
 add_library(reference INTERFACE)
@@ -21,7 +20,6 @@ target_link_libraries(reference INTERFACE hictk::chromosome hictk::common hictk:
 target_link_system_libraries(
   reference
   INTERFACE
-  std::filesystem
   phmap)
 
 include(GNUInstallDirs)
