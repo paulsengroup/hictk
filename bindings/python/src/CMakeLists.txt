@@ -7,6 +7,8 @@ find_package(
   COMPONENTS Interpreter Development
   REQUIRED)
 
+find_package(pybind11 CONFIG REQUIRED)
+
 pybind11_add_module(hictkpy MODULE hictkpy.cpp)
 
 target_link_libraries(

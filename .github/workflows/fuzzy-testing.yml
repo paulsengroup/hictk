@@ -149,6 +149,7 @@ jobs:
              -s build_type=Release                    \
              -s compiler.libcxx=libstdc++11           \
              -s compiler.cppstd=17                    \
+             -o "*/*:shared=True"                     \
              --output-folder=build
 
       - name: Clean Conan cache (post-build)
@@ -172,7 +173,7 @@ jobs:
 
       - name: Install Python bindings
         run: |
-          pip install --upgrade pip setuptools wheel
+          pip install --upgrade pip setuptools wheel pybind11
           env CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
           pip install . -v
 
