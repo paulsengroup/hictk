@@ -40,6 +40,3 @@ target_link_system_libraries(
   fmt::fmt
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
   phmap)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

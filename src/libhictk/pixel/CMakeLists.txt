@@ -19,6 +19,3 @@ target_link_libraries(
             hictk::chromosome
             hictk::common
             hictk::format)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

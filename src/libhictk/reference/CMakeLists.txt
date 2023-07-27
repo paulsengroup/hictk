@@ -18,6 +18,3 @@ target_include_directories(reference INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURREN
 target_link_libraries(reference INTERFACE hictk::chromosome hictk::common hictk::format)
 
 target_link_system_libraries(reference INTERFACE phmap)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

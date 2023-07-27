@@ -26,6 +26,3 @@ target_link_libraries(
             hictk::pixel)
 
 target_link_system_libraries(formatting INTERFACE fmt::fmt)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

@@ -20,6 +20,3 @@ target_link_libraries(
             hictk::common
             hictk::genomic_interval
             hictk::reference)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

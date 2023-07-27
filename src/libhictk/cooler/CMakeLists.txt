@@ -57,6 +57,3 @@ target_link_system_libraries(
   HighFive
   phmap
   spdlog::spdlog)
-
-include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

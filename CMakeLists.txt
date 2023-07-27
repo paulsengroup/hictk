@@ -154,3 +154,6 @@ if(HICTK_BUILD_PYTHON_BINDINGS)
   message(STATUS "Building Python bindings.")
   add_subdirectory(bindings/python)
 endif()
+
+
+include(cmake/Install.cmake)
