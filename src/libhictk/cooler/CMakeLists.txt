@@ -29,10 +29,10 @@ target_sources(
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
-            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+            "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-target_include_directories(cooler INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                            $<INSTALL_INTERFACE:include>)
+target_include_directories(cooler INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                            "$<INSTALL_INTERFACE:include>")
 
 target_link_libraries(
   cooler
@@ -50,7 +50,7 @@ target_link_libraries(
 target_link_system_libraries(
   cooler
   INTERFACE
-  $<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>
+  "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   FastFloat::fast_float
   fmt::fmt
   HDF5::HDF5
@@ -59,4 +59,4 @@ target_link_system_libraries(
   spdlog::spdlog)
 
 include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

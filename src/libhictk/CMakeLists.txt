@@ -40,7 +40,6 @@ target_include_directories(
   INTERFACE
   INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" "$<INSTALL_INTERFACE:include>")
 
-
 install(
   TARGETS libhictk
           balancing
@@ -67,15 +66,15 @@ install(
   INCLUDES
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-
-install(EXPORT libhictk-targets
-        FILE hictkTargets.cmake
-        NAMESPACE hictk:: DESTINATION  "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/")
+install(
+  EXPORT libhictk-targets
+  FILE hictkTargets.cmake
+  NAMESPACE hictk::
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/")
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
- "${PROJECT_SOURCE_DIR}/cmake/hictkConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/hictkConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/")
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk")

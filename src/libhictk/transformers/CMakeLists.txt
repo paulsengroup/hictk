@@ -10,10 +10,10 @@ target_sources(
   INTERFACE FILE_SET
             HEADERS
             BASE_DIRS
-            ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(transformers INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                                                  $<INSTALL_INTERFACE:include>)
+            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(transformers INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                                  "$<INSTALL_INTERFACE:include>")
 target_link_libraries(transformers INTERFACE hictk::cooler hictk::hic)
 
 include(GNUInstallDirs)
-install(DIRECTORY include/hictk DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/hictk DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

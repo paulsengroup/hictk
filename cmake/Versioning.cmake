@@ -25,12 +25,12 @@ function(ConfigureVersioning input_config_folder output_config_folder)
     include(FetchContent)
     FetchContent_Declare(
       _hictk_cmake-git-version-tracking
-      URL ${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz
+      URL "${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz"
       URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365)
     FetchContent_MakeAvailable(_hictk_cmake-git-version-tracking)
 
     set(GIT_IGNORE_UNTRACKED ON)
-    include(${_hictk_cmake-git-version-tracking_SOURCE_DIR}/git_watcher.cmake)
+    include("${_hictk_cmake-git-version-tracking_SOURCE_DIR}/git_watcher.cmake")
   else()
     # Add dummy target
     add_custom_target(_hictk_check_git)
@@ -69,14 +69,14 @@ function(ConfigureVersioning input_config_folder output_config_folder)
       set(GIT_TAG "unknown")
     endif()
 
-    configure_file(${PRE_CONFIGURE_FILE} ${POST_CONFIGURE_FILE} @ONLY)
+    configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
   endif()
 
   set(PRE_CONFIGURE_FILE "${input_config_folder}/version.hpp.in")
   set(POST_CONFIGURE_FILE "${output_config_folder}/version.hpp")
 
-  file(TOUCH ${POST_CONFIGURE_FILE})
-  configure_file(${PRE_CONFIGURE_FILE} ${POST_CONFIGURE_FILE} @ONLY)
+  file(TOUCH "${POST_CONFIGURE_FILE}")
+  configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
 endfunction()
 
 configureversioning("${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config"
