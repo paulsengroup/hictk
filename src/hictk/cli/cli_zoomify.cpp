@@ -11,9 +11,9 @@
 namespace hictk::tools {
 
 void Cli::make_zoomify_subcommand() {
-  auto& sc = *_cli.add_subcommand("zoomify",
-                                  "Convert single-resolution cooler file to multi-resolution "
-                                  "cooler file by coarsening.")
+  auto& sc = *_cli.add_subcommand(
+                      "zoomify",
+                      "Convert single-resolution Cooler file to multi-resolution by coarsening.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);

@@ -15,7 +15,7 @@
 
 namespace hictk::tools {
 void Cli::make_validate_subcommand() {
-  auto& sc = *_cli.add_subcommand("validate", "Validate .cooler and .hic files.")
+  auto& sc = *_cli.add_subcommand("validate", "Validate .hic and Cooler files.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
