@@ -15,6 +15,7 @@ conan-envs/
 external/
 scratch/
 test/data
+test/packaging
 Testing/
 venv/
 
