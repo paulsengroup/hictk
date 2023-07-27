@@ -4,7 +4,11 @@
 
 #include <fmt/format.h>
 #include <fmt/std.h>
+#if __has_include(<readerwriterqueue.h>)
 #include <readerwriterqueue.h>
+#else
+#include <readerwriterqueue/readerwriterqueue.h>
+#endif
 #include <spdlog/spdlog.h>
 
 #include <future>

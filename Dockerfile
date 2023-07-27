@@ -69,8 +69,9 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release            \
           -B "$build_dir"
 
 # Build and install project
-RUN cmake --build "$build_dir" -t hictk_tools -j "$(nproc)"  \
-&& cmake --install "$build_dir"
+RUN cmake --build "$build_dir" -t hictk -j "$(nproc)"  \
+&& cmake --install "$build_dir" \
+&& rm -rf "$build_dir/include" "$build_dir/lib"
 
 ARG FINAL_BASE_IMAGE
 ARG FINAL_BASE_IMAGE_DIGEST
