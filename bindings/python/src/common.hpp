@@ -83,7 +83,8 @@ inline py::object get_bins_from_file(const File& f) {
 
 template <typename PixelIt>
 inline py::object pixel_iterators_to_coo(PixelIt first_pixel, PixelIt last_pixel,
-                                         std::size_t num_rows, std::size_t num_cols) {
+                                         std::size_t num_rows, std::size_t num_cols,
+                                         std::size_t row_offset = 0, std::size_t col_offset = 0) {
   using N = decltype(first_pixel->count);
   auto ss = py::module::import("scipy.sparse");
 
@@ -92,8 +93,8 @@ inline py::object pixel_iterators_to_coo(PixelIt first_pixel, PixelIt last_pixel
   Dynamic1DA<N> counts{};
 
   std::for_each(first_pixel, last_pixel, [&](const hictk::ThinPixel<N>& tp) {
-    bin1_ids.append(static_cast<std::int64_t>(tp.bin1_id));
-    bin2_ids.append(static_cast<std::int64_t>(tp.bin2_id));
+    bin1_ids.append(static_cast<std::int64_t>(tp.bin1_id - row_offset));
+    bin2_ids.append(static_cast<std::int64_t>(tp.bin2_id - col_offset));
     counts.append(tp.count);
   });
 
@@ -299,16 +300,20 @@ inline py::object file_fetch_sparse(const File& f, std::string_view range1, std:
   const auto num_rows = (gi1.size() + bin_size - 1) / bin_size;
   const auto num_cols = (gi2.size() + bin_size - 1) / bin_size;
 
+  const auto bin1 = f.bins().at(gi1.chrom(), gi1.start());
+  const auto bin2 = f.bins().at(gi2.chrom(), gi2.start());
+
   auto sel = range2.empty() || range1 == range2
                  ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
                  : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
 
   if (count_type == "int") {
     return pixel_iterators_to_coo(sel.template begin<std::int32_t>(),
-                                  sel.template end<std::int32_t>(), num_rows, num_cols);
+                                  sel.template end<std::int32_t>(), num_rows, num_cols, bin1.id(),
+                                  bin2.id());
   }
   return pixel_iterators_to_coo(sel.template begin<double>(), sel.template end<double>(), num_rows,
-                                num_cols);
+                                num_cols, bin1.id(), bin2.id());
 }
 
 template <typename File>
