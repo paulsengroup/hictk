@@ -220,7 +220,6 @@ jobs:
           gcov: true
           gcov_executable: gcov-12
           os: linux
-          functionalities: "search"
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
