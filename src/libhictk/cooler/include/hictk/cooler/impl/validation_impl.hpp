@@ -41,6 +41,7 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
       throw;
     }
     ValidationStatusCooler s{};
+    s.uri = std::string{uri};
     s.is_hdf5 = false;
     return s;
   }
@@ -61,6 +62,7 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
       throw;
     }
     ValidationStatusMultiresCooler s{};
+    s.uri = std::string{uri};
     s.is_hdf5 = false;
     return s;
   }
@@ -79,6 +81,7 @@ inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_c
       throw;
     }
     ValidationStatusScool s{};
+    s.uri = std::string{uri};
     s.is_hdf5 = false;
     return s;
   }
