@@ -39,7 +39,7 @@ inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset, std::
 // clang-format on
 {
   if (_chunk_size == 0) {
-    _chunk_size = _dset->get_chunk_size();
+    _chunk_size = std::max(std::size_t(2048), _dset->get_chunk_size() / 3);
   }
   if (init) {
     read_chunk_at_offset(_h5_chunk_start);
@@ -287,7 +287,8 @@ inline auto Dataset::iterator<T>::make_end_iterator(std::shared_ptr<const Datase
   it._buff = nullptr;
   it._dset = std::move(dset);
   it._h5_offset = it._dset->size();
-  it._chunk_size = chunk_size == 0 ? it._dset->get_chunk_size() : chunk_size;
+  it._chunk_size =
+      chunk_size == 0 ? std::max(std::size_t(2048), it._dset->get_chunk_size() / 3) : chunk_size;
 #ifndef NDEBUG
   it._h5_size = it._h5_offset;
 #endif
