@@ -30,6 +30,7 @@ target_sources(
           "${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/multires_cooler_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/singlecell_cooler_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp"

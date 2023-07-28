@@ -75,6 +75,30 @@ inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] Pixel
   write_sentinel_attr();
 }
 
+template <typename PixelT>
+inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attributes attributes,
+                  std::size_t cache_size_bytes, double w0)
+    : _mode(HighFive::File::ReadWrite),
+      _root_group(std::move(entrypoint)),
+      _attrs(std::move(attributes)),
+      _pixel_variant(PixelT(0)),
+      _finalize(true) {
+  _groups = open_groups(_root_group);
+  _datasets = open_datasets(_root_group, cache_size_bytes, w0);
+
+  _bins = std::make_shared<BinTable>(
+      import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false), bin_size());
+  _index = std::make_shared<Index>(_bins);
+
+  assert(std::holds_alternative<PixelT>(_pixel_variant));
+  assert(bin_size() != 0);
+  assert(!_bins->empty());
+  assert(!chromosomes().empty());
+  assert(!_index->empty());
+
+  write_sentinel_attr();
+}
+
 inline File::File(std::string_view uri, std::size_t cache_size_bytes, bool validate)
     : File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
            HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate) {}
