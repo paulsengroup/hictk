@@ -164,9 +164,7 @@ inline PixelSelector::iterator<N>::iterator(const Dataset &pixels_bin1_id,
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
       _count_it(pixels_count.begin<N>()),
       _weights(std::move(weights)),
-      _h5_end_offset(pixels_bin2_id.size()) {
-  std::ignore = **this;
-}
+      _h5_end_offset(pixels_bin2_id.size()) {}
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
@@ -201,8 +199,6 @@ inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
 
   if (is_at_end()) {
     *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count, _weights);
-  } else {
-    std::ignore = **this;
   }
 }
 

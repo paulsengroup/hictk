@@ -28,6 +28,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/singlecell_cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/tmpdir.hpp"
@@ -35,37 +36,6 @@
 #include "hictk/tools/tools.hpp"
 
 namespace hictk::tools {
-
-template <typename N>
-void merge_coolers(std::vector<CoolerChunk<N>>& coolers, const Reference& chroms,
-                   std::uint32_t bin_size, std::string_view dest, bool force) {
-  if (force) {
-    std::filesystem::remove(dest);
-  }
-
-  if (coolers.size() == 1) {
-    SPDLOG_INFO(FMT_STRING("Moving temporary file to {}..."), dest);
-    const auto path = coolers.front().uri;
-    std::filesystem::copy_file(path, dest);
-    return;
-  }
-
-  SPDLOG_INFO(FMT_STRING("Merging {} intermediate files into {}..."), coolers.size(), dest);
-
-  using PixelIt = decltype(coolers.front().first);
-  std::vector<PixelIt> heads;
-  std::vector<PixelIt> tails;
-
-  heads.reserve(coolers.size());
-  tails.reserve(coolers.size());
-  for (auto&& clr : coolers) {
-    heads.emplace_back(std::move(clr.first));
-    tails.emplace_back(std::move(clr.last));
-  }
-  coolers.clear();
-
-  cooler::utils::merge(heads, tails, chroms, bin_size, dest, force);
-}
 
 void ingest_pixels_sorted(const LoadConfig& c) {
   assert(c.assume_sorted);
@@ -85,7 +55,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  const internal::TmpDir tmpdir{};
+  const auto tmp_cooler_path = c.uri + ".tmp";
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
   using FPBuff = std::vector<ThinPixel<double>>;
@@ -99,24 +69,27 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   std::visit(
       [&](auto& buffer) {
         using N = decltype(buffer.front().count);
-        std::vector<CoolerChunk<N>> chunks{};
-        buffer.clear();
-        for (std::size_t i = 0; true; ++i) {
-          const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
-          SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file {}..."), i + 1, tmp_uri);
-          chunks.emplace_back(ingest_pixels_unsorted(
-              cooler::File::create<N>(tmp_uri.string(), chroms, c.bin_size, c.force), buffer,
-              format, c.validate_pixels));
-
-          if (chunks.back().first == chunks.back().last) {
-            chunks.pop_back();
-            break;
+        {
+          auto tmp_clr =
+              cooler::SingleCellFile::create(tmp_cooler_path, chroms, c.bin_size, c.force);
+          for (std::size_t i = 0; true; ++i) {
+            SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
+                        tmp_cooler_path);
+            const auto nnz = ingest_pixels_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)),
+                                                    buffer, format, c.validate_pixels);
+            SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
+                        tmp_cooler_path);
+            if (nnz == 0) {
+              break;
+            }
           }
-          SPDLOG_INFO(FMT_STRING("done writing to file {}..."), tmp_uri);
         }
-        merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
+        const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
+        SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), c.uri);
+        tmp_clr.aggregate<N>(c.uri, c.force);
       },
       write_buffer);
+  std::filesystem::remove(tmp_cooler_path);
 }
 
 void ingest_pairs_sorted(const LoadConfig& c) {
@@ -137,7 +110,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  const internal::TmpDir tmpdir{};
+  const auto tmp_cooler_path = c.uri + ".tmp";
 
   using IntBuff = std::vector<ThinPixel<std::int32_t>>;
   using FPBuff = std::vector<ThinPixel<double>>;
@@ -151,23 +124,31 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
   std::visit(
       [&](auto& buffer) {
         using N = decltype(buffer.begin()->count);
-        std::vector<CoolerChunk<N>> chunks{};
+        {
+          auto tmp_clr =
+              cooler::SingleCellFile::create(tmp_cooler_path, chroms, c.bin_size, c.force);
 
-        for (std::size_t i = 0; true; ++i) {
-          const auto tmp_uri = tmpdir() / fmt::format(FMT_STRING("chunk_{:03d}.cool"), i);
-          chunks.emplace_back(ingest_pairs_unsorted(
-              cooler::File::create<N>(tmp_uri.string(), chroms, c.bin_size, c.force), buffer,
-              c.batch_size, format, c.validate_pixels));
+          for (std::size_t i = 0; true; ++i) {
+            SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
+                        tmp_cooler_path);
+            const auto nnz = ingest_pairs_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)),
+                                                   buffer, c.batch_size, format, c.validate_pixels);
 
-          if (chunks.back().first == chunks.back().last) {
-            chunks.pop_back();
-            break;
+            SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
+                        tmp_cooler_path);
+            if (nnz == 0) {
+              break;
+            }
           }
-          SPDLOG_INFO(FMT_STRING("Done writing to tmp file {}..."), tmp_uri);
         }
-        merge_coolers(chunks, chroms, c.bin_size, c.uri, c.force);
+
+        const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
+        SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), c.uri);
+        tmp_clr.aggregate<N>(c.uri, c.force);
       },
       write_buffer);
+
+  std::filesystem::remove(tmp_cooler_path);
 }
 
 int load_subcmd(const LoadConfig& c) {

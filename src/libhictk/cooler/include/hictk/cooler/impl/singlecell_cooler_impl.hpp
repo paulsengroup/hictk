@@ -169,7 +169,12 @@ inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
 
 template <typename N>
 inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_exists,
-                                      std::size_t chunk_size, std::size_t update_frequency) {
+                                      std::size_t chunk_size, std::size_t update_frequency) const {
+  if (_cells.size() == 1) {
+    utils::copy(open(*_cells.begin()).uri(), uri);
+    return File(uri);
+  }
+
   std::vector<cooler::PixelSelector::iterator<N>> heads{};
   std::vector<cooler::PixelSelector::iterator<N>> tails{};
 

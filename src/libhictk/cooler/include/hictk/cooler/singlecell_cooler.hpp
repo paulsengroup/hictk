@@ -77,7 +77,7 @@ class SingleCellFile {
 
   template <typename N>
   File aggregate(std::string_view uri, bool overwrite_if_exists = false,
-                 std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000);
+                 std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000) const;
 
  private:
   [[nodiscard]] static SingleCellAttributes read_standard_attributes(const HighFive::File& f,
