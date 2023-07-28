@@ -4,6 +4,22 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
+#include <cstdint>
+#include <filesystem>
+#include <highfive/H5File.hpp>
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
+#include "hictk/bin_table.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/cooler/utils.hpp"
+#include "hictk/pixel.hpp"
+
 namespace hictk::cooler {
 
 inline SingleCellAttributes SingleCellAttributes::init(std::uint32_t bin_size_) {
@@ -102,7 +118,7 @@ inline File SingleCellFile::open(std::string_view cell) const {
     throw std::out_of_range(
         fmt::format(FMT_STRING("unable to find cell \"{}\" in file {}"), cell, path()));
   }
-  return File(fmt::format(FMT_STRING("/cells/{}"), cell));
+  return File(RootGroup{_root_grp->group.getGroup(fmt::format(FMT_STRING("cells/{}"), cell))});
 }
 
 template <typename N>
@@ -130,7 +146,8 @@ inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs)
   _cells.emplace(cell);
   Attribute::write(_root_grp->group, "ncells", static_cast<std::int64_t>(_cells.size()), true);
 
-  RootGroup entrypoint{_root_grp->group.createGroup(std::string{cell})};
+  RootGroup entrypoint{
+      _root_grp->group.createGroup(fmt::format(FMT_STRING("cells/{}"), std::string{cell}))};
 
   std::ignore =
       File::create_groups(entrypoint, Group{*_root_grp, _root_grp->group.getGroup("/chroms")},
@@ -150,10 +167,29 @@ inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
   return bins().chromosomes();
 }
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
-inline SingleCellAttributes SingleCellFile::read_standard_attributes(const HighFive::File& f,
-                                                                     bool initialize_missing) {
+template <typename N>
+inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_exists,
+                                      std::size_t chunk_size, std::size_t update_frequency) {
+  std::vector<cooler::PixelSelector::iterator<N>> heads{};
+  std::vector<cooler::PixelSelector::iterator<N>> tails{};
+
+  std::for_each(_cells.begin(), _cells.end(), [&](const auto& cell) {
+    auto clr = open(cell);
+    auto first = clr.template begin<N>();
+    auto last = clr.template end<N>();
+    if (first != last) {
+      heads.emplace_back(std::move(first));
+      tails.emplace_back(std::move(last));
+    }
+  });
+  utils::merge(heads, tails, chromosomes(), bins().bin_size(), uri, overwrite_if_exists, chunk_size,
+               update_frequency);
+
+  return File(uri);
+}
+
+DISABLE_WARNING_PUSH DISABLE_WARNING_UNREACHABLE_CODE inline SingleCellAttributes
+SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initialize_missing) {
   const RootGroup root_grp{f.getGroup("/")};
   auto attrs =
       initialize_missing ? SingleCellAttributes::init(0) : SingleCellAttributes::init_empty();
@@ -199,6 +235,7 @@ inline SingleCellAttributes SingleCellFile::read_standard_attributes(const HighF
 DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::read_bins(const HighFive::File& f) {
+  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   const RootGroup root_grp{f.getGroup("/")};
   const auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
                                           Dataset(root_grp, f.getDataSet("/chroms/length")), false);
@@ -208,6 +245,7 @@ inline BinTable SingleCellFile::read_bins(const HighFive::File& f) {
 }
 
 inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::File& f) {
+  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   phmap::btree_set<std::string> cells{};
   auto buffer = f.getGroup("/cells").listObjectNames();
   std::move(buffer.begin(), buffer.end(), std::inserter(cells, cells.begin()));
@@ -215,6 +253,7 @@ inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::
 }
 
 inline void SingleCellFile::create_groups(RootGroup& root_grp) {
+  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto bins_group = root_grp().createGroup("/bins");
   auto chroms_group = root_grp().createGroup("/chroms");
   auto res_group = root_grp().createGroup("/cells");
@@ -222,6 +261,7 @@ inline void SingleCellFile::create_groups(RootGroup& root_grp) {
 
 inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
                                                       const SingleCellAttributes& attrs) {
+  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   Attribute::write(root_grp(), "bin-size", attrs.bin_size);
   Attribute::write(root_grp(), "bin-type", attrs.bin_type);
   Attribute::write(root_grp(), "format", attrs.format);

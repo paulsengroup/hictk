@@ -48,12 +48,37 @@ TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
 
     CHECK(sclr.cells().size() == 10);
   }
-  /*
-  SECTION("invalid resolutions") {
-    CHECK_THROWS(mclr.create_resolution(base_resolution / 2));
-    CHECK_THROWS(mclr.create_resolution(base_resolution + 1));
- }
- */
+
+  SECTION("duplicate cell") {
+    sclr.create_cell<std::int32_t>("A");
+    CHECK_THROWS(sclr.create_cell<std::int32_t>("A"));
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
+  const auto base_path = datadir / "cooler_test_file.cool";
+  const File base_clr(base_path.string());
+
+  const auto path1 = testdir() / "test_aggregate_cells.scool";
+  const auto path2 = testdir() / "test_aggregate_cells.cool";
+
+  auto sclr =
+      SingleCellFile::create(path1.string(), base_clr.chromosomes(), base_clr.bin_size(), true);
+
+  {
+    auto clr1 = sclr.create_cell<std::int32_t>("A");
+    auto clr2 = sclr.create_cell<std::int32_t>("B");
+
+    clr1.append_pixels(base_clr.begin<std::int32_t>(), base_clr.end<std::int32_t>());
+    clr2.append_pixels(base_clr.begin<std::int32_t>(), base_clr.end<std::int32_t>());
+  }
+
+  sclr.aggregate<std::int32_t>(path2.string());
+
+  const File clr(path2.string());
+  CHECK(std::get<std::int64_t>(*clr.attributes().sum) ==
+        2 * std::get<std::int64_t>(*base_clr.attributes().sum));
 }
 
 }  // namespace hictk::cooler::test::singlecell_cooler_file
