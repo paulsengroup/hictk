@@ -69,6 +69,8 @@ inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] Pixel
   assert(!chromosomes().empty());
   assert(!_index->empty());
   assert(std::holds_alternative<PixelT>(_pixel_variant));
+  write_chromosomes();
+  write_bin_table();
 
   write_sentinel_attr();
 }
@@ -207,9 +209,6 @@ inline void File::finalize() {
   assert(_bins);
   assert(_index);
   try {
-    write_chromosomes();
-    write_bin_table();
-
     assert(_attrs.nnz.has_value());
     _index->set_nnz(static_cast<std::uint64_t>(*_attrs.nnz));
     write_indexes();
