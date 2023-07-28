@@ -13,7 +13,7 @@ namespace hictk::cooler::test::pixel_selector {
 TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
   using T = std::uint32_t;
   const auto path = datadir / "cooler_test_file.cool";
-  File f(path.string());
+  const File f(path.string());
 
   SECTION("cis") {
     SECTION("overloads return identical results") {

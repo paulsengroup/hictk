@@ -24,7 +24,7 @@ using namespace hictk::transformers;
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
-    cooler::File clr(path.string());
+    const cooler::File clr(path.string());
     auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
@@ -115,7 +115,7 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
   SECTION("join genomic coords") {
-    auto hf = hic::File(path.string(), 2'500'000);
+    const hic::File hf(path.string(), 2'500'000);
     auto sel = hf.fetch("chr2L", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), hf.bins_ptr());
@@ -128,8 +128,8 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   }
 
   SECTION("coarsen") {
-    const auto hf1 = hic::File(path.string(), 500'000);
-    const auto hf2 = hic::File(path.string(), 2'500'000);
+    const hic::File hf1(path.string(), 500'000);
+    const hic::File hf2(path.string(), 2'500'000);
 
     auto sel = hf1.fetch("chr2R");
     auto sel1 =

@@ -76,7 +76,7 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
-  File base_clr(base_path.string());
+  const File base_clr(base_path.string());
   const auto base_resolution = base_clr.bin_size();
 
   const auto path = testdir() / "test_create_resolutions.mcool";

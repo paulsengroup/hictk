@@ -105,7 +105,7 @@ void Cli::validate_zoomify_subcommand() const {
   std::vector<std::string> errors;
   const auto& c = std::get<ZoomifyConfig>(_config);
 
-  cooler::File clr(c.input_uri);
+  const cooler::File clr(c.input_uri);
   const auto output_path = c.output_path.empty()
                                ? std::filesystem::path(clr.path()).replace_extension(".mcool")
                                : std::filesystem::path(c.output_path);
@@ -140,7 +140,7 @@ void Cli::transform_args_zoomify_subcommand() {
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
-  cooler::File clr(c.input_uri);
+  const cooler::File clr(c.input_uri);
 
   if (c.output_path.empty()) {
     c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool").string();
