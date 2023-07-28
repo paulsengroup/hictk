@@ -17,6 +17,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/suppress_warnings.hpp"
 
 namespace hictkpy {
 
@@ -36,7 +37,7 @@ struct Dynamic1DA {
     if (_buff.size() == _size) {
       grow();
     }
-    _buff.mutable_at(_size++) = x;
+    _buff.template mutable_unchecked()(_size++) = x;
   }
   inline void grow() { _buff.resize({_buff.size() * 2}); }
   inline void shrink_to_fit() { _buff.resize({_size}); }
@@ -149,6 +150,35 @@ inline py::object pixel_iterators_to_coo_df(PixelIt first_pixel, PixelIt last_pi
   py_pixels_dict["count"] = pd.attr("Series")(counts(), "copy"_a = false);
 
   return pd.attr("DataFrame")(py_pixels_dict, "copy"_a = false);
+}
+
+template <typename PixelIt>
+inline py::object pixel_iterators_to_numpy(PixelIt first_pixel, PixelIt last_pixel,
+                                           std::size_t num_rows, std::size_t num_cols,
+                                           std::size_t row_offset = 0, std::size_t col_offset = 0) {
+  using N = decltype(first_pixel->count);
+
+  py::array_t<N> matrix({num_rows, num_cols});
+  auto m = matrix.template mutable_unchecked();
+
+  DISABLE_WARNING_PUSH
+  DISABLE_WARNING_SIGN_COMPARE
+  std::for_each(first_pixel, last_pixel, [&](const hictk::ThinPixel<N>& tp) {
+    const auto i1 = static_cast<std::int64_t>(tp.bin1_id - row_offset);
+    const auto i2 = static_cast<std::int64_t>(tp.bin2_id - col_offset);
+    m(i1, i2) = tp.count;
+
+    //  Mirror matrix below diagonal
+    if (i2 - i1 < num_rows && i1 < num_cols && i2 < num_rows) {
+      m(i2, i1) = tp.count;
+    } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
+      const auto i3 = static_cast<std::int64_t>(tp.bin2_id - row_offset);
+      const auto i4 = static_cast<std::int64_t>(tp.bin1_id - col_offset);
+      m(i3, i4) = tp.count;
+    }
+  });
+  DISABLE_WARNING_POP
+  return matrix;
 }
 
 template <typename PixelIt>
@@ -326,12 +356,14 @@ inline py::object file_fetch_all_dense(File& f, std::string_view normalization,
   if (normalization != "NONE") {
     count_type = "float";
   }
-
   auto sel = f.fetch(hictk::balancing::Method{normalization});
   if (count_type == "int") {
-    return py::cast(sel.template read_dense<std::int32_t>());
+    return pixel_iterators_to_dense(sel.template begin<std::int32_t>(),
+                                    sel.template end<std::int32_t>(), f.bins().size(),
+                                    f.bins.size());
   }
-  return py::cast(sel.template read_dense<double>());
+  return pixel_iterators_to_dense(sel.template begin<double>(), sel.template end<double>(),
+                                  f.bins().size(), f.bins.size());
 }
 
 template <typename File>
@@ -348,14 +380,30 @@ inline py::object file_fetch_dense(const File& f, std::string_view range1, std::
   const auto qt =
       query_type == "UCSC" ? hictk::GenomicInterval::Type::UCSC : hictk::GenomicInterval::Type::BED;
 
+  const auto gi1 = hictk::GenomicInterval::parse(f.chromosomes(), std::string{range1}, qt);
+  const auto gi2 = range2.empty()
+                       ? gi1
+                       : hictk::GenomicInterval::parse(f.chromosomes(), std::string{range2}, qt);
+
+  const auto bin_size = f.bin_size();
+
+  const auto num_rows = (gi1.size() + bin_size - 1) / bin_size;
+  const auto num_cols = (gi2.size() + bin_size - 1) / bin_size;
+
+  const auto bin1 = f.bins().at(gi1.chrom(), gi1.start());
+  const auto bin2 = f.bins().at(gi2.chrom(), gi2.start());
+
   auto sel = range2.empty() || range1 == range2
                  ? f.fetch(range1, hictk::balancing::Method(normalization), qt)
                  : f.fetch(range1, range2, hictk::balancing::Method(normalization), qt);
 
   if (count_type == "int") {
-    return py::cast(sel.template read_dense<std::int32_t>());
+    return pixel_iterators_to_numpy(sel.template begin<std::int32_t>(),
+                                    sel.template end<std::int32_t>(), num_rows, num_cols, bin1.id(),
+                                    bin2.id());
   }
-  return py::cast(sel.template read_dense<double>());
+  return pixel_iterators_to_numpy(sel.template begin<double>(), sel.template end<double>(),
+                                  num_rows, num_cols, bin1.id(), bin2.id());
 }
 
 }  // namespace hictkpy

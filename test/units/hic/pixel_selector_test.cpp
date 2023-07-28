@@ -158,7 +158,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     SECTION("as dense matrix") {
       auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
       const auto matrix = sel.read_dense<std::int32_t>();
-      CHECK(matrix.sum() == expected_sum);
+      CHECK(matrix.sum() == 28'650'555);
     }
 #endif
     SECTION("overloads return identical results") {
@@ -465,7 +465,7 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
   SECTION("as dense matrix") {
     auto sel = File(pathV9, 1'000'000, MatrixType::observed, MatrixUnit::BP).fetch();
     const auto matrix = sel.read_dense<std::int32_t>();
-    CHECK(matrix.sum() == 119'208'613);
+    CHECK(matrix.sum() == 155'486'075);
   }
 #endif
 }

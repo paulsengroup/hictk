@@ -146,15 +146,18 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
   const auto bin_size = bins().bin_size();
-  const auto num_rows =
-      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
-  const auto num_cols =
-      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto span1 = coord1().bin2.end() - coord1().bin1.start();
+  const auto span2 = coord2().bin2.end() - coord2().bin1.start();
+  const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);
+  const auto num_cols = static_cast<std::int64_t>((span2 + bin_size - 1) / bin_size);
+
+  const auto offset1 = coord1().bin1.id();
+  const auto offset2 = coord2().bin1.id();
 
   Eigen::SparseMatrix<N> matrix(num_rows, num_cols);
   std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
-    matrix.insert(static_cast<std::int64_t>(p.bin1_id), static_cast<std::int64_t>(p.bin2_id)) =
-        p.count;
+    matrix.insert(static_cast<std::int64_t>(p.bin1_id - offset1),
+                  static_cast<std::int64_t>(p.bin2_id - offset2)) = p.count;
   });
   matrix.makeCompressed();
   return matrix;
@@ -163,17 +166,29 @@ inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
 template <typename N>
 [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
   const auto bin_size = bins().bin_size();
-  const auto num_rows =
-      static_cast<std::int64_t>((_coord1.bin1.chrom().size() + bin_size - 1) / bin_size);
-  const auto num_cols =
-      static_cast<std::int64_t>((_coord2.bin1.chrom().size() + bin_size - 1) / bin_size);
+  const auto span1 = coord1().bin2.end() - coord1().bin1.start();
+  const auto span2 = coord2().bin2.end() - coord2().bin1.start();
+  const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);
+  const auto num_cols = static_cast<std::int64_t>((span2 + bin_size - 1) / bin_size);
 
-  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  const auto offset1 = coord1().bin1.id();
+  const auto offset2 = coord2().bin1.id();
+
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   MatrixT matrix = MatrixT::Zero(num_rows, num_cols);
   std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
-    const auto i1 = static_cast<std::int64_t>(p.bin1_id);
-    const auto i2 = static_cast<std::int64_t>(p.bin2_id);
+    const auto i1 = static_cast<std::int64_t>(p.bin1_id - offset1);
+    const auto i2 = static_cast<std::int64_t>(p.bin2_id - offset2);
     matrix(i1, i2) = p.count;
+
+    //  Mirror matrix below diagonal
+    if (i2 - i1 < num_rows && i1 < num_cols && i2 < num_rows) {
+      matrix(i2, i1) = p.count;
+    } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
+      const auto i3 = static_cast<std::int64_t>(p.bin2_id - offset1);
+      const auto i4 = static_cast<std::int64_t>(p.bin1_id - offset2);
+      matrix(i3, i4) = p.count;
+    }
   });
   return matrix;
 }
@@ -619,6 +634,7 @@ template <typename N>
     const auto i1 = static_cast<std::int64_t>(p.bin1_id);
     const auto i2 = static_cast<std::int64_t>(p.bin2_id);
     matrix(i1, i2) = p.count;
+    matrix(i2, i1) = p.count;
   });
   return matrix;
 }

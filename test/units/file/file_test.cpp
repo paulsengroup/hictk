@@ -37,7 +37,7 @@ TEST_CASE("File", "[file][short]") {
 
   SECTION("accessors") {
     SECTION("hic") {
-      const auto ref_hic = hic::File(path_hic, resolution);
+      const hic::File ref_hic(path_hic, resolution);
       const auto hf = File(path_hic, resolution);
 
       CHECK(hf.is_hic());
