@@ -190,6 +190,23 @@ inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
   return groups;
 }
 
+inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp) -> GroupMap {
+  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
+  // TODO replace with createHardLink when implemented in HighFive
+  root_grp().createSoftLink("chroms", chroms_grp());
+  root_grp().createSoftLink("bins", bins_grp());
+
+  groups.emplace(root_grp.hdf5_path(), Group{root_grp, root_grp()});
+  groups.emplace("chroms", Group{root_grp, root_grp().getGroup("chroms")});
+  groups.emplace("bins", Group{root_grp, root_grp().getGroup("bins")});
+
+  groups.emplace("pixels", Group{root_grp, root_grp().createGroup("pixels")});
+  groups.emplace("indexes", Group{root_grp, root_grp().createGroup("indexes")});
+
+  return groups;
+}
+
 template <typename PixelT>
 inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
                                   std::size_t cache_size_bytes, double w0) -> DatasetMap {

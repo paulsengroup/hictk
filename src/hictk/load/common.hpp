@@ -57,11 +57,4 @@ template <typename N>
   return !line.empty() && line.front() == '#';
 }
 
-template <typename N>
-struct CoolerChunk {
-  std::string uri;
-  cooler::PixelSelector::iterator<N> first;
-  cooler::PixelSelector::iterator<N> last;
-};
-
 }  // namespace hictk::tools

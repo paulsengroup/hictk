@@ -41,6 +41,7 @@ using DefaultPixelT = std::int32_t;
 
 class File;
 class MultiResFile;
+class SingleCellFile;
 
 struct Attributes {
   friend File;
@@ -80,18 +81,9 @@ struct Attributes {
   Attributes() = default;
 };
 
-// template <typename ChromSizeInputIt, typename CellIDInputIt>
-// void init_scool(std::string_view file_path, ChromSizeInputIt first_chrom,
-//                 ChromSizeInputIt last_chrom, CellIDInputIt first_cell_id,
-//                 CellIDInputIt last_cell_id, bool force_overwrite = false);
-// template <typename InputIt>
-// void init_scool(std::string_view file_path, InputIt first_chrom, InputIt last_chrom,
-//                 bool force_overwrite = false);
-void init_scool(std::string_view file_path, const Reference &chromosomes, std::uint32_t bin_size,
-                bool force_overwrite = false);
-
 class File {
   friend MultiResFile;
+  friend SingleCellFile;
   using NumericVariant = hictk::internal::NumericVariant;
   unsigned int _mode{HighFive::File::ReadOnly};
   RootGroup _root_group{};
@@ -112,6 +104,10 @@ class File {
   template <typename PixelT>
   File(RootGroup entrypoint, Reference chroms, PixelT pixel, Attributes attributes,
        std::size_t cache_size_bytes, double w0);
+  // Ctor for SingleResCooler
+  template <typename PixelT>
+  File(RootGroup entrypoint, PixelT pixel, Attributes attributes, std::size_t cache_size_bytes,
+       double w0);
 
  public:
   using QUERY_TYPE = hictk::GenomicInterval::Type;
@@ -160,21 +156,6 @@ class File {
   [[nodiscard]] explicit operator bool() const noexcept;
 
   void close();
-
-  // template <typename PixelT, typename InputIt>
-  // [[nodiscard]] static  File create_new_mcool(std::string_view file_path,
-  //                                                   InputIt first_resolution,
-  //                                                   InputIt last_resolution,
-  //                                                   bool force_overwrite = false);
-
-  // template <typename ChromSizeInputIt, typename CellIDInputIt>
-  // [[nodiscard]] static  File create_scool(
-  //     std::string_view file_path, ChromSizeInputIt first_chrom, ChromSizeInputIt last_chrom,
-  //     CellIDInputIt first_cell_id, CellIDInputIt last_cell_id, bool force_overwrite = false);
-  // template <typename InputIt>
-  // [[nodiscard]] static  File create_scool(std::string_view file_path, InputIt first_chrom,
-  //                                               InputIt last_chrom, bool force_overwrite =
-  //                                               false);
 
   [[nodiscard]] std::string uri() const;
   [[nodiscard]] std::string hdf5_path() const;
@@ -312,6 +293,8 @@ class File {
   [[nodiscard]] static auto create_root_group(HighFive::File &f, std::string_view uri,
                                               bool write_sentinel_attr = true) -> RootGroup;
   [[nodiscard]] static auto create_groups(RootGroup &root_grp) -> GroupMap;
+  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp)
+      -> GroupMap;
   template <typename PixelT>
   [[nodiscard]] static auto create_datasets(RootGroup &root_grp, const Reference &chroms,
                                             std::size_t cache_size_bytes, double w0) -> DatasetMap;
