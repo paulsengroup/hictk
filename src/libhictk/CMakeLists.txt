@@ -7,6 +7,7 @@ add_subdirectory(bin_table)
 add_subdirectory(chromosome)
 add_subdirectory(common)
 add_subdirectory(cooler)
+add_subdirectory(file)
 add_subdirectory(formatting)
 add_subdirectory(genomic_interval)
 add_subdirectory(hic)
@@ -26,6 +27,7 @@ target_link_libraries(
             hictk::chromosome
             hictk::common
             hictk::cooler
+            hictk::file
             hictk::format
             hictk::genomic_interval
             hictk::hic

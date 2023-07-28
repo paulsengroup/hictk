@@ -33,7 +33,7 @@ TEST_CASE("Cooler: version", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: accessors", "[cooler][short]") {
   const auto path = datadir / "cooler_test_file.cool";
-  const auto f = File::open(path.string());
+  const File f(path.string());
 
   SECTION("group") {
     CHECK(f.group("bins").group.getPath() == "/bins");

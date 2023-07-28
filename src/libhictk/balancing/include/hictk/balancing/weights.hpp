@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::balancing {

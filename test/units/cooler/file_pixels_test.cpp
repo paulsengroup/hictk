@@ -18,7 +18,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   auto path2 = testdir() / "cooler_test_read_write_pixels.cool";
 
   using T = std::int32_t;
-  auto f1 = File::open(path1.string());
+  File f1(path1.string());
   {
     auto f2 = File::create<T>(path2.string(), f1.chromosomes(), f1.bin_size(), true);
 
@@ -43,7 +43,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
     } while (pixel_it != expected.end());
   }
 
-  auto f2 = File::open(path2.string());
+  File f2(path2.string());
 
   SECTION("compare chromosomes") { CHECK(f1.chromosomes() == f2.chromosomes()); }
 
@@ -103,7 +103,7 @@ TEST_CASE("Cooler: validate pixels before append", "[cooler][long]") {
   auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_validate_before_append.cool";
 
-  const auto clr1 = cooler::File::open(path1.string());
+  const File clr1(path1.string());
   auto clr2 = cooler::File::create(path2.string(), clr1.chromosomes(), 1000, true);
 
   SECTION("pixel wo/ interactions") {

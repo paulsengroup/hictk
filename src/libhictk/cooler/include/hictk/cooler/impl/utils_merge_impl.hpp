@@ -95,7 +95,7 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    const auto clr = cooler::File::open(clrs.front().uri);
+    const cooler::File clr(clrs.front().uri);
     const auto chroms = clr.chromosomes();
     const auto bin_size = clr.bin_size();
     merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,

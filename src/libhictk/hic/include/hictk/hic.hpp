@@ -51,14 +51,17 @@ class File {
   [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
+  [[nodiscard]] std::uint32_t bin_size() const noexcept;
+  [[nodiscard]] std::uint64_t nbins() const;
+  [[nodiscard]] std::uint64_t nchroms() const;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
-  [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const noexcept;
+  [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   [[nodiscard]] PixelSelectorAll fetch(balancing::Method norm = balancing::Method::NONE()) const;
 
-  [[nodiscard]] PixelSelector fetch(std::string_view query,
+  [[nodiscard]] PixelSelector fetch(std::string_view range,
                                     balancing::Method norm = balancing::Method::NONE(),
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,

@@ -37,7 +37,7 @@ class PixelSelector {
   template <typename N>
   class iterator;
 
-  PixelSelector() = delete;
+  PixelSelector() = default;
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,

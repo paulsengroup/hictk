@@ -122,7 +122,7 @@ template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
                                 It last_weight, bool overwrite_if_exists, bool divisive) {
   File(open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, true), uri),
-       HighFive::File::ReadWrite)
+       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0, true)
       .write_weights(name, first_weight, last_weight, overwrite_if_exists, divisive);
 }
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 set(targets
-    balancing;bin_table;chromosome;common;cooler;formatting;genomic_interval;hic;numeric;pixel;reference;transformers;variant
+    balancing;bin_table;chromosome;common;cooler;file;formatting;genomic_interval;hic;numeric;pixel;reference;transformers;variant
 )
 
 include(GNUInstallDirs)
@@ -18,6 +18,7 @@ install(
           chromosome
           common
           cooler
+          file
           formatting
           genomic_interval
           hic

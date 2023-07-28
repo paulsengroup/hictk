@@ -75,6 +75,10 @@ inline const BinTable& File::bins() const noexcept {
 
 inline std::shared_ptr<const BinTable> File::bins_ptr() const noexcept { return _bins; }
 
+inline std::uint32_t File::bin_size() const noexcept { return bins().bin_size(); }
+inline std::uint64_t File::nbins() const { return bins().size(); }
+inline std::uint64_t File::nchroms() const { return chromosomes().size(); }
+
 inline const Reference& File::chromosomes() const noexcept { return bins().chromosomes(); }
 
 inline const std::string& File::assembly() const noexcept { return _fs->header().genomeID; }
@@ -83,7 +87,7 @@ inline const std::vector<std::uint32_t>& File::avail_resolutions() const noexcep
   return _fs->header().resolutions;
 }
 
-inline std::vector<balancing::Method> File::avail_normalizations() const noexcept {
+inline std::vector<balancing::Method> File::avail_normalizations() const {
   return _fs->list_avail_normalizations(_type, _unit, _bins->bin_size());
 }
 
@@ -128,11 +132,11 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
   return PixelSelectorAll{std::move(selectors)};
 }
 
-inline PixelSelector File::fetch(std::string_view query, balancing::Method norm,
+inline PixelSelector File::fetch(std::string_view range, balancing::Method norm,
                                  QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
-                      ? GenomicInterval::parse_bed(chromosomes(), query)
-                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{query});
+                      ? GenomicInterval::parse_bed(chromosomes(), range)
+                      : GenomicInterval::parse_ucsc(chromosomes(), std::string{range});
 
   return fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm);
 }

@@ -35,7 +35,7 @@ TEST_CASE("Cooler: utils copy", "[copy][utils][short]") {
     const auto dest_uri = fmt::format(FMT_STRING("{}::/resolutions/1000"), dest.string());
 
     {
-      auto mclr = MultiResFile::create(dest, File::open(src.string()).chromosomes(), true);
+      auto mclr = MultiResFile::create(dest, File(src.string()).chromosomes(), true);
       mclr.init_resolution(1000);
     }
 
