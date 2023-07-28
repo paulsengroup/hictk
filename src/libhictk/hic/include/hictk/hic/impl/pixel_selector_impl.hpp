@@ -180,6 +180,15 @@ template <typename N>
     const auto i1 = static_cast<std::int64_t>(p.bin1_id - offset1);
     const auto i2 = static_cast<std::int64_t>(p.bin2_id - offset2);
     matrix(i1, i2) = p.count;
+
+    //  Mirror matrix below diagonal
+    if (i2 - i1 < num_rows && i1 < num_cols && i2 < num_rows) {
+      matrix(i2, i1) = p.count;
+    } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
+      const auto i3 = static_cast<std::int64_t>(p.bin2_id - offset1);
+      const auto i4 = static_cast<std::int64_t>(p.bin1_id - offset2);
+      matrix(i3, i4) = p.count;
+    }
   });
   return matrix;
 }
@@ -625,6 +634,7 @@ template <typename N>
     const auto i1 = static_cast<std::int64_t>(p.bin1_id);
     const auto i2 = static_cast<std::int64_t>(p.bin2_id);
     matrix(i1, i2) = p.count;
+    matrix(i2, i1) = p.count;
   });
   return matrix;
 }

@@ -142,12 +142,21 @@ template <typename N>
   const auto offset1 = coord1().bin1.id();
   const auto offset2 = coord2().bin1.id();
 
-  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   MatrixT matrix = MatrixT::Zero(num_rows, num_cols);
   std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
     const auto i1 = static_cast<std::int64_t>(p.bin1_id - offset1);
     const auto i2 = static_cast<std::int64_t>(p.bin2_id - offset2);
     matrix(i1, i2) = p.count;
+
+    //  Mirror matrix below diagonal
+    if (i2 - i1 < num_rows && i1 < num_cols && i2 < num_rows) {
+      matrix(i2, i1) = p.count;
+    } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
+      const auto i3 = static_cast<std::int64_t>(p.bin2_id - offset1);
+      const auto i4 = static_cast<std::int64_t>(p.bin1_id - offset2);
+      matrix(i3, i4) = p.count;
+    }
   });
   return matrix;
 }
