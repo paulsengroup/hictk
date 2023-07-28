@@ -44,7 +44,7 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
 TEST_CASE("Cooler: validate bin table", "[cooler][short]") {
   auto path = datadir / "ENCFF993FGR.2500000.cool";
 
-  File f(path.string());
+  const File f(path.string());
 
   CHECK_NOTHROW(f.validate_bins(true));
 }
