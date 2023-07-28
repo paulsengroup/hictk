@@ -77,8 +77,9 @@ TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
   sclr.aggregate<std::int32_t>(path2.string());
 
   const File clr(path2.string());
-  CHECK(std::get<std::int64_t>(*clr.attributes().sum) ==
-        2 * std::get<std::int64_t>(*base_clr.attributes().sum));
+  const auto sum1 = std::get<std::int64_t>(*clr.attributes().sum);       // NOLINT
+  const auto sum2 = std::get<std::int64_t>(*base_clr.attributes().sum);  // NOLINT
+  CHECK(sum1 == 2 * sum2);
 }
 
 }  // namespace hictk::cooler::test::singlecell_cooler_file
