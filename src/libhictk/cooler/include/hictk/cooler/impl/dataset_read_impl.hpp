@@ -65,27 +65,24 @@ inline std::size_t Dataset::read(VariantBuffer &vbuff, std::size_t num, std::siz
     using VT = std::variant_alternative_t<i, VBuffT>;
     using T = typename VT::value_type;
 
+    auto read_variant = [&]() {
+      if (!vbuff.holds_alternative<T>()) {
+        vbuff = std::vector<T>(num);
+      }
+      return read(vbuff.get<T>(), num, offset);
+    };
+
     auto h5type = get_h5type();
     if constexpr (is_string_v<T>) {
       if (h5type.isFixedLenStr() || h5type.isVariableStr()) {
-        goto READ_VARIANT;  // NOLINT
+        return read_variant();
       }
     }
     if (h5type != HighFive::create_datatype<T>()) {
       return read<i + 1>(vbuff, num, offset);
     }
 
-#if !defined(__clang__)
-    // Workaround for buggy -Wunused-label on GCC and MSVC
-    goto READ_VARIANT;  // NOLINT
-#endif
-
-  READ_VARIANT:
-    if (!std::holds_alternative<VT>(vbuff.get())) {
-      vbuff = std::vector<T>(num);
-    }
-
-    return read(vbuff.get<T>(), num, offset);
+    return read_variant();
   }
 
   unreachable_code();
@@ -157,27 +154,24 @@ inline std::size_t Dataset::read(GenericVariant &vbuff, std::size_t offset) cons
   if constexpr (i < std::variant_size_v<VBuffT>) {
     using T = std::variant_alternative_t<i, VBuffT>;
 
+    auto read_variant = [&]() {
+      if (!std::holds_alternative<T>(vbuff)) {
+        vbuff = T{};
+      }
+      return read(std::get<T>(vbuff), offset);
+    };
+
     const auto h5type = get_h5type();
     if constexpr (is_string_v<T>) {
       if (h5type.isFixedLenStr() || h5type.isVariableStr()) {
-        goto READ_VARIANT;  // NOLINT
+        return read_variant();
       }
     }
     if (h5type != HighFive::create_datatype<T>()) {
       return read<i + 1>(vbuff, offset);
     }
 
-#if !defined(__clang__)
-    // Workaround for buggy -Wunused-label on GCC and MSVC
-    goto READ_VARIANT;  // NOLINT
-#endif
-
-  READ_VARIANT:
-    if (!std::holds_alternative<T>(vbuff)) {
-      vbuff = T{};
-    }
-
-    return read(std::get<T>(vbuff), offset);
+    return read_variant();
   }
 
   unreachable_code();
