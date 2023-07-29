@@ -111,6 +111,11 @@ dynamic_project_options(
 
 target_compile_features(hictk_project_options INTERFACE "cxx_std_${CMAKE_CXX_STANDARD}")
 
+# Tweak fmt
+target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
+# Tweak spdlog
+target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
+
 if(WIN32)
   target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
 endif()
