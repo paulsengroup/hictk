@@ -112,7 +112,18 @@ jobs:
       CONAN_HOME: '/root/.conan2'
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Clone hictkpy
+        uses: actions/checkout@v3
+        with:
+          repository: paulsengroup/hictkpy
+          ref: main
+          path: hictkpy
+
+      - name: Patch hictkpy
+        working-directory: hictkpy
+        run: |
+          sed -i 's/GIT_TAG.*/GIT_TAG ${{ github.event.after }}/' CMakeLists.txt
+          grep 'GIT_TAG' CMakeLists.txt
 
       - name: Fix permissions
         run: |
@@ -120,6 +131,7 @@ jobs:
 
       - name: Generate cache key
         id: cache-key
+        working-directory: hictkpy
         run: |
           hash="${{ hashFiles('conanfile.txt') }}"
 
@@ -141,6 +153,7 @@ jobs:
           conan remove --confirm "*"
 
       - name: Install build dependencies
+        working-directory: hictkpy
         run: |
           conan install .                             \
              --build=missing                          \
@@ -172,6 +185,7 @@ jobs:
           apt-get install -y python3.11 python3.11-dev
 
       - name: Install Python bindings
+        working-directory: hictkpy
         run: |
           pip install --upgrade pip setuptools wheel pybind11
           env CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
@@ -219,7 +233,17 @@ jobs:
           echo "duration=$duration" >> $GITHUB_OUTPUT
           echo "resolution=$resolution" >> $GITHUB_OUTPUT
 
+      - name: Clone hictk
+        uses: actions/checkout@v3
+        with:
+          path: hictk
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
       - name: Download test datasets
+        working-directory: hictk
         run: |
           resolution="${{ steps.test-params.outputs.resolution }}"
           echo "${{ matrix.ref-sha256 }} reference.mcool" | tee checksums.sha256
@@ -243,6 +267,7 @@ jobs:
           fi
 
       - name: Run test
+        working-directory: hictk
         run: |
           test/scripts/fuzzy_test.py \
             --seed '${{ steps.test-params.outputs.seed }}' \
