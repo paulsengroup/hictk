@@ -37,6 +37,6 @@ target_link_system_libraries(
   hic
   INTERFACE
   "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
-  fmt::fmt
+  fmt::fmt-header-only
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
   phmap)

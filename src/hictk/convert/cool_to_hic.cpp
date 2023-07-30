@@ -173,17 +173,20 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
             const auto bin2 = clr.bins().at(p.bin2_id);
             // https://github.com/aidenlab/juicer/wiki/Pre#short-with-score-format
             // <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <score>
-            buffer =
+            buffer +=
                 fmt::format(FMT_COMPILE("0\t{}\t{}\t0\t1\t{}\t{}\t1\t{}\n"), bin1.chrom().name(),
                             bin1.start(), bin2.chrom().name(), bin2.start(), p.count);
 
-            boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
-
-            if (!pigz->running()) {
-              throw std::runtime_error(fmt::format(
-                  FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
-                  pigz->exit_code(), dest));
+            if (buffer.size() > 65'000) {
+              if (!pigz->running()) {
+                throw std::runtime_error(fmt::format(
+                    FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
+                    pigz->exit_code(), dest));
+              }
+              boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
+              buffer.clear();
             }
+
             if (++i == update_frequency) {
               const auto t1 = std::chrono::steady_clock::now();
               const auto delta =
@@ -198,6 +201,16 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
           });
     }
   }
+
+  if (!pigz->running()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("pigz returned prematurely with code {} while writing pixels to {}"),
+                    pigz->exit_code(), dest));
+  }
+  if (!buffer.empty()) {
+    boost::asio::write(pipe, boost::asio::buffer(buffer.data(), buffer.size()));
+  }
+
   pipe.close();
   ioc.run();
   pigz->wait();

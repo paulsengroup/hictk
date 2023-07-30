@@ -25,4 +25,4 @@ target_link_libraries(
             hictk::genomic_interval
             hictk::pixel)
 
-target_link_system_libraries(formatting INTERFACE fmt::fmt)
+target_link_system_libraries(formatting INTERFACE fmt::fmt-header-only)

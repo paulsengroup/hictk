@@ -191,13 +191,21 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
-  read_index_chunk(coord1.bin1.chrom());
+  const auto &current_chrom = coord1.bin1.chrom();
+  const auto &next_chrom = chromosomes().at(
+      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
+  read_index_chunk(current_chrom);
+  read_index_chunk(next_chrom);
   return fetch(coord1, coord2, std::move(weights));
 }
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
-  read_index_chunk(coord1.bin1.chrom());
+  const auto &current_chrom = coord1.bin1.chrom();
+  const auto &next_chrom = chromosomes().at(
+      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
+  read_index_chunk(current_chrom);
+  read_index_chunk(next_chrom);
   // clang-format off
   return PixelSelector(_index,
                        dataset("pixels/bin1_id"),
