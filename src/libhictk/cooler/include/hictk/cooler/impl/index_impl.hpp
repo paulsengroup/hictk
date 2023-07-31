@@ -52,7 +52,10 @@ inline std::size_t Index::size(std::uint32_t chrom_id) const { return at(chrom_i
 
 inline bool Index::empty() const noexcept { return size() == 0; }
 
-inline bool Index::empty(std::uint32_t chrom_id) const noexcept { return at(chrom_id).size() < 2; }
+inline bool Index::empty(std::uint32_t chrom_id) const noexcept {
+  const auto &idx = at(chrom_id);
+  return idx.front() == idx.back();
+}
 
 inline bool Index::empty(std::string_view chrom_name) const noexcept {
   return empty(chromosomes().at(chrom_name).id());

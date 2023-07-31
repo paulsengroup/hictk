@@ -43,8 +43,8 @@ target_link_system_libraries(
   std::filesystem
   PUBLIC
   Boost::filesystem
-  fmt::fmt
-  spdlog::spdlog
+  fmt::fmt-header-only
+  spdlog::spdlog_header_only
   Threads::Threads)
 
 include(GNUInstallDirs)

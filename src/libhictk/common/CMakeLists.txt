@@ -17,4 +17,4 @@ target_sources(
 target_include_directories(common INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                             "$<INSTALL_INTERFACE:include>")
 
-target_link_libraries(common INTERFACE fmt::fmt)
+target_link_libraries(common INTERFACE fmt::fmt-header-only)

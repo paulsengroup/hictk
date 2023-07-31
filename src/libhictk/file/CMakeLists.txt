@@ -23,4 +23,4 @@ target_link_libraries(
             hictk::hic
             hictk::reference)
 
-target_link_system_libraries(file INTERFACE fmt::fmt)
+target_link_system_libraries(file INTERFACE fmt::fmt-header-only)

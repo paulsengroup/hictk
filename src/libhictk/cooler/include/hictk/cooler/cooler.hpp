@@ -17,6 +17,7 @@ DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 DISABLE_WARNING_POP
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -308,7 +309,7 @@ class File {
                                         const Dataset &bin_offset_dset,
                                         std::shared_ptr<const BinTable> bin_table,
                                         std::uint64_t expected_nnz, bool missing_ok);
-  bool read_index_chunk(const Chromosome &chrom) const;
+  void read_index_chunk(std::initializer_list<Chromosome> chroms) const;
 
   template <typename PixelIt>
   static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,

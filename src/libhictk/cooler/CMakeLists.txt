@@ -52,8 +52,8 @@ target_link_system_libraries(
   INTERFACE
   "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   FastFloat::fast_float
-  fmt::fmt
+  fmt::fmt-header-only
   HDF5::HDF5
   HighFive
   phmap
-  spdlog::spdlog)
+  spdlog::spdlog_header_only)
