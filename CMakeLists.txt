@@ -128,7 +128,6 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
-option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 
@@ -154,11 +153,5 @@ if(HICTK_BUILD_BENCHMARKS)
   message(STATUS "Building benchmarks.")
   add_subdirectory(benchmark)
 endif()
-
-if(HICTK_BUILD_PYTHON_BINDINGS)
-  message(STATUS "Building Python bindings.")
-  add_subdirectory(bindings/python)
-endif()
-
 
 include(cmake/Install.cmake)
