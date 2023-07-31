@@ -37,12 +37,14 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
     return is_cooler(fp, root_path);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
-      throw;
-    }
     ValidationStatusCooler s{};
     s.uri = std::string{uri};
-    s.is_hdf5 = false;
+    s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
+    s.is_hdf5 = msg.find("Not an HDF5 file") == std::string_view::npos;
+
+    if (!s.unable_to_open_file && !s.is_hdf5) {
+      throw;
+    }
     return s;
   }
 }
@@ -51,38 +53,38 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
                                                        bool validate_resolutions,
                                                        std::int64_t min_version) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-  const auto file_path = parse_cooler_uri(uri).file_path;
-
   try {
-    const HighFive::File fp(file_path, HighFive::File::ReadOnly);
+    const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
     return is_multires_file(fp, validate_resolutions, min_version);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
-      throw;
-    }
     ValidationStatusMultiresCooler s{};
     s.uri = std::string{uri};
-    s.is_hdf5 = false;
+    s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
+    s.is_hdf5 = msg.find("Not an HDF5 file") == std::string_view::npos;
+
+    if (!s.unable_to_open_file && !s.is_hdf5) {
+      throw;
+    }
     return s;
   }
 }
 
 inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-  const auto file_path = parse_cooler_uri(uri).file_path;
-
   try {
-    const HighFive::File fp(file_path, HighFive::File::ReadOnly);
+    const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
     return is_scool_file(fp, validate_cells);
   } catch (const std::exception &e) {
     std::string_view msg{e.what()};
-    if (msg.find("Not an HDF5 file") == std::string_view::npos) {
-      throw;
-    }
     ValidationStatusScool s{};
     s.uri = std::string{uri};
-    s.is_hdf5 = false;
+    s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
+    s.is_hdf5 = msg.find("Not an HDF5 file") == std::string_view::npos;
+
+    if (!s.unable_to_open_file && !s.is_hdf5) {
+      throw;
+    }
     return s;
   }
 }
@@ -371,6 +373,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
       ctx.out(),
       FMT_STRING("uri=\"{}\"\n"
                  "is_hdf5={}\n"
+                 "unable_to_open_file={}\n"
                  "file_was_properly_closed={}\n"
                  "missing_or_invalid_format_attr={}\n"
                  "missing_or_invalid_bin_type_attr={}\n"
@@ -378,6 +381,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
                  "is_valid_cooler={}"),
       s.uri,
       s.is_hdf5,
+      s.unable_to_open_file,
       s.file_was_properly_closed,
       s.missing_or_invalid_format_attr,
       s.missing_or_invalid_bin_type_attr,
@@ -402,6 +406,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::forma
       ctx.out(),
       FMT_STRING("uri=\"{}\"\n"
                  "is_hdf5={}\n"
+                 "unable_to_open_file={}\n"
                  "file_was_properly_closed={}\n"
                  "missing_or_invalid_format_attr={}\n"
                  "missing_or_invalid_bin_type_attr={}\n"
@@ -410,6 +415,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::forma
                  "invalid_resolutions{}{}"),
       s.uri,
       s.is_hdf5,
+      s.unable_to_open_file,
       s.file_was_properly_closed,
       s.missing_or_invalid_format_attr,
       s.missing_or_invalid_bin_type_attr,
@@ -435,6 +441,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
   return fmt::format_to(
       ctx.out(),
       FMT_STRING("uri=\"{}\"\n"
+                 "unable_to_open_file={}\n"
                  "is_hdf5={}\n"
                  "file_was_properly_closed={}\n"
                  "missing_or_invalid_format_attr={}\n"
@@ -443,6 +450,7 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
                  "is_valid_scool_file={}\n"
                  "invalid_cells{}{}"),
       s.uri,
+      s.unable_to_open_file,
       s.is_hdf5,
       s.file_was_properly_closed,
       s.missing_or_invalid_format_attr,

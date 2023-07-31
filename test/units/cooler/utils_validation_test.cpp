@@ -52,12 +52,9 @@ TEST_CASE("Cooler: format checking", "[cooler][short]") {
 
   SECTION("test with nonexistent file") {
     const auto invalid_path = datadir / "void.nonexistent";
-    CHECK_THROWS_WITH(utils::is_cooler(invalid_path.string()),
-                      Catch::Matchers::ContainsSubstring("Unable to open file"));
-    CHECK_THROWS_WITH(utils::is_multires_file(invalid_path.string()),
-                      Catch::Matchers::ContainsSubstring("Unable to open file"));
-    CHECK_THROWS_WITH(utils::is_scool_file(invalid_path.string()),
-                      Catch::Matchers::ContainsSubstring("Unable to open file"));
+    CHECK(utils::is_cooler(invalid_path.string()).unable_to_open_file);
+    CHECK(utils::is_multires_file(invalid_path.string()).unable_to_open_file);
+    CHECK(utils::is_scool_file(invalid_path.string()).unable_to_open_file);
   }
 
   SECTION("test corrupted .cool") {
