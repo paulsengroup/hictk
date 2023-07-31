@@ -198,8 +198,14 @@ inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
   assert(_coord1.bin1.id() <= _coord1.bin2.id());
   assert(_coord2.bin1.id() <= _coord2.bin2.id());
 
+  if (_index->empty(coord1.bin1.chrom().id())) {
+    *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count,
+                   std::move(_weights));
+    return;
+  }
+
   // Set iterator to the first row overlapping the query (i.e. the first bin overlapping coord1)
-  auto offset = _index->get_offset_by_bin_id(_coord1.bin1.id());
+  const auto offset = _index->get_offset_by_bin_id(_coord1.bin1.id());
   _bin1_id_it = pixels_bin1_id.make_iterator_at_offset<BinIDT>(offset);
   _bin2_id_it = pixels_bin2_id.make_iterator_at_offset<BinIDT>(offset);
   _count_it = pixels_count.make_iterator_at_offset<N>(offset);
@@ -367,9 +373,16 @@ inline void PixelSelector::iterator<N>::jump_to_col(std::uint64_t bin_id) {
 
   const auto chunk_size = row_end_offset - row_start_offset;
   const auto offset = _bin2_id_it.h5_offset() - (current_offset - row_start_offset);
-  auto first = _bin2_id_it.seek(offset);
   auto last = _bin2_id_it.seek(offset + chunk_size);
-  _bin2_id_it = std::lower_bound(first, last, bin_id);
+  if (*last <= bin_id) {
+    // Avoid doing a binary search when the last bin_id is smaller than the query
+    // This improves performance for chromosomes without interactions,
+    // which are usually placed on the right-hand side of the contact matrix
+    _bin2_id_it = last;
+  } else {
+    auto first = _bin2_id_it.seek(offset);
+    _bin2_id_it = std::lower_bound(first, last, bin_id);
+  }
 
   _bin1_id_it.seek(_bin2_id_it.h5_offset());
   _count_it.seek(_bin2_id_it.h5_offset());
