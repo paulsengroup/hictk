@@ -152,12 +152,17 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     SECTION("as sparse matrix") {
       auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
       const auto matrix = sel.read_sparse<std::int32_t>();
+      CHECK(matrix.nonZeros() == 27'733);
+      CHECK(matrix.rows() == 236);
+      CHECK(matrix.cols() == 236);
       CHECK(matrix.sum() == expected_sum);
     }
 
     SECTION("as dense matrix") {
       auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
       const auto matrix = sel.read_dense<std::int32_t>();
+      CHECK(matrix.rows() == 236);
+      CHECK(matrix.cols() == 236);
       CHECK(matrix.sum() == 28'650'555);
     }
 #endif
@@ -225,6 +230,25 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       compareContactRecord(buffer[expected_value.first], expected_value.second);
       CHECK(std::is_sorted(buffer.begin(), buffer.end()));
     }
+
+#ifdef HICTK_WITH_EIGEN
+    SECTION("as sparse matrix") {
+      auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L", "chr4");
+      const auto matrix = sel.read_sparse<std::int32_t>();
+      CHECK(matrix.nonZeros() == 3278);
+      CHECK(matrix.rows() == 236);
+      CHECK(matrix.cols() == 14);
+      CHECK(matrix.sum() == expected_sum);
+    }
+
+    SECTION("as dense matrix") {
+      auto sel = File(pathV9, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L", "chr4");
+      const auto matrix = sel.read_dense<std::int32_t>();
+      CHECK(matrix.rows() == 236);
+      CHECK(matrix.cols() == 14);
+      CHECK(matrix.sum() == 70'567);
+    }
+#endif
   }
 
   SECTION("cover type 2 interactions") {
