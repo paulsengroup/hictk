@@ -109,7 +109,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ github.repository }},ghcr.io/${{ github.repository }}
           flavor: |
             latest=true
           tags: |
