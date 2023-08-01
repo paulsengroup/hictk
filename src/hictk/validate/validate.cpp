@@ -11,6 +11,37 @@
 namespace hictk::tools {
 
 static int validate_hic(const std::string& path, bool quiet) {
+  for (const auto& res : hic::utils::list_resolutions(path)) {
+    hic::File hf(path, res);
+    const auto& chroms = hf.chromosomes();
+    for (std::uint32_t i = 0; i < chroms.size(); ++i) {
+      for (std::uint32_t j = i; j < chroms.size(); ++j) {
+        const auto& chrom1 = chroms.at(i);
+        const auto& chrom2 = chroms.at(j);
+
+        if (chrom1.is_all() || chrom2.is_all()) {
+          continue;
+        }
+
+        try {
+          std::ignore = hf.fetch(chrom1.name(), chrom2.name());
+        } catch (const std::exception& e) {
+          const std::string_view msg{e.what()};
+          if (msg.find("Unable to find block map") != std::string_view::npos) {
+            continue;
+          }
+          if (!quiet) {
+            fmt::print(FMT_STRING("### FAILURE: \"{}\" is not a valid .hic file:\n"
+                                  "Validation failed for {}:{} map at {} resolution:\n"
+                                  "{}\n"),
+                       path, chrom1.name(), chrom2.name(), res, e.what());
+          }
+          return 1;
+        }
+      }
+    }
+  }
+
   if (!quiet) {
     fmt::print(FMT_STRING("### SUCCESS: \"{}\" is a valid .hic file.\n"), path);
   }
