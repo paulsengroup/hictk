@@ -9,7 +9,7 @@ include(Catch)
 
 add_executable(hictk_variant_tests)
 
-target_sources(hictk_variant_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/variant_test.cpp)
+target_sources(hictk_variant_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/variant_test.cpp")
 
 target_link_libraries(
   hictk_variant_tests
@@ -33,9 +33,9 @@ catch_discover_tests(
   TEST_SUFFIX
   " - SHORT"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   OUTPUT_DIR
-  ${CMAKE_CURRENT_BINARY_DIR}/Testing/
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
   --success
   --skip-benchmarks)
@@ -47,7 +47,7 @@ catch_discover_tests(
   TEST_SUFFIX
   " - MEDIUM"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
   --skip-benchmarks)
@@ -59,7 +59,7 @@ catch_discover_tests(
   TEST_SUFFIX
   " - LONG"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
   --skip-benchmarks)

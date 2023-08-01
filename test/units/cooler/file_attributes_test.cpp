@@ -14,7 +14,7 @@ namespace hictk::cooler::test::cooler_file {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read attributes", "[cooler][short]") {
   auto path = datadir / "cooler_test_file.cool";
-  auto f = File::open(path.string());
+  const File f(path.string());
 
   SECTION("bin size") { CHECK(f.bin_size() == 100'000); }
 

@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
@@ -23,7 +24,7 @@ using namespace hictk::transformers;
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
-    auto clr = cooler::File::open(path.string());
+    const cooler::File clr(path.string());
     auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
@@ -38,8 +39,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch("1");
     auto sel1 =
@@ -57,8 +58,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen recursive") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/400000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch("1");
     auto sel1 =
@@ -78,8 +79,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("coarsen gw") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
     const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
-    const auto clr1 = cooler::File::open(path1.string());
-    const auto clr2 = cooler::File::open(path2.string());
+    const cooler::File clr1(path1.string());
+    const cooler::File clr2(path2.string());
 
     auto sel = clr1.fetch();
     auto sel1 =
@@ -94,6 +95,19 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(v1[i] == v2[i].to_thin());
     }
   }
+
+  SECTION("stats") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const cooler::File clr(path.string());
+    auto sel = clr.fetch("chr1");
+    auto first = sel.begin<std::int32_t>();
+    auto last = sel.end<std::int32_t>();
+
+    CHECK_THAT(avg(first, last), Catch::Matchers::WithinRel(25231.981858902574));
+    CHECK(nnz(first, last) == 4'465);
+    CHECK(max(first, last) == 1'357'124);
+    CHECK(sum(first, last) == 112'660'799);
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -101,7 +115,7 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
   SECTION("join genomic coords") {
-    auto hf = hic::File(path.string(), 2'500'000);
+    const hic::File hf(path.string(), 2'500'000);
     auto sel = hf.fetch("chr2L", 5'000'000, 10'000'000);
     const auto jsel =
         JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), hf.bins_ptr());
@@ -114,8 +128,8 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
   }
 
   SECTION("coarsen") {
-    const auto hf1 = hic::File(path.string(), 500'000);
-    const auto hf2 = hic::File(path.string(), 2'500'000);
+    const hic::File hf1(path.string(), 500'000);
+    const hic::File hf2(path.string(), 2'500'000);
 
     auto sel = hf1.fetch("chr2R");
     auto sel1 =

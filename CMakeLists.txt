@@ -26,14 +26,14 @@ include(cmake/Versioning.cmake)
 project(
   hictk
   LANGUAGES C CXX
-  VERSION ${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}
+  VERSION "${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}"
   HOMEPAGE_URL https://github.com/robomics/hictk
   DESCRIPTION "Blazing fast toolkit to work with .hic and .cool files.")
 
 include(FetchContent)
 FetchContent_Declare(
   _hictk_project_options
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/external/project_options-v0.29.0.tar.xz
+  URL "${CMAKE_CURRENT_SOURCE_DIR}/external/project_options-v0.29.0.tar.xz"
   URL_HASH SHA256=ee2836af616d42e22c61048f4aedafd104fbfd97cf52bdd122a212d98777304c
   SYSTEM)
 FetchContent_MakeAvailable(_hictk_project_options)
@@ -55,8 +55,8 @@ if(BUILDING_MULTI_CONFIG)
   endif()
 endif()
 
-include(${_hictk_project_options_SOURCE_DIR}/src/DynamicProjectOptions.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompilerWarnings.cmake)
+include("${_hictk_project_options_SOURCE_DIR}/src/DynamicProjectOptions.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompilerWarnings.cmake")
 
 # dynamic_project_options sets recommended defaults and provides user and developer modes and full GUI support for
 # choosing options at configure time
@@ -101,15 +101,20 @@ dynamic_project_options(
   --suppress=passedByValue
   --inconclusive
   MSVC_WARNINGS
-  ${MSVC_WARNINGS}
+  "${MSVC_WARNINGS}"
   CLANG_WARNINGS
-  ${CLANG_WARNINGS}
+  "${CLANG_WARNINGS}"
   GCC_WARNINGS
-  ${GCC_WARNINGS}
+  "${GCC_WARNINGS}"
   CUDA_WARNINGS
-  ${CUDA_WARNINGS})
+  "${CUDA_WARNINGS}")
 
-target_compile_features(hictk_project_options INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
+target_compile_features(hictk_project_options INTERFACE "cxx_std_${CMAKE_CXX_STANDARD}")
+
+# Tweak fmt
+target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
+# Tweak spdlog
+target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
 
 if(WIN32)
   target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
@@ -123,15 +128,12 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
-option(HICTK_BUILD_PYTHON_BINDINGS "Build pybind11" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 
 if(HICTK_WITH_EIGEN)
   target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_EIGEN)
 endif()
-
-include(cmake/FetchExternalDeps.cmake)
 
 add_subdirectory(src)
 
@@ -152,7 +154,4 @@ if(HICTK_BUILD_BENCHMARKS)
   add_subdirectory(benchmark)
 endif()
 
-if(HICTK_BUILD_PYTHON_BINDINGS)
-  message(STATUS "Building Python bindings.")
-  add_subdirectory(bindings/python)
-endif()
+include(cmake/Install.cmake)

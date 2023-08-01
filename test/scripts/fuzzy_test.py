@@ -101,7 +101,7 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
 
 def hictk_dump(file, query1: str, query2: str, normalization: str = "NONE") -> pd.DataFrame:
     logging.debug("[hictkpy] running query for %s, %s...", query1, query2)
-    df = file.fetch(query1, query2, normalization)
+    df = file.fetch(query1, query2, normalization, join=True)
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
 
 
@@ -196,12 +196,6 @@ def seed_prng(worker_id: int, seed):
     random.seed(seed)
 
 
-def hictk_open_file(path: str, resolution: int = 0):
-    if hictkpy.cooler.utils.is_cooler(path):
-        return hictkpy.cooler.File(path)
-    return hictkpy.hic.File(path, resolution)
-
-
 def worker(
     path_to_file: pathlib.Path,
     path_to_reference_file: pathlib.Path,
@@ -229,7 +223,7 @@ def worker(
         clr = cooler.Cooler(str(path_to_reference_file))
         sel = clr.matrix(balance=balance if balance != "NONE" else False, as_pixels=True, join=True)
 
-        f = hictk_open_file(str(path_to_file), clr.binsize)
+        f = hictkpy.File(str(path_to_file), clr.binsize)
 
         while time.time() < end_time:
             if early_return.value:

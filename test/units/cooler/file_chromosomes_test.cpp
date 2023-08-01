@@ -24,7 +24,7 @@ TEST_CASE("Cooler: read/write chromosomes", "[cooler][short]") {
     CHECK(chroms == f.chromosomes());
   }
 
-  const auto f = File::open(path, DEFAULT_HDF5_CACHE_SIZE, false);
+  const File f(path, DEFAULT_HDF5_CACHE_SIZE, false);
   CHECK(chroms == f.chromosomes());
 }
 

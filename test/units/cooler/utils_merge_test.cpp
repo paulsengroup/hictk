@@ -77,7 +77,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto dest = testdir() / "cooler_merge_test2.cool";
     std::vector<std::string> sources{};
     {
-      auto clr = cooler::File::open(src.string());
+      const cooler::File clr(src.string());
 
       for (const auto& chrom : clr.chromosomes()) {
         sources.emplace_back((testdir() / std::string{chrom.name()}).string());

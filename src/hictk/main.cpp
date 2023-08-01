@@ -42,12 +42,10 @@ static void setup_logger_console(int verbosity_lvl, bool print_version) {
   }
 }
 
-static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int argc, char** argv) {
-  std::unique_ptr<Cli> cli{nullptr};
+static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& cli) {
   try {
-    cli = std::make_unique<Cli>(argc, argv);
-    auto config = cli->parse_arguments();
-    const auto subcmd = cli->get_subcommand();
+    auto config = cli.parse_arguments();
+    const auto subcmd = cli.get_subcommand();
     std::visit(
         [&](const auto& config_) {
           using T = hictk::remove_cvref_t<decltype(config_)>;
@@ -61,9 +59,8 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(int a
 
     return std::make_tuple(0, subcmd, config);
   } catch (const CLI::ParseError& e) {
-    assert(cli);
     //  This takes care of formatting and printing error messages (if any)
-    return std::make_tuple(cli->exit(e), Cli::subcommand::help, Config());
+    return std::make_tuple(cli.exit(e), Cli::subcommand::help, Config());
 
   } catch (const std::filesystem::filesystem_error& e) {
     SPDLOG_ERROR(FMT_STRING("FAILURE! {}"), e.what());
@@ -95,7 +92,8 @@ int main(int argc, char** argv) noexcept {
 
   try {
     setup_logger_console();
-    const auto [ec, subcmd, config] = parse_cli_and_setup_logger(argc, argv);
+    cli = std::make_unique<Cli>(argc, argv);
+    const auto [ec, subcmd, config] = parse_cli_and_setup_logger(*cli);
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
     }

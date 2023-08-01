@@ -9,12 +9,12 @@ include(Catch)
 
 add_executable(hictk_pixel_tests)
 
-target_sources(hictk_pixel_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pixel_test.cpp)
+target_sources(hictk_pixel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pixel_test.cpp")
 
 target_link_libraries(
   hictk_pixel_tests
   PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::pixel hictk::fmt)
+  PUBLIC hictk::pixel hictk::format)
 
 target_link_system_libraries(
   hictk_pixel_tests
@@ -22,7 +22,7 @@ target_link_system_libraries(
   Catch2::Catch2WithMain
   std::filesystem)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Testing/)
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. TEST_PREFIX to
 # whatever you want, or use different for different binaries
@@ -33,9 +33,9 @@ catch_discover_tests(
   TEST_SUFFIX
   " - SHORT"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   OUTPUT_DIR
-  ${CMAKE_CURRENT_BINARY_DIR}/Testing/
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
   --success
   --skip-benchmarks)
@@ -47,7 +47,7 @@ catch_discover_tests(
   TEST_SUFFIX
   " - MEDIUM"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
   --skip-benchmarks)
@@ -59,7 +59,7 @@ catch_discover_tests(
   TEST_SUFFIX
   " - LONG"
   WORKING_DIRECTORY
-  ${PROJECT_SOURCE_DIR}
+  "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
   --skip-benchmarks)
