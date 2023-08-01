@@ -21,6 +21,7 @@ namespace hictk::cooler::utils {
 
 namespace internal {
 struct ValidationStatusBase {
+  bool unable_to_open_file{false};
   bool is_hdf5{false};
   bool file_was_properly_closed{false};
 

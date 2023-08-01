@@ -358,7 +358,7 @@ void cool_to_hic(const ConvertConfig& c) {
     std::filesystem::remove(pixels);
 
     const auto weight_file_has_data =
-        c.resolutions.size() == 1
+        c.input_format == "cool"
             ? dump_weights(c.resolutions.front(), c.path_to_input.string(), weights)
             : dump_weights(c, weights);
 
