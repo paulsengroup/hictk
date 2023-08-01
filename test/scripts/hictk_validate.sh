@@ -86,6 +86,11 @@ if "$hictk_bin" validate --validate-index "$invalid_cooler" >> "$outdir/out.txt"
   status=1
 fi
 
+echo "# Validating $0..."
+if "$hictk_bin" validate --validate-index "$0" >> "$outdir/out.txt"; then
+  status=1
+fi
+
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'
 else
