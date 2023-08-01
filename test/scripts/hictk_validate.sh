@@ -44,6 +44,8 @@ script_dir="$(readlink_py "$(dirname "$0")")"
 
 valid_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic8"
 valid_cooler="$data_dir/cooler/ENCFF993FGR.2500000.cool"
+valid_mcool="$data_dir/cooler/multires_cooler_test_file.mcool"
+valid_scool="$data_dir/cooler/single_cell_cooler_test_file.scool"
 invalid_cooler="$data_dir/cooler/invalid_coolers/4DNFI9GMP2J8.1000000.cool"
 
 export PATH="$PATH:$script_dir"
@@ -52,22 +54,40 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$valid_hic" "$valid_cooler" "$invalid_cooler"; then
+if ! check_files_exist "$valid_hic" "$valid_cooler" "$valid_mcool" "$valid_scool" "$invalid_cooler"; then
   exit 1
 fi
 
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
+echo "# Validating $valid_hic..."
 if ! "$hictk_bin" validate "$valid_hic" >> "$outdir/out.txt"; then
   status=1
 fi
 
+echo "# Validating $valid_cooler..."
 if ! "$hictk_bin" validate --validate-index "$valid_cooler" >> "$outdir/out.txt"; then
   status=1
 fi
 
+echo "# Validating $valid_mcool..."
+if ! "$hictk_bin" validate --validate-index "$valid_mcool" >> "$outdir/out.txt"; then
+  status=1
+fi
+
+echo "# Validating $valid_scool..."
+if ! "$hictk_bin" validate --validate-index "$valid_scool" >> "$outdir/out.txt"; then
+  status=1
+fi
+
+echo "# Validating $invalid_cooler..."
 if "$hictk_bin" validate --validate-index "$invalid_cooler" >> "$outdir/out.txt"; then
+  status=1
+fi
+
+echo "# Validating $0..."
+if "$hictk_bin" validate --validate-index "$0" >> "$outdir/out.txt"; then
   status=1
 fi
 

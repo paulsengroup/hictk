@@ -173,6 +173,11 @@ void Cli::validate_convert_subcommand() const {
     check_requested_resolutions_avail(c.path_to_input, c.resolutions, errors);
   }
 
+  if (!c.force && std::filesystem::exists(c.path_to_output)) {
+    errors.emplace_back(fmt::format(
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.path_to_output));
+  }
+
   if (!errors.empty()) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(

@@ -29,8 +29,7 @@ void Cli::make_validate_subcommand() {
   sc.add_option(
       "uri",
       c.uri,
-      "Path to a .hic, .cool or .mcool file (Cooler URI syntax supported).")
-      ->check(IsValidHiCFile | IsValidCoolerFile)
+      "Path to a .hic or .[ms]cool file (Cooler URI syntax supported).")
       ->required();
 
   sc.add_flag(

@@ -125,8 +125,26 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
       if (chrom2.is_all()) {
         continue;
       }
-      selectors.emplace_back(fetch(chrom1.name(), chrom2.name(), norm));
+      try {
+        auto sel = fetch(chrom1.name(), chrom2.name(), norm);
+        if (sel.begin<std::int32_t>() != sel.end<std::int32_t>()) {
+          selectors.emplace_back(fetch(chrom1.name(), chrom2.name(), norm));
+        }
+      } catch (const std::exception& e) {
+        const std::string_view msg{e.what()};
+        const auto missing_norm = msg.find("unable to find") != std::string_view::npos &&
+                                  msg.find("normalization vector") != std::string_view::npos;
+        if (!missing_norm) {
+          throw;
+        }
+      }
     }
+  }
+
+  if (selectors.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to find {} normalization vectors at {} ({})"),
+                    norm.to_string(), resolution(), _unit));
   }
 
   return PixelSelectorAll{std::move(selectors)};
