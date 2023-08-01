@@ -71,11 +71,10 @@ void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixe
 
   dset.append(first_pixel, last_pixel, [&](const auto &pixel) {
     if (pixel.count == 0) {
-      // Defining pixel_to_coords as a lambda causes a compiler segfault when using conda-forge's
-      // compiler toolchain
-      const auto coords = internal::pixel_to_coords<PixelT, T>(pixel, bins);
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("Found pixel with 0 interactions: {}"), coords));
+      // Defining pixel_to_coords as a lambda and calling fmt::format to format the error message
+      // causes a compiler segfault when using conda-forge's compiler toolchain
+      throw std::runtime_error("Found pixel with 0 interactions: " +
+                               fmt::to_string(internal::pixel_to_coords<PixelT, T>(pixel, bins)));
     }
 
     sum += pixel.count;
