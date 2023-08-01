@@ -107,15 +107,15 @@ RUN hictk --version
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.authors='Roberto Rossini <roberros@uio.no>'
-LABEL org.opencontainers.image.url='https://github.com/robomics/hictk'
-LABEL org.opencontainers.image.documentation='https://github.com/robomics/hictk'
-LABEL org.opencontainers.image.source='https://github.com/robomics/hictk'
+LABEL org.opencontainers.image.url='https://github.com/paulsengroup/hictk'
+LABEL org.opencontainers.image.documentation='https://github.com/paulsengroup/hictk'
+LABEL org.opencontainers.image.source='https://github.com/paulsengroup/hictk'
 LABEL org.opencontainers.image.licenses='MIT'
 LABEL org.opencontainers.image.title='hictk'
 LABEL org.opencontainers.image.description='CLI utility to convert .hic files to .cool and .mcool'
 LABEL org.opencontainers.image.base.digest="$FINAL_BASE_IMAGE_DIGEST"
 LABEL org.opencontainers.image.base.name="$FINAL_BASE_IMAGE"
-LABEL robomics.hictk.image.build-base="$BUILD_BASE_IMAGE"
+LABEL paulsengroup.hictk.image.build-base="$BUILD_BASE_IMAGE"
 
 LABEL org.opencontainers.image.revision="$GIT_HASH"
 LABEL org.opencontainers.image.created="$CREATION_DATE"

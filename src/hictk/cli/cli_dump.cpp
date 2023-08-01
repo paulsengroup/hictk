@@ -15,7 +15,7 @@
 namespace hictk::tools {
 
 void Cli::make_dump_subcommand() {
-  auto& sc = *_cli.add_subcommand("dump", "Dump Cooler data to stdout.")
+  auto& sc = *_cli.add_subcommand("dump", "Dump data from .hic and Cooler files to stdout.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);

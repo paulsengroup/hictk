@@ -27,8 +27,8 @@ project(
   hictk
   LANGUAGES C CXX
   VERSION "${HICTK_PROJECT_VERSION_MAJOR}.${HICTK_PROJECT_VERSION_MINOR}.${HICTK_PROJECT_VERSION_PATCH}"
-  HOMEPAGE_URL https://github.com/robomics/hictk
-  DESCRIPTION "High-performance C++ library to read and write .cool files.")
+  HOMEPAGE_URL https://github.com/paulsengroup/hictk
+  DESCRIPTION "Blazing fast toolkit to work with .hic and .cool files.")
 
 include(FetchContent)
 FetchContent_Declare(
