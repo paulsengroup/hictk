@@ -21,6 +21,10 @@ set(ENABLE_DEVELOPER_MODE
     OFF
     CACHE BOOL "Enable 'developer mode'")
 
+if(NOT CMAKE_FIND_PACKAGE_PREFER_CONFIG)
+  set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
+endif()
+
 include(cmake/Versioning.cmake)
 
 project(

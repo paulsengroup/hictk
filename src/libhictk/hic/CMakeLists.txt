@@ -2,16 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FMT CONFIG REQUIRED)
-find_package(libdeflate CONFIG REQUIRED)
-find_package(phmap CONFIG REQUIRED)
+find_package(FMT REQUIRED)
+find_package(libdeflate REQUIRED)
+find_package(phmap REQUIRED)
 
 if(HICTK_WITH_EIGEN)
-  find_package(
-    Eigen3
-    CONFIG
-    QUIET
-    REQUIRED)
+  find_package(Eigen3 QUIET REQUIRED)
 endif()
 
 add_library(hic INTERFACE)

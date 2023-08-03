@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap CONFIG REQUIRED)
+find_package(phmap REQUIRED)
 
 add_library(reference INTERFACE)
 add_library(hictk::reference ALIAS reference)

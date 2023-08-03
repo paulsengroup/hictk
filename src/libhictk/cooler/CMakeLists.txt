@@ -2,24 +2,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FastFloat CONFIG REQUIRED)
-find_package(FMT CONFIG REQUIRED)
-find_package(
-  HDF5
-  CONFIG
-  REQUIRED
-  QUIET
-  COMPONENTS C)
-find_package(HighFive CONFIG REQUIRED)
-find_package(phmap CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
+find_package(FastFloat REQUIRED)
+find_package(FMT REQUIRED)
+find_package(HDF5 REQUIRED QUIET COMPONENTS C)
+find_package(HighFive REQUIRED)
+find_package(phmap REQUIRED)
+find_package(spdlog REQUIRED)
 
 if(HICTK_WITH_EIGEN)
-  find_package(
-    Eigen3
-    CONFIG
-    REQUIRED
-    QUIET)
+  find_package(Eigen3 REQUIRED QUIET)
 endif()
 
 add_library(cooler INTERFACE)

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(CLI11 CONFIG REQUIRED)
+find_package(CLI11 REQUIRED)
 find_package(Filesystem REQUIRED)
 
 add_executable(hictk_hic_dump_bench dump.cpp)

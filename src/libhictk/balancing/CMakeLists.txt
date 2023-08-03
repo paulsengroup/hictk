@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap CONFIG REQUIRED)
+find_package(phmap REQUIRED)
 
 add_library(balancing INTERFACE)
 add_library(hictk::balancing ALIAS balancing)

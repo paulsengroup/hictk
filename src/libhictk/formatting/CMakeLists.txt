@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FMT CONFIG REQUIRED)
+find_package(FMT REQUIRED)
 
 add_library(formatting INTERFACE)
 add_library(hictk::format ALIAS formatting)

@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Boost CONFIG REQUIRED COMPONENTS headers filesystem)
-find_package(CLI11 CONFIG REQUIRED)
-find_package(FMT CONFIG REQUIRED)
-find_package(readerwriterqueue CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
+find_package(Boost REQUIRED COMPONENTS headers filesystem)
+find_package(CLI11 REQUIRED)
+find_package(FMT REQUIRED)
+find_package(readerwriterqueue REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
