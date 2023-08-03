@@ -101,7 +101,7 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
 
 def hictk_dump(file, query1: str, query2: str, normalization: str = "NONE") -> pd.DataFrame:
     logging.debug("[hictkpy] running query for %s, %s...", query1, query2)
-    df = file.fetch(query1, query2, normalization, join=True)
+    df = file.fetch(query1, query2, normalization, join=True).to_df()
     return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
 
 
