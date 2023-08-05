@@ -677,6 +677,10 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
       _its(std::make_shared<ItPQueue>()),
       _sorted(sorted),
       _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
+  if (selector._selectors.empty()) {
+    *this = iterator<N>{};
+    return;
+  }
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
                 [&](const PixelSelector &sel) { _selectors->push(&sel); });
 

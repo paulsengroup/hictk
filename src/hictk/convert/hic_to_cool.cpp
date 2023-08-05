@@ -160,39 +160,76 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
   return {names.begin(), names.end(), sizes.begin()};
 }
 
+[[nodiscard]] static hic::PixelSelectorAll fetch_interactions_for_chromosome(
+    hic::File& hf, const Chromosome& chrom1) {
+  std::vector<hic::PixelSelector> selectors{};
+  for (std::uint32_t chrom2_id = chrom1.id(); chrom2_id < hf.chromosomes().size(); ++chrom2_id) {
+    const auto& chrom2 = hf.chromosomes().at(chrom2_id);
+    if (chrom2.is_all()) {
+      continue;
+    }
+    try {
+      auto sel = hf.fetch(chrom1.name(), chrom2.name());
+      if (!sel.empty()) {
+        selectors.emplace_back(std::move(sel));
+      }
+    } catch (const std::exception& e) {
+      const std::string_view msg{e.what()};
+      const auto missing_norm = msg.find("unable to find") != std::string_view::npos &&
+                                msg.find("normalization vector") != std::string_view::npos;
+      if (!missing_norm) {
+        throw;
+      }
+    }
+  }
+
+  return hic::PixelSelectorAll{std::move(selectors)};
+}
+
 template <typename N>
-static void enqueue_pixels(const hic::File& hf,
+static void enqueue_pixels(hic::File& hf,
                            moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
                            std::atomic<bool>& early_return,
                            std::size_t update_frequency = 10'000'000) {
   try {
-    auto sel = hf.fetch();
-    auto first = sel.begin<N>();
-    auto last = sel.end<N>();
-
+    std::size_t i = 0;
     auto t0 = std::chrono::steady_clock::now();
-    for (std::size_t i = 0; first != last && !early_return; ++i) {
-      while (!queue.try_enqueue(*first)) {
-        if (early_return) {
-          return;
-        }
-      }
-      ++first;
+    for (std::uint32_t chrom1_id = 0; chrom1_id < hf.chromosomes().size(); ++chrom1_id) {
+      hf.purge_footer_cache();
+      hf.clear_cache();
 
-      if (i == update_frequency) {
-        const auto t1 = std::chrono::steady_clock::now();
-        const auto delta =
-            static_cast<double>(
-                std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
-            1000.0;
-        const auto bin1 = hf.bins().at(first->bin1_id);
-        SPDLOG_INFO(
-            FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-            hf.resolution(), bin1, double(update_frequency) / delta,
-            hf.block_cache_hit_rate() * 100);
-        hf.reset_cache_stats();
-        t0 = t1;
-        i = 0;
+      const auto& chrom1 = hf.chromosomes().at(chrom1_id);
+      if (chrom1.is_all()) {
+        continue;
+      }
+
+      const auto sel = fetch_interactions_for_chromosome(hf, chrom1);
+      auto first = sel.begin<N>();
+      auto last = sel.end<N>();
+
+      for (; first != last && !early_return; ++i) {
+        while (!queue.try_enqueue(*first)) {
+          if (early_return) {
+            return;
+          }
+        }
+        ++first;
+
+        if (i == update_frequency) {
+          const auto t1 = std::chrono::steady_clock::now();
+          const auto delta =
+              static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+              1000.0;
+          const auto bin1 = hf.bins().at(first->bin1_id);
+          SPDLOG_INFO(
+              FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
+              hf.resolution(), bin1, double(update_frequency) / delta,
+              hf.block_cache_hit_rate() * 100);
+          hf.reset_cache_stats();
+          t0 = t1;
+          i = 0;
+        }
       }
     }
     queue.enqueue(ThinPixel<N>{});
