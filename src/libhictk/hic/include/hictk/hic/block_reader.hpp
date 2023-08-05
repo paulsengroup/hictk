@@ -60,12 +60,15 @@ class HiCBlockReader {
 
   [[nodiscard]] std::shared_ptr<const InteractionBlock> read(const Chromosome& chrom1,
                                                              const Chromosome& chrom2,
-                                                             const BlockIndex& idx);
+                                                             const BlockIndex& idx,
+                                                             bool cache_block = true);
   [[nodiscard]] std::size_t read_size(const Chromosome& chrom1, const Chromosome& chrom2,
                                       const BlockIndex& idx);
   void evict(const InteractionBlock& blk);
   void evict(const Chromosome& chrom1, const Chromosome& chrom2, const BlockIndex& idx);
   void clear() noexcept;
+
+  [[nodiscard]] std::size_t cache_size() const noexcept;
 
  private:
   [[nodiscard]] static Index read_index(HiCFileReader& hfs, const HiCFooter& footer);

@@ -127,8 +127,8 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
       }
       try {
         auto sel = fetch(chrom1.name(), chrom2.name(), norm);
-        if (sel.begin<std::int32_t>() != sel.end<std::int32_t>()) {
-          selectors.emplace_back(fetch(chrom1.name(), chrom2.name(), norm));
+        if (!sel.empty()) {
+          selectors.emplace_back(std::move(sel));
         }
       } catch (const std::exception& e) {
         const std::string_view msg{e.what()};
@@ -234,12 +234,20 @@ inline void File::optimize_cache_size(std::size_t upper_bound) {
 }
 
 inline void File::optimize_cache_size_for_iteration(std::size_t upper_bound) {
+  if (version() < 9) {
+    _block_cache->set_capacity(std::min(upper_bound, std::size_t(10'000'000)));
+    return;
+  }
   std::size_t cache_size = estimate_cache_size_cis() + estimate_cache_size_trans();
   cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
 }
 
 inline void File::optimize_cache_size_for_random_access(std::size_t upper_bound) {
+  if (version() < 9) {
+    _block_cache->set_capacity(std::min(upper_bound, std::size_t(10'000'000)));
+    return;
+  }
   std::size_t cache_size = estimate_cache_size_cis();
   cache_size = std::max(cache_size, std::size_t(10'000'000));
   _block_cache->set_capacity(std::min(upper_bound, cache_size));

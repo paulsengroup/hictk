@@ -225,9 +225,11 @@ inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexce
   return _footer->metadata();
 }
 
+inline bool PixelSelector::is_inter() const noexcept { return !is_intra(); }
+
 inline bool PixelSelector::is_intra() const noexcept { return chrom1() == chrom2(); }
 
-inline bool PixelSelector::is_inter() const noexcept { return !is_intra(); }
+inline bool PixelSelector::empty() const noexcept { return _reader.index().empty(); }
 
 inline std::size_t PixelSelector::estimate_optimal_cache_size(
     [[maybe_unused]] std::size_t num_samples) const {
@@ -273,6 +275,9 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 }
 
 inline void PixelSelector::clear_cache() const {
+  if (_reader.cache_size() == 0) {
+    return;
+  }
   for (auto blki : _reader.index().find_overlaps(coord1(), coord2())) {
     _reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
   }
@@ -489,7 +494,8 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
   const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
   auto first_blki = *_block_it;
   while (_block_it->coords().i1 == first_blki.coords().i1) {
-    for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it)) {
+    auto blk = *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it, false);
+    for (auto p : blk) {
       if (static_cast<std::size_t>(p.bin1_id) < bin1_lb ||
           static_cast<std::size_t>(p.bin1_id) > bin1_ub ||
           static_cast<std::size_t>(p.bin2_id) < bin2_lb ||
@@ -502,12 +508,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
       pt.bin2_id += bin2_offset;
       _buffer->emplace_back(std::move(pt));
     }
-    _sel->_reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it);
     if (++_block_it == _block_idx->end()) {
       break;
     }
   }
-
   if (_sorted) {
     std::sort(_buffer->begin(), _buffer->end());
   }
@@ -673,6 +677,10 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
       _its(std::make_shared<ItPQueue>()),
       _sorted(sorted),
       _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
+  if (selector._selectors.empty()) {
+    *this = iterator<N>{};
+    return;
+  }
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
                 [&](const PixelSelector &sel) { _selectors->push(&sel); });
 
