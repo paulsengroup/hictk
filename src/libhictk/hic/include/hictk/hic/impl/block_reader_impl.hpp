@@ -76,7 +76,8 @@ inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &foo
 
 inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromosome &chrom1,
                                                                     const Chromosome &chrom2,
-                                                                    const BlockIndex &idx) {
+                                                                    const BlockIndex &idx,
+                                                                    bool cache_block) {
   if (!idx) {
     return {nullptr};
   }
@@ -138,6 +139,11 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
       HICTK_UNREACHABLE_CODE;
   }
 
+  if (!cache_block) {
+    return std::make_shared<const InteractionBlock>(
+        InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
+  }
+
   return _blk_cache->emplace(
       chrom1.id(), chrom2.id(), idx.id(),
       InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
@@ -171,6 +177,8 @@ inline void HiCBlockReader::evict(const Chromosome &chrom1, const Chromosome &ch
 }
 
 inline void HiCBlockReader::clear() noexcept { _blk_cache->clear(); }
+
+inline std::size_t HiCBlockReader::cache_size() const noexcept { return _blk_cache->size(); }
 
 inline void HiCBlockReader::read_dispatcher_type1_block(
     bool i16Bin1, bool i16Bin2, bool i16Counts, std::int32_t bin1Offset, std::int32_t bin2Offset,
