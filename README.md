@@ -79,10 +79,10 @@ Downloading and running the latest stable release can be done as follows:
 
 ```console
 # Using Docker, may require sudo
-user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:0.0.1 --help
+user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:0.0.2 --help
 
 # Using Singularity/Apptainer
-user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:0.0.1 --help
+user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:0.0.2 --help
 
 Blazing fast tools to work with .hic and .cool files.
 Usage: /usr/local/bin/hictk [OPTIONS] SUBCOMMAND
@@ -116,7 +116,7 @@ user@dev:/tmp$ conda create -n hictk -c conda-forge -c bioconda hictk
 hictk: /home/user/.miniconda3/envs/hictk/bin/hictk
 
 (hictk) user@dev:/tmp$ hictk --version
-hictk-v0.0.1-bioconda
+hictk-v0.0.2-bioconda
 ```
 
 ### Installing from source
@@ -175,7 +175,7 @@ CC=gcc CXX=g++ conan profile detect --force
 Download from the [Release](https://github.com/paulsengroup/hictk/releases) page (recommended).
 ```bash
 mkdir /tmp/hictk
-curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v0.0.1.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
+curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v0.0.2.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
 ```
 
 Using git.
@@ -183,7 +183,7 @@ Using git.
 git clone https://github.com/paulsengroup/hictk.git /tmp/hictk
 
 cd /tmp/hictk
-git checkout v0.0.1  # Skip this step if you want to build the latest commit from main
+git checkout v0.0.2  # Skip this step if you want to build the latest commit from main
 ```
 
 #### Compiling hictk
