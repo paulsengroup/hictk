@@ -115,21 +115,31 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
         SECTION("iterable") {
           auto sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
-          const auto buffer = sel.read_all<std::int32_t>();
-          REQUIRE(buffer.size() == expected_size);
+          SECTION("sorted") {
+            const auto buffer = sel.read_all<std::int32_t>();
+            REQUIRE(buffer.size() == expected_size);
 
-          CHECK(sumCounts<std::int32_t>(buffer) == expected_sum);
+            CHECK(sumCounts<std::int32_t>(buffer) == expected_sum);
 
-          const auto h = head(buffer, N);
-          const auto t = tail(buffer, N);
+            const auto h = head(buffer, N);
+            const auto t = tail(buffer, N);
 
-          for (std::size_t i = 0; i < N; ++i) {
-            CHECK(head_expected[i] == h[i].count);
-            CHECK(tail_expected[i] == t[i].count);
+            for (std::size_t i = 0; i < N; ++i) {
+              CHECK(head_expected[i] == h[i].count);
+              CHECK(tail_expected[i] == t[i].count);
+            }
+
+            compareContactRecord(buffer[expected_value.first], expected_value.second);
+            CHECK(std::is_sorted(buffer.begin(), buffer.end()));
           }
 
-          compareContactRecord(buffer[expected_value.first], expected_value.second);
-          CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+          SECTION("unsorted") {
+            CHECK(std::accumulate(
+                      sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
+                      [&](std::int32_t accumulator, const hictk::ThinPixel<std::int32_t>& tp) {
+                        return accumulator + tp.count;
+                      }) == expected_sum);
+          }
         }
 
 #ifdef HICTK_WITH_EIGEN
