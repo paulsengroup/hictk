@@ -138,6 +138,11 @@ jobs:
 
           echo "key=fuzzy-testing-$hash" >> $GITHUB_OUTPUT
 
+      - name: Install Python
+        run: |
+          apt-get update
+          apt-get install -y python3.11 python3.11-dev
+
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v3
@@ -153,19 +158,6 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
-      - name: Install build dependencies
-        working-directory: hictkpy
-        run: |
-          conan install .                             \
-             --build=missing                          \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -s build_type=Release                    \
-             -s compiler.libcxx=libstdc++11           \
-             -s compiler.cppstd=17                    \
-             -o "*/*:shared=True"                     \
-             --output-folder=build
-
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
@@ -173,24 +165,22 @@ jobs:
           conan cache clean "*" --download
           conan cache clean "*" --source
 
+
+      - name: Install Python bindings
+        working-directory: hictkpy
+        run: |
+          pip install --upgrade pip setuptools wheel pybind11
+          env CC=clang-15 \
+              CXX=clang++-15 \
+              CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
+          pip install . -v
+
       - name: Save Conan cache
         uses: actions/cache/save@v3
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
           key: conan-${{ steps.cache-key.outputs.key }}
           path: ${{ env.CONAN_HOME }}
-
-      - name: Install Python
-        run: |
-          apt-get update
-          apt-get install -y python3.11 python3.11-dev
-
-      - name: Install Python bindings
-        working-directory: hictkpy
-        run: |
-          pip install --upgrade pip setuptools wheel pybind11
-          env CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
-          pip install . -v
 
       - name: Install test dependencies
         run: |
