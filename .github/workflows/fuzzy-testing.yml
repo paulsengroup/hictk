@@ -122,7 +122,8 @@ jobs:
       - name: Patch hictkpy
         working-directory: hictkpy
         run: |
-          sed -i 's/GIT_TAG.*/GIT_TAG ${{ github.event.after }}/' CMakeLists.txt
+          sed -i 's|URL.*\.tar\.xz"|GIT_REPOSITORY https://github.com/paulsengroup/hictk.git|' CMakeLists.txt
+          sed -i 's/URL_HASH.*/GIT_TAG "${{ github.event.after }}"/' CMakeLists.txt
           grep 'GIT_TAG' CMakeLists.txt
 
       - name: Fix permissions
