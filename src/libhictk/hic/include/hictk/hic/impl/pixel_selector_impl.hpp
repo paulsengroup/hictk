@@ -299,13 +299,7 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorte
   }
 
   while (!!_buffer && _buffer->empty()) {
-    const auto is_intra = coord1().bin1.chrom() == coord2().bin1.chrom();
-
-    if (_sel->_reader.index().version() > 8 && is_intra) {
-      read_next_chunk_v9_intra();
-    } else {
-      read_next_chunk();
-    }
+    read_next_chunk();
   }
 }
 
@@ -387,13 +381,8 @@ inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
   ++_buffer_i;
-  const auto is_intra = coord1().bin1.chrom() == coord2().bin1.chrom();
   while (!is_at_end() && _buffer_i >= size()) {
-    if (_sel->_reader.index().version() > 8 && is_intra) {
-      read_next_chunk_v9_intra();
-    } else {
-      read_next_chunk();
-    }
+    read_next_chunk();
   }
 
   return *this;
@@ -472,6 +461,58 @@ inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noex
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk() {
+  if (!_sorted) {
+    return read_next_chunk_unsorted();
+  }
+
+  const auto is_intra = coord1().bin1.chrom() == coord2().bin1.chrom();
+
+  if (_sel->_reader.index().version() > 8 && is_intra) {
+    return read_next_chunk_v9_intra_sorted();
+  }
+  read_next_chunk_sorted();
+}
+
+template <typename N>
+inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
+  assert(!!_sel);
+
+  if (_block_it == _block_idx->end()) {
+    *this = at_end(*_sel);
+    return;
+  }
+
+  if (_buffer.use_count() != 1) {
+    _buffer = std::make_shared<BufferT>(_buffer->capacity());
+  }
+  _buffer->clear();
+  _buffer_i = 0;
+
+  const auto bin1_lb = coord1().bin1.rel_id();
+  const auto bin1_ub = coord1().bin2.rel_id();
+  const auto bin2_lb = coord2().bin1.rel_id();
+  const auto bin2_ub = coord2().bin2.rel_id();
+
+  const auto bin1_offset = bins().at(coord1().bin1.chrom()).id();
+  const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
+  auto blk = *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it++, false);
+  for (auto p : blk) {
+    if (static_cast<std::size_t>(p.bin1_id) < bin1_lb ||
+        static_cast<std::size_t>(p.bin1_id) > bin1_ub ||
+        static_cast<std::size_t>(p.bin2_id) < bin2_lb ||
+        static_cast<std::size_t>(p.bin2_id) > bin2_ub) {
+      continue;
+    }
+
+    auto pt = _sel->transform_pixel<N>(p);
+    pt.bin1_id += bin1_offset;
+    pt.bin2_id += bin2_offset;
+    _buffer->emplace_back(std::move(pt));
+  }
+}
+
+template <typename N>
+inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
   assert(!!_sel);
 
   if (_block_it == _block_idx->end()) {
@@ -518,7 +559,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra() {
+inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
   assert(!!_sel);
 
   if (_bin1_id > coord1().bin2.rel_id()) {
@@ -637,7 +678,7 @@ template <typename N>
   const auto num_bins = static_cast<std::int64_t>(bins().size());
   using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
   MatrixT matrix = MatrixT::Zero(num_bins, num_bins);
-  std::for_each(begin<N>(), end<N>(), [&](const ThinPixel<N> &p) {
+  std::for_each(begin<N>(false), end<N>(), [&](const ThinPixel<N> &p) {
     const auto i1 = static_cast<std::int64_t>(p.bin1_id);
     const auto i2 = static_cast<std::int64_t>(p.bin2_id);
     matrix(i1, i2) = p.count;
