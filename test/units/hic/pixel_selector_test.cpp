@@ -135,7 +135,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
           SECTION("unsorted") {
             CHECK(std::accumulate(
-                      sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), std::int32_t(0),
+                      sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
                       [&](std::int32_t accumulator, const hictk::ThinPixel<std::int32_t>& tp) {
                         return accumulator + tp.count;
                       }) == expected_sum);
