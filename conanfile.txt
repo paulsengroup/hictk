@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 [requires]
-boost/1.82.0
+boost/1.83.0
 cli11/2.3.2
 eigen/3.4.0
 fast_float/5.2.0
-fmt/10.0.0
+fmt/10.1.0
 hdf5/1.14.0
 highfive/2.7.1
 libdeflate/1.18
