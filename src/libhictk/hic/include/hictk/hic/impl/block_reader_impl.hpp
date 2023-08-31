@@ -74,10 +74,10 @@ inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &foo
                         footer.resolution());
 }
 
-inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromosome &chrom1,
-                                                                    const Chromosome &chrom2,
-                                                                    const BlockIndex &idx,
-                                                                    bool cache_block) {
+inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read_v6(const Chromosome &chrom1,
+                                                                       const Chromosome &chrom2,
+                                                                       const BlockIndex &idx,
+                                                                       bool cache_block) {
   if (!idx) {
     return {nullptr};
   }
@@ -93,14 +93,44 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
 
   const auto nRecords = static_cast<std::size_t>(_bbuffer.read<std::int32_t>());
   _tmp_buffer.resize(nRecords);
+  std::generate(_tmp_buffer.begin(), _tmp_buffer.end(), [&]() -> ThinPixel<float> {
+    return {static_cast<std::uint64_t>(_bbuffer.read<std::int32_t>()),
+            static_cast<std::uint64_t>(_bbuffer.read<std::int32_t>()), _bbuffer.read<float>()};
+  });
 
-  // if (_fs->version() == 6) {
-  //     readBlockOfInteractionsV6(_bbuffer, buffer);
-  //     auto it =
-  //         _blockCache.emplace(idx.position),
-  //         InteractionBlock(buffer));
-  //     return it.first->second;
-  // }
+  if (!cache_block) {
+    return std::make_shared<const InteractionBlock>(
+        InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
+  }
+
+  return _blk_cache->emplace(
+      chrom1.id(), chrom2.id(), idx.id(),
+      InteractionBlock{idx.id(), _index.block_bin_count(), std::move(_tmp_buffer)});
+}
+
+inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromosome &chrom1,
+                                                                    const Chromosome &chrom2,
+                                                                    const BlockIndex &idx,
+                                                                    bool cache_block) {
+  if (_hfs->version() == 6) {
+    return read_v6(chrom1, chrom2, idx, cache_block);
+  }
+
+  if (!idx) {
+    return {nullptr};
+  }
+
+  assert(_blk_cache);
+  assert(_bins);
+  auto blk = _blk_cache->find(chrom1.id(), chrom2.id(), idx.id());
+  if (blk) {
+    return blk;
+  }
+
+  _hfs->readAndInflate(idx, _bbuffer.reset());
+
+  const auto nRecords = static_cast<std::size_t>(_bbuffer.read<std::int32_t>());
+  _tmp_buffer.resize(nRecords);
 
   const auto bin1Offset = _bbuffer.read<std::int32_t>();
   const auto bin2Offset = _bbuffer.read<std::int32_t>();
