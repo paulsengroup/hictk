@@ -121,10 +121,18 @@ jobs:
 
       - name: Patch hictkpy
         working-directory: hictkpy
+        if: github.event_name != 'schedule'
         run: |
           sed -i 's|URL.*\.tar\.xz"|GIT_REPOSITORY https://github.com/paulsengroup/hictk.git|' CMakeLists.txt
-          sed -i "s|URL_HASH.*|GIT_TAG $GITHUB_SHA|" CMakeLists.txt
+          sed -i 's|URL_HASH.*|GIT_TAG ${{ github.event.after }}|' CMakeLists.txt
           grep 'GIT_TAG' CMakeLists.txt
+
+      - name: Patch hictkpy
+        working-directory: hictkpy
+        if: github.event_name == 'schedule'
+        run: |
+          sed -i 's|URL.*\.tar\.xz"|GIT_REPOSITORY https://github.com/paulsengroup/hictk.git|' CMakeLists.txt
+          sed -i 's|URL_HASH.*|GIT_TAG main|' CMakeLists.txt
 
       - name: Fix permissions
         run: |
