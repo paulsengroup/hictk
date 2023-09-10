@@ -85,7 +85,9 @@ static int validate_cooler(std::string_view path, bool validate_index, bool quie
 
 static int validate_mcool(std::string_view path, bool validate_index, bool quiet) {
   const cooler::MultiResFile mclr{std::filesystem::path(path)};
-  for (const auto& res : mclr.resolutions()) {
+  auto resolutions = mclr.resolutions();
+  std::sort(resolutions.begin(), resolutions.end(), std::greater{});
+  for (const auto& res : resolutions) {
     const auto status = validate_cooler(mclr.open(res).uri(), validate_index, quiet);
     if (status != 0) {
       return 1;
