@@ -247,9 +247,9 @@ inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
   HiCHeader header{fs.url()};
 
   fs.read(header.version);
-  if (header.version < 8) {
+  if (header.version < 6) {
     throw std::runtime_error(fmt::format(
-        FMT_STRING(".hic version 7 and older are no longer supported. Found version {}"),
+        FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
         header.version));
   }
   fs.read(header.masterIndexOffset);
