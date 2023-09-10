@@ -113,7 +113,7 @@ jobs:
 
     steps:
       - name: Clone hictkpy
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: paulsengroup/hictkpy
           ref: main
@@ -233,7 +233,7 @@ jobs:
           echo "resolution=$resolution" >> $GITHUB_OUTPUT
 
       - name: Clone hictk
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: hictk
 
