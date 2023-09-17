@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "config.hpp"
+#include "hictk/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/hic/utils.hpp"
 
@@ -22,6 +23,9 @@ class CoolerFileValidator : public CLI::Validator {
       if (!hictk::cooler::utils::is_cooler(uri)) {
         if (hictk::cooler::utils::is_multires_file(uri)) {
           return "URI points to a .mcool file: " + uri;
+        }
+        if (hictk::cooler::utils::is_scool_file(uri)) {
+          return "URI points to a .scool file: " + uri;
         }
         const auto path = cooler::parse_cooler_uri(uri).file_path;
         if (!std::filesystem::exists(path)) {
@@ -44,6 +48,22 @@ class MultiresCoolerFileValidator : public CLI::Validator {
       }
       if (!hictk::cooler::utils::is_multires_file(uri)) {
         return "Not a valid multi-resolution cooler: " + uri;
+      }
+      return "";
+    };
+  }
+};
+
+class SingleCellCoolerFileValidator : public CLI::Validator {
+ public:
+  inline SingleCellCoolerFileValidator() : Validator("Single-cell-cooler") {
+    func_ = [](std::string& uri) -> std::string {
+      const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
+      if (!hictk::cooler::utils::is_scool_file(uri)) {
+        return "Not a valid single-cell cooler: " + uri;
       }
       return "";
     };
@@ -145,9 +165,10 @@ class Formatter : public CLI::Formatter {
 };
 
 // clang-format off
-    inline const auto IsValidCoolerFile = CoolerFileValidator();                  // NOLINT(cert-err58-cpp)
-    inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();  // NOLINT(cert-err58-cpp)
-    inline const auto IsValidHiCFile = HiCFileValidator();                        // NOLINT(cert-err58-cpp)
+    inline const auto IsValidCoolerFile = CoolerFileValidator();                      // NOLINT(cert-err58-cpp)
+    inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();      // NOLINT(cert-err58-cpp)
+    inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();  // NOLINT(cert-err58-cpp)
+    inline const auto IsValidHiCFile = HiCFileValidator();                            // NOLINT(cert-err58-cpp)
 // clang-format on
 
 // clang-format off
@@ -225,6 +246,9 @@ class Cli {
   if (cooler::utils::is_multires_file(p.string())) {
     return "mcool";
   }
+  if (cooler::utils::is_scool_file(p.string())) {
+    return "scool";
+  }
   assert(hic::utils::is_hic_file(p));
   return "hic";
 }
@@ -249,6 +273,9 @@ class Cli {
                                                                  std::string_view format) {
   if (format == "cool") {
     return {cooler::File(p.string()).bin_size()};
+  }
+  if (format == "scool") {
+    return {cooler::SingleCellFile{p.string()}.bin_size()};
   }
   if (format == "mcool") {
     return cooler::utils::list_resolutions(p, true);

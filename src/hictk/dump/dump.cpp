@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/cooler.hpp"
 #include "hictk/file.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/transformers.hpp"
@@ -16,23 +17,6 @@ static void print(const Pixel<double>& pixel) {
 }
 static void print(const ThinPixel<double>& pixel) {
   fmt::print(FMT_COMPILE("{:d}\t{:d}\t{:.16g}\n"), pixel.bin1_id, pixel.bin2_id, pixel.count);
-}
-
-static void dump_chroms(const File& f, std::string_view range) {
-  if (range == "all") {
-    for (const Chromosome& chrom : f.chromosomes()) {
-      if (!chrom.is_all()) {
-        fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
-      }
-    }
-    return;
-  }
-
-  const auto coords = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range});
-  auto it = f.chromosomes().find(coords.chrom());
-  if (it != f.chromosomes().end()) {
-    fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), it->name(), it->size());
-  }
 }
 
 template <typename File>
@@ -127,9 +111,6 @@ static void dump_pixels(hic::File& f, std::string_view range1, std::string_view 
 static void process_query(File& f, std::string_view table, std::string_view range1,
                           std::string_view range2, std::string_view normalization, bool join,
                           bool sorted) {
-  if (table == "chroms") {
-    return dump_chroms(f, range1);
-  }
   if (table == "bins") {
     return dump_bins(f, range1);
   }
@@ -139,7 +120,128 @@ static void process_query(File& f, std::string_view table, std::string_view rang
              f.get());
 }
 
-int dump_subcmd(const DumpConfig& c) {
+static int dump_chroms(std::string_view uri, std::string_view format, std::uint32_t resolution) {
+  Reference ref{};
+
+  if (format == "mcool") {
+    ref = cooler::MultiResFile{std::string{uri}}.chromosomes();
+  } else if (format == "scool") {
+    ref = cooler::SingleCellFile{std::string{uri}}.chromosomes();
+  } else {
+    ref = File{std::string{uri}, resolution}.chromosomes();
+  }
+
+  for (const Chromosome& chrom : ref) {
+    if (!chrom.is_all()) {
+      fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+    }
+  }
+  return 0;
+}
+
+static phmap::btree_set<std::string> get_normalizations(std::string_view uri,
+                                                        std::string_view format,
+                                                        std::uint32_t resolution) {
+  assert(format != "mcool");
+  assert(format != "hic" || resolution != 0);
+  if (format == "scool") {
+    const auto cell_ids = cooler::SingleCellFile{uri}.cells();
+    if (cell_ids.empty()) {
+      return {};
+    }
+
+    const auto scool_uri = fmt::format(FMT_STRING("{}::/cells/{}"), uri, *cell_ids.begin());
+    return get_normalizations(scool_uri, "cool", 0);
+  }
+
+  phmap::btree_set<std::string> norms{};
+  if (uri == "hic" && resolution == 0) {
+    const hic::File hf{std::string{uri}, resolution};
+
+    for (const auto& norm : hf.avail_normalizations()) {
+      norms.emplace(std::string{norm.to_string()});
+    }
+    return norms;
+  }
+
+  const auto norms_ = File{std::string{uri}, resolution}.avail_normalizations();
+  std::transform(norms_.begin(), norms_.end(), std::inserter(norms, norms.begin()),
+                 [](const auto& n) { return std::string{n.to_string()}; });
+
+  return norms;
+}
+
+static int dump_normalizations(std::string_view uri, std::string_view format,
+                               std::uint32_t resolution) {
+  phmap::btree_set<std::string> norms{};
+  std::vector<std::uint32_t> resolutions{};
+  if (format == "mcool") {
+    resolutions = cooler::MultiResFile{uri}.resolutions();
+    if (resolutions.empty()) {
+      return 0;
+    }
+  } else if (format == "hic" && resolution == 0) {
+    resolutions = hic::utils::list_resolutions(std::string{uri});
+    if (resolutions.empty()) {
+      return 0;
+    }
+  }
+
+  if (resolutions.empty()) {
+    norms = get_normalizations(uri, format, resolution);
+  } else {
+    format = format == "hic" ? "hic" : "cool";
+    std::for_each(resolutions.begin(), resolutions.end(),
+                  [&](const auto res) { norms.merge(get_normalizations(uri, format, res)); });
+  }
+
+  if (!norms.empty()) {
+    fmt::print(FMT_STRING("{}\n"), fmt::join(norms, "\n"));
+  }
+  return 0;
+}
+
+static int dump_resolutions(std::string_view uri, std::string_view format,
+                            std::uint32_t resolution) {
+  std::vector<std::uint32_t> resolutions{};
+
+  if (format == "hic") {
+    resolutions = hic::utils::list_resolutions(uri);
+    if (resolution != 0) {
+      const auto res_found =
+          std::find(resolutions.begin(), resolutions.end(), resolution) != resolutions.end();
+      resolutions.clear();
+      if (res_found) {
+        resolutions.push_back(resolution);
+      }
+    }
+  } else if (format == "mcool") {
+    resolutions = cooler::MultiResFile{uri}.resolutions();
+  } else if (format == "scool") {
+    resolutions.push_back(cooler::SingleCellFile{uri}.bin_size());
+  } else {
+    assert(format == "cool");
+    resolutions.push_back(cooler::File{uri}.bin_size());
+  }
+
+  if (!resolutions.empty()) {
+    fmt::print(FMT_STRING("{}\n"), fmt::join(resolutions, "\n"));
+  }
+  return 0;
+}
+
+static int dump_cells(std::string_view uri, std::string_view format) {
+  if (format != "scool") {
+    throw std::runtime_error(fmt::format(FMT_STRING("\"{}\" is not a .scool file"), uri));
+  }
+  const auto cells = cooler::SingleCellFile{uri}.cells();
+  if (!cells.empty()) {
+    fmt::print(FMT_STRING("{}\n"), fmt::join(cells, "\n"));
+  }
+  return 0;
+}
+
+static int dump_tables(const DumpConfig& c) {
   hictk::File f{c.uri, c.resolution, c.matrix_type, c.matrix_unit};
 
   if (c.query_file.empty()) {
@@ -163,5 +265,27 @@ int dump_subcmd(const DumpConfig& c) {
   }
 
   return 0;
+}
+
+int dump_subcmd(const DumpConfig& c) {
+  if (c.table == "bins" || c.table == "pixels") {
+    return dump_tables(c);
+  }
+
+  if (c.table == "chroms") {
+    return dump_chroms(c.uri, c.format, c.resolution);
+  }
+
+  if (c.table == "resolutions") {
+    return dump_resolutions(c.uri, c.format, c.resolution);
+  }
+
+  if (c.table == "normalizations") {
+    return dump_normalizations(c.uri, c.format, c.resolution);
+  }
+
+  assert(c.table == "cells");
+
+  return dump_cells(c.uri, c.format);
 }
 }  // namespace hictk::tools
