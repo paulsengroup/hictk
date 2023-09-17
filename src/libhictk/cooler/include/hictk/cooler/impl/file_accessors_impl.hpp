@@ -87,6 +87,21 @@ inline auto File::dataset(std::string_view dataset_name) const -> const Dataset 
   }
 }
 
+inline std::vector<balancing::Method> File::avail_normalizations() const {
+  const phmap::flat_hash_set<std::string> bin_table_dsets{"chrom", "start", "end"};
+
+  std::vector<balancing::Method> norms{};
+  for (const auto &dset : group("bins")().listObjectNames(HighFive::IndexType::NAME)) {
+    if (bin_table_dsets.contains(dset)) {
+      continue;
+    }
+
+    norms.emplace_back(balancing::Method{dset});
+  }
+
+  return norms;
+}
+
 inline const hictk::internal::NumericVariant &File::pixel_variant() const noexcept {
   return _pixel_variant;
 }

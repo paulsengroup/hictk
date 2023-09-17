@@ -74,6 +74,7 @@ class SingleCellFile {
   [[nodiscard]] std::string path() const;
   [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
   [[nodiscard]] auto bins() const noexcept -> const BinTable&;
+  [[nodiscard]] std::uint32_t bin_size() const noexcept;
 
   template <typename N>
   File aggregate(std::string_view uri, bool overwrite_if_exists = false,

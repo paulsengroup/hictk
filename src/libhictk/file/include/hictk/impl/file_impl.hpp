@@ -277,6 +277,10 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
       _fp);
 }
 
+inline std::vector<balancing::Method> File::avail_normalizations() const {
+  return std::visit([](const auto& fp) { return fp.avail_normalizations(); }, _fp);
+}
+
 template <typename FileT>
 constexpr const FileT& File::get() const noexcept {
   return std::get<FileT>(_fp);

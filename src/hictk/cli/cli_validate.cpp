@@ -1,6 +1,6 @@
+// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 //
-// Created by roby on 7/13/23.
-//
+// SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
 #include <fmt/std.h>
