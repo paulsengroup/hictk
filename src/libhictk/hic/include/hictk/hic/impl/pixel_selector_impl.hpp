@@ -701,6 +701,19 @@ inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
 
 inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
 
+inline std::vector<double> PixelSelectorAll::weights() const {
+  std::vector<double> weights_{};
+  weights_.reserve(bins().size());
+
+  std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
+    if (sel.is_intra()) {
+      weights_.insert(weights_.end(), sel.weights1()().begin(), sel.weights1()().end());
+    }
+  });
+
+  return weights_;
+}
+
 template <typename N>
 inline bool PixelSelectorAll::iterator<N>::Pair::operator<(const Pair &other) const noexcept {
   return first < other.first;
