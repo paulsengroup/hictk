@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -14,9 +12,26 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+TEST_CASE("Cooler: read weights", "[cooler][short]") {
+  const auto path1 = datadir / "cooler_test_file.cool";
+  const auto path2 = datadir / "ENCFF993FGR.2500000.cool";
+
+  const cooler::File clr1{path1.string()};
+  const cooler::File clr2{path2.string()};
+
+  SECTION("wo/ weights") { CHECK(clr1.avail_normalizations().empty()); }
+  SECTION("w/ weights") {
+    CHECK(clr2.avail_normalizations().size() == 6);
+    CHECK(clr2.has_weights("SCALE"));
+    CHECK(!clr2.has_weights("FOOBAR"));
+
+    CHECK(clr2.read_weights("SCALE")->type() == hictk::balancing::Weights::Type::DIVISIVE);
+  }
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: write weights", "[cooler][short]") {
-  auto path1 = datadir / "cooler_test_file.cool";
+  const auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_write_weights1.cool";
   auto path3 = testdir() / "cooler_test_write_weights2.cool";
 
