@@ -425,15 +425,15 @@ jobs:
 
       - name: Test hictk dump resolutions
         run: |
-          test/scripts/hictk_resolutions.sh bin/hictk
+          test/scripts/hictk_dump_resolutions.sh bin/hictk
 
       - name: Test hictk dump normalizations
         run: |
-          test/scripts/hictk_normalizations.sh bin/hictk
+          test/scripts/hictk_dump_normalizations.sh bin/hictk
 
       - name: Test hictk dump cells
         run: |
-          test/scripts/hictk_cells.sh bin/hictk
+          test/scripts/hictk_dump_cells.sh bin/hictk
 
       - name: Test hictk dump genome-wide
         run: |
