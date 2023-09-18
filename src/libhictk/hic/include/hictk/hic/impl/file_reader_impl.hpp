@@ -607,6 +607,8 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
 
   std::vector<balancing::Method> methods_{methods.size()};
   std::copy(methods.begin(), methods.end(), methods_.begin());
+  std::sort(methods_.begin(), methods_.end(),
+            [&](const auto &m1, const auto &m2) { return m1.to_string() < m2.to_string(); });
   return methods_;
 }
 
