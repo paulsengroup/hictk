@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <Eigen/Eigen>
 #include <cmath>
 #include <iostream>
 #include <iterator>

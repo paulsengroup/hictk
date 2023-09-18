@@ -6,12 +6,14 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <filesystem>
 
+#include "hictk/balancing/ice.hpp"
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/vc.hpp"
+#include "hictk/cooler.hpp"
 #include "hictk/hic.hpp"
 
 namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
+inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
 namespace hictk::test::balancing {
@@ -31,7 +33,7 @@ static void compare_weights(const std::vector<double>& weights, const std::vecto
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VC", "[balancing][short]") {
-  const auto path = datadir / "ENCFF993FGR.hic";
+  const auto path = datadir / "hic/ENCFF993FGR.hic";
 
   auto hf = hictk::hic::File(path.string(), 2500000);
 
@@ -62,6 +64,25 @@ TEST_CASE("Balancing: VC", "[balancing][short]") {
                              .get_weights();
 
     const auto expected = hf.fetch(hictk::balancing::Method::GW_VC()).weights();
+    compare_weights(weights, expected);
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: ICE", "[balancing][short]") {
+  const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+
+  auto clr = hictk::cooler::File(path.string());
+
+  SECTION("GW") {
+    auto sel = clr.fetch();
+
+    const auto num_bins = clr.bins().size();
+    const auto weights =
+        hictk::balancing::ICE(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), num_bins)
+            .get_weights();
+
+    const auto expected = (*clr.read_weights("weight"))();
     compare_weights(weights, expected);
   }
 }
