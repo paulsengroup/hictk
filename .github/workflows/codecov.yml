@@ -192,6 +192,10 @@ jobs:
         run: |
           test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
           test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
+          test/scripts/hictk_resolutions.sh build/src/hictk/hictk
+          test/scripts/hictk_normalizations.sh build/src/hictk/hictk
+          test/scripts/hictk_cells.sh build/src/hictk/hictk
+
           test/scripts/hictk_dump_gw.sh build/src/hictk/hictk
           test/scripts/hictk_dump_cis.sh build/src/hictk/hictk
           test/scripts/hictk_dump_trans.sh build/src/hictk/hictk
