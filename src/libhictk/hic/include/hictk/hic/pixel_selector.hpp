@@ -205,6 +205,7 @@ class PixelSelectorAll {
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::vector<double> weights() const;
 
   template <typename N>
   class iterator {
