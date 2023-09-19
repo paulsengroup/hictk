@@ -74,16 +74,10 @@ TEST_CASE("Balancing: ICE", "[balancing][short]") {
 
   auto clr = hictk::cooler::File(path.string());
 
-  SECTION("GW") {
-    auto sel = clr.fetch();
-
-    const auto num_bins = clr.bins().size();
-    const auto weights =
-        hictk::balancing::ICE(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), num_bins)
-            .get_weights();
-
-    const auto expected = (*clr.read_weights("weight"))();
-    compare_weights(weights, expected);
+  SECTION("INTRA") {
+    constexpr auto type = hictk::balancing::ICE::Type::cis;
+    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+    compare_weights(weights, (*clr.read_weights("weight"))());
   }
 }
 
