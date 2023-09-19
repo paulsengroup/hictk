@@ -61,20 +61,20 @@ class ICE {
   [[nodiscard]] static auto construct_sparse_matrix_cis(const File& f, std::size_t num_masked_diags,
                                                         std::size_t bin_offset) -> SparseMatrix;
   template <typename File>
-  [[nodiscard]] static auto construct_sparse_matrix_trans(const File& f,
-                                                          std::size_t num_masked_diags,
-                                                          std::size_t bin_offset) -> SparseMatrix;
+  [[nodiscard]] static auto construct_sparse_matrix_trans(const File& f, std::size_t bin_offset)
+      -> SparseMatrix;
 
   [[nodiscard]] static auto inner_loop(nonstd::span<const std::size_t> bin1_ids,
                                        nonstd::span<const std::size_t> bin2_ids,
                                        std::vector<double> counts, nonstd::span<double> biases,
-                                       nonstd::span<double> marg_buffer, std::size_t bin_offset = 0)
-      -> Result;
+                                       nonstd::span<double> marg_buffer, std::size_t bin_offset = 0,
+                                       nonstd::span<double> weights = {}) -> Result;
 
   static void times_outer_product(nonstd::span<const std::size_t> bin1_ids,
                                   nonstd::span<const std::size_t> bin2_ids,
                                   nonstd::span<double> counts, nonstd::span<const double> biases,
-                                  std::size_t bin_offset = 0);
+                                  std::size_t bin_offset = 0,
+                                  nonstd::span<const double> weights = {});
 
   static void marginalize(nonstd::span<const std::size_t> bin1_ids,
                           nonstd::span<const std::size_t> bin2_ids,
@@ -104,6 +104,14 @@ class ICE {
                                 nonstd::span<const std::size_t> chrom_bin_offsets,
                                 std::size_t min_nnz, std::size_t min_count, double mad_max);
   [[nodiscard]] static std::vector<std::size_t> read_chrom_bin_offsets(const BinTable& bins);
+
+  [[nodiscard]] static std::vector<double> compute_weights_from_chromosome_sizes(
+      const BinTable& bins, nonstd::span<std::size_t> chrom_bin_offsets);
+
+  static void mask_cis_interactions(nonstd::span<const std::size_t> bin1_ids,
+                                    nonstd::span<const std::size_t> bin2_ids,
+                                    nonstd::span<double> counts,
+                                    nonstd::span<const std::size_t> chrom_bin_offsets);
 };
 
 }  // namespace hictk::balancing

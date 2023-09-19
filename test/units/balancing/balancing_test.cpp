@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <filesystem>
+#include <fstream>
 
 #include "hictk/balancing/ice.hpp"
 #include "hictk/balancing/methods.hpp"
@@ -17,6 +18,20 @@ inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-
 }  // namespace hictk::test
 
 namespace hictk::test::balancing {
+
+[[nodiscard]] static std::vector<double> read_weights(const std::filesystem::path& path,
+                                                      char sep = '\n') {
+  assert(std::filesystem::exists(path));
+  std::ifstream ifs(path);
+  std::string strbuf;
+  std::vector<double> buffer{};
+
+  while (std::getline(ifs, strbuf, sep)) {
+    buffer.push_back(std::stod(strbuf));
+  }
+
+  return buffer;
+}
 
 static void compare_weights(const std::vector<double>& weights, const std::vector<double>& expected,
                             double tol = 1.0e-6) {
@@ -75,9 +90,31 @@ TEST_CASE("Balancing: ICE", "[balancing][short]") {
   auto clr = hictk::cooler::File(path.string());
 
   SECTION("INTRA") {
+    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+
     constexpr auto type = hictk::balancing::ICE::Type::cis;
     const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-    compare_weights(weights, (*clr.read_weights("weight"))());
+    const auto expected_weights = read_weights(path_intra_weights);
+
+    compare_weights(weights, expected_weights);
+  }
+  SECTION("INTER") {
+    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+
+    constexpr auto type = hictk::balancing::ICE::Type::trans;
+    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+    const auto expected_weights = read_weights(path_intra_weights);
+
+    compare_weights(weights, expected_weights);
+  }
+  SECTION("GW") {
+    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+
+    constexpr auto type = hictk::balancing::ICE::Type::gw;
+    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+    const auto expected_weights = read_weights(path_intra_weights);
+
+    compare_weights(weights, expected_weights);
   }
 }
 
