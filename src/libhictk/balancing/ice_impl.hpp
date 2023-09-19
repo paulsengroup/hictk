@@ -7,93 +7,190 @@
 #include <cmath>
 #include <iostream>
 #include <iterator>
+#include <nonstd/span.hpp>
 #include <numeric>
 #include <type_traits>
 
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::balancing {
 
-template <typename PixelIt>
-inline ICE::ICE(PixelIt first_pixel, PixelIt last_pixel, std::size_t num_rows, double tol,
-                std::size_t max_iters, std::size_t num_masked_diags, std::size_t min_nnz,
-                [[maybe_unused]] double min_count)
-    : _biases(num_rows, 1.0) {
-  auto [bin1_ids, bin2_ids, counts] =
-      construct_sparse_matrix(first_pixel, last_pixel, num_masked_diags);
-  std::vector<double> margs(_biases.size());
+template <typename File>
+inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
+                std::size_t num_masked_diags, std::size_t min_nnz, std::size_t min_count,
+                double mad_max)
+    : _chrom_bin_offsets(read_chrom_bin_offsets(f.bins())), _biases(f.bins().size(), 1.0) {
+  const auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
 
-  if (min_nnz != 0) {
-    filter_rows_by_nnz(bin1_ids, bin2_ids, counts, _biases, min_nnz, margs);
+  initialize_biases(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, _chrom_bin_offsets,
+                    min_nnz, min_count, mad_max);
+
+  std::vector<double> margs(_biases.size());
+  if (type != Type::cis) {
+    _variance.resize(1, 0);
+    _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
+
+    for (std::size_t i = 0; i < max_iters; ++i) {
+      const auto res = inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs);
+      _variance[0] = res.variance;
+      _scale[0] = res.scale;
+      if (res.variance < tol) {
+        return;
+      }
+    }
   }
 
-  // TODO mad-max filter
+  _variance.resize(_chrom_bin_offsets.size() - 1, 0);
+  _scale.resize(_chrom_bin_offsets.size() - 1, std::numeric_limits<double>::quiet_NaN());
+  for (std::size_t i = 1; i < _chrom_bin_offsets.size(); ++i) {
+    const auto i0 = matrix.chrom_offsets[i - 1];
+    const auto i1 = matrix.chrom_offsets[i];
 
-  for (std::size_t i = 0; i < max_iters; ++i) {
-    const auto res = inner_loop(bin1_ids, bin2_ids, counts, _biases, margs);
-    _variance = res.variance;
-    _scale = res.scale;
-    if (res.variance < tol) {
-      break;
+    auto bin1_ids_ = nonstd::span(matrix.bin1_ids).subspan(i0, i1 - i0);
+    auto bin2_ids_ = nonstd::span(matrix.bin2_ids).subspan(i0, i1 - i0);
+    std::vector<double> counts_{};
+    std::copy(matrix.counts.begin() + static_cast<std::ptrdiff_t>(i0),
+              matrix.counts.begin() + static_cast<std::ptrdiff_t>(i1), std::back_inserter(counts_));
+
+    const auto j0 = _chrom_bin_offsets[i - 1];
+    const auto j1 = _chrom_bin_offsets[i];
+
+    auto biases_ = nonstd::span(_biases).subspan(j0, j1 - j0);
+    auto margs_ = nonstd::span(margs).subspan(j0, j1 - j0);
+    for (std::size_t k = 0; k < max_iters; ++k) {
+      const auto res = inner_loop(bin1_ids_, bin2_ids_, counts_, biases_, margs_, j0);
+      _variance[i - 1] = res.variance;
+      _scale[i - 1] = res.scale;
+
+      if (res.variance < tol) {
+        break;
+      }
     }
   }
 }
 
-template <typename PixelIt>
-inline std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<double>>
-ICE::construct_sparse_matrix(PixelIt first_pixel, PixelIt last_pixel,
-                             std::size_t num_masked_diags) {
-  std::vector<std::size_t> bin1_ids{};
-  std::vector<std::size_t> bin2_ids{};
-  std::vector<double> counts{};
-  std::for_each(first_pixel, last_pixel, [&](const auto& p) {
+template <typename File>
+auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_masked_diags,
+                                  std::size_t bin_offset) -> SparseMatrix {
+  switch (type) {
+    case Type::cis:
+      return construct_sparse_matrix_cis(f, num_masked_diags, bin_offset);
+    case Type::trans:
+      return construct_sparse_matrix_trans(f, num_masked_diags, bin_offset);
+    case Type::gw:
+      return construct_sparse_matrix_gw(f, num_masked_diags, bin_offset);
+  }
+}
+
+template <typename File>
+inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags,
+                                            std::size_t bin_offset) -> SparseMatrix {
+  SparseMatrix m{};
+
+  const auto sel = f.fetch();
+  std::for_each(sel.template begin<double>(), sel.template end<double>(), [&](const auto& p) {
     if (p.bin2_id - p.bin1_id >= num_masked_diags) {
-      bin1_ids.push_back(p.bin1_id);
-      bin2_ids.push_back(p.bin2_id);
-      counts.push_back(p.count);
+      m.bin1_ids.push_back(p.bin1_id - bin_offset);
+      m.bin2_ids.push_back(p.bin2_id - bin_offset);
+      m.counts.push_back(p.count);
     }
   });
 
-  bin1_ids.shrink_to_fit();
-  bin2_ids.shrink_to_fit();
-  counts.shrink_to_fit();
-  return std::make_tuple(bin1_ids, bin2_ids, counts);
+  m.bin1_ids.shrink_to_fit();
+  m.bin2_ids.shrink_to_fit();
+  m.counts.shrink_to_fit();
+
+  return m;
 }
 
-inline void ICE::times_outer_product(const std::vector<std::size_t>& bin1_ids,
-                                     const std::vector<std::size_t>& bin2_ids,
-                                     std::vector<double>& counts,
-                                     const std::vector<double>& biases) {
+template <typename File>
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(const File& f,
+                                                           std::size_t num_masked_diags,
+                                                           std::size_t bin_offset) -> SparseMatrix {
+  SparseMatrix m{};
+  m.chrom_offsets.push_back(0);
+
+  for (const Chromosome& chrom : f.chromosomes()) {
+    const auto sel = f.fetch(chrom.name());
+    std::for_each(sel.template begin<double>(), sel.template end<double>(),
+                  [&](const ThinPixel<double>& p) {
+                    if (p.bin2_id - p.bin1_id >= num_masked_diags) {
+                      m.bin1_ids.push_back(p.bin1_id - bin_offset);
+                      m.bin2_ids.push_back(p.bin2_id - bin_offset);
+
+                      m.counts.push_back(p.count);
+                    }
+                  });
+
+    m.chrom_offsets.push_back(m.bin1_ids.size());
+  }
+
+  m.bin1_ids.shrink_to_fit();
+  m.bin2_ids.shrink_to_fit();
+  m.counts.shrink_to_fit();
+
+  return m;
+}
+
+template <typename File>
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(
+    [[maybe_unused]] const File& f, [[maybe_unused]] std::size_t num_masked_diags,
+    [[maybe_unused]] std::size_t bin_offset) -> SparseMatrix {
+  SparseMatrix m{};
+  return m;
+}
+
+inline void ICE::times_outer_product(nonstd::span<const std::size_t> bin1_ids,
+                                     nonstd::span<const std::size_t> bin2_ids,
+                                     nonstd::span<double> counts, nonstd::span<const double> biases,
+                                     std::size_t bin_offset) {
   assert(bin1_ids.size() == counts.size());
   assert(bin2_ids.size() == counts.size());
   for (std::size_t i = 0; i < counts.size(); ++i) {
-    const auto i1 = bin1_ids[i];
-    const auto i2 = bin2_ids[i];
+    const auto i1 = bin1_ids[i] - bin_offset;
+    const auto i2 = bin2_ids[i] - bin_offset;
     counts[i] *= biases[i1] * biases[i2];
   }
 }
 
-inline void ICE::marginalize(const std::vector<std::size_t>& bin1_ids,
-                             const std::vector<std::size_t>& bin2_ids, std::vector<double>& counts,
-                             std::vector<double>& marg) {
+inline void ICE::marginalize(nonstd::span<const std::size_t> bin1_ids,
+                             nonstd::span<const std::size_t> bin2_ids,
+                             nonstd::span<const double> counts, nonstd::span<double> marg,
+                             std::size_t bin_offset) {
   std::fill(marg.begin(), marg.end(), 0);
 
   for (std::size_t i = 0; i < counts.size(); ++i) {
-    const auto i1 = bin1_ids[i];
-    const auto i2 = bin2_ids[i];
+    const auto i1 = bin1_ids[i] - bin_offset;
+    const auto i2 = bin2_ids[i] - bin_offset;
 
     marg[i1] += counts[i];
     marg[i2] += counts[i];
   }
 }
 
-inline void ICE::filter_rows_by_nnz(const std::vector<std::size_t>& bin1_ids,
-                                    const std::vector<std::size_t>& bin2_ids,
-                                    std::vector<double> counts, std::vector<double>& biases,
-                                    std::size_t min_nnz, std::vector<double>& marg_buff) {
-  std::transform(counts.begin(), counts.end(), counts.begin(), [](const auto n) { return n != 0; });
-  marginalize(bin1_ids, bin2_ids, counts, marg_buff);
+inline void ICE::marginalize_nnz(nonstd::span<const std::size_t> bin1_ids,
+                                 nonstd::span<const std::size_t> bin2_ids,
+                                 nonstd::span<const double> counts, nonstd::span<double> marg,
+                                 std::size_t bin_offset) {
+  std::fill(marg.begin(), marg.end(), 0);
+
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    const auto i1 = bin1_ids[i] - bin_offset;
+    const auto i2 = bin2_ids[i] - bin_offset;
+
+    marg[i1] += counts[i] != 0;
+    marg[i2] += counts[i] != 0;
+  }
+}
+
+inline void ICE::min_nnz_filtering(nonstd::span<const std::size_t> bin1_ids,
+                                   nonstd::span<const std::size_t> bin2_ids,
+                                   nonstd::span<const double> counts, nonstd::span<double> biases,
+                                   std::size_t min_nnz, nonstd::span<double> marg_buff,
+                                   std::size_t bin_offset) {
+  marginalize_nnz(bin1_ids, bin2_ids, counts, marg_buff, bin_offset);
   for (std::size_t i = 0; i < biases.size(); ++i) {
     if (marg_buff[i] < static_cast<double>(min_nnz)) {
       biases[i] = 0;
@@ -101,13 +198,96 @@ inline void ICE::filter_rows_by_nnz(const std::vector<std::size_t>& bin1_ids,
   }
 }
 
-inline auto ICE::inner_loop(const std::vector<std::size_t>& bin1_ids,
-                            const std::vector<std::size_t>& bin2_ids, std::vector<double> counts,
-                            std::vector<double>& biases, std::vector<double>& marg_buffer)
-    -> Result {
-  times_outer_product(bin1_ids, bin2_ids, counts, biases);
+inline void ICE::min_count_filtering(nonstd::span<double> biases, std::size_t min_count,
+                                     const nonstd::span<double> marg) {
+  for (std::size_t i = 0; i < biases.size(); ++i) {
+    if (marg[i] < static_cast<double>(min_count)) {
+      biases[i] = 0;
+    }
+  }
+}
 
-  marginalize(bin1_ids, bin2_ids, counts, marg_buffer);
+inline void ICE::mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets,
+                                   nonstd::span<double> biases, std::vector<double> marg,
+                                   double mad_max) {
+  auto median = [](auto v) {
+    assert(!v.empty());
+
+    const auto size = static_cast<std::ptrdiff_t>(v.size());
+    auto first = v.begin();
+    auto mid = first + (size / 2);
+    auto last = v.end();
+
+    std::nth_element(first, mid, last);
+
+    if (size % 2 != 0) {
+      return *mid;
+    }
+
+    const auto n1 = *mid;
+    std::nth_element(first, --mid, last);
+    const auto n2 = *mid;
+
+    return (n1 + n2) / 2;
+  };
+
+  auto mad = [&](const auto vin) {
+    const auto median_ = median(vin);
+    auto vout = vin;
+
+    std::transform(vout.begin(), vout.end(), vout.begin(),
+                   [&](const auto n) { return std::abs(n - median_); });
+
+    return median(vout);
+  };
+
+  assert(chrom_offsets.size() > 1);
+  std::vector<double> cmarg{};
+  for (std::size_t i = 1; i < chrom_offsets.size(); ++i) {
+    const auto i0 = static_cast<std::ptrdiff_t>(chrom_offsets[i - 1] - chrom_offsets.front());
+    const auto i1 = static_cast<std::ptrdiff_t>(chrom_offsets[i] - chrom_offsets.front());
+
+    cmarg.clear();
+    std::copy_if(marg.begin() + i0, marg.begin() + i1, std::back_inserter(cmarg),
+                 [](const auto n) { return n > 0; });
+
+    if (!cmarg.empty()) {
+      const auto median_ = median(cmarg);
+      std::transform(marg.begin() + i0, marg.begin() + i1, marg.begin() + i0,
+                     [&](const auto n) { return n / median_; });
+    }
+  }
+
+  std::vector<double> log_nz_marg{};
+  for (const auto n : marg) {
+    if (n > 0) {
+      log_nz_marg.push_back(std::log(n));
+    }
+  }
+
+  if (log_nz_marg.empty()) {
+    return;
+  }
+
+  const auto median_log_nz_marg = median(log_nz_marg);
+  const auto dev_log_nz_marg = mad(log_nz_marg);
+
+  const auto cutoff = std::exp(median_log_nz_marg - mad_max * dev_log_nz_marg);
+
+  for (std::size_t i = 0; i < marg.size(); ++i) {
+    if (marg[i] < cutoff) {
+      biases[i] = 0.0;
+    }
+  }
+}
+
+inline auto ICE::inner_loop(nonstd::span<const std::size_t> bin1_ids,
+                            nonstd::span<const std::size_t> bin2_ids, std::vector<double> counts,
+                            nonstd::span<double> biases, nonstd::span<double> marg_buffer,
+                            std::size_t bin_offset) -> Result {
+  times_outer_product(bin1_ids, bin2_ids, counts, biases, bin_offset);
+
+  marginalize(bin1_ids, bin2_ids, counts, marg_buffer, bin_offset);
 
   double marg_sum = 0.0;
   std::size_t nnz_marg{};
@@ -140,16 +320,62 @@ inline auto ICE::inner_loop(const std::vector<std::size_t>& bin1_ids,
   return {avg_nzmarg, var_nzmarg};
 }
 
-inline std::vector<double> ICE::get_weights(bool rescale) const {
+inline void ICE::initialize_biases(nonstd::span<const std::size_t> bin1_ids,
+                                   nonstd::span<const std::size_t> bin2_ids,
+                                   nonstd::span<const double> counts, nonstd::span<double> biases,
+                                   nonstd::span<const std::size_t> chrom_bin_offsets,
+                                   std::size_t min_nnz, std::size_t min_count, double mad_max) {
+  std::vector<double> margs(biases.size());
+  if (min_nnz != 0) {
+    min_nnz_filtering(bin1_ids, bin2_ids, counts, biases, min_nnz, margs);
+  }
+
+  marginalize(bin1_ids, bin2_ids, counts, margs);
+  if (min_count != 0) {
+    min_count_filtering(biases, min_count, margs);
+  }
+
+  if (mad_max != 0) {
+    mad_max_filtering(chrom_bin_offsets, biases, margs, mad_max);
+  }
+}
+
+inline std::vector<size_t> ICE::read_chrom_bin_offsets(const BinTable& bins) {
+  std::vector<std::size_t> buff{0};
+  for (const Chromosome& chrom : bins.chromosomes()) {
+    const auto nbins = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
+    buff.push_back(buff.back() + nbins);
+  }
+
+  return buff;
+}
+
+inline std::vector<double> ICE::get_weights([[maybe_unused]] bool rescale) const {
   std::vector<double> biases(_biases.size());
-  const auto scale = rescale ? std::sqrt(_scale) : 1.0;
-  std::transform(_biases.begin(), _biases.end(), biases.begin(), [&](const auto n) {
-    return n == 0 ? std::numeric_limits<double>::quiet_NaN() : n / scale;
-  });
+  if (!rescale) {
+    return biases;
+  }
+
+  if (_scale.size() == 1) {
+    const auto scale = std::sqrt(_scale[0]);
+    std::transform(_biases.begin(), _biases.end(), biases.begin(), [&](const auto n) {
+      return n == 0 ? std::numeric_limits<double>::quiet_NaN() : n / scale;
+    });
+  } else {
+    for (std::size_t i = 1; i < _chrom_bin_offsets.size(); ++i) {
+      const auto i0 = static_cast<std::ptrdiff_t>(_chrom_bin_offsets[i - 1]);
+      const auto i1 = static_cast<std::ptrdiff_t>(_chrom_bin_offsets[i]);
+      const auto scale = std::sqrt(_scale[i - 1]);
+      std::transform(_biases.begin() + i0, _biases.begin() + i1, biases.begin() + i0,
+                     [&](const auto n) {
+                       return n == 0 ? std::numeric_limits<double>::quiet_NaN() : n / scale;
+                     });
+    }
+  }
   return biases;
 }
 
-inline double ICE::scale() const noexcept { return _scale; }
-inline double ICE::variance() const noexcept { return _variance; }
+inline std::vector<double> ICE::scale() const noexcept { return _scale; }
+inline std::vector<double> ICE::variance() const noexcept { return _variance; }
 
 }  // namespace hictk::balancing

@@ -5,16 +5,18 @@
 #pragma once
 
 #include <cstddef>
-#include <variant>
+#include <nonstd/span.hpp>
 #include <vector>
+
+#include "hictk/bin_table.hpp"
 
 namespace hictk::balancing {
 
 class ICE {
+  std::vector<std::size_t> _chrom_bin_offsets{};
   std::vector<double> _biases{};
-  double _variance{0.0};
-  double _scale{std::numeric_limits<double>::quiet_NaN()};
-  std::variant<std::int64_t, double> _sum{};
+  std::vector<double> _variance{};
+  std::vector<double> _scale{};
 
   struct Result {
     double scale;
@@ -22,38 +24,86 @@ class ICE {
   };
 
  public:
+  enum Type { cis, trans, gw };
+
+  template <typename File>
+  ICE(const File& f, Type type = Type::gw, double tol = 1.0e-5, std::size_t max_iters = 200,
+      std::size_t num_masked_diags = 2, std::size_t min_nnz = 10, std::size_t min_count = 0,
+      double mad_max = 5.0);
+
   template <typename PixelIt>
-  ICE(PixelIt first_pixel, PixelIt last_pixel, std::size_t num_rows, double tol = 1.0e-5,
+  ICE(PixelIt first_pixel, PixelIt last_pixel, const BinTable& bins, double tol = 1.0e-5,
       std::size_t max_iters = 200, std::size_t num_masked_diags = 2, std::size_t min_nnz = 10,
-      double min_count = 0);
+      std::size_t min_count = 0, double mad_max = 5.0);
 
   [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
-  [[nodiscard]] double scale() const noexcept;
-  [[nodiscard]] double variance() const noexcept;
+  [[nodiscard]] std::vector<double> scale() const noexcept;
+  [[nodiscard]] std::vector<double> variance() const noexcept;
 
  private:
-  template <typename PixelIt>
-  static std::tuple<std::vector<std::size_t>, std::vector<std::size_t>, std::vector<double>>
-  construct_sparse_matrix(PixelIt first_pixel, PixelIt last_pixel, std::size_t num_masked_diags);
+  struct SparseMatrix {
+    std::vector<std::size_t> bin1_ids{};
+    std::vector<std::size_t> bin2_ids{};
+    std::vector<double> counts{};
 
-  [[nodiscard]] static auto inner_loop(const std::vector<std::size_t>& bin1_ids,
-                                       const std::vector<std::size_t>& bin2_ids,
-                                       std::vector<double> counts, std::vector<double>& biases,
-                                       std::vector<double>& marg_buffer) -> Result;
+    std::vector<std::size_t> chrom_offsets{};
+  };
+  template <typename File>
+  [[nodiscard]] static auto construct_sparse_matrix(const File& f, Type type,
+                                                    std::size_t num_masked_diags,
+                                                    std::size_t bin_offset = 0) -> SparseMatrix;
 
-  static void times_outer_product(const std::vector<std::size_t>& bin1_ids,
-                                  const std::vector<std::size_t>& bin2_ids,
-                                  std::vector<double>& counts, const std::vector<double>& biases);
+  template <typename File>
+  [[nodiscard]] static auto construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags,
+                                                       std::size_t bin_offset) -> SparseMatrix;
 
-  static void marginalize(const std::vector<std::size_t>& bin1_ids,
-                          const std::vector<std::size_t>& bin2_ids, std::vector<double>& counts,
-                          std::vector<double>& marg);
+  template <typename File>
+  [[nodiscard]] static auto construct_sparse_matrix_cis(const File& f, std::size_t num_masked_diags,
+                                                        std::size_t bin_offset) -> SparseMatrix;
+  template <typename File>
+  [[nodiscard]] static auto construct_sparse_matrix_trans(const File& f,
+                                                          std::size_t num_masked_diags,
+                                                          std::size_t bin_offset) -> SparseMatrix;
 
-  static void filter_rows_by_nnz(const std::vector<std::size_t>& bin1_ids,
-                                 const std::vector<std::size_t>& bin2_ids,
-                                 std::vector<double> counts, std::vector<double>& biases,
-                                 std::size_t min_nnz, std::vector<double>& marg_buff);
+  [[nodiscard]] static auto inner_loop(nonstd::span<const std::size_t> bin1_ids,
+                                       nonstd::span<const std::size_t> bin2_ids,
+                                       std::vector<double> counts, nonstd::span<double> biases,
+                                       nonstd::span<double> marg_buffer, std::size_t bin_offset = 0)
+      -> Result;
 
+  static void times_outer_product(nonstd::span<const std::size_t> bin1_ids,
+                                  nonstd::span<const std::size_t> bin2_ids,
+                                  nonstd::span<double> counts, nonstd::span<const double> biases,
+                                  std::size_t bin_offset = 0);
+
+  static void marginalize(nonstd::span<const std::size_t> bin1_ids,
+                          nonstd::span<const std::size_t> bin2_ids,
+                          nonstd::span<const double> counts, nonstd::span<double> marg,
+                          std::size_t bin_offset = 0);
+
+  static void marginalize_nnz(nonstd::span<const std::size_t> bin1_ids,
+                              nonstd::span<const std::size_t> bin2_ids,
+                              nonstd::span<const double> counts, nonstd::span<double> marg,
+                              std::size_t bin_offset = 0);
+
+  static void min_nnz_filtering(nonstd::span<const std::size_t> bin1_ids,
+                                nonstd::span<const std::size_t> bin2_ids,
+                                nonstd::span<const double> counts, nonstd::span<double> biases,
+                                std::size_t min_nnz, nonstd::span<double> marg_buff,
+                                std::size_t bin_offset = 0);
+  static void min_count_filtering(nonstd::span<double> biases, std::size_t min_count,
+                                  nonstd::span<double> marg);
+
+  static void mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets,
+                                nonstd::span<double> biases, std::vector<double> marg,
+                                double mad_max);
+
+  static void initialize_biases(nonstd::span<const std::size_t> bin1_ids,
+                                nonstd::span<const std::size_t> bin2_ids,
+                                nonstd::span<const double> counts, nonstd::span<double> biases,
+                                nonstd::span<const std::size_t> chrom_bin_offsets,
+                                std::size_t min_nnz, std::size_t min_count, double mad_max);
+  [[nodiscard]] static std::vector<std::size_t> read_chrom_bin_offsets(const BinTable& bins);
 };
 
 }  // namespace hictk::balancing
