@@ -22,7 +22,7 @@ inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
                 std::size_t num_masked_diags, std::size_t min_nnz, std::size_t min_count,
                 double mad_max)
     : _chrom_bin_offsets(read_chrom_bin_offsets(f.bins())), _biases(f.bins().size(), 1.0) {
-  const auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
+  auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
 
   initialize_biases(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, _chrom_bin_offsets,
                     min_nnz, min_count, mad_max);
@@ -32,8 +32,16 @@ inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
     _variance.resize(1, 0);
     _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
 
+    auto weights = type == Type::trans
+                       ? compute_weights_from_chromosome_sizes(f.bins(), _chrom_bin_offsets)
+                       : std::vector<double>{};
+    if (type == Type::trans) {
+      mask_cis_interactions(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _chrom_bin_offsets);
+    }
+
     for (std::size_t i = 0; i < max_iters; ++i) {
-      const auto res = inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs);
+      const auto res =
+          inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs, 0, weights);
       _variance[0] = res.variance;
       _scale[0] = res.scale;
       if (res.variance < tol) {
@@ -78,7 +86,7 @@ auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_mask
     case Type::cis:
       return construct_sparse_matrix_cis(f, num_masked_diags, bin_offset);
     case Type::trans:
-      return construct_sparse_matrix_trans(f, num_masked_diags, bin_offset);
+      [[fallthrough]];
     case Type::gw:
       return construct_sparse_matrix_gw(f, num_masked_diags, bin_offset);
   }
@@ -135,23 +143,58 @@ template <typename File>
 }
 
 template <typename File>
-[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(
-    [[maybe_unused]] const File& f, [[maybe_unused]] std::size_t num_masked_diags,
-    [[maybe_unused]] std::size_t bin_offset) -> SparseMatrix {
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(const File& f, std::size_t bin_offset)
+    -> SparseMatrix {
   SparseMatrix m{};
+
+  using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
+
+  std::vector<PixelIt> heads{};
+  std::vector<PixelIt> tails{};
+  for (const Chromosome& chrom1 : f.chromosomes()) {
+    for (std::uint32_t chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size();
+         ++chrom2_id) {
+      const auto& chrom2 = f.chromosomes().at(chrom2_id);
+      const auto sel = f.fetch(chrom1.name(), chrom2.name());
+      auto first = sel.template begin<double>();
+      auto last = sel.template end<double>();
+      if (first != last) {
+        heads.emplace_back(std::move(first));
+        tails.emplace_back(std::move(last));
+      }
+    }
+  }
+
+  internal::PixelMerger<PixelIt> merger{heads, tails};
+  while (true) {
+    auto pixel = merger.next();
+    if (!pixel) {
+      break;
+    }
+    m.bin1_ids.push_back(pixel.bin1_id - bin_offset);
+    m.bin2_ids.push_back(pixel.bin2_id - bin_offset);
+    m.counts.push_back(pixel.count);
+  }
+
+  m.bin1_ids.shrink_to_fit();
+  m.bin2_ids.shrink_to_fit();
+  m.counts.shrink_to_fit();
+
   return m;
 }
 
 inline void ICE::times_outer_product(nonstd::span<const std::size_t> bin1_ids,
                                      nonstd::span<const std::size_t> bin2_ids,
                                      nonstd::span<double> counts, nonstd::span<const double> biases,
-                                     std::size_t bin_offset) {
+                                     std::size_t bin_offset, nonstd::span<const double> weights) {
   assert(bin1_ids.size() == counts.size());
   assert(bin2_ids.size() == counts.size());
   for (std::size_t i = 0; i < counts.size(); ++i) {
     const auto i1 = bin1_ids[i] - bin_offset;
     const auto i2 = bin2_ids[i] - bin_offset;
-    counts[i] *= biases[i1] * biases[i2];
+    const auto w1 = weights.empty() ? 1 : weights[i1];
+    const auto w2 = weights.empty() ? 1 : weights[i2];
+    counts[i] *= (w1 * biases[i1]) * (w2 * biases[i2]);
   }
 }
 
@@ -284,8 +327,8 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets
 inline auto ICE::inner_loop(nonstd::span<const std::size_t> bin1_ids,
                             nonstd::span<const std::size_t> bin2_ids, std::vector<double> counts,
                             nonstd::span<double> biases, nonstd::span<double> marg_buffer,
-                            std::size_t bin_offset) -> Result {
-  times_outer_product(bin1_ids, bin2_ids, counts, biases, bin_offset);
+                            std::size_t bin_offset, nonstd::span<double> weights) -> Result {
+  times_outer_product(bin1_ids, bin2_ids, counts, biases, bin_offset, weights);
 
   marginalize(bin1_ids, bin2_ids, counts, marg_buffer, bin_offset);
 
@@ -350,6 +393,25 @@ inline std::vector<size_t> ICE::read_chrom_bin_offsets(const BinTable& bins) {
   return buff;
 }
 
+inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
+    const BinTable& bins, nonstd::span<std::size_t> chrom_bin_offsets) {
+  std::vector<double> weights(bins.size());
+  for (std::uint32_t i = 1; i < chrom_bin_offsets.size(); ++i) {
+    const auto& chrom = bins.chromosomes().at(i - 1);
+    const auto i0 = chrom_bin_offsets[i - 1];
+    const auto i1 = chrom_bin_offsets[i];
+
+    const auto nbins = static_cast<double>(bins.size());
+    const auto cnbins =
+        std::ceil(static_cast<double>(chrom.size()) / static_cast<double>(bins.bin_size()));
+
+    for (std::size_t j = i0; j < i1; ++j) {
+      weights[j] = 1.0 / (1.0 - cnbins / nbins);
+    }
+  }
+  return weights;
+}
+
 inline std::vector<double> ICE::get_weights([[maybe_unused]] bool rescale) const {
   std::vector<double> biases(_biases.size());
   if (!rescale) {
@@ -373,6 +435,27 @@ inline std::vector<double> ICE::get_weights([[maybe_unused]] bool rescale) const
     }
   }
   return biases;
+}
+
+inline void ICE::mask_cis_interactions(nonstd::span<const std::size_t> bin1_ids,
+                                       nonstd::span<const std::size_t> bin2_ids,
+                                       nonstd::span<double> counts,
+                                       nonstd::span<const std::size_t> chrom_bin_offsets) {
+  std::size_t j = 0;
+  for (std::size_t i = 1; i < chrom_bin_offsets.size(); ++i) {
+    const auto last_bin_id = chrom_bin_offsets[i];
+
+    while (j < counts.size()) {
+      if (bin1_ids[j] < last_bin_id) {
+        if (bin2_ids[j] < last_bin_id) {
+          counts[j] = 0;
+        }
+      } else {
+        break;
+      }
+      ++j;
+    }
+  }
 }
 
 inline std::vector<double> ICE::scale() const noexcept { return _scale; }
