@@ -53,6 +53,11 @@ class ICE {
   [[nodiscard]] std::vector<double> variance() const noexcept;
 
  private:
+  void balance_gw(const SparseMatrix& matrix, std::size_t max_iters, double tol);
+  void balance_cis(const SparseMatrix& matrix, [[maybe_unused]] const BinTable& bins,
+                   std::size_t max_iters, double tol);
+  void balance_trans(SparseMatrix& matrix, const BinTable& bins, std::size_t max_iters, double tol);
+
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix(const File& f, Type type,
                                                     std::size_t num_masked_diags,
@@ -71,7 +76,7 @@ class ICE {
                                        nonstd::span<const double> counts,
                                        nonstd::span<double> biases,
                                        nonstd::span<double> marg_buffer, std::size_t bin_offset = 0,
-                                       nonstd::span<double> weights = {}) -> Result;
+                                       nonstd::span<const double> weights = {}) -> Result;
 
   static void marginalize(nonstd::span<const std::size_t> bin1_ids,
                           nonstd::span<const std::size_t> bin2_ids,

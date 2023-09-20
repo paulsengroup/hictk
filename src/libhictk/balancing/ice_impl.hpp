@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <cmath>
 #include <iostream>
 #include <iterator>
@@ -37,31 +39,61 @@ inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
   initialize_biases(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, _chrom_bin_offsets,
                     min_nnz, min_count, mad_max);
 
+  switch (type) {
+    case Type::gw:
+      balance_gw(matrix, max_iters, tol);
+      break;
+    case Type::cis:
+      balance_cis(matrix, f.bins(), max_iters, tol);
+      break;
+    case Type::trans:
+      balance_trans(matrix, f.bins(), max_iters, tol);
+  }
+}
+
+void ICE::balance_gw(const SparseMatrix& matrix, std::size_t max_iters, double tol) {
   std::vector<double> margs(_biases.size());
-  if (type != Type::cis) {
-    _variance.resize(1, 0);
-    _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
+  _variance.resize(1, 0);
+  _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
 
-    auto weights = type == Type::trans
-                       ? compute_weights_from_chromosome_sizes(f.bins(), _chrom_bin_offsets)
-                       : std::vector<double>{};
-    if (type == Type::trans) {
-      mask_cis_interactions(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _chrom_bin_offsets);
-    }
-
-    for (std::size_t i = 0; i < max_iters; ++i) {
-      const auto res =
-          inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs, 0, weights);
-      _variance[0] = res.variance;
-      _scale[0] = res.scale;
-      if (res.variance < tol) {
-        return;
-      }
+  for (std::size_t i = 0; i < max_iters; ++i) {
+    const auto res = inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs, 0);
+    SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), i + 1, res.variance);
+    _variance[0] = res.variance;
+    _scale[0] = res.scale;
+    if (res.variance < tol) {
+      return;
     }
   }
+}
 
+void ICE::balance_trans(SparseMatrix& matrix, const BinTable& bins, std::size_t max_iters,
+                        double tol) {
+  std::vector<double> margs(_biases.size());
+  _variance.resize(1, 0);
+  _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
+  const auto weights = compute_weights_from_chromosome_sizes(bins, _chrom_bin_offsets);
+  mask_cis_interactions(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _chrom_bin_offsets);
+
+  for (std::size_t i = 0; i < max_iters; ++i) {
+    const auto res =
+        inner_loop(matrix.bin1_ids, matrix.bin2_ids, matrix.counts, _biases, margs, 0, weights);
+    SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), i + 1, res.variance);
+    _variance[0] = res.variance;
+    _scale[0] = res.scale;
+    if (res.variance < tol) {
+      return;
+    }
+  }
+}
+
+void ICE::balance_cis(const SparseMatrix& matrix, const BinTable& bins, std::size_t max_iters,
+                      double tol) {
   _variance.resize(_chrom_bin_offsets.size() - 1, 0);
   _scale.resize(_chrom_bin_offsets.size() - 1, std::numeric_limits<double>::quiet_NaN());
+
+  std::vector<double> margs(_biases.size());
+
   for (std::size_t i = 1; i < _chrom_bin_offsets.size(); ++i) {
     const auto i0 = matrix.chrom_offsets[i - 1];
     const auto i1 = matrix.chrom_offsets[i];
@@ -79,6 +111,9 @@ inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
     auto margs_ = nonstd::span(margs).subspan(j0, j1 - j0);
     for (std::size_t k = 0; k < max_iters; ++k) {
       const auto res = inner_loop(bin1_ids_, bin2_ids_, counts_, biases_, margs_, j0);
+      SPDLOG_INFO(FMT_STRING("[{}] iteration {}: {}"),
+                  bins.chromosomes().at(static_cast<std::uint32_t>(i - 1)).name(), k + 1,
+                  res.variance);
       _variance[i - 1] = res.variance;
       _scale[i - 1] = res.scale;
 
@@ -307,7 +342,7 @@ inline auto ICE::inner_loop(nonstd::span<const std::size_t> bin1_ids,
                             nonstd::span<const std::size_t> bin2_ids,
                             nonstd::span<const double> counts, nonstd::span<double> biases,
                             nonstd::span<double> marg_buffer, std::size_t bin_offset,
-                            nonstd::span<double> weights) -> Result {
+                            nonstd::span<const double> weights) -> Result {
   times_outer_product_marg(bin1_ids, bin2_ids, counts, biases, marg_buffer, bin_offset, weights);
 
   double marg_sum = 0.0;
