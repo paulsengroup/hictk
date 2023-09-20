@@ -12,6 +12,18 @@
 
 namespace hictk::balancing {
 
+struct SparseMatrix {
+  std::vector<std::size_t> bin1_ids{};  // NOLINT
+  std::vector<std::size_t> bin2_ids{};  // NOLINT
+  std::vector<double> counts{};         // NOLINT
+
+  std::vector<std::size_t> chrom_offsets{};  // NOLINT
+
+  [[nodiscard]] bool empty() const noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+  void clear() noexcept;
+};
+
 class ICE {
   std::vector<std::size_t> _chrom_bin_offsets{};
   std::vector<double> _biases{};
@@ -41,13 +53,6 @@ class ICE {
   [[nodiscard]] std::vector<double> variance() const noexcept;
 
  private:
-  struct SparseMatrix {
-    std::vector<std::size_t> bin1_ids{};
-    std::vector<std::size_t> bin2_ids{};
-    std::vector<double> counts{};
-
-    std::vector<std::size_t> chrom_offsets{};
-  };
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix(const File& f, Type type,
                                                     std::size_t num_masked_diags,
@@ -60,26 +65,25 @@ class ICE {
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_cis(const File& f, std::size_t num_masked_diags,
                                                         std::size_t bin_offset) -> SparseMatrix;
-  template <typename File>
-  [[nodiscard]] static auto construct_sparse_matrix_trans(const File& f, std::size_t bin_offset)
-      -> SparseMatrix;
 
   [[nodiscard]] static auto inner_loop(nonstd::span<const std::size_t> bin1_ids,
                                        nonstd::span<const std::size_t> bin2_ids,
-                                       std::vector<double> counts, nonstd::span<double> biases,
+                                       nonstd::span<const double> counts,
+                                       nonstd::span<double> biases,
                                        nonstd::span<double> marg_buffer, std::size_t bin_offset = 0,
                                        nonstd::span<double> weights = {}) -> Result;
-
-  static void times_outer_product(nonstd::span<const std::size_t> bin1_ids,
-                                  nonstd::span<const std::size_t> bin2_ids,
-                                  nonstd::span<double> counts, nonstd::span<const double> biases,
-                                  std::size_t bin_offset = 0,
-                                  nonstd::span<const double> weights = {});
 
   static void marginalize(nonstd::span<const std::size_t> bin1_ids,
                           nonstd::span<const std::size_t> bin2_ids,
                           nonstd::span<const double> counts, nonstd::span<double> marg,
                           std::size_t bin_offset = 0);
+
+  static void times_outer_product_marg(nonstd::span<const std::size_t> bin1_ids,
+                                       nonstd::span<const std::size_t> bin2_ids,
+                                       nonstd::span<const double> counts,
+                                       nonstd::span<const double> biases, nonstd::span<double> marg,
+                                       std::size_t bin_offset,
+                                       nonstd::span<const double> weights = {});
 
   static void marginalize_nnz(nonstd::span<const std::size_t> bin1_ids,
                               nonstd::span<const std::size_t> bin2_ids,

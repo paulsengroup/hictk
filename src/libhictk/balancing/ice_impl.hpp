@@ -17,6 +17,16 @@
 
 namespace hictk::balancing {
 
+inline bool SparseMatrix::empty() const noexcept { return size() == 0; }
+inline std::size_t SparseMatrix::size() const noexcept { return counts.size(); }
+
+inline void SparseMatrix::clear() noexcept {
+  bin1_ids.clear();
+  bin2_ids.clear();
+  counts.clear();
+  chrom_offsets.clear();
+}
+
 template <typename File>
 inline ICE::ICE(const File& f, Type type, double tol, std::size_t max_iters,
                 std::size_t num_masked_diags, std::size_t min_nnz, std::size_t min_count,
@@ -134,68 +144,11 @@ template <typename File>
 
     m.chrom_offsets.push_back(m.bin1_ids.size());
   }
-
   m.bin1_ids.shrink_to_fit();
   m.bin2_ids.shrink_to_fit();
   m.counts.shrink_to_fit();
 
   return m;
-}
-
-template <typename File>
-[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(const File& f, std::size_t bin_offset)
-    -> SparseMatrix {
-  SparseMatrix m{};
-
-  using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
-
-  std::vector<PixelIt> heads{};
-  std::vector<PixelIt> tails{};
-  for (const Chromosome& chrom1 : f.chromosomes()) {
-    for (std::uint32_t chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size();
-         ++chrom2_id) {
-      const auto& chrom2 = f.chromosomes().at(chrom2_id);
-      const auto sel = f.fetch(chrom1.name(), chrom2.name());
-      auto first = sel.template begin<double>();
-      auto last = sel.template end<double>();
-      if (first != last) {
-        heads.emplace_back(std::move(first));
-        tails.emplace_back(std::move(last));
-      }
-    }
-  }
-
-  internal::PixelMerger<PixelIt> merger{heads, tails};
-  while (true) {
-    auto pixel = merger.next();
-    if (!pixel) {
-      break;
-    }
-    m.bin1_ids.push_back(pixel.bin1_id - bin_offset);
-    m.bin2_ids.push_back(pixel.bin2_id - bin_offset);
-    m.counts.push_back(pixel.count);
-  }
-
-  m.bin1_ids.shrink_to_fit();
-  m.bin2_ids.shrink_to_fit();
-  m.counts.shrink_to_fit();
-
-  return m;
-}
-
-inline void ICE::times_outer_product(nonstd::span<const std::size_t> bin1_ids,
-                                     nonstd::span<const std::size_t> bin2_ids,
-                                     nonstd::span<double> counts, nonstd::span<const double> biases,
-                                     std::size_t bin_offset, nonstd::span<const double> weights) {
-  assert(bin1_ids.size() == counts.size());
-  assert(bin2_ids.size() == counts.size());
-  for (std::size_t i = 0; i < counts.size(); ++i) {
-    const auto i1 = bin1_ids[i] - bin_offset;
-    const auto i2 = bin2_ids[i] - bin_offset;
-    const auto w1 = weights.empty() ? 1 : weights[i1];
-    const auto w2 = weights.empty() ? 1 : weights[i2];
-    counts[i] *= (w1 * biases[i1]) * (w2 * biases[i2]);
-  }
 }
 
 inline void ICE::marginalize(nonstd::span<const std::size_t> bin1_ids,
@@ -210,6 +163,32 @@ inline void ICE::marginalize(nonstd::span<const std::size_t> bin1_ids,
 
     marg[i1] += counts[i];
     marg[i2] += counts[i];
+  }
+}
+
+inline void ICE::times_outer_product_marg(nonstd::span<const std::size_t> bin1_ids,
+                                          nonstd::span<const std::size_t> bin2_ids,
+                                          nonstd::span<const double> counts,
+                                          nonstd::span<const double> biases,
+                                          nonstd::span<double> marg, std::size_t bin_offset,
+                                          nonstd::span<const double> weights) {
+  assert(bin1_ids.size() == counts.size());
+  assert(bin2_ids.size() == counts.size());
+
+  assert(biases.size() == marg.size());
+  assert(biases.size() == weights.size() || weights.empty());
+
+  std::fill(marg.begin(), marg.end(), 0);
+
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    const auto i1 = bin1_ids[i] - bin_offset;
+    const auto i2 = bin2_ids[i] - bin_offset;
+    const auto w1 = weights.empty() ? 1 : weights[i1];
+    const auto w2 = weights.empty() ? 1 : weights[i2];
+    const auto count = counts[i] * (w1 * biases[i1]) * (w2 * biases[i2]);
+
+    marg[i1] += count;
+    marg[i2] += count;
   }
 }
 
@@ -325,12 +304,11 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets
 }
 
 inline auto ICE::inner_loop(nonstd::span<const std::size_t> bin1_ids,
-                            nonstd::span<const std::size_t> bin2_ids, std::vector<double> counts,
-                            nonstd::span<double> biases, nonstd::span<double> marg_buffer,
-                            std::size_t bin_offset, nonstd::span<double> weights) -> Result {
-  times_outer_product(bin1_ids, bin2_ids, counts, biases, bin_offset, weights);
-
-  marginalize(bin1_ids, bin2_ids, counts, marg_buffer, bin_offset);
+                            nonstd::span<const std::size_t> bin2_ids,
+                            nonstd::span<const double> counts, nonstd::span<double> biases,
+                            nonstd::span<double> marg_buffer, std::size_t bin_offset,
+                            nonstd::span<double> weights) -> Result {
+  times_outer_product_marg(bin1_ids, bin2_ids, counts, biases, marg_buffer, bin_offset, weights);
 
   double marg_sum = 0.0;
   std::size_t nnz_marg{};
