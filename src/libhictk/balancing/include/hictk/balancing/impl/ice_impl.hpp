@@ -70,8 +70,9 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
       balance_cis(matrix, f.bins(), max_iters, tol);
       break;
     case Type::trans:
-      balance_trans(construct_sparse_matrix_trans(f, num_masked_diags).view(), f.bins(), max_iters,
-                    tol);
+      balance_trans(
+          construct_sparse_matrix_chunked_trans(f, num_masked_diags, tmpfile, chunk_size).view(),
+          f.bins(), max_iters, tol);
   }
 }
 
@@ -193,10 +194,10 @@ template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(const File& f,
                                                              std::size_t num_masked_diags)
     -> SparseMatrix {
+  using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
-  std::vector<PixelIt> heads{};
-  std::vector<PixelIt> tails{};
 
+  std::vector<SelectorT> selectors{};
   for (const Chromosome& chrom1 : f.chromosomes()) {
     if (chrom1.is_all()) {
       continue;
@@ -208,13 +209,24 @@ template <typename File>
         continue;
       }
 
-      const auto sel = f.fetch(chrom1.name(), chrom2.name());
+      selectors.emplace_back(f.fetch(chrom1.name(), chrom2.name()));
+    }
+    std::vector<PixelIt> heads{};
+    std::vector<PixelIt> tails{};
+    for (const auto& sel : selectors) {
       heads.emplace_back(sel.template begin<double>());
       tails.emplace_back(sel.template end<double>());
     }
   }
 
-  [[maybe_unused]] internal::PixelMerger<PixelIt> merger{heads, tails};
+  std::vector<PixelIt> heads{};
+  std::vector<PixelIt> tails{};
+  for (const auto& sel : selectors) {
+    heads.emplace_back(sel.template begin<double>());
+    tails.emplace_back(sel.template end<double>());
+  }
+
+  internal::PixelMerger<PixelIt> merger{heads, tails};
 
   SparseMatrix m(f.bins());
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -287,10 +299,10 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
                                                        const std::filesystem::path& tmpfile,
                                                        std::size_t chunk_size)
     -> SparseMatrixChunked {
+  using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
-  std::vector<PixelIt> heads{};
-  std::vector<PixelIt> tails{};
 
+  std::vector<SelectorT> selectors{};
   for (const Chromosome& chrom1 : f.chromosomes()) {
     if (chrom1.is_all()) {
       continue;
@@ -302,10 +314,15 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
         continue;
       }
 
-      const auto sel = f.fetch(chrom1.name(), chrom2.name());
-      heads.emplace_back(sel.template begin<double>());
-      tails.emplace_back(sel.template end<double>());
+      selectors.emplace_back(f.fetch(chrom1.name(), chrom2.name()));
     }
+  }
+
+  std::vector<PixelIt> heads{};
+  std::vector<PixelIt> tails{};
+  for (const auto& sel : selectors) {
+    heads.emplace_back(sel.template begin<double>());
+    tails.emplace_back(sel.template end<double>());
   }
 
   internal::PixelMerger<PixelIt> merger{heads, tails};
