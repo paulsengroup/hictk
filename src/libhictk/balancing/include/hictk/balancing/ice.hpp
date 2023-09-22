@@ -133,4 +133,4 @@ class ICE {
 
 }  // namespace hictk::balancing
 
-#include "./impl/ice_mem_impl.hpp"
+#include "./impl/ice_impl.hpp"
