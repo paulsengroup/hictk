@@ -24,4 +24,4 @@ class VC {
 };
 }  // namespace hictk::balancing
 
-#include "../../../vc_impl.hpp"
+#include "./impl/vc_impl.hpp"

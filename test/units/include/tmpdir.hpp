@@ -22,6 +22,7 @@ inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-
 }  // namespace cooler::test::attribute
 
 namespace cooler::test::balancing {
+inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::balancing
 

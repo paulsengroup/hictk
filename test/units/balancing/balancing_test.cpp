@@ -12,6 +12,7 @@
 #include "hictk/balancing/vc.hpp"
 #include "hictk/cooler.hpp"
 #include "hictk/hic.hpp"
+#include "tmpdir.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-cpp)
@@ -84,37 +85,79 @@ TEST_CASE("Balancing: VC", "[balancing][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: ICE", "[balancing][short]") {
+TEST_CASE("Balancing: ICE", "[balancing][long]") {
   const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+  const auto tmpfile = testdir() / "balancing_ice.tmp";
 
   auto clr = hictk::cooler::File(path.string());
 
-  SECTION("INTRA") {
-    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+  SECTION("in-memory") {
+    SECTION("INTRA") {
+      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
-    constexpr auto type = hictk::balancing::ICE::Type::cis;
-    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-    const auto expected_weights = read_weights(path_intra_weights);
+      constexpr auto type = hictk::balancing::ICE::Type::cis;
+      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
 
-    compare_weights(weights, expected_weights);
+      compare_weights(weights, expected_weights);
+    }
+
+    SECTION("INTER") {
+      const auto path_intra_weights =
+          datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+
+      constexpr auto type = hictk::balancing::ICE::Type::trans;
+      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
+
+      compare_weights(weights, expected_weights);
+    }
+
+    SECTION("GW") {
+      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+
+      constexpr auto type = hictk::balancing::ICE::Type::gw;
+      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
+
+      compare_weights(weights, expected_weights);
+    }
   }
-  SECTION("INTER") {
-    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
 
-    constexpr auto type = hictk::balancing::ICE::Type::trans;
-    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-    const auto expected_weights = read_weights(path_intra_weights);
+  SECTION("chunked") {
+    auto params = hictk::balancing::ICE::DefaultParams;
+    params.tmpfile = tmpfile;
 
-    compare_weights(weights, expected_weights);
-  }
-  SECTION("GW") {
-    const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+    SECTION("INTRA") {
+      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
-    constexpr auto type = hictk::balancing::ICE::Type::gw;
-    const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-    const auto expected_weights = read_weights(path_intra_weights);
+      constexpr auto type = hictk::balancing::ICE::Type::cis;
+      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
 
-    compare_weights(weights, expected_weights);
+      compare_weights(weights, expected_weights);
+    }
+
+    SECTION("INTER") {
+      const auto path_intra_weights =
+          datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+
+      constexpr auto type = hictk::balancing::ICE::Type::trans;
+      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
+
+      compare_weights(weights, expected_weights);
+    }
+
+    SECTION("GW") {
+      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+
+      constexpr auto type = hictk::balancing::ICE::Type::gw;
+      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
+      const auto expected_weights = read_weights(path_intra_weights);
+
+      compare_weights(weights, expected_weights);
+    }
   }
 }
 
