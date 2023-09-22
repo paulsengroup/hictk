@@ -401,6 +401,15 @@ inline PixelMerger<PixelIt>::PixelMerger(std::vector<PixelIt> heads, std::vector
     }
   }
 }
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::begin() -> iterator {
+  return iterator{*this};
+}
+
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::end() const noexcept -> iterator {
+  return {};
+}
 
 template <typename PixelIt>
 inline void PixelMerger<PixelIt>::replace_top_node(std::size_t i) {
@@ -429,8 +438,49 @@ inline auto PixelMerger<PixelIt>::next() -> ThinPixel<N> {
     current_node.pixel.count += next_node.pixel.count;
     replace_top_node(next_node.i);
   }
+  ++_i;
   return current_node.pixel;
 }
+
+template <typename PixelIt>
+inline PixelMerger<PixelIt>::iterator::iterator(PixelMerger<PixelIt> &merger)
+    : _merger(&merger), _value(merger.next()) {}
+
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::iterator::operator==(const iterator &other) const noexcept {
+  if (!_merger || !other._merger) {
+    return _merger == other._merger;
+  }
+
+  return _merger == other._merger && _merger->_i == other._merger->_i;
+}
+
+template <typename PixelIt>
+inline bool PixelMerger<PixelIt>::iterator::operator!=(const iterator &other) const noexcept {
+  return !(*this == other);
+}
+
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::iterator::operator*() const noexcept -> const ThinPixel<N> & {
+  return _value;
+}
+
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::iterator::operator->() const noexcept -> const ThinPixel<N> * {
+  return &(**this);
+}
+
+template <typename PixelIt>
+inline auto PixelMerger<PixelIt>::iterator::operator++() -> iterator & {
+  assert(!!_merger);
+  _value = _merger->next();
+  if (!_value) {
+    _merger = nullptr;
+  }
+
+  return *this;
+}
+
 }  // namespace internal
 
 }  // namespace hictk

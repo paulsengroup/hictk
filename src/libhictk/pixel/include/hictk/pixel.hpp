@@ -114,11 +114,34 @@ class PixelMerger {
 
   std::vector<PixelIt> _heads{};
   std::vector<PixelIt> _tails{};
+  std::size_t _i{};
 
  public:
+  class iterator;
+
   PixelMerger() = delete;
   PixelMerger(std::vector<PixelIt> head, std::vector<PixelIt> tail);
+
+  auto begin() -> iterator;
+  auto end() const noexcept -> iterator;
   [[nodiscard]] auto next() -> ThinPixel<N>;
+
+  class iterator {
+    PixelMerger *_merger{};
+    ThinPixel<N> _value{};
+
+   public:
+    iterator() = default;
+    explicit iterator(PixelMerger &merger);
+
+    [[nodiscard]] bool operator==(const iterator &other) const noexcept;
+    [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
+
+    auto operator*() const noexcept -> const ThinPixel<N> &;
+    auto operator->() const noexcept -> const ThinPixel<N> *;
+
+    [[nodiscard]] auto operator++() -> iterator &;
+  };
 
  private:
   void replace_top_node(std::size_t i);

@@ -15,6 +15,7 @@ parallel-hashmap/1.3.11#719aed501c271a34e2347a7731ab3bfb
 readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83
 span-lite/0.10.3#1967d71abb32b314387c2ab9c558dd22
 spdlog/1.12.0#248c215bc5f0718402fbf1de126ef847
+zstd/1.5.5#93372fe14bb7883bd4de82914e0a1841
 
 [generators]
 CMakeDeps
