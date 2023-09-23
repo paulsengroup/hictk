@@ -125,8 +125,6 @@ class ICE {
                                 nonstd::span<const std::size_t> chrom_bin_offsets,
                                 std::size_t min_nnz, std::size_t min_count, double mad_max);
 
-  [[nodiscard]] static std::vector<std::size_t> read_chrom_bin_offsets(const BinTable& bins);
-
   [[nodiscard]] static std::vector<double> compute_weights_from_chromosome_sizes(
       const BinTable& bins, nonstd::span<std::size_t> chrom_bin_offsets);
 };

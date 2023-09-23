@@ -20,16 +20,11 @@
 
 namespace hictk::balancing {
 
-inline SparseMatrix::SparseMatrix(const hictk::BinTable& bins, std::uint32_t chrom_id)
+inline SparseMatrix::SparseMatrix(const BinTable& bins, std::uint32_t chrom_id)
     : _chrom_id(chrom_id == _gw_id ? 0 : chrom_id),
-      _marg(chrom_id == _gw_id ? bins.size() : bins.subset(chrom_id).size()) {
-  _chrom_offsets.push_back(0);
-  for (const Chromosome& chrom : bins.chromosomes()) {
-    const auto nbins = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
-    _chrom_offsets.push_back(_chrom_offsets.back() + nbins);
-  }
-  _bin1_offsets.resize(_chrom_offsets.size(), 0);
-}
+      _chrom_offsets(bins.num_bin_prefix_sum()),
+      _bin1_offsets(_chrom_offsets.size(), 0),
+      _marg(chrom_id == _gw_id ? bins.size() : bins.subset(chrom_id).size()) {}
 
 inline bool SparseMatrix::empty() const noexcept { return size() == 0; }
 inline std::size_t SparseMatrix::size() const noexcept { return _counts.size(); }
@@ -65,6 +60,12 @@ inline const std::vector<std::size_t>& SparseMatrix::chrom_offsets() const noexc
 }
 
 inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count) {
+  if (empty()) {
+    _chrom_id = static_cast<std::uint32_t>(
+        std::lower_bound(_chrom_offsets.begin(), _chrom_offsets.end(), bin1_id) -
+        _chrom_offsets.begin());
+  }
+
   if (!empty() && bin1_id >= _chrom_offsets[_chrom_id + 1]) {
     _chrom_id = static_cast<std::uint32_t>(
         std::lower_bound(_chrom_offsets.begin(), _chrom_offsets.end(), _bin1_ids.back()) -

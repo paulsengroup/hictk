@@ -22,7 +22,7 @@ namespace hictk::balancing {
 
 template <typename File>
 inline ICE::ICE(const File& f, Type type, const Params& params)
-    : _chrom_offsets(read_chrom_bin_offsets(f.bins())), _biases(f.bins().size(), 1.0) {
+    : _chrom_offsets(f.bins().num_bin_prefix_sum()), _biases(f.bins().size(), 1.0) {
   if (params.tmpfile.empty()) {
     balance_in_memory(f, type, params.tol, params.max_iters, params.num_masked_diags,
                       params.min_nnz, params.min_count, params.mad_max);
@@ -111,27 +111,29 @@ inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std:
 }
 
 template <typename MatrixT>
-inline void ICE::balance_cis(const MatrixT& matrix, [[maybe_unused]] const BinTable& bins,
-                             std::size_t max_iters, double tol) {
-  _variance.resize(_chrom_offsets.size() - 1, 0);
-  _scale.resize(_chrom_offsets.size() - 1, std::numeric_limits<double>::quiet_NaN());
+inline void ICE::balance_cis(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters,
+                             double tol) {
+  _variance.resize(bins.chromosomes().size(), 0);
+  _scale.resize(bins.chromosomes().size(), std::numeric_limits<double>::quiet_NaN());
 
   std::vector<double> margs(_biases.size());
 
-  for (std::uint32_t chrom_id = 0; chrom_id < _chrom_offsets.size() - 1; ++chrom_id) {
-    const auto cis_matrix = matrix.subset(chrom_id);
+  for (const auto& chrom : bins.chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+    const auto cis_matrix = matrix.subset(chrom.id());
 
-    const auto j0 = _chrom_offsets[chrom_id];
-    const auto j1 = _chrom_offsets[chrom_id + 1];
+    const auto j0 = _chrom_offsets[chrom.id()];
+    const auto j1 = _chrom_offsets[chrom.id() + 1];
 
     auto biases_ = nonstd::span(_biases).subspan(j0, j1 - j0);
 
     for (std::size_t k = 0; k < max_iters; ++k) {
       const auto res = inner_loop(cis_matrix, biases_);
-      SPDLOG_INFO(FMT_STRING("[{}] iteration {}: {}"), bins.chromosomes().at(chrom_id).name(),
-                  k + 1, res.variance);
-      _variance[chrom_id] = res.variance;
-      _scale[chrom_id] = res.scale;
+      SPDLOG_INFO(FMT_STRING("[{}] iteration {}: {}"), chrom.name(), k + 1, res.variance);
+      _variance[chrom.id()] = res.variance;
+      _scale[chrom.id()] = res.scale;
 
       if (res.variance < tol) {
         break;
@@ -177,6 +179,9 @@ template <typename File>
   SparseMatrix m(f.bins());
 
   for (const Chromosome& chrom : f.chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
     const auto sel = f.fetch(chrom.name());
     std::for_each(sel.template begin<double>(), sel.template end<double>(),
                   [&](const ThinPixel<double>& p) {
@@ -282,6 +287,9 @@ inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, std::size_t 
   SparseMatrixChunked m(f.bins(), tmpfile, chunk_size);
 
   for (const Chromosome& chrom : f.chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
     const auto sel = f.fetch(chrom.name());
     std::for_each(sel.template begin<double>(), sel.template end<double>(),
                   [&](const ThinPixel<double>& p) {
@@ -496,16 +504,6 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
   }
 }
 
-inline std::vector<size_t> ICE::read_chrom_bin_offsets(const BinTable& bins) {
-  std::vector<std::size_t> buff{0};
-  for (const Chromosome& chrom : bins.chromosomes()) {
-    const auto nbins = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
-    buff.push_back(buff.back() + nbins);
-  }
-
-  return buff;
-}
-
 inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
     const BinTable& bins, nonstd::span<std::size_t> chrom_bin_offsets) {
   std::vector<double> weights(bins.size());
@@ -528,12 +526,12 @@ inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
   return weights;
 }
 
-inline std::vector<double> ICE::get_weights([[maybe_unused]] bool rescale) const {
-  std::vector<double> biases(_biases.size());
+inline std::vector<double> ICE::get_weights(bool rescale) const {
   if (!rescale) {
-    return biases;
+    return _biases;
   }
 
+  std::vector<double> biases(_biases.size());
   if (_scale.size() == 1) {
     const auto scale = std::sqrt(_scale[0]);
     std::transform(_biases.begin(), _biases.end(), biases.begin(), [&](const auto n) {
