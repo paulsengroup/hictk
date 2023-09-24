@@ -14,7 +14,7 @@ target_sources(hictk_balancing_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/balanci
 target_link_libraries(
         hictk_balancing_tests
         PRIVATE hictk_project_warnings hictk_project_options
-        PUBLIC hictk::balancing hictk::hic hictk::cooler)
+        PUBLIC hictk::balancing hictk::file)
 
 target_link_system_libraries(
         hictk_balancing_tests

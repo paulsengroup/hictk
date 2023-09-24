@@ -9,9 +9,7 @@
 
 #include "hictk/balancing/ice.hpp"
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/vc.hpp"
-#include "hictk/cooler.hpp"
-#include "hictk/hic.hpp"
+#include "hictk/file.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::test {
@@ -47,116 +45,226 @@ static void compare_weights(const std::vector<double>& weights, const std::vecto
   }
 }
 
+template <typename T>
+static void compare_vectors(const std::vector<T>& v1, const std::vector<T>& v2) {
+  REQUIRE(v1.size() == v2.size());
+
+  for (std::size_t i = 0; i < v1.size(); ++i) {
+    CHECK(v1[i] == v2[i]);
+  }
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: VC", "[balancing][short]") {
-  const auto path = datadir / "hic/ENCFF993FGR.hic";
+TEST_CASE("Balancing: SparseMatrix") {
+  using SparseMatrix = hictk::balancing::SparseMatrix;
+  const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
+                                Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
+                      50};
+  // clang-format off
+  const std::vector<ThinPixel<std::int32_t>> pixels{
+      {1, 0, 1}, {1, 1, 2}, {2, 1, 3},  // chr1
+      {3, 0, 4}, {3, 1, 5}};            // chr2
+  // clang-format on
 
-  auto hf = hictk::hic::File(path.string(), 2500000);
-
-  SECTION("INTRA") {
-    for (const auto& chrom : hf.chromosomes()) {
-      if (chrom.is_all()) {
-        continue;
-      }
-      auto sel1 = hf.fetch(chrom.name());
-
-      const auto num_bins = hf.bins().subset(chrom).size();
-      const auto bin_id_offset = hf.bins().at(chrom.name(), 0).id();
-      const auto weights =
-          hictk::balancing::VC<std::int32_t>(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
-                                             num_bins, bin_id_offset)
-              .get_weights();
-
-      auto sel2 = hf.fetch(chrom.name(), hictk::balancing::Method::VC());
-      compare_weights(weights, sel2.weights1()());
-    }
+  SECTION("accessors") {
+    CHECK(SparseMatrix{}.empty());
+    CHECK(SparseMatrix{bins}.empty());
   }
 
-  SECTION("GW") {
-    const auto num_bins = hf.bins().size();
-    auto sel = hf.fetch();
-    const auto weights = hictk::balancing::VC<std::int32_t>(sel.begin<std::int32_t>(),
-                                                            sel.end<std::int32_t>(), num_bins)
-                             .get_weights();
+  SECTION("push_back") {
+    SparseMatrix m{bins};
+    for (const auto& p : pixels) {
+      m.push_back(p.bin1_id, p.bin2_id, p.count);
+    }
+    m.finalize();
+    CHECK(m.size() == pixels.size());
 
-    const auto expected = hf.fetch(hictk::balancing::Method::GW_VC()).weights();
-    compare_weights(weights, expected);
+    m.clear();
+    CHECK(m.empty());
+  }
+
+  SECTION("subset") {
+    SparseMatrix m{bins};
+    for (const auto& p : pixels) {
+      m.push_back(p.bin1_id, p.bin2_id, p.count);
+    }
+    m.finalize();
+
+    CHECK(m.subset(0).empty());
+    CHECK(m.subset(1).size() == 3);
+    CHECK(m.subset(2).size() == 2);
+    CHECK(m.subset(3).empty());
+  }
+
+  SECTION("serde") {
+    const auto tmpfile = testdir() / "sparse_matrix_serde.bin";
+
+    SECTION("empty matrix") {
+      std::fstream f{};
+      f.open(tmpfile, std::ios::in | std::ios::out | std::ios::trunc);
+      f.exceptions(std::ios::badbit | std::ios::failbit);
+
+      SparseMatrix m1{};
+      SparseMatrix m2{};
+      m1.finalize();
+      m1.serialize(f);
+      f.seekg(std::ios::beg);
+      m2.deserialize(f);
+
+      compare_vectors(m1.bin1_ids(), m2.bin1_ids());
+      compare_vectors(m1.bin2_ids(), m2.bin2_ids());
+      compare_vectors(m1.counts(), m2.counts());
+      compare_vectors(m1.chrom_offsets(), m2.chrom_offsets());
+    }
+
+    SECTION("full matrix") {
+      SparseMatrix m1{bins};
+      for (const auto& p : pixels) {
+        m1.push_back(p.bin1_id, p.bin2_id, p.count);
+      }
+      m1.finalize();
+
+      std::fstream f{};
+      f.open(tmpfile, std::ios::in | std::ios::out | std::ios::trunc);
+      f.exceptions(std::ios::badbit | std::ios::failbit);
+
+      SparseMatrix m2{bins};
+      m1.serialize(f);
+      f.seekg(std::ios::beg);
+      m2.deserialize(f);
+
+      compare_vectors(m1.bin1_ids(), m2.bin1_ids());
+      compare_vectors(m1.bin2_ids(), m2.bin2_ids());
+      compare_vectors(m1.counts(), m2.counts());
+      compare_vectors(m1.chrom_offsets(), m2.chrom_offsets());
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: SparseMatrixChunked") {
+  using SparseMatrixChunked = hictk::balancing::SparseMatrixChunked;
+  const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
+                                Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
+                      50};
+  // clang-format off
+  const std::vector<ThinPixel<std::int32_t>> pixels{
+      {1, 0, 1}, {1, 1, 2}, {2, 1, 3},  // chr1
+      {3, 0, 4}, {3, 1, 5}};            // chr2
+  // clang-format on
+  const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
+
+  SECTION("accessors") { CHECK(SparseMatrixChunked{bins, tmpfile, 2, 0}.empty()); }
+
+  SECTION("push_back") {
+    SparseMatrixChunked m{bins, tmpfile, 2, 0};
+    for (const auto& p : pixels) {
+      m.push_back(p.bin1_id, p.bin2_id, p.count);
+    }
+    m.finalize();
+
+    CHECK(m.size() == pixels.size());
+  }
+
+  SECTION("subset") {
+    SparseMatrixChunked m{bins, tmpfile, 2, 0};
+    for (const auto& p : pixels) {
+      m.push_back(p.bin1_id, p.bin2_id, p.count);
+    }
+    m.finalize();
+
+    CHECK(m.subset(0).empty());
+    CHECK(m.subset(1).size() == 3);
+    CHECK(m.subset(2).size() == 2);
+    CHECK(m.subset(3).empty());
   }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: ICE", "[balancing][long]") {
-  const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+  const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
+      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
+
   const auto tmpfile = testdir() / "balancing_ice.tmp";
 
-  auto clr = hictk::cooler::File(path.string());
+  for (const auto& [label, path] : files) {
+    SECTION(label) {
+      const hictk::File f(path.string(), 2'500'000);
 
-  SECTION("in-memory") {
-    SECTION("INTRA") {
-      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+      SECTION("in-memory") {
+        SECTION("INTRA") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::cis;
-      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::cis;
+          const auto weights = hictk::balancing::ICE(f, type).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
-    }
+          compare_weights(weights, expected_weights);
+        }
 
-    SECTION("INTER") {
-      const auto path_intra_weights =
-          datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+        SECTION("INTER") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::trans;
-      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::trans;
+          const auto weights = hictk::balancing::ICE(f, type).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
-    }
+          compare_weights(weights, expected_weights);
+        }
 
-    SECTION("GW") {
-      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+        SECTION("GW") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::gw;
-      const auto weights = hictk::balancing::ICE(clr, type).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::gw;
+          const auto weights = hictk::balancing::ICE(f, type).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
-    }
-  }
+          compare_weights(weights, expected_weights);
+        }
+      }
 
-  SECTION("chunked") {
-    auto params = hictk::balancing::ICE::DefaultParams;
-    params.tmpfile = tmpfile;
+      SECTION("chunked") {
+        auto params = hictk::balancing::ICE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
 
-    SECTION("INTRA") {
-      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+        SECTION("INTRA") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::cis;
-      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::cis;
+          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
-    }
+          compare_weights(weights, expected_weights);
+        }
 
-    SECTION("INTER") {
-      const auto path_intra_weights =
-          datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+        SECTION("INTER") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::trans;
-      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::trans;
+          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
-    }
+          compare_weights(weights, expected_weights);
+        }
 
-    SECTION("GW") {
-      const auto path_intra_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+        SECTION("GW") {
+          const auto path_intra_weights =
+              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
 
-      constexpr auto type = hictk::balancing::ICE::Type::gw;
-      const auto weights = hictk::balancing::ICE(clr, type, params).get_weights();
-      const auto expected_weights = read_weights(path_intra_weights);
+          constexpr auto type = hictk::balancing::ICE::Type::gw;
+          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+          const auto expected_weights = read_weights(path_intra_weights);
 
-      compare_weights(weights, expected_weights);
+          compare_weights(weights, expected_weights);
+        }
+      }
     }
   }
 }
