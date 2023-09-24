@@ -98,6 +98,8 @@ TEST_CASE("Balancing: SparseMatrix") {
 
   SECTION("serde") {
     const auto tmpfile = testdir() / "sparse_matrix_serde.bin";
+    std::unique_ptr<ZSTD_CCtx_s> zstd_cctx{ZSTD_createCCtx()};
+    std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
     SECTION("empty matrix") {
       std::fstream f{};
@@ -107,9 +109,9 @@ TEST_CASE("Balancing: SparseMatrix") {
       SparseMatrix m1{};
       SparseMatrix m2{};
       m1.finalize();
-      m1.serialize(f);
+      m1.serialize(f, *zstd_cctx);
       f.seekg(std::ios::beg);
-      m2.deserialize(f);
+      m2.deserialize(f, *zstd_dctx);
 
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());
@@ -129,9 +131,9 @@ TEST_CASE("Balancing: SparseMatrix") {
       f.exceptions(std::ios::badbit | std::ios::failbit);
 
       SparseMatrix m2{bins};
-      m1.serialize(f);
+      m1.serialize(f, *zstd_cctx);
       f.seekg(std::ios::beg);
-      m2.deserialize(f);
+      m2.deserialize(f, *zstd_dctx);
 
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());

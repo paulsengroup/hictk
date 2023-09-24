@@ -5,12 +5,27 @@
 #pragma once
 
 #include <parallel_hashmap/phmap.h>
+#include <zstd.h>
 
 #include <cstddef>
+#include <limits>
+#include <memory>
 #include <nonstd/span.hpp>
 #include <vector>
 
 #include "hictk/bin_table.hpp"
+
+namespace std {
+template <>
+struct default_delete<ZSTD_CCtx_s> {
+  void operator()(ZSTD_CCtx_s* ctx) const { ZSTD_freeCCtx(ctx); }  // NOLINT
+};
+
+template <>
+struct default_delete<ZSTD_DCtx_s> {
+  void operator()(ZSTD_DCtx_s* ctx) const { ZSTD_freeDCtx(ctx); }  // NOLINT
+};
+}  // namespace std
 
 namespace hictk::balancing {
 
@@ -48,8 +63,8 @@ class SparseMatrix {
   [[nodiscard]] SparseMatrixView subset(std::uint32_t chrom_id) const;
   [[nodiscard]] SparseMatrixView view() const;
 
-  void serialize(std::fstream& fs, int compression_lvl = 3) const;
-  void deserialize(std::fstream& fs);
+  void serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl = 3) const;
+  void deserialize(std::fstream& fs, ZSTD_DCtx& ctx);
 };
 
 class SparseMatrixChunkedView;
@@ -72,6 +87,9 @@ class SparseMatrixChunked {
 
   std::size_t _chunk_size{};
   int _compression_lvl{};
+
+  std::unique_ptr<ZSTD_CCtx_s> _zstd_cctx{};
+  std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
 
  public:
   SparseMatrixChunked() = default;
@@ -142,6 +160,7 @@ class SparseMatrixChunkedView {
 
   mutable std::vector<double> _marg{};
   std::size_t _bin1_offset{};
+  std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
 
  public:
   SparseMatrixChunkedView() = default;
