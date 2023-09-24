@@ -44,6 +44,10 @@ inline void SparseMatrix::shrink_to_fit() noexcept {
 
 inline void SparseMatrix::finalize() {
   shrink_to_fit();
+  if (_chrom_id + 1 < _bin1_offsets.size()) {
+    _bin1_offsets[_chrom_id + 1] = size();
+  }
+
   for (std::size_t i = 1; i < _bin1_offsets.size(); ++i) {
     if (_bin1_offsets[i] == 0) {
       _bin1_offsets[i] = _bin1_offsets[i - 1];
@@ -62,15 +66,16 @@ inline const std::vector<std::size_t>& SparseMatrix::chrom_offsets() const noexc
 inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count) {
   if (empty()) {
     _chrom_id = static_cast<std::uint32_t>(
-        std::lower_bound(_chrom_offsets.begin(), _chrom_offsets.end(), bin1_id) -
+        std::upper_bound(_chrom_offsets.begin(), _chrom_offsets.end(), bin1_id) - 1 -
         _chrom_offsets.begin());
   }
 
-  if (!empty() && bin1_id >= _chrom_offsets[_chrom_id + 1]) {
+  const auto beginning_of_new_chromosome = bin1_id >= _chrom_offsets[_chrom_id + 1];
+  if (!empty() && beginning_of_new_chromosome) {
     _chrom_id = static_cast<std::uint32_t>(
-        std::lower_bound(_chrom_offsets.begin(), _chrom_offsets.end(), _bin1_ids.back()) -
+        std::upper_bound(_chrom_offsets.begin(), _chrom_offsets.end(), _bin1_ids.back()) - 1 -
         _chrom_offsets.begin());
-    _bin1_offsets[_chrom_id] = size();
+    _bin1_offsets[_chrom_id + 1] = size();
   }
 
   _bin1_ids.push_back(bin1_id);
@@ -139,6 +144,8 @@ void SparseMatrix::serialize(std::fstream& fs, int compression_lvl) const {
 
   fs.write(reinterpret_cast<const char*>(&compressed_size), sizeof(std::size_t));
   fs.write(tmpbuff.data(), static_cast<std::streamsize>(compressed_size));
+
+  fs.flush();
 }
 
 void SparseMatrix::deserialize(std::fstream& fs) {
@@ -218,13 +225,13 @@ inline const std::vector<std::size_t>& SparseMatrixChunked::chrom_offsets() cons
 
 inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id,
                                            double count) {
-  const auto beginning_of_new_chromosome = bin1_id >= _chrom_offsets[_chrom_id + 1];
+  if (empty()) {
+    initialize_index(bin1_id);
+  }
 
-  if (beginning_of_new_chromosome) {
-    finalize_chromosome(_chrom_id);
-    _chrom_id = static_cast<std::uint32_t>(
-        std::lower_bound(_chrom_offsets.begin(), _chrom_offsets.end(), _matrix.bin1_ids().back()) -
-        _chrom_offsets.begin());
+  const auto beginning_of_new_chromosome = bin1_id >= _chrom_offsets[_chrom_id + 1];
+  if (!empty() && beginning_of_new_chromosome) {
+    update_index(bin1_id);
   }
 
   if (_matrix.size() == _chunk_size || beginning_of_new_chromosome) {
@@ -236,20 +243,51 @@ inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t 
 }
 
 inline void SparseMatrixChunked::finalize() {
+  finalize_chromosome(_chrom_id);
+
+  for (std::size_t i = 1; i < _bin1_offsets.size(); ++i) {
+    if (_bin1_offsets[i] == 0) {
+      _bin1_offsets[i] = _bin1_offsets[i - 1];
+    }
+  }
+
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs.close();
   _fs.open(_path, std::ios::in);
 }
 
 inline void SparseMatrixChunked::finalize_chromosome(std::uint32_t chrom_id) {
-  _bin1_offsets[chrom_id + 1] = size();
+  // Finalize current chromosome
   auto [it, inserted] =
       _chrom_index.try_emplace(chrom_id, std::make_pair(_index.size(), _index.size()));
   if (!inserted) {
     it->second.second = _index.size() + 1;
   }
+
+  // Initialize next chromosome
+  if (chrom_id + 1 < _bin1_offsets.size()) {
+    _bin1_offsets[chrom_id + 1] = size();
+    _chrom_index.emplace(chrom_id + 1, std::make_pair(_index.size() + 1, _index.size() + 1));
+  }
+}
+
+inline void SparseMatrixChunked::initialize_index(std::uint64_t bin1_id) {
+  assert(empty());
+  _chrom_id = static_cast<std::uint32_t>(
+      std::upper_bound(_chrom_offsets.begin(), _chrom_offsets.end(), bin1_id) - 1 -
+      _chrom_offsets.begin());
+  for (std::uint32_t i = 0; i <= _chrom_id; ++i) {
+    _chrom_index.emplace(i, std::make_pair(std::size_t{}, std::size_t{}));
+  }
+}
+
+inline void SparseMatrixChunked::update_index(std::uint64_t bin1_id) {
+  assert(!empty());
+  finalize_chromosome(_chrom_id);
+  _chrom_id = static_cast<std::uint32_t>(
+      std::upper_bound(_chrom_offsets.begin(), _chrom_offsets.end(), bin1_id) - 1 -
+      _chrom_offsets.begin());
 }
 
 inline SparseMatrixChunkedView SparseMatrixChunked::view() const {
@@ -360,6 +398,17 @@ inline SparseMatrixChunkedView::SparseMatrixChunkedView(const std::filesystem::p
       _bin1_offset(bin1_offset) {}
 
 inline bool SparseMatrixChunkedView::empty() const noexcept { return _index.empty(); }
+inline std::size_t SparseMatrixChunkedView::size() {
+  std::size_t size_ = 0;
+
+  for (const auto& idx : _index) {
+    _fs.seekg(idx);
+    std::size_t chunk_size{};
+    _fs.read(reinterpret_cast<char*>(&chunk_size), sizeof(std::size_t));
+    size_ += chunk_size;
+  }
+  return size_;
+}
 
 inline const std::vector<double>& SparseMatrixChunkedView::margs() const noexcept { return _marg; }
 
