@@ -16,6 +16,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -hicpp-no-array-decay,
+  -misc-no-recursion,
   -modernize-use-trailing-return-type,
   -readability-identifier-length,
   -readability-magic-numbers
