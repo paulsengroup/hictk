@@ -249,6 +249,7 @@ template <typename File>
 auto ICE::construct_sparse_matrix_chunked(const File& f, Type type, std::size_t num_masked_diags,
                                           const std::filesystem::path& tmpfile,
                                           std::size_t chunk_size) -> SparseMatrixChunked {
+  SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
   if (type == Type::cis) {
     return construct_sparse_matrix_chunked_cis(f, num_masked_diags, tmpfile, chunk_size);
   }
@@ -482,7 +483,7 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
                                    std::size_t min_nnz, std::size_t min_count, double mad_max) {
   SPDLOG_INFO(FMT_STRING("Initializing bias vector..."));
   if (min_nnz != 0) {
-    SPDLOG_INFO(FMT_STRING("Masking columns with fewer than {} nnz entries..."), min_nnz);
+    SPDLOG_INFO(FMT_STRING("Masking rows with fewer than {} nnz entries..."), min_nnz);
     min_nnz_filtering(matrix, biases, min_nnz);
   }
 
@@ -490,12 +491,12 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
     matrix.marginalize();
   }
   if (min_count != 0) {
-    SPDLOG_INFO(FMT_STRING("Masking columns with fewer than {} interactions..."), min_count);
+    SPDLOG_INFO(FMT_STRING("Masking rows with fewer than {} interactions..."), min_count);
     min_count_filtering(biases, min_count, matrix.margs());
   }
 
   if (mad_max != 0) {
-    SPDLOG_INFO(FMT_STRING("Masking columns using mad_max={}..."), mad_max);
+    SPDLOG_INFO(FMT_STRING("Masking rows using mad_max={}..."), mad_max);
     auto margs = std::vector<double>{matrix.margs()};
     mad_max_filtering(chrom_bin_offsets, biases, margs, mad_max);
   }
