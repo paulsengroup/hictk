@@ -118,12 +118,10 @@ class File {
   File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
-  [[nodiscard]] explicit File(std::string_view uri,
-                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                              bool validate = true);
-  [[nodiscard]] explicit File(RootGroup entrypoint,
-                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                              bool validate = true);
+  explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                bool validate = true);
+  explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                bool validate = true);
 
   [[nodiscard]] static File open_random_access(
       std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,

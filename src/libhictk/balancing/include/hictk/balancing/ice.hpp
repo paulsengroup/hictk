@@ -14,7 +14,7 @@
 namespace hictk::balancing {
 
 class ICE {
-  std::vector<std::size_t> _chrom_offsets{};
+  std::vector<std::uint64_t> _chrom_offsets{};
   std::vector<double> _biases{};
   std::vector<double> _variance{};
   std::vector<double> _scale{};
