@@ -145,14 +145,10 @@ inline void ICE::balance_cis(const MatrixT& matrix, const BinTable& bins, std::s
 template <typename File>
 auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_masked_diags)
     -> SparseMatrix {
-  switch (type) {
-    case Type::cis:
-      return construct_sparse_matrix_cis(f, num_masked_diags);
-    case Type::trans:
-      [[fallthrough]];
-    case Type::gw:
-      return construct_sparse_matrix_gw(f, num_masked_diags);
+  if (type == Type::cis) {
+    return construct_sparse_matrix_cis(f, num_masked_diags);
   }
+  return construct_sparse_matrix_gw(f, num_masked_diags);
 }
 
 template <typename File>
@@ -252,14 +248,10 @@ template <typename File>
 auto ICE::construct_sparse_matrix_chunked(const File& f, Type type, std::size_t num_masked_diags,
                                           const std::filesystem::path& tmpfile,
                                           std::size_t chunk_size) -> SparseMatrixChunked {
-  switch (type) {
-    case Type::cis:
-      return construct_sparse_matrix_chunked_cis(f, num_masked_diags, tmpfile, chunk_size);
-    case Type::trans:
-      [[fallthrough]];
-    case Type::gw:
-      return construct_sparse_matrix_chunked_gw(f, num_masked_diags, tmpfile, chunk_size);
+  if (type == Type::cis) {
+    return construct_sparse_matrix_chunked_cis(f, num_masked_diags, tmpfile, chunk_size);
   }
+  return construct_sparse_matrix_chunked_gw(f, num_masked_diags, tmpfile, chunk_size);
 }
 
 template <typename File>

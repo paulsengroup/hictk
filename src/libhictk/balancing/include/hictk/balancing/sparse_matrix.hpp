@@ -21,8 +21,8 @@ class SparseMatrix {
   std::vector<double> _counts{};
 
   std::uint32_t _chrom_id{};  // ID of the chromosome that is being procesed
-  std::vector<std::size_t> _chrom_offsets{};
-  std::vector<std::size_t> _bin1_offsets{};
+  std::vector<std::uint64_t> _chrom_offsets{};
+  std::vector<std::uint64_t> _bin1_offsets{};
   mutable std::vector<double> _marg{};
 
   static constexpr auto _gw_id = std::numeric_limits<std::uint32_t>::max();
