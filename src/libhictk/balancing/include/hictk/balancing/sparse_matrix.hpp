@@ -96,6 +96,9 @@ class SparseMatrixChunked {
   void finalize();
   void finalize_chromosome(std::uint32_t chrom_id);
 
+  void initialize_index(std::uint64_t bin1_id);
+  void update_index(std::uint64_t bin1_id);
+
   [[nodiscard]] SparseMatrixChunkedView subset(std::uint32_t chrom_id) const;
   [[nodiscard]] SparseMatrixChunkedView view() const;
 
@@ -147,6 +150,7 @@ class SparseMatrixChunkedView {
                           std::size_t num_bins);
 
   [[nodiscard]] bool empty() const noexcept;
+  [[nodiscard]] std::size_t size();
 
   [[nodiscard]] const std::vector<double>& margs() const noexcept;
 
