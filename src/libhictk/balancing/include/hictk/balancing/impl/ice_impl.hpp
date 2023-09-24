@@ -145,6 +145,7 @@ inline void ICE::balance_cis(const MatrixT& matrix, const BinTable& bins, std::s
 template <typename File>
 auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_masked_diags)
     -> SparseMatrix {
+  SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
   if (type == Type::cis) {
     return construct_sparse_matrix_cis(f, num_masked_diags);
   }
@@ -479,7 +480,9 @@ template <typename MatrixT>
 inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> biases,
                                    nonstd::span<const std::size_t> chrom_bin_offsets,
                                    std::size_t min_nnz, std::size_t min_count, double mad_max) {
+  SPDLOG_INFO(FMT_STRING("Initializing bias vector..."));
   if (min_nnz != 0) {
+    SPDLOG_INFO(FMT_STRING("Masking columns with fewer than {} nnz entries..."), min_nnz);
     min_nnz_filtering(matrix, biases, min_nnz);
   }
 
@@ -487,10 +490,12 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
     matrix.marginalize();
   }
   if (min_count != 0) {
+    SPDLOG_INFO(FMT_STRING("Masking columns with fewer than {} interactions..."), min_count);
     min_count_filtering(biases, min_count, matrix.margs());
   }
 
   if (mad_max != 0) {
+    SPDLOG_INFO(FMT_STRING("Masking columns using mad_max={}..."), mad_max);
     auto margs = std::vector<double>{matrix.margs()};
     mad_max_filtering(chrom_bin_offsets, biases, margs, mad_max);
   }
