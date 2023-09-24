@@ -183,50 +183,24 @@ TEST_CASE("Balancing: SparseMatrixChunked") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: ICE", "[balancing][long]") {
+TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
 
-  const auto tmpfile = testdir() / "balancing_ice.tmp";
+  const auto tmpfile = testdir() / "balancing_ice_intra.tmp";
+  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
       const hictk::File f(path.string(), 2'500'000);
 
       SECTION("in-memory") {
-        SECTION("INTRA") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+        constexpr auto type = hictk::balancing::ICE::Type::cis;
+        const auto weights = hictk::balancing::ICE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-          constexpr auto type = hictk::balancing::ICE::Type::cis;
-          const auto weights = hictk::balancing::ICE(f, type).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
-
-          compare_weights(weights, expected_weights);
-        }
-
-        SECTION("INTER") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
-
-          constexpr auto type = hictk::balancing::ICE::Type::trans;
-          const auto weights = hictk::balancing::ICE(f, type).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
-
-          compare_weights(weights, expected_weights);
-        }
-
-        SECTION("GW") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
-
-          constexpr auto type = hictk::balancing::ICE::Type::gw;
-          const auto weights = hictk::balancing::ICE(f, type).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
-
-          compare_weights(weights, expected_weights);
-        }
+        compare_weights(weights, expected_weights);
       }
 
       SECTION("chunked") {
@@ -234,38 +208,83 @@ TEST_CASE("Balancing: ICE", "[balancing][long]") {
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
 
-        SECTION("INTRA") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+        constexpr auto type = hictk::balancing::ICE::Type::cis;
+        const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-          constexpr auto type = hictk::balancing::ICE::Type::cis;
-          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
+        compare_weights(weights, expected_weights);
+      }
+    }
+  }
+}
 
-          compare_weights(weights, expected_weights);
-        }
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
+  const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
+      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
 
-        SECTION("INTER") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+  const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
+  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
 
-          constexpr auto type = hictk::balancing::ICE::Type::trans;
-          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
+  for (const auto& [label, path] : files) {
+    SECTION(label) {
+      const hictk::File f(path.string(), 2'500'000);
 
-          compare_weights(weights, expected_weights);
-        }
+      SECTION("in-memory") {
+        constexpr auto type = hictk::balancing::ICE::Type::trans;
+        const auto weights = hictk::balancing::ICE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-        SECTION("GW") {
-          const auto path_intra_weights =
-              datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+        compare_weights(weights, expected_weights);
+      }
 
-          constexpr auto type = hictk::balancing::ICE::Type::gw;
-          const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-          const auto expected_weights = read_weights(path_intra_weights);
+      SECTION("chunked") {
+        auto params = hictk::balancing::ICE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
 
-          compare_weights(weights, expected_weights);
-        }
+        constexpr auto type = hictk::balancing::ICE::Type::trans;
+        const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
+      }
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
+  const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
+      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
+
+  const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
+  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+
+  for (const auto& [label, path] : files) {
+    SECTION(label) {
+      const hictk::File f(path.string(), 2'500'000);
+
+      SECTION("in-memory") {
+        constexpr auto type = hictk::balancing::ICE::Type::gw;
+        const auto weights = hictk::balancing::ICE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
+      }
+
+      SECTION("chunked") {
+        auto params = hictk::balancing::ICE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
+
+        constexpr auto type = hictk::balancing::ICE::Type::gw;
+        const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
       }
     }
   }
