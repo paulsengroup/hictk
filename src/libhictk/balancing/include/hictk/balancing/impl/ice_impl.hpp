@@ -22,34 +22,51 @@ namespace hictk::balancing {
 
 template <typename File>
 inline ICE::ICE(const File& f, Type type, const Params& params)
-    : _chrom_offsets(f.bins().num_bin_prefix_sum()), _biases(f.bins().size(), 1.0) {
+    : _chrom_offsets(f.bins().num_bin_prefix_sum()),
+      _biases(f.bins().size(), 1.0),
+      _variance(f.chromosomes().size(), 0),
+      _scale(f.chromosomes().size(), std::numeric_limits<double>::quiet_NaN()) {
+  std::unique_ptr<BS::thread_pool> tpool{};
+  if (params.threads != 1) {
+    tpool = std::make_unique<BS::thread_pool>(params.threads);
+  }
   if (params.tmpfile.empty()) {
     balance_in_memory(f, type, params.tol, params.max_iters, params.num_masked_diags,
-                      params.min_nnz, params.min_count, params.mad_max);
+                      params.min_nnz, params.min_count, params.mad_max, tpool.get());
   } else {
     balance_chunked(f, type, params.tol, params.max_iters, params.num_masked_diags, params.min_nnz,
-                    params.min_count, params.mad_max, params.tmpfile, params.chunk_size);
+                    params.min_count, params.mad_max, params.tmpfile, params.chunk_size,
+                    tpool.get());
   }
 }
 
 template <typename File>
 inline void ICE::balance_in_memory(const File& f, Type type, double tol, std::size_t max_iters,
                                    std::size_t num_masked_diags, std::size_t min_nnz,
-                                   std::size_t min_count, double mad_max) {
+                                   std::size_t min_count, double mad_max, BS::thread_pool* tpool) {
   auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
 
-  initialize_biases(matrix.view(), _biases, _chrom_offsets, min_nnz, min_count, mad_max);
+  initialize_biases(matrix, _biases, _chrom_offsets, min_nnz, min_count, mad_max, tpool);
 
-  switch (type) {
-    case Type::gw:
-      balance_gw(matrix.view(), max_iters, tol);
-      break;
-    case Type::cis:
-      balance_cis(matrix, f.bins(), max_iters, tol);
-      break;
-    case Type::trans:
-      matrix = construct_sparse_matrix_trans(f, num_masked_diags);
-      balance_trans(matrix.view(), f.bins(), max_iters, tol);
+  if (type == Type::gw) {
+    return balance_gw(matrix, max_iters, tol, tpool);
+  }
+
+  if (type == Type::trans) {
+    matrix.clear(true);
+    matrix = construct_sparse_matrix_trans(f, num_masked_diags);
+    return balance_trans(matrix, f.bins(), max_iters, tol, tpool);
+  }
+
+  assert(type == Type::cis);
+  matrix.clear(true);
+  for (std::uint32_t i = 0; i < f.chromosomes().size(); ++i) {
+    const Chromosome& chrom = f.chromosomes().at(i);
+    if (chrom.is_all()) {
+      continue;
+    }
+    matrix = construct_sparse_matrix_cis(f, chrom, _chrom_offsets[i], num_masked_diags);
+    balance_cis(matrix, chrom, max_iters, tol, tpool);
   }
 }
 
@@ -57,32 +74,45 @@ template <typename File>
 inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size_t max_iters,
                                  std::size_t num_masked_diags, std::size_t min_nnz,
                                  std::size_t min_count, double mad_max,
-                                 const std::filesystem::path& tmpfile, std::size_t chunk_size) {
-  auto matrix = construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
+                                 const std::filesystem::path& tmpfile, std::size_t chunk_size,
+                                 BS::thread_pool* tpool) {
+  auto matrix =
+      construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
 
-  initialize_biases(matrix.view(), _biases, _chrom_offsets, min_nnz, min_count, mad_max);
+  initialize_biases(matrix, _biases, _chrom_offsets, min_nnz, min_count, mad_max, tpool);
 
-  switch (type) {
-    case Type::gw:
-      balance_gw(matrix.view(), max_iters, tol);
-      break;
-    case Type::cis:
-      balance_cis(matrix, f.bins(), max_iters, tol);
-      break;
-    case Type::trans:
-      balance_trans(
-          construct_sparse_matrix_chunked_trans(f, num_masked_diags, tmpfile, chunk_size).view(),
-          f.bins(), max_iters, tol);
+  if (type == Type::gw) {
+    return balance_gw(matrix, max_iters, tol, tpool);
+  }
+
+  if (type == Type::trans) {
+    matrix.clear(true);
+    matrix = construct_sparse_matrix_chunked_trans(f, num_masked_diags, tmpfile, chunk_size);
+    return balance_trans(matrix, f.bins(), max_iters, tol, tpool);
+  }
+
+  assert(type == Type::cis);
+  matrix.clear(true);
+  for (std::uint32_t i = 0; i < f.chromosomes().size(); ++i) {
+    const Chromosome& chrom = f.chromosomes().at(i);
+    if (chrom.is_all()) {
+      continue;
+    }
+    matrix = construct_sparse_matrix_chunked_cis(f, chrom, _chrom_offsets[i], num_masked_diags,
+                                                 tmpfile, chunk_size);
+    balance_cis(matrix, chrom, max_iters, tol, tpool);
   }
 }
 
 template <typename MatrixT>
-inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double tol) {
+inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double tol,
+                            BS::thread_pool* tpool) {
   _variance.resize(1, 0);
   _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
 
+  MargsVector marg(_biases.size());
   for (std::size_t i = 0; i < max_iters; ++i) {
-    const auto res = inner_loop(matrix, _biases);
+    const auto res = inner_loop(matrix, _biases, marg, {}, tpool);
     SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), i + 1, res.variance);
     _variance[0] = res.variance;
     _scale[0] = res.scale;
@@ -94,13 +124,14 @@ inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double
 
 template <typename MatrixT>
 inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters,
-                               double tol) {
+                               double tol, BS::thread_pool* tpool) {
   _variance.resize(1, 0);
   _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
   const auto weights = compute_weights_from_chromosome_sizes(bins, _chrom_offsets);
 
+  MargsVector marg(_biases.size());
   for (std::size_t i = 0; i < max_iters; ++i) {
-    const auto res = inner_loop(matrix, _biases, weights);
+    const auto res = inner_loop(matrix, _biases, marg, weights, tpool);
     SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), i + 1, res.variance);
     _variance[0] = res.variance;
     _scale[0] = res.scale;
@@ -111,33 +142,21 @@ inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std:
 }
 
 template <typename MatrixT>
-inline void ICE::balance_cis(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters,
-                             double tol) {
-  _variance.resize(bins.chromosomes().size(), 0);
-  _scale.resize(bins.chromosomes().size(), std::numeric_limits<double>::quiet_NaN());
+inline void ICE::balance_cis(const MatrixT& matrix, const Chromosome& chrom, std::size_t max_iters,
+                             double tol, BS::thread_pool* tpool) {
+  const auto i0 = _chrom_offsets[chrom.id()];
+  const auto i1 = _chrom_offsets[chrom.id() + 1];
+  auto biases_ = nonstd::span(_biases).subspan(i0, i1 - i0);
 
-  std::vector<double> margs(_biases.size());
+  MargsVector marg(biases_.size());
+  for (std::size_t k = 0; k < max_iters; ++k) {
+    const auto res = inner_loop(matrix, biases_, marg, {}, tpool);
+    SPDLOG_INFO(FMT_STRING("[{}] iteration {}: {}"), chrom.name(), k + 1, res.variance);
+    _variance[chrom.id()] = res.variance;
+    _scale[chrom.id()] = res.scale;
 
-  for (const auto& chrom : bins.chromosomes()) {
-    if (chrom.is_all()) {
-      continue;
-    }
-    const auto cis_matrix = matrix.subset(chrom.id());
-
-    const auto j0 = _chrom_offsets[chrom.id()];
-    const auto j1 = _chrom_offsets[chrom.id() + 1];
-
-    auto biases_ = nonstd::span(_biases).subspan(j0, j1 - j0);
-
-    for (std::size_t k = 0; k < max_iters; ++k) {
-      const auto res = inner_loop(cis_matrix, biases_);
-      SPDLOG_INFO(FMT_STRING("[{}] iteration {}: {}"), chrom.name(), k + 1, res.variance);
-      _variance[chrom.id()] = res.variance;
-      _scale[chrom.id()] = res.scale;
-
-      if (res.variance < tol) {
-        break;
-      }
+    if (res.variance < tol) {
+      break;
     }
   }
 }
@@ -155,7 +174,7 @@ auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_mask
 template <typename File>
 inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags)
     -> SparseMatrix {
-  SparseMatrix m(f.bins());
+  SparseMatrix m{};
 
   const auto sel = f.fetch();
   std::for_each(sel.template begin<double>(), sel.template end<double>(), [&](const auto& p) {
@@ -170,16 +189,35 @@ inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_maske
 }
 
 template <typename File>
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(const File& f, const Chromosome& chrom,
+                                                           std::size_t bin_offset,
+                                                           std::size_t num_masked_diags)
+    -> SparseMatrix {
+  SparseMatrix m{};
+
+  const auto sel = f.fetch(chrom.name());
+  std::for_each(sel.template begin<double>(), sel.template end<double>(),
+                [&](const ThinPixel<double>& p) {
+                  if (p.bin2_id - p.bin1_id >= num_masked_diags) {
+                    m.push_back(p.bin1_id, p.bin2_id, p.count, bin_offset);
+                  }
+                });
+  m.finalize();
+
+  return m;
+}
+
+template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(const File& f,
                                                            std::size_t num_masked_diags)
     -> SparseMatrix {
-  SparseMatrix m(f.bins());
+  SparseMatrix m{};
 
-  for (const Chromosome& chrom : f.chromosomes()) {
+  for (const auto& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
       continue;
     }
-    const auto sel = f.fetch(chrom.name());
+    auto sel = f.fetch(chrom.name());
     std::for_each(sel.template begin<double>(), sel.template end<double>(),
                   [&](const ThinPixel<double>& p) {
                     if (p.bin2_id - p.bin1_id >= num_masked_diags) {
@@ -230,7 +268,7 @@ template <typename File>
 
   internal::PixelMerger<PixelIt> merger{heads, tails};
 
-  SparseMatrix m(f.bins());
+  SparseMatrix m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
     // TODO: this filtering step is wrong when done on trans matrices, as it will
     // remove the first and last few pixels from trans matrices of adjacent chromosomes.
@@ -249,7 +287,7 @@ template <typename File>
 auto ICE::construct_sparse_matrix_chunked(const File& f, Type type, std::size_t num_masked_diags,
                                           const std::filesystem::path& tmpfile,
                                           std::size_t chunk_size) -> SparseMatrixChunked {
-  SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
+  SPDLOG_INFO(FMT_STRING("Writing interactions to temporary file {}..."), tmpfile);
   if (type == Type::cis) {
     return construct_sparse_matrix_chunked_cis(f, num_masked_diags, tmpfile, chunk_size);
   }
@@ -260,7 +298,7 @@ template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_gw(const File& f, std::size_t num_masked_diags,
                                                     const std::filesystem::path& tmpfile,
                                                     std::size_t chunk_size) -> SparseMatrixChunked {
-  SparseMatrixChunked m(f.bins(), tmpfile, chunk_size);
+  SparseMatrixChunked m(tmpfile, chunk_size);
 
   const auto sel = f.fetch();
   std::for_each(sel.template begin<double>(), sel.template end<double>(), [&](const auto& p) {
@@ -274,11 +312,31 @@ inline auto ICE::construct_sparse_matrix_chunked_gw(const File& f, std::size_t n
 }
 
 template <typename File>
+inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, const Chromosome& chrom,
+                                                     std::size_t bin_offset,
+                                                     std::size_t num_masked_diags,
+                                                     const std::filesystem::path& tmpfile,
+                                                     std::size_t chunk_size)
+    -> SparseMatrixChunked {
+  SparseMatrixChunked m(tmpfile, chunk_size);
+
+  const auto sel = f.fetch(chrom.name());
+  std::for_each(sel.template begin<double>(), sel.template end<double>(),
+                [&](const ThinPixel<double>& p) {
+                  if (p.bin2_id - p.bin1_id >= num_masked_diags) {
+                    m.push_back(p.bin1_id, p.bin2_id, p.count, bin_offset);
+                  }
+                });
+  m.finalize();
+  return m;
+}
+
+template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, std::size_t num_masked_diags,
                                                      const std::filesystem::path& tmpfile,
                                                      std::size_t chunk_size)
     -> SparseMatrixChunked {
-  SparseMatrixChunked m(f.bins(), tmpfile, chunk_size);
+  SparseMatrixChunked m(tmpfile, chunk_size);
 
   for (const Chromosome& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
@@ -329,7 +387,7 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
 
   internal::PixelMerger<PixelIt> merger{heads, tails};
 
-  SparseMatrixChunked m(f.bins(), tmpfile, chunk_size);
+  SparseMatrixChunked m(tmpfile, chunk_size);
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
     // TODO: this filtering step is wrong when done on trans matrices, as it will
     // remove the first and last few pixels from trans matrices of adjacent chromosomes.
@@ -344,11 +402,12 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
 }
 
 template <typename MatrixT>
-inline void ICE::min_nnz_filtering(const MatrixT& matrix, nonstd::span<double> biases,
-                                   std::size_t min_nnz) {
-  const auto& marg = matrix.marginalize_nnz();
+inline void ICE::min_nnz_filtering(MargsVector& marg, const MatrixT& matrix,
+                                   nonstd::span<double> biases, std::size_t min_nnz,
+                                   BS::thread_pool* tpool) {
+  matrix.marginalize_nnz(marg, tpool);
   for (std::size_t i = 0; i < biases.size(); ++i) {
-    if (marg[i] < static_cast<double>(min_nnz)) {
+    if (marg()[i] < static_cast<double>(min_nnz)) {
       biases[i] = 0;
     }
   }
@@ -438,20 +497,16 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets
 }
 
 template <typename MatrixT>
-inline auto ICE::inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
-                            nonstd::span<const double> weights) -> Result {
+inline auto ICE::inner_loop(const MatrixT& matrix, nonstd::span<double> biases, MargsVector& marg,
+                            nonstd::span<const double> weights, BS::thread_pool* tpool) -> Result {
   if (matrix.empty()) {
     std::fill(biases.begin(), biases.end(), std::numeric_limits<double>::quiet_NaN());
     return {std::numeric_limits<double>::quiet_NaN(), 0.0};
   }
-  const auto& marg = matrix.times_outer_product_marg(biases, weights);
 
-  double marg_sum = 0.0;
-  std::size_t nnz_marg{};
-  for (const auto& n : marg) {
-    marg_sum += n;
-    nnz_marg += n != 0;
-  }
+  marg.resize(biases.size());
+  matrix.times_outer_product_marg(marg, biases, weights, tpool);
+  const auto [marg_sum, nnz_marg] = aggregate_marg(marg(), tpool);
 
   if (nnz_marg == 0) {
     std::fill(biases.begin(), biases.end(), std::numeric_limits<double>::quiet_NaN());
@@ -459,46 +514,120 @@ inline auto ICE::inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
   }
 
   const auto avg_nzmarg = (marg_sum / static_cast<double>(nnz_marg));
-  for (std::size_t i = 0; i < biases.size(); ++i) {
-    const auto n = marg[i] / avg_nzmarg;
-    if (n != 0) {
-      biases[i] /= n;
-    }
-  }
+  update_biases(marg(), biases, avg_nzmarg, tpool);
 
-  double ssq_nzmarg = 0.0;
-  for (const auto n : marg) {
-    if (n != 0) {
-      ssq_nzmarg += std::pow(n - avg_nzmarg, 2);
-    }
-  }
+  const auto ssq_nzmarg = compute_ssq_nzmarg(marg(), avg_nzmarg, tpool);
   const auto var_nzmarg = ssq_nzmarg / static_cast<double>(nnz_marg - 1);
 
   return {avg_nzmarg, var_nzmarg};
 }
 
+inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const double> marg,
+                                                          BS::thread_pool* tpool) {
+  double marg_sum = 0.0;
+  std::size_t nnz_marg{};
+
+  std::mutex mtx{};
+
+  auto aggregate_marg_impl = [&](std::size_t istart, std::size_t iend) {
+    double marg_sum_ = 0.0;
+    std::size_t nnz_marg_{};
+
+    for (auto i = istart; i < iend; ++i) {
+      marg_sum_ += marg[i];
+      nnz_marg_ += marg[i] != 0;
+    }
+
+    [[maybe_unused]] const std::scoped_lock lck(mtx);
+    marg_sum += marg_sum_;
+    nnz_marg += nnz_marg_;
+  };
+
+  if (marg.size() < 10'000 || !tpool) {
+    aggregate_marg_impl(0, marg.size());
+    return std::make_pair(marg_sum, nnz_marg);
+  }
+
+  tpool->push_loop(0, marg.size(), aggregate_marg_impl);
+  tpool->wait_for_tasks();
+
+  return std::make_pair(marg_sum, nnz_marg);
+}
+
+inline void ICE::update_biases(nonstd::span<const double> marg, nonstd::span<double> biases,
+                               double avg_nzmarg, BS::thread_pool* tpool) {
+  auto update_biases_impl = [&](std::size_t istart, std::size_t iend) {
+    for (auto i = istart; i < iend; ++i) {
+      const auto n = marg[i] / avg_nzmarg;
+      if (n != 0) {
+        biases[i] /= n;
+      }
+    }
+  };
+
+  if (marg.size() < 10'000 || !tpool) {
+    return update_biases_impl(0, marg.size());
+  }
+
+  tpool->push_loop(0, marg.size(), update_biases_impl);
+  tpool->wait_for_tasks();
+}
+
+inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double avg_nzmarg,
+                                      BS::thread_pool* tpool) {
+  std::mutex mtx{};
+  double ssq_nzmarg = 0;
+
+  auto compute_ssq_nzmarg_impl = [&](std::size_t istart, std::size_t iend) {
+    double ssq_nzmarg_ = 0.0;
+    for (auto i = istart; i < iend; ++i) {
+      const auto& n = marg[i];
+      if (n != 0) {
+        ssq_nzmarg_ += std::pow(n - avg_nzmarg, 2);
+      }
+    }
+    [[maybe_unused]] const std::scoped_lock lck(mtx);
+    ssq_nzmarg += ssq_nzmarg_;
+  };
+
+  if (marg.size() < 10'000 || !tpool) {
+    compute_ssq_nzmarg_impl(0, marg.size());
+    return ssq_nzmarg;
+  }
+
+  tpool->push_loop(0, marg.size(), compute_ssq_nzmarg_impl);
+  tpool->wait_for_tasks();
+  return ssq_nzmarg;
+}
+
 template <typename MatrixT>
 inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> biases,
                                    nonstd::span<const std::size_t> chrom_bin_offsets,
-                                   std::size_t min_nnz, std::size_t min_count, double mad_max) {
+                                   std::size_t min_nnz, std::size_t min_count, double mad_max,
+                                   BS::thread_pool* tpool) {
+  if (min_nnz == 0 && min_count == 0 && mad_max == 0) {
+    return;
+  }
+
   SPDLOG_INFO(FMT_STRING("Initializing bias vector..."));
+  MargsVector marg(biases.size());
   if (min_nnz != 0) {
     SPDLOG_INFO(FMT_STRING("Masking rows with fewer than {} nnz entries..."), min_nnz);
-    min_nnz_filtering(matrix, biases, min_nnz);
+    min_nnz_filtering(marg, matrix, biases, min_nnz, tpool);
   }
 
   if (min_count != 0 || mad_max != 0) {
-    matrix.marginalize();
+    matrix.marginalize(marg, tpool);
   }
+
   if (min_count != 0) {
     SPDLOG_INFO(FMT_STRING("Masking rows with fewer than {} interactions..."), min_count);
-    min_count_filtering(biases, min_count, matrix.margs());
+    min_count_filtering(biases, min_count, marg());
   }
 
   if (mad_max != 0) {
     SPDLOG_INFO(FMT_STRING("Masking rows using mad_max={}..."), mad_max);
-    auto margs = std::vector<double>{matrix.margs()};
-    mad_max_filtering(chrom_bin_offsets, biases, margs, mad_max);
+    mad_max_filtering(chrom_bin_offsets, biases, marg(), mad_max);
   }
 }
 

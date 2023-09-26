@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
@@ -66,13 +66,10 @@ TEST_CASE("Balancing: SparseMatrix") {
       {3, 0, 4}, {3, 1, 5}};            // chr2
   // clang-format on
 
-  SECTION("accessors") {
-    CHECK(SparseMatrix{}.empty());
-    CHECK(SparseMatrix{bins}.empty());
-  }
+  SECTION("accessors") { CHECK(SparseMatrix{}.empty()); }
 
   SECTION("push_back") {
-    SparseMatrix m{bins};
+    SparseMatrix m{};
     for (const auto& p : pixels) {
       m.push_back(p.bin1_id, p.bin2_id, p.count);
     }
@@ -81,19 +78,6 @@ TEST_CASE("Balancing: SparseMatrix") {
 
     m.clear();
     CHECK(m.empty());
-  }
-
-  SECTION("subset") {
-    SparseMatrix m{bins};
-    for (const auto& p : pixels) {
-      m.push_back(p.bin1_id, p.bin2_id, p.count);
-    }
-    m.finalize();
-
-    CHECK(m.subset(0).empty());
-    CHECK(m.subset(1).size() == 3);
-    CHECK(m.subset(2).size() == 2);
-    CHECK(m.subset(3).empty());
   }
 
   SECTION("serde") {
@@ -116,11 +100,10 @@ TEST_CASE("Balancing: SparseMatrix") {
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());
       compare_vectors(m1.counts(), m2.counts());
-      compare_vectors(m1.chrom_offsets(), m2.chrom_offsets());
     }
 
     SECTION("full matrix") {
-      SparseMatrix m1{bins};
+      SparseMatrix m1{};
       for (const auto& p : pixels) {
         m1.push_back(p.bin1_id, p.bin2_id, p.count);
       }
@@ -130,7 +113,7 @@ TEST_CASE("Balancing: SparseMatrix") {
       f.open(tmpfile, std::ios::in | std::ios::out | std::ios::trunc);
       f.exceptions(std::ios::badbit | std::ios::failbit);
 
-      SparseMatrix m2{bins};
+      SparseMatrix m2{};
       m1.serialize(f, *zstd_cctx);
       f.seekg(std::ios::beg);
       m2.deserialize(f, *zstd_dctx);
@@ -138,7 +121,6 @@ TEST_CASE("Balancing: SparseMatrix") {
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());
       compare_vectors(m1.counts(), m2.counts());
-      compare_vectors(m1.chrom_offsets(), m2.chrom_offsets());
     }
   }
 }
@@ -156,29 +138,16 @@ TEST_CASE("Balancing: SparseMatrixChunked") {
   // clang-format on
   const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
 
-  SECTION("accessors") { CHECK(SparseMatrixChunked{bins, tmpfile, 2, 0}.empty()); }
+  SECTION("accessors") { CHECK(SparseMatrixChunked{tmpfile, 2, 0}.empty()); }
 
   SECTION("push_back") {
-    SparseMatrixChunked m{bins, tmpfile, 2, 0};
+    SparseMatrixChunked m{tmpfile, 2, 0};
     for (const auto& p : pixels) {
       m.push_back(p.bin1_id, p.bin2_id, p.count);
     }
     m.finalize();
 
     CHECK(m.size() == pixels.size());
-  }
-
-  SECTION("subset") {
-    SparseMatrixChunked m{bins, tmpfile, 2, 0};
-    for (const auto& p : pixels) {
-      m.push_back(p.bin1_id, p.bin2_id, p.count);
-    }
-    m.finalize();
-
-    CHECK(m.subset(0).empty());
-    CHECK(m.subset(1).size() == 3);
-    CHECK(m.subset(2).size() == 2);
-    CHECK(m.subset(3).empty());
   }
 }
 
