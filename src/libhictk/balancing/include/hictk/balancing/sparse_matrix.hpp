@@ -7,6 +7,7 @@
 #include <parallel_hashmap/phmap.h>
 #include <zstd.h>
 
+#include <BS_thread_pool.hpp>
 #include <cstddef>
 #include <limits>
 #include <memory>
@@ -29,45 +30,75 @@ struct default_delete<ZSTD_DCtx_s> {
 
 namespace hictk::balancing {
 
-class SparseMatrixView;
+class MargsVector {
+  std::vector<double> _margs{};
+  mutable std::vector<std::mutex> _mtxes;
+
+ public:
+  MargsVector() = default;
+  explicit MargsVector(std::size_t size_);
+
+  MargsVector(const MargsVector& other);
+  MargsVector(MargsVector&& other) noexcept = default;
+
+  ~MargsVector() = default;
+
+  MargsVector& operator=(const MargsVector& other);
+  MargsVector& operator=(MargsVector&& other) noexcept = default;
+
+  [[nodiscard]] double operator[](std::size_t i) const noexcept;
+  [[nodiscard]] double& operator[](std::size_t i) noexcept;
+  void add(std::size_t i, double n) noexcept;
+
+  [[nodiscard]] const std::vector<double>& operator()() const noexcept;
+  [[nodiscard]] std::vector<double>& operator()() noexcept;
+
+  void fill(double n = 0) noexcept;
+  void resize(std::size_t size_);
+
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+
+ private:
+  static constexpr std::size_t compute_number_of_mutexes(std::size_t size) noexcept;
+  template <typename I, typename = std::enable_if_t<std::is_integral_v<I>>>
+  [[nodiscard]] static constexpr I next_pow2(I n) noexcept;
+  [[nodiscard]] std::size_t get_mutex_idx(std::size_t i) const noexcept;
+};
+
 class SparseMatrix {
   std::vector<std::size_t> _bin1_ids{};
   std::vector<std::size_t> _bin2_ids{};
   std::vector<double> _counts{};
 
-  std::uint32_t _chrom_id{};  // ID of the chromosome that is being procesed
-  std::vector<std::uint64_t> _chrom_offsets{};
-  std::vector<std::uint64_t> _bin1_offsets{};
-  mutable std::vector<double> _marg{};
-
-  static constexpr auto _gw_id = std::numeric_limits<std::uint32_t>::max();
-
  public:
   SparseMatrix() = default;
-  explicit SparseMatrix(const BinTable& bins, std::uint32_t chrom_id = _gw_id);
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
-  void clear() noexcept;
+  void clear(bool shrink_to_fit_ = false) noexcept;
   void shrink_to_fit() noexcept;
   void finalize();
 
   [[nodiscard]] const std::vector<std::size_t>& bin1_ids() const noexcept;
   [[nodiscard]] const std::vector<std::size_t>& bin2_ids() const noexcept;
   [[nodiscard]] const std::vector<double>& counts() const noexcept;
-  [[nodiscard]] const std::vector<double>& margs() const noexcept;
-  [[nodiscard]] const std::vector<std::size_t>& chrom_offsets() const noexcept;
 
-  void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count);
-
-  [[nodiscard]] SparseMatrixView subset(std::uint32_t chrom_id) const;
-  [[nodiscard]] SparseMatrixView view() const;
+  void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
+                 std::size_t bin_offset = 0);
 
   void serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl = 3) const;
   void deserialize(std::fstream& fs, ZSTD_DCtx& ctx);
+
+  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+                   bool init_buffer = true) const;
+  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+                       bool init_buffer = true) const;
+  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+                                nonstd::span<const double> weights,
+                                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 };
 
-class SparseMatrixChunkedView;
 class SparseMatrixChunked {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
@@ -75,16 +106,7 @@ class SparseMatrixChunked {
   mutable std::fstream _fs{};
 
   std::vector<std::streamoff> _index{};
-
-  // chrom_id, <first_offset_idx, last_offset_idx>
-  phmap::flat_hash_map<std::uint32_t, std::pair<std::size_t, std::size_t>> _chrom_index{};
-  std::uint32_t _chrom_id{};  // id of the chromosome that is currently being processed;
   std::size_t _size{};
-
-  mutable std::vector<double> _marg{};
-  std::vector<std::size_t> _chrom_offsets{};
-  std::vector<std::size_t> _bin1_offsets{};
-
   std::size_t _chunk_size{};
   int _compression_lvl{};
 
@@ -93,7 +115,7 @@ class SparseMatrixChunked {
 
  public:
   SparseMatrixChunked() = default;
-  SparseMatrixChunked(const BinTable& bins, std::filesystem::path tmp_file, std::size_t chunk_size,
+  SparseMatrixChunked(std::filesystem::path tmp_file, std::size_t chunk_size,
                       int compression_lvl = 3);
 
   SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
@@ -106,77 +128,24 @@ class SparseMatrixChunked {
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
+  void clear(bool shrink_to_fit_ = false);
 
-  [[nodiscard]] const std::vector<double>& margs() const noexcept;
-  [[nodiscard]] const std::vector<std::size_t>& chrom_offsets() const noexcept;
-
-  void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count);
+  void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
+                 std::size_t bin_offset = 0);
   void finalize();
-  void finalize_chromosome(std::uint32_t chrom_id);
 
-  void initialize_index(std::uint64_t bin1_id);
-  void update_index(std::uint64_t bin1_id);
-
-  [[nodiscard]] SparseMatrixChunkedView subset(std::uint32_t chrom_id) const;
-  [[nodiscard]] SparseMatrixChunkedView view() const;
-
-  void read_chunk(std::size_t chunk_id, SparseMatrix& buffer);
+  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+                   bool init_buffer = true) const;
+  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+                       bool init_buffer = true) const;
+  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+                                nonstd::span<const double> weights,
+                                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
  private:
   void write_chunk();
-};
-
-class SparseMatrixView {
-  mutable std::vector<double> _marg{};
-  std::size_t _bin1_offset{};
-
- public:
-  nonstd::span<const std::size_t> bin1_ids{};  // NOLINT
-  nonstd::span<const std::size_t> bin2_ids{};  // NOLINT
-  nonstd::span<const double> counts{};         // NOLINT
-
-  SparseMatrixView() = default;
-  SparseMatrixView(nonstd::span<const std::size_t> bin1_ids_,
-                   nonstd::span<const std::size_t> bin2_ids_, nonstd::span<const double> counts_,
-                   std::size_t bin1_offset, std::size_t num_bins);
-
-  [[nodiscard]] bool empty() const noexcept;
-  [[nodiscard]] std::size_t size() const noexcept;
-
-  [[nodiscard]] const std::vector<double>& margs() const noexcept;
-
-  const std::vector<double>& marginalize() const;
-  const std::vector<double>& marginalize_nnz() const;
-  const std::vector<double>& times_outer_product_marg(nonstd::span<const double> biases,
-                                                      nonstd::span<const double> weights) const;
-};
-
-class SparseMatrixChunkedView {
-  mutable SparseMatrix _matrix{};
-  mutable std::string _buff{};
-  mutable std::fstream _fs{};
-
-  std::vector<std::streamoff> _index{};
-
-  mutable std::vector<double> _marg{};
-  std::size_t _bin1_offset{};
-  std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
-
- public:
-  SparseMatrixChunkedView() = default;
-  SparseMatrixChunkedView(const std::filesystem::path& path,
-                          nonstd::span<const std::streamoff> index, std::size_t bin1_offset,
-                          std::size_t num_bins);
-
-  [[nodiscard]] bool empty() const noexcept;
-  [[nodiscard]] std::size_t size();
-
-  [[nodiscard]] const std::vector<double>& margs() const noexcept;
-
-  const std::vector<double>& marginalize() const;
-  const std::vector<double>& marginalize_nnz() const;
-  const std::vector<double>& times_outer_product_marg(nonstd::span<const double> biases,
-                                                      nonstd::span<const double> weights) const;
+  [[nodiscard]] static std::vector<std::size_t> compute_chunk_offsets(std::size_t size,
+                                                                      std::size_t num_chunks);
 };
 
 }  // namespace hictk::balancing
