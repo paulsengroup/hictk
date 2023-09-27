@@ -22,8 +22,8 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
   SECTION("wo/ weights") { CHECK(clr1.avail_normalizations().empty()); }
   SECTION("w/ weights") {
     CHECK(clr2.avail_normalizations().size() == 6);
-    CHECK(clr2.has_weights("SCALE"));
-    CHECK(!clr2.has_weights("FOOBAR"));
+    CHECK(clr2.has_normalization("SCALE"));
+    CHECK(!clr2.has_normalization("FOOBAR"));
 
     CHECK(clr2.read_weights("SCALE")->type() == hictk::balancing::Weights::Type::DIVISIVE);
   }
@@ -38,7 +38,7 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
   std::filesystem::remove(path2);
   std::filesystem::remove(path3);
   std::filesystem::copy(path1, path2);
-  REQUIRE_FALSE(File(path2.string()).has_weights("weight"));
+  REQUIRE_FALSE(File(path2.string()).has_normalization("weight"));
 
   const auto num_bins = File(path1.string()).bins().size();
 

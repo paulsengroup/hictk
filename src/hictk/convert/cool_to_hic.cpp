@@ -204,7 +204,7 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
   const cooler::File clr(cooler_uri);
   assert(clr.bin_size() == resolution);
 
-  if (!clr.has_weights("weight")) {
+  if (!clr.has_normalization("weight")) {
     SPDLOG_WARN(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
     return false;
   }
