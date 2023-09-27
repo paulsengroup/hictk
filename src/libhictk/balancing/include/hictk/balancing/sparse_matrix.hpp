@@ -60,9 +60,9 @@ class MargsVector {
   [[nodiscard]] bool empty() const noexcept;
 
  private:
-  static constexpr std::size_t compute_number_of_mutexes(std::size_t size) noexcept;
+  static std::size_t compute_number_of_mutexes(std::size_t size) noexcept;
   template <typename I, typename = std::enable_if_t<std::is_integral_v<I>>>
-  [[nodiscard]] static constexpr I next_pow2(I n) noexcept;
+  [[nodiscard]] static I next_pow2(I n) noexcept;
   [[nodiscard]] std::size_t get_mutex_idx(std::size_t i) const noexcept;
 };
 

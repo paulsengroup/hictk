@@ -69,7 +69,7 @@ inline void MargsVector::resize(std::size_t size_) {
 inline std::size_t MargsVector::size() const noexcept { return _margs.size(); }
 inline bool MargsVector::empty() const noexcept { return size() == 0; }
 
-constexpr std::size_t MargsVector::compute_number_of_mutexes(std::size_t size) noexcept {
+inline std::size_t MargsVector::compute_number_of_mutexes(std::size_t size) noexcept {
   if (size == 0) {
     return 0;
   }
@@ -80,7 +80,7 @@ constexpr std::size_t MargsVector::compute_number_of_mutexes(std::size_t size) n
 }
 
 template <typename I, typename>
-constexpr I MargsVector::next_pow2(I n) noexcept {
+inline I MargsVector::next_pow2(I n) noexcept {
   using ull = unsigned long long;
   if constexpr (std::is_signed_v<I>) {
     assert(n >= 0);
