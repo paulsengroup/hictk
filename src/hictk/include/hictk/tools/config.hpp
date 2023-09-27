@@ -28,7 +28,7 @@ struct BalanceConfig {
   std::size_t max_iters{500};
   bool rescale_marginals{true};
   std::string name{"weight"};
-  bool in_memory{true};
+  bool in_memory{false};
   bool stdout_{false};
   std::uint8_t zstd_compression_lvl{3};
   std::size_t threads{1};
