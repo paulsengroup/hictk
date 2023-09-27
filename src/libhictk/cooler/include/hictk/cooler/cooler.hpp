@@ -241,7 +241,6 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  bool has_weights(std::string_view normalization) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
                                                          bool rescale = false) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,

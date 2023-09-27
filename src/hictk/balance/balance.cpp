@@ -83,7 +83,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                                  const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
   const auto path = fmt::format(FMT_STRING("{}/bins/{}"), grp, c.name);
-  SPDLOG_INFO(FMT_STRING("Writing weights to {}{}..."), uri, path);
+  SPDLOG_INFO(FMT_STRING("Writing weights to {}::{}..."), uri, path);
 
   const HighFive::File clr(file, HighFive::File::ReadWrite);
 
@@ -110,7 +110,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   } else {
     std::vector<bool> converged{};
     for (const auto& var : variance) {
-      converged.push_back(var < c.tolerance);
+      converged.push_back(var < c.tolerance);  // NOLINT
     }
     dset.write_attribute("converged", converged);
     dset.write_attribute("scale", scale);
@@ -121,14 +121,11 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
 static int balance_singleres_file(File&& f, const BalanceConfig& c) {
   std::filesystem::path tmpfile{};
 
-  if (f.is_cooler()) {
-    const auto& ff = f.get<cooler::File>();
-    if (ff.has_weights(c.name) && !c.force) {
-      throw std::runtime_error(fmt::format(
-          FMT_STRING(
-              "{}/bins/weight already exists. Pass --force to overwrite currently stored weights."),
-          ff.uri()));
-    }
+  if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
+                               "--force to overwrite existing weights."),
+                    c.name, f.path()));
   }
 
   if (!c.in_memory) {
@@ -177,7 +174,6 @@ static int balance_singleres_file(File&& f, const BalanceConfig& c) {
   }
 
   write_weights_hic(f.get<hic::File>(), c, weights);
-  // TODO write weights .hic
 
   return 0;
 }

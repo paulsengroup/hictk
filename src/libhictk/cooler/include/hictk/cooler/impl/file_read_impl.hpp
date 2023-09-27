@@ -226,7 +226,7 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
   // clang-format on
 }
 
-inline bool File::has_weights(std::string_view normalization) const {
+inline bool File::has_normalization(std::string_view normalization) const {
   return has_normalization(balancing::Method{normalization});
 }
 inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view normalization,

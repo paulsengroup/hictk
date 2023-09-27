@@ -156,7 +156,8 @@ void Cli::validate_balance_subcommand() const {
   const auto juicer_tools_jar_parsed =
       !_cli.get_subcommand("balance")->get_option("--juicer-tools-jar")->empty();
   if (hic::utils::is_hic_file(c.path_to_input) && !c.stdout_ && !juicer_tools_jar_parsed) {
-    errors.push_back("option --juicer-tools-jar is required when balancing files in .hic format.");
+    errors.emplace_back(
+        "option --juicer-tools-jar is required when balancing files in .hic format.");
   }
 
   if (!errors.empty()) {
