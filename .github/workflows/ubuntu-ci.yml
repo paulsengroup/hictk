@@ -415,6 +415,10 @@ jobs:
           zstd -dcf binaries.tar.zst | tar -xf -
           tar -xf test/data/hictk_test_data.tar.xz
 
+      - name: Test hictk balance
+        run: |
+          test/scripts/hictk_balance.sh bin/hictk hic_tools.jar
+
       - name: Test hictk dump chroms
         run: |
           test/scripts/hictk_dump_chroms.sh bin/hictk
