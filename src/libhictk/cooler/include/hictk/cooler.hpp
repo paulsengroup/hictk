@@ -6,3 +6,4 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
+#include "hictk/cooler/singlecell_cooler.hpp"

@@ -42,6 +42,10 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.avail_resolutions().front() == 2'500'000);
   CHECK(f.avail_resolutions().back() == 1000);
 
+  CHECK(f.avail_normalizations().size() == 4);
+  CHECK(f.avail_normalizations().front() == "KR");
+  CHECK(f.avail_normalizations().back() == "VC_SQRT");
+
   CHECK(f.open(2'500'000).resolution() == 2'500'000);
 
   SECTION("invalid") {
