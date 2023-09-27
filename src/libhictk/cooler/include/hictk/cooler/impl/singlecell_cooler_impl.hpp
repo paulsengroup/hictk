@@ -163,6 +163,7 @@ inline SingleCellFile::operator bool() const noexcept { return !!_root_grp; }
 inline std::string SingleCellFile::path() const { return (*_root_grp)().getFile().getName(); }
 
 inline auto SingleCellFile::bins() const noexcept -> const BinTable& { return *_bins; }
+inline std::uint32_t SingleCellFile::bin_size() const noexcept { return bins().bin_size(); }
 inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
   return bins().chromosomes();
 }
