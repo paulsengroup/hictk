@@ -421,7 +421,7 @@ inline void ICE::min_count_filtering(nonstd::span<double> biases, std::size_t mi
   }
 }
 
-inline void ICE::mad_max_filtering(nonstd::span<const std::size_t> chrom_offsets,
+inline void ICE::mad_max_filtering(nonstd::span<const std::uint64_t> chrom_offsets,
                                    nonstd::span<double> biases, nonstd::span<double> marg,
                                    double mad_max) {
   auto median = [](auto v) {
@@ -601,7 +601,7 @@ inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double av
 
 template <typename MatrixT>
 inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> biases,
-                                   nonstd::span<const std::size_t> chrom_bin_offsets,
+                                   nonstd::span<const std::uint64_t> chrom_bin_offsets,
                                    std::size_t min_nnz, std::size_t min_count, double mad_max,
                                    BS::thread_pool* tpool) {
   if (min_nnz == 0 && min_count == 0 && mad_max == 0) {
@@ -631,7 +631,7 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
 }
 
 inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
-    const BinTable& bins, nonstd::span<std::size_t> chrom_bin_offsets) {
+    const BinTable& bins, nonstd::span<std::uint64_t> chrom_bin_offsets) {
   std::vector<double> weights(bins.size());
   for (std::uint32_t i = 1; i < chrom_bin_offsets.size(); ++i) {
     const auto& chrom = bins.chromosomes().at(i - 1);
