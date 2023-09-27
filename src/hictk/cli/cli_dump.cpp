@@ -120,7 +120,7 @@ void Cli::make_dump_subcommand() {
 void Cli::validate_dump_subcommand() const {
   assert(_cli.get_subcommand("dump")->parsed());
 
-  [[maybe_unused]] std::vector<std::string> warnings;
+  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<DumpConfig>(_config);
 
