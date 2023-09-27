@@ -76,8 +76,7 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
                                  std::size_t min_count, double mad_max,
                                  const std::filesystem::path& tmpfile, std::size_t chunk_size,
                                  BS::thread_pool* tpool) {
-  auto matrix =
-      construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
+  auto matrix = construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
 
   initialize_biases(matrix, _biases, _chrom_offsets, min_nnz, min_count, mad_max, tpool);
 

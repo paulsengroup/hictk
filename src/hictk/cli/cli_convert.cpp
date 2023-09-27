@@ -95,7 +95,7 @@ void Cli::make_convert_subcommand() {
       c.processes,
       "Maximum number of parallel processes to spawn.\n"
       "When converting from hic to cool, only two processes will be used.")
-      ->check(CLI::Range(2, 1024))
+      ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-level",

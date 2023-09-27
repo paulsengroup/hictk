@@ -192,6 +192,7 @@ class Cli {
  public:
   enum subcommand {
     help,
+    balance,
     convert,
     dump,
     load,
@@ -216,6 +217,7 @@ class Cli {
   CLI::App _cli{};
   subcommand _subcommand{subcommand::help};
 
+  void make_balance_subcommand();
   void make_convert_subcommand();
   void make_dump_subcommand();
   void make_load_subcommand();
@@ -224,6 +226,7 @@ class Cli {
   void make_zoomify_subcommand();
   void make_cli();
 
+  void validate_balance_subcommand() const;
   void validate_convert_subcommand() const;
   void validate_dump_subcommand() const;
   void validate_load_subcommand() const;
@@ -231,6 +234,7 @@ class Cli {
   void validate_zoomify_subcommand() const;
   void validate_args() const;
 
+  void transform_args_balance_subcommand();
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();
   void transform_args_load_subcommand();

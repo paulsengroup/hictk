@@ -87,6 +87,14 @@ inline const std::vector<std::uint32_t>& File::avail_resolutions() const noexcep
   return _fs->header().resolutions;
 }
 
+inline bool File::has_normalization(std::string_view normalization) const {
+  const auto normalizations = avail_normalizations();
+  const auto it = std::find_if(normalizations.begin(), normalizations.end(),
+                               [&](const auto& norm) { return norm.to_string() == normalization; });
+
+  return it != normalizations.end();
+}
+
 inline std::vector<balancing::Method> File::avail_normalizations() const {
   return _fs->list_avail_normalizations(_type, _unit, _bins->bin_size());
 }

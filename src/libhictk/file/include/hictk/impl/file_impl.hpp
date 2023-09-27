@@ -277,6 +277,9 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
       _fp);
 }
 
+inline bool File::has_normalization(std::string_view normalization) const {
+  return std::visit([&](const auto& fp) { return fp.has_normalization(normalization); }, _fp);
+}
 inline std::vector<balancing::Method> File::avail_normalizations() const {
   return std::visit([](const auto& fp) { return fp.avail_normalizations(); }, _fp);
 }
