@@ -25,7 +25,9 @@ auto Cli::parse_arguments() -> Config {
     _cli.name(_exec_name);
     _cli.parse(_argc, _argv);
 
-    if (_cli.get_subcommand("convert")->parsed()) {
+    if (_cli.get_subcommand("balance")->parsed()) {
+      _subcommand = subcommand::balance;
+    } else if (_cli.get_subcommand("convert")->parsed()) {
       _subcommand = subcommand::convert;
     } else if (_cli.get_subcommand("dump")->parsed()) {
       _subcommand = subcommand::dump;
@@ -69,6 +71,8 @@ int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
   switch (s) {
+    case balance:
+      return "balance";
     case convert:
       return "convert";
     case dump:
@@ -93,6 +97,7 @@ void Cli::make_cli() {
   _cli.set_version_flag("-V,--version", std::string{hictk::config::version::str_long()});
   _cli.require_subcommand(1);
 
+  make_balance_subcommand();
   make_convert_subcommand();
   make_dump_subcommand();
   make_load_subcommand();
@@ -103,6 +108,9 @@ void Cli::make_cli() {
 
 void Cli::validate_args() const {
   switch (_subcommand) {
+    case balance:
+      validate_balance_subcommand();
+      break;
     case convert:
       validate_convert_subcommand();
       break;
@@ -127,6 +135,9 @@ void Cli::validate_args() const {
 
 void Cli::transform_args() {
   switch (_subcommand) {
+    case balance:
+      transform_args_balance_subcommand();
+      break;
     case convert:
       transform_args_convert_subcommand();
       break;

@@ -28,7 +28,7 @@ class ICE {
   enum Type { cis, trans, gw };
 
   struct Params {
-    double tol{1.0e-6};
+    double tol{1.0e-5};
     std::size_t max_iters{200};
     std::size_t num_masked_diags{2};
     std::size_t min_nnz{10};
@@ -39,8 +39,8 @@ class ICE {
     std::size_t threads{1};
   };
 
-  inline static const Params DefaultParams{1.0e-6, 200, 2,          10, 0,
-                                           5.0,    "",  10'000'000, 1};  // NOLINT
+  // NOLINTNEXTLINE
+  inline static const Params DefaultParams{1.0e-5, 200, 2, 10, 0, 5.0, "", 10'000'000, 1};
 
   template <typename File>
   explicit ICE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);

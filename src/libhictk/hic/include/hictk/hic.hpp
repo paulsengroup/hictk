@@ -56,6 +56,7 @@ class File {
   [[nodiscard]] std::uint64_t nchroms() const;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
+  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 

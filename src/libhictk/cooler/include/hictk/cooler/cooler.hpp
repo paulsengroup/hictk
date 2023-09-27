@@ -248,6 +248,7 @@ class File {
                                                          balancing::Weights::Type type,
                                                          bool rescale = false) const;
 
+  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
   [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
   std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,

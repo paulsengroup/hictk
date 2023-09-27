@@ -239,16 +239,6 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
   return read_weights(balancing::Method{normalization}, type, rescale);
 }
 
-inline bool File::has_normalization(const balancing::Method &normalization) const {
-  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
-                                     normalization.to_string());
-  if (_weights.contains(dset_path)) {
-    return true;
-  }
-
-  return _root_group().exist(dset_path);
-}
-
 inline std::shared_ptr<const balancing::Weights> File::read_weights(
     const balancing::Method &normalization, bool rescale) const {
   if (normalization == "NONE") {
