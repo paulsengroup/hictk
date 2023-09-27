@@ -92,6 +92,12 @@ jobs:
             VERSION="$GIT_TAG"
           fi
 
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+            PLATFORMS='linux/amd64,linux/arm64'
+          else
+            PLATFORMS='linux/amd64'
+          fi
+
           echo "C_COMPILER=$C_COMPILER" >> $GITHUB_OUTPUT
           echo "CXX_COMPILER=$CXX_COMPILER" >> $GITHUB_OUTPUT
           echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" >> $GITHUB_OUTPUT
@@ -104,6 +110,7 @@ jobs:
           echo "CREATION_DATE=$CREATION_DATE" >> $GITHUB_OUTPUT
           echo "GIT_TAG=$GIT_TAG" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "PLATFORMS=$PLATFORMS" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: meta
@@ -134,6 +141,13 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
 
       - name: Build Docker image and push to registries
         uses: docker/build-push-action@v5
@@ -143,6 +157,7 @@ jobs:
           cache-from: type=gha,scope=build-dockerfile
           cache-to: type=gha,mode=min,scope=build-dockerfile
           tags: ${{ steps.meta.outputs.tags }}
+          platforms: ${{ steps.build-args.outputs.PLATFORMS }}
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
             CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
