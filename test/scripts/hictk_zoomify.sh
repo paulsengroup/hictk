@@ -91,8 +91,7 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 "$hictk_bin" zoomify \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
-  "$outdir/out.mcool" \
-  --resolutions "${resolutions[@]}"
+  "$outdir/out.mcool"
 
 for res in "${resolutions[@]}"; do
   if ! compare_coolers \
