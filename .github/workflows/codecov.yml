@@ -191,6 +191,7 @@ jobs:
       - name: Run integration tests
         run: |
           test/scripts/hictk_balance.sh build/src/hictk/hictk hic_tools.jar
+
           test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
           test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
           test/scripts/hictk_dump_resolutions.sh build/src/hictk/hictk
