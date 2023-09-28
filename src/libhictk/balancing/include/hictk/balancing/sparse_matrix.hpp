@@ -80,8 +80,8 @@ class SparseMatrix {
   void shrink_to_fit() noexcept;
   void finalize();
 
-  [[nodiscard]] const std::vector<std::size_t>& bin1_ids() const noexcept;
-  [[nodiscard]] const std::vector<std::size_t>& bin2_ids() const noexcept;
+  [[nodiscard]] const std::vector<std::uint64_t>& bin1_ids() const noexcept;
+  [[nodiscard]] const std::vector<std::uint64_t>& bin2_ids() const noexcept;
   [[nodiscard]] const std::vector<double>& counts() const noexcept;
 
   void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
