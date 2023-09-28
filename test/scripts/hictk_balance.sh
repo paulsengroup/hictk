@@ -17,6 +17,11 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
+function nproc_py {
+  set -eu
+  python3 -c 'import multiprocessing as mp; print(mp.cpu_count())'
+}
+
 function check_files_exist {
   set -eu
   status=0
@@ -123,17 +128,17 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cp "$ref_cool" "$ref_hic" "$outdir"
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc) --chunk-size=100 --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool -t $(nproc_py) --chunk-size=100 --mode=cis --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.hic -t $(nproc) --chunk-size=100 --mode=cis --force --juicer-tools-jar "$juicer_tools_jar"
+"$hictk_bin" balance "$outdir/"*.hic -t $(nproc_py) --chunk-size=100 --mode=cis --force --juicer-tools-jar "$juicer_tools_jar"
 if ! compare_matrices "$hictk_bin" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc) --in-memory --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool -t $(nproc_py) --in-memory --mode=cis --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
