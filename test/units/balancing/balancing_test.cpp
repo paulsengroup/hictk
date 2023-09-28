@@ -55,15 +55,15 @@ static void compare_vectors(const std::vector<T>& v1, const std::vector<T>& v2) 
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: SparseMatrix") {
+TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
   using SparseMatrix = hictk::balancing::SparseMatrix;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
                                 Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
                       50};
   // clang-format off
   const std::vector<ThinPixel<std::int32_t>> pixels{
-      {1, 0, 1}, {1, 1, 2}, {2, 1, 3},  // chr1
-      {3, 0, 4}, {3, 1, 5}};            // chr2
+      {1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
+      {3, 3, 4}, {3, 4, 5}};            // chr2
   // clang-format on
 
   SECTION("accessors") { CHECK(SparseMatrix{}.empty()); }
@@ -126,15 +126,15 @@ TEST_CASE("Balancing: SparseMatrix") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: SparseMatrixChunked") {
+TEST_CASE("Balancing: SparseMatrixChunked", "[balancing][short]") {
   using SparseMatrixChunked = hictk::balancing::SparseMatrixChunked;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
                                 Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
                       50};
   // clang-format off
   const std::vector<ThinPixel<std::int32_t>> pixels{
-      {1, 0, 1}, {1, 1, 2}, {2, 1, 3},  // chr1
-      {3, 0, 4}, {3, 1, 5}};            // chr2
+      {1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
+      {3, 3, 4}, {3, 4, 5}};            // chr2
   // clang-format on
   const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
 
