@@ -136,7 +136,7 @@ void Cli::validate_zoomify_subcommand() const {
                     fmt::join(invalid, "\n    - "), clr.bin_size()));
   }
 
-  const auto sc = _cli.get_subcommand("zoomify");
+  const auto* sc = _cli.get_subcommand("zoomify");
   const auto nice_or_pow2_steps_parsed =
       !sc->get_option("--nice-steps")->empty() || !sc->get_option("--pow2-steps")->empty();
   if (!c.resolutions.empty() && nice_or_pow2_steps_parsed) {
