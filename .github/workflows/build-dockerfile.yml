@@ -149,11 +149,41 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Build Docker image and push to registries
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: ${{ github.workspace }}
-          push: ${{ github.event_name != 'pull_request' }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=build-dockerfile
+          cache-to: type=gha,mode=min,scope=build-dockerfile
+          tags: hictk:test
+          platforms: ${{ steps.build-args.outputs.PLATFORMS }}
+          build-args: |
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
+            BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
+            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
+            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
+            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
+            GIT_IS_DIRTY=false
+            VERSION=${{ steps.build-args.outputs.VERSION }}
+
+      - name: Test Docker image
+        run: |
+          utils/devel/test_docker_image.sh hictk:test
+
+      - name: Push image to registries
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ github.workspace }}
+          push: true
           cache-from: type=gha,scope=build-dockerfile
           cache-to: type=gha,mode=min,scope=build-dockerfile
           tags: ${{ steps.meta.outputs.tags }}
@@ -174,33 +204,6 @@ jobs:
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
 
-  test-docker-image:
-    name: Test Docker image
-    needs: build-dockerfile
-    runs-on: ubuntu-latest
-    permissions:
-      packages: 'read'
-
-    if: github.event_name != 'pull_request'
-
-    container:
-      image: ghcr.io/${{ github.repository }}:latest
-      options: '--entrypoint /bin/bash'
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
-
-    steps:
-      - name: Test hictk
-        run: |
-          set -o pipefail
-
-          whereis -b hictk
-          ls -lah "$(whereis -b hictk | cut -d$' ' -f 2)"
-
-          hictk --help
-          hictk --version
-
 
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)
@@ -208,12 +211,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-dockerfile
-      - test-docker-image
 
     steps:
       - name: Collect job results
         if: |
-          needs.build-dockerfile.result != 'success'  ||
-          (needs.test-docker-image.result != 'success'  &&
-           needs.test-docker-image.result != 'skipped')
+          needs.build-dockerfile.result != 'success'
         run: exit 1
