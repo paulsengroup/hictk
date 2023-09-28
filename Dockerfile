@@ -99,6 +99,13 @@ RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-a
 # Export project binaries to the final build stage
 COPY --from=builder "$staging_dir" "$install_dir"
 
+# Install runtime dependencies
+RUN apt-get update \
+&& apt-get install -y \
+   openjdk-19-jre-headless \
+   pigz \
+&& rm -rf /var/lib/apt/lists/*
+
 WORKDIR /data
 ENTRYPOINT ["/usr/local/bin/hictk"]
 
