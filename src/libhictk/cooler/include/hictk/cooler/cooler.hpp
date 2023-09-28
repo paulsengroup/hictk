@@ -150,7 +150,7 @@ class File {
   ~File() noexcept;
 
   File &operator=(const File &other) = delete;
-  File &operator=(File &&other) noexcept(noexcept_move_assigment_op()) = default;  // NOLINT
+  File &operator=(File &&other) noexcept(noexcept_move_assignment_op()) = default;  // NOLINT
 
   [[nodiscard]] explicit operator bool() const noexcept;
 

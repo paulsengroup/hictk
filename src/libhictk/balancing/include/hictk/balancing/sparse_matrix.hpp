@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
 
 namespace std {
 template <>
@@ -119,12 +120,13 @@ class SparseMatrixChunked {
                       int compression_lvl = 3);
 
   SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
-  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
+  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept(noexcept_move_ctor()) = default;
 
   ~SparseMatrixChunked() noexcept;
 
   SparseMatrixChunked& operator=(const SparseMatrixChunked& other) = delete;
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept(
+      noexcept_move_assignment_op()) = default;
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
