@@ -149,7 +149,36 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Build Docker image and push to registries
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ github.workspace }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=build-dockerfile
+          cache-to: type=gha,mode=min,scope=build-dockerfile
+          tags: hictk:test
+          platforms: ${{ steps.build-args.outputs.PLATFORMS }}
+          build-args: |
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
+            BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
+            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
+            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
+            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
+            GIT_IS_DIRTY=false
+            VERSION=${{ steps.build-args.outputs.VERSION }}
+
+      - name: Test Docker image
+        run: |
+          utils/devel/test_docker_image.sh hictk:test
+
+      - name: Push image to registries
         uses: docker/build-push-action@v5
         with:
           context: ${{ github.workspace }}
@@ -174,65 +203,6 @@ jobs:
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
 
-  test-docker-image:
-    name: Test Docker image
-    needs: build-dockerfile
-    runs-on: ubuntu-latest
-    permissions:
-      packages: 'read'
-
-    if: github.event_name != 'pull_request'
-
-    container:
-      image: ghcr.io/${{ github.repository }}:latest
-      options: '--entrypoint /bin/bash'
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
-
-    steps:
-      - name: Install deps
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends git python3 xz-utils zstd
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Restore test dataset
-        uses: actions/cache/restore@v3
-        with:
-          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
-          path: test/data/hictk_test_data.tar.xz
-          fail-on-cache-miss: true
-
-      - name: Cache hic_tools
-        id: cache-hictools
-        uses: actions/cache@v3
-        with:
-          key: hic_tools
-          path: hic_tools.jar
-
-      - name: Download hic_tools
-        if: steps.cache-hictools.outputs.cache-hit != 'true'
-        run: |
-          apt-get install -y --no-install-recommends curl
-          curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' \
-               -o hic_tools.jar
-
-      - name: Extract test dataset
-        run: |
-          tar -xf test/data/hictk_test_data.tar.xz
-
-      - name: Test hictk
-        run: |
-          set -o pipefail
-
-          whereis -b hictk
-
-          test/scripts/hictk_convert_hic2cool.sh "$(which hictk)"
-          test/scripts/hictk_convert_cool2hic.sh "$(which hictk)" hic_tools.jar
-
 
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)
@@ -240,12 +210,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-dockerfile
-      - test-docker-image
 
     steps:
       - name: Collect job results
         if: |
-          needs.build-dockerfile.result != 'success'  ||
-          (needs.test-docker-image.result != 'success'  &&
-           needs.test-docker-image.result != 'skipped')
+          needs.build-dockerfile.result != 'success'
         run: exit 1
