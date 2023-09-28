@@ -158,7 +158,7 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_intra.tmp";
-  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -194,7 +194,7 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
-  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.trans.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -230,7 +230,7 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
-  const auto path_weights = datadir / "cooler/balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.gw.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
