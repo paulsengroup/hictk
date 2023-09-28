@@ -191,15 +191,47 @@ jobs:
         password: ${{ secrets.github_token }}
 
     steps:
+      - name: Install deps
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git python3 xz-utils zstd
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v3
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.xz
+          fail-on-cache-miss: true
+
+      - name: Cache hic_tools
+        id: cache-hictools
+        uses: actions/cache@v3
+        with:
+          key: hic_tools
+          path: hic_tools.jar
+
+      - name: Download hic_tools
+        if: steps.cache-hictools.outputs.cache-hit != 'true'
+        run: |
+          apt-get install -y --no-install-recommends curl
+          curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' \
+               -o hic_tools.jar
+
+      - name: Extract test dataset
+        run: |
+          tar -xf test/data/hictk_test_data.tar.xz
+
       - name: Test hictk
         run: |
           set -o pipefail
 
           whereis -b hictk
-          ls -lah "$(whereis -b hictk | cut -d$' ' -f 2)"
 
-          hictk --help
-          hictk --version
+          test/scripts/hictk_convert_hic2cool.sh "$(which hictk)"
+          test/scripts/hictk_convert_cool2hic.sh "$(which hictk)" hic_tools.jar
 
 
   build-dockerfile-status-check:
