@@ -120,7 +120,11 @@ class SparseMatrixChunked {
                       int compression_lvl = 3);
 
   SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
-  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept(noexcept_move_ctor()) = default;
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 9
+  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
+#else
+  SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+#endif
 
   ~SparseMatrixChunked() noexcept;
 
