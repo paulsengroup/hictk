@@ -136,8 +136,8 @@ inline void SparseMatrix::shrink_to_fit() noexcept {
 
 inline void SparseMatrix::finalize() { shrink_to_fit(); }
 
-inline const std::vector<std::size_t>& SparseMatrix::bin1_ids() const noexcept { return _bin1_ids; }
-inline const std::vector<std::size_t>& SparseMatrix::bin2_ids() const noexcept { return _bin2_ids; }
+inline const std::vector<std::uint64_t>& SparseMatrix::bin1_ids() const noexcept { return _bin1_ids; }
+inline const std::vector<std::uint64_t>& SparseMatrix::bin2_ids() const noexcept { return _bin2_ids; }
 inline const std::vector<double>& SparseMatrix::counts() const noexcept { return _counts; }
 
 inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
