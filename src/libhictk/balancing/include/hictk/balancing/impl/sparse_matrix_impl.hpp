@@ -351,7 +351,7 @@ inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {
   _fs.exceptions(std::ios::badbit);
-  _fs.open(_path, std::ios::out);
+  _fs.open(_path, std::ios::out | std::ios::binary);
 }
 
 inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
@@ -388,7 +388,7 @@ inline void SparseMatrixChunked::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs.open(_path, std::ios::in);
+  _fs.open(_path, std::ios::in | std::ios::binary);
 }
 
 inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool* tpool,
@@ -397,7 +397,7 @@ inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool*
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     std::fstream fs{};
     fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in);
+    fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
     MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -440,7 +440,7 @@ inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_p
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     std::fstream fs{};
     fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in);
+    fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
     MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -484,7 +484,7 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     std::fstream fs{};
     fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in);
+    fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
     MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
