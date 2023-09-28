@@ -132,6 +132,7 @@ class File {
       std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
       const balancing::Method &normalization = balancing::Method::NONE()) const;
 
+  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
   template <typename FileT>

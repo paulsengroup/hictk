@@ -87,6 +87,16 @@ inline auto File::dataset(std::string_view dataset_name) const -> const Dataset 
   }
 }
 
+inline bool File::has_normalization(const balancing::Method &normalization) const {
+  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
+                                     normalization.to_string());
+  if (_weights.contains(dset_path)) {
+    return true;
+  }
+
+  return _root_group().exist(dset_path);
+}
+
 inline std::vector<balancing::Method> File::avail_normalizations() const {
   const phmap::flat_hash_set<std::string> bin_table_dsets{"chrom", "start", "end"};
 

@@ -99,6 +99,8 @@ int main(int argc, char** argv) noexcept {
     }
     using sc = Cli::subcommand;
     switch (subcmd) {
+      case sc::balance:
+        return balance_subcmd(std::get<BalanceConfig>(config));
       case sc::convert:
         return convert_subcmd(std::get<ConvertConfig>(config));
       case sc::dump:

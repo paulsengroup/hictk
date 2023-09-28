@@ -226,7 +226,7 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
   // clang-format on
 }
 
-inline bool File::has_weights(std::string_view normalization) const {
+inline bool File::has_normalization(std::string_view normalization) const {
   return has_normalization(balancing::Method{normalization});
 }
 inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view normalization,
@@ -237,16 +237,6 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_
                                                                     balancing::Weights::Type type,
                                                                     bool rescale) const {
   return read_weights(balancing::Method{normalization}, type, rescale);
-}
-
-inline bool File::has_normalization(const balancing::Method &normalization) const {
-  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
-                                     normalization.to_string());
-  if (_weights.contains(dset_path)) {
-    return true;
-  }
-
-  return _root_group().exist(dset_path);
 }
 
 inline std::shared_ptr<const balancing::Weights> File::read_weights(

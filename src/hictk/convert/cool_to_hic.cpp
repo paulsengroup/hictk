@@ -16,60 +16,14 @@
 
 #include "hictk/fmt.hpp"
 #include "hictk/tmpdir.hpp"
+#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
-
-namespace std {
-template <>
-struct default_delete<FILE> {
-  void operator()(FILE* file) const { std::fclose(file); }  // NOLINT
-};
-}  // namespace std
+#include "hictk/tools/juicer_tools.hpp"
 
 namespace hictk::tools {
 
-[[nodiscard]] static std::filesystem::path find_java() {
-  auto java = boost::process::search_path("java");
-  if (java.empty()) {
-    throw std::runtime_error("unable to find java in your PATH");
-  }
-  return java.string();
-}
-
 [[maybe_unused]] [[nodiscard]] static std::filesystem::path find_pigz() {
   return boost::process::search_path("pigz").string();
-}
-
-[[nodiscard]] static std::vector<std::string> generate_juicer_tools_pre_args(
-    const ConvertConfig& c, const std::filesystem::path& path_to_pixels,
-    const std::filesystem::path& path_to_chrom_sizes, std::size_t processes) {
-  assert(processes != 0);
-  return {fmt::format(FMT_STRING("-Xmx{}M"), c.juicer_tools_xmx / 1'000'000),
-          "-jar",
-          c.juicer_tools_jar.string(),
-          "pre",
-          "-j",
-          fmt::to_string(processes),
-          "-t",
-          c.tmp_dir.string(),
-          "-n",
-          "-r",
-          fmt::format(FMT_STRING("{}"), fmt::join(c.resolutions, ",")),
-          path_to_pixels.string(),
-          c.path_to_output.string(),
-          path_to_chrom_sizes.string()};
-}
-
-[[nodiscard]] static std::vector<std::string> generate_juicer_tools_add_norm_args(
-    const ConvertConfig& c, const std::filesystem::path& path_to_weights, std::size_t processes) {
-  assert(processes != 0);
-  return {fmt::format(FMT_STRING("-Xmx{}M"), c.juicer_tools_xmx / 1'000'000),
-          "-jar",
-          c.juicer_tools_jar.string(),
-          "addNorm",
-          "-j",
-          fmt::to_string(processes),
-          c.path_to_output.string(),
-          path_to_weights.string()};
 }
 
 static void dump_chrom_sizes(const cooler::File& clr, const std::filesystem::path& dest) {
@@ -250,7 +204,7 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
   const cooler::File clr(cooler_uri);
   assert(clr.bin_size() == resolution);
 
-  if (!clr.has_weights("weight")) {
+  if (!clr.has_normalization("weight")) {
     SPDLOG_WARN(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
     return false;
   }
@@ -294,19 +248,6 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
   }
 
   return cooler_has_weights;
-}
-
-[[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_pre(
-    const ConvertConfig& c, const std::filesystem::path& chrom_sizes,
-    const std::filesystem::path& pixels, std::size_t processes) {
-  const auto cmd = generate_juicer_tools_pre_args(c, pixels, chrom_sizes, processes);
-  return std::make_unique<boost::process::child>(find_java().string(), cmd);
-}
-
-[[nodiscard]] static std::unique_ptr<boost::process::child> run_juicer_tools_add_norm(
-    const ConvertConfig& c, const std::filesystem::path& path_to_weights, std::size_t processes) {
-  const auto cmd = generate_juicer_tools_add_norm_args(c, path_to_weights, processes);
-  return std::make_unique<boost::process::child>(find_java().string(), cmd);
 }
 
 void cool_to_hic(const ConvertConfig& c) {
@@ -365,7 +306,8 @@ void cool_to_hic(const ConvertConfig& c) {
     if (weight_file_has_data) {
       t1 = std::chrono::steady_clock::now();
       SPDLOG_INFO(FMT_STRING("running juicer_tools addNorm..."));
-      process = run_juicer_tools_add_norm(c, weights, c.processes);
+      process = run_juicer_tools_add_norm(c.juicer_tools_jar, weights, c.path_to_output,
+                                          c.juicer_tools_xmx);
       process->wait();
       if (process->exit_code() != 0) {
         throw std::runtime_error(fmt::format(

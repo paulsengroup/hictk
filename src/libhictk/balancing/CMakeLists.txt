@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(bshoshany-thread-pool REQUIRED)
 find_package(phmap REQUIRED)
+find_package(span-lite REQUIRED)
+find_package(xxHash REQUIRED)
+find_package(zstd REQUIRED)
 
 add_library(balancing INTERFACE)
 add_library(hictk::balancing ALIAS balancing)
@@ -18,4 +22,13 @@ target_include_directories(balancing INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURREN
                                                "$<INSTALL_INTERFACE:include>")
 target_link_libraries(balancing INTERFACE hictk::common hictk::pixel)
 
-target_link_system_libraries(balancing INTERFACE phmap)
+target_link_system_libraries(
+  balancing
+  INTERFACE
+  bshoshany-thread-pool::bshoshany-thread-pool
+  nonstd::span-lite
+  phmap
+  xxHash::xxhash
+  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
+
+target_compile_definitions(balancing INTERFACE span_FEATURE_MAKE_SPAN=1)

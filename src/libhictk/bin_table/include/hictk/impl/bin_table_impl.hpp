@@ -105,7 +105,8 @@ inline std::size_t BinTable::size() const noexcept {
   if (_num_bins_prefix_sum.empty()) {
     return 0;
   }
-  return static_cast<std::size_t>(_num_bins_prefix_sum.back());
+  return conditional_static_cast<std::size_t>(_num_bins_prefix_sum.back() -
+                                              _num_bins_prefix_sum.front());
 }
 
 inline bool BinTable::empty() const noexcept { return size() == 0; }

@@ -118,12 +118,10 @@ class File {
   File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
-  [[nodiscard]] explicit File(std::string_view uri,
-                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                              bool validate = true);
-  [[nodiscard]] explicit File(RootGroup entrypoint,
-                              std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
-                              bool validate = true);
+  explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                bool validate = true);
+  explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                bool validate = true);
 
   [[nodiscard]] static File open_random_access(
       std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
@@ -152,7 +150,7 @@ class File {
   ~File() noexcept;
 
   File &operator=(const File &other) = delete;
-  File &operator=(File &&other) noexcept(noexcept_move_assigment_op()) = default;  // NOLINT
+  File &operator=(File &&other) noexcept(noexcept_move_assignment_op()) = default;  // NOLINT
 
   [[nodiscard]] explicit operator bool() const noexcept;
 
@@ -243,13 +241,13 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  bool has_weights(std::string_view normalization) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
                                                          bool rescale = false) const;
   std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
                                                          balancing::Weights::Type type,
                                                          bool rescale = false) const;
 
+  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
   [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
   std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,

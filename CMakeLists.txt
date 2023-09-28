@@ -119,6 +119,8 @@ target_compile_features(hictk_project_options INTERFACE "cxx_std_${CMAKE_CXX_STA
 target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
 # Tweak spdlog
 target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
+#Tweak xxHash
+target_compile_definitions(hictk_project_options INTERFACE XXH_INLINE_ALL)
 
 if(WIN32)
   target_compile_definitions(hictk_project_options INTERFACE NOMINMAX _CRT_SECURE_NO_WARNINGS)
