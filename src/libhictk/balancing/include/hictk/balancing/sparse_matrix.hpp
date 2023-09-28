@@ -67,8 +67,8 @@ class MargsVector {
 };
 
 class SparseMatrix {
-  std::vector<std::size_t> _bin1_ids{};
-  std::vector<std::size_t> _bin2_ids{};
+  std::vector<std::uint64_t> _bin1_ids{};
+  std::vector<std::uint64_t> _bin2_ids{};
   std::vector<double> _counts{};
 
  public:
