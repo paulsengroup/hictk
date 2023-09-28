@@ -97,6 +97,7 @@ struct ZoomifyConfig {
 
   std::vector<std::uint32_t> resolutions{};
   bool copy_base_resolution{true};
+  bool nice_resolution_steps{true};
 
   bool force{false};
   std::uint8_t verbosity{4};

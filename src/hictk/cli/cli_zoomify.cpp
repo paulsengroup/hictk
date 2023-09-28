@@ -45,13 +45,22 @@ void Cli::make_zoomify_subcommand() {
   sc.add_option(
       "--resolutions",
       c.resolutions,
-      "One or more resolution to be used for coarsening.")
-      ->required(true);
+      "One or more resolution to be used for coarsening.");
 
   sc.add_flag(
       "--copy-base-resolution,!--no-copy-base-resolution",
       c.copy_base_resolution,
       "Copy the base resolution to the output file.");
+
+  sc.add_flag(
+      "--nice-steps,!--pow2-steps",
+      c.nice_resolution_steps,
+      "Use nice or power of two steps to automatically generate the list of resolutions.\n"
+      "Example:\n"
+      "Base resolution: 1000\n"
+      "Pow2: 1000, 2000, 4000, 8000...\n"
+      "Nice: 1000, 2000, 5000, 10000...\n")
+      ->default_str("--nice-steps");
 
   sc.add_option(
       "-v,--verbosity",
@@ -102,6 +111,7 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
 void Cli::validate_zoomify_subcommand() const {
   assert(_cli.get_subcommand("zoomify")->parsed());
 
+  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<ZoomifyConfig>(_config);
 
@@ -126,12 +136,64 @@ void Cli::validate_zoomify_subcommand() const {
                     fmt::join(invalid, "\n    - "), clr.bin_size()));
   }
 
+  const auto* sc = _cli.get_subcommand("zoomify");
+  const auto nice_or_pow2_steps_parsed =
+      !sc->get_option("--nice-steps")->empty() || !sc->get_option("--pow2-steps")->empty();
+  if (!c.resolutions.empty() && nice_or_pow2_steps_parsed) {
+    warnings.emplace_back(
+        "--nice-steps and --pow2-steps are ignored when resolutions are explicitly set with "
+        "--resolutions.");
+  }
+
+  for (const auto& w : warnings) {
+    SPDLOG_WARN(FMT_STRING("{}"), w);
+  }
+
   if (!errors.empty()) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("the following error(s) where encountered while validating CLI "
                                "arguments and input file(s):\n   - {}"),
                     fmt::join(errors, "\n   - ")));
   }
+}
+
+static std::vector<std::uint32_t> generate_resolutions_pow2(
+    std::uint32_t base_resolution, std::uint32_t upper_bound = 10'000'000) {
+  assert(base_resolution != 0);
+  std::vector<std::uint32_t> resolutions{base_resolution};
+
+  for (auto res = resolutions.back(); res * 2 <= upper_bound; res = resolutions.back()) {
+    resolutions.push_back(res * 2);
+  }
+
+  return resolutions;
+}
+
+static std::vector<std::uint32_t> generate_resolutions_nice(
+    std::uint32_t base_resolution, std::uint32_t upper_bound = 10'000'000) {
+  assert(base_resolution != 0);
+  std::vector<std::uint32_t> resolutions{base_resolution};
+
+  while (resolutions.back() * 2 <= upper_bound) {
+    const auto res = resolutions.back();
+
+    if (res * 2 > upper_bound) {
+      break;
+    }
+    resolutions.push_back(res * 2);
+
+    if (res * 5 > upper_bound) {
+      break;
+    }
+    resolutions.push_back(res * 5);
+
+    if (res * 10 > upper_bound) {
+      break;
+    }
+    resolutions.push_back(res * 10);
+  }
+
+  return resolutions;
 }
 
 void Cli::transform_args_zoomify_subcommand() {
@@ -146,7 +208,12 @@ void Cli::transform_args_zoomify_subcommand() {
     c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool").string();
   }
 
-  std::sort(c.resolutions.begin(), c.resolutions.end());
+  if (c.resolutions.empty()) {
+    c.resolutions = c.nice_resolution_steps ? generate_resolutions_nice(clr.bin_size())
+                                            : generate_resolutions_pow2(clr.bin_size());
+  } else {
+    std::sort(c.resolutions.begin(), c.resolutions.end());
+  }
 
   if (c.resolutions.front() != clr.bin_size()) {
     c.resolutions.insert(c.resolutions.begin(), clr.bin_size());
