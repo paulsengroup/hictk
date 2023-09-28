@@ -201,7 +201,7 @@ int balance_subcmd(const BalanceConfig& c) {
   }
 
   for (const auto& res : resolutions) {
-    balance_singleres_file(File(c.path_to_input, res), c);
+    balance_singleres_file(File(c.path_to_input.string(), res), c);
   }
 
   return 0;
