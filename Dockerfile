@@ -67,6 +67,11 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release            \
           -DCMAKE_PREFIX_PATH="$build_dir"      \
           -DENABLE_DEVELOPER_MODE=OFF           \
           -DCMAKE_INSTALL_PREFIX="$staging_dir" \
+          -DGIT_RETRIEVED_STATE=true            \
+          -DGIT_TAG="$GIT_TAG"                  \
+          -DGIT_IS_DIRTY="$GIT_IS_DIRTY"        \
+          -DGIT_HEAD_SHA1="$GIT_HASH"           \
+          -DGIT_DESCRIBE="$GIT_SHORT_HASH"      \
           -G Ninja                              \
           -S "$src_dir"                         \
           -B "$build_dir"
