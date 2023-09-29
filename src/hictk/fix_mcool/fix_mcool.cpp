@@ -105,6 +105,8 @@ static void run_hictk_balance(const FixMcoolConfig& c, std::uint32_t resolution)
 int fix_mcool_subcmd(const FixMcoolConfig& c) {
   assert(cooler::utils::is_multires_file(c.path_to_input.string()));
 
+  const auto t0 = std::chrono::system_clock::now();
+
   const auto resolutions = cooler::MultiResFile{c.path_to_input.string()}.resolutions();
   const auto base_resolution = resolutions.front();
 
@@ -120,6 +122,12 @@ int fix_mcool_subcmd(const FixMcoolConfig& c) {
 
   std::for_each(resolutions.begin() + 1, resolutions.end(),
                 [&](const auto& res) { run_hictk_balance(c, res); });
+
+  const auto t1 = std::chrono::system_clock::now();
+  const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+
+  SPDLOG_INFO(FMT_STRING("Restoration successfully completed! Elapsed time: {}s"),
+              static_cast<double>(delta) / 1000.0);
 
   return 0;
 }
