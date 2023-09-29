@@ -156,7 +156,7 @@ jobs:
           load: true
           push: false
           cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=min,scope=build-dockerfile
+          cache-to: type=gha,mode=max,scope=build-dockerfile
           tags: hictk:test
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
@@ -185,7 +185,7 @@ jobs:
           load: true
           push: false
           cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=min,scope=build-dockerfile
+          cache-to: type=gha,mode=max,scope=build-dockerfile
           tags: hictk:test
           platforms: ${{ steps.build-args.outputs.PLATFORMS }}
           build-args: |
@@ -210,7 +210,7 @@ jobs:
           context: ${{ github.workspace }}
           push: true
           cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=min,scope=build-dockerfile
+          cache-to: type=gha,mode=max,scope=build-dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           platforms: ${{ steps.build-args.outputs.PLATFORMS }}
           build-args: |
