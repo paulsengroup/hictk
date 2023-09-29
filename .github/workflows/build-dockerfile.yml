@@ -149,8 +149,37 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Build Docker image
+      - name: Build Docker image (x86)
         uses: docker/build-push-action@v5
+        with:
+          context: ${{ github.workspace }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=build-dockerfile
+          cache-to: type=gha,mode=min,scope=build-dockerfile
+          tags: hictk:test
+          build-args: |
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
+            BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
+            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
+            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
+            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
+            GIT_IS_DIRTY=false
+            VERSION=${{ steps.build-args.outputs.VERSION }}
+
+      - name: Test Docker image (x86)
+        run: |
+          utils/devel/test_docker_image.sh hictk:test
+
+      - name: Build Docker image (arm64)
+        uses: docker/build-push-action@v5
+        if: github.event_name != 'pull_request'
         with:
           context: ${{ github.workspace }}
           load: true
@@ -173,10 +202,6 @@ jobs:
             GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
             GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
-
-      - name: Test Docker image
-        run: |
-          utils/devel/test_docker_image.sh hictk:test
 
       - name: Push image to registries
         if: github.event_name != 'pull_request'
