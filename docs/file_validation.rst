@@ -2,8 +2,8 @@
    Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
    SPDX-License-Identifier: MIT
 
-File validation (hictk validate)
-################################
+File validation
+###############
 
 Why is this needed?
 -------------------
@@ -15,7 +15,7 @@ Why is this needed?
 Cooler index corruption
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-TO make a long story short, older version of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
+To make a long story short, older version of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
 
 Example:
 
@@ -33,7 +33,7 @@ hictk validate
 
 ``hictk validate`` was initially developed to detect files affected by the above issue and was later extended to also validate .cool, .scool and .hic files.
 
-Perform a quick check to detect truncated files:
+Perform a quick check to detect truncated or otherwise invalid files:
 
 .. code-block:: console
 
@@ -92,11 +92,17 @@ The quick check will not detect Cooler files with corrupted index, as this requi
   index_is_valid=false
   ### FAILURE: "4DNFI9GMP2J8.mcool::/resolutions/1000000" is not a valid Cooler.
 
-Fixing corrupted Cooler files
------------------------------
+Restoring corrupted .mcool files
+--------------------------------
 
-Luckily, the base resolution of .mcool files corrupted as described in :ref:`cooler-index-corruption-label` is still valid, and so the .mcool files can be fixed by running ``hictk zoomify`` on the base resolution:
+Luckily, the base resolution of .mcool files corrupted as described in :ref:`cooler-index-corruption-label` is still valid, and so corrupted resolutions can be regenerated from the base resolution.
+
+File restoration is automated with ``hictk fix-mcool``:
 
 .. code-block:: sh
 
-  hictk zoomify corrupted.mcool::/resolutions/1000 fixed.mcool --resolutions $(hictk dump -t resolutions | tr '\n' ' ') ...
+  hictk fix-mcool 4DNFI9GMP2J8.mcool 4DNFI9GMP2J8.fixed.mcool
+
+``hictk fix-mcool`` is basically a wrapper around ``hictk zoomify`` and ``hictk balance``.
+
+When balancing, ``hictk fix-mcool`` will try to use the same parameters used to balance the original .mcool file. When this is not possible, ``hictk fix-mcool`` will fall back to the default parameters used by ``hictk balance``.

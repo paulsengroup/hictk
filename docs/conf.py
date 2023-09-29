@@ -197,6 +197,12 @@ html_theme = "furo"
 # Output file base name for HTML help builder.
 htmlhelp_basename = "hictk_doc"
 
+# Tweak copybutton https://sphinx-copybutton.readthedocs.io/en/latest/use.html
+copybutton_selector = "div:not(.no-copybutton) > div.highlight > pre"
+copybutton_exclude = '.linenos, .gp, .go'
+copybutton_copy_empty_lines = False
+copybutton_prompt_text = "user@dev:/tmp$"
+
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_engine = "pdflatex"

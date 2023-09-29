@@ -15,7 +15,7 @@ hictk is capable of reading files in .cool, .mcool, .scool and .hic format (incl
    ---------------------
 
    You are reading the HTML version of the documentation. An alternative `PDF
-   version <https://hictk.readthedocs.io/_/downloads/en/latest/pdf/>`__ is
+   version <https://hictk.readthedocs.io/_/downloads/en/latest/pdf/>`_ is
    also available.
 
    Installation
@@ -40,7 +40,7 @@ Python bindings for hictk can be installed using pip or conda. See :doc:`here <.
 
    .. rubric:: How to cite this project?
 
-Please use the following BibTeX template to cite nanobind in scientific
+Please use the following BibTeX template to cite hictk in scientific
 discourse:
 
 .. code-block:: bibtex
@@ -51,6 +51,8 @@ discourse:
        note = {https://github.com/paulsengroup/hictk},
        title = {hictk: blazing fast toolkit to work with .hic and .cool files}
     }
+
+If you use ``hictk convert`` to convert .[m]cool files to .hic format you should also cite JuicerTools or HiCTools.
 
 
 .. only:: not latex
@@ -71,7 +73,12 @@ discourse:
    :maxdepth: 1
 
    quickstart
+   downloading_test_datasets
    file_validation
+   format_conversion
+   reading_interactions
+   creating_coolers
+   creating_multires_coolers
 
 
 .. toctree::
@@ -79,6 +86,5 @@ discourse:
    :maxdepth: 2
 
    cli_reference
-   cpp_api
    cpp_api/index
    Python API <https://github.com/paulsengroup/hictkpy>
