@@ -192,19 +192,21 @@ jobs:
         run: |
           test/scripts/hictk_balance.sh build/src/hictk/hictk hic_tools.jar
 
+          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
+          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk hic_tools.jar
+
           test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
           test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
           test/scripts/hictk_dump_resolutions.sh build/src/hictk/hictk
           test/scripts/hictk_dump_normalizations.sh build/src/hictk/hictk
           test/scripts/hictk_dump_cells.sh build/src/hictk/hictk
 
+          test/scripts/hictk_fix_mcool.sh build/src/hictk/hictk
+
           test/scripts/hictk_dump_gw.sh build/src/hictk/hictk
           test/scripts/hictk_dump_cis.sh build/src/hictk/hictk
           test/scripts/hictk_dump_trans.sh build/src/hictk/hictk
           test/scripts/hictk_dump_balanced.sh build/src/hictk/hictk
-
-          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
-          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk hic_tools.jar
 
           test/scripts/hictk_load_coo.sh build/src/hictk/hictk sorted
           test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted

@@ -46,7 +46,7 @@ valid_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic8"
 valid_cooler="$data_dir/cooler/ENCFF993FGR.2500000.cool"
 valid_mcool="$data_dir/cooler/multires_cooler_test_file.mcool"
 valid_scool="$data_dir/cooler/single_cell_cooler_test_file.scool"
-invalid_cooler="$data_dir/cooler/invalid_coolers/4DNFI9GMP2J8.1000000.cool"
+invalid_cooler="$data_dir/cooler/invalid_coolers/corrupted_index.mcool::/resolutions/10000000"
 
 export PATH="$PATH:$script_dir"
 
