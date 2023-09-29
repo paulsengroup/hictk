@@ -39,7 +39,10 @@ RUN conan install "$src_dir/conanfile.txt"       \
              -s build_type=Release               \
              -s compiler.libcxx=libstdc++11      \
              -s compiler.cppstd=17               \
-             --output-folder="$build_dir"
+             --output-folder="$build_dir"        \
+&& conan cache clean "*" --build                 \
+&& conan cache clean "*" --download              \
+&& conan cache clean "*" --source
 
 # Copy source files
 COPY LICENSE "$src_dir/"
@@ -96,15 +99,15 @@ RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-a
 &&  if [ -z "$GIT_SHORT_HASH" ]; then echo "Missing GIT_SHORT_HASH --build-arg" && exit 1; fi \
 &&  if [ -z "$CREATION_DATE" ]; then echo "Missing CREATION_DATE --build-arg" && exit 1; fi
 
-# Export project binaries to the final build stage
-COPY --from=builder "$staging_dir" "$install_dir"
-
 # Install runtime dependencies
 RUN apt-get update \
 && apt-get install -y \
    openjdk-19-jre-headless \
    pigz \
 && rm -rf /var/lib/apt/lists/*
+
+# Export project binaries to the final build stage
+COPY --from=builder "$staging_dir" "$install_dir"
 
 WORKDIR /data
 ENTRYPOINT ["/usr/local/bin/hictk"]
