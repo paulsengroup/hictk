@@ -11,31 +11,12 @@
 
 namespace hictk::tools {
 
-template <typename N = std::int32_t, typename PixelIt = cooler::PixelSelector::iterator<N>,
-          typename CoarsenIt = typename transformers::CoarsenPixels<PixelIt>::iterator>
-internal::PixelMerger<CoarsenIt> setup_pixel_merger(const cooler::File& clr, std::size_t factor) {
-  const auto& chroms = clr.chromosomes();
-  std::vector<CoarsenIt> heads{};
-  std::vector<CoarsenIt> tails{};
-
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chroms.size(); ++chrom1_id) {
-    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chroms.size(); ++chrom2_id) {
-      auto sel = clr.fetch(chroms.at(chrom1_id).name(), chroms.at(chrom2_id).name());
-      auto sel1 = transformers::CoarsenPixels(sel.begin<N>(), sel.end<N>(), clr.bins_ptr(), factor);
-      auto first = sel1.begin();
-      auto last = sel1.end();
-      if (first != last) {
-        heads.emplace_back(std::move(first));
-        tails.emplace_back(std::move(last));
-      }
-    }
-  }
-  return {heads, tails};
-}
-
 void zoomify_once(const cooler::File& clr1, cooler::RootGroup entrypoint2,
                   std::uint32_t resolution) {
-  auto clr2 = cooler::File::create(std::move(entrypoint2), clr1.chromosomes(), resolution);
+  auto attrs = cooler::Attributes::init(clr1.bin_size());
+  attrs.assembly = clr1.attributes().assembly;
+
+  auto clr2 = cooler::File::create(std::move(entrypoint2), clr1.chromosomes(), resolution, attrs);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
   cooler::MultiResFile::coarsen(clr1, clr2, buffer);

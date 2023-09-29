@@ -89,14 +89,14 @@ static std::size_t dump_pixels_plain(const cooler::File& clr, const std::filesys
 template <typename Pipe>
 [[nodiscard]] static std::unique_ptr<boost::process::child> run_pigz(
     Pipe& pipe, const std::filesystem::path& dest, std::uint8_t compression_lvl,
-    std::size_t processes) {
+    std::size_t threads) {
   assert(compression_lvl != 0);
-  assert(processes != 0);
+  assert(threads != 0);
   // clang-format off
   return std::make_unique<boost::process::child>(
       find_pigz().string(),
       fmt::format(FMT_STRING("-{}"), compression_lvl),
-      "--processes", fmt::to_string(processes),
+      "--processes", fmt::to_string(threads),
       boost::process::std_in < pipe,
       boost::process::std_out > dest.string()
   );
@@ -104,14 +104,14 @@ template <typename Pipe>
 }
 
 static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesystem::path& dest,
-                                    std::uint8_t compression_lvl, std::size_t processes,
+                                    std::uint8_t compression_lvl, std::size_t threads,
                                     std::size_t update_frequency = 10'000'000) {
   assert(compression_lvl != 0);
-  assert(processes > 1);
+  assert(threads > 1);
 
   boost::asio::io_context ioc;
   boost::process::async_pipe pipe{ioc};
-  const auto pigz = run_pigz(pipe, dest, compression_lvl, processes - 1);
+  const auto pigz = run_pigz(pipe, dest, compression_lvl, threads - 1);
 
   auto t0 = std::chrono::steady_clock::now();
   std::string buffer;
@@ -178,7 +178,7 @@ static std::size_t dump_pixels_pigz(const cooler::File& clr, const std::filesyst
 }
 
 static void dump_pixels(const cooler::File& clr, const std::filesystem::path& dest,
-                        std::uint8_t compression_lvl, std::size_t processes) {
+                        std::uint8_t compression_lvl, std::size_t threads) {
   const auto t0 = std::chrono::steady_clock::now();
 
   SPDLOG_INFO(FMT_STRING("writing pixels to file {}..."), dest);
@@ -186,7 +186,7 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
   std::size_t pixels_processed{};
   if (dest.extension() == ".gz") {
     assert(compression_lvl != 0);
-    pixels_processed = dump_pixels_pigz(clr, dest, compression_lvl, processes);
+    pixels_processed = dump_pixels_pigz(clr, dest, compression_lvl, threads);
   } else {
     pixels_processed = dump_pixels_plain(clr, dest);
   }
@@ -277,12 +277,12 @@ void cool_to_hic(const ConvertConfig& c) {
 
       const cooler::File clr(uri);
       dump_chrom_sizes(clr, chrom_sizes);
-      dump_pixels(clr, pixels, c.gzip_compression_lvl, c.processes);
+      dump_pixels(clr, pixels, c.gzip_compression_lvl, c.threads);
     }
 
     auto t1 = std::chrono::steady_clock::now();
     SPDLOG_INFO(FMT_STRING("running juicer_tools pre..."));
-    process = run_juicer_tools_pre(c, chrom_sizes, pixels, c.processes);
+    process = run_juicer_tools_pre(c, chrom_sizes, pixels, c.threads);
     process->wait();
     if (process->exit_code() != 0) {
       throw std::runtime_error(fmt::format(FMT_STRING("juicer_tools pre failed with exit code {}"),

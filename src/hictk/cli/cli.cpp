@@ -31,6 +31,8 @@ auto Cli::parse_arguments() -> Config {
       _subcommand = subcommand::convert;
     } else if (_cli.get_subcommand("dump")->parsed()) {
       _subcommand = subcommand::dump;
+    } else if (_cli.get_subcommand("fix-mcool")->parsed()) {
+      _subcommand = subcommand::fix_mcool;
     } else if (_cli.get_subcommand("load")->parsed()) {
       _subcommand = subcommand::load;
     } else if (_cli.get_subcommand("merge")->parsed()) {
@@ -77,6 +79,8 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
       return "convert";
     case dump:
       return "dump";
+    case fix_mcool:
+      return "fix-mcool";
     case load:
       return "load";
     case merge:
@@ -100,6 +104,7 @@ void Cli::make_cli() {
   make_balance_subcommand();
   make_convert_subcommand();
   make_dump_subcommand();
+  make_fix_mcool_subcommand();
   make_load_subcommand();
   make_merge_subcommand();
   make_validate_subcommand();
@@ -116,6 +121,9 @@ void Cli::validate_args() const {
       break;
     case dump:
       validate_dump_subcommand();
+      break;
+    case fix_mcool:
+      validate_fix_mcool_subcommand();
       break;
     case load:
       validate_load_subcommand();
@@ -143,6 +151,9 @@ void Cli::transform_args() {
       break;
     case dump:
       transform_args_dump_subcommand();
+      break;
+    case fix_mcool:
+      transform_args_fix_mcool_subcommand();
       break;
     case load:
       transform_args_load_subcommand();

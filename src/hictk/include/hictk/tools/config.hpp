@@ -54,7 +54,7 @@ struct ConvertConfig {
   bool fail_if_normalization_method_is_not_avaliable{false};
 
   std::uint8_t gzip_compression_lvl{6};
-  std::size_t processes{2};
+  std::size_t threads{2};
 
   std::size_t juicer_tools_xmx{32'000'000'000};
   std::uint8_t verbosity{4};
@@ -79,6 +79,23 @@ struct DumpConfig {
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};
   std::uint8_t verbosity{2};
+  bool force{false};
+};
+
+struct FixMcoolConfig {
+  std::filesystem::path path_to_input{};
+  std::filesystem::path path_to_output{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+
+  bool skip_balancing{false};
+  bool check_base_resolution{false};
+
+  bool in_memory{false};
+  std::uint8_t zstd_compression_lvl{3};
+  std::size_t chunk_size{10'000'000};
+
+  std::size_t threads{1};
+  std::uint8_t verbosity{4};
   bool force{false};
 };
 
@@ -133,6 +150,7 @@ using Config = std::variant<std::monostate,
                             BalanceConfig,
                             ConvertConfig,
                             DumpConfig,
+                            FixMcoolConfig,
                             LoadConfig,
                             MergeConfig,
                             ValidateConfig,
