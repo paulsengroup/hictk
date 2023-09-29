@@ -57,7 +57,7 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-"$hictk_bin" fix-mcool "$invalid_mcool" "$outdir/out.mcool"
+"$hictk_bin" fix-mcool "$invalid_mcool" "$outdir/out.mcool" --check-base-resolution
 
 if ! "$hictk_bin" validate --validate-index "$outdir/out.mcool"; then
   status=1
