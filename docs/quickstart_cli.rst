@@ -2,8 +2,8 @@
    Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
    SPDX-License-Identifier: MIT
 
-Quickstart
-##########
+Quickstart (CLI)
+################
 
 First, install hictk with one of the methods listed in the :doc:`Installation <./installation>` section.
 
@@ -57,3 +57,9 @@ Other operations
 * :doc:`Format conversion <./format_conversion>`
 * :doc:`Creating .cool files <./creating_coolers>`
 * :doc:`Converting .cool files to .mcool format <./creating_multires_coolers>`
+
+
+API
+===
+
+Refer to :doc:`Quickstart (API) <./quickstart_api>`.

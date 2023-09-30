@@ -14,8 +14,8 @@ hictk supports creating .cool files from text files in the following formats:
 
 File requirements:
 
-* ``dm6.chrom.sizes`` - `download <https://hgdownload.cse.ucsc.edu/goldenpath/dm6/bigZips/dm6.chrom.sizes>`_
-* ``4DNFIKNWM36K.pairs.gz`` - `download <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/930ba072-05ac-4382-9a92-369517184ec7/4DNFIKNWM36K.pairs.gz>`_
+* ``dm6.chrom.sizes`` - `download <https://hgdownload.cse.ucsc.edu/goldenpath/dm6/bigZips/dm6.chrom.sizes>`__
+* ``4DNFIKNWM36K.pairs.gz`` - `download <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/930ba072-05ac-4382-9a92-369517184ec7/4DNFIKNWM36K.pairs.gz>`__
 
 .. code-block:: console
 

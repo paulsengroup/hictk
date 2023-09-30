@@ -10,7 +10,7 @@ Generic API
 hictk generic API allows users to transparently operate on .hic .cool files.
 There is virtually no runtime overhead when using the :cpp:class:`File` and :cpp:class:`PixelSelector` classes. However iterating over :cpp:class:`Pixel`\s using this API is slightly slower than using the format specific APIs.
 
-Refer to examples in the :ref:`Quickstart <../quickstart>` section for how to use the generic API without incurring into any overhead when iterating over :cpp:class:`Pixel`\s overlapping queries.
+Refer to examples in the :doc:`../quickstart_api` section for how to use the generic API without incurring into any overhead when iterating over :cpp:class:`Pixel`\s overlapping queries.
 
 Common
 ------

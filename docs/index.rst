@@ -29,7 +29,7 @@ hictk is developed on Linux and tested on Linux, MacOS and Windows. CLI tools ca
 
 hictk can be compiled on most UNIX-like systems (including many Linux distributions and MacOS) as well as Windows. See the :doc:`build instructions <./installation_src>` for more details.
 
-Python bindings for hictk can be installed using pip or conda. See :doc:`here <./installation_py>` for more details.
+Python bindings for hictk can be installed using pip or conda. Refer to hictkpy `documentation <https://hictkpy.readthedocs.io/en/latest/installation.html>`_ for more details.
 
 .. only:: not latex
 
@@ -66,13 +66,13 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
 
    installation
    installation_src
-   installation_py
 
 .. toctree::
    :caption: Introduction
    :maxdepth: 1
 
-   quickstart
+   quickstart_cli
+   quickstart_api
    downloading_test_datasets
    file_validation
    format_conversion

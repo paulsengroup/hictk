@@ -152,7 +152,7 @@ endif()
 
 if(HICTK_BUILD_EXAMPLES)
   message(STATUS "Building examples.")
-  # add_subdirectory(examples)
+  add_subdirectory(examples)
 endif()
 
 if(HICTK_BUILD_BENCHMARKS)
