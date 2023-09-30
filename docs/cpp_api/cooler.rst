@@ -120,13 +120,15 @@ Single-resolution Cooler (.cool)
 
   **Normalization**
 
-  .. cpp:function:: bool has_weights(std::string_view normalization) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
+  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_normalization(std::string_view normalization, bool rescale = false) const;
   .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization, balancing::Weights::Type type, bool rescale = false) const;
 
-  .. cpp:function:: bool has_weights(const balancing::Method &normalization) const;
+  .. cpp:function:: [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
   .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization, bool rescale = false) const;
   .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization, balancing::Weights::Type type, bool rescale = false) const;
+
+  .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
   .. cpp:function:: bool purge_weights(std::string_view name = "");
 
@@ -206,6 +208,7 @@ Single-cell Cooler (.scool)
   .. cpp:function:: [[nodiscard]] std::string path() const;
   .. cpp:function:: [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
   .. cpp:function:: [[nodiscard]] auto bins() const noexcept -> const BinTable&;
+  .. cpp:function:: [[nodiscard]] std::uint32_t bin_size() const noexcept;
 
   .. cpp:function:: [[nodiscard]] constexpr const phmap::btree_set<std::string>& cells() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr const SingleCellAttributes& attributes() const noexcept;

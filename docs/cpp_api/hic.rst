@@ -73,6 +73,7 @@ File handle
   .. cpp:function:: [[nodiscard]] std::uint64_t nchroms() const;
   .. cpp:function:: [[nodiscard]] const std::string &assembly() const noexcept;
   .. cpp:function:: [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
+  .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
   **Fetch methods (1D queries)**

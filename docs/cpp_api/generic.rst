@@ -20,7 +20,6 @@ Common
 .. cpp:enum-class:: QUERY_TYPE
 
   .. cpp:enumerator:: BED
-
   .. cpp:enumerator:: UCSC
 
 
@@ -42,7 +41,6 @@ File handle
    Constructors for :cpp:class:`File` class.
    ``resolution`` is a mandatory argument when opening .hic files.
    Matrix ``type`` and ``unit`` are ignored when operating on .cool files.
-
 
   **Accessors**
 
@@ -71,6 +69,11 @@ File handle
 
   Accessors for common attributes.
   Calling any of these accessors does not involve any computation.
+
+  .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
+  .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
+
+  Accessors for normalization methods/vectors.
 
   **Fetch methods (1D queries)**
 
@@ -196,10 +199,13 @@ Pixel selector
   **Fetch at once**
 
   .. cpp:function:: template <typename N> [[nodiscard]] std::vector<Pixel<N>> read_all() const;
+  .. cpp:function:: template <typename N> [[nodiscard]] Eigen::SparseMatrix<N> read_sparse() const;
+  .. cpp:function:: template <typename N> [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> read_dense() const;
 
   Read and return all :cpp:class:`Pixel`\s at once using a :cpp:class:`std::vector`.
 
   **Accessors**
+
   .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord1() const;
   .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord2() const;
 
