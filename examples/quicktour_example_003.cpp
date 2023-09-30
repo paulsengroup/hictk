@@ -7,7 +7,7 @@
 #include <hictk/file.hpp>
 #include <iostream>
 #include <string>
-#include <visit>
+#include <variant>
 
 int main() {
   const std::string path = "interactions.hic";

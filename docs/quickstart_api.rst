@@ -171,7 +171,7 @@ We can avoid paying this overhead by using the format specific file handles inst
   #include <hictk/file.hpp>
   #include <iostream>
   #include <string>
-  #include <visit>
+  #include <variant>
 
   int main() {
     const std::string path = "interactions.hic";
