@@ -87,4 +87,4 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
 
    cli_reference
    cpp_api/index
-   Python API <https://github.com/paulsengroup/hictkpy>
+   Python API <https://hictkpy.readthedocs.io/en/latest/hictkpy.html>
