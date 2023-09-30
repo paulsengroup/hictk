@@ -8,7 +8,6 @@ on:
     branches: [ main ]
     paths:
       - ".github/workflows/fuzzy-testing.yml"
-      - "bindings/python/**"
       - "cmake/**"
       - "examples/**"
       - "src/**"
@@ -16,21 +15,14 @@ on:
       - "test/scripts/link_h5_dataset.py"
       - "CMakeLists.txt"
       - "conanfile.txt"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "setup.py"
     tags:
       - 'v*.*.*'
 
   pull_request:
     paths:
       - ".github/workflows/fuzzy-testing.yml"
-      - "bindings/python/**"
       - "test/scripts/fuzzy_test.py"
       - "test/scripts/link_h5_dataset.py"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "setup.py"
 
   schedule:
     # Run weekly
@@ -166,6 +158,17 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
+      - name: Install build dependencies
+        run: |
+          conan install .                          \
+          --build=missing                          \
+          -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
+          -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
+          -s build_type="${{ matrix.build_type }}" \
+          -s compiler.libcxx=libstdc++11           \
+          -s compiler.cppstd=17                    \
+          --output-folder=build
+
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
@@ -181,6 +184,7 @@ jobs:
           env CC=clang-15 \
               CXX=clang++-15 \
               CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/build" \
+              HICTKPY_SETUP_SKIP_CONAN=1 \
           pip install . -v
 
       - name: Save Conan cache
