@@ -9,7 +9,6 @@ on:
     paths:
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
-      - "examples/**"
       - "src/**"
       - "test/scripts/fuzzy_test.py"
       - "test/scripts/link_h5_dataset.py"
@@ -104,6 +103,9 @@ jobs:
       CONAN_HOME: '/root/.conan2'
 
     steps:
+      - name: Clone hictk
+        uses: actions/checkout@v4
+
       - name: Clone hictkpy
         uses: actions/checkout@v4
         with:
