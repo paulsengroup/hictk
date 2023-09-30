@@ -419,6 +419,14 @@ jobs:
         run: |
           test/scripts/hictk_balance.sh bin/hictk hic_tools.jar
 
+      - name: Test hictk convert (hic2cool)
+        run: |
+          test/scripts/hictk_convert_hic2cool.sh bin/hictk
+
+      - name: Test hictk convert (cool2hic)
+        run: |
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+
       - name: Test hictk dump chroms
         run: |
           test/scripts/hictk_dump_chroms.sh bin/hictk
@@ -455,13 +463,9 @@ jobs:
         run: |
           test/scripts/hictk_dump_balanced.sh bin/hictk
 
-      - name: Test hictk convert (hic2cool)
+      - name: Test hictk fix-mcool
         run: |
-          test/scripts/hictk_convert_hic2cool.sh bin/hictk
-
-      - name: Test hictk convert (cool2hic)
-        run: |
-          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+          test/scripts/hictk_fix_mcool.sh bin/hictk
 
       - name: Test hictk load coo sorted
         run: |

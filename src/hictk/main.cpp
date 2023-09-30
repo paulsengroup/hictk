@@ -105,6 +105,8 @@ int main(int argc, char** argv) noexcept {
         return convert_subcmd(std::get<ConvertConfig>(config));
       case sc::dump:
         return dump_subcmd(std::get<DumpConfig>(config));
+      case sc::fix_mcool:
+        return fix_mcool_subcmd(std::get<FixMcoolConfig>(config));
       case sc::load:
         return load_subcmd(std::get<LoadConfig>(config));
       case sc::merge:

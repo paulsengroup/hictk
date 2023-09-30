@@ -19,6 +19,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_balance.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_convert.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_dump.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_merge.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_validate.cpp
@@ -28,6 +29,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/cool_to_hic.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp

@@ -154,7 +154,7 @@ inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id
   _counts.push_back(count);
 }
 
-void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl) const {
+inline void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl) const {
   auto size_ = size();
   fs.write(reinterpret_cast<const char*>(&size_), sizeof(std::size_t));
 
@@ -196,7 +196,7 @@ void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_l
   fs.flush();
 }
 
-void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
+inline void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
   std::size_t size_{};
   fs.read(reinterpret_cast<char*>(&size_), sizeof(std::size_t));
 

@@ -46,7 +46,7 @@ valid_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic8"
 valid_cooler="$data_dir/cooler/ENCFF993FGR.2500000.cool"
 valid_mcool="$data_dir/cooler/multires_cooler_test_file.mcool"
 valid_scool="$data_dir/cooler/single_cell_cooler_test_file.scool"
-invalid_cooler="$data_dir/cooler/invalid_coolers/4DNFI9GMP2J8.1000000.cool"
+invalid_mcool="$data_dir/cooler/invalid_coolers/corrupted_index.mcool"
 
 export PATH="$PATH:$script_dir"
 
@@ -54,7 +54,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$valid_hic" "$valid_cooler" "$valid_mcool" "$valid_scool" "$invalid_cooler"; then
+if ! check_files_exist "$valid_hic" "$valid_cooler" "$valid_mcool" "$valid_scool" "$invalid_mcool"; then
   exit 1
 fi
 
@@ -81,8 +81,8 @@ if ! "$hictk_bin" validate --validate-index "$valid_scool" >> "$outdir/out.txt";
   status=1
 fi
 
-echo "# Validating $invalid_cooler..."
-if "$hictk_bin" validate --validate-index "$invalid_cooler" >> "$outdir/out.txt"; then
+echo "# Validating $invalid_mcool..."
+if "$hictk_bin" validate --validate-index "$invalid_mcool" >> "$outdir/out.txt"; then
   status=1
 fi
 

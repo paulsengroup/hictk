@@ -91,10 +91,10 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::Range(1, 4))
       ->capture_default_str();
   sc.add_option(
-      "-p,--processes",
-      c.processes,
-      "Maximum number of parallel processes to spawn.\n"
-      "When converting from hic to cool, only two processes will be used.")
+      "-t,--threads",
+      c.threads,
+      "Maximum number of parallel threads to spawn.\n"
+      "When converting from hic to cool, only two threads will be used.")
       ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(

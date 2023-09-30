@@ -195,6 +195,7 @@ class Cli {
     balance,
     convert,
     dump,
+    fix_mcool,
     load,
     merge,
     validate,
@@ -220,6 +221,7 @@ class Cli {
   void make_balance_subcommand();
   void make_convert_subcommand();
   void make_dump_subcommand();
+  void make_fix_mcool_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
   void make_validate_subcommand();
@@ -229,6 +231,7 @@ class Cli {
   void validate_balance_subcommand() const;
   void validate_convert_subcommand() const;
   void validate_dump_subcommand() const;
+  void validate_fix_mcool_subcommand() const;
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
   void validate_zoomify_subcommand() const;
@@ -237,6 +240,7 @@ class Cli {
   void transform_args_balance_subcommand();
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();
+  void transform_args_fix_mcool_subcommand();
   void transform_args_load_subcommand();
   void transform_args_merge_subcommand();
   void transform_args_zoomify_subcommand();
