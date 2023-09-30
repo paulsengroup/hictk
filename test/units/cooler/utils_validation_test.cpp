@@ -118,8 +118,14 @@ TEST_CASE("Cooler: index validation", "[cooler][short]") {
     CHECK(cooler::utils::index_is_valid(path2.string()));
   }
   SECTION("broken index") {
-    const auto path = datadir / "invalid_coolers/4DNFI9GMP2J8.1000000.cool";
-    CHECK_FALSE(cooler::utils::index_is_valid(path.string()));
+    SECTION(".cool") {
+      const auto path = datadir / "invalid_coolers/corrupted_index.mcool::/resolutions/10000000";
+      CHECK_FALSE(cooler::utils::index_is_valid(path.string()));
+    }
+    SECTION(".mcool") {
+      const auto path = datadir / "invalid_coolers/corrupted_index.mcool";
+      CHECK_FALSE(cooler::utils::index_is_valid(path.string()));
+    }
   }
 }
 

@@ -135,11 +135,12 @@ inline File MultiResFile::copy_resolution(const File& clr) {
 
 template <typename N>
 inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes attributes) {
-  attributes.bin_size = resolution;
   const auto base_resolution = compute_base_resolution(resolutions(), resolution);
 
   std::vector<ThinPixel<std::int32_t>> buffer{500'000};
   auto base_clr = open(base_resolution);
+  attributes.assembly = base_clr.attributes().assembly;
+  attributes.bin_size = resolution;
   {
     auto clr = File::create<N>(init_resolution(resolution), base_clr.chromosomes(), resolution,
                                attributes, DEFAULT_HDF5_CACHE_SIZE);
