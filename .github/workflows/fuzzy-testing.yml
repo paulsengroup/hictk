@@ -121,7 +121,7 @@ jobs:
           sed -i 's|URL_HASH.*|GIT_TAG ${{ github.event.after }}|' CMakeLists.txt
           grep 'GIT_TAG' CMakeLists.txt
 
-      - name: Patch hictkpy
+      - name: Patch hictkpy (schedule)
         working-directory: hictkpy
         if: github.event_name == 'schedule'
         run: |
@@ -166,7 +166,7 @@ jobs:
           --build=missing                          \
           -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
           -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-          -s build_type="${{ matrix.build_type }}" \
+          -s build_type=Release                    \
           -s compiler.libcxx=libstdc++11           \
           -s compiler.cppstd=17                    \
           --output-folder=build
