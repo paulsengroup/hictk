@@ -171,6 +171,15 @@ jobs:
           -s compiler.cppstd=17               \
           --output-folder=build
 
+          conan install hictkpy               \
+          --build=missing                     \
+          -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
+          -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
+          -s build_type=Release               \
+          -s compiler.libcxx=libstdc++11      \
+          -s compiler.cppstd=17               \
+          --output-folder=build
+
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
