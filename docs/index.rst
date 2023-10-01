@@ -79,6 +79,7 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
    reading_interactions
    creating_coolers
    creating_multires_coolers
+   balancing_matrices
 
 
 .. toctree::
