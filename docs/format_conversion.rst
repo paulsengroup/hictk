@@ -90,4 +90,4 @@ You should use HiCTools JAR unless you need to open the resulting .hic file with
 
 * Use JuicerTools instead of HiCTools if the output .hic file needs to be opened by applications that do not support the latest .hic format specification.
 * When converting large .[m]cool files to .hic, ``hictk`` needs to create large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space
-* When converting .[m]cool files to .hic, ``hictk`` tries to use ``pigz`` instead of plain ``gzip`` to compress temporary files. This can drammatically reduce conversion time. Please make sure ``pigz`` is installed and increase the number of processing thread with option ``--thread``.
+* When converting .[m]cool files to .hic, ``hictk`` tries to use ``pigz`` instead of plain ``gzip`` to compress temporary files. This can dramatically reduce conversion time. Please make sure ``pigz`` is installed and increase the number of processing threads with option ``--thread``.

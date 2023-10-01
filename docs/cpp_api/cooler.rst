@@ -9,7 +9,7 @@ Cooler API
 
 API to operate on .cool files. Compared to the generic API, this API provides:
 
-* more control on how files are opened
+* more control over how files are opened
 * direct access to HDF5 group and datasets
 * lower overhead
 * support for creating .cool files

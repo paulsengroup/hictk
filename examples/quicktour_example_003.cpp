@@ -18,7 +18,7 @@ int main() {
 
   const auto selector = f.fetch("chr1", "chr2");
 
-  // std::visit applies the lambda funciton provided as first argument
+  // std::visit applies the lambda function provided as first argument
   // to the variant returned by selector.get().
   // In this way, the type held by the std::variant is checked once
   // and the underlying PixelSelector and iterators are used for all operations

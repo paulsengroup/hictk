@@ -56,7 +56,7 @@ void Cli::make_convert_subcommand() {
   sc.add_option(
       "-r,--resolutions",
       c.resolutions,
-      "One or more resolution to be converted. By default all resolutions are converted.")
+      "One or more resolutions to be converted. By default all resolutions are converted.")
       ->check(CLI::PositiveNumber);
   sc.add_option(
       "--normalization-methods",

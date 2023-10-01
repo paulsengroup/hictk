@@ -9,7 +9,7 @@ Hi-C API
 
 API to operate on .hic files. Compared to the generic API, this API provides:
 
-* more control on how files are opened
+* more control over how files are opened
 * access to .hic-specific metadata
 * control over the interaction block cache
 

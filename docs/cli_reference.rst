@@ -95,7 +95,7 @@ hictk convert
     -j,--juicer-tools-jar TEXT:FILE
                                 Path to juicer_tools or hic_tools JAR.
     -r,--resolutions UINT:POSITIVE ...
-                                One or more resolution to be converted. By default all resolutions are converted.
+                                One or more resolutions to be converted. By default all resolutions are converted.
     --normalization-methods TEXT [ALL]  ...
                                 Name of one or more normalization methods to be copied.
                                 By default, vectors for all known normalization methods are copied.
@@ -169,9 +169,9 @@ hictk fix-mcool
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 16] [1]
-                                Maximum number of parallel threads to spawn (only applies to balancing stage).
+                                Maximum number of parallel threads to spawn (only applies to the balancing stage).
     -l,--compression-level UINT:INT in [0 - 19] []
-                                Compression level used to compress temporary files using ZSTD (only applies to balancing stage).
+                                Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).
     -f,--force                  Overwrite existing files (if any).
 
 hictk load
@@ -248,7 +248,7 @@ hictk zoomify
   Options:
     -h,--help                   Print this help message and exit
     --force                     Force overwrite existing output file(s).
-    --resolutions UINT ...      One or more resolution to be used for coarsening.
+    --resolutions UINT ...      One or more resolutions to be used for coarsening.
     --copy-base-resolution,--no-copy-base-resolution{false}
                                 Copy the base resolution to the output file.
     --nice-steps,--pow2-steps{false} [--nice-steps]

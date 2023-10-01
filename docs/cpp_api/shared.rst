@@ -134,7 +134,7 @@ Genomic bins
   The class is implemented as a thin wrapper around :cpp:class:`GenomicInterval`\s. The main difference between :cpp:class:`Bin` and :cpp:class:`GenomicInterval` objects is that in addition to genomic coordinates, the :cpp:class:`Bin` object also store two identifiers:
 
   * A unique identifier that can be used to refer :cpp:class:`Bin`\s in a :cpp:class:`Reference`.
-  * A relative identifier that can be uset to refer to :cpp:class:`Bin`\s in a :cpp:class:`Chromosome`.
+  * A relative identifier that can be used to refer to :cpp:class:`Bin`\s in a :cpp:class:`Chromosome`.
 
   .. cpp:function:: constexpr Bin() = default;
   .. cpp:function:: Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
@@ -170,7 +170,7 @@ Reference genome
 
 .. cpp:class:: Reference
 
-  This class models the reference genome used as coordinate system in Hi-C matrices.
+  This class models the reference genome used as coordinate systems in Hi-C matrices.
 
   :cpp:class:`Reference` objects consist of collections of :cpp:class:`Chromosome`\s with unique IDs.
 
@@ -241,7 +241,7 @@ Bin Table
 
 .. cpp:class:: BinTable
 
-  This class models the bin table used as coordinate system in Hi-C matrices.
+  This class models the bin table used as coordinate systems in Hi-C matrices.
 
   The class API gives the illusion of operating over a collection of :cpp:class:`Bin`\s.
   In reality :cpp:class:`BinTable`\s do not store any :cpp:class:`Bin`\s. All queries are satisfied through simple arithmetic operations on the prefix sum of :cpp:class:`Chromosome` sizes and :cpp:class:`Bin`\s are generated on the fly as needed.
@@ -381,7 +381,7 @@ Pixels
 
   Struct to model genomic pixels as interaction counts associated to a pair of genomic :cpp:class:`Bin`\s.
 
-  The main difference between :cpp:class:`ThinPixel` and :cpp:class:`Pixel` objects, is that the latter posesses all the knowledge required to map interactions to genomic coordinates, not just bin IDs.
+  The main difference between :cpp:class:`ThinPixel` and :cpp:class:`Pixel` objects, is that the latter possessesall the knowledge required to map interactions to genomic coordinates, not just bin IDs.
 
   **Member variables**
 

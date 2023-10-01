@@ -8,7 +8,7 @@ Generic API
 ===========
 
 hictk generic API allows users to transparently operate on .hic .cool files.
-There is virtually no runtime overhead when using the :cpp:class:`File` and :cpp:class:`PixelSelector` classes. However iterating over :cpp:class:`Pixel`\s using this API is slightly slower than using the format specific APIs.
+There is virtually no runtime overhead when using the :cpp:class:`File` and :cpp:class:`PixelSelector` classes. However iterating over :cpp:class:`Pixel`\s using this API is slightly slower than using the format-specific APIs.
 
 Refer to examples in the :doc:`../quickstart_api` section for how to use the generic API without incurring into any overhead when iterating over :cpp:class:`Pixel`\s overlapping queries.
 
@@ -30,7 +30,7 @@ File handle
 
 .. cpp:class:: File
 
-  This class implements a generic file handle capable of transparently operate on .cool and .hic files.
+  This class implements a generic file handle capable of transparently operating on .cool and .hic files.
 
   **Constructors**
 
@@ -160,10 +160,10 @@ Pixel selector
 
 .. cpp:class:: PixelSelector
 
-  This class implements a generic, light-weight pixel selector object.
+  This class implements a generic, lightweight pixel selector object.
 
   :cpp:class:`PixelSelector` objects are constructed and returned by :cpp:func:`File::fetch` methods.
-  Users are **not** supposed to cosntruct :cpp:class:`PixelSelector` objects themselves.
+  Users are **not** supposed to construct :cpp:class:`PixelSelector` objects themselves.
 
   **Iteration**
 

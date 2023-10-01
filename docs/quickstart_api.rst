@@ -127,7 +127,7 @@ The quick tour showcases basic functionality of the generic :cpp:class:`File` cl
   }
 
 
-It is often the case that we need access to more information that just bin IDs and counts.
+It is often the case that we need access to more information than just bin IDs and counts.
 Joining genomic coordinates to pixel counts can be done as follows:
 
 .. code-block:: cpp
@@ -162,7 +162,7 @@ Joining genomic coordinates to pixel counts can be done as follows:
 
 The above examples work just fine, however using iterators returned by generic :cpp:class:`PixelSelector` is suboptimal. These iterators are implemented using `std::variant <https://en.cppreference.com/w/cpp/utility/variant>`_ and require checking the type of the underlying ``PixelSelector`` every iteration. The overhead of this check is quite low but still noticeable.
 
-We can avoid paying this overhead by using the format specific file handles instead of the generic one, or by using `std::visit <https://en.cppreference.com/w/cpp/utility/variant/visit>`_ as follows:
+We can avoid paying this overhead by using the format-specific file handles instead of the generic one, or by using `std::visit <https://en.cppreference.com/w/cpp/utility/variant/visit>`_ as follows:
 
 .. code-block:: cpp
 
@@ -181,7 +181,7 @@ We can avoid paying this overhead by using the format specific file handles inst
 
     const auto selector = f.fetch("chr1", "chr2");
 
-    // std::visit applies the lambda funciton provided as first argument
+    // std::visit applies the lambda function provided as first argument
     // to the variant returned by selector.get().
     // In this way, the type held by the std::variant is checked once
     // and the underlying PixelSelector and iterators are used for all operations

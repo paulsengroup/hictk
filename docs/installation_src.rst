@@ -32,7 +32,7 @@ Furthermore, the following tools are required:
 * Python3.6+ (including :code:`pip`, required to install Conan)
 
 
-We recommend to install CMake and Conan in a Python `virtualenv <https://virtualenvwrapper.readthedocs.io/en/stable/>`_, but you are of course free to install build dependencies in any way you want.
+We recommend installing CMake and Conan in a Python `virtualenv <https://virtualenvwrapper.readthedocs.io/en/stable/>`_, but you are of course free to install build dependencies in any way you want.
 
 .. code-block:: bash
 
@@ -114,7 +114,7 @@ We highly recommend using the same compiler when running Conan and CMake.
 Running automated tests
 =======================
 
-Steps outlined in this section are optional but highly recommended.
+The steps outlined in this section are optional but highly recommended.
 
 Unit tests
 ----------
@@ -158,7 +158,7 @@ A successful run of the test suite will produce an output like the following:
    <details>
    <summary><a>Troubleshooting test failures</a></summary>
 
-If one or more test fail, try the following troubleshooting steps before reaching out for help.
+If one or more tests fail, try the following troubleshooting steps before reaching out for help.
 
 #. Make sure you are running :code:`ctest` from the root of the source tree (:code:`/tmp/hictk` if you are following the instructions).
 #. Make sure you are passing the correct build folder to :code:`--test-dir`. Pass the absolute path if necessary (i.e. :code:`--test-dir=/tmp/hictk/build/` if you are following the instructions).

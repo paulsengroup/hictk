@@ -5,7 +5,7 @@
 Converting .cool to .mcool
 ##########################
 
-Interactions from a single-resolution Cooler file (.cool) can be used to generate a multi-resolution Cooler (.mcool) by iterative coaresning using ``hictk zoomify``
+Interactions from a single-resolution Cooler file (.cool) can be used to generate a multi-resolution Cooler (.mcool) by iterative coarsening using ``hictk zoomify``
 
 .. code-block:: console
 

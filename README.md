@@ -149,7 +149,7 @@ Furthermore, the following tools are required:
 - Python3.6+ (including `pip`, required to install Conan)
 
 
-We recommend to install CMake and Conan in a Python [virtualenv](https://virtualenvwrapper.readthedocs.io/en/stable/), but you are of course free to install the build dependencies in any way you want.
+We recommend installing CMake and Conan in a Python [virtualenv](https://virtualenvwrapper.readthedocs.io/en/stable/), but you are of course free to install the build dependencies in any way you want.
 
 ```bash
 python3 -m venv /tmp/venv
@@ -225,7 +225,7 @@ We highly recommend using the same compiler when running Conan and CMake.
 
 ## Running automated tests
 
-Steps outlined in this section are optional but highly recommended.
+The steps outlined in this section are optional but highly recommended.
 
 #### Unit tests
 
@@ -264,7 +264,7 @@ __All tests are expected to pass. Do not ignore test failures!__
 
 <details>
 <summary> Troubleshooting test failures </summary>
-If one or more test fail, try the following troubleshooting steps before reaching out for help.
+If one or more tests fail, try the following troubleshooting steps before reaching out for help.
 
 1. Make sure you are running `ctest` from the root of the source tree (`/tmp/hictk` if you are following the instructions).
 2. Make sure you are passing the correct build folder to `--test-dir`. Pass the absolute path if necessary (i.e. `--test-dir=/tmp/hictk/build/` if you are following the instructions).

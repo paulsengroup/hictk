@@ -15,7 +15,7 @@ Why is this needed?
 Cooler index corruption
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To make a long story short, older version of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
+To make a long story short, older versions of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
 
 Example:
 
@@ -24,7 +24,7 @@ Example:
   :header-rows: 1
   :delim: tab
 
-Unfortunately this is not a rare issue, as the above bug currently affects most (possibly all) .mcool files released by 4DNucleome:
+Unfortunately, this is not a rare issue, as the above bug currently affects most (possibly all) .mcool files released by 4DNucleome:
 
 .. image:: assets/4dnucleome_bug_notice.avif
 
