@@ -48,7 +48,7 @@ hictk provides the following subcommands:
 | __validate__   | Validate Cooler and .hic files.                                                        |
 | __zoomify__    | Convert single-resolution cooler files to multi-resolution cooler files by coarsening. |
 
-Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) for more details.
+Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/latest/cli_reference.html) for more details.
 
 ## Using libhictk
 
