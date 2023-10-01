@@ -124,12 +124,20 @@ TEST_CASE("PixelSelector", "[file][short]") {
       CHECK(sel1.coord1().bin1.chrom().name() == "chr2L");
       CHECK(sel1.coord2().bin1.chrom().name() == "chr2R");
       CHECK(sel1.bins().bin_size() == resolution);
+
+      CHECK(sel1.read_all<std::int32_t>().size() == 624);
+      CHECK(sel1.read_sparse<std::int32_t>().nonZeros() == 624);
+      CHECK(sel1.read_dense<std::int32_t>().sum() == 1'483'112);
     }
     SECTION("hic gw") {
       const auto hf = File(path_hic, resolution);
       auto sel1 = hf.fetch();
       CHECK(sel1.coord1() == PixelCoordinates{});
       CHECK(sel1.coord2() == PixelCoordinates{});
+
+      CHECK(sel1.read_all<std::int32_t>().size() == 10'148);
+      CHECK(sel1.read_sparse<std::int32_t>().nonZeros() == 10'148);
+      CHECK(sel1.read_dense<std::int32_t>().sum() == 155'486'075);
     }
     SECTION("cooler") {
       const auto clr = File(path_cooler, resolution);
@@ -138,6 +146,10 @@ TEST_CASE("PixelSelector", "[file][short]") {
       CHECK(sel1.coord1().bin1.chrom().name() == "chr2L");
       CHECK(sel1.coord2().bin1.chrom().name() == "chr2R");
       CHECK(sel1.bins().bin_size() == resolution);
+
+      CHECK(sel1.read_all<std::int32_t>().size() == 624);
+      CHECK(sel1.read_sparse<std::int32_t>().nonZeros() == 624);
+      CHECK(sel1.read_dense<std::int32_t>().sum() == 1'483'112);
     }
   }
 }

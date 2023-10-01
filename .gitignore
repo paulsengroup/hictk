@@ -12,6 +12,7 @@ benchmark/data
 build/
 cmake-build*/
 conan-envs/
+docs/_build/
 external/
 scratch/
 test/data
