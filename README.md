@@ -54,7 +54,7 @@ Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cl
 
 libhictk can be installed in various way, including with Conan and CMake FetchContent. Section [Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) of hictk documentation contains further details on how this can be accomplished.
 
-[Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](.examples/) folder as well as to the [source code](./src/hictk/) of hictk.
+[Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](./examples/) folder as well as to the [source code](./src/hictk/) of hictk.
 
 The public C++ API of hictk is documented in the [C++ API Reference](https://hictk.readthedocs.io/en/latest/cpp_api/index.html) section of hictk documentation.
 
