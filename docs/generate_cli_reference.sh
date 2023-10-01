@@ -34,8 +34,12 @@ cat << EOT
 CLI Reference
 #############
 
-.. code-block text
+For an up-to-date list of subcommands and CLI options refer to ``hictk --help``.
 
+Subcommands
+-----------
+
+.. code-block:: text
 
 EOT
 
