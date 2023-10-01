@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+// NOLINTNEXTLINE
 int main() {
   // const std::string path = "interactions.cool";
   // const std::string path = "interactions.mcool::/resolutions/1000";

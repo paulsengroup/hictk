@@ -9,6 +9,7 @@
 #include <string>
 #include <variant>
 
+// NOLINTNEXTLINE
 int main() {
   const std::string path = "interactions.hic";
   const std::uint32_t resolution = 1000;
