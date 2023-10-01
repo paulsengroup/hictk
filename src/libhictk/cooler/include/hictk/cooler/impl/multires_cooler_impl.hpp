@@ -163,7 +163,7 @@ inline MultiResFile::operator bool() const noexcept { return !!_root_grp; }
 inline std::string MultiResFile::path() const { return (*_root_grp)().getFile().getName(); }
 
 inline auto MultiResFile::chromosomes() const noexcept -> const Reference& {
-  return open(_resolutions.back()).chromosomes();
+  return _chroms;
 }
 
 [[nodiscard]] inline std::uint32_t MultiResFile::compute_base_resolution(

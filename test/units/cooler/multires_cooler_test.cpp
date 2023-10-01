@@ -19,6 +19,8 @@ TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
 
   auto mclr = MultiResFile(path.string());
 
+  CHECK(mclr.chromosomes().size() == 20);
+  CHECK(mclr.chromosomes().begin()->name() == "1");
   CHECK(mclr.resolutions().size() == 7);
   CHECK(mclr.attributes().format == MCOOL_MAGIC);
   CHECK(mclr.attributes().format_version == 2);
