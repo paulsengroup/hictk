@@ -207,6 +207,7 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
                          const std::filesystem::path& weight_file,
                          std::vector<balancing::Method> normalizations, bool fail_if_norm_missing) {
