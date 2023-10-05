@@ -198,45 +198,79 @@ static void dump_pixels(const cooler::File& clr, const std::filesystem::path& de
               pixels_processed, clr.chromosomes().size(), dest, delta);
 }
 
+[[nodiscard]] static std::shared_ptr<const balancing::Weights> try_read_weights(
+    const cooler::File& clr, const balancing::Method& method) {
+  try {
+    return clr.read_weights(method);
+  } catch (const std::exception& e) {
+    return clr.read_weights(method, balancing::Weights::Type::DIVISIVE);
+  }
+}
+
 static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
-                         const std::filesystem::path& weight_file) {
+                         const std::filesystem::path& weight_file,
+                         std::vector<balancing::Method> normalizations, bool fail_if_norm_missing) {
+  if (normalizations.size() == 1 && normalizations.front() == balancing::Method::NONE()) {
+    return false;
+  }
+
+  if (normalizations.empty()) {
+    normalizations = cooler::File(cooler_uri).avail_normalizations();
+    if (normalizations.empty()) {
+      return false;
+    }
+  }
+
   SPDLOG_INFO(FMT_STRING("[{}] writing balancing weights to file {}..."), resolution, weight_file);
   const cooler::File clr(cooler_uri);
   assert(clr.bin_size() == resolution);
-
-  if (!clr.has_normalization("weight")) {
-    SPDLOG_WARN(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
-    return false;
-  }
 
   const std::unique_ptr<FILE> f(std::fopen(weight_file.string().c_str(), "ae"));
   if (!bool(f)) {
     throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), weight_file);
   }
 
-  const auto weights = (*clr.read_weights("weight"))();
-  std::ptrdiff_t i0 = 0;
+  for (const auto& norm : normalizations) {
+    if (!clr.has_normalization(norm) && !fail_if_norm_missing) {
+      SPDLOG_WARN(FMT_STRING("[{}] unable to read weights from \"{}\"..."), resolution, cooler_uri);
+      continue;
+    }
 
-  for (const auto& chrom : clr.chromosomes()) {
-    // TODO add GW/INTRA/INTER prefix as appropriate
-    fmt::print(f.get(), FMT_STRING("vector\tICE\t{}\t{}\tBP\n"), chrom.name(), resolution);
+    const auto weights = try_read_weights(clr, norm);
+    const auto weight_name = norm == "weight" ? "ICE" : norm.to_string();
+    const auto weight_is_divisive = weights->type() == balancing::Weights::Type::INFER ||
+                                    weights->type() == balancing::Weights::Type::UNKNOWN ||
+                                    weights->type() == balancing::Weights::Type::DIVISIVE;
+    auto weight_vector = (*weights)();
+    if (weight_is_divisive) {
+      std::transform(weight_vector.begin(), weight_vector.end(), weight_vector.begin(),
+                     [](const double w) { return 1.0 / w; });
+    }
 
-    const auto num_bins = (chrom.size() + resolution - 1) / resolution;
-    const auto i1 = i0 + static_cast<std::ptrdiff_t>(num_bins);
-    std::for_each(weights.begin() + i0, weights.begin() + i1, [&](const double w) {
-      std::isnan(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
-                    : fmt::print(f.get(), FMT_COMPILE("{}\n"), 1.0 / w);
-      if (!bool(f)) {  // NOLINT
-        throw fmt::system_error(
-            errno, FMT_STRING("an error occurred while writing weights to file {}"), weight_file);
-      }
-    });
+    std::ptrdiff_t i0 = 0;
+    for (const auto& chrom : clr.chromosomes()) {
+      // TODO add GW/INTRA/INTER prefix as appropriate
+      fmt::print(f.get(), FMT_STRING("vector\t{}\t{}\t{}\tBP\n"), weight_name, chrom.name(),
+                 resolution);
 
-    i0 = i1;
+      const auto num_bins = (chrom.size() + resolution - 1) / resolution;
+      const auto i1 = i0 + static_cast<std::ptrdiff_t>(num_bins);
+      std::for_each(weight_vector.begin() + i0, weight_vector.begin() + i1, [&](double w) {
+        std::isnan(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
+                      : fmt::print(f.get(), FMT_COMPILE("{}\n"), w);
+        if (!bool(f)) {  // NOLINT
+          throw fmt::system_error(
+              errno, FMT_STRING("an error occurred while writing weights to file {}"), weight_file);
+        }
+      });
+
+      i0 = i1;
+    }
+    SPDLOG_INFO(FMT_STRING("[{}] wrote \"{}\" weights to file {}..."), resolution, weight_name,
+                weight_file);
   }
-  SPDLOG_INFO(FMT_STRING("[{}] wrote {} weights to file {}..."), resolution, weights.size(),
-              weight_file);
-  return true;
+
+  return std::ftell(f.get()) != 0;
 }
 
 static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& weight_file) {
@@ -244,7 +278,7 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
   for (const auto& res : c.resolutions) {
     cooler_has_weights |= dump_weights(
         res, fmt::format(FMT_STRING("{}::/resolutions/{}"), c.path_to_input.string(), res),
-        weight_file);
+        weight_file, c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
   }
 
   return cooler_has_weights;
@@ -300,7 +334,8 @@ void cool_to_hic(const ConvertConfig& c) {
 
     const auto weight_file_has_data =
         c.input_format == "cool"
-            ? dump_weights(c.resolutions.front(), c.path_to_input.string(), weights)
+            ? dump_weights(c.resolutions.front(), c.path_to_input.string(), weights,
+                           c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable)
             : dump_weights(c, weights);
 
     if (weight_file_has_data) {
