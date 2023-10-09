@@ -225,6 +225,9 @@ void Cli::transform_args_convert_subcommand() {
   if (c.tmp_dir.empty()) {
     c.tmp_dir = c.path_to_output.parent_path();
   }
+
+  c.tmp_dir /= c.path_to_output.filename();
+  c.tmp_dir.replace_extension(".tmp");
 }
 
 }  // namespace hictk::tools

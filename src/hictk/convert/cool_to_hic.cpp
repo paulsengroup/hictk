@@ -288,8 +288,7 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
 void cool_to_hic(const ConvertConfig& c) {
   std::ignore = find_java();
 
-  const internal::TmpDir tmpdir{
-      c.tmp_dir / std::filesystem::path(c.path_to_input.filename()).replace_extension(".tmp")};
+  const internal::TmpDir tmpdir{c.tmp_dir};
 
   const auto chrom_sizes = tmpdir() / "reference.chrom.sizes";
   const auto pixels = [&]() {
