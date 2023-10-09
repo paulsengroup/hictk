@@ -300,7 +300,8 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto weights = tmpdir() / "weights.txt";
 
   if (c.force && std::filesystem::exists(c.path_to_output)) {
-    std::filesystem::remove(c.path_to_output);
+    [[maybe_unused]] std::error_code ec{};
+    std::filesystem::remove(c.path_to_output, ec);
   }
 
   std::unique_ptr<boost::process::child> process{};
