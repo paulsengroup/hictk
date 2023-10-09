@@ -257,8 +257,8 @@ static bool dump_weights(std::uint32_t resolution, std::string_view cooler_uri,
       const auto num_bins = (chrom.size() + resolution - 1) / resolution;
       const auto i1 = i0 + static_cast<std::ptrdiff_t>(num_bins);
       std::for_each(weight_vector.begin() + i0, weight_vector.begin() + i1, [&](double w) {
-        std::isnan(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
-                      : fmt::print(f.get(), FMT_COMPILE("{}\n"), w);
+        !std::isfinite(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
+                          : fmt::print(f.get(), FMT_COMPILE("{}\n"), w);
         if (!bool(f)) {  // NOLINT
           throw fmt::system_error(
               errno, FMT_STRING("an error occurred while writing weights to file {}"), weight_file);
@@ -288,7 +288,8 @@ static bool dump_weights(const ConvertConfig& c, const std::filesystem::path& we
 void cool_to_hic(const ConvertConfig& c) {
   std::ignore = find_java();
 
-  const internal::TmpDir tmpdir{c.tmp_dir / c.path_to_output.filename()};
+  const internal::TmpDir tmpdir{
+      c.tmp_dir / std::filesystem::path(c.path_to_input.filename()).replace_extension(".tmp")};
 
   const auto chrom_sizes = tmpdir() / "reference.chrom.sizes";
   const auto pixels = [&]() {
