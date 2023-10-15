@@ -103,6 +103,7 @@ hictk convert
     --normalization-methods TEXT [ALL]  ...
                                 Name of one or more normalization methods to be copied.
                                 By default, vectors for all known normalization methods are copied.
+                                Pass NONE to avoid copying normalization vectors.
     --fail-if-norm-not-found    Fail if any of the requested normalization vectors are missing.
     -g,--genome TEXT            Genome assembly name. By default this is copied from the .hic file metadata.
     --juicer-tools-memory UINT:SIZE [b, kb(=1000b), kib(=1024b), ...]:POSITIVE [32GB]

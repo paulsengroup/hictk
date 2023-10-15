@@ -62,7 +62,8 @@ void Cli::make_convert_subcommand() {
       "--normalization-methods",
       c.normalization_methods,
       "Name of one or more normalization methods to be copied.\n"
-      "By default, vectors for all known normalization methods are copied.\n")
+      "By default, vectors for all known normalization methods are copied.\n"
+      "Pass NONE to avoid copying normalization vectors.")
       ->default_str("ALL");
   sc.add_flag(
       "--fail-if-norm-not-found",
@@ -224,6 +225,9 @@ void Cli::transform_args_convert_subcommand() {
   if (c.tmp_dir.empty()) {
     c.tmp_dir = c.path_to_output.parent_path();
   }
+
+  c.tmp_dir /= c.path_to_output.filename();
+  c.tmp_dir.replace_extension(".tmp");
 }
 
 }  // namespace hictk::tools
