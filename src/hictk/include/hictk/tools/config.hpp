@@ -126,6 +126,14 @@ struct MergeConfig {
   std::uint8_t verbosity{4};
 };
 
+struct RenameChromosomesConfig {
+  std::string uri{};
+  std::filesystem::path path_to_name_mappings{};
+  bool add_chr_prefix{false};
+  bool remove_chr_prefix{false};
+  std::uint8_t verbosity{4};
+};
+
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
@@ -153,6 +161,7 @@ using Config = std::variant<std::monostate,
                             FixMcoolConfig,
                             LoadConfig,
                             MergeConfig,
+                            RenameChromosomesConfig,
                             ValidateConfig,
                             ZoomifyConfig>;
 // clang-format on
