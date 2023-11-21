@@ -37,9 +37,16 @@ void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
 void copy(std::string_view uri1, std::string_view uri2, bool force_overwrite);
 void copy(std::string_view uri1, RootGroup dest);
 
+template <typename It>
+void rename_chromosomes(std::string_view uri, It first_mapping, It last_mapping);
+
+void rename_chromosomes(std::string_view uri,
+                        const phmap::flat_hash_map<std::string, std::string>& mappings);
+
 }  // namespace hictk::cooler::utils
 
 #include "./impl/utils_copy_impl.hpp"
 #include "./impl/utils_equal_impl.hpp"
 #include "./impl/utils_impl.hpp"
 #include "./impl/utils_merge_impl.hpp"
+#include "./impl/utils_rename_chroms_impl.hpp"

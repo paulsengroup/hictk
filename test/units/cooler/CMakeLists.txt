@@ -37,6 +37,7 @@ target_sources(
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_copy_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/utils_rename_chromosomes_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_validation_test.cpp")
 
 target_link_libraries(
