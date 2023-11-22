@@ -67,6 +67,7 @@ inline void rename_chromosomes(std::string_view uri,
 
   names = internal::rename_chromosomes(std::move(names), mappings);
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   HighFive::File h5f(file_path, HighFive::File::ReadWrite);
   const cooler::RootGroup root_grp{h5f.getGroup("/")};
   const auto aprop = h5f.getDataSet(chrom_dset).getAccessPropertyList();

@@ -73,7 +73,7 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
 
 [[nodiscard]] static phmap::flat_hash_map<std::string, std::string> generate_name_mappings(
     std::string_view uri, const std::filesystem::path& name_mappings_path, bool add_chr_prefix,
-    bool remove_chr_prefix) {
+    [[maybe_unused]] bool remove_chr_prefix) {
   if (!name_mappings_path.empty()) {
     return read_mappings_from_file(name_mappings_path);
   }
