@@ -29,9 +29,9 @@ namespace internal {
   return names;
 }
 
-[[nodiscard]] inline std::vector<std::string>& rename_chromosomes(
-    std::vector<std::string>&& names,
-    const phmap::flat_hash_map<std::string, std::string>& mappings) {
+template <typename NameMap>
+[[nodiscard]] inline std::vector<std::string>& rename_chromosomes(std::vector<std::string>&& names,
+                                                                  const NameMap& mappings) {
   for (auto& name : names) {
     auto it = mappings.find(name);
     if (it != mappings.end()) {
@@ -57,8 +57,11 @@ inline void rename_chromosomes(std::string_view uri, It first_mapping, It last_m
   return rename_chromosomes(uri, {first_mapping, last_mapping});
 }
 
-inline void rename_chromosomes(std::string_view uri,
-                               const phmap::flat_hash_map<std::string, std::string>& mappings) {
+template <typename NameMap, typename>
+inline void rename_chromosomes(std::string_view uri, const NameMap& mappings) {
+  if (mappings.empty()) {
+    return;
+  }
   cooler::File clr(uri);
   auto names = internal::get_chrom_names(clr);
   const auto file_path = clr.path();
