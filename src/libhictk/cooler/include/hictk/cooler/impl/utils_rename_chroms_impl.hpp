@@ -5,7 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/btree.h>
 
 #include <algorithm>
 #include <cassert>
@@ -54,7 +54,8 @@ template <typename NameMap>
 
 template <typename It>
 inline void rename_chromosomes(std::string_view uri, It first_mapping, It last_mapping) {
-  return rename_chromosomes(uri, {first_mapping, last_mapping});
+  return rename_chromosomes(
+      uri, phmap::btree_map<std::string, std::string>{first_mapping, last_mapping});
 }
 
 template <typename NameMap, typename>
