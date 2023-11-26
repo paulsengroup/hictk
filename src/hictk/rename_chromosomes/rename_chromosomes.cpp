@@ -101,30 +101,72 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
   return mappings;
 }
 
-int rename_chromosomes_subcmd(const RenameChromosomesConfig& c) {
-  if (cooler::utils::is_cooler(c.uri)) {
-    const auto mappings = generate_name_mappings(c.uri, c.path_to_name_mappings, c.add_chr_prefix,
-                                                 c.remove_chr_prefix);
-    cooler::utils::rename_chromosomes(c.uri, mappings);
-  } else if (cooler::utils::is_multires_file(c.uri)) {
-    const auto resolutions = cooler::MultiResFile(c.uri).resolutions();
-    const auto mappings = generate_name_mappings(
-        fmt::format(FMT_STRING("{}::/resolutions/{}"), c.uri, resolutions.front()),
-        c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
-    for (const auto& res : resolutions) {
-      cooler::utils::rename_chromosomes(fmt::format(FMT_STRING("{}::/resolutions/{}"), c.uri, res),
-                                        mappings);
-    }
-  } else {
-    assert(cooler::utils::is_scool_file(c.uri));
-    const auto cell_id = *cooler::SingleCellFile(c.uri).cells().begin();
-    const auto uri = fmt::format(FMT_STRING("{}::/cells/{}"), c.uri, cell_id);
-    const auto mappings =
-        generate_name_mappings(uri, c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
-    cooler::utils::rename_chromosomes(uri, mappings);
+static void remove_hardlinks_scool(HighFive::File& h5f,
+                                   const phmap::btree_set<std::string>& cells) {
+  for (const auto& cell : cells) {
+    h5f.unlink(fmt::format(FMT_STRING("/cells/{}/chroms"), cell));
   }
+}
+
+static void create_hardlinks_scool(HighFive::File& h5f,
+                                   const phmap::btree_set<std::string>& cells) {
+  const auto chrom_grp = h5f.getGroup("/chroms");
+  for (const auto& cell : cells) {
+    h5f.createHardLink(fmt::format(FMT_STRING("/cells/{}/chroms"), cell), chrom_grp);
+  }
+}
+
+[[nodiscard]] static int rename_chromosomes_cooler(const RenameChromosomesConfig& c) {
+  const auto mappings =
+      generate_name_mappings(c.uri, c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
+  cooler::utils::rename_chromosomes(c.uri, mappings);
+  return 0;
+}
+
+[[nodiscard]] static int rename_chromosomes_multires_cooler(const RenameChromosomesConfig& c) {
+  const auto resolutions = cooler::MultiResFile(c.uri).resolutions();
+  const auto mappings = generate_name_mappings(
+      fmt::format(FMT_STRING("{}::/resolutions/{}"), c.uri, resolutions.front()),
+      c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
+  for (const auto& res : resolutions) {
+    cooler::utils::rename_chromosomes(fmt::format(FMT_STRING("{}::/resolutions/{}"), c.uri, res),
+                                      mappings);
+  }
+  return 0;
+}
+
+[[nodiscard]] static int rename_chromosomes_single_cell_cooler(const RenameChromosomesConfig& c) {
+  assert(cooler::utils::is_scool_file(c.uri));
+  const auto cells = cooler::SingleCellFile(c.uri).cells();
+  const auto uri = fmt::format(FMT_STRING("{}::/cells/{}"), c.uri, *cells.begin());
+
+  const auto mappings =
+      generate_name_mappings(uri, c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
+
+  // NOLINTNEXTLINE(misc-const-correctness)
+  HighFive::File h5f(c.uri, HighFive::File::ReadWrite);
+
+  remove_hardlinks_scool(h5f, cells);
+
+  const cooler::RootGroup root_grp{h5f.getGroup("/")};
+  cooler::Dataset dset{root_grp, "/chroms/name"};
+  cooler::utils::rename_chromosomes(dset, mappings);
+
+  create_hardlinks_scool(h5f, cells);
+  assert(cooler::utils::is_scool_file(c.uri));
 
   return 0;
+}
+
+int rename_chromosomes_subcmd(const RenameChromosomesConfig& c) {
+  if (cooler::utils::is_cooler(c.uri)) {
+    return rename_chromosomes_cooler(c);
+  }
+
+  if (cooler::utils::is_multires_file(c.uri)) {
+    return rename_chromosomes_multires_cooler(c);
+  }
+  return rename_chromosomes_single_cell_cooler(c);
 }
 
 }  // namespace hictk::tools

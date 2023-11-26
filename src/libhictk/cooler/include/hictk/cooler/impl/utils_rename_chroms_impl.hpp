@@ -69,15 +69,32 @@ inline void rename_chromosomes(std::string_view uri, const NameMap& mappings) {
   const auto chrom_dset = fmt::format(FMT_STRING("{}/chroms/name"), clr.hdf5_path());
   clr.close();
 
-  names = internal::rename_chromosomes(std::move(names), mappings);
-
   // NOLINTNEXTLINE(misc-const-correctness)
   HighFive::File h5f(file_path, HighFive::File::ReadWrite);
   const cooler::RootGroup root_grp{h5f.getGroup("/")};
-  const auto aprop = h5f.getDataSet(chrom_dset).getAccessPropertyList();
+  cooler::Dataset dset{root_grp, chrom_dset};
 
-  h5f.unlink(chrom_dset);
-  cooler::Dataset dset{root_grp, chrom_dset, internal::find_chrom_with_longest_name(names),
+  return rename_chromosomes(dset, mappings);
+}
+
+template <typename NameMap, typename>
+inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappings) {
+  if (mappings.empty()) {
+    return;
+  }
+  auto names = chrom_dset.read_all<std::vector<std::string>>();
+
+  names = internal::rename_chromosomes(std::move(names), mappings);
+
+  // NOLINTNEXTLINE(misc-const-correctness)
+  auto h5f = chrom_dset().getFile();
+  const auto chrom_path = chrom_dset().getPath();
+  const auto aprop = chrom_dset().getAccessPropertyList();
+
+  h5f.unlink(chrom_dset().getPath());
+
+  const cooler::RootGroup root_grp{h5f.getGroup("/")};
+  cooler::Dataset dset{root_grp, chrom_path, internal::find_chrom_with_longest_name(names),
                        HighFive::DataSpace::UNLIMITED, aprop};
 
   try {

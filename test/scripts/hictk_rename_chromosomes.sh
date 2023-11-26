@@ -94,7 +94,7 @@ fi
 
 
 # Test scool
-cp "$input_mcool" "$outdir/out5.scool"
+cp "$input_scool" "$outdir/out5.scool"
 "$hictk_bin" rename-chroms "$outdir/out5.scool" --name-mappings "$outdir/mappings.txt"
 if ! "$hictk_bin" dump -t chroms "$outdir/out5.scool" | grep -q ABC ; then
   status=1

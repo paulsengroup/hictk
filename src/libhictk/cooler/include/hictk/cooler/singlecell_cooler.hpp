@@ -76,6 +76,9 @@ class SingleCellFile {
   [[nodiscard]] auto bins() const noexcept -> const BinTable&;
   [[nodiscard]] std::uint32_t bin_size() const noexcept;
 
+  [[nodiscard]] HighFive::File file_handle();
+  [[nodiscard]] const HighFive::File& file_handle() const;
+
   template <typename N>
   File aggregate(std::string_view uri, bool overwrite_if_exists = false,
                  std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000) const;

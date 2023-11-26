@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
 
 namespace hictk::cooler::utils {
@@ -42,6 +43,9 @@ void rename_chromosomes(std::string_view uri, It first_mapping, It last_mapping)
 
 template <typename NameMap, typename = std::enable_if_t<is_map_v<NameMap>>>
 void rename_chromosomes(std::string_view uri, const NameMap& mappings);
+
+template <typename NameMap, typename = std::enable_if_t<is_map_v<NameMap>>>
+inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappings);
 
 }  // namespace hictk::cooler::utils
 
