@@ -169,7 +169,8 @@ void Cli::transform_args() {
     case merge:
       transform_args_merge_subcommand();
       break;
-    case rename_chromosomes:  // NOLINT
+    case rename_chromosomes:
+      transform_args_rename_chromosomes_subcommand();
       break;
     case validate:
       break;

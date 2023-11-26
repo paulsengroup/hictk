@@ -108,7 +108,7 @@ int rename_chromosomes_subcmd(const RenameChromosomesConfig& c) {
     cooler::utils::rename_chromosomes(uri, mappings);
   }
 
-  return 1;
+  return 0;
 }
 
 }  // namespace hictk::tools
