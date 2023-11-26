@@ -217,6 +217,8 @@ jobs:
 
           test/scripts/hictk_merge.sh build/src/hictk/hictk
 
+          test/scripts/hictk_rename_chroms.sh build/src/hictk/hictk
+
           test/scripts/hictk_validate.sh build/src/hictk/hictk
 
           test/scripts/hictk_zoomify.sh build/src/hictk/hictk
