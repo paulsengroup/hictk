@@ -50,11 +50,19 @@ void Cli::make_rename_chromosomes_subcommand() {
       c.remove_chr_prefix,
       "Remove prefix \"chr\" from chromosome names.")
       ->capture_default_str();
+
+  sc.add_option(
+      "-v,--verbosity",
+      c.verbosity,
+      "Set verbosity of output to the console.")
+      ->check(CLI::Range(1, 4))
+      ->capture_default_str();
   // clang-format on
 
   sc.get_option("--name-mappings")->excludes(sc.get_option("--add-chr-prefix"));
   sc.get_option("--name-mappings")->excludes(sc.get_option("--remove-chr-prefix"));
   sc.get_option("--add-chr-prefix")->excludes(sc.get_option("--remove-chr-prefix"));
+  sc.alias("rename-chroms");
 
   _config = std::monostate{};
 }

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
 
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"
@@ -12,20 +13,20 @@
 
 namespace hictk::tools {
 
-[[nodiscard]] static phmap::flat_hash_map<std::string, std::string>
+[[nodiscard]] static phmap::btree_map<std::string, std::string>
 generate_mappings_add_chr_prefix_prefix(std::string_view uri) {
+  phmap::btree_map<std::string, std::string> mappings{};
   const auto chroms = cooler::File{uri}.chromosomes();
-  phmap::flat_hash_map<std::string, std::string> mappings(chroms.size());
   for (const auto& chrom : chroms) {
     mappings.emplace(std::string{chrom.name()}, "chr" + std::string{chrom.name()});
   }
   return mappings;
 }
 
-[[nodiscard]] static phmap::flat_hash_map<std::string, std::string>
+[[nodiscard]] static phmap::btree_map<std::string, std::string>
 generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
+  phmap::btree_map<std::string, std::string> mappings{};
   const auto chroms = cooler::File{uri}.chromosomes();
-  phmap::flat_hash_map<std::string, std::string> mappings(chroms.size());
   for (const auto& chrom : chroms) {
     const auto match = chrom.name().find("chr") == 0;
     if (match) {
@@ -35,7 +36,7 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
   return mappings;
 }
 
-[[nodiscard]] static phmap::flat_hash_map<std::string, std::string> read_mappings_from_file(
+[[nodiscard]] static phmap::btree_map<std::string, std::string> read_mappings_from_file(
     const std::filesystem::path& path) {
   if (path.empty()) {
     return {};
@@ -45,7 +46,7 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
   ifs.exceptions(std::ios::badbit);
   ifs.open(path);
 
-  phmap::flat_hash_map<std::string, std::string> mappings{};
+  phmap::btree_map<std::string, std::string> mappings{};
   std::string buff{};
 
   for (std::size_t i = 0; std::getline(ifs, buff); ++i) {
@@ -71,18 +72,33 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
   return mappings;
 }
 
-[[nodiscard]] static phmap::flat_hash_map<std::string, std::string> generate_name_mappings(
+[[nodiscard]] static phmap::btree_map<std::string, std::string> generate_name_mappings(
     std::string_view uri, const std::filesystem::path& name_mappings_path, bool add_chr_prefix,
     [[maybe_unused]] bool remove_chr_prefix) {
+  phmap::btree_map<std::string, std::string> mappings{};
   if (!name_mappings_path.empty()) {
-    return read_mappings_from_file(name_mappings_path);
+    mappings = read_mappings_from_file(name_mappings_path);
   }
   if (add_chr_prefix) {
-    return generate_mappings_add_chr_prefix_prefix(uri);
+    mappings = generate_mappings_add_chr_prefix_prefix(uri);
   }
 
-  assert(remove_chr_prefix);
-  return generate_mappings_remove_chr_prefix_prefix(uri);
+  if (remove_chr_prefix) {
+    mappings = generate_mappings_remove_chr_prefix_prefix(uri);
+  }
+
+  [[maybe_unused]] std::string mappings_str{};
+  std::for_each(mappings.begin(), mappings.end(), [&](const auto& m) {
+    mappings_str += fmt::format(FMT_STRING("\n - {} -> {}"), m.first, m.second);
+  });
+
+  if (mappings.empty()) {
+    SPDLOG_WARN("Chromosome name map is empty: no chromosomes will be renamed!");
+  } else {
+    SPDLOG_INFO(FMT_STRING("Renaming chromosomes as follows:{}"), mappings_str);
+  }
+
+  return mappings;
 }
 
 int rename_chromosomes_subcmd(const RenameChromosomesConfig& c) {
