@@ -58,7 +58,7 @@ jobs:
           fi
 
       - name: Generate matrix
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         id: set-result
         with:
           script: |
