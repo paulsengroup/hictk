@@ -78,13 +78,15 @@ inline auto JoinGenomicCoords<PixelIt>::iterator::operator->() const -> const_po
 
 template <typename PixelIt>
 inline auto JoinGenomicCoords<PixelIt>::iterator::operator++() -> iterator& {
-  ++_it;
+  std::ignore = ++_it;
   return *this;
 }
+
 template <typename PixelIt>
 inline auto JoinGenomicCoords<PixelIt>::iterator::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++_it;
   return it;
 }
+
 }  // namespace hictk::transformers

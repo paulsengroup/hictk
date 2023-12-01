@@ -108,6 +108,89 @@ static void dump_pixels(hic::File& f, std::string_view range1, std::string_view 
   print_pixels(jsel.begin(), jsel.end());
 }
 
+static void dump_pixels_trans_only_sorted(const cooler::File& f, std::string_view normalization,
+                                          bool join) {
+  auto weights = f.read_weights(balancing::Method{normalization});
+
+  using It = decltype(f.fetch("chr1", "chr2").template begin<double>());
+
+  const auto chroms = f.chromosomes();
+  for (std::uint32_t i = 0; i < chroms.size(); ++i) {
+    std::vector<It> heads{};
+    std::vector<It> tails{};
+    for (std::uint32_t j = i + 1; j < chroms.size(); ++j) {
+      const auto& chrom1 = chroms[i];
+      const auto& chrom2 = chroms[j];
+
+      if (chrom1.is_all() || chrom2.is_all()) {
+        continue;
+      }
+
+      auto sel = f.fetch(chrom1.name(), chrom2.name(), weights);
+      heads.emplace_back(sel.begin<double>());
+      tails.emplace_back(sel.end<double>());
+    }
+
+    internal::PixelMerger<It> merger(std::move(heads), std::move(tails));
+
+    if (!join) {
+      print_pixels(merger.begin(), merger.end());
+      continue;
+    }
+
+    auto jsel = transformers::JoinGenomicCoords(merger.begin(), merger.end(), f.bins_ptr());
+    print_pixels(jsel.begin(), jsel.end());
+  }
+}
+
+static void dump_pixels_trans_only_sorted(hic::File& f, std::string_view normalization, bool join) {
+  auto norm = balancing::Method{std::string{normalization}};
+
+  std::vector<hic::PixelSelector> selectors;
+
+  for (std::uint32_t chrom1_id = 0; chrom1_id < f.chromosomes().size(); ++chrom1_id) {
+    const auto& chrom1 = f.chromosomes().at(chrom1_id);
+    if (chrom1.is_all()) {
+      continue;
+    }
+    for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < f.chromosomes().size(); ++chrom2_id) {
+      const auto& chrom2 = f.chromosomes().at(chrom2_id);
+      if (chrom2.is_all()) {
+        continue;
+      }
+      try {
+        auto sel = f.fetch(chrom1.name(), chrom2.name(), norm);
+        if (!sel.empty()) {
+          selectors.emplace_back(std::move(sel));
+        }
+      } catch (const std::exception& e) {
+        const std::string_view msg{e.what()};
+        const auto missing_norm = msg.find("unable to find") != std::string_view::npos &&
+                                  msg.find("normalization vector") != std::string_view::npos;
+        if (!missing_norm) {
+          throw;
+        }
+      }
+    }
+  }
+
+  if (selectors.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to find {} normalization vectors at {} ({})"),
+                    norm.to_string(), f.resolution(), hic::MatrixUnit::BP));
+  }
+
+  hic::PixelSelectorAll sel(std::move(selectors));
+
+  if (!join) {
+    print_pixels(sel.template begin<double>(), sel.template end<double>());
+  }
+
+  auto jsel = transformers::JoinGenomicCoords(sel.template begin<double>(),
+                                              sel.template end<double>(), f.bins_ptr());
+  print_pixels(jsel.begin(), jsel.end());
+}
+
 static void process_query(File& f, std::string_view table, std::string_view range1,
                           std::string_view range2, std::string_view normalization, bool join,
                           bool sorted) {
@@ -118,6 +201,55 @@ static void process_query(File& f, std::string_view table, std::string_view rang
   assert(table == "pixels");
   std::visit([&](auto& ff) { return dump_pixels(ff, range1, range2, normalization, join, sorted); },
              f.get());
+}
+
+static void process_query_cis_only(File& f, std::string_view normalization, bool join,
+                                   bool sorted) {
+  std::visit(
+      [&](auto& ff) {
+        for (const auto& chrom : ff.chromosomes()) {
+          if (chrom.is_all()) {
+            continue;
+          }
+          dump_pixels(ff, chrom.name(), chrom.name(), normalization, join, sorted);
+        }
+      },
+      f.get());
+}
+
+static void process_query_trans_only_unsorted(File& f, std::string_view normalization, bool join) {
+  std::visit(
+      [&](auto& ff) {
+        const auto& chromosomes = ff.chromosomes();
+        for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes.size(); ++chrom1_id) {
+          const auto& chrom1 = chromosomes[chrom1_id];
+          if (chrom1.is_all()) {
+            continue;
+          }
+          for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < chromosomes.size();
+               ++chrom2_id) {
+            const auto& chrom2 = chromosomes[chrom2_id];
+            if (chrom2.is_all()) {
+              continue;
+            }
+
+            dump_pixels(ff, chrom1.name(), chrom2.name(), normalization, join, false);
+          }
+        }
+      },
+      f.get());
+}
+
+static void process_query_trans_only_sorted(File& f, std::string_view normalization, bool join) {
+  std::visit([&](auto& ff) { dump_pixels_trans_only_sorted(ff, normalization, join); }, f.get());
+}
+
+static void process_query_trans_only(File& f, std::string_view normalization, bool join,
+                                     bool sorted) {
+  if (sorted) {
+    return process_query_trans_only_sorted(f, normalization, join);
+  }
+  return process_query_trans_only_unsorted(f, normalization, join);
 }
 
 static int dump_chroms(std::string_view uri, std::string_view format, std::uint32_t resolution) {
@@ -244,8 +376,20 @@ static int dump_cells(std::string_view uri, std::string_view format) {
 static int dump_tables(const DumpConfig& c) {
   hictk::File f{c.uri, c.resolution, c.matrix_type, c.matrix_unit};
 
-  if (c.query_file.empty()) {
+  if (c.query_file.empty() && !c.cis_only && !c.trans_only) {
     process_query(f, c.table, c.range1, c.range2, c.normalization, c.join, c.sorted);
+    return 0;
+  }
+
+  if (c.cis_only) {
+    assert(c.table == "pixels");
+    process_query_cis_only(f, c.normalization, c.join, c.sorted);
+    return 0;
+  }
+
+  if (c.trans_only) {
+    assert(c.table == "pixels");
+    process_query_trans_only(f, c.normalization, c.join, c.sorted);
     return 0;
   }
 

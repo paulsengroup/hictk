@@ -83,6 +83,16 @@ void Cli::make_dump_subcommand() {
       ->check(CLI::ExistingFile | CLI::IsMember({"-"}))
       ->capture_default_str();
 
+  sc.add_flag(
+      "--cis-only",
+      c.cis_only,
+      "Dump intra-chromosomal interactions only.");
+
+  sc.add_flag(
+      "--trans-only",
+      c.trans_only,
+      "Dump inter-chromosomal interactions only.");
+
   sc.add_option(
       "-b,--balance",
       c.normalization,
@@ -113,6 +123,9 @@ void Cli::make_dump_subcommand() {
   sc.get_option("--range2")->needs(sc.get_option("--range"));
   sc.get_option("--query-file")->excludes(sc.get_option("--range"));
   sc.get_option("--query-file")->excludes(sc.get_option("--range2"));
+  sc.get_option("--query-file")->excludes(sc.get_option("--cis-only"));
+  sc.get_option("--query-file")->excludes(sc.get_option("--trans-only"));
+  sc.get_option("--cis-only")->excludes(sc.get_option("--trans-only"));
 
   _config = std::monostate{};
 }
@@ -166,6 +179,10 @@ void Cli::validate_dump_subcommand() const {
 
   if (is_hic && c.matrix_unit == hic::MatrixUnit::FRAG) {
     errors.emplace_back("--matrix-type=FRAG is not yet supported.");
+  }
+
+  if ((c.cis_only || c.trans_only) && c.table != "pixels") {
+    errors.emplace_back("--cis-only and --trans-only require --table=pixels.");
   }
 
   for (const auto& w : warnings) {

@@ -13,6 +13,7 @@
 #include <type_traits>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk {
 
@@ -131,6 +132,14 @@ class PixelMerger {
     ThinPixel<N> _value{};
 
    public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
+    using pointer = value_type *;
+    using const_pointer = const value_type *;
+    using reference = value_type &;
+    using const_reference = const value_type &;
+    using iterator_category = std::forward_iterator_tag;
+
     iterator() = default;
     explicit iterator(PixelMerger &merger);
 
