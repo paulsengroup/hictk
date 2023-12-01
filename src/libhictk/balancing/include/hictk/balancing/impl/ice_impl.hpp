@@ -16,6 +16,7 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::balancing {
@@ -265,7 +266,7 @@ template <typename File>
     tails.emplace_back(sel.template end<double>());
   }
 
-  internal::PixelMerger<PixelIt> merger{heads, tails};
+  transformers::PixelMerger<PixelIt> merger{heads, tails};
 
   SparseMatrix m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -384,7 +385,7 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
     tails.emplace_back(sel.template end<double>());
   }
 
-  internal::PixelMerger<PixelIt> merger{heads, tails};
+  transformers::PixelMerger<PixelIt> merger{heads, tails};
 
   SparseMatrixChunked m(tmpfile, chunk_size);
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {

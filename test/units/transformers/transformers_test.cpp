@@ -20,6 +20,42 @@ namespace hictk::test::transformers {
 
 using namespace hictk::transformers;
 
+struct Coords {
+  std::uint64_t bin1;
+  std::uint64_t bin2;
+
+  bool operator==(const Coords& other) const noexcept {
+    return bin1 == other.bin1 && bin2 == other.bin2;
+  }
+  bool operator<(const Coords& other) const noexcept {
+    if (bin1 == other.bin1) {
+      return bin2 < other.bin2;
+    }
+    return bin1 < other.bin1;
+  }
+};
+
+template <typename PixelIt>
+static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
+    const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails) {
+  assert(heads.size() == tails.size());
+
+  phmap::btree_map<Coords, std::int32_t> map{};
+
+  for (std::size_t i = 0; i < heads.size(); ++i) {
+    std::for_each(heads[i], tails[i], [&](const ThinPixel<std::int32_t>& p) {
+      Coords c{p.bin1_id, p.bin2_id};
+
+      if (map.contains(c)) {
+        map[c] += p.count;
+      } else {
+        map[c] = p.count;
+      }
+    });
+  }
+  return map;
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
@@ -33,6 +69,33 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     REQUIRE(pixels.size() == expected.size());
     for (std::size_t i = 0; i < expected.size(); ++i) {
       CHECK(pixels[i].coords.bin1.start() == expected[i]);
+    }
+  }
+
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+  SECTION("PixelMerger", "[transformers][short]") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+
+    cooler::File clr(path.string());
+    const auto sel1 = clr.fetch("chr1:0-100,000,000");
+    const auto sel2 = clr.fetch("chr1:50,000,000-150,000,000");
+    const auto sel3 = clr.fetch("chr2:50,000,000-150,000,000");
+
+    using It = decltype(sel1.template begin<std::int32_t>());
+    std::vector<It> heads{sel1.template begin<std::int32_t>(), sel2.template begin<std::int32_t>(),
+                          sel3.template begin<std::int32_t>()};
+    std::vector<It> tails{sel1.template end<std::int32_t>(), sel2.template end<std::int32_t>(),
+                          sel3.template end<std::int32_t>()};
+
+    transformers::PixelMerger<It> merger(heads, tails);
+    const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
+    const auto expected_pixels = merge_pixels_hashmap(heads, tails);
+
+    REQUIRE(pixels.size() == expected_pixels.size());
+
+    for (const auto& p : pixels) {
+      REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
+      CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
     }
   }
 
@@ -124,6 +187,31 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
     REQUIRE(pixels.size() == expected.size());
     for (std::size_t i = 0; i < expected.size(); ++i) {
       CHECK(pixels[i].coords.bin1.start() == expected[i]);
+    }
+  }
+
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+  SECTION("PixelMerger", "[transformers][short]") {
+    const hic::File hf(path.string(), 100'000);
+    const auto sel1 = hf.fetch("chr2L:0-10,000,000");
+    const auto sel2 = hf.fetch("chr2L:5,000,000-15,000,000");
+    const auto sel3 = hf.fetch("chr2R:5,000,000-15,000,000");
+
+    using It = decltype(sel1.template begin<std::int32_t>());
+    std::vector<It> heads{sel1.template begin<std::int32_t>(), sel2.template begin<std::int32_t>(),
+                          sel3.template begin<std::int32_t>()};
+    std::vector<It> tails{sel1.template end<std::int32_t>(), sel2.template end<std::int32_t>(),
+                          sel3.template end<std::int32_t>()};
+
+    transformers::PixelMerger<It> merger(heads, tails);
+    const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
+    const auto expected_pixels = merge_pixels_hashmap(heads, tails);
+
+    REQUIRE(pixels.size() == expected_pixels.size());
+
+    for (const auto& p : pixels) {
+      REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
+      CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
     }
   }
 
