@@ -21,8 +21,8 @@ namespace hictk::test::transformers {
 using namespace hictk::transformers;
 
 struct Coords {
-  std::uint64_t bin1;
-  std::uint64_t bin2;
+  std::uint64_t bin1{};  // NOLINT
+  std::uint64_t bin2{};  // NOLINT
 
   bool operator==(const Coords& other) const noexcept {
     return bin1 == other.bin1 && bin2 == other.bin2;
@@ -41,10 +41,9 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
   assert(heads.size() == tails.size());
 
   phmap::btree_map<Coords, std::int32_t> map{};
-
   for (std::size_t i = 0; i < heads.size(); ++i) {
     std::for_each(heads[i], tails[i], [&](const ThinPixel<std::int32_t>& p) {
-      Coords c{p.bin1_id, p.bin2_id};
+      const Coords c{p.bin1_id, p.bin2_id};
 
       if (map.contains(c)) {
         map[c] += p.count;
@@ -76,18 +75,20 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("PixelMerger", "[transformers][short]") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
 
-    cooler::File clr(path.string());
+    const cooler::File clr(path.string());
     const auto sel1 = clr.fetch("chr1:0-100,000,000");
     const auto sel2 = clr.fetch("chr1:50,000,000-150,000,000");
     const auto sel3 = clr.fetch("chr2:50,000,000-150,000,000");
 
     using It = decltype(sel1.template begin<std::int32_t>());
-    std::vector<It> heads{sel1.template begin<std::int32_t>(), sel2.template begin<std::int32_t>(),
-                          sel3.template begin<std::int32_t>()};
-    std::vector<It> tails{sel1.template end<std::int32_t>(), sel2.template end<std::int32_t>(),
-                          sel3.template end<std::int32_t>()};
+    const std::vector<It> heads{sel1.template begin<std::int32_t>(),
+                                sel2.template begin<std::int32_t>(),
+                                sel3.template begin<std::int32_t>()};
+    const std::vector<It> tails{sel1.template end<std::int32_t>(),
+                                sel2.template end<std::int32_t>(),
+                                sel3.template end<std::int32_t>()};
 
-    transformers::PixelMerger<It> merger(heads, tails);
+    const transformers::PixelMerger<It> merger(heads, tails);
     const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
     const auto expected_pixels = merge_pixels_hashmap(heads, tails);
 
@@ -198,12 +199,14 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
     const auto sel3 = hf.fetch("chr2R:5,000,000-15,000,000");
 
     using It = decltype(sel1.template begin<std::int32_t>());
-    std::vector<It> heads{sel1.template begin<std::int32_t>(), sel2.template begin<std::int32_t>(),
-                          sel3.template begin<std::int32_t>()};
-    std::vector<It> tails{sel1.template end<std::int32_t>(), sel2.template end<std::int32_t>(),
-                          sel3.template end<std::int32_t>()};
+    const std::vector<It> heads{sel1.template begin<std::int32_t>(),
+                                sel2.template begin<std::int32_t>(),
+                                sel3.template begin<std::int32_t>()};
+    const std::vector<It> tails{sel1.template end<std::int32_t>(),
+                                sel2.template end<std::int32_t>(),
+                                sel3.template end<std::int32_t>()};
 
-    transformers::PixelMerger<It> merger(heads, tails);
+    const transformers::PixelMerger<It> merger(heads, tails);
     const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
     const auto expected_pixels = merge_pixels_hashmap(heads, tails);
 
