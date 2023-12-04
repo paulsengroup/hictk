@@ -33,10 +33,11 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
                                     std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
                                     PixelCoordinates coord2_) noexcept
-    : _reader(std::move(hfs_), footer_->index(), std::move(bins_), std::move(cache_)),
+    : _reader(std::make_shared<internal::HiCBlockReader>(std::move(hfs_), footer_->index(),
+                                                         std::move(bins_), std::move(cache_))),
       _footer(std::move(footer_)),
-      _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)) {}
+      _coord1(std::make_shared<const PixelCoordinates>(std::move(coord1_))),
+      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))) {}
 
 inline PixelSelector::~PixelSelector() noexcept {
   try {
@@ -48,8 +49,8 @@ inline PixelSelector::~PixelSelector() noexcept {
 }
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
-  return _reader.index().chrom1() == _reader.index().chrom2() && _coord1 == other._coord1 &&
-         _coord2 == other._coord2;
+  return _reader->index().chrom1() == _reader->index().chrom2() && *_coord1 == *other._coord1 &&
+         *_coord2 == *other._coord2;
 }
 
 inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept {
@@ -63,7 +64,7 @@ inline auto PixelSelector::cbegin(bool sorted) const -> iterator<N> {
 
 template <typename N>
 inline auto PixelSelector::cend() const -> iterator<N> {
-  return iterator<N>::at_end(*this);
+  return iterator<N>::at_end(_reader, _coord1, _coord2);
 }
 
 template <typename N>
@@ -110,7 +111,7 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
 
   const auto expectedCount = [&]() {
     if (is_inter()) {
-      return float(_reader.avg());
+      return float(_reader->avg());
     }
 
     const auto i = (bin2 - bin1);
@@ -197,19 +198,19 @@ template <typename N>
 }
 #endif
 
-inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
-inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
+inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return *_coord1; }
+inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return *_coord2; }
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
 inline balancing::Method PixelSelector::normalization() const noexcept {
   return metadata().normalization;
 }
-inline MatrixUnit PixelSelector::unit() const noexcept { return _reader.index().unit(); }
+inline MatrixUnit PixelSelector::unit() const noexcept { return _reader->index().unit(); }
 inline std::uint32_t PixelSelector::resolution() const noexcept {
-  return _reader.index().resolution();
+  return _reader->index().resolution();
 }
 
-inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1.bin1.chrom(); }
-inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2.bin1.chrom(); }
+inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1->bin1.chrom(); }
+inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2->bin1.chrom(); }
 
 inline const balancing::Weights &PixelSelector::weights1() const noexcept {
   return _footer->weights1();
@@ -218,7 +219,7 @@ inline const balancing::Weights &PixelSelector::weights2() const noexcept {
   return _footer->weights2();
 }
 
-inline const BinTable &PixelSelector::bins() const noexcept { return _reader.bins(); }
+inline const BinTable &PixelSelector::bins() const noexcept { return _reader->bins(); }
 
 inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexcept {
   assert(!!_footer);
@@ -229,25 +230,25 @@ inline bool PixelSelector::is_inter() const noexcept { return !is_intra(); }
 
 inline bool PixelSelector::is_intra() const noexcept { return chrom1() == chrom2(); }
 
-inline bool PixelSelector::empty() const noexcept { return _reader.index().empty(); }
+inline bool PixelSelector::empty() const noexcept { return _reader->index().empty(); }
 
 inline std::size_t PixelSelector::estimate_optimal_cache_size(
     [[maybe_unused]] std::size_t num_samples) const {
-  if (_reader.index().empty()) {
+  if (_reader->index().empty()) {
     return 0;  // should we throw instead?
   }
 
-  std::seed_seq sseq({_reader.index().size()});
+  std::seed_seq sseq({_reader->index().size()});
   std::mt19937_64 rand_eng(sseq);
 
   // Try to guess the average block size
   std::size_t avg_block_size = 0;
+  const auto &idx = _reader->index();
 
-  std::vector<internal::BlockIndex> blocks(std::min(_reader.index().size(), num_samples));
-  std::sample(_reader.index().begin(), _reader.index().end(), blocks.begin(), blocks.size(),
-              rand_eng);
+  std::vector<internal::BlockIndex> blocks(std::min(idx.size(), num_samples));
+  std::sample(idx.begin(), idx.end(), blocks.begin(), blocks.size(), rand_eng);
   for (const auto &blki : blocks) {
-    avg_block_size += _reader.read_size(chrom1(), chrom2(), blki);
+    avg_block_size += _reader->read_size(chrom1(), chrom2(), blki);
   }
   avg_block_size /= blocks.size();
 
@@ -266,7 +267,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
     const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
     const auto bin1 = bins().at(coord1().bin1.chrom(), pos1);
 
-    auto overlap = _reader.index().find_overlaps({bin1, bin1}, coord2());
+    auto overlap = idx.find_overlaps({bin1, bin1}, coord2());
     const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.begin(), overlap.end()));
     max_blocks_per_row = (std::max)(max_blocks_per_row, num_blocks);
   }
@@ -275,26 +276,29 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 }
 
 inline void PixelSelector::clear_cache() const {
-  if (_reader.cache_size() == 0) {
+  if (_reader->cache_size() == 0) {
     return;
   }
-  for (auto blki : _reader.index().find_overlaps(coord1(), coord2())) {
-    _reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
+  for (auto blki : _reader->index().find_overlaps(coord1(), coord2())) {
+    _reader->evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
   }
 }
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorted)
-    : _sel(&sel),
+    : _reader(sel._reader),
+      _coord1(sel._coord1),
+      _coord2(sel._coord2),
+      _footer(sel._footer),
       _block_idx(std::make_shared<const internal::Index::Overlap>(
-          sel._reader.index().find_overlaps(coord1(), coord2()))),
+          _reader->index().find_overlaps(coord1(), coord2()))),
       _block_blacklist(std::make_shared<BlockBlacklist>()),
       _block_it(_block_idx->begin()),
       _buffer(std::make_shared<BufferT>()),
       _bin1_id(coord1().bin1.rel_id()),
       _sorted(sorted) {
-  if (_sel->_reader.index().empty()) {
-    *this = at_end(sel);
+  if (_reader->index().empty()) {
+    *this = at_end(_reader, _coord1, _coord2);
     return;
   }
 
@@ -304,10 +308,15 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorte
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::at_end(const PixelSelector &sel) -> iterator<N> {
+inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBlockReader> reader,
+                                               std::shared_ptr<const PixelCoordinates> coord1,
+                                               std::shared_ptr<const PixelCoordinates> coord2)
+    -> iterator<N> {
   iterator it{};
 
-  it._sel = &sel;
+  it._reader = reader;
+  it._coord1 = coord1;
+  it._coord2 = coord2;
   it._buffer = nullptr;  // end of queue
 
   return it;
@@ -315,9 +324,14 @@ inline auto PixelSelector::iterator<N>::at_end(const PixelSelector &sel) -> iter
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
-  if (_sel != other._sel) {
+  const auto same_query = coord1() == other.coord1() && coord2() == other.coord2();
+
+  if (!same_query) {
     return false;
   }
+
+  assert(_reader->index().chrom1() == other._reader->index().chrom1());
+  assert(_reader->index().chrom2() == other._reader->index().chrom2());
 
   const auto bin11 = bin1_id();
   const auto bin12 = bin2_id();
@@ -402,18 +416,18 @@ inline bool PixelSelector::iterator<N>::is_at_end() const noexcept {
 
 template <typename N>
 inline const BinTable &PixelSelector::iterator<N>::bins() const noexcept {
-  assert(!!_sel);
-  return _sel->bins();
+  assert(!!_reader);
+  return _reader->bins();
 }
 template <typename N>
 inline const PixelCoordinates &PixelSelector::iterator<N>::coord1() const noexcept {
-  assert(!!_sel);
-  return _sel->coord1();
+  assert(!!_coord1);
+  return *_coord1;
 }
 template <typename N>
 inline const PixelCoordinates &PixelSelector::iterator<N>::coord2() const noexcept {
-  assert(!!_sel);
-  return _sel->coord2();
+  assert(!!_coord2);
+  return *_coord2;
 }
 
 template <typename N>
@@ -442,14 +456,15 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
                                         bins().at(coord1().bin1.chrom(), pos2));
 
-  return _sel->_reader.index().find_overlaps(coord1_, coord2());
+  return _reader->index().find_overlaps(coord1_, coord2());
 }
 
 template <typename N>
 inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
+  assert(!!_reader);
   const auto bin_size = bins().bin_size();
   const auto num_bins = std::min(
-      static_cast<std::uint32_t>(_sel->_reader.index().block_bin_count()),
+      static_cast<std::uint32_t>(_reader->index().block_bin_count()),
       static_cast<std::uint32_t>(0.005 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
 
   const auto end_pos = coord1().bin2.start();
@@ -461,13 +476,14 @@ inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noex
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk() {
+  assert(!!_reader);
   if (!_sorted) {
     return read_next_chunk_unsorted();
   }
 
   const auto is_intra = coord1().bin1.chrom() == coord2().bin1.chrom();
 
-  if (_sel->_reader.index().version() > 8 && is_intra) {
+  if (_reader->index().version() > 8 && is_intra) {
     return read_next_chunk_v9_intra_sorted();
   }
   read_next_chunk_sorted();
@@ -475,10 +491,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
-  assert(!!_sel);
+  assert(!!_reader);
 
   if (_block_it == _block_idx->end()) {
-    *this = at_end(*_sel);
+    *this = at_end(_reader, _coord1, _coord2);
     return;
   }
 
@@ -495,7 +511,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
 
   const auto bin1_offset = bins().at(coord1().bin1.chrom()).id();
   const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
-  auto blk = *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it++, false);
+  auto blk = *_reader->read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it++, false);
   for (auto p : blk) {
     if (static_cast<std::size_t>(p.bin1_id) < bin1_lb ||
         static_cast<std::size_t>(p.bin1_id) > bin1_ub ||
@@ -504,7 +520,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
       continue;
     }
 
-    auto pt = _sel->transform_pixel<N>(p);
+    auto pt = transform_pixel(p);
     pt.bin1_id += bin1_offset;
     pt.bin2_id += bin2_offset;
     _buffer->emplace_back(std::move(pt));
@@ -513,10 +529,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
-  assert(!!_sel);
+  assert(!!_reader);
 
   if (_block_it == _block_idx->end()) {
-    *this = at_end(*_sel);
+    *this = at_end(_reader, _coord1, _coord2);
     return;
   }
 
@@ -535,7 +551,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
   const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
   auto first_blki = *_block_it;
   while (_block_it->coords().i1 == first_blki.coords().i1) {
-    auto blk = *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it, false);
+    auto blk = *_reader->read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it, false);
     for (auto p : blk) {
       if (static_cast<std::size_t>(p.bin1_id) < bin1_lb ||
           static_cast<std::size_t>(p.bin1_id) > bin1_ub ||
@@ -544,7 +560,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
         continue;
       }
 
-      auto pt = _sel->transform_pixel<N>(p);
+      auto pt = transform_pixel(p);
       pt.bin1_id += bin1_offset;
       pt.bin2_id += bin2_offset;
       _buffer->emplace_back(std::move(pt));
@@ -560,10 +576,10 @@ inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
-  assert(!!_sel);
+  assert(!!_reader);
 
   if (_bin1_id > coord1().bin2.rel_id()) {
-    *this = at_end(*_sel);
+    *this = at_end(_reader, _coord1, _coord2);
     return;
   }
 
@@ -594,7 +610,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
     const auto bin1_offset = bins().at(coord1().bin1.chrom()).id();
     const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
     bool block_overlaps_query = false;
-    for (auto p : *_sel->_reader.read(coord1().bin1.chrom(), coord2().bin1.chrom(), blki)) {
+    for (auto p : *_reader->read(coord1().bin1.chrom(), coord2().bin1.chrom(), blki)) {
       // Using bitwise operators gives a ~5% perf improvement on my machine
       const auto pixel_overlaps_query = bool(int(static_cast<std::size_t>(p.bin1_id) >= bin1_lb) &
                                              int(static_cast<std::size_t>(p.bin1_id) <= bin1_ub) &
@@ -609,13 +625,13 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
         continue;
       }
 
-      auto pt = _sel->transform_pixel<N>(p);
+      auto pt = transform_pixel(p);
       pt.bin1_id += bin1_offset;
       pt.bin2_id += bin2_offset;
       _buffer->emplace_back(std::move(pt));
     }
     if (!block_overlaps_query) {
-      _sel->_reader.evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
+      _reader->evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
       _block_blacklist->emplace(blki);
     }
   }
@@ -624,6 +640,64 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
     std::sort(_buffer->begin(), _buffer->end());
   }
   _bin1_id = bin1_id_last + 1;
+}
+
+template <typename N>
+inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float> pixel) const {
+  assert(!!_footer);
+
+  auto return_pixel = [&]() -> ThinPixel<N> {
+    if constexpr (std::is_floating_point_v<N>) {
+      return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
+    } else {
+      return {pixel.bin1_id, pixel.bin2_id, static_cast<N>(std::round(pixel.count))};
+    }
+  };
+
+  const auto &weights1 = _footer->weights1()();
+  const auto &weights2 = _footer->weights2()();
+  const auto &expected = _footer->expectedValues();
+
+  const auto bin1 = pixel.bin1_id;
+  const auto bin2 = pixel.bin2_id;
+
+  const auto is_inter = coord1().bin1.chrom() != coord2().bin1.chrom();
+  const auto matrix_type = _footer->matrix_type();
+
+  assert(is_inter || bin1 <= bin2);
+
+  const auto skip_normalization =
+      _footer->normalization() == balancing::Method::NONE() || matrix_type == MatrixType::expected;
+
+  if (!skip_normalization) {
+    assert(bin1 < weights1.size());
+    assert(bin2 < weights2.size());
+    pixel.count /= static_cast<float>(weights1[bin1] * weights2[bin2]);
+  }
+
+  if (matrix_type == MatrixType::observed) {
+    return return_pixel();
+  }
+
+  const auto expected_count = [&]() {
+    if (is_inter) {
+      return float(_reader->avg());
+    }
+
+    const auto i = (bin2 - bin1);
+    assert(i < expected.size());
+    return float(expected[i]);
+  }();
+
+  if (matrix_type == MatrixType::expected) {
+    pixel.count = expected_count;
+    return return_pixel();
+  }
+
+  assert(matrix_type == MatrixType::oe);
+  pixel.count /= expected_count;
+
+  return return_pixel();
 }
 
 inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
