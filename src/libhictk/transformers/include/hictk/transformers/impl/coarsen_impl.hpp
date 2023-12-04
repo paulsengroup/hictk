@@ -17,6 +17,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::transformers {
 
@@ -201,19 +202,18 @@ inline void CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass2(const ColumnMe
     }
   }
 
-  using PixelMerger = internal::PixelMerger<RowIt>;
+  using PixelMerger = transformers::PixelMerger<RowIt>;
   PixelMerger merger(heads, tails);
+  auto first = merger.begin();
+  auto last = merger.end();
 
   if (_buffer.use_count() != 1) {
     _buffer = std::make_shared<BufferT>();
   }
   _buffer->clear();
-  _buffer->emplace_back(merger.next());
-  while (!!_buffer->back()) {
-    const auto value = merger.next();
-    if (!value) {
-      break;  // all pixels have been processed
-    }
+  _buffer->emplace_back(*first);
+  while (!!_buffer->back() && ++first != last) {
+    const auto value = *first;
 
     // Insert or merge pixels
     auto &last_pixel = _buffer->back();

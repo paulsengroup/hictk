@@ -8,9 +8,7 @@
 
 #include <cstdint>
 #include <limits>
-#include <queue>
 #include <string_view>
-#include <type_traits>
 
 #include "hictk/bin_table.hpp"
 #include "hictk/type_traits.hpp"
@@ -91,71 +89,6 @@ struct Pixel {
   static auto from_validpair(const BinTable &bins, std::string_view line) -> Pixel;
   static auto from_4dn_pairs(const BinTable &bins, std::string_view line) -> Pixel;
 };
-
-namespace internal {
-
-/// This class is basically a wrapper around a priority queue of objects of type Pair
-/// Pair consist of a pixel and an index. The index represent from which iterator the
-/// pixel was read. This allows us to know from which iterator we should read the next pixel (i.e.
-/// the same iterator from which the top pixel originated)
-template <typename PixelIt>
-class PixelMerger {
-  using N = decltype(std::declval<PixelIt>()->count);
-  struct Node {
-    ThinPixel<N> pixel{};  // NOLINT
-    std::size_t i{};       // NOLINT
-
-    bool operator<(const Node &other) const noexcept;
-    bool operator>(const Node &other) const noexcept;
-    bool operator==(const Node &other) const noexcept;
-    bool operator!=(const Node &other) const noexcept;
-  };
-
-  std::priority_queue<Node, std::vector<Node>, std::greater<>> _pqueue{};
-
-  std::vector<PixelIt> _heads{};
-  std::vector<PixelIt> _tails{};
-  std::size_t _i{};
-
- public:
-  class iterator;
-
-  PixelMerger() = delete;
-  PixelMerger(std::vector<PixelIt> head, std::vector<PixelIt> tail);
-
-  auto begin() -> iterator;
-  auto end() const noexcept -> iterator;
-  [[nodiscard]] auto next() -> ThinPixel<N>;
-
-  class iterator {
-    PixelMerger *_merger{};
-    ThinPixel<N> _value{};
-
-   public:
-    using difference_type = std::ptrdiff_t;
-    using value_type = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
-    using pointer = value_type *;
-    using const_pointer = const value_type *;
-    using reference = value_type &;
-    using const_reference = const value_type &;
-    using iterator_category = std::forward_iterator_tag;
-
-    iterator() = default;
-    explicit iterator(PixelMerger &merger);
-
-    [[nodiscard]] bool operator==(const iterator &other) const noexcept;
-    [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
-
-    auto operator*() const noexcept -> const ThinPixel<N> &;
-    auto operator->() const noexcept -> const ThinPixel<N> *;
-
-    [[nodiscard]] auto operator++() -> iterator &;
-  };
-
- private:
-  void replace_top_node(std::size_t i);
-};
-}  // namespace internal
 
 }  // namespace hictk
 
