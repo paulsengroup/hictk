@@ -78,48 +78,53 @@ static void process_query_cis_only(File& f, std::string_view normalization, bool
   }
 }
 
+template <typename File, typename Selector = decltype(std::declval<File>().fetch("chr1", "chr2")),
+          typename PixelIt = decltype(std::declval<Selector>().template begin<double>())>
+static transformers::PixelMerger<PixelIt> init_pixel_merger(const File& f,
+                                                            std::string_view normalization) {
+  std::vector<PixelIt> heads{};
+  std::vector<PixelIt> tails{};
+
+  for (std::uint32_t chrom1_id = 0; chrom1_id < f.chromosomes().size(); ++chrom1_id) {
+    const auto& chrom1 = f.chromosomes().at(chrom1_id);
+    if (chrom1.is_all()) {
+      continue;
+    }
+    for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < f.chromosomes().size(); ++chrom2_id) {
+      const auto& chrom2 = f.chromosomes().at(chrom2_id);
+      if (chrom2.is_all()) {
+        continue;
+      }
+      try {
+        const auto sel = f.fetch(chrom1.name(), chrom2.name(), balancing::Method{normalization});
+        heads.emplace_back(sel.template begin<double>());
+        tails.emplace_back(sel.template end<double>());
+      } catch (const std::exception& e) {
+        const std::string_view msg{e.what()};
+        const auto missing_norm = msg.find("unable to find") != std::string_view::npos &&
+                                  msg.find("normalization vector") != std::string_view::npos;
+        if (!missing_norm) {
+          throw;
+        }
+      }
+    }
+  }
+
+  if (heads.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to find {} normalization vectors at {} ({})"), normalization,
+                    f.bin_size(), hic::MatrixUnit::BP));
+  }
+
+  return {std::move(heads), std::move(tails)};
+}
+
 static void dump_pixels_trans_only_sorted(File& f, std::string_view normalization, bool join) {
   auto norm = balancing::Method{std::string{normalization}};
 
   std::visit(
       [&](const auto& ff) {
-        using It = decltype(ff.fetch("chr1", "chr2").template begin<double>());
-        std::vector<It> heads{};
-        std::vector<It> tails{};
-
-        for (std::uint32_t chrom1_id = 0; chrom1_id < ff.chromosomes().size(); ++chrom1_id) {
-          const auto& chrom1 = ff.chromosomes().at(chrom1_id);
-          if (chrom1.is_all()) {
-            continue;
-          }
-          for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < ff.chromosomes().size();
-               ++chrom2_id) {
-            const auto& chrom2 = ff.chromosomes().at(chrom2_id);
-            if (chrom2.is_all()) {
-              continue;
-            }
-            try {
-              const auto sel = ff.fetch(chrom1.name(), chrom2.name(), norm);
-              heads.emplace_back(sel.template begin<double>());
-              tails.emplace_back(sel.template end<double>());
-            } catch (const std::exception& e) {
-              const std::string_view msg{e.what()};
-              const auto missing_norm = msg.find("unable to find") != std::string_view::npos &&
-                                        msg.find("normalization vector") != std::string_view::npos;
-              if (!missing_norm) {
-                throw;
-              }
-            }
-          }
-        }
-
-        if (heads.empty()) {
-          throw std::runtime_error(
-              fmt::format(FMT_STRING("unable to find {} normalization vectors at {} ({})"),
-                          norm.to_string(), ff.bin_size(), hic::MatrixUnit::BP));
-        }
-
-        transformers::PixelMerger merger(heads, tails);
+        const auto merger = init_pixel_merger(ff, normalization);
 
         if (!join) {
           print_pixels(merger.begin(), merger.end());

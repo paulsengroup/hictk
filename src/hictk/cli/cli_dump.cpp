@@ -121,11 +121,18 @@ void Cli::make_dump_subcommand() {
   // clang-format on
 
   sc.get_option("--range2")->needs(sc.get_option("--range"));
+
   sc.get_option("--query-file")->excludes(sc.get_option("--range"));
   sc.get_option("--query-file")->excludes(sc.get_option("--range2"));
   sc.get_option("--query-file")->excludes(sc.get_option("--cis-only"));
   sc.get_option("--query-file")->excludes(sc.get_option("--trans-only"));
+
   sc.get_option("--cis-only")->excludes(sc.get_option("--trans-only"));
+  sc.get_option("--cis-only")->excludes(sc.get_option("--range"));
+  sc.get_option("--cis-only")->excludes(sc.get_option("--range2"));
+
+  sc.get_option("--trans-only")->excludes(sc.get_option("--range"));
+  sc.get_option("--trans-only")->excludes(sc.get_option("--range2"));
 
   _config = std::monostate{};
 }
