@@ -85,10 +85,29 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
+# Test chrom-chrom matrix
 cooler dump --join "$ref_cooler::/resolutions/100000" -r chr2L > "$outdir/expected.pixels"
 "$hictk_bin" dump --join "$ref_cooler::/resolutions/100000" -r chr2L > "$outdir/out.cooler.pixels"
 "$hictk_bin" dump --join --resolution 100000 "$ref_hic8" -r chr2L > "$outdir/out.hic8.pixels"
 "$hictk_bin" dump --join --resolution 100000 "$ref_hic9" -r chr2L > "$outdir/out.hic9.pixels"
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
+  status=1
+fi
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic8.pixels"; then
+  status=1
+fi
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic9.pixels"; then
+  status=1
+fi
+
+# Test --cis-only matrix
+cooler dump --join "$ref_cooler::/resolutions/100000" | awk -F '\t' '$1==$4' | tee "$outdir/expected.pixels" > /dev/null
+"$hictk_bin" dump --join "$ref_cooler::/resolutions/100000" --cis-only | tee "$outdir/out.cooler.pixels" > /dev/null
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic8" --cis-only | tee "$outdir/out.hic8.pixels" > /dev/null
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic9" --cis-only | tee "$outdir/out.hic9.pixels" > /dev/null
 
 if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
   status=1
