@@ -102,11 +102,28 @@ if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic9.pixels"; then
   status=1
 fi
 
-# Test --trans-only matrix
+# Test --trans-only matrix (sorted)
 cooler dump --join "$ref_cooler::/resolutions/100000" | awk -F '\t' '$1!=$4' | tee "$outdir/expected.pixels" > /dev/null
 "$hictk_bin" dump --join "$ref_cooler::/resolutions/100000" --trans-only | tee "$outdir/out.cooler.pixels" > /dev/null
 "$hictk_bin" dump --join --resolution 100000 "$ref_hic8" --trans-only | tee "$outdir/out.hic8.pixels" > /dev/null
 "$hictk_bin" dump --join --resolution 100000 "$ref_hic9" --trans-only | tee "$outdir/out.hic9.pixels" > /dev/null
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
+  status=1
+fi
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic8.pixels"; then
+  status=1
+fi
+
+if ! compare_files "$outdir/expected.pixels" "$outdir/out.hic9.pixels"; then
+  status=1
+fi
+
+# Test --trans-only matrix (unsorted)
+"$hictk_bin" dump --join "$ref_cooler::/resolutions/100000" --trans-only --unsorted | sort -V | tee "$outdir/out.cooler.pixels" > /dev/null
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic8" --trans-only --unsorted | sort -V | tee "$outdir/out.hic8.pixels" > /dev/null
+"$hictk_bin" dump --join --resolution 100000 "$ref_hic9" --trans-only --unsorted | sort -V | tee "$outdir/out.hic9.pixels" > /dev/null
 
 if ! compare_files "$outdir/expected.pixels" "$outdir/out.cooler.pixels"; then
   status=1
