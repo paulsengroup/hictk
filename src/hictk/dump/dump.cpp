@@ -31,14 +31,14 @@ static void dump_pixels_gw(File& f, std::string_view normalization, bool join, b
 
   if (f.is_hic()) {
     const auto& ff = f.get<hic::File>();
-    const auto sel = ff.fetch(normalization);
+    const auto sel = ff.fetch(balancing::Method{normalization});
     dump_pixels(sel.template begin<double>(sorted), sel.template end<double>(), ff.bins_ptr(),
                 join);
     return;
   }
 
   const auto& ff = f.get<cooler::File>();
-  const auto sel = ff.fetch(normalization);
+  const auto sel = ff.fetch(balancing::Method{normalization});
   dump_pixels(sel.template begin<double>(), sel.template end<double>(), ff.bins_ptr(), join);
 }
 
