@@ -14,6 +14,7 @@
 #include <string_view>
 #include <vector>
 
+#include "hictk/bin.hpp"
 #include "hictk/chromosome.hpp"
 
 namespace hictk {
