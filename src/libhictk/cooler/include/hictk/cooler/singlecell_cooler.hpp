@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 
+#include "hictk/bin.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/cooler/cooler.hpp"
 
