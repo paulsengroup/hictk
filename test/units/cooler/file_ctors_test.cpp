@@ -62,7 +62,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
       f.append_pixels(pixels.begin(), pixels.end(), true);
     }
   }
-  SECTION("open .cool") {
+  SECTION("open .cool (fixed bin size)") {
     const auto path = datadir / "cooler_test_file.cool";
     const File f(path.string());
 
@@ -71,6 +71,18 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     CHECK(f.bin_size() == 100'000);
     CHECK(f.chromosomes().size() == 20);
     CHECK(f.bins().size() == 26'398);
+    CHECK(f.has_pixel_of_type<std::int32_t>());
+  }
+
+  SECTION("open .cool (variable bin size)") {
+    const auto path = datadir / "cooler_variable_bins_test_file.cool";
+    const File f(path.string());
+
+    CHECK(f.path() == path);
+    CHECK(f.uri() == path);
+    CHECK(f.bin_size() == 0);
+    CHECK(f.chromosomes().size() == 2);
+    CHECK(f.bins().size() == 8);
     CHECK(f.has_pixel_of_type<std::int32_t>());
   }
 

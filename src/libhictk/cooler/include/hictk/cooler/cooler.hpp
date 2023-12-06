@@ -304,6 +304,9 @@ class File {
   [[nodiscard]] static auto import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                           bool missing_ok) -> Reference;
 
+  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, std::string_view bin_type,
+                                               std::uint32_t bin_size);
+
   [[nodiscard]] static Index init_index(const Dataset &chrom_offset_dset,
                                         const Dataset &bin_offset_dset,
                                         std::shared_ptr<const BinTable> bin_table,

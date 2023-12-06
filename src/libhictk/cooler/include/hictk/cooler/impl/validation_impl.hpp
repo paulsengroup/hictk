@@ -121,10 +121,10 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
     status.missing_or_invalid_format_attr |= version == 0 || version > 3;
   }
 
-  // Check file has a bin-type that we support (currently only "fixed" is supported)
+  // Check file has a bin-type that we support
   if (Attribute::exists(root_group, "bin-type")) {
     const auto bin_type = Attribute::read<std::string>(root_group, "bin-type");
-    status.missing_or_invalid_bin_type_attr = bin_type != "fixed";
+    status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
   // Check file has the mandatory groups
@@ -177,12 +177,12 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
     status.missing_or_invalid_format_attr |= version == 0 || version > 3;
   }
 
-  // Check file has a bin-type that we support (currently only "fixed" is supported)
+  // Check file has a bin-type that we support
   // NOTE: .mcool files are not required to advertise the bin type they are using at the root level
   status.missing_or_invalid_bin_type_attr = false;
   if (Attribute::exists(fp, "bin-type")) {
     const auto bin_type = Attribute::read<std::string>(fp, "bin-type");
-    status.missing_or_invalid_bin_type_attr = bin_type != "fixed";
+    status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
   // Try to read resolutions from the Cooler's root
@@ -261,12 +261,12 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     status.missing_or_invalid_format_attr |= version == 0 || version > 3;
   }
 
-  // Check file has a bin-type that we support (currently only "fixed" is supported)
+  // Check file has a bin-type that we support
   // NOTE: .scool files are not required to advertise the bin type they are using at the root level
   status.missing_or_invalid_bin_type_attr = false;
   if (Attribute::exists(fp, "bin-type")) {
     const auto bin_type = Attribute::read<std::string>(fp, "bin-type");
-    status.missing_or_invalid_bin_type_attr = bin_type != "fixed";
+    status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
   constexpr std::array<std::string_view, 3> scool_root_groups{"chroms", "bins", "cells"};

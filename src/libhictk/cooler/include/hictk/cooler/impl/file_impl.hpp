@@ -41,8 +41,7 @@ inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_siz
       _attrs(read_standard_attributes(_root_group)),
       _pixel_variant(detect_pixel_type(_root_group)),
       _bins(std::make_shared<BinTable>(
-          import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false),
-          bin_size())),
+          init_bin_table(_datasets, _attrs.bin_type.value(), _attrs.bin_size))),
       _index(std::make_shared<Index>(init_index(_datasets.at("indexes/chrom_offset"),
                                                 _datasets.at("indexes/bin1_offset"), _bins,
                                                 _datasets.at("pixels/count").size(), false))) {

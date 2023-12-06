@@ -24,10 +24,8 @@ inline Index::Index(std::shared_ptr<const BinTable> bins,
                     const std::vector<std::uint64_t> &chrom_offsets, std::uint64_t nnz,
                     bool allocate)
     : _bins(std::move(bins)),
-      _idx(Index::init(_bins->chromosomes(), chrom_offsets, _bins->bin_size(), allocate)),
-      _nnz(nnz) {
-  assert(bin_size() != 0);
-}
+      _idx(Index::init(_bins->chromosomes(), *_bins, chrom_offsets, allocate)),
+      _nnz(nnz) {}
 
 inline const Reference &Index::chromosomes() const noexcept {
   assert(_bins);
@@ -201,15 +199,15 @@ inline void Index::compute_chrom_offsets(std::vector<std::uint64_t> &buff) const
                  });
 }
 
-inline auto Index::init(const Reference &chroms, const std::vector<std::uint64_t> &chrom_offsets,
-                        std::uint32_t bin_size, bool allocate) -> MapT {
+inline auto Index::init(const Reference &chroms, const BinTable &bins,
+                        const std::vector<std::uint64_t> &chrom_offsets, bool allocate) -> MapT {
   assert(!chroms.empty());
-  assert(bin_size != 0);
   assert(chrom_offsets.empty() || chroms.size() + 1 == chrom_offsets.size());
   MapT idx{};
   for (std::uint32_t i = 0; i < chroms.size(); ++i) {
     const auto &chrom = chroms.at(i);
-    const auto num_bins = (chrom.size() + bin_size - 1) / bin_size;
+    const auto [first_bin, last_bin] = bins.find_overlap(chrom, 0, chrom.size());
+    const auto num_bins = static_cast<std::size_t>(std::distance(first_bin, last_bin));
     auto node =
         idx.emplace(chrom, OffsetVect(allocate ? num_bins : 1, Index::offset_not_set_value));
 
