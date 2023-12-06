@@ -115,6 +115,13 @@ TEST_CASE("Reference", "[reference][short]") {
 
     CHECK(chroms2.chromosome_with_longest_name().name() == "chr123");
     CHECK(chroms2.longest_chromosome().name() == "chr1");
+
+    const auto& prefix_sum = chroms2.chrom_size_prefix_sum();
+    REQUIRE(prefix_sum.size() == 4);
+    CHECK(prefix_sum[0] == 0);
+    CHECK(prefix_sum[1] == 1000);
+    CHECK(prefix_sum[2] == 1005);
+    CHECK(prefix_sum[3] == 1006);
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }  // namespace hictk::test::reference

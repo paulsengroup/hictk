@@ -6,7 +6,7 @@
 
 #include <fmt/format.h>
 
-#include "hictk/fmt/bin_table.hpp"
+#include "hictk/fmt/bin.hpp"
 #include "hictk/fmt/common.hpp"
 #include "hictk/pixel.hpp"
 
