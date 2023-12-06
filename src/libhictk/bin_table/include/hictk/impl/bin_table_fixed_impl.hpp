@@ -307,9 +307,13 @@ inline auto BinTableFixed::iterator::operator+=(std::size_t i) -> iterator & {
     return *this;
   }
 
-  if (bin_id() + i >= _bin_table->size()) {
+  if (bin_id() + i > _bin_table->size()) {
     throw std::out_of_range(
         "BinTableFixed::iterator: caught attempt to increment iterator past end()");
+  }
+  if (bin_id() + i == _bin_table->size()) {
+    *this = make_end_iterator(*_bin_table);
+    return *this;
   }
 
   const auto ii = static_cast<std::uint32_t>(i);

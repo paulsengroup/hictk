@@ -18,11 +18,31 @@ namespace hictk::cooler::test::cooler_file {
 TEST_CASE("Cooler: init files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
 
-  const auto path = testdir() / "test_init.cool";
-  constexpr std::uint32_t bin_size = 1000;
-  std::ignore = File::create(path.string(), chroms, bin_size, true);
-  CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
-  CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+  SECTION("fixed bins") {
+    const auto path = testdir() / "test_init_fixed_bins.cool";
+    constexpr std::uint32_t bin_size = 1000;
+    std::ignore = File::create(path.string(), chroms, bin_size, true);
+    CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
+    CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+    CHECK(File(path.string()).attributes().bin_type.value() == "fixed");
+  }
+
+  SECTION("variable bins") {
+    const auto path = testdir() / "test_init_variable_bins.cool";
+
+    const Chromosome chrom1{0, "chr1", 32};
+    const Chromosome chrom2{1, "chr2", 32};
+
+    const std::vector<std::uint32_t> start_pos{0, 8, 15, 23, 0, 5, 10, 26};
+    const std::vector<std::uint32_t> end_pos{8, 15, 23, 32, 5, 10, 26, 32};
+
+    const BinTable table({chrom1, chrom2}, start_pos, end_pos);
+
+    std::ignore = File::create(path.string(), table, true);
+    CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
+    CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+    CHECK(File(path.string()).attributes().bin_type.value() == "variable");
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
