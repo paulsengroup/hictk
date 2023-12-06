@@ -129,7 +129,8 @@ inline void Index::set(const Chromosome &chrom, OffsetVect offsets) {
 }
 
 inline void Index::set_offset_by_bin(const Bin &bin, std::uint64_t offset) {
-  set_offset_by_row_idx(bin.chrom().id(), bin.rel_id(), offset);
+  set_offset_by_row_idx(bin.chrom().id(), conditional_static_cast<std::size_t>(bin.rel_id()),
+                        offset);
 }
 
 inline void Index::set_offset_by_bin_id(std::uint64_t bin_id, std::uint64_t offset) {
