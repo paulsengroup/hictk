@@ -36,17 +36,23 @@ void Cli::make_load_subcommand() {
       ->required();
 
   sc.add_option(
-      "bin-size",
-      c.bin_size,
-      "Bin size (bp).")
-      ->check(CLI::PositiveNumber)
-      ->required();
-
-  sc.add_option(
       "output-uri",
       c.uri,
       "Path to output Cooler (URI syntax supported).")
       ->required();
+
+  sc.add_option(
+      "-b,--bin-size",
+      c.bin_size,
+      "Bin size (bp).\n"
+      "Required when --bin-table is not used.")
+      ->check(CLI::PositiveNumber);
+
+  sc.add_option(
+      "-t,--bin-table",
+      c.path_to_bin_table,
+      "Path to a BED3+ file with the bin table.")
+      ->check(CLI::ExistingFile);
 
   sc.add_option(
       "-f,--format",
@@ -93,6 +99,7 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
   // clang-format on
 
+  sc.get_option("--bin-size")->excludes(sc.get_option("--bin-table"));
   _config = std::monostate{};
 }
 
@@ -105,6 +112,12 @@ void Cli::validate_load_subcommand() const {
   if (!c.force && std::filesystem::exists(c.uri)) {
     errors.emplace_back(fmt::format(
         FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
+  }
+
+  if (c.path_to_bin_table.empty() && c.path_to_chrom_sizes.empty()) {
+    assert(c.bin_size == 0);
+    errors.emplace_back(
+        "--bin-size is required when --bin-table is not specified.");
   }
 
   if (!errors.empty()) {

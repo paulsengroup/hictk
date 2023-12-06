@@ -62,6 +62,8 @@ class SingleCellFile {
                           unsigned int mode = HighFive::File::ReadOnly);
   [[nodiscard]] static SingleCellFile create(const std::filesystem::path& path,
                                              const Reference& chroms, std::uint32_t bin_size,
+                                             bool force_overwrite);
+  [[nodiscard]] static SingleCellFile create(const std::filesystem::path& path, BinTable bins,
                                              bool force_overwrite = false);
 
   [[nodiscard]] constexpr const phmap::btree_set<std::string>& cells() const noexcept;
@@ -83,7 +85,7 @@ class SingleCellFile {
  private:
   [[nodiscard]] static SingleCellAttributes read_standard_attributes(const HighFive::File& f,
                                                                      bool initialize_missing);
-  [[nodiscard]] static BinTable read_bins(const HighFive::File& f);
+  [[nodiscard]] static BinTable init_bin_table(const HighFive::File& f);
   [[nodiscard]] static phmap::btree_set<std::string> read_cells(const HighFive::File& f);
 
   static void create_groups(RootGroup& root_grp);

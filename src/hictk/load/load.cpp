@@ -37,7 +37,35 @@
 
 namespace hictk::tools {
 
-void ingest_pixels_sorted(const LoadConfig& c) {
+[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
+                                             std::uint32_t bin_size) {
+  auto chroms = Reference::from_chrom_sizes(path_to_chrom_sizes);
+  return {chroms, bin_size};
+}
+
+[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
+                                             const std::filesystem::path& path_to_bin_table) {
+  auto chroms = Reference::from_chrom_sizes(path_to_chrom_sizes);
+
+  std::ifstream ifs{};
+  ifs.exceptions(std::ios::badbit);
+  ifs.open(path_to_bin_table);
+
+  std::vector<std::uint32_t> start_pos{};
+  std::vector<std::uint32_t> end_pos{};
+
+  std::string line{};
+  GenomicInterval record{};
+  while (std::getline(ifs, line)) {
+    record = GenomicInterval::parse_bed(chroms, line);
+    start_pos.push_back(record.start());
+    end_pos.push_back(record.end());
+  }
+
+  return {chroms, start_pos, end_pos};
+}
+
+static void ingest_pixels_sorted(const LoadConfig& c) {
   assert(c.assume_sorted);
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
@@ -50,9 +78,11 @@ void ingest_pixels_sorted(const LoadConfig& c) {
                          format, c.batch_size, c.validate_pixels);
 }
 
-void ingest_pixels_unsorted(const LoadConfig& c) {
+static void ingest_pixels_unsorted(const LoadConfig& c) {
   assert(!c.assume_sorted);
-  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+  auto bins = c.path_to_bin_table.empty()
+                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
+                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
 
   const auto tmp_cooler_path = c.uri + ".tmp";
@@ -70,8 +100,7 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
       [&](auto& buffer) {
         using N = decltype(buffer.front().count);
         {
-          auto tmp_clr =
-              cooler::SingleCellFile::create(tmp_cooler_path, chroms, c.bin_size, c.force);
+          auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, c.force);
           for (std::size_t i = 0; true; ++i) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
@@ -92,22 +121,25 @@ void ingest_pixels_unsorted(const LoadConfig& c) {
   std::filesystem::remove(tmp_cooler_path);
 }
 
-void ingest_pairs_sorted(const LoadConfig& c) {
+static void ingest_pairs_sorted(const LoadConfig& c) {
   assert(c.assume_sorted);
-  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+  auto bins = c.path_to_bin_table.empty()
+                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
+                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
 
-  c.count_as_float ? ingest_pairs_sorted<double>(
-                         cooler::File::create<double>(c.uri, chroms, c.bin_size, c.force), format,
-                         c.batch_size, c.validate_pixels)
-                   : ingest_pairs_sorted<std::int32_t>(
-                         cooler::File::create<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
-                         format, c.batch_size, c.validate_pixels);
+  c.count_as_float
+      ? ingest_pairs_sorted<double>(cooler::File::create<double>(c.uri, bins, c.force), format,
+                                    c.batch_size, c.validate_pixels)
+      : ingest_pairs_sorted<std::int32_t>(cooler::File::create<std::int32_t>(c.uri, bins, c.force),
+                                          format, c.batch_size, c.validate_pixels);
 }
 
 static void ingest_pairs_unsorted(const LoadConfig& c) {
   assert(!c.assume_sorted);
-  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+  auto bins = c.path_to_bin_table.empty()
+                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
+                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
 
   const auto tmp_cooler_path = c.uri + ".tmp";
@@ -125,8 +157,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
       [&](auto& buffer) {
         using N = decltype(buffer.begin()->count);
         {
-          auto tmp_clr =
-              cooler::SingleCellFile::create(tmp_cooler_path, chroms, c.bin_size, c.force);
+          auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, c.force);
 
           for (std::size_t i = 0; true; ++i) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,

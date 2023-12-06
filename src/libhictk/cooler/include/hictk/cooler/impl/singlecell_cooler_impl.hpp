@@ -25,6 +25,11 @@ namespace hictk::cooler {
 inline SingleCellAttributes SingleCellAttributes::init(std::uint32_t bin_size_) {
   SingleCellAttributes attrs{};
   attrs.bin_size = bin_size_;
+  if (bin_size_ == 0) {
+    attrs.bin_type = "variable";
+  } else {
+    attrs.bin_type = "fixed";
+  }
   return attrs;
 }
 
@@ -66,12 +71,18 @@ inline SingleCellFile::SingleCellFile(HighFive::File fp, BinTable bins, SingleCe
       _bins(std::make_shared<const BinTable>(std::move(bins))) {}
 
 inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigned int mode)
-    : SingleCellFile(HighFive::File(path.string(), mode), read_bins(HighFive::File(path.string())),
+    : SingleCellFile(HighFive::File(path.string(), mode),
+                     init_bin_table(HighFive::File(path.string())),
                      read_standard_attributes(HighFive::File(path.string()),
                                               mode != HighFive::File::ReadOnly)) {}
 
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path,
                                              const Reference& chroms, std::uint32_t bin_size,
+                                             bool force_overwrite) {
+  return SingleCellFile::create(path, {BinTableFixed{chroms, bin_size}}, force_overwrite);
+}
+
+inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, BinTable bins,
                                              bool force_overwrite) {
   if (!force_overwrite && std::filesystem::exists(path)) {
     throw std::runtime_error(
@@ -82,12 +93,10 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path,
     std::filesystem::remove(path);
   }
 
-  const BinTable bins(chroms, bin_size);
-
   HighFive::File fp(path.string(), HighFive::File::Create);
   RootGroup root_grp{fp.getGroup("/")};
 
-  auto attrs = SingleCellAttributes::init(bin_size);
+  auto attrs = SingleCellAttributes::init(bins.bin_size());
 
   create_groups(root_grp);
   create_datasets(root_grp, bins);
@@ -188,8 +197,7 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
       tails.emplace_back(std::move(last));
     }
   });
-  utils::merge(heads, tails, chromosomes(), bins().bin_size(), uri, overwrite_if_exists, chunk_size,
-               update_frequency);
+  utils::merge(heads, tails, bins(), uri, overwrite_if_exists, chunk_size, update_frequency);
 
   return File(uri);
 }
@@ -240,14 +248,22 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 }
 DISABLE_WARNING_POP
 
-inline BinTable SingleCellFile::read_bins(const HighFive::File& f) {
+inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   const RootGroup root_grp{f.getGroup("/")};
-  const auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
-                                          Dataset(root_grp, f.getDataSet("/chroms/length")), false);
-  const auto bin_size = Attribute::read<std::uint32_t>(root_grp(), "bin-size");
+  auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
+                                    Dataset(root_grp, f.getDataSet("/chroms/length")), false);
+  const auto bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
+  if (bin_type == "fixed") {
+    const auto bin_size = Attribute::read<std::uint32_t>(root_grp(), "bin-size");
 
-  return {chroms, bin_size};
+    return {std::move(chroms), bin_size};
+  }
+
+  assert(bin_type == "variable");
+  return {std::move(chroms),
+          Dataset(root_grp, f.getDataSet("bins/start")).read_all<std::vector<std::uint32_t>>(),
+          Dataset(root_grp, f.getDataSet("bins/end")).read_all<std::vector<std::uint32_t>>()};
 }
 
 inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::File& f) {

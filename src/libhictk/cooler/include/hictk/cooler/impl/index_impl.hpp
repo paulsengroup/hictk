@@ -118,7 +118,8 @@ inline std::uint64_t Index::get_offset_by_row_idx(std::uint32_t chrom_id,
 }
 
 inline void Index::set(const Chromosome &chrom, OffsetVect offsets) {
-  const auto expected_size = (chrom.size() + bin_size() - 1) / bin_size();
+  const auto [fist_bin, last_bin] = _bins->find_overlap(chrom, 0, chrom.size());
+  const auto expected_size = static_cast<std::size_t>(std::distance(fist_bin, last_bin));
   if (offsets.size() != expected_size) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("expected index for {} to have size {}, found {}"), chrom,
@@ -127,9 +128,12 @@ inline void Index::set(const Chromosome &chrom, OffsetVect offsets) {
   _idx.at(chrom) = std::move(offsets);
 }
 
+inline void Index::set_offset_by_bin(const Bin &bin, std::uint64_t offset) {
+  set_offset_by_row_idx(bin.chrom().id(), bin.rel_id(), offset);
+}
+
 inline void Index::set_offset_by_bin_id(std::uint64_t bin_id, std::uint64_t offset) {
-  const auto &bin = _bins->at(bin_id);
-  set_offset_by_pos(bin.chrom(), bin.start(), offset);
+  set_offset_by_bin(_bins->at(bin_id), offset);
 }
 
 inline void Index::set_offset_by_pos(const Chromosome &chrom, std::uint32_t pos,
@@ -139,8 +143,7 @@ inline void Index::set_offset_by_pos(const Chromosome &chrom, std::uint32_t pos,
 
 inline void Index::set_offset_by_pos(std::uint32_t chrom_id, std::uint32_t pos,
                                      std::uint64_t offset) {
-  const auto row_idx = pos / bin_size();
-  set_offset_by_row_idx(chrom_id, row_idx, offset);
+  set_offset_by_bin(_bins->at(chrom_id, pos), offset);
 }
 
 inline void Index::set_offset_by_row_idx(std::uint32_t chrom_id, std::size_t row_idx,

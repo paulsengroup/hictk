@@ -532,14 +532,13 @@ inline BinTable File::init_bin_table(const DatasetMap &dsets, std::string_view b
                                      std::uint32_t bin_size) {
   auto chroms = import_chroms(dsets.at("chroms/name"), dsets.at("chroms/length"), false);
   if (bin_type == "fixed") {
-    return {BinTableFixed{std::move(chroms), bin_size}};
+    return {std::move(chroms), bin_size};
   }
   assert(bin_type == "variable");
   assert(bin_size == 0);
 
-  return {BinTableVariable{std::move(chroms),
-                           dsets.at("bins/start").read_all<std::vector<std::uint32_t>>(),
-                           dsets.at("bins/end").read_all<std::vector<std::uint32_t>>()}};
+  return {std::move(chroms), dsets.at("bins/start").read_all<std::vector<std::uint32_t>>(),
+          dsets.at("bins/end").read_all<std::vector<std::uint32_t>>()};
 }
 
 inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &bin_offset_dset,

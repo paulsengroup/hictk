@@ -84,6 +84,7 @@ class Index {
                                                     std::size_t row_idx) const;
 
   void set(const Chromosome& chrom, OffsetVect offsets);
+  void set_offset_by_bin(const Bin& bin, std::uint64_t offset);
   void set_offset_by_bin_id(std::uint64_t bin_id, std::uint64_t offset);
 
   void set_offset_by_pos(const Chromosome& chrom, std::uint32_t pos, std::uint64_t offset);

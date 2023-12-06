@@ -96,11 +96,8 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    const cooler::File clr(clrs.front().uri);
-    const auto chroms = clr.chromosomes();
-    const auto bin_size = clr.bin_size();
-    merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,
-          update_frequency);
+    merge(heads, tails, cooler::File(clrs.front().uri).bins(), dest_uri, overwrite_if_exists,
+          chunk_size, update_frequency);
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
                                          std::distance(first_uri, last_uri), e.what()));
@@ -109,15 +106,15 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
 
 template <typename PixelIt>
 inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
-                  const Reference& chromosomes, std::uint32_t bin_size, std::string_view dest_uri,
-                  bool overwrite_if_exists, std::size_t chunk_size, std::size_t update_frequency) {
+                  const BinTable& bins, std::string_view dest_uri, bool overwrite_if_exists,
+                  std::size_t chunk_size, std::size_t update_frequency) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
   hictk::transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
-  auto dest = File::create<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
+  auto dest = File::create<N>(dest_uri, bins, overwrite_if_exists);
 
   std::size_t pixels_processed{};
   auto t0 = std::chrono::steady_clock::now();

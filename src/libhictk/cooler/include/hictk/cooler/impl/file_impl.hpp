@@ -84,12 +84,10 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
   _groups = open_groups(_root_group);
   _datasets = open_datasets(_root_group, cache_size_bytes, w0);
 
-  _bins = std::make_shared<BinTable>(
-      import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false), bin_size());
+  _bins = std::make_shared<BinTable>(init_bin_table(_datasets, *_attrs.bin_type, _attrs.bin_size));
   _index = std::make_shared<Index>(_bins);
 
   assert(std::holds_alternative<PixelT>(_pixel_variant));
-  assert(bin_size() != 0);
   assert(!_bins->empty());
   assert(!chromosomes().empty());
   assert(!_index->empty());
