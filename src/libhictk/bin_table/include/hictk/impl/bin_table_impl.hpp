@@ -100,7 +100,10 @@ inline auto BinTable::find_overlap(const GenomicInterval &query) const
   return std::visit(
       [&](const auto &t) {
         auto its = t.find_overlap(query);
+        DISABLE_WARNING_PUSH
+        DISABLE_WARNING_MAYBE_UNINITIALIZED
         return std::make_pair(iterator{its.first}, iterator{its.second});
+        DISABLE_WARNING_POP
       },
       _table);
 }
