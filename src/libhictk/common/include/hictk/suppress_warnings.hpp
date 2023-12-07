@@ -31,7 +31,6 @@
     #define DISABLE_WARNING(warningName)              DO_PRAGMA(GCC diagnostic ignored warningName)  // NOLINT(cppcoreguidelines-macro-usage)
 
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING("-Wdeprecated-declarations")   // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")       // NOLINT(cppcoreguidelines-macro-usage)
     #define DISABLE_WARNING_NULL_DEREF                DISABLE_WARNING("-Wnull-dereference")          // NOLINT(cppcoreguidelines-macro-usage)
     #define DISABLE_WARNING_SIGN_COMPARE              DISABLE_WARNING("-Wsign-compare")
     #define DISABLE_WARNING_UNREACHABLE_CODE
@@ -39,11 +38,13 @@
 
 // Defines for GCC only
 #if defined(__GNUC__) && !defined(__clang__)
-    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")   // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")       // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")              // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 // Defines for Clang only
 #ifdef __clang__
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_USELESS_CAST
 #endif
 
