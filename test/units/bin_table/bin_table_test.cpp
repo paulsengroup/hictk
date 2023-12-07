@@ -38,10 +38,15 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
 
     CHECK(table.at(0) == Bin{chr1, 0, bin_size});
     CHECK(table.at(10) == Bin{chr1, 50000, 50001});
-
     CHECK(table.at(11) == Bin{chr2, 0, bin_size});
 
+    CHECK(table.at(chr1, bin_size - 1).id() == 0);
+    CHECK(table.at(chr1, 50000).id() == 10);
+    CHECK(table.at(chr2, 1).id() == 11);
+
     CHECK_THROWS_AS(table.at(table.size()), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr1, 50001), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr2, 26000), std::out_of_range);
   }
 
   SECTION("coord to bin id") {
@@ -211,10 +216,18 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
 
     CHECK(table.at(0) == Bin{chr1, 0, 8});
     CHECK(table.at(3) == Bin{chr1, 23, 32});
-
     CHECK(table.at(4) == Bin{chr2, 0, 5});
 
+    CHECK(table.at(chr1, 0).id() == 0);
+    CHECK(table.at(chr1, 7).id() == 0);
+    CHECK(table.at(chr1, 8).id() == 1);
+
+    CHECK(table.at(chr1, 23).id() == 3);
+    CHECK(table.at(chr2, 4).id() == 4);
+
     CHECK_THROWS_AS(table.at(table.size()), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr1, 32), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr2, 32), std::out_of_range);
   }
 
   SECTION("coord to bin id") {
