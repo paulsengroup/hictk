@@ -76,7 +76,9 @@ void Cli::make_load_subcommand() {
   sc.add_flag(
       "--one-based,!--zero-based",
       c.one_based,
-      "Interpret genomic coordinates or bins as one/zero based.");
+      "Interpret genomic coordinates or bins as one/zero based.\n"
+      "By default coordinates are assumed to be one-based for interactions in\n"
+      "4dn and validapairs formats and zero-based otherwise.");
 
   sc.add_flag(
       "--count-as-float",
@@ -152,8 +154,15 @@ void Cli::validate_load_subcommand() const {
 
 void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("load");
 
-  c.offset = c.one_based ? -1 : 0;
+  if (sc.get_option("--one-based")->empty()) {
+    if (c.format == "4dn" || c.format == "validpairs") {
+      c.offset = -1;
+    }
+  } else {
+    c.offset = c.one_based ? -1 : 0;
+  }
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

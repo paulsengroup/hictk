@@ -109,7 +109,6 @@ if [[ "$sorted" == true ]]; then
       --assume-sorted \
       --batch-size 1000000 \
       --bin-size 10000 \
-      --zero-based \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 else
@@ -120,7 +119,6 @@ else
       --assume-unsorted \
       --batch-size 1000000 \
       --bin-size 10000 \
-      --zero-based \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 fi
