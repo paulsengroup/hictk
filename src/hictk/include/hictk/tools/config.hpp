@@ -108,6 +108,8 @@ struct LoadConfig {
 
   std::string format{};
   std::string assembly{"unknown"};
+  bool one_based{true};
+  std::int64_t offset{0};
   bool count_as_float{false};
   bool assume_sorted{false};
   bool force{false};

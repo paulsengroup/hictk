@@ -74,6 +74,11 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
+      "--one-based,!--zero-based",
+      c.one_based,
+      "Interpret genomic coordinates or bins as one/zero based.");
+
+  sc.add_flag(
       "--count-as-float",
       c.count_as_float,
       "Interactions are floats.")
@@ -95,7 +100,8 @@ void Cli::make_load_subcommand() {
   sc.add_option(
       "--batch-size",
       c.batch_size,
-      "Number of pixels to buffer in memory. Only used when processing unsorted interactions or pairs")
+      "Number of pixels to buffer in memory.\n"
+      "Only used when processing unsorted interactions or pairs.")
       ->capture_default_str();
   // clang-format on
 
@@ -106,8 +112,10 @@ void Cli::make_load_subcommand() {
 void Cli::validate_load_subcommand() const {
   assert(_cli.get_subcommand("load")->parsed());
 
+  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<LoadConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("load");
 
   if (!c.force && std::filesystem::exists(c.uri)) {
     errors.emplace_back(fmt::format(
@@ -116,8 +124,22 @@ void Cli::validate_load_subcommand() const {
 
   if (c.path_to_bin_table.empty() && c.path_to_chrom_sizes.empty()) {
     assert(c.bin_size == 0);
+    errors.emplace_back("--bin-size is required when --bin-table is not specified.");
+  }
+
+  if ((c.format == "bg2" || c.format == "coo") && !sc.get_option("--bin-table")->empty()) {
     errors.emplace_back(
-        "--bin-size is required when --bin-table is not specified.");
+        "specifying bins through the --bin-table is not supported when ingesting pre-binned "
+        "interactions.");
+  }
+
+  if (c.format == "4dn" && c.format == "validpairs" && c.assume_sorted) {
+    warnings.emplace_back(
+        "--assume-sorted has no effect when ingesting interactions in 4dn or validpairs format.");
+  }
+
+  for (const auto& w : warnings) {
+    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {
@@ -130,6 +152,8 @@ void Cli::validate_load_subcommand() const {
 
 void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
+
+  c.offset = c.one_based ? -1 : 0;
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

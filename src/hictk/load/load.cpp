@@ -56,12 +56,28 @@ namespace hictk::tools {
 
   std::string line{};
   GenomicInterval record{};
+  bool fixed_bin_size = true;
+  std::uint32_t bin_size = 0;
   while (std::getline(ifs, line)) {
     record = GenomicInterval::parse_bed(chroms, line);
+    if (bin_size == 0) {
+      bin_size = record.size();
+    }
+
+    // TODO uncomment
+    // fixed_bin_size &= record.size() == bin_size || record.chrom().size() == record.end();
+    fixed_bin_size = false;
+
     start_pos.push_back(record.start());
     end_pos.push_back(record.end());
   }
 
+  if (fixed_bin_size) {
+    SPDLOG_INFO(FMT_STRING("detected bin table with uniform bin size."));
+    return {chroms, bin_size};
+  }
+
+  SPDLOG_INFO(FMT_STRING("detected bin table with variable bin size."));
   return {chroms, start_pos, end_pos};
 }
 
@@ -72,10 +88,10 @@ static void ingest_pixels_sorted(const LoadConfig& c) {
 
   c.count_as_float ? ingest_pixels_sorted<double>(
                          cooler::File::create<double>(c.uri, chroms, c.bin_size, c.force), format,
-                         c.batch_size, c.validate_pixels)
+                         c.offset, c.batch_size, c.validate_pixels)
                    : ingest_pixels_sorted<std::int32_t>(
                          cooler::File::create<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
-                         format, c.batch_size, c.validate_pixels);
+                         format, c.offset, c.batch_size, c.validate_pixels);
 }
 
 static void ingest_pixels_unsorted(const LoadConfig& c) {
@@ -105,7 +121,7 @@ static void ingest_pixels_unsorted(const LoadConfig& c) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
             const auto nnz = ingest_pixels_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)),
-                                                    buffer, format, c.validate_pixels);
+                                                    buffer, format, c.offset, c.validate_pixels);
             SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
                         tmp_cooler_path);
             if (nnz == 0) {
@@ -121,22 +137,7 @@ static void ingest_pixels_unsorted(const LoadConfig& c) {
   std::filesystem::remove(tmp_cooler_path);
 }
 
-static void ingest_pairs_sorted(const LoadConfig& c) {
-  assert(c.assume_sorted);
-  auto bins = c.path_to_bin_table.empty()
-                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
-                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
-  const auto format = format_from_string(c.format);
-
-  c.count_as_float
-      ? ingest_pairs_sorted<double>(cooler::File::create<double>(c.uri, bins, c.force), format,
-                                    c.batch_size, c.validate_pixels)
-      : ingest_pairs_sorted<std::int32_t>(cooler::File::create<std::int32_t>(c.uri, bins, c.force),
-                                          format, c.batch_size, c.validate_pixels);
-}
-
-static void ingest_pairs_unsorted(const LoadConfig& c) {
-  assert(!c.assume_sorted);
+static void ingest_pairs(const LoadConfig& c) {
   auto bins = c.path_to_bin_table.empty()
                   ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
                   : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
@@ -162,8 +163,8 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
           for (std::size_t i = 0; true; ++i) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
-            const auto nnz = ingest_pairs_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)),
-                                                   buffer, c.batch_size, format, c.validate_pixels);
+            const auto nnz = ingest_pairs(tmp_clr.create_cell<N>(fmt::to_string(i)), buffer,
+                                          c.batch_size, format, c.offset, c.validate_pixels);
 
             SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
                         tmp_cooler_path);
@@ -185,6 +186,7 @@ static void ingest_pairs_unsorted(const LoadConfig& c) {
 int load_subcmd(const LoadConfig& c) {
   const auto format = format_from_string(c.format);
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
+  const auto t0 = std::chrono::system_clock::now();
 
   if (c.assume_sorted && pixel_has_count) {
     SPDLOG_INFO(FMT_STRING("begin loading presorted pixels..."));
@@ -192,13 +194,23 @@ int load_subcmd(const LoadConfig& c) {
   } else if (!c.assume_sorted && pixel_has_count) {
     SPDLOG_INFO(FMT_STRING("begin loading un-sorted pixels..."));
     ingest_pixels_unsorted(c);
-  } else if (c.assume_sorted && !pixel_has_count) {
-    SPDLOG_INFO(FMT_STRING("begin loading presorted pairs..."));
-    ingest_pairs_sorted(c);
-  } else {
-    SPDLOG_INFO(FMT_STRING("begin loading un-sorted pairs..."));
-    ingest_pairs_unsorted(c);
+  } else if (!pixel_has_count) {
+    SPDLOG_INFO(FMT_STRING("begin loading pairs..."));
+    ingest_pairs(c);
   }
+
+  const cooler::File clr(c.uri);
+
+  const auto t1 = std::chrono::system_clock::now();
+  const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+
+  std::visit(
+      [&](const auto& sum) {
+        SPDLOG_INFO(FMT_STRING("ingested {} interactions ({} nnz) in {}s!"), sum, clr.nnz(),
+                    static_cast<double>(delta) / 1.0e9);
+      },
+      clr.attributes().sum.value());
+
   return 0;
 }
 
