@@ -64,9 +64,7 @@ namespace hictk::tools {
       bin_size = record.size();
     }
 
-    // TODO uncomment
-    // fixed_bin_size &= record.size() == bin_size || record.chrom().size() == record.end();
-    fixed_bin_size = false;
+    fixed_bin_size &= record.size() == bin_size || record.chrom().size() == record.end();
 
     start_pos.push_back(record.start());
     end_pos.push_back(record.end());
