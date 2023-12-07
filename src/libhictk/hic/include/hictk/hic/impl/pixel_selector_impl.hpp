@@ -257,7 +257,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 
   const std::size_t first_bin_id = 0;
   const std::size_t last_bin_id =
-      bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size()).rel_id() - 1;
+      bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size() - 1).rel_id() - 1;
   const auto samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
   for (std::size_t i = 0; i < samples; ++i) {
     const auto bin_id =

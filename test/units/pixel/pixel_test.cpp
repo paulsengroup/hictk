@@ -202,7 +202,7 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
   SECTION("validpair") {
     SECTION("valid") {
       CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-"));
-      CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t248956422\t+\tchr1\t248956422\t-") ==
+      CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t248956421\t+\tchr1\t248956421\t-") ==
             expected2);
     }
 
