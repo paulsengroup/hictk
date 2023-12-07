@@ -248,9 +248,9 @@ inline std::uint64_t BinTableVariable<I>::map_to_bin_id(const Chromosome &chrom,
   }
 #endif
 
-  if (pos > chrom.size()) {
+  if (pos >= chrom.size()) {
     throw std::out_of_range(fmt::format(
-        FMT_STRING("position is greater than chromosome size: {} > {}"), pos, chrom.size()));
+        FMT_STRING("position is greater than chromosome size: {} >= {}"), pos, chrom.size()));
   }
 
   const auto pos_offset = _chroms.chrom_size_prefix_sum()[chrom.id()];
