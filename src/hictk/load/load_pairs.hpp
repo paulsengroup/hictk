@@ -86,6 +86,15 @@ class PairsAggregator {
     return p;
   }
 
+  inline void insert_or_update(const ThinPixel<N>& pixel) {
+    auto node = _buffer.find(pixel);
+    if (node != _buffer.end()) {
+      node->count += pixel.count;
+    } else {
+      _buffer.emplace(pixel);
+    }
+  }
+
   inline void read_next_batch(std::size_t batch_size) {
     _buffer.clear();
 
@@ -94,14 +103,11 @@ class PairsAggregator {
       if (!pixel) {
         break;
       }
-      auto node = _buffer.find(pixel);
-      if (node != _buffer.end()) {
-        node->count += pixel.count;
-      } else {
-        _buffer.emplace(pixel);
-      }
 
-      if (_buffer.size() == batch_size) {
+      insert_or_update(pixel);
+
+      if (_buffer.size() == batch_size - 1) {
+        insert_or_update(_last_pixel);
         break;
       }
     }
