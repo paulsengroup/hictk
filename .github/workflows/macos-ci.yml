@@ -430,13 +430,9 @@ jobs:
         run: |
           test/scripts/hictk_load_bg2.sh bin/hictk unsorted
 
-      - name: Test hictk load 4dn sorted
+      - name: Test hictk load 4dn
         run: |
-          test/scripts/hictk_load_4dn.sh bin/hictk sorted
-
-      - name: Test hictk load 4dn unsorted
-        run: |
-          test/scripts/hictk_load_4dn.sh bin/hictk unsorted
+          test/scripts/hictk_load_4dn.sh bin/hictk
 
       - name: Test hictk merge
         run: |

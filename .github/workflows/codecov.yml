@@ -212,8 +212,7 @@ jobs:
           test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted
           test/scripts/hictk_load_bg2.sh build/src/hictk/hictk sorted
           test/scripts/hictk_load_bg2.sh build/src/hictk/hictk unsorted
-          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
-          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk unsorted
+          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk
 
           test/scripts/hictk_merge.sh build/src/hictk/hictk
 
