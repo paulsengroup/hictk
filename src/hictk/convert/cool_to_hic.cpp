@@ -314,6 +314,12 @@ void cool_to_hic(const ConvertConfig& c) {
                                          c.path_to_input.string(), c.resolutions.front());
 
       const cooler::File clr(uri);
+
+      if (clr.bin_size() == 0) {
+        throw std::runtime_error(
+            "converting cooler files with variable bin size is not supported.");
+      }
+
       dump_chrom_sizes(clr, chrom_sizes);
       dump_pixels(clr, pixels, c.gzip_compression_lvl, c.threads);
     }
