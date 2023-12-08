@@ -100,6 +100,13 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     CHECK_THROWS(table.get<BinTableVariable<>>());
   }
 
+  SECTION("operator==") {
+    CHECK(BinTable(table.chromosomes(), 10) == BinTable(table.chromosomes(), 10));
+    CHECK(BinTable(table.chromosomes(), 10) != BinTable(table.chromosomes(), 20));
+    CHECK(BinTable(Reference{table.chromosomes().begin(), table.chromosomes().end() - 1}, 10) !=
+          BinTable(table.chromosomes(), 10));
+  }
+
   SECTION("iterators") {
     const auto& chr1 = table.chromosomes().at("chr1");
     const auto& chr2 = table.chromosomes().at("chr2");
@@ -323,6 +330,23 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
       CHECK_THROWS_WITH(BinTable({chrom1, chrom2, chrom3}, start_pos, end_pos),
                         Catch::Matchers::ContainsSubstring("unexpected number of chromosomes"));
     }
+  }
+
+  SECTION("operator==") {
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) ==
+          BinTable(table.chromosomes(), start_pos, end_pos));
+
+    const std::vector<std::uint32_t> start_pos1{0, 0};
+    const std::vector<std::uint32_t> end_pos1{32, 32};
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) !=
+          BinTable(table.chromosomes(), start_pos1, end_pos1));
+
+    const std::vector<std::uint32_t> start_pos2{0};
+    const std::vector<std::uint32_t> end_pos2{32};
+    CHECK(BinTable(Reference{table.chromosomes().begin(), table.chromosomes().end() - 1},
+                   start_pos2, end_pos2) != BinTable(table.chromosomes(), start_pos, end_pos));
+
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) != BinTable(table.chromosomes(), 10));
   }
 
   SECTION("iterators") {

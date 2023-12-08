@@ -172,8 +172,13 @@ inline std::uint64_t BinTable::map_to_bin_id(std::uint32_t chrom_id, std::uint32
 inline bool BinTable::operator==(const BinTable &other) const {
   return std::visit(
       [&](const auto &t1) {
-        const auto &t2 = std::get<remove_cvref_t<decltype(t1)>>(other._table);
-        return t1 == t2;
+        try {
+          using BinTableT = remove_cvref_t<decltype(t1)>;
+          const auto &t2 = std::get<BinTableT>(other._table);
+          return t1 == t2;
+        } catch (const std::bad_variant_access &) {
+          return false;
+        }
       },
       _table);
 }
