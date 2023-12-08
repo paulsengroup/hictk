@@ -77,6 +77,10 @@ class BinTableVariable {
   [[nodiscard]] bool operator==(const BinTableVariable &other) const;
   [[nodiscard]] bool operator!=(const BinTableVariable &other) const;
 
+ private:
+  static void validate_bin_coords(const std::vector<I> &start_pos, const std::vector<I> &end_pos);
+
+ public:
   class iterator {
     friend BinTableVariable;
     Bin _value{};

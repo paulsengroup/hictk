@@ -32,6 +32,8 @@ inline BinTableVariable<I>::BinTableVariable(Reference chroms, const std::vector
     return;
   }
 
+  validate_bin_coords(start_pos, end_pos);
+
   _bin_end_prefix_sum.reserve(start_pos.size() + 1);
   _bin_end_prefix_sum.push_back(end_pos.front());
 
@@ -42,6 +44,12 @@ inline BinTableVariable<I>::BinTableVariable(Reference chroms, const std::vector
     _bin_end_prefix_sum.push_back(_bin_end_prefix_sum.back() + end_pos[i] - start_pos[i]);
   }
   _num_bins_prefix_sum.push_back(_bin_end_prefix_sum.size() - 1);
+  if (_num_bins_prefix_sum.size() != _chroms.size() + 1) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Bin table contains an unexpected number of chromosomes: expected "
+                               "{} chromosomes, found {}."),
+                    _chroms.size(), _num_bins_prefix_sum.size() - 1));
+  }
 }
 
 template <typename I>
@@ -270,6 +278,48 @@ template <typename I>
 inline std::uint64_t BinTableVariable<I>::map_to_bin_id(std::uint32_t chrom_id,
                                                         std::uint32_t pos) const {
   return map_to_bin_id(_chroms.at(chrom_id), pos);
+}
+
+template <typename I>
+inline void BinTableVariable<I>::validate_bin_coords(const std::vector<I> &start_pos,
+                                                     const std::vector<I> &end_pos) {
+  if (start_pos.front() != 0) {
+    throw std::runtime_error("Bin table does not start from zero");
+  }
+
+  for (std::size_t i = 1; i < start_pos.size(); ++i) {
+    const auto s1 = start_pos[i - 1];
+    const auto s2 = start_pos[i];
+    const auto e1 = end_pos[i - 1];
+    const auto e2 = end_pos[i];
+
+    if (s1 >= e1) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("Bin #{} is not valid: start_pos >= end_pos: {} >= {}"), i, s1, e1));
+    }
+
+    if (s1 >= s2 && s2 != 0) {
+      throw std::runtime_error(fmt::format(FMT_STRING("Bin table is not sorted in ascending order: "
+                                                      "bin #{} >= bin #{} (start_pos {} >= {})"),
+                                           i - 1, i, s1, s2));
+    }
+
+    if (e1 >= e2 && s2 != 0) {
+      throw std::runtime_error(fmt::format(FMT_STRING("Bin table is not sorted in ascending order: "
+                                                      "bin #{} >= bin #{} (end_pos {} >= {})"),
+                                           i - 1, i, e1, e2));
+    }
+
+    if (e1 != s2 && s2 != 0) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("Detected a gap between bins #{} and #{}."), i - 1, i));
+    }
+  }
+  if (start_pos.back() >= end_pos.back()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("Bin #{} is not valid: start_pos >= end_pos: {} >= {}"),
+                    start_pos.size() - 1, start_pos.back(), end_pos.back()));
+  }
 }
 
 template <typename I>

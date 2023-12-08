@@ -282,6 +282,49 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     CHECK_THROWS(table.get<BinTableFixed>());
   }
 
+  SECTION("invalid bins") {
+    SECTION("bins out of order") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 7};
+      const std::vector<std::uint32_t> end_pos1{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("not sorted"));
+
+      const std::vector<std::uint32_t> start_pos2{0, 8, 15};
+      const std::vector<std::uint32_t> end_pos2{8, 15, 14};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos2, end_pos2),
+                        Catch::Matchers::ContainsSubstring("not sorted"));
+    }
+    SECTION("gap between bins") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 16};
+      const std::vector<std::uint32_t> end_pos1{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("gap between bins"));
+
+      const std::vector<std::uint32_t> start_pos2{1, 8, 16};
+      const std::vector<std::uint32_t> end_pos2{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos2, end_pos2),
+                        Catch::Matchers::ContainsSubstring("does not start from zero"));
+    }
+
+    SECTION("start pos >= end pos") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 10, 15};
+      const std::vector<std::uint32_t> end_pos1{0, 10, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("start_pos >= end_pos"));
+    }
+
+    SECTION("number of chromosome mismatch") {
+      const Chromosome chrom3{2, "chr3", 32};
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2, chrom3}, start_pos, end_pos),
+                        Catch::Matchers::ContainsSubstring("unexpected number of chromosomes"));
+    }
+  }
+
   SECTION("iterators") {
     const auto& chr1 = table.chromosomes().at("chr1");
     const auto& chr2 = table.chromosomes().at("chr2");
