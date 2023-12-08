@@ -54,7 +54,7 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-gcc-12
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-23.04-cxx-gcc-13
       options: '--user=root'
 
     steps:
