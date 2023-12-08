@@ -206,8 +206,8 @@ int load_subcmd(const LoadConfig& c) {
       [&](const auto& sum) {
         SPDLOG_INFO(FMT_STRING("ingested {} interactions ({} nnz) in {}s!"), sum, clr.nnz(),
                     static_cast<double>(delta) / 1.0e9);
-      },
-      clr.attributes().sum.value());
+      },  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+      *clr.attributes().sum);
 
   return 0;
 }

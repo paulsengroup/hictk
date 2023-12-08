@@ -264,7 +264,7 @@ inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
   return {std::move(chroms),
           Dataset(root_grp, f.getDataSet("bins/start")).read_all<std::vector<std::uint32_t>>(),
           Dataset(root_grp, f.getDataSet("bins/end")).read_all<std::vector<std::uint32_t>>()};
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::File& f) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
