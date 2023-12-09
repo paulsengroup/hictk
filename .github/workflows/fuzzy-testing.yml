@@ -193,8 +193,8 @@ jobs:
         working-directory: hictkpy
         run: |
           pip install --upgrade pip setuptools wheel pybind11
-          env CC=clang-15 \
-              CXX=clang++-15 \
+          env CC=clang-16 \
+              CXX=clang++-16 \
               CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/../build" \
               HICTKPY_SETUP_SKIP_CONAN=1 \
           pip install . -v
