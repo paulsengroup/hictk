@@ -226,7 +226,7 @@ jobs:
         with:
           fail_ci_if_error: true
           gcov: true
-          gcov_executable: gcov-12
+          gcov_executable: gcov-13
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
