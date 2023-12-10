@@ -7,10 +7,12 @@
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
-#include "hictk/balancing/methods.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::balancing {
@@ -56,4 +58,4 @@ using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weight
 
 }  // namespace hictk::balancing
 
-#include "./impl/weights_impl.hpp"
+#include "./impl/weights_impl.hpp"  // NOLINT

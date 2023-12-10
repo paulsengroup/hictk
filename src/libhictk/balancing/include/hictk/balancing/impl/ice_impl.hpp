@@ -5,19 +5,27 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <zstd.h>
 
+#include <BS_thread_pool.hpp>
+#include <algorithm>
+#include <cassert>
 #include <cmath>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
 #include <iterator>
+#include <limits>
+#include <memory>
+#include <mutex>
 #include <nonstd/span.hpp>
-#include <numeric>
-#include <type_traits>
+#include <utility>
+#include <vector>
 
-#include "hictk/cooler/cooler.hpp"
+#include "hictk/balancing/sparse_matrix.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
-#include "hictk/type_traits.hpp"
 
 namespace hictk::balancing {
 

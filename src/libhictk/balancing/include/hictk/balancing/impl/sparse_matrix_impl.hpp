@@ -4,20 +4,26 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <xxhash.h>
 #include <zstd.h>
 
-#include <cmath>
+#include <BS_thread_pool.hpp>
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
-#include <iterator>
+#include <memory>
+#include <mutex>
 #include <nonstd/span.hpp>
-#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <thread>
 #include <type_traits>
-
-#include "hictk/cooler/cooler.hpp"
-#include "hictk/pixel.hpp"
-#include "hictk/type_traits.hpp"
+#include <utility>
+#include <vector>
 
 namespace hictk::balancing {
 
@@ -50,7 +56,7 @@ inline double& MargsVector::operator[](std::size_t i) noexcept {
 
 inline void MargsVector::add(std::size_t i, double n) noexcept {
   assert(i < size());
-  [[maybe_unused]] std::scoped_lock lck(_mtxes[get_mutex_idx(i)]);
+  [[maybe_unused]] const std::scoped_lock lck(_mtxes[get_mutex_idx(i)]);
   _margs[i] += n;
 }
 
@@ -359,6 +365,7 @@ inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
     if (!_path.empty() && std::filesystem::exists(_path)) {
       std::filesystem::remove(_path);
     }
+    // NOLINTNEXTLINE
   } catch (...) {
   }
 }
@@ -519,8 +526,6 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     tpool->push_task(times_outer_product_marg_impl, i0, i1);
   }
   tpool->wait_for_tasks();
-
-  return;
 }
 
 inline void SparseMatrixChunked::write_chunk() {
