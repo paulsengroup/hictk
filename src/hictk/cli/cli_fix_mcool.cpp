@@ -3,13 +3,18 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <stdexcept>
 #include <string>
 #include <thread>
+#include <variant>
+#include <vector>
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -88,6 +93,8 @@ void Cli::make_fix_mcool_subcommand() {
       "Overwrite existing files (if any).")
       ->capture_default_str();
   // clang-format on
+
+  _config = std::monostate{};
 }
 
 void Cli::validate_fix_mcool_subcommand() const {

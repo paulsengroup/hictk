@@ -3,13 +3,25 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <thread>
+#include <variant>
+#include <vector>
 
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/utils.hpp"
+#include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -111,6 +123,8 @@ void Cli::make_convert_subcommand() {
       "Overwrite existing files (if any).")
       ->capture_default_str();
   // clang-format on
+
+  _config = std::monostate{};
 }
 
 static void check_requested_resolutions_avail(const std::filesystem::path& path_to_input_file,

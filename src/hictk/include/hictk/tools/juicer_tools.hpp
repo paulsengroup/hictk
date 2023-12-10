@@ -6,9 +6,10 @@
 
 #include <fmt/format.h>
 
-#include <boost/process.hpp>
+#include <boost/process/child.hpp>
+#include <boost/process/search_path.hpp>
 #include <cassert>
-#include <cstdint>
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>

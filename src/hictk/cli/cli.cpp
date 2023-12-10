@@ -5,11 +5,16 @@
 #include "hictk/tools/cli.hpp"
 
 #include <fmt/format.h>
-#include <fmt/std.h>
 
 #include <CLI/CLI.hpp>
 #include <cassert>
+#include <exception>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+
+#include "hictk/version.hpp"
+#include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
 

@@ -8,8 +8,6 @@
 #include <string_view>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
-#include "hictk/cooler.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {

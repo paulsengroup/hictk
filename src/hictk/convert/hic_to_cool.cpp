@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
-#include <fmt/std.h>
 #if __has_include(<readerwriterqueue.h>)
 #include <readerwriterqueue.h>
 #else
@@ -11,13 +10,35 @@
 #endif
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <atomic>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <filesystem>
 #include <future>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/tools/tools.hpp"
-#include "hictk/version.hpp"
+#include "hictk/hic/pixel_selector.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
+#include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
 

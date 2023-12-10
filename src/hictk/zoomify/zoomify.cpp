@@ -2,10 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
+
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <highfive/H5File.hpp>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/utils.hpp"
-#include "hictk/tmpdir.hpp"
+#include "hictk/pixel.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/transformers/coarsen.hpp"
 

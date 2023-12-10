@@ -4,13 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string>
 #include <variant>
+#include <vector>
 
-#include "hictk/cooler/cooler.hpp"
-#include "hictk/hic.hpp"
+#include "hictk/balancing/methods.hpp"
+#include "hictk/hic/common.hpp"
 
 namespace hictk::tools {
 

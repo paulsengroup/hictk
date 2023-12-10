@@ -2,13 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <fmt/format.h>
-#include <fmt/std.h>
-
-#include <CLI/CLI.hpp>
 #include <cassert>
-#include <cstdint>
-#include <string>
+#include <cstddef>
+#include <variant>
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"

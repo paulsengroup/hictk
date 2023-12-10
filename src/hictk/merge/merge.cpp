@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <chrono>
+#include <cstdint>
+#include <filesystem>
 
 #include "hictk/cooler/utils.hpp"
-#include "hictk/hic/utils.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

@@ -5,15 +5,21 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "./common.hpp"
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 
@@ -35,7 +41,7 @@ class PairsAggregator {
   phmap::btree_set<ThinPixel<N>, PixelCmp<N>> _buffer{};
   typename phmap::btree_set<ThinPixel<N>, PixelCmp<N>>::const_iterator _it{};
 
-  const BinTable& _bins{};
+  const BinTable& _bins{};  // NOLINT
   Format _format{};
   ThinPixel<N> _last{};
 
@@ -148,8 +154,8 @@ inline void read_sort_and_aggregate_batch(PairsAggregator<N>& aggregator,
 }
 
 template <typename N>
-inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t batch_size,
-                                bool validate_pixels) {
+inline void ingest_pairs_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+                                Format format, std::size_t batch_size, bool validate_pixels) {
   PairsAggregator<N> aggregator{clr.bins(), format};
   std::vector<ThinPixel<N>> buffer{};
   buffer.reserve(batch_size);
@@ -182,10 +188,10 @@ inline void ingest_pairs_sorted(cooler::File&& clr, Format format, std::size_t b
 }
 
 template <typename N>
-[[nodiscard]] inline std::uint64_t ingest_pairs_unsorted(cooler::File&& clr,
-                                                         std::vector<ThinPixel<N>>& buffer,
-                                                         std::size_t batch_size, Format format,
-                                                         bool validate_pixels) {
+[[nodiscard]] inline std::uint64_t ingest_pairs_unsorted(
+    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+    std::vector<ThinPixel<N>>& buffer, std::size_t batch_size, Format format,
+    bool validate_pixels) {
   buffer.reserve(batch_size);
   PairsAggregator<N>{clr.bins(), format}.read_next_chunk(buffer);
 

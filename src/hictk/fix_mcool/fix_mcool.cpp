@@ -2,17 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cassert>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <highfive/H5File.hpp>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
-#include "hictk/balancing/ice.hpp"
-#include "hictk/balancing/methods.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
 
@@ -79,7 +86,8 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
     c.min_nnz = dset.read_attribute<std::size_t>("min_nnz");
     c.tolerance = dset.read_attribute<double>("tol");
 
-  } catch (const std::exception& e) {
+    // NOLINTNEXTLINE
+  } catch (const std::exception&) {
   }
   return c;
 }
