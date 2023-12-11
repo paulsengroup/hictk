@@ -4,14 +4,13 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
+#include <cstddef>
 #include <cstdint>
-#include <initializer_list>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace hictk {
 
@@ -74,8 +73,8 @@ struct ChromosomeCmp {
 namespace std {
 template <>
 struct hash<hictk::Chromosome> {
-  size_t operator()(const hictk::Chromosome& c) const;
+  std::size_t operator()(const hictk::Chromosome& c) const;
 };
 }  // namespace std
 
-#include "./impl/chromosome_impl.hpp"
+#include "./impl/chromosome_impl.hpp"  // NOLINT

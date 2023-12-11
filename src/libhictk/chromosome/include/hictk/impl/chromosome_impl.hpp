@@ -4,18 +4,18 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <cassert>
+#include <cctype>
+#include <cstddef>
 #include <cstdint>
-#include <iterator>
-#include <stdexcept>
+#include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "hictk/common.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/hash.hpp"
 
 namespace hictk {
