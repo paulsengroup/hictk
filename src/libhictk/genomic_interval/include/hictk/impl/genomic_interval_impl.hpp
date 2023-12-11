@@ -8,16 +8,17 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
-#include <vector>
 
-#include "hictk/common.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk {
 

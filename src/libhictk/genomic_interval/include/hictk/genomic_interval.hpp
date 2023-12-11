@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string>
+#include <string_view>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/reference.hpp"
@@ -50,8 +53,8 @@ class GenomicInterval {
 namespace std {
 template <>
 struct hash<hictk::GenomicInterval> {
-  size_t operator()(const hictk::GenomicInterval &gi) const;
+  std::size_t operator()(const hictk::GenomicInterval &gi) const;
 };
 }  // namespace std
 
-#include "./impl/genomic_interval_impl.hpp"
+#include "./impl/genomic_interval_impl.hpp"  // NOLINT
