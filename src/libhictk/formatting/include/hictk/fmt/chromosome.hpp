@@ -6,7 +6,9 @@
 
 #include <fmt/format.h>
 
-#include "hictk/fmt/common.hpp"
+#include <string_view>
+
+#include "./common.hpp"
 
 namespace fmt {
 template <>

@@ -6,7 +6,10 @@
 
 #include <fmt/format.h>
 
-#include "hictk/fmt/common.hpp"
+#include <cassert>
+#include <string_view>
+
+#include "./common.hpp"
 #include "hictk/genomic_interval.hpp"
 
 namespace fmt {
