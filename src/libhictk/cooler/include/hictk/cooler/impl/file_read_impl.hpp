@@ -8,10 +8,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <highfive/H5Exception.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
+#include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,15 +25,23 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/cooler/index.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/genomic_interval.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/string_utils.hpp"
 #include "hictk/suppress_warnings.hpp"
-#include "hictk/type_pretty_printer.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 
@@ -391,7 +403,8 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
 
 namespace internal {
 template <typename N>
-bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff, bool missing_ok) {
+inline bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff,
+                          bool missing_ok) {
   if (!Attribute::exists(root_grp(), key) && missing_ok) {
     return false;
   }

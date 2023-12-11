@@ -4,12 +4,24 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
+#include <stdexcept>
+#include <tuple>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
-#include "hictk/numeric_utils.hpp"
+#include "hictk/balancing/weights.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/index.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::cooler {
 

@@ -6,28 +6,37 @@
 
 #include <fmt/format.h>
 
+#include "hictk/cooler/dataset.hpp"
+
 #if __has_include(<hdf5/hdf5.h>)
+#include <hdf5/H5Dpublic.h>
 #include <hdf5/H5Ipublic.h>
 #include <hdf5/H5Ppublic.h>
 #include <hdf5/H5Tpublic.h>
 #else
+#include <H5Dpublic.h>
 #include <H5Ipublic.h>
 #include <H5Ppublic.h>
 #include <H5Tpublic.h>
 #endif
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
-#include <highfive/H5Exception.hpp>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5PropertyList.hpp>
 #include <highfive/H5Utility.hpp>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
-#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 

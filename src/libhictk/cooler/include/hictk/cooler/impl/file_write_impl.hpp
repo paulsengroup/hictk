@@ -8,12 +8,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <highfive/H5DataSpace.hpp>
 #include <highfive/H5Exception.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 #include <highfive/H5Utility.hpp>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -23,10 +25,14 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/cooler/index.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 

@@ -10,13 +10,14 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #endif
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
-#include <type_traits>
+#include <vector>
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
@@ -157,4 +158,4 @@ class PixelSelector {
 
 }  // namespace hictk::cooler
 
-#include "./impl/pixel_selector_impl.hpp"
+#include "./impl/pixel_selector_impl.hpp"  // NOLINT

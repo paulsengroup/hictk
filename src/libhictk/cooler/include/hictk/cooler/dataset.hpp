@@ -10,16 +10,24 @@
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
 
+#include <parallel_hashmap/phmap.h>
+
+#include <cstddef>
 #include <cstdint>
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5DataSet.hpp>
 DISABLE_WARNING_POP
-#include <parallel_hashmap/phmap.h>
-
-#include <limits>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5DataType.hpp>
+#include <highfive/H5PropertyList.hpp>
+#include <highfive/H5Selection.hpp>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,6 +35,7 @@ DISABLE_WARNING_POP
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/generic_variant.hpp"
+#include "hictk/type_traits.hpp"
 #include "hictk/variant_buff.hpp"
 
 namespace hictk::cooler {
@@ -305,8 +314,8 @@ using DatasetMap = phmap::flat_hash_map<std::string, Dataset>;
 
 }  // namespace hictk::cooler
 
-#include "./impl/dataset_accessors_impl.hpp"
-#include "./impl/dataset_impl.hpp"
-#include "./impl/dataset_iterator_impl.hpp"
-#include "./impl/dataset_read_impl.hpp"
-#include "./impl/dataset_write_impl.hpp"
+#include "./impl/dataset_accessors_impl.hpp"  // NOLINT
+#include "./impl/dataset_impl.hpp"            // NOLINT
+#include "./impl/dataset_iterator_impl.hpp"   // NOLINT
+#include "./impl/dataset_read_impl.hpp"       // NOLINT
+#include "./impl/dataset_write_impl.hpp"      // NOLINT

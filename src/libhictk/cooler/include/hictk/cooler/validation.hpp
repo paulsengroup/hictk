@@ -4,8 +4,6 @@
 
 #pragma once
 
-// IWYU pragma: private, include "hictk/cooler.hpp"
-
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
@@ -17,8 +15,9 @@ DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5File.hpp>
 DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
+#include <string>
 #include <string_view>
-#include <utility>
+#include <vector>
 
 namespace hictk::cooler::utils {
 
@@ -104,4 +103,4 @@ struct formatter<hictk::cooler::utils::ValidationStatusScool> {
 };
 }  // namespace fmt
 
-#include "./impl/validation_impl.hpp"
+#include "./impl/validation_impl.hpp"  // NOLINT

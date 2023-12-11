@@ -4,24 +4,23 @@
 
 #pragma once
 
-#include <fmt/chrono.h>
-
+#include <cstddef>
 #include <cstdint>
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_NULL_DEREF
-#include <highfive/H5DataSet.hpp>
-#include <highfive/H5DataSpace.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 DISABLE_WARNING_POP
+
 #include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -29,12 +28,15 @@ DISABLE_WARNING_POP
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/numeric_variant.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 
@@ -363,11 +365,16 @@ class File {
                                     std::shared_ptr<const balancing::Weights> weights) const;
 };
 
+namespace internal {
+template <typename N>
+bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff, bool missing_ok);
+}
+
 }  // namespace hictk::cooler
 
-#include "./impl/file_accessors_impl.hpp"
-#include "./impl/file_impl.hpp"
-#include "./impl/file_read_impl.hpp"
-#include "./impl/file_standard_attr_impl.hpp"
-#include "./impl/file_validation_impl.hpp"
-#include "./impl/file_write_impl.hpp"
+#include "./impl/file_accessors_impl.hpp"      // NOLINT
+#include "./impl/file_impl.hpp"                // NOLINT
+#include "./impl/file_read_impl.hpp"           // NOLINT
+#include "./impl/file_standard_attr_impl.hpp"  // NOLINT
+#include "./impl/file_validation_impl.hpp"     // NOLINT
+#include "./impl/file_write_impl.hpp"          // NOLINT

@@ -4,16 +4,15 @@
 
 #pragma once
 
-// IWYU pragma: private, include "hictk/cooler.hpp"
-
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -41,7 +40,7 @@ void copy(std::string_view uri1, RootGroup dest);
 
 }  // namespace hictk::cooler::utils
 
-#include "./impl/utils_copy_impl.hpp"
-#include "./impl/utils_equal_impl.hpp"
-#include "./impl/utils_impl.hpp"
-#include "./impl/utils_merge_impl.hpp"
+#include "./impl/utils_copy_impl.hpp"   // NOLINT
+#include "./impl/utils_equal_impl.hpp"  // NOLINT
+#include "./impl/utils_impl.hpp"        // NOLINT
+#include "./impl/utils_merge_impl.hpp"  // NOLINT

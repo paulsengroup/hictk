@@ -5,20 +5,36 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <highfive/H5DataSpace.hpp>
 #include <highfive/H5File.hpp>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
+#include "hictk/suppress_warnings.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 

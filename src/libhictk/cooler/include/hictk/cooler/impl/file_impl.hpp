@@ -7,28 +7,32 @@
 #include <fmt/format.h>
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <exception>
 #include <filesystem>
-#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5DataSet.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 #include <highfive/H5Utility.hpp>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/cooler/attribute.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/cooler/index.hpp"
 #include "hictk/cooler/uri.hpp"
 #include "hictk/cooler/validation.hpp"
-#include "hictk/numeric_utils.hpp"
+#include "hictk/numeric_variant.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/suppress_warnings.hpp"
-#include "hictk/type_pretty_printer.hpp"
-#include "hictk/variant_buff.hpp"
 
 namespace hictk::cooler {
 

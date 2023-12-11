@@ -4,15 +4,27 @@
 
 #pragma once
 
-#include <H5Lpublic.h>
+#include <fmt/format.h>
+
+#if __has_include(<hdf5/hdf5.h>)
+#include <hdf5/H5Opublic.h>
+#include <hdf5/H5Ppublic.h>
+#else
 #include <H5Opublic.h>
 #include <H5Ppublic.h>
+#endif
 
-#include <algorithm>
+#include <exception>
+#include <filesystem>
 #include <highfive/H5File.hpp>
+#include <highfive/H5Group.hpp>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 
-#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/cooler/uri.hpp"
+#include "hictk/cooler/validation.hpp"
 
 namespace hictk::cooler::utils {
 

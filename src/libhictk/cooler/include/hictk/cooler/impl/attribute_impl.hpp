@@ -10,21 +10,24 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <highfive/H5Attribute.hpp>
+#include <highfive/H5DataType.hpp>
 #include <highfive/H5Utility.hpp>
 #include <limits>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 #include "hictk/common.hpp"
-#include "hictk/cooler/group.hpp"
 #include "hictk/numeric_utils.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_pretty_printer.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 

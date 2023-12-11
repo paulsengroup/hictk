@@ -8,16 +8,26 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <highfive/H5Exception.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Utility.hpp>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
-#include "hictk/numeric_utils.hpp"
+#include "hictk/cooler/validation.hpp"
 
 namespace hictk::cooler::utils {
 

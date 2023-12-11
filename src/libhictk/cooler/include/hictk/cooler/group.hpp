@@ -20,8 +20,6 @@ DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
 #include <string>
 
-#include "hictk/suppress_warnings.hpp"
-
 namespace hictk::cooler {
 
 DISABLE_WARNING_PUSH

@@ -4,11 +4,26 @@
 
 #pragma once
 
+#if __has_include(<hdf5/hdf5.h>)
+#include <hdf5/H5Ppublic.h>
+#include <hdf5/H5Tpublic.h>
+#include <hdf5/H5public.h>
+#else
+#include <H5Ppublic.h>
+#include <H5Tpublic.h>
+#include <H5public.h>
+#endif
 #include <fmt/format.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataType.hpp>
+#include <string>
+#include <string_view>
+
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
 
 namespace hictk::cooler {
 
