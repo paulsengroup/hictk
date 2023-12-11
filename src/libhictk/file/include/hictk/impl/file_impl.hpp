@@ -4,12 +4,30 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <vector>
 
-#include "hictk/cooler/utils.hpp"
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/cooler/uri.hpp"
+#include "hictk/cooler/validation.hpp"
+#include "hictk/hic.hpp"
+#include "hictk/hic/pixel_selector.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk {
 
