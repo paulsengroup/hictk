@@ -4,6 +4,8 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <fmt/format.h>
 
 #include <cassert>

@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on

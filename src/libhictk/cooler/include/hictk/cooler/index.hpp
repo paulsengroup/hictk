@@ -4,6 +4,8 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 #include <parallel_hashmap/btree.h>
 
 #include <cassert>

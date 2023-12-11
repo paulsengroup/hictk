@@ -4,6 +4,8 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>

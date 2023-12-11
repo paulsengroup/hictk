@@ -4,6 +4,8 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 #include <string>
 #include <string_view>
 #include <utility>

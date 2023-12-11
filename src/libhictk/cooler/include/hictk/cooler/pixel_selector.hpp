@@ -4,6 +4,8 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 #ifdef HICTK_WITH_EIGEN
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
