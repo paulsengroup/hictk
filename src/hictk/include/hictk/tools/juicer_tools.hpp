@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <boost/process/child.hpp>
 #include <boost/process/search_path.hpp>

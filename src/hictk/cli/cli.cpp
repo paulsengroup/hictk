@@ -13,8 +13,8 @@
 #include <string>
 #include <string_view>
 
-#include "hictk/version.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/version.hpp"
 
 namespace hictk::tools {
 
