@@ -5,13 +5,14 @@
 #pragma once
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
+#include <cstdlib>
 #elif defined(_WIN32)
+#include <cstdio>
 #include <random>
+#include <string>
 #endif
 
 #include <atomic>
-#include <cstdio>
 #include <filesystem>
 #include <utility>
 

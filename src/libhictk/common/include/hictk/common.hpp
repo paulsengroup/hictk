@@ -5,6 +5,8 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
