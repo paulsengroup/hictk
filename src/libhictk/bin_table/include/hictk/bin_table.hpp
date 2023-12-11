@@ -4,13 +4,16 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <iterator>
 #include <limits>
-#include <map>
-#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
-#include "hictk/common.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
 
@@ -197,4 +200,4 @@ struct hash<hictk::Bin> {
 };
 }  // namespace std
 
-#include "./impl/bin_table_impl.hpp"
+#include "./impl/bin_table_impl.hpp"  // NOLINT

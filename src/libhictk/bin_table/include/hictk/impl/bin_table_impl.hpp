@@ -8,16 +8,20 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
+#include <functional>
+#include <iterator>
 #include <stdexcept>
-#include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/suppress_warnings.hpp"
 
 namespace hictk {  // NOLINT
