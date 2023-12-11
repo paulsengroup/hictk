@@ -63,6 +63,8 @@ class PixelSelector {
   template <typename N>
   [[nodiscard]] auto cend() const -> iterator<N>;
 
+  [[nodiscard]] bool empty() const;
+
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 #ifdef HICTK_WITH_EIGEN

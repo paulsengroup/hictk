@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk {
 
