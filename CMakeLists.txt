@@ -117,6 +117,8 @@ target_compile_features(hictk_project_options INTERFACE "cxx_std_${CMAKE_CXX_STA
 
 # Tweak fmt
 target_compile_definitions(hictk_project_options INTERFACE FMT_HEADER_ONLY FMT_ENFORCE_COMPILE_STRING)
+# Tweak spanlite
+target_compile_definitions(hictk_project_options INTERFACE span_FEATURE_MAKE_SPAN=1)
 # Tweak spdlog
 target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
 #Tweak xxHash

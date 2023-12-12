@@ -30,5 +30,3 @@ target_link_system_libraries(
   phmap
   xxHash::xxhash
   "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
-
-target_compile_definitions(balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
