@@ -127,6 +127,7 @@ jobs:
                 -DHICTK_ENABLE_TESTING=ON                     \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
+                -DHICTK_USE_PCH=ON                            \
                 -S .                                          \
                 -B build
 

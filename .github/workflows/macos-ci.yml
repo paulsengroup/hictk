@@ -193,6 +193,7 @@ jobs:
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
+                -DHICTK_USE_PCH=ON                                   \
                 -DCMAKE_INSTALL_PREFIX=dest                          \
                 -S "${{ github.workspace }}"                         \
                 -B "${{ github.workspace }}/build"

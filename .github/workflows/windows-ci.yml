@@ -172,6 +172,7 @@ jobs:
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
+                -DHICTK_USE_PCH=ON                                   \
                 -S .                                                 \
                 -B build
 
