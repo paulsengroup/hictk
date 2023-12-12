@@ -11,6 +11,10 @@ add_executable(hictk_transformers_tests)
 
 target_sources(hictk_transformers_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/transformers_test.cpp")
 
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_transformers_tests REUSE_FROM hictk_test_pch)
+endif()
+
 target_link_libraries(
   hictk_transformers_tests
   PRIVATE hictk_project_warnings hictk_project_options

@@ -16,6 +16,10 @@ target_sources(
           "${CMAKE_CURRENT_SOURCE_DIR}/hic_file_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp")
 
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_hic_tests REUSE_FROM hictk_test_pch)
+endif()
+
 target_link_libraries(
   hictk_hic_tests
   PRIVATE hictk_project_warnings hictk_project_options

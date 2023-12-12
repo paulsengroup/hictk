@@ -7,17 +7,21 @@ find_package(Filesystem REQUIRED)
 include(CTest)
 include(Catch)
 
-add_executable(bin_table_tests)
+add_executable(hictk_bin_table_tests)
 
-target_sources(bin_table_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bin_table_test.cpp")
+target_sources(hictk_bin_table_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bin_table_test.cpp")
+
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_bin_table_tests REUSE_FROM hictk_test_pch)
+endif()
 
 target_link_libraries(
-  bin_table_tests
+  hictk_bin_table_tests
   PRIVATE hictk_project_warnings hictk_project_options
   PUBLIC hictk::bin_table hictk::format)
 
 target_link_system_libraries(
-  bin_table_tests
+  hictk_bin_table_tests
   PUBLIC
   Catch2::Catch2WithMain
   std::filesystem)
@@ -27,7 +31,7 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 # automatically discover tests that are defined in catch based test files you can modify the unittests. TEST_PREFIX to
 # whatever you want, or use different for different binaries
 catch_discover_tests(
-  bin_table_tests
+  hictk_bin_table_tests
   TEST_SPEC
   "[short]"
   TEST_SUFFIX
@@ -41,7 +45,7 @@ catch_discover_tests(
   --skip-benchmarks)
 
 catch_discover_tests(
-  bin_table_tests
+  hictk_bin_table_tests
   TEST_SPEC
   "[medium]"
   TEST_SUFFIX
@@ -53,7 +57,7 @@ catch_discover_tests(
   --skip-benchmarks)
 
 catch_discover_tests(
-  bin_table_tests
+  hictk_bin_table_tests
   TEST_SPEC
   "[long]"
   TEST_SUFFIX

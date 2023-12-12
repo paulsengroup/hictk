@@ -23,3 +23,6 @@ if(HICTK_DOWNLOAD_TEST_DATASET)
   message(STATUS "Downloading test dataset...")
   include(${PROJECT_SOURCE_DIR}/cmake/FetchTestDataset.cmake)
 endif()
+
+add_executable(test123 units/devel/test.cpp)
+target_link_libraries(test123 PUBLIC hictk::libhictk)

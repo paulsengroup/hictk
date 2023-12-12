@@ -11,6 +11,10 @@ add_executable(hictk_pixel_tests)
 
 target_sources(hictk_pixel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pixel_test.cpp")
 
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_pixel_tests REUSE_FROM hictk_test_pch)
+endif()
+
 target_link_libraries(
   hictk_pixel_tests
   PRIVATE hictk_project_warnings hictk_project_options

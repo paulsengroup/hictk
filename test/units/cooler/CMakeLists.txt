@@ -39,6 +39,10 @@ target_sources(
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/utils_validation_test.cpp")
 
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_cooler_tests REUSE_FROM hictk_test_pch)
+endif()
+
 target_link_libraries(
   hictk_cooler_tests
   PRIVATE hictk_project_warnings hictk_project_options

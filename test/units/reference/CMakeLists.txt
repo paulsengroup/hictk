@@ -11,6 +11,10 @@ add_executable(hictk_reference_tests)
 
 target_sources(hictk_reference_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/reference_test.cpp")
 
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk_reference_tests REUSE_FROM hictk_test_pch)
+endif()
+
 target_link_libraries(
   hictk_reference_tests
   PRIVATE hictk_project_warnings hictk_project_options

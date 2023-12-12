@@ -4,6 +4,8 @@
 
 include_directories(include)
 
+add_subdirectory(pch)
+
 add_subdirectory(balancing)
 add_subdirectory(bin_table)
 add_subdirectory(chromosome)

@@ -36,6 +36,11 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 
 target_include_directories(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+if(HICTK_USE_PCH)
+  target_precompile_headers(hictk PRIVATE [["hictk/tools/internal/pch.hpp"]])
+endif()
+
 target_link_libraries(hictk PRIVATE hictk_project_options hictk_project_warnings hictk::libhictk)
 
 target_link_system_libraries(
