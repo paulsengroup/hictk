@@ -103,6 +103,7 @@ hictk convert
     --normalization-methods TEXT [ALL]  ...
                                 Name of one or more normalization methods to be copied.
                                 By default, vectors for all known normalization methods are copied.
+                                Pass NONE to avoid copying normalization vectors.
     --fail-if-norm-not-found    Fail if any of the requested normalization vectors are missing.
     -g,--genome TEXT            Genome assembly name. By default this is copied from the .hic file metadata.
     --juicer-tools-memory UINT:SIZE [b, kb(=1000b), kib(=1024b), ...]:POSITIVE [32GB]
@@ -138,12 +139,16 @@ hictk dump
                                 Matrix unit (ignored when file is not in .hic format).
     -t,--table TEXT:{chroms,bins,pixels,normalizations,resolutions,cells} [pixels]
                                 Name of the table to dump.
-    -r,--range TEXT [all]  Excludes: --query-file
+    -r,--range TEXT [all]  Excludes: --query-file --cis-only --trans-only
                                 Coordinates of the genomic regions to be dumped following UCSC-style notation (chr1:0-1000).
-    --range2 TEXT [all]  Needs: --range Excludes: --query-file
+    --range2 TEXT [all]  Needs: --range Excludes: --query-file --cis-only --trans-only
                                 Coordinates of the genomic regions to be dumped following UCSC-style notation (chr1:0-1000).
-    --query-file TEXT:(FILE) OR ({-}) Excludes: --range --range2
+    --query-file TEXT:(FILE) OR ({-}) Excludes: --range --range2 --cis-only --trans-only
                                 Path to a BEDPE file with the list of coordinates to be fetched (pass - to read queries from stdin).
+    --cis-only Excludes: --range --range2 --query-file --trans-only
+                                Dump intra-chromosomal interactions only.
+    --trans-only Excludes: --range --range2 --query-file --cis-only
+                                Dump inter-chromosomal interactions only.
     -b,--balance TEXT [NONE]    Balance interactions using the given method.
     --sorted,--unsorted{false}  Return interactions in ascending order.
     --join,--no-join{false}     Output pixels in BG2 format.

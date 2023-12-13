@@ -106,3 +106,22 @@ Dump tables other than pixels:
   5000
   10000
   ...
+
+
+Dump cis or trans interactions only:
+
+.. code-block:: console
+
+  user@dev:/tmp$ hictk dump data/4DNFIZ1ZVXC8.hic9 --resolution 1000 --cis-only --join
+
+  chr2L	7000	8000	chr2L	7000	8000	1745
+  chr2L	7000	8000	chr2L	12000	13000	1766
+  chr2L	7000	8000	chr2L	17000	18000	1078
+  ...
+
+  user@dev:/tmp$ hictk dump data/4DNFIZ1ZVXC8.hic9 --resolution 1000 --trans-only --join
+
+  chr2L	7000	8000	chr2R	27000	28000	1
+  chr2L	7000	8000	chr2R	322000	323000	1
+  chr2L	7000	8000	chr2R	397000	398000	1
+  ...

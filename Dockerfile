@@ -28,6 +28,15 @@ RUN if [ -z "$C_COMPILER" ]; then echo "Missing C_COMPILER --build-arg" && exit 
 ENV CC="$C_COMPILER"
 ENV CXX="$CXX_COMPILER"
 
+# Install b2 using Conan
+RUN printf '[requires]\nb2/4.10.1\n[options]\nb2*:toolset=%s' \
+           "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.txt
+
+RUN conan install /tmp/conanfile.txt                 \
+                 --build=missing                     \
+                 -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
+                 -pr:h="$CONAN_DEFAULT_PROFILE_PATH"
+
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"
 
@@ -106,6 +115,7 @@ RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-a
 
 # Install runtime dependencies
 RUN apt-get update \
+&& apt-get install -y ca-certificates-java \
 && apt-get install -y \
    openjdk-19-jre-headless \
    pigz \

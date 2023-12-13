@@ -85,7 +85,7 @@ inline auto Weights::infer_type(std::string_view name) -> Type {
        {"ICE", Type::MULTIPLICATIVE},
        {"INTER_ICE", Type::MULTIPLICATIVE},
        {"GW_ICE", Type::MULTIPLICATIVE},
-       {"weights", Type::MULTIPLICATIVE}}};
+       {"weight", Type::MULTIPLICATIVE}}};
 
   auto it = mappings.find(name);
   if (it == mappings.end()) {

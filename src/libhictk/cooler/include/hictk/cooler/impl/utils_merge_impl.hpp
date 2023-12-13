@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -112,7 +113,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
                   bool overwrite_if_exists, std::size_t chunk_size, std::size_t update_frequency) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
-  hictk::internal::PixelMerger merger{heads, tails};
+  hictk::transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
@@ -120,11 +121,11 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
 
   std::size_t pixels_processed{};
   auto t0 = std::chrono::steady_clock::now();
-  for (std::size_t i = 0; true; ++i) {
-    auto pixel = merger.next();
-    if (!pixel) {
-      break;
-    }
+  auto first = merger.begin();
+  auto last = merger.end();
+  for (std::size_t i = 0; first != last; ++i) {
+    const auto pixel = *first;
+    std::ignore = ++first;
 
     if (i == update_frequency) {
       const auto bin1 = dest.bins().at(pixel.bin1_id);
