@@ -105,5 +105,5 @@ inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappi
                     dset.uri(), e.what()));
   }
   assert(dset.size() == names.size());
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }  // namespace hictk::cooler::utils
