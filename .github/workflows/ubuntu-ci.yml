@@ -113,9 +113,9 @@ jobs:
             includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
 
             // Make sure project builds with CMake 3.25
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-23.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-23.04',  generator: 'Unix Makefiles', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
