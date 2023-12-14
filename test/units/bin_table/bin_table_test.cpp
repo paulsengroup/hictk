@@ -4,15 +4,21 @@
 
 #include "hictk/bin_table.hpp"
 
+#include <fmt/format.h>
+
 #include <array>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
-#include "hictk/fmt/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
+#include "hictk/fmt/bin_table.hpp"  // IWYU pragma: keep
+#include "hictk/genomic_interval.hpp"
 
 namespace hictk::test::bin_table {
 

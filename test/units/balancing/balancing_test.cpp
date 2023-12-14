@@ -2,14 +2,31 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <zstd.h>
+
+#include <array>
+#include <cassert>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ios>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "hictk/balancing/ice.hpp"
-#include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/sparse_matrix.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/file.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::test {

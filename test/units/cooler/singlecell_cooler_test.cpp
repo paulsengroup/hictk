@@ -4,11 +4,14 @@
 
 #include "hictk/cooler/singlecell_cooler.hpp"
 
-#include <fmt/format.h>
-
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
+#include "hictk/cooler/common.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/validation.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::singlecell_cooler_file {

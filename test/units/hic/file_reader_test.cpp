@@ -6,10 +6,15 @@
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string>
+
+#include "hictk/balancing/methods.hpp"
+#include "hictk/hic/common.hpp"
 
 using namespace hictk::hic;
 

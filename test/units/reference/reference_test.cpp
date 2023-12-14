@@ -4,10 +4,17 @@
 
 #include "hictk/reference.hpp"
 
-#include <fmt/format.h>
-
+#include <algorithm>
+#include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstdint>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
+
+#include "hictk/chromosome.hpp"
 
 namespace hictk::test::reference {
 

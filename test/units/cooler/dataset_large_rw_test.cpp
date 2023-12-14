@@ -2,11 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <highfive/H5File.hpp>
 #include <random>
-#include <set>
+#include <vector>
 
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"

@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <algorithm>
+#include <array>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
 #include <filesystem>
+#include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 

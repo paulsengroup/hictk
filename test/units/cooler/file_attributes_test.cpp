@@ -2,10 +2,11 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <variant>
 
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 

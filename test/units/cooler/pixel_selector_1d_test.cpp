@@ -2,15 +2,22 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
-#include <random>
+#include <iterator>
+#include <numeric>
+#include <vector>
 
+#include "hictk/chromosome.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/genomic_interval.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {

@@ -2,11 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <cstdint>
 #include <filesystem>
 
+#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
