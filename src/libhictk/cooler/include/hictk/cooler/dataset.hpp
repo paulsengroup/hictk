@@ -31,7 +31,7 @@ DISABLE_WARNING_POP
 #include <utility>
 #include <vector>
 
-#include "hictk/common.hpp"
+#include "hictk/cooler/common.hpp"
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/generic_variant.hpp"
