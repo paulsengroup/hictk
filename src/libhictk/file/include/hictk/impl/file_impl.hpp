@@ -25,7 +25,7 @@
 #include "hictk/cooler/validation.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/pixel_selector.hpp"
-#include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 

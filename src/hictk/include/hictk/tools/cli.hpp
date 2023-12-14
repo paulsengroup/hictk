@@ -17,6 +17,7 @@
 #include "config.hpp"
 #include "hictk/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/string_utils.hpp"
 

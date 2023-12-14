@@ -19,6 +19,7 @@
 #include "hictk/cooler/singlecell_cooler.hpp"
 #include "hictk/cooler/validation.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/tools/config.hpp"
 
