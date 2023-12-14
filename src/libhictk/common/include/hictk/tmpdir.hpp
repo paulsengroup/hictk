@@ -5,7 +5,7 @@
 #pragma once
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <cstdlib>
+#include <unistd.h>
 #elif defined(_WIN32)
 #include <cstdio>
 #include <random>
