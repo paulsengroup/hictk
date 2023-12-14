@@ -2,12 +2,21 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <cassert>
+#pragma once
+
+#include <fmt/format.h>
+
+#include <array>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <stdexcept>
 #include <string_view>
+#include <utility>
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk {
 
