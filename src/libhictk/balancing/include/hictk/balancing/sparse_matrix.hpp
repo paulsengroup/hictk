@@ -126,6 +126,8 @@ class SparseMatrixChunked {
   SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 10
   SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+#elif defined(__GNUC__) && defined(__clang__) && __clang__ < 9
+  SparseMatrixChunked(SparseMatrixChunked&& other) = default;
 #else
   SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
 #endif
