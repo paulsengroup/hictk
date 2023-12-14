@@ -6,21 +6,25 @@
 
 #include <fmt/format.h>
 #include <fmt/std.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
-#include "hictk/hash.hpp"
 #include "hictk/numeric_utils.hpp"
 
 namespace hictk {
