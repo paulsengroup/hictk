@@ -6,19 +6,20 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
-#include <parallel_hashmap/btree.h>
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/common.hpp"
-#include "hictk/hic/footer.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
@@ -140,5 +141,5 @@ class WeightCache {
 
 }  // namespace hictk::hic::internal
 
-#include "./impl/block_cache_impl.hpp"
-#include "./impl/weight_cache_impl.hpp"
+#include "./impl/block_cache_impl.hpp"   // NOLINT
+#include "./impl/weight_cache_impl.hpp"  // NOLINT

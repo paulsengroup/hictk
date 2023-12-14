@@ -5,18 +5,21 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
-#include <functional>
-#include <memory>
+#include <cstdint>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "hictk/chromosome.hpp"
+#include "hictk/hic/common.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
 

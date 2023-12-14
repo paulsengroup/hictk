@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
 #include <filesystem>
-#include <string>
+#include <vector>
 
-#include "hictk/hic.hpp"
+#include "hictk/hic/file_reader.hpp"
 
 namespace hictk::hic::utils {
 inline bool is_hic_file(const std::filesystem::path& path) {

@@ -6,16 +6,26 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <limits>
+#include <memory>
 #include <random>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/footer.hpp"
+#include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic {

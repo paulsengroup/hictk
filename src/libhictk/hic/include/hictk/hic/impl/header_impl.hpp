@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include <cassert>
-#include <cstdint>
+#include <cstddef>
 #include <functional>
-#include <iterator>
+
+#include "hictk/hash.hpp"
+#include "hictk/hic/header.hpp"
 
 namespace hictk::hic::internal {
 

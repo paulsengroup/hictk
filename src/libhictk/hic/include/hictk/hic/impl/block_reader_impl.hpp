@@ -6,10 +6,21 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <memory>
+#include <stdexcept>
+#include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
+
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
 

@@ -6,16 +6,19 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
+#include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
 
@@ -93,4 +96,4 @@ class HiCBlockReader {
 
 }  // namespace hictk::hic::internal
 
-#include "./impl/block_reader_impl.hpp"
+#include "./impl/block_reader_impl.hpp"  // NOLINT

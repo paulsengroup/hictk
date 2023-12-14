@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/common.hpp"
 
 namespace hictk::hic::internal {
 

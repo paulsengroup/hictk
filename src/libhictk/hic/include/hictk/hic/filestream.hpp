@@ -6,15 +6,13 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
+#include <cstddef>
 #include <fstream>
-#include <limits>
-#include <memory>
+#include <ios>
+#include <iosfwd>
 #include <string>
 #include <type_traits>
-#include <variant>
 #include <vector>
-
-#include "hictk/hic/common.hpp"
 
 namespace hictk::hic::internal::filestream {
 
@@ -69,4 +67,4 @@ class FileStream {
 };
 }  // namespace hictk::hic::internal::filestream
 
-#include "./impl/filestream_impl.hpp"
+#include "./impl/filestream_impl.hpp"  // NOLINT

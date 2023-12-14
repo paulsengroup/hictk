@@ -4,15 +4,18 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <filesystem>
+#include <limits>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <utility>
+#include <string_view>
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
@@ -22,6 +25,7 @@
 #include "hictk/hic/footer_cache.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/pixel_selector.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::hic {
 
@@ -109,4 +113,4 @@ class File {
 
 }  // namespace hictk::hic
 
-#include "./hic/impl/hic_file_impl.hpp"
+#include "./hic/impl/hic_file_impl.hpp"  // NOLINT

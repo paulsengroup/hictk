@@ -8,10 +8,8 @@
 
 #include <cstdint>
 #include <string>
-#include <utility>
 #include <vector>
 
-#include "hictk/hic/common.hpp"
 #include "hictk/reference.hpp"
 
 namespace hictk::hic::internal {
@@ -33,4 +31,4 @@ struct HiCHeader {
 
 }  // namespace hictk::hic::internal
 
-#include "./impl/header_impl.hpp"
+#include "./impl/header_impl.hpp"  // NOLINT
