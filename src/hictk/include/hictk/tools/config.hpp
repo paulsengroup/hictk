@@ -75,6 +75,9 @@ struct DumpConfig {
   bool join{false};
   bool sorted{true};
 
+  bool cis_only{false};
+  bool trans_only{false};
+
   std::string normalization{"NONE"};
   std::string weight_type{"infer"};
   hic::MatrixType matrix_type{hic::MatrixType::observed};

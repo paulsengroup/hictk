@@ -34,12 +34,12 @@
 namespace hictk::hic {
 
 class PixelSelector {
-  mutable internal::HiCBlockReader _reader{};
+  std::shared_ptr<internal::HiCBlockReader> _reader{};
 
   std::shared_ptr<const internal::HiCFooter> _footer{};
 
-  PixelCoordinates _coord1{};
-  PixelCoordinates _coord2{};
+  std::shared_ptr<const PixelCoordinates> _coord1{};
+  std::shared_ptr<const PixelCoordinates> _coord2{};
 
  public:
   template <typename N>
@@ -122,7 +122,10 @@ class PixelSelector {
     using BufferT = std::vector<ThinPixel<N>>;
     using BlockBlacklist = phmap::flat_hash_set<internal::BlockIndex>;
 
-    const PixelSelector *_sel{};
+    std::shared_ptr<internal::HiCBlockReader> _reader{};
+    std::shared_ptr<const PixelCoordinates> _coord1{};
+    std::shared_ptr<const PixelCoordinates> _coord2{};
+    std::shared_ptr<const internal::HiCFooter> _footer{};
     std::shared_ptr<const internal::Index::Overlap> _block_idx{};
     std::shared_ptr<BlockBlacklist> _block_blacklist{};
     internal::Index::Overlap::const_iterator _block_it{};
@@ -142,7 +145,9 @@ class PixelSelector {
 
     iterator() = default;
     explicit iterator(const PixelSelector &sel, bool sorted);
-    [[nodiscard]] static auto at_end(const PixelSelector &sel) -> iterator;
+    [[nodiscard]] static auto at_end(std::shared_ptr<internal::HiCBlockReader> reader,
+                                     std::shared_ptr<const PixelCoordinates> coord1,
+                                     std::shared_ptr<const PixelCoordinates> coord2) -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
@@ -173,6 +178,7 @@ class PixelSelector {
     void read_next_chunk_unsorted();
     void read_next_chunk_sorted();
     void read_next_chunk_v9_intra_sorted();
+    [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
   };
 };
 

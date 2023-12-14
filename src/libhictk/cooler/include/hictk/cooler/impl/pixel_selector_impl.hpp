@@ -111,6 +111,8 @@ inline auto PixelSelector::cend() const -> iterator<N> {
   return iterator<N>::at_end(_index, *_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count, _weights);
 }
 
+inline bool PixelSelector::empty() const { return begin<double>() == end<double>(); }
+
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,

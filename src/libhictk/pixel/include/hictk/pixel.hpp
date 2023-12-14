@@ -12,6 +12,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk {
 
