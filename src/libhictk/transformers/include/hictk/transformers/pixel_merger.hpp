@@ -95,4 +95,4 @@ class PixelMerger {
 };
 }  // namespace hictk::transformers
 
-// #include "./impl/pixel_merger_impl.hpp"  // NOLINT
+#include "./impl/pixel_merger_impl.hpp"  // NOLINT
