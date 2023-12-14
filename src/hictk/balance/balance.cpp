@@ -32,7 +32,7 @@
 #include "hictk/cooler/utils.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
 

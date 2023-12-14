@@ -16,7 +16,7 @@
 #include <variant>
 #include <vector>
 
-#include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 

@@ -15,8 +15,8 @@
 #include <variant>
 #include <vector>
 
-#include "hictk/cooler/utils.hpp"
-#include "hictk/hic/utils.hpp"
+#include "hictk/cooler/validation.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
