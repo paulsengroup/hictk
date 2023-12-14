@@ -5,6 +5,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <numeric>
 
 namespace hictk::transformers {

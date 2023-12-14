@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <functional>
+#include <iterator>
+#include <memory>
 #include <queue>
 #include <type_traits>
 #include <vector>
@@ -93,4 +95,4 @@ class PixelMerger {
 };
 }  // namespace hictk::transformers
 
-#include "./impl/pixel_merger_impl.hpp"
+// #include "./impl/pixel_merger_impl.hpp"  // NOLINT
