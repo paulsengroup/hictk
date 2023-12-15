@@ -18,11 +18,31 @@ namespace hictk::cooler::test::cooler_file {
 TEST_CASE("Cooler: init files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
 
-  const auto path = testdir() / "test_init.cool";
-  constexpr std::uint32_t bin_size = 1000;
-  std::ignore = File::create(path.string(), chroms, bin_size, true);
-  CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
-  CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+  SECTION("fixed bins") {
+    const auto path = testdir() / "test_init_fixed_bins.cool";
+    constexpr std::uint32_t bin_size = 1000;
+    std::ignore = File::create(path.string(), chroms, bin_size, true);
+    CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
+    CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+    CHECK(File(path.string()).attributes().bin_type.value() == "fixed");  // NOLINT
+  }
+
+  SECTION("variable bins") {
+    const auto path = testdir() / "test_init_variable_bins.cool";
+
+    const Chromosome chrom1{0, "chr1", 32};
+    const Chromosome chrom2{1, "chr2", 32};
+
+    const std::vector<std::uint32_t> start_pos{0, 8, 15, 23, 0, 5, 10, 26};
+    const std::vector<std::uint32_t> end_pos{8, 15, 23, 32, 5, 10, 26, 32};
+
+    const BinTable table({chrom1, chrom2}, start_pos, end_pos);
+
+    std::ignore = File::create(path.string(), table, true);
+    CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
+    CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
+    CHECK(File(path.string()).attributes().bin_type.value() == "variable");  // NOLINT
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -62,7 +82,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
       f.append_pixels(pixels.begin(), pixels.end(), true);
     }
   }
-  SECTION("open .cool") {
+  SECTION("open .cool (fixed bin size)") {
     const auto path = datadir / "cooler_test_file.cool";
     const File f(path.string());
 
@@ -71,6 +91,18 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     CHECK(f.bin_size() == 100'000);
     CHECK(f.chromosomes().size() == 20);
     CHECK(f.bins().size() == 26'398);
+    CHECK(f.has_pixel_of_type<std::int32_t>());
+  }
+
+  SECTION("open .cool (variable bin size)") {
+    const auto path = datadir / "cooler_variable_bins_test_file.cool";
+    const File f(path.string());
+
+    CHECK(f.path() == path);
+    CHECK(f.uri() == path);
+    CHECK(f.bin_size() == 0);
+    CHECK(f.chromosomes().size() == 2);
+    CHECK(f.bins().size() == 8);
     CHECK(f.has_pixel_of_type<std::int32_t>());
   }
 

@@ -76,7 +76,7 @@ fi
 data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
-ref_cooler="$data_dir/4DNFIKNWM36K.subset.cool"
+ref_cooler="$data_dir/4DNFIKNWM36K.subset.fixed-bins.cool"
 
 export PATH="$PATH:$script_dir"
 
@@ -108,8 +108,8 @@ if [[ "$sorted" == true ]]; then
       -f bg2 \
       --assume-sorted \
       --batch-size 1000000 \
+      --bin-size 10000 \
       "$outdir/chrom.sizes" \
-      10000 \
       "$outdir/out.cool"
 else
   cooler dump -t pixels --join "$ref_cooler" |
@@ -118,8 +118,8 @@ else
       -f bg2 \
       --assume-unsorted \
       --batch-size 1000000 \
+      --bin-size 10000 \
       "$outdir/chrom.sizes" \
-      10000 \
       "$outdir/out.cool"
 fi
 

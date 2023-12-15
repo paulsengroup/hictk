@@ -25,7 +25,7 @@ namespace hictk::cooler {
 
 inline void File::validate_bins(bool full) const {
   try {
-    assert(_attrs.bin_type == "fixed");
+    assert(_attrs.bin_type == "fixed" || _attrs.bin_type == "variable");
     auto nchroms = dataset("bins/chrom").size();
     auto nstarts = dataset("bins/start").size();
     auto nends = dataset("bins/end").size();
@@ -63,7 +63,7 @@ inline void File::validate_bins(bool full) const {
         if (chromosomes().at(*chrom_it).name() != bin.chrom().name() || *start_it != bin.start() ||
             *end_it != bin.end()) {
           throw std::runtime_error(
-              fmt::format(FMT_STRING("GenomicInterval #{}: expected {}:{}-{}, found {:ucsc}"), i,
+              fmt::format(FMT_STRING("Bin #{}: expected {}:{}-{}, found {:ucsc}"), i,
                           chromosomes().at(*chrom_it).name(), *start_it, *end_it, bin));
         }
         ++chrom_it;
@@ -75,8 +75,8 @@ inline void File::validate_bins(bool full) const {
 
   } catch (const HighFive::Exception &e) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("GenomicInterval table at URI {}/{} is invalid or corrupted: {}"),
-                    uri(), group("bins")().getPath(), e.what()));
+        fmt::format(FMT_STRING("Bin table at URI {}/{} is invalid or corrupted: {}"), uri(),
+                    group("bins")().getPath(), e.what()));
   }
 }
 

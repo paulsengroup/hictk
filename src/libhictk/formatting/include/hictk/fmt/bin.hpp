@@ -6,7 +6,7 @@
 
 #include <fmt/format.h>
 
-#include "hictk/bin_table.hpp"
+#include "hictk/bin.hpp"
 #include "hictk/fmt/common.hpp"
 #include "hictk/fmt/genomic_interval.hpp"
 

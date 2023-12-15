@@ -31,20 +31,20 @@ enum class Format { COO, BG2, VP, _4DN };
 
 template <typename N>
 [[nodiscard]] inline ThinPixel<N> parse_pixel(const BinTable& bins, std::string_view line,
-                                              Format format) {
+                                              Format format, std::int64_t offset) {
   ThinPixel<N> pixel{};
   switch (format) {
     case Format::COO:
-      pixel = ThinPixel<N>::from_coo(bins, line);
+      pixel = ThinPixel<N>::from_coo(bins, line, offset);
       break;
     case Format::BG2:
-      pixel = Pixel<N>::from_bg2(bins, line).to_thin();
+      pixel = Pixel<N>::from_bg2(bins, line, offset).to_thin();
       break;
     case Format::VP:
-      pixel = Pixel<N>::from_validpair(bins, line).to_thin();
+      pixel = Pixel<N>::from_validpair(bins, line, offset).to_thin();
       break;
     case Format::_4DN:
-      pixel = Pixel<N>::from_4dn_pairs(bins, line).to_thin();
+      pixel = Pixel<N>::from_4dn_pairs(bins, line, offset).to_thin();
       break;
   }
   if (pixel.bin1_id > pixel.bin2_id) {

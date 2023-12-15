@@ -1,517 +1,328 @@
-// Copyright (C) 2022 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
-#include <fmt/format.h>
-
-#include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <limits>
-#include <stdexcept>
+#include <map>
 #include <string>
-#include <string_view>
-#include <utility>
 #include <vector>
 
+#include "hictk/bin.hpp"
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
-#include "hictk/suppress_warnings.hpp"
+#include "hictk/reference.hpp"
+#include "hictk/type_traits.hpp"
 
-namespace hictk {  // NOLINT
-
-inline Bin::Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end_) noexcept
-    : Bin(Bin::null_id, Bin::rel_null_id, chrom_, start_, end_) {}
-
-inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, const Chromosome &chrom_,
-                std::uint32_t start_, std::uint32_t end_) noexcept
-    : _id(id_), _rel_id(rel_id_), _interval(chrom_, start_, end_) {}
-
-inline Bin::Bin(GenomicInterval interval) noexcept
-    : Bin(Bin::null_id, Bin::rel_null_id, std::move(interval)) {}
-
-inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, GenomicInterval interval) noexcept
-    : _id(id_), _rel_id(rel_id_), _interval(std::move(interval)) {}
-
-inline Bin::operator bool() const noexcept { return !!chrom(); }
-
-inline bool Bin::operator==(const Bin &other) const noexcept {
-  if (!has_null_id() && !other.has_null_id()) {
-    return id() == other.id();
-  }
-  return _interval == other._interval;
-}
-inline bool Bin::operator!=(const Bin &other) const noexcept { return !(*this == other); }
-
-inline bool Bin::operator<(const Bin &other) const noexcept {
-  if (!has_null_id() && !other.has_null_id()) {
-    return id() < other.id();
-  }
-  return _interval < other._interval;
-}
-
-inline bool Bin::operator<=(const Bin &other) const noexcept {
-  if (!has_null_id() && !other.has_null_id()) {
-    return id() <= other.id();
-  }
-  return _interval <= other._interval;
-}
-
-inline bool Bin::operator>(const Bin &other) const noexcept {
-  if (!has_null_id() && !other.has_null_id()) {
-    return id() > other.id();
-  }
-  return _interval > other._interval;
-}
-
-inline bool Bin::operator>=(const Bin &other) const noexcept {
-  if (!has_null_id() && !other.has_null_id()) {
-    return id() >= other.id();
-  }
-  return _interval >= other._interval;
-}
-
-constexpr std::uint64_t Bin::id() const noexcept { return _id; }
-constexpr std::uint32_t Bin::rel_id() const noexcept { return _rel_id; }
-inline const GenomicInterval &Bin::interval() const noexcept { return _interval; }
-inline const Chromosome &Bin::chrom() const noexcept { return interval().chrom(); }
-constexpr std::uint32_t Bin::start() const noexcept { return _interval.start(); }
-constexpr std::uint32_t Bin::end() const noexcept { return _interval.end(); }
-
-constexpr bool Bin::has_null_id() const noexcept { return id() == Bin::null_id; }
+namespace hictk {
+template <typename BinTableT>
+inline BinTable::BinTable(BinTableT table) : _table(std::move(table)) {}
 
 inline BinTable::BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset)
-    : _chroms(std::move(chroms)),
-      _num_bins_prefix_sum(compute_num_bins_prefix_sum(_chroms, bin_size, bin_offset)),
-      _bin_size(bin_size) {
-  assert(bin_size != 0);
-}
+    : BinTable(BinTableFixed(std::move(chroms), bin_size, bin_offset)) {}
 
 template <typename ChromIt>
 inline BinTable::BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size,
                           std::size_t bin_offset)
-    : BinTable(Reference(first_chrom, last_chrom), bin_size, bin_offset) {}
+    : BinTable(BinTableFixed(first_chrom, last_chrom, bin_size, bin_offset)) {}
 
 template <typename ChromNameIt, typename ChromSizeIt>
 inline BinTable::BinTable(ChromNameIt first_chrom_name, ChromNameIt last_chrom_name,
                           ChromSizeIt first_chrom_size, std::uint32_t bin_size,
                           std::size_t bin_offset)
-    : BinTable(Reference(first_chrom_name, last_chrom_name, first_chrom_size), bin_size,
-               bin_offset) {}
+    : BinTable(BinTableFixed(first_chrom_name, last_chrom_name, first_chrom_size, bin_size,
+                             bin_offset)) {}
+
+template <typename I>
+inline BinTable::BinTable(Reference chroms, const std::vector<I> &start_pos,
+                          const std::vector<I> &end_pos, I bin_offset)
+    : BinTable(BinTableVariable(std::move(chroms), start_pos, end_pos, bin_offset)) {}
 
 inline std::size_t BinTable::size() const noexcept {
-  if (_num_bins_prefix_sum.empty()) {
-    return 0;
-  }
-  return conditional_static_cast<std::size_t>(_num_bins_prefix_sum.back() -
-                                              _num_bins_prefix_sum.front());
+  return std::visit([&](const auto &t) { return t.size(); }, _table);
 }
 
 inline bool BinTable::empty() const noexcept { return size() == 0; }
 
-inline std::size_t BinTable::num_chromosomes() const { return _chroms.size(); }
+inline std::size_t BinTable::num_chromosomes() const {
+  return std::visit([&](const auto &t) { return t.num_chromosomes(); }, _table);
+}
 
-constexpr std::uint32_t BinTable::bin_size() const noexcept { return _bin_size; }
+constexpr std::uint32_t BinTable::bin_size() const noexcept {
+  if (std::holds_alternative<BinTableFixed>(_table)) {
+    return std::get<BinTableFixed>(_table).bin_size();
+  }
+  return 0;
+}
 
-constexpr const Reference &BinTable::chromosomes() const noexcept { return _chroms; }
+constexpr const Reference &BinTable::chromosomes() const noexcept {
+  return std::visit([&](const auto &t) -> const Reference & { return t.chromosomes(); }, _table);
+}
+
+constexpr bool BinTable::has_fixed_bin_size() const noexcept {
+  return std::holds_alternative<BinTableFixed>(_table);
+}
 
 constexpr const std::vector<std::uint64_t> &BinTable::num_bin_prefix_sum() const noexcept {
-  return _num_bins_prefix_sum;
+  return std::visit(
+      [&](const auto &t) -> const std::vector<std::uint64_t> & { return t.num_bin_prefix_sum(); },
+      _table);
 }
 
-inline auto BinTable::begin() const -> iterator { return iterator(*this); }
-inline auto BinTable::end() const -> iterator { return iterator::make_end_iterator(*this); }
+inline auto BinTable::begin() const -> iterator {
+  return std::visit([&](const auto &t) { return iterator{t.begin()}; }, _table);
+}
+
+inline auto BinTable::end() const -> iterator {
+  return std::visit([&](const auto &t) { return iterator{t.end()}; }, _table);
+}
+
 inline auto BinTable::cbegin() const -> iterator { return begin(); }
+
 inline auto BinTable::cend() const -> iterator { return end(); }
 
-constexpr std::uint32_t BinTable::iterator::bin_size() const noexcept {
-  assert(_bin_table);
-  return _bin_table->bin_size();
-}
-
-constexpr std::size_t BinTable::iterator::bin_id() const noexcept {
-  return _chrom_bin_id + _rel_bin_id;
-}
-
-inline BinTableConcrete BinTable::concretize() const {
-  std::vector<Chromosome> chroms(size());
-  std::vector<std::uint32_t> starts(size());
-  std::vector<std::uint32_t> ends(size());
-
-  std::size_t i = 0;
-  for (const auto &bin : *this) {
-    chroms[i] = bin.chrom();
-    starts[i] = bin.start();
-    ends[i++] = bin.end();
-  }
-  assert(i == chroms.size());
-
-  return BinTableConcrete{chroms, starts, ends};
-}
-
-inline bool BinTable::operator==(const BinTable &other) const {
-  return _bin_size == other._bin_size && _chroms == other._chroms;
-}
-inline bool BinTable::operator!=(const BinTable &other) const { return !(*this == other); }
-
 inline BinTable BinTable::subset(const Chromosome &chrom) const {
-  // GCC8 fails to compile when using if constexpr instead #ifndef
-  // See: https://github.com/fmtlib/fmt/issues/1455
-#ifndef NDEBUG
-  if (!_chroms.contains(chrom)) {
-    throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom.name()));
-  }
-#endif
-  const auto offset = at(chrom, 0).id();
-  return {Reference{chrom}, _bin_size, offset};
+  return std::visit([&](const auto &t) -> BinTable { return {t.subset(chrom)}; }, _table);
 }
+
 inline BinTable BinTable::subset(std::string_view chrom_name) const {
-  return subset(_chroms.at(chrom_name));
+  return subset(chromosomes().at(chrom_name));
 }
+
 inline BinTable BinTable::subset(std::uint32_t chrom_id) const {
-  return subset(_chroms.at(chrom_id));
+  return subset(chromosomes().at(chrom_id));
 }
 
 inline auto BinTable::find_overlap(const GenomicInterval &query) const
     -> std::pair<BinTable::iterator, BinTable::iterator> {
-  return find_overlap(query.chrom(), query.start(), query.end());
+  return std::visit(
+      [&](const auto &t) {
+        auto its = t.find_overlap(query);
+        DISABLE_WARNING_PUSH
+        DISABLE_WARNING_MAYBE_UNINITIALIZED
+        return std::make_pair(iterator{its.first}, iterator{its.second});
+        DISABLE_WARNING_POP
+      },
+      _table);
 }
 
 inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start,
                                    std::uint32_t end) const
     -> std::pair<BinTable::iterator, BinTable::iterator> {
-  assert(start < end);
-
-  const auto bin1_id = at(chrom, start).id();
-  const auto bin2_id = at(chrom, end - (std::min)(end, 1U)).id();
-
-  return std::make_pair(begin() + bin1_id, begin() + bin2_id + 1);
+  return find_overlap(GenomicInterval{chrom, start, end});
 }
+
 inline auto BinTable::find_overlap(std::string_view chrom_name, std::uint32_t start,
                                    std::uint32_t end) const
     -> std::pair<BinTable::iterator, BinTable::iterator> {
-  return find_overlap(_chroms.at(chrom_name), start, end);
+  return find_overlap(chromosomes().at(chrom_name), start, end);
 }
+
 inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
                                    std::uint32_t end) const
     -> std::pair<BinTable::iterator, BinTable::iterator> {
-  return find_overlap(_chroms.at(chrom_id), start, end);
+  return find_overlap(chromosomes().at(chrom_id), start, end);
 }
 
+// Map bin_id to Bin
 inline Bin BinTable::at(std::uint64_t bin_id) const {
-  // I tried benchmarking linear search as well as std::set (including third-party implementations).
-  // Binary search and find on flat vectors are always faster for a reasonable number of chromosomes
-  // (e.g. 5-100) and have fairly similar performanc.
-  // Linear search is however better in practice because chromosomes are usually sorted by (approx.)
-  // size, with unplaced scaffolds etc. ending up last.
-  auto match = std::find_if(_num_bins_prefix_sum.begin(), _num_bins_prefix_sum.end(),
-                            [&](const auto n) { return n > bin_id; });
-
-  if (match == _num_bins_prefix_sum.end()) {
-    throw std::out_of_range(fmt::format(FMT_STRING("bin id {} not found: out of range"), bin_id));
-  }
-  assert(match != _num_bins_prefix_sum.begin());
-
-  const auto chrom_id =
-      static_cast<std::uint32_t>(std::distance(_num_bins_prefix_sum.begin(), --match));
-  return at_hint(bin_id, _chroms[chrom_id]);
-}
-
-inline Bin BinTable::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
-  const auto offset = _num_bins_prefix_sum[chrom.id()];
-  const auto relative_bin_id = bin_id - offset;
-  const auto start = static_cast<uint32_t>(relative_bin_id * bin_size());
-  assert(start < chrom.size());
-  const auto end = (std::min)(start + bin_size(), chrom.size());
-
-  return {bin_id, static_cast<std::uint32_t>(relative_bin_id), chrom, start, end};
+  return std::visit([&](const auto &t) { return t.at(bin_id); }, _table);
 }
 
 inline std::pair<Bin, Bin> BinTable::at(const GenomicInterval &gi) const {
-  const auto [bin1_id, bin2_id] = map_to_bin_ids(gi);
-  return std::make_pair(at_hint(bin1_id, gi.chrom()), at_hint(bin2_id, gi.chrom()));
-}
-inline Bin BinTable::at(const Chromosome &chrom, std::uint32_t pos) const {
-  return at_hint(map_to_bin_id(chrom, pos), chrom);
-}
-inline Bin BinTable::at(std::string_view chrom_name, std::uint32_t pos) const {
-  return at(map_to_bin_id(chrom_name, pos));
-}
-inline Bin BinTable::at(std::uint32_t chrom_id, std::uint32_t pos) const {
-  return at(map_to_bin_id(chrom_id, pos));
+  return std::visit([&](const auto &t) { return t.at(gi); }, _table);
 }
 
+inline Bin BinTable::at(const Chromosome &chrom, std::uint32_t pos) const {
+  return std::visit([&](const auto &t) { return t.at(chrom, pos); }, _table);
+}
+
+inline Bin BinTable::at(std::string_view chrom_name, std::uint32_t pos) const {
+  return std::visit([&](const auto &t) { return t.at(chrom_name, pos); }, _table);
+}
+
+inline Bin BinTable::at(std::uint32_t chrom_id, std::uint32_t pos) const {
+  return std::visit([&](const auto &t) { return t.at(chrom_id, pos); }, _table);
+}
+
+inline Bin BinTable::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
+  return std::visit([&](const auto &t) { return t.at_hint(bin_id, chrom); }, _table);
+}
+
+// Map genomic coords to bin_id
 inline std::pair<std::uint64_t, std::uint64_t> BinTable::map_to_bin_ids(
     const GenomicInterval &gi) const {
-  return std::make_pair(map_to_bin_id(gi.chrom(), gi.start()),
-                        map_to_bin_id(gi.chrom(), gi.end() - (std::min)(gi.end(), 1U)));
+  return std::visit([&](const auto &t) { return t.map_to_bin_ids(gi); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(const Chromosome &chrom, std::uint32_t pos) const {
-  // GCC8 fails to compile when using if constexpr instead #ifndef
-  // See: https://github.com/fmtlib/fmt/issues/1455
-#ifndef NDEBUG
-  if (!_chroms.contains(chrom)) {
-    throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom.name()));
-  }
-#endif
-
-  if (pos > chrom.size()) {
-    throw std::out_of_range(fmt::format(
-        FMT_STRING("position is greater than chromosome size: {} > {}"), pos, chrom.size()));
-  }
-
-  const auto bin_offset = _num_bins_prefix_sum[chrom.id()] - _num_bins_prefix_sum.front();
-
-  return bin_offset + static_cast<std::uint64_t>(pos / bin_size());
+  return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom, pos); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(std::string_view chrom_name, std::uint32_t pos) const {
-  return map_to_bin_id(_chroms.at(chrom_name), pos);
+  return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom_name, pos); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(std::uint32_t chrom_id, std::uint32_t pos) const {
-  return map_to_bin_id(_chroms.at(chrom_id), pos);
+  return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom_id, pos); }, _table);
 }
 
-inline std::vector<std::uint64_t> BinTable::compute_num_bins_prefix_sum(const Reference &chroms,
-                                                                        std::uint32_t bin_size,
-                                                                        std::size_t bin_offset) {
-  assert(bin_size != 0);
-
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_NULL_DEREF
-  std::vector<std::uint64_t> prefix_sum(chroms.size() + 1);
-  prefix_sum.front() = bin_offset;
-  DISABLE_WARNING_POP
-
-  // I am using transform instead of inclusive_scan because the latter is not always available
-  std::transform(chroms.begin(), chroms.end(), prefix_sum.begin() + 1,
-                 [&, sum = bin_offset](const Chromosome &chrom) mutable {
-                   if (chrom.is_all()) {
-                     return sum;
-                   }
-                   const auto num_bins = (chrom.size() + bin_size - 1) / bin_size;
-                   return sum += static_cast<std::uint64_t>(num_bins);
-                 });
-
-  return prefix_sum;
+inline bool BinTable::operator==(const BinTable &other) const {
+  return std::visit(
+      [&](const auto &t1) {
+        try {
+          using BinTableT = remove_cvref_t<decltype(t1)>;
+          const auto &t2 = std::get<BinTableT>(other._table);
+          return t1 == t2;
+        } catch (const std::bad_variant_access &) {
+          return false;
+        }
+      },
+      _table);
 }
 
-inline BinTable::iterator::iterator(const BinTable &bin_table) noexcept
-    : _bin_table{&bin_table}, _chrom_bin_id(_bin_table->_num_bins_prefix_sum.front()) {
-  if (_bin_table->chromosomes().at(_chrom_id).is_all()) {
-    _chrom_id++;
-  }
+inline bool BinTable::operator!=(const BinTable &other) const { return !(*this == other); };
+
+template <typename BinTableT>
+constexpr const BinTableT &BinTable::get() const {
+  return std::get<BinTableT>(get());
 }
 
-constexpr bool BinTable::iterator::operator==(const iterator &other) const noexcept {
-  // clang-format off
-  return _bin_table == other._bin_table &&
-         _chrom_id == other._chrom_id &&
-         _rel_bin_id == other._rel_bin_id;
-  // clang-format on
+template <typename BinTableT>
+constexpr BinTableT &BinTable::get() {
+  return std::get<BinTableT>(get());
 }
 
-constexpr bool BinTable::iterator::operator!=(const iterator &other) const noexcept {
+constexpr auto BinTable::get() const noexcept -> const BinTableVar & { return _table; }
+
+constexpr auto BinTable::get() noexcept -> BinTableVar & { return _table; }
+
+template <typename It>
+inline BinTable::iterator::iterator(It it) noexcept : _it(it) {}
+
+constexpr bool BinTable::iterator::operator==(const iterator &other) const {
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 == it2;
+      },
+      _it);
+}
+
+constexpr bool BinTable::iterator::operator!=(const iterator &other) const {
   return !(*this == other);
 }
 
-constexpr bool BinTable::iterator::operator<(const iterator &other) const noexcept {
-  return bin_id() < other.bin_id();
+constexpr bool BinTable::iterator::operator<(const iterator &other) const {
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 < it2;
+      },
+      _it);
 }
 
-constexpr bool BinTable::iterator::operator<=(const iterator &other) const noexcept {
-  return bin_id() <= other.bin_id();
+constexpr bool BinTable::iterator::operator<=(const iterator &other) const {
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 <= it2;
+      },
+      _it);
 }
 
-constexpr bool BinTable::iterator::operator>(const iterator &other) const noexcept {
-  return bin_id() > other.bin_id();
+constexpr bool BinTable::iterator::operator>(const iterator &other) const {
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 > it2;
+      },
+      _it);
 }
 
-constexpr bool BinTable::iterator::operator>=(const iterator &other) const noexcept {
-  return bin_id() >= other.bin_id();
-}
-
-inline auto BinTable::iterator::make_end_iterator(const BinTable &table) noexcept -> iterator {
-  iterator it(table);
-
-  it._chrom_id = nchrom;
-  it._rel_bin_id = null_rel_bin_id;
-  return it;
+constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 >= it2;
+      },
+      _it);
 }
 
 inline auto BinTable::iterator::operator*() const -> value_type {
-  assert(_bin_table);
-
-  const auto &chrom = chromosome();
-  const auto bin_size = this->bin_size();
-
-  const auto start = std::min(_rel_bin_id * bin_size, chrom.size());
-  const auto end = std::min(start + bin_size, chrom.size());
-
-  return value_type{bin_id(), _rel_bin_id, chrom, start, end};
+  return std::visit([&](const auto &it) { return *it; }, _it);
+}
+inline auto BinTable::iterator::operator[](std::size_t i) const -> iterator {
+  std::visit([&](const auto &it) { std::ignore = it + i; }, _it);
+  return *this;
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {
-  assert(_bin_table);
-  if (_chrom_id == nchrom) {
-    return *this;
-  }
-
-  if (++_rel_bin_id >= compute_num_chrom_bins()) {
-    if (_chrom_id + 1 >= num_chromosomes()) {
-      return *this = make_end_iterator(*_bin_table);
-    }
-    ++_chrom_id;
-    _chrom_bin_id = compute_bin_offset();
-    _rel_bin_id = 0;
-  }
-
+  std::visit([&](auto &it) { std::ignore = ++it; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator++(int) -> iterator {
-  auto it = *this;
-  std::ignore = ++(*this);
-  return it;
+  auto old_it = *this;
+  std::visit([&](auto &it) { std::ignore = ++it; }, _it);
+  return old_it;
 }
 
 inline auto BinTable::iterator::operator+=(std::size_t i) -> iterator & {
-  assert(_bin_table);
-  if (_chrom_id == nchrom) {
-    if (i == 0) {
-      return *this;
-    }
-    throw std::out_of_range("BinTable::iterator: caught attempt to increment iterator past end()");
-  }
-
-  const auto ii = static_cast<std::uint32_t>(i);
-  const auto num_bins = compute_num_chrom_bins();
-  if (_rel_bin_id + ii < num_bins) {
-    _rel_bin_id += ii;
-    return *this;
-  }
-
-  _chrom_id++;
-  _chrom_bin_id = compute_bin_offset();
-  i -= (num_bins - _rel_bin_id);
-  _rel_bin_id = 0;
-  return *this += i;
+  std::visit([&](auto &it) { std::ignore = it += i; }, _it);
+  return *this;
 }
 
 inline auto BinTable::iterator::operator+(std::size_t i) const -> iterator {
   auto it = *this;
-  return it += i;
+  it += i;
+  return it;
 }
 
 inline auto BinTable::iterator::operator--() -> iterator & {
-  assert(_bin_table);
-  if (bin_id() == 0) {
-    return *this;
-  }
-
-  if (_rel_bin_id == null_rel_bin_id) {
-    assert(*this == make_end_iterator(*_bin_table));
-    _chrom_id = static_cast<std::uint32_t>(num_chromosomes() - 1);
-    _chrom_bin_id = compute_bin_offset();
-    _rel_bin_id = compute_num_chrom_bins() - 1;
-    return *this;
-  }
-
-  if (_rel_bin_id-- == 0) {
-    _chrom_id--;
-    _chrom_bin_id = compute_bin_offset();
-    _rel_bin_id = compute_num_chrom_bins() - 1;
-  }
-
+  std::visit([&](auto &it) { std::ignore = --it; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator--(int) -> iterator {
-  auto it = *this;
-  std::ignore = --(*this);
-  return it;
+  auto old_it = *this;
+  std::visit([&](auto &it) { std::ignore = --it; }, _it);
+  return old_it;
 }
 
 inline auto BinTable::iterator::operator-=(std::size_t i) -> iterator & {
-  assert(_bin_table);
-
-  if (_chrom_id == 0 && _rel_bin_id == 0 && i == 0) {
-    return *this;
-  }
-
-  if (_chrom_id == 0 && _rel_bin_id < i) {
-    throw std::out_of_range(
-        "BinTable::iterator: caught attempt to decrement iterator past begin()");
-  }
-
-  if (_rel_bin_id == null_rel_bin_id) {
-    assert(*this == make_end_iterator(*_bin_table));
-    _chrom_id = static_cast<std::uint32_t>(num_chromosomes() - 1);
-    _chrom_bin_id = compute_bin_offset();
-    _rel_bin_id = compute_num_chrom_bins();
-    return *this -= i;
-  }
-
-  if (i <= _rel_bin_id) {
-    _rel_bin_id -= static_cast<std::uint32_t>(i);
-    return *this;
-  }
-
-  _chrom_id--;
-  _chrom_bin_id = compute_bin_offset();
-  i -= _rel_bin_id;
-  _rel_bin_id = compute_num_chrom_bins();
-  return *this -= i;
+  std::visit([&](auto &it) { std::ignore = it -= i; }, _it);
+  return *this;
 }
 
 inline auto BinTable::iterator::operator-(std::size_t i) const -> iterator {
   auto it = *this;
-  return it -= i;
+  it -= i;
+  return it;
 }
 
 inline auto BinTable::iterator::operator-(const iterator &other) const -> difference_type {
-  assert(_bin_table);
-  assert(other._bin_table);
-
-  const auto offset1 = _chrom_id == nchrom ? _bin_table->size() : bin_id();
-  const auto offset2 = other._chrom_id == nchrom ? other._bin_table->size() : other.bin_id();
-
-  return static_cast<difference_type>(offset1) - static_cast<difference_type>(offset2);
+  return std::visit(
+      [&](const auto &it1) {
+        const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
+        return it1 - it2;
+      },
+      _it);
 }
 
-inline auto BinTable::iterator::operator[](std::size_t i) const -> iterator { return (*this + i); }
-
-inline const Chromosome &BinTable::iterator::chromosome() const { return chromosome(_chrom_id); }
-
-inline const Chromosome &BinTable::iterator::chromosome(std::uint32_t chrom_id) const {
-  return _bin_table->chromosomes().at(chrom_id);
+template <typename IteratorT>
+constexpr const IteratorT &BinTable::iterator::get() const {
+  return std::get<IteratorT>(get());
 }
 
-inline std::uint32_t BinTable::iterator::compute_num_chrom_bins() const noexcept {
-  assert(_bin_table);
-
-  const auto chrom_size = chromosome().size();
-  const auto bin_size = this->bin_size();
-
-  return (chrom_size + bin_size - 1) / bin_size;
+template <typename IteratorT>
+constexpr IteratorT &BinTable::iterator::get() {
+  return std::get<IteratorT>(get());
 }
 
-inline std::size_t BinTable::iterator::compute_bin_offset() const noexcept {
-  return _bin_table->at(_chrom_id, 0).id();
-}
+constexpr auto BinTable::iterator::get() const noexcept -> const IteratorVar & { return _it; }
 
-inline std::size_t BinTable::iterator::num_chromosomes() const noexcept {
-  assert(_bin_table);
-
-  return _bin_table->num_chromosomes();
-}
-
+constexpr auto BinTable::iterator::get() noexcept -> IteratorVar & { return _it; }
 }  // namespace hictk
-
-inline std::size_t std::hash<hictk::Bin>::operator()(const hictk::Bin &b) const {
-  return hictk::internal::hash_combine(0, b.id(), b.interval());
-}

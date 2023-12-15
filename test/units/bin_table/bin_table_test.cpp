@@ -12,102 +12,10 @@
 #include <stdexcept>
 #include <utility>
 
-#include "hictk/fmt/bin_table.hpp"
-
 namespace hictk::test::bin_table {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Bin", "[bin][short]") {
-  const Chromosome chrom1{0, "chr1", 50};
-  const Chromosome chrom2{1, "chr2", 10};
-  SECTION("Ctors") {
-    CHECK(Bin{chrom1, 1, 2}.has_null_id());
-    CHECK_FALSE(Bin{0, 0, chrom1, 1, 2}.has_null_id());
-    CHECK_FALSE(Bin{0, 0, GenomicInterval{chrom1, 1, 2}}.has_null_id());
-  }
-
-  SECTION("Accessors") {
-    const Bin bin1{chrom1, 1, 2};
-    const Bin bin2{10, 5, chrom1, 1, 2};
-
-    CHECK(bin1.id() == Bin::null_id);
-    CHECK(bin2.id() == 10);
-    CHECK(bin2.rel_id() == 5);
-
-    CHECK(bin1.interval() == GenomicInterval{chrom1, 1, 2});
-
-    CHECK(bin2.chrom() == chrom1);
-    CHECK(bin2.start() == 1);
-    CHECK(bin2.end() == 2);
-  }
-
-  SECTION("operators (wo/ id)") {
-    const Bin bin0{};
-    const Bin bin1{chrom1, 1, 2};
-    const Bin bin2{chrom1, 2, 3};
-
-    const Bin bin3{chrom2, 1, 2};
-
-    CHECK(!bin0);
-    CHECK(!!bin1);
-
-    CHECK(bin1 != bin2);
-    CHECK(bin1 != bin3);
-
-    CHECK(bin1 < bin2);
-    CHECK(bin1 < bin3);
-
-    CHECK(bin1 <= bin2);
-    CHECK(bin1 <= bin3);
-
-    CHECK(bin2 > bin1);
-    CHECK(bin3 > bin1);
-
-    CHECK(bin2 >= bin1);
-    CHECK(bin3 >= bin1);
-  }
-
-  SECTION("operators (w/ id)") {
-    const Bin bin1{0, 0, chrom1, 1, 2};
-    const Bin bin2{1, 1, chrom1, 2, 3};
-
-    const Bin bin3{10, 10, chrom2, 1, 2};
-    const Bin bin4{10, 10, chrom2, 10, 20};
-
-    CHECK(bin1 != bin2);
-    CHECK(bin1 != bin3);
-
-    // This is true because they have the same ID.
-    // However, comparing bins with same ID and different interval is UB
-    CHECK(bin3 == bin4);
-
-    CHECK(bin1 < bin2);
-    CHECK(bin1 < bin3);
-
-    CHECK(bin1 <= bin2);
-    CHECK(bin1 <= bin3);
-
-    CHECK(bin2 > bin1);
-    CHECK(bin3 > bin1);
-
-    CHECK(bin2 >= bin1);
-    CHECK(bin3 >= bin1);
-  }
-
-  SECTION("fmt") {
-    const Bin bin1{chrom1, 0, 100};
-    const Bin bin2{123, 123, chrom1, 0, 100};
-
-    CHECK(fmt::format(FMT_STRING("{}"), bin1) == std::to_string(Bin::null_id));
-    CHECK(fmt::format(FMT_STRING("{}"), bin2) == "123");
-    CHECK(fmt::format(FMT_STRING("{:bed}"), bin1) == "chr1\t0\t100");
-    CHECK(fmt::format(FMT_STRING("{:ucsc}"), bin1) == "chr1:0-100");
-    CHECK(fmt::format(FMT_STRING("{:raw}"), bin2) == "123");
-  }
-}
-
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("BinTable", "[bin-table][short]") {
+TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   constexpr std::uint32_t bin_size = 5000;
   // clang-format off
   const BinTable table({
@@ -130,10 +38,15 @@ TEST_CASE("BinTable", "[bin-table][short]") {
 
     CHECK(table.at(0) == Bin{chr1, 0, bin_size});
     CHECK(table.at(10) == Bin{chr1, 50000, 50001});
-
     CHECK(table.at(11) == Bin{chr2, 0, bin_size});
 
+    CHECK(table.at(chr1, bin_size - 1).id() == 0);
+    CHECK(table.at(chr1, 50000).id() == 10);
+    CHECK(table.at(chr2, 1).id() == 11);
+
     CHECK_THROWS_AS(table.at(table.size()), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr1, 50001), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr2, 26000), std::out_of_range);
   }
 
   SECTION("coord to bin id") {
@@ -150,7 +63,7 @@ TEST_CASE("BinTable", "[bin-table][short]") {
   }
 
   SECTION("subset") {
-    const BinTable expected{{Chromosome{1, "chr2", 25017}}, bin_size};
+    const BinTableFixed expected{{Chromosome{1, "chr2", 25017}}, bin_size};
 
     CHECK(table.subset(Chromosome{1, "chr2", 25017}) == expected);
     CHECK(table.subset("chr2") == expected);
@@ -179,6 +92,19 @@ TEST_CASE("BinTable", "[bin-table][short]") {
     its = table.find_overlap({chrom, 0, chrom.size()});
     const auto table1 = table.subset(chrom);
     CHECK(std::distance(its.first, its.second) == std::distance(table1.begin(), table1.end()));
+  }
+
+  SECTION("accessors") {
+    CHECK(table.has_fixed_bin_size());
+    CHECK_NOTHROW(table.get<BinTableFixed>());
+    CHECK_THROWS(table.get<BinTableVariable<>>());
+  }
+
+  SECTION("operator==") {
+    CHECK(BinTable(table.chromosomes(), 10) == BinTable(table.chromosomes(), 10));
+    CHECK(BinTable(table.chromosomes(), 10) != BinTable(table.chromosomes(), 20));
+    CHECK(BinTable(Reference{table.chromosomes().begin(), table.chromosomes().end() - 1}, 10) !=
+          BinTable(table.chromosomes(), 10));
   }
 
   SECTION("iterators") {
@@ -222,6 +148,9 @@ TEST_CASE("BinTable", "[bin-table][short]") {
       }
 
       CHECK(first_bin == last_bin);
+
+      CHECK_THROWS_AS(first_bin++, std::out_of_range);
+      CHECK_THROWS_AS(last_bin++, std::out_of_range);
     }
 
     SECTION("backward") {
@@ -234,6 +163,9 @@ TEST_CASE("BinTable", "[bin-table][short]") {
       }
 
       CHECK(first_bin == last_bin);
+
+      CHECK_THROWS_AS(--first_bin, std::out_of_range);
+      CHECK_THROWS_AS(--last_bin, std::out_of_range);
     }
 
     SECTION("operator+") {
@@ -244,6 +176,8 @@ TEST_CASE("BinTable", "[bin-table][short]") {
       for (std::size_t i = 0; i < expected.size() - 5; ++i) {
         CHECK(*(it + i) == expected[i + 5]);  // NOLINT
       }
+
+      CHECK_THROWS_AS(it + 100, std::out_of_range);
     }
 
     SECTION("operator-") {
@@ -255,20 +189,245 @@ TEST_CASE("BinTable", "[bin-table][short]") {
       for (std::size_t i = 1; i < expected.size(); ++i) {
         CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
       }
+
+      CHECK_THROWS_AS(it1 - 100, std::out_of_range);
     }
-  }
 
-  SECTION("concretize") {
-    const auto concrete_table = table.concretize();
-
-    REQUIRE(concrete_table.chroms.size() == table.size());
-
-    std::size_t i = 0;
-    for (const auto& bin : table) {
-      CHECK(concrete_table.chroms[i] == bin.chrom());
-      CHECK(concrete_table.bin_starts[i] == bin.start());
-      CHECK(concrete_table.bin_ends[i++] == bin.end());
+    SECTION("accessors") {
+      CHECK_NOTHROW(table.begin().get<BinTableFixed::iterator>());
+      CHECK_THROWS(table.begin().get<BinTableVariable<>::iterator>());
     }
   }
 }
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
+  const Chromosome chrom1{0, "chr1", 32};
+  const Chromosome chrom2{1, "chr2", 32};
+
+  const std::vector<std::uint32_t> start_pos{0, 8, 15, 23, 0, 5, 10, 26};
+  const std::vector<std::uint32_t> end_pos{8, 15, 23, 32, 5, 10, 26, 32};
+
+  const BinTable table({chrom1, chrom2}, start_pos, end_pos);
+
+  SECTION("stats") {
+    CHECK(BinTable{}.empty());
+    CHECK(table.size() == start_pos.size());
+    CHECK(table.num_chromosomes() == 2);
+    CHECK(table.bin_size() == 0);
+  }
+
+  SECTION("at") {
+    const auto& chr1 = table.chromosomes().at("chr1");
+    const auto& chr2 = table.chromosomes().at("chr2");
+
+    CHECK(table.at(0) == Bin{chr1, 0, 8});
+    CHECK(table.at(3) == Bin{chr1, 23, 32});
+    CHECK(table.at(4) == Bin{chr2, 0, 5});
+
+    CHECK(table.at(chr1, 0).id() == 0);
+    CHECK(table.at(chr1, 7).id() == 0);
+    CHECK(table.at(chr1, 8).id() == 1);
+
+    CHECK(table.at(chr1, 23).id() == 3);
+    CHECK(table.at(chr2, 4).id() == 4);
+
+    CHECK_THROWS_AS(table.at(table.size()), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr1, 32), std::out_of_range);
+    CHECK_THROWS_AS(table.at(chr2, 32), std::out_of_range);
+  }
+
+  SECTION("coord to bin id") {
+    const auto& chr2 = table.chromosomes().at("chr2");
+
+    CHECK(table.map_to_bin_id(0, 8) == 1);
+    CHECK(table.map_to_bin_id("chr1", 25) == 3);
+    CHECK(table.map_to_bin_id(chr2, 9) == 5);
+
+    CHECK_THROWS_AS(table.map_to_bin_id("a", 0), std::out_of_range);
+    CHECK_THROWS_AS(table.map_to_bin_id("chr1", 33), std::out_of_range);
+    CHECK_THROWS_AS(table.map_to_bin_id(chr2, 50), std::out_of_range);
+    CHECK_THROWS_AS(table.map_to_bin_id(1, 50), std::out_of_range);
+  }
+
+  SECTION("subset") {
+    const std::vector<std::uint32_t> start_pos_{0, 5, 10, 26};
+    const std::vector<std::uint32_t> end_pos_{5, 10, 26, 32};
+    const BinTableVariable expected{{Chromosome{1, "chr2", 32}}, start_pos_, end_pos_};
+
+    CHECK(table.subset(Chromosome{1, "chr2", 32}) == expected);
+    CHECK(table.subset("chr2") == expected);
+    CHECK(table.subset(1) == expected);
+    CHECK(table.subset("chr1") != expected);
+
+    if constexpr (ndebug_not_defined()) {
+      CHECK_THROWS_AS(table.subset(Chromosome{4, "chr5", 1}), std::out_of_range);
+    }
+    CHECK_THROWS_AS(table.subset("a"), std::out_of_range);
+    CHECK_THROWS_AS(table.subset(10), std::out_of_range);
+  }
+
+  SECTION("find overlap") {
+    const auto& chrom = *table.chromosomes().begin();
+
+    auto its = table.find_overlap({chrom, 8, 9});
+    CHECK(std::distance(its.first, its.second) == 1);
+
+    its = table.find_overlap({chrom, 8, 15 - 1});
+    CHECK(std::distance(its.first, its.second) == 1);
+
+    its = table.find_overlap({chrom, 14, 23});
+    CHECK(std::distance(its.first, its.second) == 2);
+
+    its = table.find_overlap({chrom, 0, chrom.size()});
+    CHECK(std::distance(its.first, its.second) == 4);
+  }
+
+  SECTION("accessors") {
+    CHECK_FALSE(table.has_fixed_bin_size());
+    CHECK_NOTHROW(table.get<BinTableVariable<>>());
+    CHECK_THROWS(table.get<BinTableFixed>());
+  }
+
+  SECTION("invalid bins") {
+    SECTION("bins out of order") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 7};
+      const std::vector<std::uint32_t> end_pos1{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("not sorted"));
+
+      const std::vector<std::uint32_t> start_pos2{0, 8, 15};
+      const std::vector<std::uint32_t> end_pos2{8, 15, 14};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos2, end_pos2),
+                        Catch::Matchers::ContainsSubstring("not sorted"));
+    }
+    SECTION("gap between bins") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 16};
+      const std::vector<std::uint32_t> end_pos1{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("gap between bins"));
+
+      const std::vector<std::uint32_t> start_pos2{1, 8, 16};
+      const std::vector<std::uint32_t> end_pos2{8, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos2, end_pos2),
+                        Catch::Matchers::ContainsSubstring("does not start from zero"));
+    }
+
+    SECTION("start pos >= end pos") {
+      const std::vector<std::uint32_t> start_pos1{0, 8, 10, 15};
+      const std::vector<std::uint32_t> end_pos1{0, 10, 15, 23};
+
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2}, start_pos1, end_pos1),
+                        Catch::Matchers::ContainsSubstring("start_pos >= end_pos"));
+    }
+
+    SECTION("number of chromosome mismatch") {
+      const Chromosome chrom3{2, "chr3", 32};
+      CHECK_THROWS_WITH(BinTable({chrom1, chrom2, chrom3}, start_pos, end_pos),
+                        Catch::Matchers::ContainsSubstring("unexpected number of chromosomes"));
+    }
+  }
+
+  SECTION("operator==") {
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) ==
+          BinTable(table.chromosomes(), start_pos, end_pos));
+
+    const std::vector<std::uint32_t> start_pos1{0, 0};
+    const std::vector<std::uint32_t> end_pos1{32, 32};
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) !=
+          BinTable(table.chromosomes(), start_pos1, end_pos1));
+
+    const std::vector<std::uint32_t> start_pos2{0};
+    const std::vector<std::uint32_t> end_pos2{32};
+    CHECK(BinTable(Reference{table.chromosomes().begin(), table.chromosomes().end() - 1},
+                   start_pos2, end_pos2) != BinTable(table.chromosomes(), start_pos, end_pos));
+
+    CHECK(BinTable(table.chromosomes(), start_pos, end_pos) != BinTable(table.chromosomes(), 10));
+  }
+
+  SECTION("iterators") {
+    const auto& chr1 = table.chromosomes().at("chr1");
+    const auto& chr2 = table.chromosomes().at("chr2");
+
+    // clang-format off
+    const std::array<Bin, 8> expected{
+       Bin{0, 0, chr1, 0,  8},
+       Bin{1, 1, chr1, 8,  15},
+       Bin{2, 2, chr1, 15, 23},
+       Bin{3, 3, chr1, 23, 32},
+       Bin{4, 0, chr2, 0,  5},
+       Bin{5, 1, chr2, 5,  10},
+       Bin{6, 2, chr2, 10, 26},
+       Bin{7, 3, chr2, 26, 32}
+    };
+    // clang-format on
+
+    REQUIRE(table.size() == expected.size());
+
+    SECTION("forward") {
+      auto first_bin = table.begin();
+      auto last_bin = table.end();
+
+      // NOLINTNEXTLINE
+      for (std::size_t i = 0; i < expected.size(); ++i) {
+        CHECK(*first_bin++ == expected[i]);
+      }
+
+      CHECK(first_bin == last_bin);
+
+      CHECK_THROWS_AS(first_bin++, std::out_of_range);
+      CHECK_THROWS_AS(last_bin++, std::out_of_range);
+    }
+
+    SECTION("backward") {
+      auto first_bin = table.begin();
+      auto last_bin = table.end();
+
+      // NOLINTNEXTLINE
+      for (std::size_t i = expected.size(); i != 0; --i) {
+        CHECK(*(--last_bin) == expected[i - 1]);
+      }
+
+      CHECK(first_bin == last_bin);
+
+      CHECK_THROWS_AS(--first_bin, std::out_of_range);
+      CHECK_THROWS_AS(--last_bin, std::out_of_range);
+    }
+
+    SECTION("operator+") {
+      CHECK(table.begin() + 0 == table.begin());
+      CHECK(*(table.begin() + 5) == expected[5]);
+
+      auto it = table.begin() + 5;
+      for (std::size_t i = 0; i < expected.size() - 5; ++i) {
+        CHECK(*(it + i) == expected[i + 5]);  // NOLINT
+      }
+
+      CHECK_THROWS_AS(it + 100, std::out_of_range);
+    }
+
+    SECTION("operator-") {
+      CHECK(table.begin() - 0 == table.begin());
+      CHECK(*(table.end() - 5) == *(expected.end() - 5));
+
+      auto it1 = table.end();
+      auto it2 = expected.end();  // NOLINT
+      for (std::size_t i = 1; i < expected.size(); ++i) {
+        CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
+      }
+
+      CHECK_THROWS_AS(it1 - 100, std::out_of_range);
+    }
+
+    SECTION("accessors") {
+      CHECK_NOTHROW(table.begin().get<BinTableVariable<>::iterator>());
+      CHECK_THROWS(table.begin().get<BinTableFixed::iterator>());
+    }
+  }
+}
+
 }  // namespace hictk::test::bin_table

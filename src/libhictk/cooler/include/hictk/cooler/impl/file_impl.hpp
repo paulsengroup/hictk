@@ -41,8 +41,7 @@ inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_siz
       _attrs(read_standard_attributes(_root_group)),
       _pixel_variant(detect_pixel_type(_root_group)),
       _bins(std::make_shared<BinTable>(
-          import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false),
-          bin_size())),
+          init_bin_table(_datasets, _attrs.bin_type.value(), _attrs.bin_size))),
       _index(std::make_shared<Index>(init_index(_datasets.at("indexes/chrom_offset"),
                                                 _datasets.at("indexes/bin1_offset"), _bins,
                                                 _datasets.at("pixels/count").size(), false))) {
@@ -53,18 +52,17 @@ inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_siz
 }
 
 template <typename PixelT>
-inline File::File(RootGroup entrypoint, Reference chroms, [[maybe_unused]] PixelT pixel,
+inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT pixel,
                   Attributes attributes, std::size_t cache_size_bytes, double w0)
     : _mode(HighFive::File::ReadWrite),
       _root_group(std::move(entrypoint)),
       _groups(create_groups(_root_group)),
-      _datasets(create_datasets<PixelT>(_root_group, chroms, cache_size_bytes, w0)),
+      _datasets(create_datasets<PixelT>(_root_group, bins.chromosomes(), cache_size_bytes, w0)),
       _attrs(std::move(attributes)),
       _pixel_variant(PixelT(0)),
-      _bins(std::make_shared<const BinTable>(std::move(chroms), bin_size())),
+      _bins(std::make_shared<const BinTable>(std::move(bins))),
       _index(std::make_shared<Index>(_bins)),
       _finalize(true) {
-  assert(bin_size() != 0);
   assert(!_bins->empty());
   assert(!chromosomes().empty());
   assert(!_index->empty());
@@ -86,12 +84,10 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
   _groups = open_groups(_root_group);
   _datasets = open_datasets(_root_group, cache_size_bytes, w0);
 
-  _bins = std::make_shared<BinTable>(
-      import_chroms(_datasets.at("chroms/name"), _datasets.at("chroms/length"), false), bin_size());
+  _bins = std::make_shared<BinTable>(init_bin_table(_datasets, *_attrs.bin_type, _attrs.bin_size));
   _index = std::make_shared<Index>(_bins);
 
   assert(std::holds_alternative<PixelT>(_pixel_variant));
-  assert(bin_size() != 0);
   assert(!_bins->empty());
   assert(!chromosomes().empty());
   assert(!_index->empty());
@@ -117,11 +113,17 @@ inline File File::open_read_once(std::string_view uri, std::size_t cache_size_by
   return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
               HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
 }
-
 template <typename PixelT>
 inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
                          bool overwrite_if_exists, Attributes attributes,
                          std::size_t cache_size_bytes) {
+  return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists, attributes,
+                              cache_size_bytes);
+}
+
+template <typename PixelT>
+inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_exists,
+                         Attributes attributes, std::size_t cache_size_bytes) {
   try {
     const auto [file_path, root_path] = parse_cooler_uri(uri);
     const auto uri_is_file_path = root_path.empty() || root_path == "/";
@@ -162,8 +164,8 @@ inline File File::create(std::string_view uri, const Reference &chroms, std::uin
     }
 
     return create<PixelT>(
-        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), chroms,
-        bin_size, attributes, cache_size_bytes);
+        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), bins,
+        attributes, cache_size_bytes);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
@@ -184,18 +186,26 @@ inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_by
 template <typename PixelT>
 inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size,
                          Attributes attributes, std::size_t cache_size_bytes) {
+  return File::create<PixelT>(entrypoint, BinTable(chroms, bin_size), attributes, cache_size_bytes);
+}
+
+template <typename PixelT>
+inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attributes,
+                         std::size_t cache_size_bytes) {
   static_assert(std::is_arithmetic_v<PixelT>);
-  if (bin_size == 0) {
-    throw std::logic_error("bin_size cannot be zero.");
+  if (std::holds_alternative<BinTableVariable<>>(bins.get())) {
+    attributes.bin_type = "variable";
+    attributes.bin_size = 0;
+  } else {
+    attributes.bin_type = "fixed";
+    attributes.bin_size = bins.bin_size();
   }
-  attributes.bin_size = bin_size;
+
   try {
     if (utils::is_cooler(entrypoint())) {
       throw std::runtime_error("URI points to an already existing cooler.");
     }
-    // At this point the parent file is guaranteed to exist, so we can always open it in ReadWrite
-    // mode
-    return File(entrypoint, chroms, PixelT(0), attributes, cache_size_bytes, true);
+    return File(entrypoint, bins, PixelT(0), attributes, cache_size_bytes, true);
 
   } catch (const std::exception &e) {
     throw std::runtime_error(

@@ -25,6 +25,7 @@ class Reference {
 
   ChromBuff _buff{};
   ChromMap _map{};
+  std::vector<std::uint64_t> _size_prefix_sum{};
 
   std::size_t _longest_chrom{Chromosome{}.id()};
   std::size_t _chrom_with_longest_name{Chromosome{}.id()};
@@ -87,6 +88,8 @@ class Reference {
   [[nodiscard]] bool operator==(const Reference& other) const;
   [[nodiscard]] bool operator!=(const Reference& other) const;
 
+  [[nodiscard]] constexpr const std::vector<std::uint64_t>& chrom_size_prefix_sum() const noexcept;
+
   // In case of ties, the first match is returned
   [[nodiscard]] const Chromosome& longest_chromosome() const;
   [[nodiscard]] const Chromosome& chromosome_with_longest_name() const;
@@ -99,10 +102,17 @@ class Reference {
                                                    ChromosomeNameIt last_chrom_name,
                                                    ChromosomeSizeIt first_chrom_size) -> ChromBuff;
 
+  template <typename ChromosomeIt>
+  [[nodiscard]] static auto construct_chrom_buffer(ChromosomeIt first_chrom,
+                                                   ChromosomeIt last_chrom) -> ChromBuff;
+
   [[nodiscard]] static auto construct_chrom_map(const ChromBuff& chroms) -> ChromMap;
 
   [[nodiscard]] static std::size_t find_longest_chromosome(const ChromBuff& chroms) noexcept;
   [[nodiscard]] static std::size_t find_chromosome_with_longest_name(
+      const ChromBuff& chroms) noexcept;
+
+  [[nodiscard]] static std::vector<std::uint64_t> compute_size_prefix_sum(
       const ChromBuff& chroms) noexcept;
 
   void validate() const;

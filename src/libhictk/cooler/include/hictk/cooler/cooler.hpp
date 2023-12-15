@@ -98,13 +98,14 @@ class File {
   mutable std::shared_ptr<Index> _index{};
   bool _finalize{false};
 
-  // Constructors are private. Cooler files are opened using factory methods
+  // Private ctors
   File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0,
        bool validate);
 
   template <typename PixelT>
-  File(RootGroup entrypoint, Reference chroms, PixelT pixel, Attributes attributes,
+  File(RootGroup entrypoint, BinTable bins, PixelT pixel, Attributes attributes,
        std::size_t cache_size_bytes, double w0);
+
   // Ctor for SingleCellCooler
   template <typename PixelT>
   File(RootGroup entrypoint, PixelT pixel, Attributes attributes, std::size_t cache_size_bytes,
@@ -135,6 +136,12 @@ class File {
                                    Attributes attributes = Attributes::init<PixelT>(0),
                                    std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
 
+  template <typename PixelT = DefaultPixelT>
+  [[nodiscard]] static File create(std::string_view uri, BinTable bins,
+                                   bool overwrite_if_exists = false,
+                                   Attributes attributes = Attributes::init<PixelT>(0),
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+
   [[nodiscard]] static File open_random_access(
       RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
       bool validate = true);
@@ -144,6 +151,11 @@ class File {
   template <typename PixelT = DefaultPixelT>
   [[nodiscard]] static File create(RootGroup entrypoint, const Reference &chroms,
                                    std::uint32_t bin_size,
+                                   Attributes attributes = Attributes::init<PixelT>(0),
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+
+  template <typename PixelT = DefaultPixelT>
+  [[nodiscard]] static File create(RootGroup entrypoint, BinTable bins,
                                    Attributes attributes = Attributes::init<PixelT>(0),
                                    std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
 
@@ -303,6 +315,9 @@ class File {
 
   [[nodiscard]] static auto import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                           bool missing_ok) -> Reference;
+
+  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, std::string_view bin_type,
+                                               std::uint32_t bin_size);
 
   [[nodiscard]] static Index init_index(const Dataset &chrom_offset_dset,
                                         const Dataset &bin_offset_dset,

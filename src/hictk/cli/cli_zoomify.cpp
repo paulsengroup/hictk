@@ -145,6 +145,12 @@ void Cli::validate_zoomify_subcommand() const {
         "--resolutions.");
   }
 
+  if (clr.bin_size() == 0) {  // Variable bin size
+    errors.clear();
+    warnings.clear();
+    errors.emplace_back("zoomifying files with variable bin size is not currently supported.");
+  }
+
   for (const auto& w : warnings) {
     SPDLOG_WARN(FMT_STRING("{}"), w);
   }

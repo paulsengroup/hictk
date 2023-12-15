@@ -14,6 +14,7 @@
 #include <string_view>
 #include <vector>
 
+#include "hictk/bin.hpp"
 #include "hictk/chromosome.hpp"
 
 namespace hictk {
@@ -84,6 +85,7 @@ class Index {
                                                     std::size_t row_idx) const;
 
   void set(const Chromosome& chrom, OffsetVect offsets);
+  void set_offset_by_bin(const Bin& bin, std::uint64_t offset);
   void set_offset_by_bin_id(std::uint64_t bin_id, std::uint64_t offset);
 
   void set_offset_by_pos(const Chromosome& chrom, std::uint32_t pos, std::uint64_t offset);
@@ -109,9 +111,9 @@ class Index {
   [[nodiscard]] auto at(std::string_view chrom_name) -> mapped_type&;
   [[nodiscard]] auto at(std::uint32_t chrom_id) -> mapped_type&;
 
-  [[nodiscard]] static auto init(const Reference& chroms,
-                                 const std::vector<std::uint64_t>& chrom_offsets,
-                                 std::uint32_t bin_size, bool allocate) -> MapT;
+  [[nodiscard]] static auto init(const Reference& chroms, const BinTable& bins,
+                                 const std::vector<std::uint64_t>& chrom_offsets, bool allocate)
+      -> MapT;
 
  public:
   class iterator {

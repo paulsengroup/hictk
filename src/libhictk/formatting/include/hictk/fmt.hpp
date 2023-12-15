@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "hictk/fmt/bin_table.hpp"
+#include "hictk/fmt/bin.hpp"
 #include "hictk/fmt/chromosome.hpp"
 #include "hictk/fmt/genomic_interval.hpp"
 #include "hictk/fmt/pixel.hpp"

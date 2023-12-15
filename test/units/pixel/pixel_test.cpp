@@ -138,12 +138,14 @@ TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
     }
 
     SECTION("invalid") {
-      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, ""),
+      CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, ""),
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
-      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
+      CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
-      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "0\t1\tchr"),
+      CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, "0\t1\tchr"),
                         Catch::Matchers::ContainsSubstring("Unable to convert field \"chr\""));
+      CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, "9999999999\t9999999999\t1"),
+                        Catch::Matchers::ContainsSubstring("out of range"));
     }
   }
 }
@@ -159,10 +161,11 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
   const BinTable bins{chroms, bin_size};
 
   using N = std::uint32_t;
-  const Pixel<N> expected{{bins.at(0), bins.at(1)}, 1};
+  const Pixel<N> expected1{{bins.at(0), bins.at(1)}, 1};
+  const Pixel<N> expected2{{bins.at(24895642), bins.at(24895642)}, 1};
 
   SECTION("coo") {
-    SECTION("valid") { CHECK(Pixel<N>::from_coo(bins, "0\t1\t1") == expected); }
+    SECTION("valid") { CHECK(Pixel<N>::from_coo(bins, "0\t1\t1") == expected1); }
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, ""),
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
@@ -170,13 +173,17 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
       CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "0\t1\tchr"),
                         Catch::Matchers::ContainsSubstring("Unable to convert field \"chr\""));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "9999999999\t9999999999\t1"),
+                        Catch::Matchers::ContainsSubstring("out of range"));
     }
   }
 
   SECTION("bg2") {
     SECTION("valid") {
-      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1") == expected);
-      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1\ta\tb\tc") == expected);
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1") == expected1);
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t248956421\t248956422\tchr1\t248956421\t248956422\t1") ==
+            expected2);
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1\ta\tb\tc") == expected1);
     }
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr999\t0\t10\tchr1\t0\t10\t1"),
@@ -187,11 +194,18 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
                         Catch::Matchers::ContainsSubstring("expected 7 or more fields, found 1"));
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr1\ta\t10\tchr1\t10\t20\t1"),
                         Catch::Matchers::ContainsSubstring("Unable to convert field \"a\""));
+      CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "9999999999\t9999999999\t1"),
+                        Catch::Matchers::ContainsSubstring("out of range"));
     }
   }
 
   SECTION("validpair") {
-    SECTION("valid") { CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-")); }
+    SECTION("valid") {
+      CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-"));
+      CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t248956421\t+\tchr1\t248956421\t-") ==
+            expected2);
+    }
+
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, ""),
                         Catch::Matchers::ContainsSubstring("expected 6 or more fields, found 0"));
@@ -201,6 +215,9 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
                         Catch::Matchers::ContainsSubstring("expected 6 or more fields, found 5"));
       CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr1\tchr1\t+\tchr1\t15\t-"),
                         Catch::Matchers::ContainsSubstring("Unable to convert field \"chr1\""));
+      CHECK_THROWS_WITH(
+          Pixel<N>::from_validpair(bins, "read_id\tchr1\t248956423\t+\tchr1\t248956423\t-"),
+          Catch::Matchers::ContainsSubstring("position is greater than chromosome size"));
     }
   }
 }

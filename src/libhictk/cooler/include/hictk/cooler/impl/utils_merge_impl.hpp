@@ -39,13 +39,21 @@ template <typename N>
 inline void validate_bin_size(const std::vector<LightCooler<N>>& coolers) {
   assert(coolers.size() > 1);
   const auto& clr1 = coolers.front();
+  const auto bin_table1 = cooler::File(clr1.uri).bins();
 
   for (std::size_t i = 1; i < coolers.size(); ++i) {
     const auto& clr2 = coolers[i];
-    if (clr1.bin_size != clr2.bin_size) {
+
+    if (clr1.bin_size == 0 || clr2.bin_size == 0) {  // Table(s) with variable bin size
+      const auto bin_table2 = cooler::File(clr2.uri).bins();
+      if (bin_table1 != bin_table2) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("cooler \"{}\" and \"{}\" have different bin tables"), clr1.uri, clr2.uri));
+      }
+    } else if (clr1.bin_size != clr2.bin_size) {
       throw std::runtime_error(fmt::format(
           FMT_STRING(
-              "cooler \"{}\" and \"{}\" have different resolutions ({}  and {} respectively)"),
+              "cooler \"{}\" and \"{}\" have different resolutions ({} and {} respectively)"),
           clr1.uri, clr2.uri, clr1.bin_size, clr2.bin_size));
     }
   }
@@ -96,11 +104,8 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
       }
     }
 
-    const cooler::File clr(clrs.front().uri);
-    const auto chroms = clr.chromosomes();
-    const auto bin_size = clr.bin_size();
-    merge(heads, tails, chroms, bin_size, dest_uri, overwrite_if_exists, chunk_size,
-          update_frequency);
+    merge(heads, tails, cooler::File(clrs.front().uri).bins(), dest_uri, overwrite_if_exists,
+          chunk_size, update_frequency);
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
                                          std::distance(first_uri, last_uri), e.what()));
@@ -109,15 +114,15 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
 
 template <typename PixelIt>
 inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
-                  const Reference& chromosomes, std::uint32_t bin_size, std::string_view dest_uri,
-                  bool overwrite_if_exists, std::size_t chunk_size, std::size_t update_frequency) {
+                  const BinTable& bins, std::string_view dest_uri, bool overwrite_if_exists,
+                  std::size_t chunk_size, std::size_t update_frequency) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
   hictk::transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
-  auto dest = File::create<N>(dest_uri, chromosomes, bin_size, overwrite_if_exists);
+  auto dest = File::create<N>(dest_uri, bins, overwrite_if_exists);
 
   std::size_t pixels_processed{};
   auto t0 = std::chrono::steady_clock::now();

@@ -104,69 +104,69 @@ inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::stri
   return GenomicInterval::parse_bed(chroms, query);
 }
 
-inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std::string query) {
-  if (query.empty()) {
+inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std::string buffer) {
+  if (buffer.empty()) {
     throw std::runtime_error("query is empty");
   }
 
-  if (const auto match = chroms.find(query); match != chroms.end()) {
+  if (const auto match = chroms.find(buffer); match != chroms.end()) {
     return GenomicInterval{*match};
   }
 
-  const auto p1 = query.find_last_of(':');
-  auto p2 = query.find_last_of('-');
+  const auto p1 = buffer.find_last_of(':');
+  auto p2 = buffer.find_last_of('-');
 
   if (p1 == std::string::npos && p2 == std::string::npos) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid chromosome \"{0}\" in query \"{0}\""), query));
+        fmt::format(FMT_STRING("invalid chromosome \"{0}\" in query \"{0}\""), buffer));
   }
 
   if (p1 == std::string::npos || p2 == std::string::npos || p1 > p2) {
-    throw std::runtime_error(fmt::format(FMT_STRING("query \"{}\" is malformed"), query));
+    throw std::runtime_error(fmt::format(FMT_STRING("query \"{}\" is malformed"), buffer));
   }
 
-  if (query.find(',', p1) != std::string::npos) {
-    query.erase(std::remove(query.begin() + std::ptrdiff_t(p1), query.end(), ','), query.end());
-    p2 = query.find_last_of('-');
+  if (buffer.find(',', p1) != std::string::npos) {
+    buffer.erase(std::remove(buffer.begin() + std::ptrdiff_t(p1), buffer.end(), ','), buffer.end());
+    p2 = buffer.find_last_of('-');
   }
 
-  query[p1] = '\t';
-  query[p2] = '\t';
+  buffer[p1] = '\t';
+  buffer[p2] = '\t';
 
-  return GenomicInterval::parse_bed(chroms, query);
+  return GenomicInterval::parse_bed(chroms, buffer);
 }
 
-inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::string_view query,
+inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::string_view buffer,
                                                   char sep) {
-  if (query.empty()) {
-    throw std::runtime_error("query is empty");
+  if (buffer.empty()) {
+    throw std::runtime_error("interval is empty");
   }
 
-  const auto p1 = query.find(sep);
-  const auto p2 = query.find(sep, p1 + 1);
+  const auto p1 = buffer.find(sep);
+  const auto p2 = buffer.find(sep, p1 + 1);
 
   if (p1 == std::string_view::npos || p2 == std::string_view::npos || p1 > p2) {
-    throw std::runtime_error(fmt::format(FMT_STRING("query \"{}\" is malformed"), query));
+    throw std::runtime_error(fmt::format(FMT_STRING("interval \"{}\" is malformed"), buffer));
   }
 
-  const auto chrom_name = query.substr(0, p1);
-  const auto start_pos_str = query.substr(p1 + 1, p2 - (p1 + 1));
-  const auto end_pos_str = query.substr(p2 + 1);
+  const auto chrom_name = buffer.substr(0, p1);
+  const auto start_pos_str = buffer.substr(p1 + 1, p2 - (p1 + 1));
+  const auto end_pos_str = buffer.substr(p2 + 1);
 
   const auto match = chroms.find(chrom_name);
   if (match == chroms.end()) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid chromosome \"{}\" in query \"{}\""), chrom_name, query));
+    throw std::runtime_error(fmt::format(FMT_STRING("invalid chromosome \"{}\" in interval \"{}\""),
+                                         chrom_name, buffer));
   }
 
   if (start_pos_str.empty()) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("query \"{}\" is malformed: missing start position"), query));
+        fmt::format(FMT_STRING("interval \"{}\" is malformed: missing start position"), buffer));
   }
 
   if (end_pos_str.empty()) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("query \"{}\" is malformed: missing end position"), query));
+        fmt::format(FMT_STRING("interval \"{}\" is malformed: missing end position"), buffer));
   }
 
   GenomicInterval gi{*match};
@@ -175,29 +175,29 @@ inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::
     internal::parse_numeric_or_throw(start_pos_str, gi._start);
   } catch (const std::exception &e) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid start position \"{}\" in query \"{}\": {}"), start_pos_str,
-                    query, e.what()));
+        fmt::format(FMT_STRING("invalid start position \"{}\" in interval \"{}\": {}"),
+                    start_pos_str, buffer, e.what()));
   }
   try {
     internal::parse_numeric_or_throw(end_pos_str, gi._end);
   } catch (const std::exception &e) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid end position \"{}\" in query \"{}\": {}"), end_pos_str,
-                    query, e.what()));
+        fmt::format(FMT_STRING("invalid end position \"{}\" in interval \"{}\": {}"), end_pos_str,
+                    buffer, e.what()));
   }
 
   if (gi._end > gi.chrom().size()) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid end position \"{0}\" in query \"{1}\": end position is "
+        fmt::format(FMT_STRING("invalid end position \"{0}\" in interval \"{1}\": end position is "
                                "greater than the chromosome size ({0} > {2})"),
-                    gi._end, query, gi.chrom().size()));
+                    gi._end, buffer, gi.chrom().size()));
   }
 
   if (gi._start >= gi._end) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("invalid query \"{}\": query end position should be "
+        fmt::format(FMT_STRING("invalid interval \"{}\": query end position should be "
                                "greater than the start position ({} >= {})"),
-                    query, gi._start, gi._end));
+                    buffer, gi._start, gi._end));
   }
 
   return gi;
