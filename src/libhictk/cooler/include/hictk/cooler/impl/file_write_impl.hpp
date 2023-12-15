@@ -268,12 +268,17 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
 
 inline void File::write_standard_attributes(RootGroup &root_grp, const Attributes &attributes,
                                             bool skip_sentinel_attr) {
-  assert(attributes.bin_size != 0);
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (attributes.assembly) {
     Attribute::write(root_grp(), "assembly", *attributes.assembly);
   }
-  Attribute::write(root_grp(), "bin-size", attributes.bin_size);
+  if (attributes.bin_size == 0) {
+    assert(attributes.bin_type.value() == "variable");
+    Attribute::write(root_grp(), "bin-size", "null");
+  } else {
+    assert(attributes.bin_type.value() == "fixed");
+    Attribute::write(root_grp(), "bin-size", attributes.bin_size);
+  }
   Attribute::write(root_grp(), "bin-type", *attributes.bin_type);            // NOLINT
   Attribute::write(root_grp(), "creation-date", *attributes.creation_date);  // NOLINT
   Attribute::write(root_grp(), "format", std::string{COOL_MAGIC});

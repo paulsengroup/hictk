@@ -113,9 +113,9 @@ jobs:
             includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'ON'  })
 
             // Make sure project builds with CMake 3.25
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-23.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-23.04',  generator: 'Unix Makefiles', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.27.*', conan: '2.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -274,7 +274,7 @@ jobs:
           tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: >
             unit-tests-${{ matrix.os }}-
@@ -287,7 +287,7 @@ jobs:
           retention-days: 1
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: >
             binaries-${{ matrix.os }}-
@@ -331,7 +331,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: >
             unit-tests-${{ matrix.os }}-
@@ -405,7 +405,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: >
             binaries-${{ matrix.os }}-
@@ -487,13 +487,9 @@ jobs:
         run: |
           test/scripts/hictk_load_bg2.sh bin/hictk unsorted
 
-      - name: Test hictk load 4dn sorted
+      - name: Test hictk load 4dn
         run: |
-          test/scripts/hictk_load_4dn.sh bin/hictk sorted
-
-      - name: Test hictk load 4dn unsorted
-        run: |
-          test/scripts/hictk_load_4dn.sh bin/hictk unsorted
+          test/scripts/hictk_load_4dn.sh bin/hictk
 
       - name: Test hictk merge
         run: |

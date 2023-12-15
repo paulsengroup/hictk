@@ -42,17 +42,23 @@ void Cli::make_load_subcommand() {
       ->required();
 
   sc.add_option(
-      "bin-size",
-      c.bin_size,
-      "Bin size (bp).")
-      ->check(CLI::PositiveNumber)
-      ->required();
-
-  sc.add_option(
       "output-uri",
       c.uri,
       "Path to output Cooler (URI syntax supported).")
       ->required();
+
+  sc.add_option(
+      "-b,--bin-size",
+      c.bin_size,
+      "Bin size (bp).\n"
+      "Required when --bin-table is not used.")
+      ->check(CLI::PositiveNumber);
+
+  sc.add_option(
+      "-t,--bin-table",
+      c.path_to_bin_table,
+      "Path to a BED3+ file with the bin table.")
+      ->check(CLI::ExistingFile);
 
   sc.add_option(
       "-f,--format",
@@ -72,6 +78,13 @@ void Cli::make_load_subcommand() {
       c.assembly,
       "Assembly name.")
       ->capture_default_str();
+
+  sc.add_flag(
+      "--one-based,!--zero-based",
+      c.one_based,
+      "Interpret genomic coordinates or bins as one/zero based.\n"
+      "By default coordinates are assumed to be one-based for interactions in\n"
+      "4dn and validapairs formats and zero-based otherwise.");
 
   sc.add_flag(
       "--count-as-float",
@@ -95,22 +108,46 @@ void Cli::make_load_subcommand() {
   sc.add_option(
       "--batch-size",
       c.batch_size,
-      "Number of pixels to buffer in memory. Only used when processing unsorted interactions or pairs")
+      "Number of pixels to buffer in memory.\n"
+      "Only used when processing unsorted interactions or pairs.")
       ->capture_default_str();
   // clang-format on
 
+  sc.get_option("--bin-size")->excludes(sc.get_option("--bin-table"));
   _config = std::monostate{};
 }
 
 void Cli::validate_load_subcommand() const {
   assert(_cli.get_subcommand("load")->parsed());
 
+  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<LoadConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("load");
 
   if (!c.force && std::filesystem::exists(c.uri)) {
     errors.emplace_back(fmt::format(
         FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
+  }
+
+  if (c.path_to_bin_table.empty() && c.path_to_chrom_sizes.empty()) {
+    assert(c.bin_size == 0);
+    errors.emplace_back("--bin-size is required when --bin-table is not specified.");
+  }
+
+  if ((c.format == "bg2" || c.format == "coo") && !sc.get_option("--bin-table")->empty()) {
+    errors.emplace_back(
+        "specifying bins through the --bin-table is not supported when ingesting pre-binned "
+        "interactions.");
+  }
+
+  if (c.format == "4dn" && c.format == "validpairs" && c.assume_sorted) {
+    warnings.emplace_back(
+        "--assume-sorted has no effect when ingesting interactions in 4dn or validpairs format.");
+  }
+
+  for (const auto& w : warnings) {
+    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {
@@ -123,6 +160,15 @@ void Cli::validate_load_subcommand() const {
 
 void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("load");
+
+  if (sc.get_option("--one-based")->empty()) {
+    if (c.format == "4dn" || c.format == "validpairs") {
+      c.offset = -1;
+    }
+  } else {
+    c.offset = c.one_based ? -1 : 0;
+  }
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

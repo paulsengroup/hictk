@@ -23,7 +23,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/utils.hpp"
-#include "hictk/fmt/bin_table.hpp"
+#include "hictk/fmt/bin.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/coarsen.hpp"
 #include "hictk/type_traits.hpp"

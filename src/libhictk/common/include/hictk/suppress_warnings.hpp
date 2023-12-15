@@ -16,6 +16,7 @@
     #define DISABLE_WARNING(warningNumber)            __pragma(warning(disable : warningNumber))
 
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_NULL_DEREF
     #define DISABLE_WARNING_USELESS_CAST
     #define DISABLE_WARNING_SIGN_COMPARE
@@ -37,11 +38,13 @@
 
 // Defines for GCC only
 #if defined(__GNUC__) && !defined(__clang__)
-    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")   // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")       // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")              // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 // Defines for Clang only
 #ifdef __clang__
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_USELESS_CAST
 #endif
 
@@ -52,6 +55,7 @@
   #define DISABLE_WARNING_POP
 
   #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
+  #define DISABLE_WARNING_MAYBE_UNINITIALIZED
   #define DISABLE_WARNING_NULL_DEREF
   #define DISABLE_WARNING_USELESS_CAST
   #define DISABLE_WARNING_SIGN_COMPARE

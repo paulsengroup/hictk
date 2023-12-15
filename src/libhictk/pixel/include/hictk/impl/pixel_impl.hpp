@@ -128,12 +128,15 @@ inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
 }
 
 template <typename N>
-inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line) -> ThinPixel<N> {
+inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line, std::int64_t offset)
+    -> ThinPixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 
-    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
-    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto bin1_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[0]) + offset);
+    const auto bin2_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[1]) + offset);
     const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
 
     if (bin1_id > bins.size()) {
@@ -149,13 +152,16 @@ inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line) 
         fmt::format(FMT_STRING("line \"{}\" is not in coo format: {}"), line, e.what()));
   }
 }
+
 template <typename N>
-inline auto ThinPixel<N>::from_coo(std::string_view line) -> ThinPixel<N> {
+inline auto ThinPixel<N>::from_coo(std::string_view line, std::int64_t offset) -> ThinPixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 
-    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
-    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto bin1_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[0]) + offset);
+    const auto bin2_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[1]) + offset);
     const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
 
     return {bin1_id, bin2_id, count};
@@ -294,12 +300,15 @@ inline ThinPixel<N> Pixel<N>::to_thin() const noexcept {
 }
 
 template <typename N>
-inline auto Pixel<N>::from_coo(const hictk::BinTable &bins, std::string_view line) -> Pixel<N> {
+inline auto Pixel<N>::from_coo(const hictk::BinTable &bins, std::string_view line,
+                               std::int64_t offset) -> Pixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 
-    const auto bin1_id = internal::parse_numeric_or_throw<std::size_t>(toks[0]);
-    const auto bin2_id = internal::parse_numeric_or_throw<std::size_t>(toks[1]);
+    const auto bin1_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[0]) + offset);
+    const auto bin2_id =
+        static_cast<std::size_t>(internal::parse_numeric_or_throw<std::int64_t>(toks[1]) + offset);
     const auto count = internal::parse_numeric_or_throw<N>(toks[2]);
 
     return {bins.at(bin1_id), bins.at(bin2_id), count};
@@ -310,15 +319,18 @@ inline auto Pixel<N>::from_coo(const hictk::BinTable &bins, std::string_view lin
 }
 
 template <typename N>
-inline auto Pixel<N>::from_bg2(const hictk::BinTable &bins, std::string_view line) -> Pixel<N> {
+inline auto Pixel<N>::from_bg2(const hictk::BinTable &bins, std::string_view line,
+                               std::int64_t offset) -> Pixel<N> {
   try {
     const auto toks = internal::tokenize_n_or_more<7>(line);
 
     const auto &chrom1 = toks[0];
-    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[1]);
+    const auto start1 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[1]) + offset);
 
     const auto &chrom2 = toks[3];
-    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[4]);
+    const auto start2 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[4]) + offset);
 
     const auto count = internal::parse_numeric_or_throw<N>(toks[6]);
     return {bins.at(chrom1, start1), bins.at(chrom2, start2), count};
@@ -329,16 +341,18 @@ inline auto Pixel<N>::from_bg2(const hictk::BinTable &bins, std::string_view lin
 }
 
 template <typename N>
-inline auto Pixel<N>::from_validpair(const hictk::BinTable &bins, std::string_view line)
-    -> Pixel<N> {
+inline auto Pixel<N>::from_validpair(const hictk::BinTable &bins, std::string_view line,
+                                     std::int64_t offset) -> Pixel<N> {
   try {
     const auto toks = internal::tokenize_n_or_more<6>(line);
 
     const auto &chrom1 = toks[1];
-    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[2]);
+    const auto start1 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[2]) + offset);
 
     const auto &chrom2 = toks[4];
-    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[5]);
+    const auto start2 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[5]) + offset);
 
     return {bins.at(chrom1, start1), bins.at(chrom2, start2), 1};
   } catch (const std::exception &e) {
@@ -348,16 +362,18 @@ inline auto Pixel<N>::from_validpair(const hictk::BinTable &bins, std::string_vi
 }
 
 template <typename N>
-inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_view line)
-    -> Pixel<N> {
+inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_view line,
+                                     std::int64_t offset) -> Pixel<N> {
   try {
     const auto toks = internal::tokenize_n_or_more<6>(line);
 
     const auto &chrom1 = toks[1];
-    const auto start1 = internal::parse_numeric_or_throw<std::uint32_t>(toks[2]);
+    const auto start1 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[2]) + offset);
 
     const auto &chrom2 = toks[3];
-    const auto start2 = internal::parse_numeric_or_throw<std::uint32_t>(toks[4]);
+    const auto start2 = static_cast<std::uint32_t>(
+        internal::parse_numeric_or_throw<std::int64_t>(toks[4]) + offset);
 
     return {bins.at(chrom1, start1), bins.at(chrom2, start2), 1};
   } catch (const std::exception &e) {

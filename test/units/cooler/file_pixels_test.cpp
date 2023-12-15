@@ -34,7 +34,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
     std::mt19937_64 rand_eng{rd()};
 
     auto pixel_it = expected.begin();
-    do {
+    do {  // NOLINT(cppcoreguidelines-avoid-do-while)
       const auto diff = std::distance(pixel_it, expected.end());
       // Write pixels in chunks of random size
       const auto offset =

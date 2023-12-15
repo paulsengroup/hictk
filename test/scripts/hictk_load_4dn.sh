@@ -49,35 +49,23 @@ function compare_coolers {
   fi
 }
 
-function shuffle {
-  if command -v shuf &> /dev/null; then
-    shuf
-  else
-    sort -R
-  fi
-}
-
 export function readlink_py shuffle
 
 status=0
 
-if [ $# -ne 2 ]; then
-  2>&1 echo "Usage: $0 path_to_hictk [un]sorted"
+if [ $# -ne 1 ]; then
+  2>&1 echo "Usage: $0 path_to_hictk"
   status=1
 fi
 
 hictk_bin="$1"
-if [[ "$2" == 'sorted' ]]; then
-  sorted=true
-else
-  sorted=false
-fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 pairs="$data_dir/4DNFIKNWM36K.subset.pairs.xz"
-ref_cooler="$data_dir/4DNFIKNWM36K.subset.cool"
+ref_cooler_fixed_bins="$data_dir/4DNFIKNWM36K.subset.fixed-bins.cool"
+ref_cooler_variable_bins="$data_dir/4DNFIKNWM36K.subset.variable-bins.cool"
 
 export PATH="$PATH:$script_dir"
 
@@ -99,37 +87,43 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$ref_cooler"; then
+if ! check_files_exist "$pairs" "$ref_cooler_fixed_bins" "$ref_cooler_variable_bins"; then
   exit 1
 fi
 
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-cooler dump -t chroms "$ref_cooler" > "$outdir/chrom.sizes"
+cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 
-if [[ "$sorted" == true ]]; then
-  xzcat "$pairs" |
-    "$hictk_bin" load \
-      -f 4dn \
-      --assume-sorted \
-      --batch-size 1000000 \
-      "$outdir/chrom.sizes" \
-      10000 \
-      "$outdir/out.cool"
-else
-  xzcat "$pairs" |
-    shuffle |
-    "$hictk_bin" load \
-      -f 4dn \
-      --assume-unsorted \
-      --batch-size 1000000 \
-      "$outdir/chrom.sizes" \
-      10000 \
-      "$outdir/out.cool"
+# Test cooler with fixed bin size
+xzcat "$pairs" |
+  "$hictk_bin" load \
+    -f 4dn \
+    --assume-sorted \
+    --batch-size 1000000 \
+    --bin-size 10000 \
+    "$outdir/chrom.sizes" \
+    "$outdir/out.cool"
+
+if ! compare_coolers "$outdir/out.cool" "$ref_cooler_fixed_bins"; then
+  status=1
 fi
 
-if ! compare_coolers "$outdir/out.cool" "$ref_cooler"; then
+# Test cooler with variable bin size
+cooler dump -t bins "$ref_cooler_variable_bins" > "$outdir/bins.bed"
+
+xzcat "$pairs" |
+  "$hictk_bin" load \
+    -f 4dn \
+    --assume-sorted \
+    --batch-size 1000000 \
+    --bin-table "$outdir/bins.bed" \
+    --force \
+    "$outdir/chrom.sizes" \
+    "$outdir/out.cool"
+
+if ! compare_coolers "$outdir/out.cool" "$ref_cooler_variable_bins"; then
   status=1
 fi
 

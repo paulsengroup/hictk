@@ -31,8 +31,9 @@ namespace hictk {
 
 template <typename ChromosomeIt>
 inline Reference::Reference(ChromosomeIt first_chrom, ChromosomeIt last_chrom)
-    : _buff(first_chrom, last_chrom),
+    : _buff(construct_chrom_buffer(first_chrom, last_chrom)),
       _map(construct_chrom_map(_buff)),
+      _size_prefix_sum(compute_size_prefix_sum(_buff)),
       _longest_chrom(find_longest_chromosome(_buff)),
       _chrom_with_longest_name(find_chromosome_with_longest_name(_buff)) {
   validate();
@@ -43,6 +44,7 @@ inline Reference::Reference(ChromosomeNameIt first_chrom_name, ChromosomeNameIt 
                             ChromosomeSizeIt first_chrom_size)
     : _buff(construct_chrom_buffer(first_chrom_name, last_chrom_name, first_chrom_size)),
       _map(construct_chrom_map(_buff)),
+      _size_prefix_sum(compute_size_prefix_sum(_buff)),
       _longest_chrom(find_longest_chromosome(_buff)),
       _chrom_with_longest_name(find_chromosome_with_longest_name(_buff)) {
   validate();
@@ -160,6 +162,10 @@ inline bool Reference::operator==(const Reference& other) const {
 
 inline bool Reference::operator!=(const Reference& other) const { return !(*this == other); }
 
+constexpr const std::vector<std::uint64_t>& Reference::chrom_size_prefix_sum() const noexcept {
+  return _size_prefix_sum;
+}
+
 inline const Chromosome& Reference::longest_chromosome() const {
   if (empty()) {
     throw std::runtime_error("longest_chromosome() was called on an empty Reference");
@@ -199,6 +205,20 @@ inline auto Reference::construct_chrom_buffer(ChromosomeNameIt first_chrom_name,
   return buff;
 }
 
+template <typename ChromosomeIt>
+inline auto Reference::construct_chrom_buffer(ChromosomeIt first_chrom, ChromosomeIt last_chrom)
+    -> ChromBuff {
+  std::vector<std::string> chrom_names{};
+  std::vector<std::uint32_t> chrom_sizes{};
+
+  std::for_each(first_chrom, last_chrom, [&](const Chromosome& chrom) {
+    chrom_names.emplace_back(std::string{chrom.name()});
+    chrom_sizes.emplace_back(chrom.size());
+  });
+
+  return construct_chrom_buffer(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
+}
+
 inline auto Reference::construct_chrom_map(const ChromBuff& chroms) -> ChromMap {
   ChromMap buff(chroms.size());
   std::transform(chroms.begin(), chroms.end(), std::inserter(buff, buff.begin()),
@@ -235,6 +255,18 @@ inline std::size_t Reference::find_chromosome_with_longest_name(const ChromBuff&
                                       });
 
   return static_cast<std::size_t>(std::distance(chroms.begin(), match));
+}
+
+inline std::vector<std::uint64_t> Reference::compute_size_prefix_sum(
+    const ChromBuff& chroms) noexcept {
+  std::vector<std::uint64_t> buff(chroms.size() + 2, 0);
+  for (std::size_t i = 1; i < chroms.size() + 1; ++i) {
+    buff[i] = buff[i - 1] + chroms[i - 1].size();
+  }
+
+  buff.back() = buff[chroms.size()] + 1;
+
+  return buff;
 }
 
 inline void Reference::validate() const {

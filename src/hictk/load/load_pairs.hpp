@@ -39,161 +39,93 @@ struct PixelCmp {
 template <typename N>
 class PairsAggregator {
   phmap::btree_set<ThinPixel<N>, PixelCmp<N>> _buffer{};
-  typename phmap::btree_set<ThinPixel<N>, PixelCmp<N>>::const_iterator _it{};
 
   const BinTable& _bins{};  // NOLINT
   Format _format{};
-  ThinPixel<N> _last{};
+  ThinPixel<N> _last_pixel{};
+  std::string _line_buffer{};
+  std::int64_t _offset{};
 
  public:
   PairsAggregator() = delete;
-  inline PairsAggregator(const BinTable& bins, Format format)
-      : _it(_buffer.end()), _bins(bins), _format(format) {}
+  inline PairsAggregator(const BinTable& bins, Format format, std::int64_t offset)
+      : _bins(bins), _format(format), _offset(offset) {
+    while (std::getline(std::cin, _line_buffer)) {
+      if (!line_is_header(_line_buffer)) {
+        break;
+      }
+    }
+    if (!_line_buffer.empty()) {
+      _last_pixel = parse_pixel<N>(_bins, _line_buffer, _format, _offset);
+    }
+  }
 
-  inline void read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
+  inline bool read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
     buffer.clear();
     read_next_batch(buffer.capacity());
     std::copy(_buffer.begin(), _buffer.end(), std::back_inserter(buffer));
     _buffer.clear();
-  }
 
-  [[nodiscard]] inline ThinPixel<N> next() {
-    if (_it == _buffer.end()) {
-      read_next_batch();
-    }
-    if (_buffer.empty()) {
-      auto last = _last;
-      _last = {};
-      return last;
-    }
-    return *_it++;
+    return buffer.size() == buffer.capacity();
   }
 
  private:
-  inline void read_next_batch() {
-    auto last_bin1 = _last.bin1_id;
-    std::string line{};
+  inline ThinPixel<N> aggregate_pixel() {
+    assert(!!_last_pixel);
 
-    _buffer.clear();
-    if (!!_last) {
-      _buffer.emplace(_last);
-    }
-
-    while (std::getline(std::cin, line)) {
-      if (line_is_header(line)) {
+    while (std::getline(std::cin, _line_buffer)) {
+      if (_line_buffer.empty()) {
         continue;
       }
 
-      auto pixel = parse_pixel<N>(_bins, line, _format);
-      auto node = _buffer.find(pixel);
-      if (node != _buffer.end()) {
-        node->count += pixel.count;
-      } else {
-        _buffer.emplace(pixel);
+      auto p = parse_pixel<N>(_bins, _line_buffer, _format, _offset);
+      if (p.bin1_id != _last_pixel.bin1_id || p.bin2_id != _last_pixel.bin2_id) {
+        std::swap(p, _last_pixel);
+        return p;
       }
-
-      if (last_bin1 != ThinPixel<N>::null_id && pixel.bin1_id != last_bin1) {
-        break;
-      }
-      last_bin1 = pixel.bin1_id;
+      _last_pixel.count += p.count;
     }
 
-    _it = _buffer.begin();
-    if (_buffer.empty()) {
-      _last = {};
+    ThinPixel<N> p{};
+    std::swap(p, _last_pixel);
+    return p;
+  }
+
+  inline void insert_or_update(const ThinPixel<N>& pixel) {
+    auto node = _buffer.find(pixel);
+    if (node != _buffer.end()) {
+      node->count += pixel.count;
     } else {
-      _last = *_buffer.rbegin();
-      _buffer.erase(_last);
+      _buffer.emplace(pixel);
     }
   }
 
   inline void read_next_batch(std::size_t batch_size) {
-    std::string line{};
-
     _buffer.clear();
-    while (std::getline(std::cin, line)) {
-      if (line_is_header(line)) {
-        continue;
+
+    while (!!_last_pixel) {
+      const auto pixel = aggregate_pixel();
+      if (!pixel) {
+        break;
       }
 
-      auto pixel = parse_pixel<N>(_bins, line, _format);
-      auto node = _buffer.find(pixel);
-      if (node != _buffer.end()) {
-        node->count += pixel.count;
-      } else {
-        _buffer.emplace(pixel);
-      }
+      insert_or_update(pixel);
 
-      if (_buffer.size() == batch_size) {
+      if (_buffer.size() == batch_size - 1) {
+        insert_or_update(_last_pixel);
         break;
       }
     }
-
-    _it = _buffer.begin();
   }
 };
 
 template <typename N>
-inline void read_sort_and_aggregate_batch(PairsAggregator<N>& aggregator,
-                                          std::vector<ThinPixel<N>>& buffer,
-                                          std::size_t batch_size) {
+[[nodiscard]] inline std::uint64_t ingest_pairs(cooler::File&& clr,
+                                                std::vector<ThinPixel<N>>& buffer,
+                                                std::size_t batch_size, Format format,
+                                                std::int64_t offset, bool validate_pixels) {
   buffer.reserve(batch_size);
-  buffer.clear();
-
-  while (true) {
-    if (buffer.size() == batch_size) {
-      return;
-    }
-
-    auto pixel = aggregator.next();
-    if (!pixel) {
-      break;
-    }
-    buffer.emplace_back(std::move(pixel));
-  }
-}
-
-template <typename N>
-inline void ingest_pairs_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-                                Format format, std::size_t batch_size, bool validate_pixels) {
-  PairsAggregator<N> aggregator{clr.bins(), format};
-  std::vector<ThinPixel<N>> buffer{};
-  buffer.reserve(batch_size);
-
-  std::size_t i0 = 0;
-  std::size_t i1 = i0;
-  try {
-    for (; true; ++i1) {
-      if (buffer.size() == batch_size) {
-        SPDLOG_INFO(FMT_STRING("processing chunk {}-{}..."), i0, i1);
-        clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-        buffer.clear();
-        i0 = i1;
-      }
-
-      auto pixel = aggregator.next();
-      if (!pixel) {
-        break;
-      }
-      buffer.emplace_back(std::move(pixel));
-    }
-
-    if (!buffer.empty()) {
-      clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-    }
-  } catch (const std::exception& e) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("an error occurred while processing chunk {}-{}: {}"), i0, i1, e.what()));
-  }
-}
-
-template <typename N>
-[[nodiscard]] inline std::uint64_t ingest_pairs_unsorted(
-    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, std::size_t batch_size, Format format,
-    bool validate_pixels) {
-  buffer.reserve(batch_size);
-  PairsAggregator<N>{clr.bins(), format}.read_next_chunk(buffer);
+  PairsAggregator<N>{clr.bins(), format, offset}.read_next_chunk(buffer);
 
   if (buffer.empty()) {
     assert(std::cin.eof());

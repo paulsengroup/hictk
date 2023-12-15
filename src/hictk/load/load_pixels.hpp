@@ -24,7 +24,8 @@
 namespace hictk::tools {
 
 template <typename N>
-inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format) {
+inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format,
+                       std::int64_t offset) {
   buffer.clear();
   std::string line{};
   try {
@@ -32,7 +33,7 @@ inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, 
       if (line_is_header(line)) {
         continue;
       }
-      buffer.emplace_back(parse_pixel<N>(bins, line, format));
+      buffer.emplace_back(parse_pixel<N>(bins, line, format, offset));
       if (buffer.size() == buffer.capacity()) {
         return;
       }
@@ -48,14 +49,15 @@ inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, 
 
 template <typename N>
 inline void ingest_pixels_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-                                 Format format, std::size_t batch_size, bool validate_pixels) {
+                                 Format format, std::int64_t offset, std::size_t batch_size,
+                                 bool validate_pixels) {
   std::vector<ThinPixel<N>> buffer(batch_size);
 
   std::size_t i = 0;
   try {
     for (; !std::cin.eof(); ++i) {
       SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
-      read_batch(clr.bins(), buffer, format);
+      read_batch(clr.bins(), buffer, format, offset);
       clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();
     }
@@ -73,10 +75,10 @@ inline void ingest_pixels_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-referen
 template <typename N>
 [[nodiscard]] inline std::size_t ingest_pixels_unsorted(
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, Format format, bool validate_pixels) {
+    std::vector<ThinPixel<N>>& buffer, Format format, std::int64_t offset, bool validate_pixels) {
   assert(buffer.capacity() != 0);
 
-  read_batch(clr.bins(), buffer, format);
+  read_batch(clr.bins(), buffer, format, offset);
 
   if (buffer.empty()) {
     assert(std::cin.eof());
