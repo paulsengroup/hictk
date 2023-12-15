@@ -36,6 +36,13 @@
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
 
+namespace std {
+template <>
+struct default_delete<FILE> {
+  void operator()(FILE* file) const { std::fclose(file); }  // NOLINT
+};
+}  // namespace std
+
 namespace hictk::tools {
 
 static void write_weights_hic(const hic::File& hf, const BalanceConfig& c,
