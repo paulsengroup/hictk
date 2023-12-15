@@ -33,15 +33,9 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
-
-namespace std {
-template <>
-struct default_delete<FILE> {
-  void operator()(FILE* file) const { std::fclose(file); }  // NOLINT
-};
-}  // namespace std
 
 namespace hictk::tools {
 

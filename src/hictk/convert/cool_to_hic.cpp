@@ -37,6 +37,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/tmpdir.hpp"
+#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
 
