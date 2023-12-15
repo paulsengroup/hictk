@@ -274,7 +274,7 @@ jobs:
           tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: >
             unit-tests-${{ matrix.os }}-
@@ -287,7 +287,7 @@ jobs:
           retention-days: 1
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: >
             binaries-${{ matrix.os }}-
