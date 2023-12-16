@@ -28,7 +28,7 @@ class BinTable {
 
   BinTable() = default;
   template <typename BinTableT>
-  BinTable(BinTableT table);
+  explicit BinTable(BinTableT table);
   BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset = 0);
   template <typename ChromIt>
   BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size,

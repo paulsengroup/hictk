@@ -188,10 +188,9 @@ inline const BinTable &PixelSelector::bins() const noexcept { return *bins_ptr()
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept { return _bins; }
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(const Dataset &pixels_bin1_id,
-                                            const Dataset &pixels_bin2_id,
-                                            const Dataset &pixels_count,
-                                            std::shared_ptr<const balancing::Weights> weights)
+inline PixelSelector::iterator<N>::iterator(
+    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
+    std::shared_ptr<const balancing::Weights> weights)  // NOLINT(*-unnecessary-value-param)
     : _bin1_id_it(pixels_bin1_id.begin<BinIDT>()),
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
       _count_it(pixels_count.begin<N>()),
@@ -199,12 +198,12 @@ inline PixelSelector::iterator<N>::iterator(const Dataset &pixels_bin1_id,
       _h5_end_offset(pixels_bin2_id.size()) {}
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(std::shared_ptr<const Index> index,
-                                            const Dataset &pixels_bin1_id,
-                                            const Dataset &pixels_bin2_id,
-                                            const Dataset &pixels_count, PixelCoordinates coord1,
-                                            PixelCoordinates coord2,
-                                            std::shared_ptr<const balancing::Weights> weights)
+inline PixelSelector::iterator<N>::iterator(
+    // NOLINTBEGIN(*-unnecessary-value-param)
+    std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
+    const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
+    PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights)
+    // NOLINTEND(*-unnecessary-value-param)
     : _index(std::move(index)),
       _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
@@ -489,12 +488,12 @@ inline void PixelSelector::iterator<N>::refresh() {
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::overlaps_coord1() const noexcept {
+constexpr bool PixelSelector::iterator<N>::overlaps_coord1() const {
   return !_coord1 || (*_bin1_id_it >= _coord1.bin1.id() && *_bin1_id_it <= _coord1.bin2.id());
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::overlaps_coord2() const noexcept {
+constexpr bool PixelSelector::iterator<N>::overlaps_coord2() const {
   return !_coord2 || (*_bin2_id_it >= _coord2.bin1.id() && *_bin2_id_it <= _coord2.bin2.id());
 }
 
@@ -508,7 +507,7 @@ inline bool PixelSelector::iterator<N>::discard() const {
 }
 
 template <typename N>
-constexpr bool PixelSelector::iterator<N>::is_at_end() const noexcept {
+constexpr bool PixelSelector::iterator<N>::is_at_end() const {
   if (_h5_end_offset == _bin2_id_it.h5_offset()) {
     return true;
   }

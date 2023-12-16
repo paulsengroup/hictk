@@ -18,7 +18,7 @@
 #include "hictk/type_traits.hpp"
 
 namespace hictk {
-template <typename BinTableT>
+template <typename BinTableT>  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
 inline BinTable::BinTable(BinTableT table) : _table(std::move(table)) {}
 
 inline BinTable::BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset)
@@ -85,7 +85,7 @@ inline auto BinTable::cbegin() const -> iterator { return begin(); }
 inline auto BinTable::cend() const -> iterator { return end(); }
 
 inline BinTable BinTable::subset(const Chromosome &chrom) const {
-  return std::visit([&](const auto &t) -> BinTable { return {t.subset(chrom)}; }, _table);
+  return std::visit([&](const auto &t) { return BinTable{t.subset(chrom)}; }, _table);
 }
 
 inline BinTable BinTable::subset(std::string_view chrom_name) const {

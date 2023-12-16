@@ -33,7 +33,7 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
   if (std::filesystem::exists(uri2) && utils::is_cooler(uri2)) {
     throw std::runtime_error("destination already contains a Cooler");
   }
-  HighFive::File dest(path2, HighFive::File::OpenOrCreate);
+  const HighFive::File dest(path2, HighFive::File::OpenOrCreate);
   return copy(uri1, RootGroup{dest.getGroup(grp2)});
 }
 

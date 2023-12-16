@@ -75,7 +75,7 @@ inline bool Dataset::has_attribute(std::string_view key) const {
 }
 
 inline HighFive::DataType Dataset::get_h5type() const {
-  auto h5type = _dataset.getDataType();
+  const auto h5type = _dataset.getDataType();
   if (h5type.isFixedLenStr()) {
     return h5type;
   }
@@ -89,6 +89,7 @@ inline HighFive::DataType Dataset::get_h5type() const {
 
   // Useful to suppress warnings about treating enum datasets as plain int datasets
   const auto is_unsigned = H5Tget_sign(h5type.getId()) == H5T_SGN_NONE;
+  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
   auto create_dtype = [&]([[maybe_unused]] auto tunsigned, [[maybe_unused]] auto tsigned) {
     using T1 = decltype(tunsigned);
     using T2 = decltype(tsigned);

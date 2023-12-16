@@ -36,22 +36,30 @@ class FileStream {
   void read(std::string &buffer, std::size_t count);
   void read(char *buffer, std::size_t count);
 
+  // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   [[nodiscard]] T read();
+  // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   void read(T &buffer);
 
-  template <typename Tin, typename Tout = std::make_signed_t<Tin>,
+  template <typename Tin,
+            typename Tout = std::make_signed_t<Tin>,  // NOLINTNEXTLINE(modernize-type-traits)
             typename std::enable_if<std::is_integral<Tin>::value>::type * = nullptr>
   [[nodiscard]] Tout read_as_signed();
-  template <typename Tin, typename Tout = std::make_unsigned_t<Tin>,
+  template <typename Tin,
+            typename Tout = std::make_unsigned_t<Tin>,  // NOLINTNEXTLINE(modernize-type-traits)
             typename std::enable_if<std::is_integral<Tin>::value>::type * = nullptr>
   [[nodiscard]] Tout read_as_unsigned();
+  // NOLINTNEXTLINE(modernize-type-traits)
   template <typename Tin, typename std::enable_if<std::is_arithmetic<Tin>::value>::type * = nullptr>
   [[nodiscard]] double read_as_double();
 
+  // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   void read(std::vector<T> &buffer);
+
+  // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   [[nodiscard]] std::vector<T> read(std::size_t size);
 

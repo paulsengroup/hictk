@@ -191,6 +191,7 @@ inline BuffT Dataset::read(std::size_t offset) const {
   return buff;
 }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline hictk::internal::GenericVariant Dataset::read(std::size_t offset) const {
   return read<GenericVariant>(offset);
 }
@@ -206,6 +207,7 @@ inline BuffT Dataset::read_last() const {
   return buff;
 }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline hictk::internal::GenericVariant Dataset::read_last() const {
   return read_last<GenericVariant>();
 }

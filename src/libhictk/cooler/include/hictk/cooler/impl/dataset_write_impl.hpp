@@ -84,6 +84,7 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
   return size();
 }
 
+// NOLINT(*-convert-member-functions-to-static)
 inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
@@ -171,6 +172,7 @@ inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool all
   return ++_dataset_size;
 }
 
+// NOLINT(*-convert-member-functions-to-static)
 inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};

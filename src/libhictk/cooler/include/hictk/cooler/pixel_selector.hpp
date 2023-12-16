@@ -150,11 +150,11 @@ class PixelSelector {
     void jump_at_end();
     void refresh();
 
-    [[nodiscard]] constexpr bool overlaps_coord1() const noexcept;
-    [[nodiscard]] constexpr bool overlaps_coord2() const noexcept;
+    [[nodiscard]] constexpr bool overlaps_coord1() const;
+    [[nodiscard]] constexpr bool overlaps_coord2() const;
 
     [[nodiscard]] bool discard() const;
-    constexpr bool is_at_end() const noexcept;
+    constexpr bool is_at_end() const;
   };
 };
 

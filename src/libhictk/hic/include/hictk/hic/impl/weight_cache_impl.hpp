@@ -22,7 +22,7 @@ inline auto WeightCache::find_or_emplace(std::uint32_t chrom_id, balancing::Meth
     return it->second;
   }
 
-  return _weights.emplace(key, std::make_shared<balancing::Weights>()).first->second;
+  return _weights.emplace(std::move(key), std::make_shared<balancing::Weights>()).first->second;
 }
 
 inline auto WeightCache::find_or_emplace(const Chromosome &chrom, balancing::Method norm) -> Value {

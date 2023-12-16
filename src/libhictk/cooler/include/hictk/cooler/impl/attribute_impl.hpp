@@ -40,7 +40,7 @@ template <typename T, typename ParentObj>
 inline void Attribute::write(ParentObj& h5obj, std::string_view key, const T& value,
                              bool overwrite_if_exists) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  const std::string key_{key};
+  const std::string key_{key};                        // NOLINT(cert-err58-cpp)
   if (overwrite_if_exists && Attribute::exists(h5obj, key)) {
     h5obj.deleteAttribute(key_);
   }
@@ -50,8 +50,10 @@ inline void Attribute::write(ParentObj& h5obj, std::string_view key, const T& va
 template <typename T, typename ParentObj>
 inline T Attribute::read(const ParentObj& h5obj, std::string_view key) {
   try {
+    // NOLINTBEGIN(*-avoid-non-const-global-variables)
     auto attrv = Attribute::read(h5obj, key, false);
     std::optional<T> buff{};
+    // NOLINTEND(*-avoid-non-const-global-variables)
     std::visit(
         [&](auto& attr) {
           using Tin = remove_cvref_t<decltype(attr)>;
@@ -81,7 +83,7 @@ inline auto Attribute::read(const ParentObj& h5obj, std::string_view key, bool m
   if (missing_ok && !Attribute::exists(h5obj, key)) {
     return std::monostate();
   }
-  auto attr = read_variant(h5obj.getAttribute(std::string{key}));
+  const auto attr = read_variant(h5obj.getAttribute(std::string{key}));
   if (std::holds_alternative<std::monostate>(attr)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Unable to read attribute \"{}\" from path \"{}\". Reason: "
@@ -93,7 +95,7 @@ inline auto Attribute::read(const ParentObj& h5obj, std::string_view key, bool m
 
 template <typename T, typename ParentObj>
 inline std::vector<T> Attribute::read_vector(const ParentObj& h5obj, std::string_view key) {
-  std::vector<T> buff;
+  std::vector<T> buff;  // NOLINT(*-avoid-non-const-global-variables)
   Attribute::read_vector(h5obj, key, buff);
   return buff;
 }
@@ -116,7 +118,7 @@ template <std::size_t i>
 inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> AttributeVar {
   if constexpr (i < std::variant_size_v<AttributeVar>) {
     using T = std::variant_alternative_t<i, AttributeVar>;
-    const auto variant_found = [&]() {
+    const auto variant_found = [&]() {  // NOLINT(*-err58-cpp)
       if constexpr (std::is_same_v<T, bool>) {
         return attr.getDataType() == HighFive::create_enum_boolean();
       } else {
@@ -127,7 +129,7 @@ inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> Attribut
     if (!variant_found) {
       return read_variant<i + 1>(attr);
     }
-    T buff{};
+    T buff{};  // NOLINT(*-avoid-non-const-global-variables)
     attr.read(buff);
     return buff;
   }

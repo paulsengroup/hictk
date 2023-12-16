@@ -22,7 +22,6 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/genomic_interval.hpp"
-#include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/pixel.hpp"

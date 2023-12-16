@@ -381,8 +381,9 @@ class File {
 };
 
 namespace internal {
-template <typename N>
-bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff, bool missing_ok);
+template <typename N>  // NOLINTNEXTLINE(*-redundant-declaration)
+[[maybe_unused]] bool read_optional(const RootGroup &root_grp, std::string_view key, N &buff,
+                                    bool missing_ok);
 }
 
 }  // namespace hictk::cooler

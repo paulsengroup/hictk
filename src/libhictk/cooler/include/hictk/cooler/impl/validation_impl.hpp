@@ -27,7 +27,6 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
-#include "hictk/cooler/validation.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -46,7 +45,7 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
     const HighFive::File fp(file_path, HighFive::File::ReadOnly);
     return is_cooler(fp, root_path);
   } catch (const std::exception &e) {
-    std::string_view msg{e.what()};
+    const std::string_view msg{e.what()};
     ValidationStatusCooler s{};
     s.uri = std::string{uri};
     s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
@@ -67,7 +66,7 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
     return is_multires_file(fp, validate_resolutions, min_version);
   } catch (const std::exception &e) {
-    std::string_view msg{e.what()};
+    const std::string_view msg{e.what()};
     ValidationStatusMultiresCooler s{};
     s.uri = std::string{uri};
     s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
@@ -86,7 +85,7 @@ inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_c
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
     return is_scool_file(fp, validate_cells);
   } catch (const std::exception &e) {
-    std::string_view msg{e.what()};
+    const std::string_view msg{e.what()};
     ValidationStatusScool s{};
     s.uri = std::string{uri};
     s.unable_to_open_file = msg.find("Unable to open file") != std::string_view::npos;
@@ -368,15 +367,15 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
 }  // namespace hictk::cooler::utils
 
 constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::parse(
-    format_parse_context &ctx) const -> format_parse_context::iterator {
+    format_parse_context &ctx) -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
   }
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
-    const hictk::cooler::utils::ValidationStatusCooler &s, format_context &ctx) const
+inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
+    const hictk::cooler::utils::ValidationStatusCooler &s, format_context &ctx)
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -401,15 +400,15 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
 }
 
 constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::parse(
-    format_parse_context &ctx) const -> format_parse_context::iterator {
+    format_parse_context &ctx) -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
   }
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::format(
-    const hictk::cooler::utils::ValidationStatusMultiresCooler &s, format_context &ctx) const
+inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::format(
+    const hictk::cooler::utils::ValidationStatusMultiresCooler &s, format_context &ctx)
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
@@ -437,15 +436,15 @@ auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::forma
 }
 
 constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::parse(
-    format_parse_context &ctx) const -> format_parse_context::iterator {
+    format_parse_context &ctx) -> format_parse_context::iterator {
   if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
     throw fmt::format_error("invalid format");
   }
   return ctx.end();
 }
 
-auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
-    const hictk::cooler::utils::ValidationStatusScool &s, format_context &ctx) const
+inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
+    const hictk::cooler::utils::ValidationStatusScool &s, format_context &ctx)
     -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(

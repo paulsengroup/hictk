@@ -302,7 +302,7 @@ static std::size_t append_pixels(cooler::File& clr,
   }
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
 static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
                                               std::vector<balancing::Method> normalization_methods,
                                               bool fail_if_norm_not_found) {

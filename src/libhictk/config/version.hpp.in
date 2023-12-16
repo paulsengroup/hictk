@@ -27,7 +27,7 @@ namespace internal {
 
 [[nodiscard]] inline std::string generate_suffix() {
   namespace git = hictk::config::git;
-  constexpr std::string_view raw_suffix{"@HICTK_PROJECT_VERSION_SUFFIX@"};
+  constexpr std::string_view raw_suffix{"@HICTK_PROJECT_VERSION_SUFFIX@"};  // NOLINT
   if (!git::state_available()) {
     return std::string{raw_suffix};
   }

@@ -58,10 +58,12 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
   constexpr explicit operator bool() const noexcept;
 };
 
+// NOLINTBEGIN(*-redundant-declaration)
 [[nodiscard]] ValidationStatusCooler is_cooler(std::string_view uri);
 [[nodiscard]] ValidationStatusCooler is_cooler(const HighFive::File& fp,
                                                std::string_view root_path = "/");
 [[nodiscard]] ValidationStatusCooler is_cooler(const HighFive::Group& root_group);
+// NOLINTEND(*-redundant-declaration)
 
 [[nodiscard]] ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
                                                               bool validate_resolutions = true,
@@ -80,26 +82,26 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
 namespace fmt {
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusCooler> {
-  constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
 
-  inline auto format(const hictk::cooler::utils::ValidationStatusCooler& s,
-                     format_context& ctx) const -> format_context::iterator;
+  static auto format(const hictk::cooler::utils::ValidationStatusCooler& s,
+                     format_context& ctx) -> format_context::iterator;
 };
 
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusMultiresCooler> {
-  constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
 
-  inline auto format(const hictk::cooler::utils::ValidationStatusMultiresCooler& s,
-                     format_context& ctx) const -> format_context::iterator;
+  static auto format(const hictk::cooler::utils::ValidationStatusMultiresCooler& s,
+                     format_context& ctx) -> format_context::iterator;
 };
 
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusScool> {
-  constexpr auto parse(format_parse_context& ctx) const -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
 
-  inline auto format(const hictk::cooler::utils::ValidationStatusScool& s,
-                     format_context& ctx) const -> format_context::iterator;
+  static auto format(const hictk::cooler::utils::ValidationStatusScool& s,
+                     format_context& ctx) -> format_context::iterator;
 };
 }  // namespace fmt
 

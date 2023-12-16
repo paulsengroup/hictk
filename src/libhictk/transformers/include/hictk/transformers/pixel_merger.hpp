@@ -76,6 +76,7 @@ class PixelMerger {
     explicit iterator(const std::vector<PixelIt> &heads, const std::vector<PixelIt> &tails);
     iterator(const iterator &other);
     iterator(iterator &&other) noexcept;
+    ~iterator() noexcept = default;
 
     auto operator=(const iterator &other) -> iterator &;
     auto operator=(iterator &&other) noexcept -> iterator &;

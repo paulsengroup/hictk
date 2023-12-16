@@ -8,7 +8,6 @@
 #include <functional>
 
 #include "hictk/hash.hpp"
-#include "hictk/hic/header.hpp"
 
 namespace hictk::hic::internal {
 

@@ -140,6 +140,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 }
 
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
 static int balance_singleres_file(File&& f, const BalanceConfig& c) {
   std::filesystem::path tmpfile{};
 

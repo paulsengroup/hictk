@@ -18,6 +18,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/numeric_utils.hpp"
 
+// NOLINTNEXTLINE(*-concat-nested-namespaces)
 namespace hictk {
 
 namespace internal {

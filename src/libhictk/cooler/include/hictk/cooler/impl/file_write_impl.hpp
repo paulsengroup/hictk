@@ -119,8 +119,10 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
 
   File::append_bins(dataset("pixels/bin1_id"), dataset("pixels/bin2_id"), first_pixel, last_pixel);
 
+  // NOLINTBEGIN(*-avoid-non-const-global-variables)
   T sum{};
   T cis_sum{};
+  // NOLINTEND(*-avoid-non-const-global-variables)
   File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
   _attrs.nnz = dataset("pixels/bin1_id").size();
 

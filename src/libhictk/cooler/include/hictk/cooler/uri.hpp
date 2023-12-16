@@ -21,7 +21,6 @@ struct CoolerURI {
   CoolerURI(std::string p1, std::string p2);
   explicit CoolerURI(std::pair<std::string_view, std::string_view> paths);
   explicit CoolerURI(std::pair<std::string, std::string> paths);
-  // clang-format on
 };
 
 [[nodiscard]] CoolerURI parse_cooler_uri(std::string_view uri);

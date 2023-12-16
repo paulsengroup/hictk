@@ -28,6 +28,7 @@ class BinaryBuffer {
 
  public:
   BinaryBuffer() = default;
+  // NOLINTNEXTLINE
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
   T read();
 

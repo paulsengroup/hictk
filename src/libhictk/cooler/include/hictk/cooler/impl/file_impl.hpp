@@ -104,7 +104,7 @@ inline File::File(std::string_view uri, std::size_t cache_size_bytes, bool valid
            HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0, validate) {}
 
 inline File::File(RootGroup entrypoint, std::size_t cache_size_bytes, bool validate)
-    : File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0,
+    : File(std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, DEFAULT_HDF5_CACHE_W0,
            validate) {}
 
 inline File File::open_random_access(std::string_view uri, std::size_t cache_size_bytes,
@@ -179,12 +179,12 @@ inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_
 
 inline File File::open_random_access(RootGroup entrypoint, std::size_t cache_size_bytes,
                                      bool validate) {
-  return File(entrypoint, cache_size_bytes, validate);
+  return File(std::move(entrypoint), cache_size_bytes, validate);
 }
 
 inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File(entrypoint, HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return File(std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
 }
 
 template <typename PixelT>
@@ -218,6 +218,7 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
   }
 }
 
+// NOLINTNEXTLINE(*-exception-escape)
 inline File::~File() noexcept {
   try {
     finalize();

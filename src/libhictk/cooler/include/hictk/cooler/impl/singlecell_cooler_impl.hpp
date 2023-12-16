@@ -95,7 +95,7 @@ inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigne
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path,
                                              const Reference& chroms, std::uint32_t bin_size,
                                              bool force_overwrite) {
-  return SingleCellFile::create(path, {BinTableFixed{chroms, bin_size}}, force_overwrite);
+  return SingleCellFile::create(path, BinTable{chroms, bin_size}, force_overwrite);
 }
 
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, BinTable bins,
