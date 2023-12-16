@@ -4,11 +4,29 @@
 
 #pragma once
 
-#include <filesystem>
-#include <variant>
+#ifdef HICTK_WITH_EIGEN
+#include <Eigen/Dense>
+#include <Eigen/SparseCore>
+#endif
 
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/pixel_selector.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk {
 
@@ -152,4 +170,4 @@ class File {
 
 }  // namespace hictk
 
-#include "./impl/file_impl.hpp"
+#include "./impl/file_impl.hpp"  // NOLINT

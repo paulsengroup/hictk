@@ -5,10 +5,12 @@
 #pragma once
 
 #include <cassert>
-#include <cstdint>
+#include <cstddef>
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "hictk/generic_variant.hpp"
 
 namespace hictk::internal {
 template <typename T>

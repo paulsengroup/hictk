@@ -4,15 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <iterator>
 #include <limits>
-#include <map>
-#include <string>
-#include <variant>
-#include <vector>
 
 #include "hictk/bin_table_fixed.hpp"
 #include "hictk/bin_table_variable.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
@@ -28,7 +28,7 @@ class BinTable {
 
   BinTable() = default;
   template <typename BinTableT>
-  BinTable(BinTableT table);
+  explicit BinTable(BinTableT table);
   BinTable(Reference chroms, std::uint32_t bin_size, std::size_t bin_offset = 0);
   template <typename ChromIt>
   BinTable(ChromIt first_chrom, ChromIt last_chrom, std::uint32_t bin_size,
@@ -145,4 +145,4 @@ class BinTable {
 
 }  // namespace hictk
 
-#include "./impl/bin_table_impl.hpp"
+#include "./impl/bin_table_impl.hpp"  // NOLINT

@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <cstddef>
+#include <iterator>
 #include <memory>
-#include <variant>
+#include <type_traits>
+#include <vector>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/cooler/pixel_selector.hpp"
-#include "hictk/hic/pixel_selector.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::transformers {
 
@@ -65,4 +67,4 @@ class JoinGenomicCoords {
 
 }  // namespace hictk::transformers
 
-#include "./impl/join_genomic_coords_impl.hpp"
+#include "./impl/join_genomic_coords_impl.hpp"  // NOLINT

@@ -12,7 +12,7 @@ namespace hictk {
 
 template <typename T>
 struct remove_cvref {
-  using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+  using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;  // NOLINT
 };
 
 template <typename T>

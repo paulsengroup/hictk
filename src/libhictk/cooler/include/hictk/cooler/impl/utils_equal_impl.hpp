@@ -5,9 +5,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
+#include <string>
 #include <string_view>
 
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
 
 namespace hictk::cooler::utils {
 

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <string_view>
 #include <system_error>
 
@@ -28,4 +29,4 @@ template <typename N>
 constexpr N abs_diff(N n1, N n2) noexcept;
 }  // namespace hictk::internal
 
-#include "./impl/numeric_utils_impl.hpp"
+#include "./impl/numeric_utils_impl.hpp"  // NOLINT

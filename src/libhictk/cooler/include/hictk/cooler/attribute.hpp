@@ -4,13 +4,16 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
+#include <cstddef>
 #include <cstdint>
+#include <highfive/H5Attribute.hpp>
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
-#include "group.hpp"
-#include "hictk/common.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
@@ -57,4 +60,4 @@ struct Attribute {
 };
 }  // namespace hictk::cooler
 
-#include "./impl/attribute_impl.hpp"
+#include "./impl/attribute_impl.hpp"  //NOLINT

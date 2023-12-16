@@ -8,16 +8,20 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <CLI/Error.hpp>
 #include <cassert>
+#include <cstdio>
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <string_view>
+#include <tuple>
+#include <variant>
 
-#include "hictk/common.hpp"
 #include "hictk/tools/cli.hpp"
+#include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
+#include "hictk/type_traits.hpp"
 #include "hictk/version.hpp"
 
 using namespace hictk::tools;

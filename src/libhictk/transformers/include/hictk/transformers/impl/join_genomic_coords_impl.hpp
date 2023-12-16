@@ -4,6 +4,17 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <memory>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+#include "hictk/bin_table.hpp"
+#include "hictk/pixel.hpp"
+
 namespace hictk::transformers {
 
 template <typename PixelIt>

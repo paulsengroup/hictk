@@ -8,13 +8,17 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
-#include <highfive/H5Exception.hpp>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5PropertyList.hpp>
 #include <highfive/H5Selection.hpp>
-#include <numeric>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "hictk/common.hpp"

@@ -4,14 +4,12 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
-
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 

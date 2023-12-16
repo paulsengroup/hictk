@@ -2,9 +2,21 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <CLI/CLI.hpp>
-#include <cassert>
+#include <fmt/format.h>
+#include <parallel_hashmap/phmap.h>
+#include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <stdexcept>
+#include <string>
+#include <variant>
+#include <vector>
+
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 

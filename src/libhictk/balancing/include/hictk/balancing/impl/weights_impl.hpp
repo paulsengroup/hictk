@@ -7,10 +7,17 @@
 #include <fmt/format.h>
 #include <parallel_hashmap/phmap.h>
 
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
+
+#include "hictk/pixel.hpp"
 
 namespace hictk::balancing {
 

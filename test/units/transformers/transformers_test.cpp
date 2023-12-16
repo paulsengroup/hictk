@@ -2,15 +2,25 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/transformers.hpp"
+#include <parallel_hashmap/btree.h>
 
-#include <fmt/format.h>
-
+#include <array>
+#include <cassert>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <vector>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/transformers/coarsen.hpp"
+#include "hictk/transformers/join_genomic_coords.hpp"
+#include "hictk/transformers/pixel_merger.hpp"
+#include "hictk/transformers/stats.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)

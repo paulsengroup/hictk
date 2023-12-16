@@ -6,15 +6,26 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::hic {
 

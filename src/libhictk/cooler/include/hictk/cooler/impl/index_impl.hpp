@@ -6,9 +6,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <memory>
-#include <numeric>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
@@ -16,7 +17,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/fmt.hpp"
+#include "hictk/fmt/chromosome.hpp"
 
 namespace hictk::cooler {
 

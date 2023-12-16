@@ -4,17 +4,21 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
 #include <zstd.h>
 
 #include <BS_thread_pool.hpp>
 #include <cstddef>
-#include <limits>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
 #include <memory>
+#include <mutex>
 #include <nonstd/span.hpp>
+#include <string>
+#include <type_traits>
 #include <vector>
 
-#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 
 namespace std {
@@ -120,10 +124,12 @@ class SparseMatrixChunked {
                       int compression_lvl = 3);
 
   SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 9
-  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
-#else
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 10
   SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+#elif defined(__clang__) && __clang__ < 9
+  SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+#else
+  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
 #endif
 
   ~SparseMatrixChunked() noexcept;
@@ -156,4 +162,4 @@ class SparseMatrixChunked {
 
 }  // namespace hictk::balancing
 
-#include "./impl/sparse_matrix_impl.hpp"
+#include "./impl/sparse_matrix_impl.hpp"  // NOLINT

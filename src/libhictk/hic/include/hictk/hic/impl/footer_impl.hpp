@@ -4,10 +4,19 @@
 
 #pragma once
 
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/hic/common.hpp"
 
 namespace hictk::hic::internal {

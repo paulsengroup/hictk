@@ -8,18 +8,18 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <filesystem>
+#include <exception>
 #include <highfive/H5Exception.hpp>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
-#include "hictk/cooler/validation.hpp"
-#include "hictk/fmt.hpp"
+#include "hictk/fmt/pixel.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::cooler {
 

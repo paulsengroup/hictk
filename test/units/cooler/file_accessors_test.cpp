@@ -3,12 +3,17 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>  // IWYU pragma: keep
 
-#include <algorithm>
+#include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <cstdint>
 #include <filesystem>
+#include <variant>
 
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/version.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {

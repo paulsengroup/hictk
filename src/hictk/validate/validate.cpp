@@ -4,10 +4,23 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <exception>
+#include <filesystem>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+
+#include "hictk/chromosome.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"
-#include "hictk/cooler/utils.hpp"
+#include "hictk/cooler/validation.hpp"
+#include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

@@ -3,14 +3,20 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <fmt/ranges.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <thread>
+#include <variant>
+#include <vector>
 
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -147,6 +153,8 @@ void Cli::make_balance_subcommand() {
       "Overwrite existing files and datasets (if any).")
       ->capture_default_str();
   // clang-format on
+
+  _config = std::monostate{};
 }
 
 void Cli::validate_balance_subcommand() const {

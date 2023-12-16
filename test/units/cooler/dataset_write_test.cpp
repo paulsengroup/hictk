@@ -2,14 +2,21 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstddef>
 #include <filesystem>
-#include <random>
+#include <highfive/H5File.hpp>
 #include <set>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/variant_buff.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::dataset {

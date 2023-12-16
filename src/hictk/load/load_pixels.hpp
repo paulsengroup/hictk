@@ -5,15 +5,19 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "./common.hpp"
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 
@@ -44,8 +48,9 @@ inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, 
 }
 
 template <typename N>
-inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::int64_t offset,
-                                 std::size_t batch_size, bool validate_pixels) {
+inline void ingest_pixels_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+                                 Format format, std::int64_t offset, std::size_t batch_size,
+                                 bool validate_pixels) {
   std::vector<ThinPixel<N>> buffer(batch_size);
 
   std::size_t i = 0;
@@ -68,10 +73,9 @@ inline void ingest_pixels_sorted(cooler::File&& clr, Format format, std::int64_t
 }
 
 template <typename N>
-[[nodiscard]] inline std::size_t ingest_pixels_unsorted(cooler::File&& clr,
-                                                        std::vector<ThinPixel<N>>& buffer,
-                                                        Format format, std::int64_t offset,
-                                                        bool validate_pixels) {
+[[nodiscard]] inline std::size_t ingest_pixels_unsorted(
+    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+    std::vector<ThinPixel<N>>& buffer, Format format, std::int64_t offset, bool validate_pixels) {
   assert(buffer.capacity() != 0);
 
   read_batch(clr.bins(), buffer, format, offset);

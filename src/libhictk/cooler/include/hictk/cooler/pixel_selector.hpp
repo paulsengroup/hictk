@@ -4,17 +4,20 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 #ifdef HICTK_WITH_EIGEN
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #endif
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
-#include <type_traits>
+#include <vector>
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
@@ -147,14 +150,14 @@ class PixelSelector {
     void jump_at_end();
     void refresh();
 
-    [[nodiscard]] constexpr bool overlaps_coord1() const noexcept;
-    [[nodiscard]] constexpr bool overlaps_coord2() const noexcept;
+    [[nodiscard]] constexpr bool overlaps_coord1() const;
+    [[nodiscard]] constexpr bool overlaps_coord2() const;
 
     [[nodiscard]] bool discard() const;
-    constexpr bool is_at_end() const noexcept;
+    constexpr bool is_at_end() const;
   };
 };
 
 }  // namespace hictk::cooler
 
-#include "./impl/pixel_selector_impl.hpp"
+#include "./impl/pixel_selector_impl.hpp"  // NOLINT

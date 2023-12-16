@@ -5,15 +5,21 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
+#include <cstddef>
 #include <highfive/H5DataType.hpp>
 #include <highfive/H5Utility.hpp>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/generic_variant.hpp"
+#include "hictk/suppress_warnings.hpp"
+#include "hictk/type_traits.hpp"
+#include "hictk/variant_buff.hpp"
 
 namespace hictk::cooler {
 
@@ -185,6 +191,7 @@ inline BuffT Dataset::read(std::size_t offset) const {
   return buff;
 }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline hictk::internal::GenericVariant Dataset::read(std::size_t offset) const {
   return read<GenericVariant>(offset);
 }
@@ -200,6 +207,7 @@ inline BuffT Dataset::read_last() const {
   return buff;
 }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline hictk::internal::GenericVariant Dataset::read_last() const {
   return read_last<GenericVariant>();
 }

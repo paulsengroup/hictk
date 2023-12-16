@@ -4,17 +4,17 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <memory>
 #include <vector>
 
 #include "hictk/chromosome.hpp"
-#include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
@@ -126,4 +126,5 @@ struct std::hash<hictk::hic::internal::BlockIndex> {
     return std::hash<std::size_t>{}(b.id());
   }
 };
-#include "./impl/index_impl.hpp"
+
+#include "./impl/index_impl.hpp"  // NOLINT

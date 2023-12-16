@@ -4,8 +4,12 @@
 
 #pragma once
 
+#include <fmt/chrono.h>
+
 #include <cassert>
 #include <cstdint>
+#include <ctime>
+#include <string>
 #include <type_traits>
 
 namespace hictk::cooler {

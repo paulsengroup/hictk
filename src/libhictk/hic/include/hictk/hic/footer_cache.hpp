@@ -4,15 +4,13 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <parallel_hashmap/phmap.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
-#include <vector>
 
-#include "hictk/chromosome.hpp"
-#include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
 
 namespace hictk::hic::internal {
@@ -61,4 +59,4 @@ class FooterCache {
 
 }  // namespace hictk::hic::internal
 
-#include "./impl/footer_cache_impl.hpp"
+#include "./impl/footer_cache_impl.hpp"  // NOLINT

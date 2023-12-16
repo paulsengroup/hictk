@@ -4,18 +4,18 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <cassert>
+#include <cctype>
+#include <cstddef>
 #include <cstdint>
-#include <iterator>
-#include <stdexcept>
+#include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "hictk/common.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/hash.hpp"
 
 namespace hictk {
@@ -36,6 +36,7 @@ inline std::string_view Chromosome::name() const noexcept {
 
 constexpr std::uint32_t Chromosome::size() const noexcept { return _size; }
 
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline bool Chromosome::is_all() const noexcept {
   constexpr std::string_view all{"All"};
   if (name() == all) {

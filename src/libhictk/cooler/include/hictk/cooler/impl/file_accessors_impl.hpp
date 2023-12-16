@@ -5,14 +5,26 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <cassert>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
+
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/cooler/index.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/numeric_variant.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::cooler {
 

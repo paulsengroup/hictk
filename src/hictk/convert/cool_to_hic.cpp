@@ -4,17 +4,38 @@
 
 #include <fmt/compile.h>
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/process/async_pipe.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/io.hpp>
 #include <boost/process/search_path.hpp>
+#include <cassert>
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <exception>
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <tuple>
+#include <vector>
 
-#include "hictk/fmt.hpp"
+#include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/pixel.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"

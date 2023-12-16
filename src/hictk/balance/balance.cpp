@@ -2,15 +2,37 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <fmt/compile.h>
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <cassert>
+#include <cerrno>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <filesystem>
+#include <highfive/H5File.hpp>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
 #include <variant>
+#include <vector>
 
 #include "hictk/balancing/ice.hpp"
-#include "hictk/balancing/methods.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
+#include "hictk/cooler/uri.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
@@ -118,6 +140,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 }
 
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
 static int balance_singleres_file(File&& f, const BalanceConfig& c) {
   std::filesystem::path tmpfile{};
 

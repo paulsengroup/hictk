@@ -4,12 +4,15 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <libdeflate.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
+#include <string_view>
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
@@ -103,4 +106,4 @@ class HiCFileReader {
 };
 }  // namespace hictk::hic::internal
 
-#include "./impl/file_reader_impl.hpp"
+#include "./impl/file_reader_impl.hpp"  // NOLINT
