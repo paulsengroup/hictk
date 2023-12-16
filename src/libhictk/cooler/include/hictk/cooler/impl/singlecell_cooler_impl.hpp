@@ -84,7 +84,8 @@ inline SingleCellFile::SingleCellFile(HighFive::File fp, BinTable bins, SingleCe
     : _root_grp(std::make_unique<RootGroup>(RootGroup{fp.getGroup("/")})),
       _cells(read_cells(fp)),
       _attrs(std::move(attrs)),
-      _bins(std::make_shared<const BinTable>(std::move(bins))) {}
+      _bins(std::make_shared<const BinTable>(std::move(bins))) {
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigned int mode)
     : SingleCellFile(HighFive::File(path.string(), mode),
@@ -261,7 +262,7 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
   internal::read_optional(root_grp, "nchroms", attrs.nchroms, missing_ok);
 
   return attrs;
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {

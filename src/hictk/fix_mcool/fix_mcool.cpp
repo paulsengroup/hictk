@@ -90,7 +90,7 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
   } catch (const std::exception&) {
   }
   return c;
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 static void run_hictk_balance(const FixMcoolConfig& c, std::uint32_t resolution) {
   auto bc = detect_balancing_params(c.path_to_input.string(), resolution);
@@ -128,8 +128,9 @@ int fix_mcool_subcmd(const FixMcoolConfig& c) {
 
   run_hictk_zoomify(c, resolutions, base_uri);
 
-  std::for_each(resolutions.begin() + 1, resolutions.end(),
-                [&](const auto& res) { run_hictk_balance(c, res); });
+  std::for_each(resolutions.begin() + 1, resolutions.end(), [&](const auto& res) {
+    run_hictk_balance(c, res);  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+  });
 
   const auto t1 = std::chrono::system_clock::now();
   const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
