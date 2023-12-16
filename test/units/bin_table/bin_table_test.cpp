@@ -71,7 +71,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 
   SECTION("subset") {
-    const BinTableFixed expected{{Chromosome{1, "chr2", 25017}}, bin_size};
+    const BinTable expected{Reference{Chromosome{1, "chr2", 25017}}, bin_size};
 
     CHECK(table.subset(Chromosome{1, "chr2", 25017}) == expected);
     CHECK(table.subset("chr2") == expected);
@@ -261,7 +261,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   SECTION("subset") {
     const std::vector<std::uint32_t> start_pos_{0, 5, 10, 26};
     const std::vector<std::uint32_t> end_pos_{5, 10, 26, 32};
-    const BinTableVariable expected{{Chromosome{1, "chr2", 32}}, start_pos_, end_pos_};
+    const BinTable expected{Reference{Chromosome{1, "chr2", 32}}, start_pos_, end_pos_};
 
     CHECK(table.subset(Chromosome{1, "chr2", 32}) == expected);
     CHECK(table.subset("chr2") == expected);
