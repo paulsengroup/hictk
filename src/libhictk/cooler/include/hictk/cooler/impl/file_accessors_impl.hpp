@@ -47,6 +47,10 @@ inline std::uint64_t File::nnz() const { return dataset("pixels/count").size(); 
 
 inline auto File::attributes() const noexcept -> const Attributes & { return _attrs; }
 
+inline HighFive::File File::file_handle() { return _root_group().getFile(); }
+
+inline const HighFive::File& File::file_handle() const { return _root_group().getFile(); }
+
 inline auto File::group(std::string_view group_name) -> Group & {
   try {
     return _groups.at(std::string{group_name});

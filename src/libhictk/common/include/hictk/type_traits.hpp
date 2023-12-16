@@ -28,6 +28,15 @@ struct is_string
 template <typename T>
 constexpr bool is_string_v = is_string<T>::value;
 
+template <typename T, typename Enabler = void>
+struct is_map : std::false_type {};
+
+template <typename T>
+struct is_map<T, std::void_t<typename T::mapped_type>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_map_v = is_map<T>::value;
+
 template <typename Operation, typename Operand>
 struct is_unary_operation : public std::is_invocable<Operation, Operand> {};
 

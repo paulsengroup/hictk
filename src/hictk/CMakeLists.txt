@@ -22,6 +22,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_merge.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_zoomify.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance.cpp
@@ -35,6 +36,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/rename_chromosomes/rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 

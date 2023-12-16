@@ -495,6 +495,10 @@ jobs:
         run: |
           test/scripts/hictk_merge.sh bin/hictk
 
+      - name: Test hictk rename-chroms
+        run: |
+          test/scripts/hictk_rename_chromosomes.sh bin/hictk
+
       - name: Test hictk validate
         run: |
           test/scripts/hictk_validate.sh bin/hictk
