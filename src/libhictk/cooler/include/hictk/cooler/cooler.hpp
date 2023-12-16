@@ -184,8 +184,10 @@ class File {
   [[nodiscard]] std::uint64_t nnz() const;
 
   [[nodiscard]] auto attributes() const noexcept -> const Attributes &;
+  [[nodiscard]] HighFive::File file_handle();
   [[nodiscard]] auto group(std::string_view group_name) -> Group &;
   [[nodiscard]] auto dataset(std::string_view dataset_name) -> Dataset &;
+  [[nodiscard]] const HighFive::File &file_handle() const;
   [[nodiscard]] auto group(std::string_view group_name) const -> const Group &;
   [[nodiscard]] auto dataset(std::string_view dataset_name) const -> const Dataset &;
 

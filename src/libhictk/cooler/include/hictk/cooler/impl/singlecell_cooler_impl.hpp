@@ -194,6 +194,11 @@ inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
   return bins().chromosomes();
 }
 
+inline HighFive::File SingleCellFile::file_handle() { return _root_grp->group.getFile(); }
+inline const HighFive::File& SingleCellFile::file_handle() const {
+  return _root_grp->group.getFile();
+}
+
 template <typename N>
 inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_exists,
                                       std::size_t chunk_size, std::size_t update_frequency) const {

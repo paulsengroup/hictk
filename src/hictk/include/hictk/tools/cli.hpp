@@ -205,6 +205,7 @@ class Cli {
     fix_mcool,
     load,
     merge,
+    rename_chromosomes,
     validate,
     zoomify,
   };
@@ -231,6 +232,7 @@ class Cli {
   void make_fix_mcool_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
+  void make_rename_chromosomes_subcommand();
   void make_validate_subcommand();
   void make_zoomify_subcommand();
   void make_cli();
@@ -241,6 +243,7 @@ class Cli {
   void validate_fix_mcool_subcommand() const;
   void validate_load_subcommand() const;
   void validate_merge_subcommand() const;
+  void validate_rename_chromosomes_subcommand() const;
   void validate_zoomify_subcommand() const;
   void validate_args() const;
 
@@ -250,6 +253,7 @@ class Cli {
   void transform_args_fix_mcool_subcommand();
   void transform_args_load_subcommand();
   void transform_args_merge_subcommand();
+  void transform_args_rename_chromosomes_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
 };

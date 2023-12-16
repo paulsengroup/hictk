@@ -207,9 +207,8 @@ inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
 inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp) -> GroupMap {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
-  // TODO replace with createHardLink when implemented in HighFive
-  root_grp().createSoftLink("chroms", chroms_grp());
-  root_grp().createSoftLink("bins", bins_grp());
+  root_grp().createHardLink("chroms", chroms_grp());
+  root_grp().createHardLink("bins", bins_grp());
 
   groups.emplace(root_grp.hdf5_path(), Group{root_grp, root_grp()});
   groups.emplace("chroms", Group{root_grp, root_grp().getGroup("chroms")});

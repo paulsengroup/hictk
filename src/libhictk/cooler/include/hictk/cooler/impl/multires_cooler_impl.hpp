@@ -190,6 +190,11 @@ inline auto MultiResFile::chromosomes() const noexcept -> const Reference& { ret
                        [&](const auto res) { return res <= target_res && target_res % res == 0; });
 }
 
+inline HighFive::File MultiResFile::file_handle() { return _root_grp->group.getFile(); }
+inline const HighFive::File& MultiResFile::file_handle() const {
+  return _root_grp->group.getFile();
+}
+
 inline void MultiResFile::coarsen(const File& clr1, File& clr2,
                                   std::vector<ThinPixel<std::int32_t>>& buffer) {
   SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.bin_size(),

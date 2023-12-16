@@ -63,6 +63,9 @@ class MultiResFile {
   [[nodiscard]] std::string path() const;
   [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
 
+  [[nodiscard]] HighFive::File file_handle();
+  [[nodiscard]] const HighFive::File& file_handle() const;
+
   [[nodiscard]] static std::uint32_t compute_base_resolution(
       const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res);
 

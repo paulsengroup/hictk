@@ -14,6 +14,7 @@ namespace hictk::tools {
 [[nodiscard]] int fix_mcool_subcmd(const FixMcoolConfig& c);
 [[nodiscard]] int load_subcmd(const LoadConfig& c);
 [[nodiscard]] int merge_subcmd(const MergeConfig& c);
+[[nodiscard]] int rename_chromosomes_subcmd(const RenameChromosomesConfig& c);
 [[nodiscard]] int validate_subcmd(const ValidateConfig& c);
 [[nodiscard]] int zoomify_subcmd(const ZoomifyConfig& c);
 
