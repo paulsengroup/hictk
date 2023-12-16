@@ -145,7 +145,7 @@ inline File SingleCellFile::open(std::string_view cell) const {
         fmt::format(FMT_STRING("unable to find cell \"{}\" in file {}"), cell, path()));
   }
   return File(RootGroup{_root_grp->group.getGroup(fmt::format(FMT_STRING("cells/{}"), cell))});
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename N>
 inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs) {
