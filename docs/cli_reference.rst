@@ -24,6 +24,8 @@ Subcommands
     fix-mcool                   Fix corrupted .mcool files.
     load                        Build .cool files from interactions in various text formats.
     merge                       Merge coolers.
+    rename-chromosomes, rename-chroms
+                                Rename chromosomes found in a Cooler file.
     validate                    Validate .hic and Cooler files.
     zoomify                     Convert single-resolution Cooler file to multi-resolution by coarsening.
 
@@ -189,26 +191,34 @@ hictk load
 .. code-block:: text
 
   Build .cool files from interactions in various text formats.
-  Usage: hictk load [OPTIONS] chrom-sizes bin-size output-uri
+  Usage: hictk load [OPTIONS] chrom-sizes output-uri
   Positionals:
     chrom-sizes TEXT:FILE REQUIRED
                                 Path to .chrom.sizes file.
-    bin-size UINT:POSITIVE REQUIRED
-                                Bin size (bp).
     output-uri TEXT REQUIRED    Path to output Cooler (URI syntax supported).
   Options:
     -h,--help                   Print this help message and exit
+    -b,--bin-size UINT:POSITIVE Excludes: --bin-table
+                                Bin size (bp).
+                                Required when --bin-table is not used.
+    -t,--bin-table TEXT:FILE Excludes: --bin-size
+                                Path to a BED3+ file with the bin table.
     -f,--format TEXT:{4dn,validpairs,bg2,coo} REQUIRED
                                 Input format.
     --force                     Force overwrite existing output file(s).
     --assembly TEXT [unknown]   Assembly name.
+    --one-based,--zero-based{false}
+                                Interpret genomic coordinates or bins as one/zero based.
+                                By default coordinates are assumed to be one-based for interactions in
+                                4dn and validapairs formats and zero-based otherwise.
     --count-as-float            Interactions are floats.
     --assume-sorted,--assume-unsorted{false}
                                 Assume input files are already sorted.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
     --batch-size UINT [20000000]
-                                Number of pixels to buffer in memory. Only used when processing unsorted interactions or pairs
+                                Number of pixels to buffer in memory.
+                                Only used when processing unsorted interactions or pairs.
 
 hictk merge
 -----------
@@ -227,6 +237,28 @@ hictk merge
     -f,--force                  Force overwrite output cooler.
     --chunk-size UINT [5000000]
                                 Number of pixels to store in memory before writing to disk.
+    -v,--verbosity UINT:INT in [1 - 4] []
+                                Set verbosity of output to the console.
+
+hictk rename-chromosomes
+------------------------
+
+.. code-block:: text
+
+  Rename chromosomes found in a Cooler file.
+  Usage: hictk rename-chromosomes [OPTIONS] uri
+  Positionals:
+    uri TEXT REQUIRED           Path to a or .[ms]cool file (Cooler URI syntax supported).
+  Options:
+    -h,--help                   Print this help message and exit
+    --name-mappings TEXT Excludes: --add-chr-prefix --remove-chr-prefix
+                                Path to a two column TSV with pairs of chromosomes to be renamed.
+                                The first column should contain the original chromosome name,
+                                while the second column should contain the destination name to use when renaming.
+    --add-chr-prefix Excludes: --name-mappings --remove-chr-prefix
+                                Prefix chromosome names with "chr".
+    --remove-chr-prefix Excludes: --name-mappings --add-chr-prefix
+                                Remove prefix "chr" from chromosome names.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
