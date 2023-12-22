@@ -54,12 +54,12 @@ inline MargsVector& MargsVector::operator=(const MargsVector& other) {
 
 inline double MargsVector::operator[](std::size_t i) const noexcept {
   assert(i < size());
-  return static_cast<double>(_margsi[i].load()) / static_cast<double>(_cfx);
+  return decode(_margsi[i].load());
 }
 
 inline void MargsVector::add(std::size_t i, double n) noexcept {
   assert(i < size());
-  _margsi[i] += static_cast<N::value_type>(n * static_cast<double>(_cfx));
+  _margsi[i] += encode(n);
 }
 
 inline const std::vector<double>& MargsVector::operator()() const noexcept {
@@ -78,9 +78,9 @@ inline std::vector<double>& MargsVector::operator()() noexcept {
   return _margsd;
 }
 
-inline void MargsVector::fill(N::value_type value) noexcept {
+inline void MargsVector::fill(double value) noexcept {
   for (auto& n : _margsi) {
-    std::atomic_init(&n, value);
+    n = encode(value);
   }
 }
 
@@ -92,6 +92,14 @@ inline void MargsVector::resize(std::size_t size_) {
 
 inline std::size_t MargsVector::size() const noexcept { return _margsi.size(); }
 inline bool MargsVector::empty() const noexcept { return size() == 0; }
+
+inline auto MargsVector::encode(double n) const noexcept -> I {
+  return static_cast<I>(n * static_cast<double>(_cfx));
+}
+
+inline double MargsVector::decode(I n) const noexcept {
+  return static_cast<double>(n) / static_cast<double>(_cfx);
+}
 
 inline bool SparseMatrix::empty() const noexcept { return size() == 0; }
 inline std::size_t SparseMatrix::size() const noexcept { return _counts.size(); }

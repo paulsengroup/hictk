@@ -36,11 +36,12 @@ struct default_delete<ZSTD_DCtx_s> {
 namespace hictk::balancing {
 
 class MargsVector {
-  using N = std::atomic<std::uint64_t>;
+  using I = std::uint64_t;
+  using N = std::atomic<I>;
   std::vector<N> _margsi{};
   mutable std::vector<double> _margsd{};
   std::uint64_t _cfx{};
-  const static auto DEFAULT_DECIMAL_DIGITS = 6ULL;
+  const static auto DEFAULT_DECIMAL_DIGITS = 9ULL;
 
  public:
   MargsVector() = delete;
@@ -60,11 +61,15 @@ class MargsVector {
   [[nodiscard]] const std::vector<double>& operator()() const noexcept;
   [[nodiscard]] std::vector<double>& operator()() noexcept;
 
-  void fill(N::value_type value = 0) noexcept;
+  void fill(double value = 0) noexcept;
   void resize(std::size_t size_);
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
+
+ private:
+  auto encode(double n) const noexcept -> I;
+  double decode(I n) const noexcept;
 };
 
 class SparseMatrix {
