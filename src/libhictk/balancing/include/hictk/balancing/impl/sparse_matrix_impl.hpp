@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <xxhash.h>
 #include <zstd.h>
 
 #include <BS_thread_pool.hpp>
@@ -27,100 +26,72 @@
 
 namespace hictk::balancing {
 
-inline MargsVector::MargsVector(std::size_t size_)
-    : _margs(size_, 0), _mtxes(compute_number_of_mutexes(size_)) {}
+inline MargsVector::MargsVector(std::size_t size_, std::size_t decimals)
+    : _margsi(size_), _margsd(size_), _cfx(static_cast<std::uint64_t>(std::pow(10, decimals - 1))) {
+  fill(0);
+}
 
 inline MargsVector::MargsVector(const MargsVector& other)
-    : _margs(other._margs.begin(), other._margs.end()), _mtxes(other.size()) {}
+    : _margsi(other.size()), _margsd(other.size()), _cfx(other._cfx) {
+  for (std::size_t i = 0; i < size(); ++i) {
+    _margsi[i] = other._margsi[i].load();
+  }
+}
 
 inline MargsVector& MargsVector::operator=(const MargsVector& other) {
   if (this == &other) {
     return *this;
   }
-
-  _margs = other._margs;
-  _mtxes = std::vector<std::mutex>{other.size()};
+  _margsi = std::vector<N>(other.size());
+  for (std::size_t i = 0; i < size(); ++i) {
+    _margsi[i] = other._margsi[i].load();
+  }
+  _margsd = other._margsd;
+  _cfx = other._cfx;
 
   return *this;
 }
 
 inline double MargsVector::operator[](std::size_t i) const noexcept {
   assert(i < size());
-  return _margs[i];
-}
-
-inline double& MargsVector::operator[](std::size_t i) noexcept {
-  assert(i < size());
-  return _margs[i];
+  return static_cast<double>(_margsi[i].load()) / static_cast<double>(_cfx);
 }
 
 inline void MargsVector::add(std::size_t i, double n) noexcept {
   assert(i < size());
-  [[maybe_unused]] const std::scoped_lock lck(_mtxes[get_mutex_idx(i)]);
-  _margs[i] += n;
+  _margsi[i] += static_cast<N::value_type>(n * static_cast<double>(_cfx));
 }
 
-inline const std::vector<double>& MargsVector::operator()() const noexcept { return _margs; }
-inline std::vector<double>& MargsVector::operator()() noexcept { return _margs; }
+inline const std::vector<double>& MargsVector::operator()() const noexcept {
+  assert(_margsi.size() == _margsd.size());
+  for (std::size_t i = 0; i < size(); ++i) {
+    _margsd[i] = (*this)[i];
+  }
+  return _margsd;
+}
 
-inline void MargsVector::fill(double n) noexcept { std::fill(_margs.begin(), _margs.end(), n); }
+inline std::vector<double>& MargsVector::operator()() noexcept {
+  assert(_margsi.size() == _margsd.size());
+  for (std::size_t i = 0; i < size(); ++i) {
+    _margsd[i] = (*this)[i];
+  }
+  return _margsd;
+}
+
+inline void MargsVector::fill(N::value_type value) noexcept {
+  for (auto& n : _margsi) {
+    std::atomic_init(&n, value);
+  }
+}
+
 inline void MargsVector::resize(std::size_t size_) {
   if (size_ != size()) {
-    _margs.resize(size_);
-    std::vector<std::mutex> v(size_);
-    std::swap(v, _mtxes);
+    _margsi = std::vector<N>(size_);
   }
 }
 
-inline std::size_t MargsVector::size() const noexcept { return _margs.size(); }
+inline std::size_t MargsVector::size() const noexcept { return _margsi.size(); }
 inline bool MargsVector::empty() const noexcept { return size() == 0; }
-
-inline std::size_t MargsVector::compute_number_of_mutexes(std::size_t size) noexcept {
-  if (size == 0) {
-    return 0;
-  }
-  const auto nthreads = static_cast<std::size_t>(std::thread::hardware_concurrency());
-  // Clamping to 2-n is needed because get_pixel_mutex_idx expects the number of
-  // mutexes to be a multiple of 2
-  return next_pow2(std::clamp(size, std::size_t(2), 5000 * nthreads));
-}
-
-template <typename I, typename>
-inline I MargsVector::next_pow2(I n) noexcept {
-  using ull = unsigned long long;
-  if constexpr (std::is_signed_v<I>) {
-    assert(n >= 0);
-    return conditional_static_cast<I>(next_pow2(static_cast<ull>(n)));
-  } else {
-    auto m = conditional_static_cast<ull>(n);
-#ifndef __GNUC__
-    // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-    --m;
-    m |= m >> 1;
-    m |= m >> 2;
-    m |= m >> 4;
-    m |= m >> 8;
-    m |= m >> 16;
-    m |= m >> 32;
-    return conditional_static_cast<I>(m + 1);
-#else
-    // https://jameshfisher.com/2018/03/30/round-up-power-2/
-    // https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-
-    return conditional_static_cast<I>(
-        m <= 1 ? m
-               : std::uint64_t(1) << (std::uint64_t(64) - std::uint64_t(__builtin_clzll(m - 1))));
-#endif
-  }
-}
-
-inline std::size_t MargsVector::get_mutex_idx(std::size_t i) const noexcept {
-  assert(!_mtxes.empty());
-  assert(_mtxes.size() % 2 == 0);
-  i = XXH3_64bits(&i, sizeof(std::size_t));
-  // equivalent to i % _mtxes.size() when _mtxes.size() % 2 == 0
-  return i & (_mtxes.size() - 1);
-}
 
 inline bool SparseMatrix::empty() const noexcept { return size() == 0; }
 inline std::size_t SparseMatrix::size() const noexcept { return _counts.size(); }
@@ -256,14 +227,9 @@ inline void SparseMatrix::marginalize(MargsVector& marg, BS::thread_pool* tpool,
       const auto i1 = _bin1_ids[i];
       const auto i2 = _bin2_ids[i];
 
-      if (tpool) {
-        if (_counts[i] != 0) {
-          marg.add(i1, _counts[i]);
-          marg.add(i2, _counts[i]);
-        }
-      } else {
-        marg[i1] += _counts[i];
-        marg[i2] += _counts[i];
+      if (_counts[i] != 0) {
+        marg.add(i1, _counts[i]);
+        marg.add(i2, _counts[i]);
       }
     }
   };
@@ -288,14 +254,9 @@ inline void SparseMatrix::marginalize_nnz(MargsVector& marg, BS::thread_pool* tp
       const auto i1 = _bin1_ids[i];
       const auto i2 = _bin2_ids[i];
 
-      if (tpool) {
-        if (_counts[i] != 0) {
-          marg.add(i1, _counts[i] != 0);
-          marg.add(i2, _counts[i] != 0);
-        }
-      } else {
-        marg[i1] += _counts[i] != 0;
-        marg[i2] += _counts[i] != 0;
+      if (_counts[i] != 0) {
+        marg.add(i1, _counts[i] != 0);
+        marg.add(i2, _counts[i] != 0);
       }
     }
   };
@@ -328,14 +289,9 @@ inline void SparseMatrix::times_outer_product_marg(MargsVector& marg,
       const auto w2 = weights.empty() ? 1 : weights[i2];
       const auto count = _counts[i] * (w1 * biases[i1]) * (w2 * biases[i2]);
 
-      if (tpool) {
-        if (count != 0) {
-          marg.add(i1, count);
-          marg.add(i2, count);
-        }
-      } else {
-        marg[i1] += count;
-        marg[i2] += count;
+      if (count != 0) {
+        marg.add(i1, count);
+        marg.add(i2, count);
       }
     }
   };

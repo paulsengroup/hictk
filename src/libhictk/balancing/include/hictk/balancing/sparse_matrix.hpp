@@ -7,13 +7,13 @@
 #include <zstd.h>
 
 #include <BS_thread_pool.hpp>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <ios>
 #include <memory>
-#include <mutex>
 #include <nonstd/span.hpp>
 #include <string>
 #include <type_traits>
@@ -36,12 +36,15 @@ struct default_delete<ZSTD_DCtx_s> {
 namespace hictk::balancing {
 
 class MargsVector {
-  std::vector<double> _margs{};
-  mutable std::vector<std::mutex> _mtxes;
+  using N = std::atomic<std::uint64_t>;
+  std::vector<N> _margsi{};
+  mutable std::vector<double> _margsd{};
+  std::uint64_t _cfx{};
+  const static auto DEFAULT_DECIMAL_DIGITS = 6ULL;
 
  public:
-  MargsVector() = default;
-  explicit MargsVector(std::size_t size_);
+  MargsVector() = delete;
+  explicit MargsVector(std::size_t size_ = 0, std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
 
   MargsVector(const MargsVector& other);
   MargsVector(MargsVector&& other) noexcept = default;
@@ -52,23 +55,16 @@ class MargsVector {
   MargsVector& operator=(MargsVector&& other) noexcept = default;
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
-  [[nodiscard]] double& operator[](std::size_t i) noexcept;
   void add(std::size_t i, double n) noexcept;
 
   [[nodiscard]] const std::vector<double>& operator()() const noexcept;
   [[nodiscard]] std::vector<double>& operator()() noexcept;
 
-  void fill(double n = 0) noexcept;
+  void fill(N::value_type value = 0) noexcept;
   void resize(std::size_t size_);
 
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
-
- private:
-  static std::size_t compute_number_of_mutexes(std::size_t size) noexcept;
-  template <typename I, typename = std::enable_if_t<std::is_integral_v<I>>>
-  [[nodiscard]] static I next_pow2(I n) noexcept;
-  [[nodiscard]] std::size_t get_mutex_idx(std::size_t i) const noexcept;
 };
 
 class SparseMatrix {

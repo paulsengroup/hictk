@@ -5,7 +5,6 @@
 find_package(bshoshany-thread-pool REQUIRED)
 find_package(phmap REQUIRED)
 find_package(span-lite REQUIRED)
-find_package(xxHash REQUIRED)
 find_package(zstd REQUIRED)
 
 add_library(balancing INTERFACE)
@@ -28,7 +27,6 @@ target_link_system_libraries(
   bshoshany-thread-pool::bshoshany-thread-pool
   nonstd::span-lite
   phmap
-  xxHash::xxhash
   "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
 
 target_compile_definitions(balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
