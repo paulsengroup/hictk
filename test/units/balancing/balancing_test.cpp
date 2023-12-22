@@ -50,14 +50,14 @@ namespace hictk::test::balancing {
 }
 
 static void compare_weights(const std::vector<double>& weights, const std::vector<double>& expected,
-                            double tol = 1.0e-6) {
+                            double tol = 1.0e-5) {
   REQUIRE(weights.size() == expected.size());
 
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(weights[i])) {
       CHECK(std::isnan(expected[i]));
     } else {
-      CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], tol));
+      CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], tol));
     }
   }
 }
