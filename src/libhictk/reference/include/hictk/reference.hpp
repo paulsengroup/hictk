@@ -4,14 +4,12 @@
 
 #pragma once
 
-#include <fmt/format.h>
 #include <parallel_hashmap/phmap.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <initializer_list>
-#include <limits>
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -119,4 +117,4 @@ class Reference {
 };
 }  // namespace hictk
 
-#include "./impl/reference_impl.hpp"
+#include "./impl/reference_impl.hpp"  // NOLINT

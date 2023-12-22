@@ -4,8 +4,11 @@
 
 #pragma once
 
-#include <algorithm>
+#include <parallel_hashmap/phmap.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -93,4 +96,4 @@ class CoarsenPixels {
 
 }  // namespace hictk::transformers
 
-#include "./impl/coarsen_impl.hpp"
+#include "./impl/coarsen_impl.hpp"  // NOLINT

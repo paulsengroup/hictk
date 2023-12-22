@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <catch2/catch_test_macros.hpp>
+#include <cstdint>
 
 #include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"

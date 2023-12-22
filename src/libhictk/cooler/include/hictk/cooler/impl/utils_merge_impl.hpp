@@ -7,11 +7,22 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <queue>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iterator>
+#include <stdexcept>
+#include <string>
 #include <string_view>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::cooler::utils {

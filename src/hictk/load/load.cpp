@@ -2,36 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <fmt/compile.h>
 #include <fmt/format.h>
-#include <fmt/std.h>
-#include <parallel_hashmap/btree.h>
 #include <spdlog/spdlog.h>
 
-#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <stdexcept>
 #include <string>
-#include <string_view>
-#include <utility>
 #include <variant>
 #include <vector>
 
 #include "./common.hpp"
 #include "./load_pairs.hpp"
 #include "./load_pixels.hpp"
-#include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"
-#include "hictk/cooler/utils.hpp"
 #include "hictk/pixel.hpp"
-#include "hictk/tmpdir.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
 

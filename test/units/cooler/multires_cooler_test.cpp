@@ -6,9 +6,17 @@
 
 #include <fmt/format.h>
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstdint>
+#include <tuple>
+#include <vector>
 
+#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/validation.hpp"
+#include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::multires_cooler_file {

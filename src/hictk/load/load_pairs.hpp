@@ -6,15 +6,20 @@
 
 #include <fmt/format.h>
 #include <parallel_hashmap/btree.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "./common.hpp"
 #include "hictk/bin_table.hpp"
-#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/pixel.hpp"
 
@@ -35,7 +40,7 @@ template <typename N>
 class PairsAggregator {
   phmap::btree_set<ThinPixel<N>, PixelCmp<N>> _buffer{};
 
-  const BinTable& _bins{};
+  const BinTable& _bins{};  // NOLINT
   Format _format{};
   ThinPixel<N> _last_pixel{};
   std::string _line_buffer{};

@@ -4,17 +4,12 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cassert>
 #include <cstddef>
-#include <cstdint>
-#include <numeric>
-#include <stdexcept>
+#include <memory>
 #include <utility>
 #include <vector>
 
-#include "hictk/hash.hpp"
-#include "hictk/hic/footer.hpp"
+#include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
 

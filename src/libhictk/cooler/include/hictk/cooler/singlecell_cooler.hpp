@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <parallel_hashmap/btree.h>
+
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <highfive/H5File.hpp>
@@ -12,9 +15,11 @@
 #include <string>
 #include <string_view>
 
-#include "hictk/bin.hpp"
-#include "hictk/chromosome.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::cooler {
 
@@ -102,4 +107,4 @@ class SingleCellFile {
 
 }  // namespace hictk::cooler
 
-#include "./impl/singlecell_cooler_impl.hpp"
+#include "./impl/singlecell_cooler_impl.hpp"  // NOLINT

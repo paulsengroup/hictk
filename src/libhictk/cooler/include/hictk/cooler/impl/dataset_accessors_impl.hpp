@@ -4,11 +4,26 @@
 
 #pragma once
 
+#if __has_include(<hdf5/hdf5.h>)
+#include <hdf5/H5Ppublic.h>
+#include <hdf5/H5Tpublic.h>
+#include <hdf5/H5public.h>
+#else
+#include <H5Ppublic.h>
+#include <H5Tpublic.h>
+#include <H5public.h>
+#endif
 #include <fmt/format.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataType.hpp>
+#include <string>
+#include <string_view>
+
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
 
 namespace hictk::cooler {
 
@@ -60,7 +75,7 @@ inline bool Dataset::has_attribute(std::string_view key) const {
 }
 
 inline HighFive::DataType Dataset::get_h5type() const {
-  auto h5type = _dataset.getDataType();
+  const auto h5type = _dataset.getDataType();
   if (h5type.isFixedLenStr()) {
     return h5type;
   }
@@ -74,6 +89,7 @@ inline HighFive::DataType Dataset::get_h5type() const {
 
   // Useful to suppress warnings about treating enum datasets as plain int datasets
   const auto is_unsigned = H5Tget_sign(h5type.getId()) == H5T_SGN_NONE;
+  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
   auto create_dtype = [&]([[maybe_unused]] auto tunsigned, [[maybe_unused]] auto tsigned) {
     using T1 = decltype(tunsigned);
     using T2 = decltype(tsigned);

@@ -4,11 +4,19 @@
 
 #include "hictk/pixel.hpp"
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cstdint>
+#include <memory>
+#include <string_view>
+#include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/fmt/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk {
 

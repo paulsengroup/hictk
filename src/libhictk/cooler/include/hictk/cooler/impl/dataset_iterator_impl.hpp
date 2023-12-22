@@ -4,20 +4,14 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <highfive/H5DataSet.hpp>
-#include <highfive/H5Exception.hpp>
-#include <highfive/H5File.hpp>
-#include <highfive/H5Selection.hpp>
 #include <memory>
-#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
-
-#include "hictk/common.hpp"
-#include "hictk/type_pretty_printer.hpp"
 
 namespace hictk::cooler {
 template <typename T>

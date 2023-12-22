@@ -4,13 +4,14 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #include <cstdint>
 #include <limits>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk {
@@ -97,4 +98,4 @@ struct Pixel {
 
 }  // namespace hictk
 
-#include "./impl/pixel_impl.hpp"
+#include "./impl/pixel_impl.hpp"  // NOLINT

@@ -4,13 +4,37 @@
 
 #include "./dump.hpp"
 
+#include <fmt/compile.h>
+#include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
+
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <ios>
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
+#include "hictk/cooler/singlecell_cooler.hpp"
 #include "hictk/file.hpp"
+#include "hictk/genomic_interval.hpp"
+#include "hictk/hic.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/transformers.hpp"
+#include "hictk/transformers/join_genomic_coords.hpp"
 
 namespace hictk::tools {
 

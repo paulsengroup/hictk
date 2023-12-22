@@ -5,20 +5,36 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <highfive/H5DataSpace.hpp>
 #include <highfive/H5File.hpp>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
+#include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
+#include "hictk/suppress_warnings.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 
@@ -68,7 +84,8 @@ inline SingleCellFile::SingleCellFile(HighFive::File fp, BinTable bins, SingleCe
     : _root_grp(std::make_unique<RootGroup>(RootGroup{fp.getGroup("/")})),
       _cells(read_cells(fp)),
       _attrs(std::move(attrs)),
-      _bins(std::make_shared<const BinTable>(std::move(bins))) {}
+      _bins(std::make_shared<const BinTable>(std::move(bins))) {
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigned int mode)
     : SingleCellFile(HighFive::File(path.string(), mode),
@@ -79,7 +96,7 @@ inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigne
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path,
                                              const Reference& chroms, std::uint32_t bin_size,
                                              bool force_overwrite) {
-  return SingleCellFile::create(path, {BinTableFixed{chroms, bin_size}}, force_overwrite);
+  return SingleCellFile::create(path, BinTable{chroms, bin_size}, force_overwrite);
 }
 
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, BinTable bins,
@@ -128,7 +145,7 @@ inline File SingleCellFile::open(std::string_view cell) const {
         fmt::format(FMT_STRING("unable to find cell \"{}\" in file {}"), cell, path()));
   }
   return File(RootGroup{_root_grp->group.getGroup(fmt::format(FMT_STRING("cells/{}"), cell))});
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename N>
 inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs) {
@@ -250,7 +267,7 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
   internal::read_optional(root_grp, "nchroms", attrs.nchroms, missing_ok);
 
   return attrs;
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {

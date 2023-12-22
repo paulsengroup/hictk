@@ -4,12 +4,17 @@
 
 #pragma once
 
+#include <BS_thread_pool.hpp>
 #include <cstddef>
+#include <cstdint>
+#include <filesystem>
 #include <nonstd/span.hpp>
+#include <utility>
 #include <vector>
 
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 
 namespace hictk::balancing {
 
@@ -155,4 +160,4 @@ class ICE {
 
 }  // namespace hictk::balancing
 
-#include "./impl/ice_impl.hpp"
+#include "./impl/ice_impl.hpp"  //NOLINT

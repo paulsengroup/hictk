@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/common.hpp"
 
 namespace hictk::hic::internal {
 
@@ -20,7 +22,7 @@ inline auto WeightCache::find_or_emplace(std::uint32_t chrom_id, balancing::Meth
     return it->second;
   }
 
-  return _weights.emplace(key, std::make_shared<balancing::Weights>()).first->second;
+  return _weights.emplace(std::move(key), std::make_shared<balancing::Weights>()).first->second;
 }
 
 inline auto WeightCache::find_or_emplace(const Chromosome &chrom, balancing::Method norm) -> Value {

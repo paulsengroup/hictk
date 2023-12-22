@@ -5,14 +5,18 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <highfive/H5File.hpp>
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
+#include <vector>
 
-#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::cooler {
 
@@ -74,4 +78,4 @@ class MultiResFile {
 
 }  // namespace hictk::cooler
 
-#include "./impl/multires_cooler_impl.hpp"
+#include "./impl/multires_cooler_impl.hpp"  // NOLINT

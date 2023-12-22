@@ -2,9 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cstddef>
+#include <cstdint>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "tmpdir.hpp"
 

@@ -31,8 +31,6 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump_common.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump_multiple.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump_single.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp

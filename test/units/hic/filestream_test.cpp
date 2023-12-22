@@ -4,8 +4,8 @@
 
 #include "hictk/hic/filestream.hpp"
 
-#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>

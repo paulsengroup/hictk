@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
@@ -80,7 +80,6 @@ constexpr const std::vector<std::uint64_t> &BinTableVariable<I>::num_bin_prefix_
 
 template <typename I>
 inline auto BinTableVariable<I>::begin() const -> iterator {
-  volatile auto chrom = *chromosomes().begin();
   return iterator(*this);
 }
 

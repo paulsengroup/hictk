@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <functional>
+#include <iterator>
+#include <memory>
 #include <queue>
 #include <type_traits>
 #include <vector>
@@ -74,6 +76,7 @@ class PixelMerger {
     explicit iterator(const std::vector<PixelIt> &heads, const std::vector<PixelIt> &tails);
     iterator(const iterator &other);
     iterator(iterator &&other) noexcept;
+    ~iterator() noexcept = default;
 
     auto operator=(const iterator &other) -> iterator &;
     auto operator=(iterator &&other) noexcept -> iterator &;
@@ -93,4 +96,4 @@ class PixelMerger {
 };
 }  // namespace hictk::transformers
 
-#include "./impl/pixel_merger_impl.hpp"
+#include "./impl/pixel_merger_impl.hpp"  // NOLINT

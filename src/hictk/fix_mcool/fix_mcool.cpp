@@ -2,17 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cassert>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <highfive/H5File.hpp>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
-#include "hictk/balancing/ice.hpp"
-#include "hictk/balancing/methods.hpp"
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
 
@@ -79,10 +86,11 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
     c.min_nnz = dset.read_attribute<std::size_t>("min_nnz");
     c.tolerance = dset.read_attribute<double>("tol");
 
-  } catch (const std::exception& e) {
+    // NOLINTNEXTLINE
+  } catch (const std::exception&) {
   }
   return c;
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 static void run_hictk_balance(const FixMcoolConfig& c, std::uint32_t resolution) {
   auto bc = detect_balancing_params(c.path_to_input.string(), resolution);
@@ -120,8 +128,9 @@ int fix_mcool_subcmd(const FixMcoolConfig& c) {
 
   run_hictk_zoomify(c, resolutions, base_uri);
 
-  std::for_each(resolutions.begin() + 1, resolutions.end(),
-                [&](const auto& res) { run_hictk_balance(c, res); });
+  std::for_each(resolutions.begin() + 1, resolutions.end(), [&](const auto& res) {
+    run_hictk_balance(c, res);  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+  });
 
   const auto t1 = std::chrono::system_clock::now();
   const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();

@@ -4,16 +4,15 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
 #include <fmt/format.h>
 
-#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
-#include <utility>
 
 #include "hictk/common.hpp"
 

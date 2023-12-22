@@ -4,11 +4,13 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 #include <parallel_hashmap/btree.h>
 
-#include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <filesystem>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string_view>
@@ -152,4 +154,4 @@ class Index {
 
 }  // namespace hictk
 
-#include "./impl/index_impl.hpp"
+#include "./impl/index_impl.hpp"  // NOLINT

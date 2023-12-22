@@ -4,19 +4,19 @@
 
 #pragma once
 
-#include <fast_float/fast_float.h>  // for from_chars (fp)
-#include <fmt/format.h>             // for compile_string_to_view, FMT_STRING
+#include <fast_float/fast_float.h>
+#include <fmt/format.h>
 
-#include <charconv>      // for from_chars (int)
-#include <limits>        // for numeric_limits
-#include <stdexcept>     // for runtime_error, logic_error
-#include <string>        // for string
-#include <string_view>   // for string_view
-#include <system_error>  // for errc, make_error_code, errc::invalid_argument, errc:...
-#include <type_traits>   // for is_arithmetic, is_integral, is_unsigned
-#include <vector>        // for vector
-
-#include "hictk/type_pretty_printer.hpp"
+#include <charconv>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <type_traits>
 
 namespace hictk::internal {
 

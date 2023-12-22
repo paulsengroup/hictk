@@ -5,11 +5,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <string>
+#include <tuple>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/hic/utils.hpp"
-#include "hictk/tmpdir.hpp"
+#include "hictk/hic/validation.hpp"
 
 using namespace hictk::hic;
 

@@ -4,22 +4,30 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
+#include <parallel_hashmap/phmap.h>
+
+#include <cstddef>
+#include <cstdint>
 #ifdef HICTK_WITH_EIGEN
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #endif
-#include <cstddef>
-#include <cstdint>
+#include <functional>
+#include <iterator>
 #include <memory>
 #include <queue>
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
+#include "hictk/hic/footer.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
 
@@ -263,4 +271,4 @@ class PixelSelectorAll {
 
 }  // namespace hictk::hic
 
-#include "./impl/pixel_selector_impl.hpp"
+#include "./impl/pixel_selector_impl.hpp"  // NOLINT

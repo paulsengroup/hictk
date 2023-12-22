@@ -71,7 +71,7 @@ constexpr std::uint32_t Bin::end() const noexcept { return _interval.end(); }
 
 constexpr bool Bin::has_null_id() const noexcept { return id() == Bin::null_id; }
 
-};  // namespace hictk
+}  // namespace hictk
 
 inline std::size_t std::hash<hictk::Bin>::operator()(const hictk::Bin &b) const {
   return hictk::internal::hash_combine(0, b.id(), b.interval());

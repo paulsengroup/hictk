@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include <cstdio>
-#include <memory>
 
 namespace std {
 template <>

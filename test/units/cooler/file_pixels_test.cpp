@@ -4,10 +4,15 @@
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <random>
+#include <vector>
 
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/pixel.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {

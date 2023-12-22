@@ -6,20 +6,29 @@
 
 #include <fmt/compile.h>
 #include <fmt/format.h>
+#include <libdeflate.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <fstream>
+#include <exception>
 #include <ios>
+#include <memory>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::hic::internal {
 

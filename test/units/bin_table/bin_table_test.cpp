@@ -2,15 +2,23 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/bin_table.hpp"
+#include "hictk/bin_table.hpp"  // IWYU pragma: keep
+
+#include <fmt/format.h>
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <stdexcept>
+#include <string>
 #include <utility>
+
+#include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
+#include "hictk/genomic_interval.hpp"
 
 namespace hictk::test::bin_table {
 
@@ -63,7 +71,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 
   SECTION("subset") {
-    const BinTableFixed expected{{Chromosome{1, "chr2", 25017}}, bin_size};
+    const BinTable expected{Reference{Chromosome{1, "chr2", 25017}}, bin_size};
 
     CHECK(table.subset(Chromosome{1, "chr2", 25017}) == expected);
     CHECK(table.subset("chr2") == expected);
@@ -253,7 +261,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   SECTION("subset") {
     const std::vector<std::uint32_t> start_pos_{0, 5, 10, 26};
     const std::vector<std::uint32_t> end_pos_{5, 10, 26, 32};
-    const BinTableVariable expected{{Chromosome{1, "chr2", 32}}, start_pos_, end_pos_};
+    const BinTable expected{Reference{Chromosome{1, "chr2", 32}}, start_pos_, end_pos_};
 
     CHECK(table.subset(Chromosome{1, "chr2", 32}) == expected);
     CHECK(table.subset("chr2") == expected);

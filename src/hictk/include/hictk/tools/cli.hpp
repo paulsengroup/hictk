@@ -5,14 +5,21 @@
 #pragma once
 
 #include <CLI/CLI.hpp>
+#include <cassert>
+#include <filesystem>
+#include <map>
 #include <regex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "config.hpp"
 #include "hictk/cooler.hpp"
-#include "hictk/cooler/utils.hpp"
+#include "hictk/cooler/validation.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
+#include "hictk/string_utils.hpp"
 
 namespace hictk::tools {
 

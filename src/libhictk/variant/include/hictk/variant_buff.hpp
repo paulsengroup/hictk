@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -125,4 +125,4 @@ class VariantBuffer {
 
 }  // namespace hictk::internal
 
-#include "./impl/variant_buff_impl.hpp"
+#include "./impl/variant_buff_impl.hpp"  // NOLINT

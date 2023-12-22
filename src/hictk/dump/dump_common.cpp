@@ -16,6 +16,7 @@
 #include "hictk/cooler.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {

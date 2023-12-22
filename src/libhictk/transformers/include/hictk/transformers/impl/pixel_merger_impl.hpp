@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cassert>
-#include <cstddef>
 #include <utility>
+#include <vector>
+
+#include "hictk/pixel.hpp"
 
 namespace hictk::transformers {
 

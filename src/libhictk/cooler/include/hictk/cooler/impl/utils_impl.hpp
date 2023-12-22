@@ -9,12 +9,15 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <highfive/H5File.hpp>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/validation.hpp"
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk::cooler::utils {
 

@@ -4,8 +4,12 @@
 
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <numeric>
 #include <random>
+#include <variant>
+#include <vector>
 
 #include "hictk/variant_buff.hpp"
 

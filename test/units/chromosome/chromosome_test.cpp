@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-#include "hictk/fmt/chromosome.hpp"
+#include "hictk/fmt/chromosome.hpp"  // IWYU pragma: keep
 
 namespace hictk::test::chromosome {
 

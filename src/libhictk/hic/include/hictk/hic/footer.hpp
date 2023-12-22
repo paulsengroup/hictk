@@ -4,8 +4,13 @@
 
 #pragma once
 
+// IWYU pragma: private, include "hictk/hic.hpp"
+
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -78,4 +83,5 @@ template <>
 struct std::hash<hictk::hic::internal::HiCFooter> {
   inline std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
 };
-#include "./impl/footer_impl.hpp"
+
+#include "./impl/footer_impl.hpp"  // NOLINT

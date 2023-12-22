@@ -12,11 +12,8 @@
 #include "hictk/hic/file_reader.hpp"
 
 namespace hictk::hic::utils {
-inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path, bool sorted) {
-  auto resolutions = hic::internal::HiCFileReader(path.string()).header().resolutions;
-  if (sorted) {
-    std::sort(resolutions.begin(), resolutions.end());
-  }
-  return resolutions;
+inline bool is_hic_file(const std::filesystem::path& path) {
+  return internal::HiCFileReader::checkMagicString(path.string());
 }
+
 }  // namespace hictk::hic::utils

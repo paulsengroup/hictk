@@ -7,8 +7,10 @@
 #include <spdlog/spdlog.h>
 
 #include <chrono>
+#include <filesystem>
 
 #include "./common.hpp"
+#include "hictk/cooler/uri.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

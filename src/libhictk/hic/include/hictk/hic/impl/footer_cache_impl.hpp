@@ -4,11 +4,9 @@
 
 #pragma once
 
-#include <cassert>
-#include <cstdint>
+#include <cstddef>
 #include <functional>
 #include <memory>
-#include <numeric>
 #include <vector>
 
 #include "hictk/hic/footer.hpp"

@@ -4,18 +4,29 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <filesystem>
+#include <highfive/H5File.hpp>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/group.hpp"
 #include "hictk/cooler/utils.hpp"
+#include "hictk/fmt/bin.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/transformers/coarsen.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
 

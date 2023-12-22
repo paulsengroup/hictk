@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+
+// IWYU pragma: private, include "hictk/cooler.hpp"
+
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
@@ -16,8 +19,6 @@ DISABLE_WARNING_NULL_DEREF
 DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
 #include <string>
-
-#include "hictk/suppress_warnings.hpp"
 
 namespace hictk::cooler {
 
