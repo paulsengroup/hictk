@@ -370,17 +370,10 @@ inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool*
     fs.exceptions(_fs.exceptions());
     fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
-    MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(offset);
       matrix.deserialize(fs, *zstd_dctx);
-      matrix.marginalize(marg_local, nullptr, false);
-    }
-
-    for (std::size_t i = 0; i < marg_local.size(); ++i) {
-      if (marg_local[i] != 0) {
-        marg.add(i, marg_local[i]);
-      }
+      matrix.marginalize(marg, nullptr, false);
     }
   };
 
@@ -413,16 +406,10 @@ inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_p
     fs.exceptions(_fs.exceptions());
     fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
-    MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(offset);
       matrix.deserialize(fs, *zstd_dctx);
       matrix.marginalize_nnz(marg, nullptr, false);
-    }
-    for (std::size_t i = 0; i < marg_local.size(); ++i) {
-      if (marg_local[i] != 0) {
-        marg.add(i, marg_local[i]);
-      }
     }
   };
 
@@ -457,16 +444,10 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     fs.exceptions(_fs.exceptions());
     fs.open(_path, std::ios::in | std::ios::binary);
     auto matrix = _matrix;
-    MargsVector marg_local(marg.size());
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(offset);
       matrix.deserialize(fs, *zstd_dctx);
-      matrix.times_outer_product_marg(marg_local, biases, weights, nullptr, false);
-    }
-    for (std::size_t i = 0; i < marg.size(); ++i) {
-      if (marg_local[i] != 0) {
-        marg.add(i, marg_local[i]);
-      }
+      matrix.times_outer_product_marg(marg, biases, weights, nullptr, false);
     }
   };
 
