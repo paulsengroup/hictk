@@ -414,8 +414,9 @@ inline void ICE::min_nnz_filtering(MargsVector& marg, const MatrixT& matrix,
                                    nonstd::span<double> biases, std::size_t min_nnz,
                                    BS::thread_pool* tpool) {
   matrix.marginalize_nnz(marg, tpool);
+  const auto marg_ = marg();
   for (std::size_t i = 0; i < biases.size(); ++i) {
-    if (marg()[i] < static_cast<double>(min_nnz)) {
+    if (marg_[i] < static_cast<double>(min_nnz)) {
       biases[i] = 0;
     }
   }
