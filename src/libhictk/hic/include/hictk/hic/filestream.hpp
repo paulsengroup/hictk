@@ -11,6 +11,7 @@
 #include <ios>
 #include <iosfwd>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -18,12 +19,13 @@ namespace hictk::hic::internal::filestream {
 
 class FileStream {
   std::string path_{};
-  mutable std::ifstream handle_{};
+  mutable std::fstream handle_{};
   std::size_t file_size_{};
 
  public:
   FileStream() = default;
   explicit FileStream(std::string path);
+  static FileStream create(std::string path);
 
   [[nodiscard]] const std::string &path() const noexcept;
   [[nodiscard]] const std::string &url() const noexcept;
@@ -31,10 +33,21 @@ class FileStream {
 
   void seekg(std::streamoff offset, std::ios::seekdir way = std::ios::beg);
   [[nodiscard]] std::size_t tellg() const noexcept;
+
+  void seekp(std::streamoff offset, std::ios::seekdir way = std::ios::beg);
+  [[nodiscard]] std::size_t tellp() const noexcept;
+
   [[nodiscard]] bool eof() const noexcept;
 
   void read(std::string &buffer, std::size_t count);
   void read(char *buffer, std::size_t count);
+  void read_append(std::string &buffer, std::size_t count);
+
+  bool getline(std::string &buffer, char delim = '\n');
+  [[nodiscard]] std::string getline(char delim = '\n');
+
+  void write(std::string_view buffer);
+  void write(const char *buffer, std::size_t count);
 
   // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
@@ -42,6 +55,10 @@ class FileStream {
   // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   void read(T &buffer);
+
+  // NOLINTNEXTLINE(modernize-type-traits)
+  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
+  void write(T buffer);
 
   template <typename Tin,
             typename Tout = std::make_signed_t<Tin>,  // NOLINTNEXTLINE(modernize-type-traits)
@@ -61,17 +78,16 @@ class FileStream {
 
   // NOLINTNEXTLINE(modernize-type-traits)
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
+  void write(const std::vector<T> &buffer);
+
+  // NOLINTNEXTLINE(modernize-type-traits)
+  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type * = nullptr>
   [[nodiscard]] std::vector<T> read(std::size_t size);
-
-  void append(std::string &buffer, std::size_t count);
-
-  bool getline(std::string &buffer, char delim = '\n');
-  [[nodiscard]] std::string getline(char delim = '\n');
 
  private:
   [[nodiscard]] std::streampos new_pos(std::streamoff offset, std::ios::seekdir way);
-  [[nodiscard]] static std::ifstream open_file(const std::string &path,
-                                               std::ifstream::openmode mode);
+  void update_file_size();
+  [[nodiscard]] static std::fstream open_file(const std::string &path, std::fstream::openmode mode);
 };
 }  // namespace hictk::hic::internal::filestream
 

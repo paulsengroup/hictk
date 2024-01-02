@@ -104,7 +104,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Cooler: validate pixels before append", "[cooler][long]") {
+TEST_CASE("Cooler: validate pixels before read_append", "[cooler][long]") {
   auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_validate_before_append.cool";
 
