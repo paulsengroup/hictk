@@ -18,9 +18,10 @@
 namespace hictk::hic::internal::filestream {
 
 class FileStream {
-  std::string path_{};
-  mutable std::fstream handle_{};
-  std::size_t file_size_{};
+  std::string _path{};
+  mutable std::ifstream _ifs{};
+  mutable std::ofstream _ofs{};
+  std::size_t _file_size{};
 
  public:
   FileStream() = default;
@@ -38,6 +39,8 @@ class FileStream {
   [[nodiscard]] std::size_t tellp() const noexcept;
 
   [[nodiscard]] bool eof() const noexcept;
+
+  void flush();
 
   void read(std::string &buffer, std::size_t count);
   void read(char *buffer, std::size_t count);
@@ -85,9 +88,13 @@ class FileStream {
   [[nodiscard]] std::vector<T> read(std::size_t size);
 
  private:
-  [[nodiscard]] std::streampos new_pos(std::streamoff offset, std::ios::seekdir way);
+  [[nodiscard]] std::streampos new_posg(std::streamoff offset, std::ios::seekdir way);
+  [[nodiscard]] std::streampos new_posp(std::streamoff offset, std::ios::seekdir way);
   void update_file_size();
-  [[nodiscard]] static std::fstream open_file(const std::string &path, std::fstream::openmode mode);
+  [[nodiscard]] static std::ifstream open_file_read(const std::string &path,
+                                                    std::ifstream::openmode mode);
+  [[nodiscard]] static std::ofstream open_file_write(const std::string &path,
+                                                     std::ofstream::openmode mode);
 };
 }  // namespace hictk::hic::internal::filestream
 
