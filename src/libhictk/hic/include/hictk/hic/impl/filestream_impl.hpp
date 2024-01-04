@@ -32,8 +32,8 @@ inline FileStream::FileStream(std::string path)
 inline FileStream FileStream::create(std::string path) {
   FileStream fs{};
   fs._path = std::move(path);
-  fs._ifs = open_file_read(fs._path, std::ios::trunc | std::ios::binary);
-  fs._ofs = open_file_write(fs._path, std::ios::binary);
+  fs._ofs = open_file_write(fs._path, std::ios::trunc | std::ios::binary);
+  fs._ifs = open_file_read(fs._path, std::ios::binary);
 
   return fs;
 }
@@ -63,9 +63,7 @@ inline std::size_t FileStream::tellp() const noexcept {
   return static_cast<std::size_t>(_ofs.tellp());
 }
 
-inline bool FileStream::eof() const noexcept {
-  return _ifs.eof();
-}
+inline bool FileStream::eof() const noexcept { return _ifs.eof(); }
 
 inline void FileStream::flush() { _ofs.flush(); }
 
