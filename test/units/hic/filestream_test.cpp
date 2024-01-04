@@ -18,7 +18,7 @@
 #include "hictk/type_traits.hpp"
 #include "tmpdir.hpp"
 
-namespace hictk::hic::filestream {
+namespace hictk::hic::test::filestream {
 
 using namespace hictk::hic::internal::filestream;
 
@@ -403,4 +403,4 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   }
 }
 
-}  // namespace hictk::hic::filestream
+}  // namespace hictk::hic::test::filestream

@@ -205,7 +205,7 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
     std::ignore = _fs->read<std::int32_t>();  // oldIndex
     const auto sumCount = _fs->read<float>();
     std::ignore = _fs->read<float>();  // occupiedCellCount
-    std::ignore = _fs->read<float>();  // stdDev
+    std::ignore = _fs->read<float>();  // percent5
     std::ignore = _fs->read<float>();  // percent95
 
     const auto foundResolution = static_cast<std::int64_t>(_fs->read<std::int32_t>());
@@ -282,10 +282,11 @@ inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
 
   const auto nAttributes = fs.read<std::int32_t>();
 
-  // reading and ignoring attribute-value dictionary
+  // reading attribute-value dictionary
   for (std::int32_t i = 0; i < nAttributes; i++) {
-    std::ignore = fs.getline('\0');  // key
-    std::ignore = fs.getline('\0');  // value
+    auto key = fs.getline('\0');    // key
+    auto value = fs.getline('\0');  // value
+    header.attributes.emplace(std::move(key), std::move(value));
   }
 
   // Read chromosomes

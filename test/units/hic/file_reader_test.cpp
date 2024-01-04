@@ -15,17 +15,16 @@
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/hic/common.hpp"
+#include "tmpdir.hpp"
 
 using namespace hictk::hic;
 
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+namespace hictk::hic::test::file_reader {
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
+const auto pathV8 = (datadir / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
+const auto pathV9 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
@@ -305,3 +304,5 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     }
   }
 }
+
+}  // namespace hictk::hic::test::file_reader

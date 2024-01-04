@@ -13,6 +13,7 @@ target_sources(
   hictk_hic_tests
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/filestream_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/file_reader_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/file_writer_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/hic_file_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp")
 

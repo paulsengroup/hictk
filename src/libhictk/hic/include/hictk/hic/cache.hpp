@@ -14,13 +14,12 @@
 #include <memory>
 #include <queue>
 #include <utility>
-#include <vector>
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hash.hpp"
-#include "hictk/pixel.hpp"
+#include "hictk/hic/interaction_block.hpp"
 
 namespace hictk::hic::internal {
 struct BlockID {
@@ -39,48 +38,6 @@ struct std::hash<hictk::hic::internal::BlockID> {
 };
 
 namespace hictk::hic::internal {
-
-class InteractionBlock {
- public:
-  using Row = std::vector<ThinPixel<float>>;
-
- private:
-  using BuffT = std::vector<ThinPixel<float>>;
-  std::size_t _id{};
-  BuffT _interactions{};
-
- public:
-  using iterator = BuffT::iterator;
-  using const_iterator = BuffT::const_iterator;
-
-  InteractionBlock() = default;
-  InteractionBlock(std::size_t id_, std::size_t block_bin_count,
-                   std::vector<ThinPixel<float>> pixels);
-
-  friend constexpr bool operator<(const InteractionBlock& a, const InteractionBlock& b) noexcept;
-  friend constexpr bool operator==(const InteractionBlock& a, const InteractionBlock& b) noexcept;
-  friend constexpr bool operator!=(const InteractionBlock& a, const InteractionBlock& b) noexcept;
-
-  friend constexpr bool operator<(const InteractionBlock& a, std::size_t b_id) noexcept;
-  friend constexpr bool operator==(const InteractionBlock& a, std::size_t b_id) noexcept;
-  friend constexpr bool operator!=(const InteractionBlock& a, std::size_t b_id) noexcept;
-
-  friend constexpr bool operator<(std::size_t a_id, const InteractionBlock& b) noexcept;
-  friend constexpr bool operator==(std::size_t a_id, const InteractionBlock& b) noexcept;
-  friend constexpr bool operator!=(std::size_t a_id, const InteractionBlock& b) noexcept;
-
-  [[nodiscard]] auto operator()() const noexcept -> const BuffT&;
-
-  [[nodiscard]] auto begin() const noexcept -> const_iterator;
-  [[nodiscard]] auto end() const noexcept -> const_iterator;
-
-  [[nodiscard]] auto cbegin() const noexcept -> const_iterator;
-  [[nodiscard]] auto cend() const noexcept -> const_iterator;
-
-  [[nodiscard]] std::size_t id() const noexcept;
-
-  [[nodiscard]] std::size_t size() const noexcept;
-};
 
 class BlockCache {
   using Value = std::shared_ptr<const InteractionBlock>;

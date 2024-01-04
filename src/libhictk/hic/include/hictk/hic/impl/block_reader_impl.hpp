@@ -24,25 +24,6 @@
 
 namespace hictk::hic::internal {
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
-inline T BinaryBuffer::read() {
-  static_assert(sizeof(char) == 1, "");
-  assert(_i < _buffer.size());
-  T x{};
-
-  std::memcpy(static_cast<void *>(&x), _buffer.data() + _i, sizeof(T));
-  _i += sizeof(T);
-  return x;
-}
-
-inline std::size_t BinaryBuffer::operator()() const noexcept { return _i; }
-
-inline std::string &BinaryBuffer::reset() noexcept {
-  _buffer.clear();
-  _i = 0;
-  return _buffer;
-}
-
 inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index &master_index,
                                       std::shared_ptr<const BinTable> bins_,
                                       std::shared_ptr<BlockCache> block_cache_)

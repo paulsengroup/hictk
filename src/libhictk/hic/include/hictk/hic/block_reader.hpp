@@ -9,35 +9,18 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <type_traits>
 #include <vector>
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
-
-class BinaryBuffer {
-  std::string _buffer{};
-  std::size_t _i{};
-
- public:
-  BinaryBuffer() = default;
-  // NOLINTNEXTLINE
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
-  T read();
-
-  // Return the offset of the underlying buffer. Useful for error checking
-  [[nodiscard]] std::size_t operator()() const noexcept;
-
-  // Reset and return ref to underlying buffer so that buff can be refilled
-  std::string& reset() noexcept;
-};
 
 class HiCBlockReader {
   std::shared_ptr<HiCFileReader> _hfs{};
