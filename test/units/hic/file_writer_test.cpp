@@ -104,7 +104,12 @@ TEST_CASE("devel") {
     HiCFileWriter w(header);
     w.write_header();
 
-    const std::vector<ThinPixel<float>> pixels{{0, 0, 1}, {0, 1, 2}, {1, 1, 3}};
+    std::vector<ThinPixel<float>> pixels;
+    for (std::size_t i = 0; i < 100; ++i) {
+      for (std::size_t j = i; j < 100; ++j) {
+        pixels.push_back({i, j, 10});
+      }
+    }
     const InteractionBlock blk(0, 2, pixels);
 
     std::vector<HiCFooter> footers{};
