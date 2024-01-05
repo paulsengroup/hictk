@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/footer.hpp"
@@ -60,8 +61,6 @@ struct MatrixResolutionMetadata {
   std::int32_t blockColumnCount{};
   std::int32_t blockCount{};
 
-  std::vector<MatrixBlockMetadata> blocksMetadata{};
-
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
@@ -75,17 +74,19 @@ struct MatrixInteractionBlock {
   std::uint8_t useIntYPos;
   std::uint8_t matrixRepresentation;
 
-  MatrixInteractionBlock(const InteractionBlock& blk, std::size_t bin_row_offset);
+  MatrixInteractionBlock(const BinTable& bins, const std::vector<ThinPixel<float>>& pixels,
+                         std::size_t bin_row_offset);
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
                                       std::string& compression_buffer) const;
 
  private:
   using RowID = std::int32_t;
-  using Row = std::vector<ThinPixel<float>>;
+  using Row = std::vector<Pixel<float>>;
   phmap::btree_map<RowID, Row> _interactions;
 
-  auto group_interactions_by_column(const InteractionBlock& blk, std::size_t bin_row_offset)
+  auto group_interactions_by_column(const BinTable& bins,
+                                    const std::vector<ThinPixel<float>>& pixels)
       -> phmap::btree_map<RowID, Row>;
 };
 
@@ -122,30 +123,43 @@ struct NormalizationVectorArray {
 };
 
 struct FooterV5 {
-  std::int64_t nBytesV5;
-  std::int32_t nEntries;
+  MasterIndex masterIndex{};
 
-  std::vector<MasterIndex> masterIndex;
-
-  ExpectedValues expectedValues;
-  NormalizedExpectedValues normExpectedValues;
-  NormalizationVectorIndex normVectIndex;
-  std::vector<NormalizationVectorArray> normVectArray;
+  ExpectedValues expectedValues{};
+  NormalizedExpectedValues normExpectedValues{};
+  NormalizationVectorIndex normVectIndex{};
+  std::vector<NormalizationVectorArray> normVectArray{};
 
   FooterV5() = default;
-  [[nodiscard]] constexpr std::int64_t master_index_offset() const noexcept;
-  void add_footer(const HiCFooter& footer, std::int64_t matrix_offset, std::int32_t matrix_bytes);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+};
+
+struct BlockIndexKey {
+  Chromosome chrom1;
+  Chromosome chrom2;
+  std::uint32_t resolution;
+
+  [[nodiscard]] bool operator<(const BlockIndexKey& other) const noexcept;
 };
 
 class HiCFileWriter {
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
-  phmap::btree_set<MatrixBlockMetadata> _block_index{};
+  phmap::flat_hash_map<std::uint32_t, BinTable> _bin_tables{};
+
+  phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
+  std::vector<MatrixMetadata> _matrix_metadata{};
+  std::vector<MatrixResolutionMetadata> _matrix_resolution_metadata{};
+  std::vector<FooterV5> _footers{};
 
   BinaryBuffer _bbuffer{};
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
+
+  using PixelTankKey = std::pair<Chromosome, Chromosome>;
+  using ChromPixelTank = phmap::btree_set<ThinPixel<float>>;
+  using PixelTank = phmap::flat_hash_map<PixelTankKey, ChromPixelTank>;
+  PixelTank _pixel_tank{};
 
   static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
@@ -158,23 +172,34 @@ class HiCFileWriter {
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
+  [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
   [[nodiscard]] const std::vector<std::uint32_t> resolutions() const noexcept;
+
+  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
+  void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
+
+  void write_pixels();
+  void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution);
 
   // Write header
   void write_header();
   void write_master_index_offset(std::int64_t master_index);
 
   // Write body
-  std::pair<std::streamoff, std::size_t> write_body_metadata(std::uint32_t chrom1_id,
-                                                             std::uint32_t chrom2_id,
-                                                             const std::string& unit = "BP");
+  auto write_body_metadata(const Chromosome& chrom1, const Chromosome& chrom2,
+                           const std::string& unit = "BP");
 
-  std::streamoff write_interaction_block(const InteractionBlock& blk, std::size_t bin_column_offset,
-                                         std::size_t bin_row_offset);
+  std::streamoff write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
+                                         const Chromosome& chrom2, std::uint32_t resolution,
+                                         const std::vector<ThinPixel<float>>& pixels,
+                                         std::size_t bin_column_offset, std::size_t bin_row_offset);
 
-  std::streamoff write_footer(const std::vector<HiCFooter>& footers,
-                              const std::vector<std::int64_t>& matrix_offsets,
-                              const std::vector<std::int32_t>& matrix_bytes);
+  std::streamoff write_footers();
+
+  void add_footer(const Chromosome& chrom1, const Chromosome& chrom2, std::size_t file_offset,
+                  std::size_t matrix_metadata_bytes);
+
+  void finalize();
 
  private:
   [[nodiscard]] std::size_t compute_block_column_count(
@@ -182,12 +207,10 @@ class HiCFileWriter {
       std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
   [[nodiscard]] std::size_t compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
                                              std::size_t bin_size);
-  [[nodiscard]] static phmap::btree_map<std::int32_t, std::vector<ThinPixel<float>>>
-  group_interactions_by_column(const InteractionBlock& blk, std::size_t bin_row_offset);
 
-  void write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id);
-  void write_resolution_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                 const std::string& unit);
+  std::size_t write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id);
+  auto write_resolutions_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                  const std::string& unit);
 
  public:
   class BlockMapperInter {
@@ -196,10 +219,10 @@ class HiCFileWriter {
 
    public:
     BlockMapperInter(std::uint64_t block_bin_count, std::uint64_t block_column_count);
-    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id);
+    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id) const;
 
-    [[nodiscard]] std::uint64_t block_bin_count();
-    [[nodiscard]] std::uint64_t block_column_count();
+    [[nodiscard]] std::uint64_t block_bin_count() const;
+    [[nodiscard]] std::uint64_t block_column_count() const;
   };
 
   class BlockMapperIntra {
@@ -211,10 +234,10 @@ class HiCFileWriter {
    public:
     BlockMapperIntra(std::uint64_t block_bin_count, std::uint64_t block_column_count,
                      std::int64_t base_depth = DEFAULT_BASE_DEPTH);
-    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id);
+    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id) const;
 
-    [[nodiscard]] std::uint64_t block_bin_count();
-    [[nodiscard]] std::uint64_t block_column_count();
+    [[nodiscard]] std::uint64_t block_bin_count() const;
+    [[nodiscard]] std::uint64_t block_column_count() const;
 
    private:
     [[nodiscard]] bool use_inter_mapper() const noexcept;

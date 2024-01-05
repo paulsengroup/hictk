@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include "hictk/fmt.hpp" // TODO remove
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic.hpp"
@@ -82,6 +83,7 @@ TEST_CASE("HiC: BlockMapperIntra", "[hic][v9][short]") {
   }
 }
 
+/*
 TEST_CASE("devel") {
   {
     // clang-format off
@@ -110,8 +112,6 @@ TEST_CASE("devel") {
         pixels.push_back({i, j, 10});
       }
     }
-    const InteractionBlock blk(0, 2, pixels);
-
     std::vector<HiCFooter> footers{};
     std::vector<std::int64_t> master_index_offsets{};
     std::vector<std::int32_t> matrix_metadata_offsets{};
@@ -128,11 +128,11 @@ TEST_CASE("devel") {
       };
 
       if (chrom == "chr1") {
-        w.write_interaction_block(blk, 0, 0);
+        w.write_interaction_block(0, w.chromosomes().at("chr1"), w.chromosomes().at("chr1"), 1000,
+                                  pixels, 0, 0);
       }
 
-      const auto [master_index_offset, matrix_metadata_size] =
-          w.write_body_metadata(chrom.id(), chrom.id());
+      const auto [master_index_offset, matrix_metadata_size] = w.write_body_metadata(chrom, chrom);
       master_index_offsets.push_back(master_index_offset);
       matrix_metadata_offsets.push_back(static_cast<std::int32_t>(matrix_metadata_size));
       footers.push_back(footer);
@@ -148,6 +148,49 @@ TEST_CASE("devel") {
   std::for_each(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), [](const auto& p) {
     fmt::print(FMT_STRING("{}\t{}\t{}\n"), p.bin1_id, p.bin2_id, p.count);
   });
+}
+
+*/
+
+TEST_CASE("devel") {
+  const hic::File f1((datadir / "ENCFF993FGR.hic").string(), 2500000);
+  {
+    // clang-format off
+    const HiCHeader header{
+            "/tmp/test.hic",           // url
+            9,                         // version
+            -1,                        // masterIndexOffset
+            "hg38",                    // genomeID
+            -1,                        // nviPosition
+            -1,                        // nviLength
+            f1.chromosomes(),
+            {f1.resolution()},         // resolutions
+            {{"software", "hictk"}}    // attributes
+    };
+    // clang-format on
+
+    HiCFileWriter w(header);
+    w.write_header();
+
+    const auto sel = f1.fetch();
+    w.append_pixels(f1.bin_size(), sel.begin<float>(), sel.end<float>());
+    w.write_pixels();
+    w.finalize();
+  }
+
+  const hic::File f2("/tmp/test.hic", 2500000);
+  const auto pixels = f2.fetch().read_all<float>();
+  const auto expected_pixels = f1.fetch().read_all<float>();
+
+  REQUIRE(expected_pixels.size() == pixels.size());
+  for (std::size_t i = 0; i < expected_pixels.size(); ++i) {
+    if (i >= pixels.size()) {
+      fmt::print(FMT_STRING("{} : NA\n"), expected_pixels[i]);
+    } else {
+      fmt::print(FMT_STRING("{} : {}\n"), expected_pixels[i], pixels[i]);
+      CHECK(expected_pixels[i] == pixels[i]);
+    }
+  }
 }
 
 }  // namespace hictk::hic::test::file_writer
