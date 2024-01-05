@@ -27,7 +27,9 @@ inline void BinaryBuffer::write(T data) {
   _buffer.append(reinterpret_cast<const char *>(&data), sizeof(T));
 }
 
-inline void BinaryBuffer::write(const std::string &data) { _buffer.append(data); }
+inline void BinaryBuffer::write(const std::string &data) {
+  _buffer.append(data.c_str(), data.size() + 1);
+}
 
 inline std::size_t BinaryBuffer::operator()() const noexcept { return _i; }
 

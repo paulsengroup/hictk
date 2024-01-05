@@ -76,6 +76,84 @@ inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer) con
   return buffer.get();
 }
 
+inline MatrixInteractionBlock::MatrixInteractionBlock(const InteractionBlock &blk,
+                                                      std::size_t bin_row_offset)
+    : nRecords(static_cast<std::int32_t>(blk.size())),
+      binRowOffset(static_cast<std::int32_t>(bin_row_offset)),
+      _interactions(group_interactions_by_column(blk, bin_row_offset)) {}
+
+inline std::string MatrixInteractionBlock::serialize(BinaryBuffer &buffer,
+                                                     libdeflate_compressor &compressor,
+                                                     std::string &compression_buffer) const {
+  // TODO support dense layout
+  // TODO support representation using shorts
+
+  buffer.clear();
+
+  buffer.write(nRecords);
+  buffer.write(binColumnOffset);
+  buffer.write(binRowOffset);
+  buffer.write(useFloatContact);
+  buffer.write(useIntXPos);
+  buffer.write(useIntYPos);
+  buffer.write(matrixRepresentation);
+
+  const auto rowCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
+  buffer.write(rowCount);
+
+  for (const auto &[row, pixels] : _interactions) {
+    const auto rowNumber = static_cast<std::int32_t>(row);              // TODO support short
+    const auto recordCount = static_cast<std::int32_t>(pixels.size());  // TODO support short
+    buffer.write(rowNumber);
+    buffer.write(recordCount);
+
+    assert(std::is_sorted(pixels.begin(), pixels.end()));
+    for (const auto &p : pixels) {
+      const auto binColumn = static_cast<std::int32_t>(p.bin1_id) - binRowOffset;
+      const auto value = p.count;
+      buffer.write(binColumn);
+      buffer.write(value);
+    }
+  }
+
+  assert(compression_buffer.capacity() != 0);
+  compression_buffer.resize(compression_buffer.capacity());
+  while (true) {
+    const auto compressed_size =
+        libdeflate_zlib_compress(&compressor, buffer.get().data(), buffer.get().size(),
+                                 compression_buffer.data(), compression_buffer.size());
+    if (compressed_size != 0) {
+      compression_buffer.resize(compressed_size);
+      break;
+    }
+
+    compression_buffer.resize(compression_buffer.size() * 2);
+  }
+
+  return compression_buffer;
+}
+
+inline auto MatrixInteractionBlock::group_interactions_by_column(const InteractionBlock &blk,
+                                                                 std::size_t bin_row_offset)
+    -> phmap::btree_map<RowID, Row> {
+  phmap::btree_map<RowID, Row> buffer;
+
+  for (const auto &p : blk) {
+    const auto col = static_cast<std::int32_t>(p.bin2_id - bin_row_offset);
+    auto it = buffer.find(col);
+    if (it != buffer.end()) {
+      it->second.push_back(p);
+    } else {
+      buffer.emplace(col, std::vector<ThinPixel<float>>{p});
+    }
+  }
+
+  for (auto &[_, v] : buffer) {
+    std::sort(v.begin(), v.end());
+  }
+  return buffer;
+}
+
 inline std::string MasterIndex::serialize(BinaryBuffer &buffer) const {
   buffer.clear();
   buffer.write(key);
@@ -147,18 +225,23 @@ inline void FooterV5::add_footer(const HiCFooter &footer, std::int64_t matrix_of
                                  std::int32_t matrix_bytes) {
   ++nEntries;
   masterIndex.emplace_back(
-      MasterIndex{fmt::format(FMT_STRING("{}_{}\0"), footer.chrom1().id(), footer.chrom2().id()),
+      MasterIndex{fmt::format(FMT_STRING("{}_{}"), footer.chrom1().id(), footer.chrom2().id()),
                   matrix_offset, matrix_bytes}
 
   );
   // TODO populate other fields
 }
 
-inline HiCFileWriter::HiCFileWriter(HiCHeader header)
+inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::int32_t compression_lvl,
+                                    std::size_t buffer_size)
     : _header(std::make_shared<HiCHeader>(std::move(header))),
       _fs(std::make_shared<filestream::FileStream>(
-          filestream::FileStream::create(std::string{url()}))) {
-  assert(_header->chromosomes.contains("ALL"));
+          filestream::FileStream::create(std::string{url()}))),
+      _compressor(libdeflate_alloc_compressor(compression_lvl)),
+      _compression_buffer(buffer_size, '\0') {
+  if (!_header->chromosomes.contains("ALL")) {
+    throw std::runtime_error("reference should contain chromosome ALL");
+  }
 }
 
 inline std::string_view HiCFileWriter::url() const noexcept {
@@ -242,12 +325,15 @@ inline std::pair<std::streamoff, std::size_t> HiCFileWriter::write_body_metadata
 inline void HiCFileWriter::write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id) {
   assert(_header);
 
-  // chrom_id is 0 when chromosome is ALL
-  const auto nResolutions = chrom1_id == 0 ? std::int32_t(1) : std::int32_t(resolutions().size());
+  MatrixMetadata m;
 
-  _fs->write(static_cast<std::int32_t>(chrom1_id));
-  _fs->write(static_cast<std::int32_t>(chrom2_id));
-  _fs->write(nResolutions);
+  m.chr1Idx = static_cast<std::int32_t>(chrom1_id);
+  m.chr2Idx = static_cast<std::int32_t>(chrom2_id);
+
+  // chrom_id is 0 when chromosome is ALL
+  m.nResolutions = chrom1_id == 0 ? std::int32_t(1) : std::int32_t(resolutions().size());
+
+  _fs->write(m.serialize(_bbuffer));
 }
 
 inline void HiCFileWriter::write_resolution_metadata(std::uint32_t chrom1_id,
@@ -263,27 +349,20 @@ inline void HiCFileWriter::write_resolution_metadata(std::uint32_t chrom1_id,
         num_bins, bin_size, chrom1_id == chrom2_id ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
     const auto num_rows = num_bins / (num_columns + 1);
 
-    // write resolution metadata
-    const auto resIdx = static_cast<std::int32_t>(i);
-    const float sumCount = 0;
-    const float occupiedCellCount = 0;
-    const float percent5 = 0;
-    const float percent95 = 0;
-    const auto binSize = static_cast<std::int32_t>(bin_size);
-    const std::int32_t blockSize = static_cast<std::int32_t>(num_rows);
-    const auto blockColumnCount = static_cast<std::int32_t>(num_columns);
-    const auto blockCount = static_cast<std::int32_t>(_block_index.size());
+    MatrixResolutionMetadata m{};
+    m.unit = unit;
+    m.resIdx = static_cast<std::int32_t>(i);
+    m.sumCounts = 0;
+    m.occupiedCellCount = 0;  // not used
+    m.percent5 = 0;           // not used
+    m.percent95 = 0;          // not used
+    m.binSize = static_cast<std::int32_t>(bin_size);
+    m.blockSize = static_cast<std::int32_t>(num_rows);
+    m.blockColumnCount = static_cast<std::int32_t>(num_columns);
+    m.blockCount = static_cast<std::int32_t>(_block_index.size());
 
-    _fs->write(unit.c_str(), unit.size() + 1);
-    _fs->write(resIdx);
-    _fs->write(sumCount);
-    _fs->write(occupiedCellCount);
-    _fs->write(percent5);
-    _fs->write(percent95);
-    _fs->write(binSize);
-    _fs->write(blockSize);
-    _fs->write(blockColumnCount);
-    _fs->write(blockCount);
+    // write resolution metadata
+    _fs->write(m.serialize(_bbuffer));
 
     // write block index
     for (const auto &b : _block_index) {
@@ -296,60 +375,27 @@ inline std::streamoff HiCFileWriter::write_interaction_block(const InteractionBl
                                                              std::size_t bin_column_offset,
                                                              std::size_t bin_row_offset) {
   const auto offset = _fs->tellp();
-  _bbuffer.clear();
 
   // TODO support dense layout
   // TODO support representation using shorts
 
-  const auto nRecords = static_cast<std::int32_t>(blk.size());
-  const auto binColumnOffset = static_cast<std::int32_t>(bin_column_offset);
-  const auto binRowOffset = static_cast<std::int32_t>(bin_row_offset);
-  const auto useFloatContact = true;
-  const auto useIntXPos = true;
-  const auto useIntYPos = true;
-  const std::uint8_t matrixRepresentation = 1;
+  MatrixInteractionBlock m(blk, bin_row_offset);
 
-  _bbuffer.write(nRecords);
-  _bbuffer.write(binColumnOffset);
-  _bbuffer.write(binRowOffset);
-  _bbuffer.write(useFloatContact);
-  _bbuffer.write(useIntXPos);
-  _bbuffer.write(useIntYPos);
-  _bbuffer.write(matrixRepresentation);
+  m.nRecords = static_cast<std::int32_t>(blk.size());
+  m.binColumnOffset = static_cast<std::int32_t>(bin_column_offset);
+  m.binRowOffset = static_cast<std::int32_t>(bin_row_offset);
+  m.useFloatContact = true;
+  m.useIntXPos = true;
+  m.useIntYPos = true;
+  m.matrixRepresentation = 1;
 
-  const auto interactions = group_interactions_by_column(blk, bin_row_offset);
-  const auto rowCount = static_cast<std::int32_t>(interactions.size());  // TODO support short
-  _bbuffer.write(rowCount);
+  _fs->write(m.serialize(_bbuffer, *_compressor, _compression_buffer));
 
-  for (const auto &[row, pixels] : interactions) {
-    const auto rowNumber = static_cast<std::int32_t>(row);              // TODO support short
-    const auto recordCount = static_cast<std::int32_t>(pixels.size());  // TODO support short
-    _bbuffer.write(rowNumber);
-    _bbuffer.write(recordCount);
+  MatrixBlockMetadata mm{static_cast<std::int32_t>(blk.id()), static_cast<std::int64_t>(offset),
+                         static_cast<std::int32_t>(_fs->tellp() - offset)};
 
-    assert(std::is_sorted(pixels.begin(), pixels.end()));
-    for (const auto &p : pixels) {
-      const auto binColumn = static_cast<std::int32_t>(p.bin1_id - bin_row_offset);
-      const auto value = p.count;
-      _bbuffer.write(binColumn);
-      _bbuffer.write(value);
-    }
-  }
-
-  // TODO compress properly
-  auto *compressor = libdeflate_alloc_compressor(9);
-  std::string out(1'000'000, '\0');
-  const auto compressed_size = libdeflate_zlib_compress(
-      compressor, _bbuffer.get().data(), _bbuffer.get().size(), out.data(), out.size());
-  libdeflate_free_compressor(compressor);
-  out.resize(compressed_size);
-  _fs->write(out);
-
-  MatrixBlockMetadata m{static_cast<std::int32_t>(blk.id()), static_cast<std::int64_t>(offset),
-                        static_cast<std::int32_t>(_bbuffer.get().size())};
-
-  assert(!_block_index.contains(m));
-  _block_index.emplace(std::move(m));
+  assert(!_block_index.contains(mm));
+  _block_index.emplace(std::move(mm));
 
   return static_cast<std::streamoff>(offset);
 }

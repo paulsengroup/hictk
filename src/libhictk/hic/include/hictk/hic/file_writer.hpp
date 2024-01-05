@@ -6,10 +6,12 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
+#include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "hictk/hic/binary_buffer.hpp"
@@ -18,8 +20,16 @@
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
 
+template <>
+struct std::default_delete<libdeflate_compressor> {
+  void operator()(libdeflate_compressor* compressor) const {
+    libdeflate_free_compressor(compressor);
+  }
+};
+
 namespace hictk::hic::internal {
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#matrix-metadata
 struct MatrixMetadata {
   std::int32_t chr1Idx{};
   std::int32_t chr2Idx{};
@@ -37,6 +47,7 @@ struct MatrixBlockMetadata {
   [[nodiscard]] bool operator<(const MatrixBlockMetadata& other) const noexcept;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#resolution-zoom-level-metadata
 struct MatrixResolutionMetadata {
   std::string unit{};
   std::int32_t resIdx{};
@@ -54,6 +65,31 @@ struct MatrixResolutionMetadata {
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#blocks
+struct MatrixInteractionBlock {
+  std::int32_t nRecords;
+  std::int32_t binColumnOffset;
+  std::int32_t binRowOffset;
+  std::uint8_t useFloatContact;
+  std::uint8_t useIntXPos;
+  std::uint8_t useIntYPos;
+  std::uint8_t matrixRepresentation;
+
+  MatrixInteractionBlock(const InteractionBlock& blk, std::size_t bin_row_offset);
+
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
+                                      std::string& compression_buffer) const;
+
+ private:
+  using RowID = std::int32_t;
+  using Row = std::vector<ThinPixel<float>>;
+  phmap::btree_map<RowID, Row> _interactions;
+
+  auto group_interactions_by_column(const InteractionBlock& blk, std::size_t bin_row_offset)
+      -> phmap::btree_map<RowID, Row>;
+};
+
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index
 struct MasterIndex {
   std::string key;
   std::int64_t position;
@@ -61,21 +97,25 @@ struct MasterIndex {
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
 struct ExpectedValues {
   std::int32_t nExpectedValueVectors = 0;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
 struct NormalizedExpectedValues {
   std::int32_t nNormExpectedValueVectors = 0;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-index
 struct NormalizationVectorIndex {
   std::int32_t nNormVectors = 0;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
 };
 
+// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
 struct NormalizationVectorArray {
   std::int64_t nValues = 0;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
@@ -104,6 +144,8 @@ class HiCFileWriter {
   phmap::btree_set<MatrixBlockMetadata> _block_index{};
 
   BinaryBuffer _bbuffer{};
+  std::unique_ptr<libdeflate_compressor> _compressor{};
+  std::string _compression_buffer{};
 
   static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
@@ -111,7 +153,8 @@ class HiCFileWriter {
 
  public:
   HiCFileWriter() = default;
-  explicit HiCFileWriter(HiCHeader header);
+  explicit HiCFileWriter(HiCHeader header, std::int32_t compression_lvl = 9,
+                         std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
