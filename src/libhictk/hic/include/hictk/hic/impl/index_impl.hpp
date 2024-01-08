@@ -155,25 +155,26 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
   const auto row1 = bin3 / _block_bin_count;
   const auto row2 = (bin4 + 1) / _block_bin_count;
 
-  std::vector<BlockIndex> buffer{};
+  phmap::flat_hash_set<BlockIndex> buffer{};
   for (auto row = row1; row <= row2; ++row) {
     for (auto col = col1; col <= col2; ++col) {
       const auto block_id = (row * block_column_count()) + col;
       const auto match = _buffer.find(BlockIndex{block_id, 0, 0, _block_column_count});
       if (match != _buffer.end()) {
-        buffer.emplace_back(*match);
+        buffer.emplace(*match);
       }
     }
   }
 
+  std::vector<BlockIndex> flat_buffer(buffer.begin(), buffer.end());
   // Sort first by row, then by column
-  std::sort(buffer.begin(), buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
+  std::sort(flat_buffer.begin(), flat_buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
     if (b1.coords().i1 != b2.coords().i1) {
       return b1.coords().i1 < b2.coords().i1;
     }
     return b1.coords().i2 < b2.coords().i2;
   });
-  return buffer;
+  return flat_buffer;
 }
 
 inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
