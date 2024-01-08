@@ -299,8 +299,11 @@ inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     for (const auto &p : pixels) {
       Pixel<float> pp(bin_table, p);
 
-      const auto block_id = pp.coords.is_intra() ? mapper_intra(p.bin1_id, p.bin2_id)
-                                                 : mapper_inter(p.bin1_id, p.bin2_id);
+      const auto bin1_id = pp.coords.bin1.rel_id();
+      const auto bin2_id = pp.coords.bin2.rel_id();
+
+      const auto block_id =
+          pp.coords.is_intra() ? mapper_intra(bin1_id, bin2_id) : mapper_inter(bin1_id, bin2_id);
       auto it = blocks.find(block_id);
       if (it != blocks.end()) {
         it->second.emplace_back(p);
@@ -312,8 +315,10 @@ inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
 
   for (auto &[block_id, pixels] : blocks) {
     assert(!pixels.empty());
-    const auto bin1_offset = pixels.front().bin1_id;
-    const auto bin2_offset = pixels.front().bin2_id;
+    const auto bin1 = bins(resolution).at(pixels.front().bin1_id);
+    const auto bin2 = bins(resolution).at(pixels.front().bin2_id);
+    const auto bin1_offset = bin1.rel_id();
+    const auto bin2_offset = bin2.rel_id();
     write_interaction_block(block_id, chrom1, chrom2, resolution, pixels, bin1_offset, bin2_offset);
   }
 }
