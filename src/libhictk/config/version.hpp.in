@@ -46,7 +46,7 @@ namespace internal {
   }
   buff.append(is_dirty_suffix);
 
-  if (buff.front() == '-') {
+  if (!buff.empty() && buff.front() == '-') {
     buff.erase(0, 1);
   }
 
