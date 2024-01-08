@@ -277,7 +277,13 @@ inline void HiCFileWriter::write_pixels() {
 
 inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
                                         std::uint32_t resolution) {
-  phmap::btree_map<std::uint64_t, std::vector<ThinPixel<float>>> blocks;
+  struct PixelBlock {
+    std::vector<ThinPixel<float>> pixels;
+    std::uint32_t bin1_id_offset;
+    std::uint32_t bin2_id_offset;
+  };
+
+  phmap::btree_map<std::uint64_t, PixelBlock> blocks;
 
   if (!_pixel_tank.contains({chrom1, chrom2})) {
     return;
@@ -299,27 +305,28 @@ inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     for (const auto &p : pixels) {
       Pixel<float> pp(bin_table, p);
 
-      const auto bin1_id = pp.coords.bin1.rel_id();
-      const auto bin2_id = pp.coords.bin2.rel_id();
+      const auto &bin1 = pp.coords.bin1;
+      const auto &bin2 = pp.coords.bin2;
+
+      const auto bin1_id = bin1.rel_id();
+      const auto bin2_id = bin2.rel_id();
 
       const auto block_id =
           pp.coords.is_intra() ? mapper_intra(bin1_id, bin2_id) : mapper_inter(bin1_id, bin2_id);
       auto it = blocks.find(block_id);
       if (it != blocks.end()) {
-        it->second.emplace_back(p);
+        it->second.pixels.emplace_back(p);
+        it->second.bin1_id_offset = std::min(it->second.bin1_id_offset, bin1_id);
+        it->second.bin2_id_offset = std::min(it->second.bin2_id_offset, bin2_id);
       } else {
-        blocks.emplace(block_id, std::vector<ThinPixel<float>>{p});
+        blocks.emplace(block_id, PixelBlock{{p}, bin1_id, bin2_id});
       }
     }
   }
 
-  for (auto &[block_id, pixels] : blocks) {
-    assert(!pixels.empty());
-    const auto bin1 = bins(resolution).at(pixels.front().bin1_id);
-    const auto bin2 = bins(resolution).at(pixels.front().bin2_id);
-    const auto bin1_offset = bin1.rel_id();
-    const auto bin2_offset = bin2.rel_id();
-    write_interaction_block(block_id, chrom1, chrom2, resolution, pixels, bin1_offset, bin2_offset);
+  for (auto &[block_id, blk] : blocks) {
+    write_interaction_block(block_id, chrom1, chrom2, resolution, blk.pixels, blk.bin1_id_offset,
+                            blk.bin2_id_offset);
   }
 }
 
