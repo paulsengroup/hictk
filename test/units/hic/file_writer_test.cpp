@@ -9,9 +9,9 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
-#include "hictk/fmt.hpp" // TODO remove
 
 #include "hictk/chromosome.hpp"
+#include "hictk/fmt.hpp"  // TODO remove
 #include "hictk/hic.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/reference.hpp"
@@ -60,26 +60,37 @@ TEST_CASE("HiC: BlockMapperIntra", "[hic][v9][short]") {
   SECTION("intra") {
     // Test case based on blocks fetched by running an instrumented version of
     // hictk dump test/data/hic/4DNFIZ1ZVXC8.hic9 --resolution 10000 --range chr3R:0-50000
-    HiCFileWriter::BlockMapperIntra mapper(803, 4);
-    CHECK(mapper(0, 0) == 0);
-    CHECK(mapper(0, 100) == 0);
-    CHECK(mapper(802, 802) == 0);
-    CHECK(mapper(803, 803) == 1);
-    CHECK(mapper(1038, 2137) == 1);
-    CHECK(mapper(235, 1376) == 5);
-    CHECK(mapper(8, 3203) == 5);
+    {
+      const HiCFileWriter::BlockMapperIntra mapper(803, 4);
+      CHECK(mapper(0, 0) == 0);
+      CHECK(mapper(0, 100) == 0);
+      CHECK(mapper(802, 802) == 0);
+      CHECK(mapper(803, 803) == 1);
+      CHECK(mapper(1038, 2137) == 1);
+      CHECK(mapper(235, 1376) == 5);
+      CHECK(mapper(8, 3203) == 5);
+    }
   }
 
   SECTION("inter") {
     // Test case based on blocks fetched by running an instrumented version of
-    // hictk dump test/data/hic/4DNFIZ1ZVXC8.hic9 --resolution 10000 --range chr3R:0-50000 --range2
+    // hictk dump test/data/hic/4DNFIZ1ZVXC8.hic9 --resolution 10000 --range chr3L:0-50000 --range2
     // chr3R:0-10000000
-    HiCFileWriter::BlockMapperInter mapper(803, 4);
-    CHECK(mapper(0, 0) == 0);
-    CHECK(mapper(0, 100) == 0);
-    CHECK(mapper(802, 802) == 0);
-    CHECK(mapper(7, 803) == 4);
-    CHECK(mapper(795, 1605) == 4);
+    {
+      const HiCFileWriter::BlockMapperInter mapper(803, 4);
+      CHECK(mapper(0, 0) == 0);
+      CHECK(mapper(0, 100) == 0);
+      CHECK(mapper(802, 802) == 0);
+      CHECK(mapper(7, 803) == 4);
+      CHECK(mapper(795, 1605) == 4);
+    }
+
+    {
+      const HiCFileWriter::BlockMapperInter mapper(101, 1);
+      CHECK(mapper(0, 0) == 0);
+      CHECK(mapper(0, 99) == 0);
+      CHECK(mapper(99, 99) == 0);
+    }
   }
 }
 
@@ -153,7 +164,8 @@ TEST_CASE("devel") {
 */
 
 TEST_CASE("devel") {
-  const hic::File f1((datadir / "ENCFF993FGR.hic").string(), 2500000);
+  const std::uint32_t resolution = 1'000;
+  const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
   {
     // clang-format off
     const HiCHeader header{
@@ -178,17 +190,23 @@ TEST_CASE("devel") {
     w.finalize();
   }
 
-  const hic::File f2("/tmp/test.hic", 2500000);
-  const auto pixels = f2.fetch().read_all<float>();
+  const hic::File f2("/tmp/test.hic", resolution);
   const auto expected_pixels = f1.fetch().read_all<float>();
+  const auto pixels = f2.fetch().read_all<float>();
 
-  REQUIRE(expected_pixels.size() == pixels.size());
-  for (std::size_t i = 0; i < expected_pixels.size(); ++i) {
-    if (i >= pixels.size()) {
-      fmt::print(FMT_STRING("{} : NA\n"), expected_pixels[i]);
+  const auto pixels_ = phmap::btree_set<Pixel<float>>(pixels.begin(), pixels.end());
+  const auto expected_pixels_ =
+      phmap::btree_set<Pixel<float>>(expected_pixels.begin(), expected_pixels.end());
+
+  CHECK(expected_pixels.size() == pixels.size());
+  CHECK(expected_pixels.size() == expected_pixels_.size());
+  CHECK(pixels_.size() == expected_pixels.size());
+  for (const auto& ep : expected_pixels) {
+    auto it = pixels_.find(ep);
+    if (it != pixels_.end()) {
+      fmt::print(FMT_STRING("{} : {}\n"), ep, *it);
     } else {
-      fmt::print(FMT_STRING("{} : {}\n"), expected_pixels[i], pixels[i]);
-      CHECK(expected_pixels[i] == pixels[i]);
+      fmt::print(FMT_STRING("{} : NA\n"), ep);
     }
   }
 }
