@@ -23,7 +23,7 @@ namespace hictk::test::file {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("File", "[file][short]") {
+TEST_CASE("HiC: File", "[file][short]") {
   const std::uint32_t resolution = 1'000'000;
   const auto path_hic = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
   const auto path_cooler = (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string();
