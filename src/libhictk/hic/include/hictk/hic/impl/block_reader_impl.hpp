@@ -71,7 +71,7 @@ inline double HiCBlockReader::avg() const {
   const auto bin_size = bins().bin_size();
   // We round down for two reasons:
   // - to be consistent with straw
-  // - and because the last bin is usually smaller than the bin_size
+  // - because the last bin is usually smaller than the bin_size
   const auto num_bins1 = chrom1().size() / bin_size;
   const auto num_bins2 = chrom2().size() / bin_size;
 
