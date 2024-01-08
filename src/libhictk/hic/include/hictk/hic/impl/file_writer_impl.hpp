@@ -27,6 +27,7 @@
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/transformers/coarsen.hpp"
 
 namespace hictk::hic::internal {
 
@@ -263,7 +264,7 @@ inline void HiCFileWriter::append_pixels(std::uint32_t resolution, PixelIt first
   });
 }
 
-inline void HiCFileWriter::write_pixels() {
+inline void HiCFileWriter::write_pixels([[maybe_unused]] bool write_chromosome_ALL) {
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto &chrom1 = chromosomes().at(chrom1_id);
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
@@ -272,6 +273,9 @@ inline void HiCFileWriter::write_pixels() {
         write_pixels(chrom1, chrom2, res);
       }
     }
+  }
+  if (write_chromosome_ALL) {
+    // write_pixels_ALL();
   }
 }
 
@@ -330,19 +334,41 @@ inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   }
 }
 
+inline void HiCFileWriter::write_pixels_ALL(std::size_t num_bins) {
+  const auto genome_size = chromosomes().chrom_size_prefix_sum().back();
+  const auto resolution = static_cast<std::uint32_t>(genome_size / num_bins);
+
+  _bin_tables.emplace(resolution, BinTable{chromosomes(), resolution});
+
+  const auto &bin_table = bins(resolutions().front());
+  const auto factor = std::max(bin_table.size(), bin_table.size() / resolution);
+
+  assert(!_pixel_tank.empty());
+  std::vector<ThinPixel<float>> pixels{};
+  for (const auto &[_, pixels_] : _pixel_tank) {
+    const transformers::CoarsenPixels coarsener(pixels_.begin(), pixels_.end(),
+                                                std::make_shared<BinTable>(bin_table), factor);
+    std::copy(coarsener.begin(), coarsener.end(), std::back_inserter(pixels));
+  }
+
+  std::sort(pixels.begin(), pixels.end());
+  write_interaction_block(0, chromosomes().at(0), chromosomes().at(0), resolution, pixels, 0, 0);
+}
+
 inline void HiCFileWriter::write_header() {
   assert(_fs->tellg() == 0);
 
+  assert(_header);
   assert(_header->version == 9);
-  assert(!_header->chromosomes.empty());
-  assert(!_header->resolutions.empty());
+  assert(!chromosomes().empty());
+  assert(!resolutions().empty());
 
   _fs->write("HIC\0", 4);
   _fs->write(_header->version);
   _fs->write(std::int64_t(-1));  // masterIndexOffset
   _fs->write(_header->genomeID.c_str(), _header->genomeID.size() + 1);
-  _fs->write(_header->nviPosition);
-  _fs->write(_header->nviLength);
+  _fs->write(std::int64_t(_fs->tellp() + sizeof(_header->normVectorIndexPosition)));
+  _fs->write(std::int64_t(0));
 
   // Write attributes
   const auto nAttributes = static_cast<std::int32_t>(_header->attributes.size());
@@ -353,10 +379,10 @@ inline void HiCFileWriter::write_header() {
   }
 
   // Write chromosomes
-  auto numChromosomes = static_cast<std::uint32_t>(_header->chromosomes.size());
+  auto numChromosomes = static_cast<std::uint32_t>(chromosomes().size());
   _fs->write(numChromosomes);
 
-  for (const Chromosome &c : _header->chromosomes) {
+  for (const Chromosome &c : chromosomes()) {
     const auto name = std::string{c.name()};
     _fs->write(name.c_str(), name.size() + 1);
     _fs->write<std::int64_t>(c.size());
@@ -367,6 +393,10 @@ inline void HiCFileWriter::write_header() {
   const std::vector<std::int32_t> resolutions(_header->resolutions.begin(),
                                               _header->resolutions.end());
   _fs->write(resolutions);
+
+  // write fragments: TODO
+  const std::int32_t nFragResolutions = 0;
+  _fs->write(nFragResolutions);
 }
 
 inline void HiCFileWriter::write_master_index_offset(std::int64_t master_index_offset) {
@@ -508,7 +538,6 @@ inline std::streamoff HiCFileWriter::write_interaction_block(
 
 inline std::streamoff HiCFileWriter::write_footers() {
   const auto offset = _fs->tellp();
-  // TODO write bytes v5;
   const std::int64_t nBytesV5 = 0;  // TODO
   const std::int32_t nEntries = static_cast<std::int32_t>(_footers.size());
   _fs->write(nBytesV5);
@@ -569,6 +598,9 @@ inline void HiCFileWriter::finalize() {
       master_index_offset = std::min(offsets.matrix_metadata_offset, master_index_offset);
       file_offsets[key] = offsets.matrix_metadata_offset;
       matrix_size_bytes[key] = offsets.matrix_metadata_bytes;
+      if (chrom2.is_all()) {
+        break;
+      }
     }
   }
 

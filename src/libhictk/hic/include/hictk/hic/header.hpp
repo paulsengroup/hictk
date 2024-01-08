@@ -21,8 +21,8 @@ struct HiCHeader {
   std::int32_t version{-1};
   std::int64_t masterIndexOffset{-1};
   std::string genomeID{};
-  std::int64_t nviPosition{-1};
-  std::int64_t nviLength{-1};
+  std::int64_t normVectorIndexPosition{-1};
+  std::int64_t normVectorIndexLength{-1};
   Reference chromosomes{};
   std::vector<std::uint32_t> resolutions{};
   phmap::flat_hash_map<std::string, std::string> attributes{};

@@ -276,8 +276,8 @@ inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
   }
 
   if (header.version > 8) {
-    fs.read(header.nviPosition);
-    fs.read(header.nviLength);
+    fs.read(header.normVectorIndexPosition);
+    fs.read(header.normVectorIndexLength);
   }
 
   const auto nAttributes = fs.read<std::int32_t>();

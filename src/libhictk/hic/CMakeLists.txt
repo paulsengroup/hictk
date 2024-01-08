@@ -27,7 +27,8 @@ target_link_libraries(
   INTERFACE hictk::balancing
             hictk::common
             hictk::chromosome
-            hictk::reference)
+            hictk::reference
+            hictk::transformers)
 
 target_link_system_libraries(
   hic

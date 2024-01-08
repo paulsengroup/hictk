@@ -164,7 +164,7 @@ TEST_CASE("devel") {
 */
 
 TEST_CASE("devel") {
-  const std::uint32_t resolution = 1'000;
+  const std::uint32_t resolution = 100'000;
   const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
   {
     // clang-format off
@@ -187,6 +187,7 @@ TEST_CASE("devel") {
     const auto sel = f1.fetch();
     w.append_pixels(f1.bin_size(), sel.begin<float>(), sel.end<float>());
     w.write_pixels();
+    // w.write_pixels_ALL();
     w.finalize();
   }
 
@@ -194,20 +195,9 @@ TEST_CASE("devel") {
   const auto expected_pixels = f1.fetch().read_all<float>();
   const auto pixels = f2.fetch().read_all<float>();
 
-  const auto pixels_ = phmap::btree_set<Pixel<float>>(pixels.begin(), pixels.end());
-  const auto expected_pixels_ =
-      phmap::btree_set<Pixel<float>>(expected_pixels.begin(), expected_pixels.end());
-
-  CHECK(expected_pixels.size() == pixels.size());
-  CHECK(expected_pixels.size() == expected_pixels_.size());
-  CHECK(pixels_.size() == expected_pixels.size());
-  for (const auto& ep : expected_pixels) {
-    auto it = pixels_.find(ep);
-    if (it != pixels_.end()) {
-      fmt::print(FMT_STRING("{} : {}\n"), ep, *it);
-    } else {
-      fmt::print(FMT_STRING("{} : NA\n"), ep);
-    }
+  REQUIRE(expected_pixels.size() == pixels.size());
+  for (std::size_t i = 0; i < pixels.size(); ++i) {
+    CHECK(pixels[i] == expected_pixels[i]);
   }
 }
 

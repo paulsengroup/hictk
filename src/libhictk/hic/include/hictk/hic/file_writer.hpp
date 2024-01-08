@@ -146,7 +146,6 @@ class HiCFileWriter {
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
   phmap::flat_hash_map<std::uint32_t, BinTable> _bin_tables{};
-
   phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
   std::vector<MatrixMetadata> _matrix_metadata{};
   std::vector<MatrixResolutionMetadata> _matrix_resolution_metadata{};
@@ -178,12 +177,14 @@ class HiCFileWriter {
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
-  void write_pixels();
+  void write_pixels(bool write_chromosome_ALL = true);
   void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution);
+  void write_pixels_ALL(std::size_t num_bins = 1000);
 
   // Write header
   void write_header();
   void write_master_index_offset(std::int64_t master_index);
+  void write_norm_vector_index_metadata();
 
   // Write body
   auto write_body_metadata(const Chromosome& chrom1, const Chromosome& chrom2,

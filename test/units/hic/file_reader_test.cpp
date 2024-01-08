@@ -39,8 +39,8 @@ TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 8);
-  CHECK(header.nviPosition == -1);
-  CHECK(header.nviLength == -1);
+  CHECK(header.normVectorIndexPosition == -1);
+  CHECK(header.normVectorIndexLength == -1);
 
   REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
@@ -62,8 +62,8 @@ TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 9);
-  CHECK(header.nviPosition == 131417220);
-  CHECK(header.nviLength == 6600);
+  CHECK(header.normVectorIndexPosition == 131417220);
+  CHECK(header.normVectorIndexLength == 6600);
 
   REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
