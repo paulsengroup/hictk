@@ -601,7 +601,7 @@ inline std::size_t HiCFileWriter::compute_block_column_count(std::size_t num_bin
 
   const auto max_sqrt =
       static_cast<std::size_t>(std::sqrt(std::numeric_limits<std::int32_t>::max()));
-  return std::min(num_columns, max_sqrt - 1);
+  return std::clamp(num_columns, std::size_t(1), max_sqrt - 1);
 }
 
 inline std::size_t HiCFileWriter::compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
