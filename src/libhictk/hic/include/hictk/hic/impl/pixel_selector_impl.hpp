@@ -124,8 +124,8 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
       return float(_reader->avg());
     }
 
-    const auto i = (bin2 - bin1);
-    assert(i < expected.size());
+    const auto i =
+        std::min(bin2 - bin1, conditional_static_cast<std::uint64_t>(expected.size() - 1));
     return float(expected[i]);
   }();
 
@@ -694,8 +694,8 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
       return float(_reader->avg());
     }
 
-    const auto i = (bin2 - bin1);
-    assert(i < expected.size());
+    const auto i =
+        std::min(bin2 - bin1, conditional_static_cast<std::uint64_t>(expected.size() - 1));
     return float(expected[i]);
   }();
 
