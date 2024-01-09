@@ -50,8 +50,11 @@ inline double HiCBlockReader::avg() const {
   }
 
   const auto bin_size = bins().bin_size();
-  const auto num_bins1 = (chrom1().size() + bin_size - 1) / bin_size;
-  const auto num_bins2 = (chrom2().size() + bin_size - 1) / bin_size;
+  // We round down for two reasons:
+  // - to be consistent with straw
+  // - because the last bin is usually smaller than the bin_size
+  const auto num_bins1 = chrom1().size() / bin_size;
+  const auto num_bins2 = chrom2().size() / bin_size;
 
   return sum() / double(num_bins1 * num_bins2);
 }

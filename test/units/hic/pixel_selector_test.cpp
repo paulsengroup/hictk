@@ -359,7 +359,7 @@ TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
       }
       SECTION("inter-chromosomal") {
         constexpr std::size_t expected_size = 56743;
-        constexpr double expected_sum = 12610.80619812;
+        constexpr double expected_sum = 12710.32078149;
         auto sel = File(path, 10'000, MatrixType::expected, MatrixUnit::BP)
                        .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
         const auto buffer = sel.read_all<double>();
@@ -387,7 +387,7 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
     }
     SECTION("inter-chromosomal") {
       constexpr std::size_t expected_size = 56743;
-      constexpr double expected_sum = 317520.00459671;
+      constexpr double expected_sum = 315034.01705551;
       auto sel = File(path, 10'000, MatrixType::oe, MatrixUnit::BP)
                      .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
       const auto buffer = sel.read_all<double>();
