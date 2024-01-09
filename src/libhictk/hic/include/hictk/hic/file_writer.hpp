@@ -36,7 +36,7 @@ struct MatrixMetadata {
   std::int32_t chr2Idx{};
   std::int32_t nResolutions{};
 
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 struct MatrixBlockMetadata {
@@ -44,7 +44,7 @@ struct MatrixBlockMetadata {
   std::int64_t blockPosition{};
   std::int32_t blockSizeBytes{};
 
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
   [[nodiscard]] bool operator<(const MatrixBlockMetadata& other) const noexcept;
 };
 
@@ -61,7 +61,7 @@ struct MatrixResolutionMetadata {
   std::int32_t blockColumnCount{};
   std::int32_t blockCount{};
 
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#blocks
@@ -78,7 +78,7 @@ struct MatrixInteractionBlock {
                          std::size_t bin_row_offset);
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
-                                      std::string& compression_buffer) const;
+                                      std::string& compression_buffer, bool clear = true) const;
 
  private:
   using RowID = std::int32_t;
@@ -95,31 +95,48 @@ struct MasterIndex {
   std::string key;
   std::int64_t position;
   std::int32_t size;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+};
+
+struct ExpectedValuesBlock {
+  std::string unit{};
+  std::int32_t binSize{};
+  std::int64_t nValues{};
+  std::vector<float> value{};
+  std::int32_t nChrScaleFactors{};
+  std::vector<std::int32_t> chrIndex{};
+  std::vector<float> chrScaleFactor{};
+
+  ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
+                      const std::vector<double>& weights,
+                      const std::vector<std::uint32_t>& chrom_ids,
+                      const std::vector<double>& scale_factors);
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
 struct ExpectedValues {
   std::int32_t nExpectedValueVectors = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  std::vector<ExpectedValuesBlock> expectedValues;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
 struct NormalizedExpectedValues {
   std::int32_t nNormExpectedValueVectors = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-index
 struct NormalizationVectorIndex {
   std::int32_t nNormVectors = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
 struct NormalizationVectorArray {
   std::int64_t nValues = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 struct FooterV5 {
@@ -131,7 +148,7 @@ struct FooterV5 {
   std::vector<NormalizationVectorArray> normVectArray{};
 
   FooterV5() = default;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer) const;
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 struct BlockIndexKey {
@@ -142,10 +159,51 @@ struct BlockIndexKey {
   [[nodiscard]] bool operator<(const BlockIndexKey& other) const noexcept;
 };
 
+class ExpectedValuesAggregator {
+  std::shared_ptr<const BinTable> _bins{};
+  std::size_t _num_bins_gw{};
+
+  using CisKey = Chromosome;
+  using TransKey = std::pair<CisKey, CisKey>;
+  phmap::flat_hash_map<CisKey, double> _cis_sum{};
+  phmap::flat_hash_map<TransKey, double> _trans_sum{};
+
+  std::vector<double> _possible_distances{};
+  std::vector<double> _actual_distances{};
+
+  std::vector<double> _weights{};
+  phmap::btree_map<Chromosome, double> _scaling_factors{};
+
+ public:
+  ExpectedValuesAggregator() = default;
+  explicit ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins);
+  void add(const ThinPixel<float>& p);
+  void add(const Pixel<float>& p);
+
+  void compute_density();
+
+  [[nodiscard]] const std::vector<double>& weights() const noexcept;
+
+  [[nodiscard]] double scaling_factor(const Chromosome& chrom) const;
+  [[nodiscard]] const phmap::btree_map<Chromosome, double>& scaling_factors() const noexcept;
+
+ private:
+  [[nodiscard]] const Reference& chromosomes() const noexcept;
+
+  void compute_density_cis();
+  void compute_density_trans();
+
+  [[nodiscard]] double at(const Chromosome& chrom) const;
+  [[nodiscard]] double at(const Chromosome& chrom1, const Chromosome& chrom2) const;
+
+  [[nodiscard]] double& at(const Chromosome& chrom);
+  [[nodiscard]] double& at(const Chromosome& chrom1, const Chromosome& chrom2);
+};
+
 class HiCFileWriter {
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
-  phmap::flat_hash_map<std::uint32_t, BinTable> _bin_tables{};
+  phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>> _bin_tables{};
   phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
   std::vector<MatrixMetadata> _matrix_metadata{};
   std::vector<MatrixResolutionMetadata> _matrix_resolution_metadata{};
@@ -159,6 +217,8 @@ class HiCFileWriter {
   using ChromPixelTank = phmap::btree_set<ThinPixel<float>>;
   using PixelTank = phmap::flat_hash_map<PixelTankKey, ChromPixelTank>;
   PixelTank _pixel_tank{};
+
+  phmap::flat_hash_map<std::uint32_t, ExpectedValuesAggregator> _expected_values{};
 
   static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
@@ -175,7 +235,8 @@ class HiCFileWriter {
   [[nodiscard]] const std::vector<std::uint32_t> resolutions() const noexcept;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
+  void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel,
+                     bool update_expected_values = true);
 
   void write_pixels(bool write_chromosome_ALL = true);
   void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution);
@@ -183,8 +244,8 @@ class HiCFileWriter {
 
   // Write header
   void write_header();
-  void write_master_index_offset(std::int64_t master_index);
-  void write_norm_vector_index_metadata();
+  void write_footer_offset(std::int64_t master_index_offset);
+  void write_norm_vector_index(std::size_t position, std::size_t length);
 
   // Write body
   auto write_body_metadata(const Chromosome& chrom1, const Chromosome& chrom2,
@@ -195,10 +256,14 @@ class HiCFileWriter {
                                          const std::vector<ThinPixel<float>>& pixels,
                                          std::size_t bin_column_offset, std::size_t bin_row_offset);
 
+  // Write footer
   std::streamoff write_footers();
-
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2, std::size_t file_offset,
                   std::size_t matrix_metadata_bytes);
+  void write_footer_section_size(std::uint64_t footer_offset, std::uint64_t bytes);
+
+  // Write expected/normalization values
+  void write_expected_values(std::string_view unit);
 
   void finalize();
 

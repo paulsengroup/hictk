@@ -16,6 +16,7 @@
 #include <exception>
 #include <ios>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -31,8 +32,11 @@
 
 namespace hictk::hic::internal {
 
-inline std::string MatrixMetadata::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string MatrixMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(chr1Idx);
   buffer.write(chr2Idx);
   buffer.write(nResolutions);
@@ -40,8 +44,11 @@ inline std::string MatrixMetadata::serialize(BinaryBuffer &buffer) const {
   return buffer.get();
 }
 
-inline std::string MatrixBlockMetadata::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string MatrixBlockMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(blockNumber);
   buffer.write(blockPosition);
   buffer.write(blockSizeBytes);
@@ -53,8 +60,10 @@ inline bool MatrixBlockMetadata::operator<(const MatrixBlockMetadata &other) con
   return blockNumber < other.blockNumber;
 }
 
-inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
 
   buffer.write(unit);
   buffer.write(resIdx);
@@ -79,11 +88,14 @@ inline MatrixInteractionBlock::MatrixInteractionBlock(const BinTable &bins,
 
 inline std::string MatrixInteractionBlock::serialize(BinaryBuffer &buffer,
                                                      libdeflate_compressor &compressor,
-                                                     std::string &compression_buffer) const {
+                                                     std::string &compression_buffer,
+                                                     bool clear) const {
   // TODO support dense layout
   // TODO support representation using shorts
 
-  buffer.clear();
+  if (clear) {
+    buffer.clear();
+  }
 
   buffer.write(nRecords);
   buffer.write(binColumnOffset);
@@ -153,8 +165,11 @@ inline auto MatrixInteractionBlock::group_interactions_by_column(
   return buffer;
 }
 
-inline std::string MasterIndex::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string MasterIndex::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(key);
   buffer.write(position);
   buffer.write(size);
@@ -162,35 +177,98 @@ inline std::string MasterIndex::serialize(BinaryBuffer &buffer) const {
   return buffer.get();
 }
 
-inline std::string ExpectedValues::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
-  buffer.write(nExpectedValueVectors);
+inline ExpectedValuesBlock::ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
+                                                const std::vector<double> &weights,
+                                                const std::vector<std::uint32_t> &chrom_ids,
+                                                const std::vector<double> &scale_factors)
+    : unit(std::string{unit_}),
+      binSize(static_cast<std::int32_t>(bin_size)),
+      nValues(static_cast<std::int32_t>(weights.size())),
+      value(weights.size()),
+      nChrScaleFactors(static_cast<std::int32_t>(chrom_ids.size())),
+      chrIndex(chrom_ids.size()),
+      chrScaleFactor(chrom_ids.size()) {
+  std::transform(weights.begin(), weights.end(), value.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
+  std::transform(chrom_ids.begin(), chrom_ids.end(), chrIndex.begin(),
+                 [](const auto n) { return static_cast<std::int32_t>(n); });
+  std::transform(scale_factors.begin(), scale_factors.end(), chrScaleFactor.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
+}
+
+inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
+  buffer.write(unit);
+  buffer.write(binSize);
+  buffer.write(nValues);
+  buffer.write(value);
+  buffer.write(nChrScaleFactors);
+
+  assert(chrIndex.size() == chrScaleFactor.size());
+  for (std::size_t i = 0; i < chrIndex.size(); ++i) {
+    buffer.write(chrIndex[i]);
+    buffer.write(chrScaleFactor[i]);
+  }
 
   return buffer.get();
 }
 
-inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
+  buffer.write(nExpectedValueVectors);
+
+  if (nExpectedValueVectors == 0) {
+    return buffer.get();
+  }
+
+  for (const auto &ev : expectedValues) {
+    std::ignore = ev.serialize(buffer, false);
+  }
+
+  return buffer.get();
+}
+
+inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(nNormExpectedValueVectors);
 
   return buffer.get();
 }
 
-inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(nNormVectors);
 
   return buffer.get();
 }
 
-inline std::string NormalizationVectorArray::serialize(BinaryBuffer &buffer) const {
-  buffer.clear();
+inline std::string NormalizationVectorArray::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   buffer.write(nValues);
 
   return buffer.get();
 }
 
-inline std::string FooterV5::serialize(BinaryBuffer &buffer) const {
+inline std::string FooterV5::serialize(BinaryBuffer &buffer, bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
   std::string data = masterIndex.serialize(buffer);
   data += expectedValues.serialize(buffer);
   data += normExpectedValues.serialize(buffer);
@@ -212,6 +290,172 @@ inline bool BlockIndexKey::operator<(const BlockIndexKey &other) const noexcept 
   return resolution < other.resolution;
 }
 
+inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins)
+    : _bins(std::move(bins)) {
+  std::uint32_t max_length = 0;
+  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
+    const auto &chrom1 = chromosomes().at(chrom1_id);
+    if (chrom1.is_all()) {
+      continue;
+    }
+
+    max_length = std::max(max_length, chrom1.size());
+    _cis_sum.emplace(chrom1, 0.0);
+
+    for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < chromosomes().size(); ++chrom2_id) {
+      const auto &chrom2 = chromosomes().at(chrom2_id);
+      _trans_sum.emplace(std::make_pair(chrom1, chrom2), 0.0);
+    }
+
+    for (const auto &chrom : chromosomes()) {
+      if (chrom.is_all()) {
+        continue;
+      }
+      _num_bins_gw += chrom.size();
+    }
+  }
+
+  const auto bin_size = _bins->bin_size();
+  const auto max_n_bins = (max_length + bin_size - 1) / bin_size;
+  _possible_distances.resize(max_n_bins, 0.0);
+  _actual_distances.resize(max_n_bins, 0.0);
+
+  for (const auto &chrom : chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+    const auto n_bins = chrom.size() / bin_size;
+    for (std::uint32_t i = 0; i < n_bins; ++i) {
+      _possible_distances[i] += n_bins - i;
+    }
+  }
+}
+
+inline void ExpectedValuesAggregator::add(const ThinPixel<float> &p) {
+  add(Pixel<float>{*_bins, p});
+}
+
+inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
+  const auto &chrom1 = p.coords.bin1.chrom();
+  const auto &chrom2 = p.coords.bin2.chrom();
+
+  if (p.coords.is_intra()) {
+    at(chrom1) += static_cast<double>(p.count);
+    const auto i = p.coords.bin2.id() - p.coords.bin1.id();
+    _actual_distances[i] += static_cast<double>(p.count);
+  } else {
+    at(chrom1, chrom2) += static_cast<double>(p.count);
+  }
+}
+
+inline void ExpectedValuesAggregator::compute_density() {
+  compute_density_cis();
+  compute_density_trans();
+}
+
+inline const std::vector<double> &ExpectedValuesAggregator::weights() const noexcept {
+  return _weights;
+}
+
+inline double ExpectedValuesAggregator::scaling_factor(const Chromosome &chrom) const {
+  return _scaling_factors.at(chrom);
+}
+
+inline const phmap::btree_map<Chromosome, double> &ExpectedValuesAggregator::scaling_factors()
+    const noexcept {
+  return _scaling_factors;
+}
+
+inline void ExpectedValuesAggregator::compute_density_cis() {
+  auto num_sum = _actual_distances.front();
+  auto den_sum = _possible_distances.front();
+  std::size_t bound1 = 0;
+  std::size_t bound2 = 0;
+
+  const auto shot_noise_minimum = 400.0;
+  const auto max_num_bins = _actual_distances.size();
+
+  _weights.resize(max_num_bins);
+  std::fill(_weights.begin(), _weights.end(), 0.0);
+
+  for (auto ii = 0UL; ii < max_num_bins; ii++) {
+    if (num_sum < shot_noise_minimum) {
+      while (num_sum < shot_noise_minimum && bound2 < max_num_bins) {
+        bound2++;
+        num_sum += _actual_distances[bound2];
+        den_sum += _possible_distances[bound2];
+      }
+    } else if (num_sum >= shot_noise_minimum && bound2 - bound1 > 0) {
+      while (bound2 - bound1 > 0 && bound2 < _num_bins_gw && bound1 < _num_bins_gw &&
+             num_sum - _actual_distances[bound1] - _actual_distances[bound2] >=
+                 shot_noise_minimum) {
+        num_sum = num_sum - _actual_distances[bound1] - _actual_distances[bound2];
+        den_sum = den_sum - _possible_distances[bound1] - _possible_distances[bound2];
+        bound1++;
+        bound2--;
+      }
+    }
+    _weights[ii] = num_sum / den_sum;
+    if (bound2 + 2 < max_num_bins) {
+      num_sum += _actual_distances[bound2 + 1] + _actual_distances[bound2 + 2];
+      den_sum += _possible_distances[bound2 + 1] + _possible_distances[bound2 + 2];
+      bound2 += 2;
+    } else if (bound2 + 1 < max_num_bins) {
+      num_sum += _actual_distances[bound2 + 1];
+      den_sum += _possible_distances[bound2 + 1];
+      bound2++;
+    }
+  }
+
+  for (const auto &chrom : chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+    auto num_chrom_bins = chrom.size() / _bins->bin_size();
+    auto expected_count = 0.0;
+    for (std::size_t n = 0; n < num_chrom_bins; n++) {
+      if (n < max_num_bins) {
+        double v = _weights[n];
+        expected_count += (double(num_chrom_bins) - double(n)) * v;
+      }
+    }
+
+    double observed_count = _cis_sum.at(chrom);
+    double f = expected_count / observed_count;
+    _scaling_factors.emplace(chrom, f);
+  }
+}
+
+inline void ExpectedValuesAggregator::compute_density_trans() {
+  for (auto &[k, v] : _trans_sum) {
+    // We round-down to match HiCTools behavior
+    const auto num_bins1 = k.first.size() / _bins->bin_size();
+    const auto num_bins2 = k.second.size() / _bins->bin_size();
+    const auto num_pixels = num_bins1 * num_bins2;
+    v = num_pixels != 0 ? v / static_cast<double>(num_pixels) : 0.0;
+  }
+}
+
+inline double ExpectedValuesAggregator::at(const Chromosome &chrom) const {
+  return _cis_sum.at(chrom);
+}
+
+inline double ExpectedValuesAggregator::at(const Chromosome &chrom1,
+                                           const Chromosome &chrom2) const {
+  return _trans_sum.at(std::make_pair(chrom1, chrom2));
+}
+
+inline double &ExpectedValuesAggregator::at(const Chromosome &chrom) { return _cis_sum.at(chrom); }
+
+inline double &ExpectedValuesAggregator::at(const Chromosome &chrom1, const Chromosome &chrom2) {
+  return _trans_sum.at(std::make_pair(chrom1, chrom2));
+}
+
+inline const Reference &ExpectedValuesAggregator::chromosomes() const noexcept {
+  assert(_bins);
+  return _bins->chromosomes();
+}
+
 inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::int32_t compression_lvl,
                                     std::size_t buffer_size)
     : _header(std::make_shared<HiCHeader>(std::move(header))),
@@ -225,7 +469,8 @@ inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::int32_t compression_l
 
   _bin_tables.reserve(resolutions().size());
   for (const auto &resolution : resolutions()) {
-    _bin_tables.emplace(resolution, BinTableFixed(chromosomes(), resolution));
+    _bin_tables.emplace(resolution, std::make_shared<const BinTable>(chromosomes(), resolution));
+    _expected_values.emplace(resolution, _bin_tables.at(resolution));
   }
 }
 
@@ -240,7 +485,7 @@ inline const Reference &HiCFileWriter::chromosomes() const noexcept {
 }
 
 inline const BinTable &HiCFileWriter::bins(std::uint32_t resolution) const {
-  return _bin_tables.at(resolution);
+  return *_bin_tables.at(resolution);
 }
 
 inline const std::vector<std::uint32_t> HiCFileWriter::resolutions() const noexcept {
@@ -250,8 +495,9 @@ inline const std::vector<std::uint32_t> HiCFileWriter::resolutions() const noexc
 
 template <typename PixelIt, typename>
 inline void HiCFileWriter::append_pixels(std::uint32_t resolution, PixelIt first_pixel,
-                                         PixelIt last_pixel) {
+                                         PixelIt last_pixel, bool update_expected_values) {
   const auto &bin_table = bins(resolution);
+  auto &ev = _expected_values.at(resolution);
   std::for_each(first_pixel, last_pixel, [&](const ThinPixel<float> &p) {
     Pixel<float> pp(bin_table, p);
     const auto key = std::make_pair(pp.coords.bin1.chrom(), pp.coords.bin2.chrom());
@@ -260,6 +506,10 @@ inline void HiCFileWriter::append_pixels(std::uint32_t resolution, PixelIt first
       it->second.emplace(p);
     } else {
       _pixel_tank.emplace(key, ChromPixelTank{p});
+    }
+
+    if (update_expected_values) {
+      ev.add(pp);
     }
   });
 }
@@ -338,7 +588,7 @@ inline void HiCFileWriter::write_pixels_ALL(std::size_t num_bins) {
   const auto genome_size = chromosomes().chrom_size_prefix_sum().back();
   const auto resolution = static_cast<std::uint32_t>(genome_size / num_bins);
 
-  _bin_tables.emplace(resolution, BinTable{chromosomes(), resolution});
+  _bin_tables.emplace(resolution, std::make_shared<const BinTable>(chromosomes(), resolution));
 
   const auto &bin_table = bins(resolutions().front());
   const auto factor = std::max(bin_table.size(), bin_table.size() / resolution);
@@ -399,11 +649,22 @@ inline void HiCFileWriter::write_header() {
   _fs->write(nFragResolutions);
 }
 
-inline void HiCFileWriter::write_master_index_offset(std::int64_t master_index_offset) {
+inline void HiCFileWriter::write_footer_offset(std::int64_t master_index_offset) {
   const auto foffset = _fs->tellp();
   const auto offset = sizeof("HIC") + sizeof(_header->version);
   _fs->seekp(offset);
   _fs->write(master_index_offset);
+  _fs->seekp(static_cast<std::int64_t>(foffset));
+}
+
+inline void HiCFileWriter::write_norm_vector_index(std::size_t position, std::size_t length) {
+  const auto foffset = _fs->tellp();
+  const auto offset =
+      static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header->version) +
+                                sizeof(_header->masterIndexOffset) + _header->genomeID.size() + 1);
+  _fs->seekp(offset);
+  _fs->write(static_cast<std::int64_t>(position));
+  _fs->write(static_cast<std::int64_t>(length));
   _fs->seekp(static_cast<std::int64_t>(foffset));
 }
 
@@ -538,31 +799,13 @@ inline std::streamoff HiCFileWriter::write_interaction_block(
 
 inline std::streamoff HiCFileWriter::write_footers() {
   const auto offset = _fs->tellp();
-  const std::int64_t nBytesV5 = 0;  // TODO
+  const std::int64_t nBytesV5 = -1;
   const std::int32_t nEntries = static_cast<std::int32_t>(_footers.size());
   _fs->write(nBytesV5);
   _fs->write(nEntries);
 
   for (const auto &f : _footers) {
     _fs->write(f.masterIndex.serialize(_bbuffer));
-  }
-
-  for (const auto &f : _footers) {
-    _fs->write(f.expectedValues.serialize(_bbuffer));
-  }
-
-  for (const auto &f : _footers) {
-    _fs->write(f.normExpectedValues.serialize(_bbuffer));
-  }
-
-  for (const auto &f : _footers) {
-    _fs->write(f.normVectIndex.serialize(_bbuffer));
-  }
-
-  for (const auto &f : _footers) {
-    for (const auto &v : f.normVectArray) {
-      _fs->write(v.serialize(_bbuffer));
-    }
   }
 
   return static_cast<std::streamoff>(offset);
@@ -580,6 +823,32 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
 
   // TODO populate other fields
   _footers.emplace_back(std::move(f));
+}
+
+inline void HiCFileWriter::write_footer_section_size(std::uint64_t footer_offset,
+                                                     std::uint64_t bytes) {
+  const auto offset = _fs->tellp();
+  _fs->seekp(static_cast<std::int64_t>(footer_offset));
+  _fs->write(static_cast<std::int64_t>(bytes));
+  _fs->seekp(static_cast<std::int64_t>(offset));
+}
+
+inline void HiCFileWriter::write_expected_values(std::string_view unit) {
+  ExpectedValues evs{};
+  evs.nExpectedValueVectors = static_cast<std::int32_t>(_expected_values.size());
+
+  for (const auto &[resolution, ev] : _expected_values) {
+    assert(!ev.weights().empty());
+    std::vector<std::uint32_t> chrom_ids{};
+    std::vector<double> scale_factors{};
+    for (const auto &[chrom, factor] : ev.scaling_factors()) {
+      chrom_ids.push_back(chrom.id());
+      scale_factors.push_back(factor);
+    }
+    evs.expectedValues.emplace_back(unit, resolution, ev.weights(), chrom_ids, scale_factors);
+  }
+
+  _fs->write(evs.serialize(_bbuffer));
 }
 
 inline void HiCFileWriter::finalize() {
@@ -618,7 +887,21 @@ inline void HiCFileWriter::finalize() {
 
   const auto footer_offset = write_footers();
 
-  write_master_index_offset(footer_offset);
+  for (auto &[_, ev] : _expected_values) {
+    ev.compute_density();
+  }
+
+  write_expected_values("BP");
+
+  write_footer_section_size(footer_offset, _fs->tellp() - footer_offset);
+
+  const auto normVectorIndexPosition = _fs->tellp();
+  _fs->write(std::int32_t(0));  // no nNormExpectedValueVectors
+  _fs->write(std::int32_t(0));  // no NormVectors
+  const auto normVectorIndexLength = _fs->tellp() - normVectorIndexPosition;
+
+  write_footer_offset(footer_offset);
+  write_norm_vector_index(normVectorIndexPosition, normVectorIndexLength);
 }
 
 inline std::size_t HiCFileWriter::compute_block_column_count(std::size_t num_bins,

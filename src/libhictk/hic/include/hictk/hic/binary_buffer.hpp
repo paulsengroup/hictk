@@ -24,6 +24,8 @@ class BinaryBuffer {
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
   void write(T data);
   void write(const std::string& data);
+  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  void write(const std::vector<T>& data);
 
   // Return the offset of the underlying buffer. Useful for error checking
   [[nodiscard]] std::size_t operator()() const noexcept;

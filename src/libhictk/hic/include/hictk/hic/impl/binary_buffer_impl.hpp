@@ -31,6 +31,11 @@ inline void BinaryBuffer::write(const std::string &data) {
   _buffer.append(data.c_str(), data.size() + 1);
 }
 
+template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+void BinaryBuffer::write(const std::vector<T> &data) {
+  _buffer.append(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(T));
+}
+
 inline std::size_t BinaryBuffer::operator()() const noexcept { return _i; }
 
 inline std::string &BinaryBuffer::reset() noexcept {
