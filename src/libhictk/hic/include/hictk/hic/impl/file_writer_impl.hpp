@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <libdeflate.h>
 #include <parallel_hashmap/phmap.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cassert>
@@ -292,6 +293,7 @@ inline bool BlockIndexKey::operator<(const BlockIndexKey &other) const noexcept 
 
 inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins)
     : _bins(std::move(bins)) {
+  SPDLOG_INFO(FMT_STRING("[{}] initializing expected value vector"), _bins->bin_size());
   std::uint32_t max_length = 0;
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto &chrom1 = chromosomes().at(chrom1_id);
@@ -349,6 +351,7 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
 }
 
 inline void ExpectedValuesAggregator::compute_density() {
+  SPDLOG_INFO(FMT_STRING("[{}] computing expected vector density"), _bins->bin_size());
   compute_density_cis();
   compute_density_trans();
 }
@@ -507,7 +510,10 @@ inline void PixelTank<N>::add_pixels(PixelIt first_pixel, PixelIt last_pixel,
 
 template <typename N>
 inline void PixelTank<N>::finalize() {
+  SPDLOG_DEBUG(FMT_STRING("[{}] finalize called on PixelTank"), _bin_table->bin_size());
   for (auto &[k, v] : _pixel_tank) {
+    SPDLOG_DEBUG(FMT_STRING("[{}] sorting {} pixels for PixelTank[{}:{}]"), _bin_table->bin_size(),
+                 v.size(), k.first.name(), k.second.name());
     std::sort(v.begin(), v.end());  // TODO is this needed?
   }
   _expected_values.compute_density();
@@ -542,96 +548,133 @@ inline auto PixelTank<N>::matrix_counts(const Chromosome &chrom1, const Chromoso
   return _matrix_tot_counts.at(std::make_pair(chrom1, chrom2));
 }
 
-inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::int32_t compression_lvl,
-                                    std::size_t buffer_size)
-    : _header(std::make_shared<HiCHeader>(std::move(header))),
+inline bool MetadataOffsetTank::Key::operator<(
+    const MetadataOffsetTank::Key &other) const noexcept {
+  if (resolution != other.resolution) {
+    return resolution < other.resolution;
+  }
+  if (chrom1 != other.chrom1) {
+    return chrom1 < other.chrom1;
+  }
+  return chrom2 < other.chrom2;
+}
+
+inline bool MetadataOffsetTank::contains(const Chromosome &chrom1, const Chromosome &chrom2,
+                                         std::uint32_t resolution) const noexcept {
+  return _tank.contains({chrom1, chrom2, resolution});
+}
+
+inline auto MetadataOffsetTank::at(const Chromosome &chrom1, const Chromosome &chrom2,
+                                   std::uint32_t resolution) const -> const Value & {
+  return _tank.at({chrom1, chrom2, resolution});
+}
+
+inline void MetadataOffsetTank::insert(const Chromosome &chrom1, const Chromosome &chrom2,
+                                       std::uint32_t resolution, std::size_t offset,
+                                       std::size_t size) {
+  SPDLOG_DEBUG(FMT_STRING("[{}] body offsets for {}:{}: {} + {}"), resolution, chrom1.name(),
+               chrom2.name(), offset, size);
+  assert(!contains(chrom1, chrom2, resolution));
+  _tank.emplace(Key{chrom1, chrom2, resolution}, Value{static_cast<std::streamoff>(offset), size});
+}
+
+inline auto MetadataOffsetTank::operator()() const noexcept
+    -> const phmap::btree_map<Key, Value> & {
+  return _tank;
+}
+
+inline ChromChromHiCFileWriter::ChromChromHiCFileWriter(const Chromosome &chrom1,
+                                                        const Chromosome &chrom2, HiCHeader header,
+                                                        const std::filesystem::path &tmpdir,
+                                                        std::int32_t compression_lvl,
+                                                        std::size_t buffer_size)
+    : _header(init_header(chrom1, chrom2, std::move(header))),
       _fs(std::make_shared<filestream::FileStream>(
           filestream::FileStream::create(std::string{url()}))),
+      _bin_table(
+          std::make_shared<const BinTable>(_header->chromosomes, _header->resolutions.front())),
       _compressor(libdeflate_alloc_compressor(compression_lvl)),
-      _compression_buffer(buffer_size, '\0') {
-  if (!chromosomes().at(0).is_all()) {
-    throw std::runtime_error("reference should contain chromosome ALL");
-  }
+      _compression_buffer(buffer_size, '\0'),
+      _pixel_tank(_bin_table),
+      _tmpdir(tmpdir.empty() ? nullptr
+                             : std::make_unique<const hictk::internal::TmpDir>(
+                                   tmpdir / (_header->url + ".tmp/"))) {
+  _chrom1 = chromosomes().at(0);
+  _chrom2 = chromosomes().size() == 2 ? chromosomes().at(1) : _chrom1;
 
-  _bin_tables.reserve(resolutions().size());
-  for (const auto &resolution : resolutions()) {
-    auto [it, _] = _bin_tables.emplace(resolution,
-                                       std::make_shared<const BinTable>(chromosomes(), resolution));
-    _pixel_tank.emplace(resolution, it->second);
+  if (_header->resolutions.size() != 1) {
+    throw std::runtime_error(
+        "ChromChromHiCFileWriter should be constructed with an header containing a single "
+        "resolution");
   }
 }
 
-inline std::string_view HiCFileWriter::url() const noexcept {
+inline std::string_view ChromChromHiCFileWriter::url() const noexcept {
   assert(_header);
   return _header->url;
 }
 
-inline const Reference &HiCFileWriter::chromosomes() const noexcept {
+inline const Reference &ChromChromHiCFileWriter::chromosomes() const noexcept {
   assert(_header);
   return _header->chromosomes;
 }
 
-inline const BinTable &HiCFileWriter::bins(std::uint32_t resolution) const {
-  return *_bin_tables.at(resolution);
-}
+inline const BinTable &ChromChromHiCFileWriter::bins() const { return *_bin_table; }
 
-inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noexcept {
+inline std::uint32_t ChromChromHiCFileWriter::resolution() const noexcept {
   assert(_header);
-  return _header->resolutions;
+  return _header->resolutions.front();
 }
 
 template <typename PixelIt, typename>
-inline void HiCFileWriter::append_pixels(std::uint32_t resolution, PixelIt first_pixel,
-                                         PixelIt last_pixel, bool update_expected_values) {
-  _pixel_tank.at(resolution).add_pixels(first_pixel, last_pixel, update_expected_values);
-}
+inline void ChromChromHiCFileWriter::write_pixels(PixelIt first_pixel, PixelIt last_pixel,
+                                                  bool update_expected_values) {
+  SPDLOG_DEBUG(FMT_STRING("[{}::{}] writing pixels..."),
+               std::filesystem::path{_header->url}.filename(), resolution());
+  _pixel_tank.add_pixels(first_pixel, last_pixel, update_expected_values);
+  _pixel_tank.finalize();
+  _body_offset.position =
+      _header_offset.position + static_cast<std::streamoff>(_header_offset.size);
+  _body_metadata_offset.position = _body_offset.position;
 
-inline void HiCFileWriter::write_pixels([[maybe_unused]] bool write_chromosome_ALL) {
-  coarsen_pixels();
-
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
-    const auto &chrom1 = chromosomes().at(chrom1_id);
-    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
-      const auto &chrom2 = chromosomes().at(chrom2_id);
-      for (const auto &res : resolutions()) {
-        write_pixels(chrom1, chrom2, res);
-      }
-    }
-  }
-  if (write_chromosome_ALL) {
-    // write_pixels_ALL();
-  }
-}
-
-inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
-                                        std::uint32_t resolution) {
   struct PixelBlock {
     std::vector<ThinPixel<float>> pixels;
     std::uint32_t bin1_id_offset;
     std::uint32_t bin2_id_offset;
   };
 
-  phmap::btree_map<std::uint64_t, PixelBlock> blocks;
-
-  if (!_pixel_tank.at(resolution).contains(chrom1, chrom2)) {
+  if (!_pixel_tank.contains(_chrom1, _chrom2)) {
+    _body_offset.size = 0;
+    _body_metadata_offset.size = 0;
     return;
   }
 
+  phmap::btree_map<std::uint64_t, PixelBlock> blocks;
+
   {
-    const auto &bin_table = bins(resolution);
-    assert(!_pixel_tank.empty());
-    const auto &pixels = _pixel_tank.at(resolution).pixels(chrom1, chrom2);
-    const auto num_bins = compute_num_bins(chrom1.id(), chrom2.id(), bin_table.bin_size());
-    const auto num_columns =
-        compute_block_column_count(num_bins, bin_table.bin_size(),
-                                   chrom1 == chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
+    const auto &bin_table = bins();
+    const auto &pixels = _pixel_tank.pixels(_chrom1, _chrom2);
+    const auto num_bins = compute_num_bins(_chrom1.id(), _chrom2.id(), bin_table.bin_size());
+    const auto num_columns = compute_block_column_count(
+        num_bins, bin_table.bin_size(),
+        _chrom1 == _chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
     const auto num_rows = num_bins / num_columns + 1;
+
+    SPDLOG_DEBUG(FMT_STRING("[{}::{}] matrix {}:{}: blockBinCount={}"),
+                 std::filesystem::path{_header->url}.filename(), resolution(), _chrom1.name(),
+                 _chrom2.name(), num_rows);
+    SPDLOG_DEBUG(FMT_STRING("[{}::{}] matrix {}:{}: blockColumnCount={}"),
+                 std::filesystem::path{_header->url}.filename(), resolution(), _chrom1.name(),
+                 _chrom2.name(), num_columns);
 
     const BlockMapperIntra mapper_intra(num_rows, num_columns);
     const BlockMapperInter mapper_inter(num_rows, num_columns);
 
     for (const auto &p : pixels) {
       Pixel<float> pp(bin_table, p);
+
+      assert(pp.coords.bin1.chrom() == _chrom1);
+      assert(pp.coords.bin2.chrom() == _chrom2);
 
       const auto &bin1 = pp.coords.bin1;
       const auto &bin2 = pp.coords.bin2;
@@ -653,41 +696,26 @@ inline void HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   }
 
   for (auto &[block_id, blk] : blocks) {
-    write_interaction_block(block_id, chrom1, chrom2, resolution, blk.pixels, blk.bin1_id_offset,
-                            blk.bin2_id_offset);
-  }
-}
-
-inline void HiCFileWriter::write_pixels_ALL([[maybe_unused]] std::size_t num_bins) {
-  /*
-  const auto genome_size = chromosomes().chrom_size_prefix_sum().back();
-  const auto resolution = static_cast<std::uint32_t>(genome_size / num_bins);
-
-  _bin_tables.emplace(resolution, std::make_shared<const BinTable>(chromosomes(), resolution));
-
-  const auto &bin_table = bins(resolutions().front());
-  const auto factor = std::max(bin_table.size(), bin_table.size() / resolution);
-
-  assert(!_pixel_tank.empty());
-  std::vector<ThinPixel<float>> pixels{};
-  for (const auto &[_, pixels_] : _pixel_tank) {
-    const transformers::CoarsenPixels coarsener(pixels_.begin(), pixels_.end(),
-                                                std::make_shared<BinTable>(bin_table), factor);
-    std::copy(coarsener.begin(), coarsener.end(), std::back_inserter(pixels));
+    SPDLOG_DEBUG(FMT_STRING("[{}::{}] writing block {}..."),
+                 std::filesystem::path{_header->url}.filename(), resolution(), block_id);
+    write_interaction_block(block_id, blk.pixels, blk.bin1_id_offset, blk.bin2_id_offset);
   }
 
-  std::sort(pixels.begin(), pixels.end());
-  write_interaction_block(0, chromosomes().at(0), chromosomes().at(0), resolution, pixels, 0, 0);
-*/
+  _body_metadata_offset.position = static_cast<std::streamoff>(_fs->tellp());
+  write_body_metadata();
+  _body_offset.size = _fs->tellp() - static_cast<std::size_t>(_body_offset.position);
+  _body_metadata_offset.size =
+      _fs->tellp() - static_cast<std::size_t>(_body_metadata_offset.position);
 }
 
-inline void HiCFileWriter::write_header() {
-  assert(_fs->tellg() == 0);
+inline void ChromChromHiCFileWriter::write_header() {
+  assert(_fs->tellp() == 0);
 
   assert(_header);
   assert(_header->version == 9);
   assert(!chromosomes().empty());
-  assert(!resolutions().empty());
+
+  const auto offset1 = _fs->tellp();
 
   _fs->write("HIC\0", 4);
   _fs->write(_header->version);
@@ -723,9 +751,14 @@ inline void HiCFileWriter::write_header() {
   // write fragments: TODO
   const std::int32_t nFragResolutions = 0;
   _fs->write(nFragResolutions);
+
+  const auto offset2 = _fs->tellp();
+
+  _header_offset.position = static_cast<std::streamoff>(offset1);
+  _header_offset.size = offset2 - offset1;
 }
 
-inline void HiCFileWriter::write_footer_offset(std::int64_t master_index_offset) {
+inline void ChromChromHiCFileWriter::write_footer_offset(std::int64_t master_index_offset) {
   const auto foffset = _fs->tellp();
   const auto offset = sizeof("HIC") + sizeof(_header->version);
   _fs->seekp(offset);
@@ -733,7 +766,8 @@ inline void HiCFileWriter::write_footer_offset(std::int64_t master_index_offset)
   _fs->seekp(static_cast<std::int64_t>(foffset));
 }
 
-inline void HiCFileWriter::write_norm_vector_index(std::streamoff position, std::size_t length) {
+inline void ChromChromHiCFileWriter::write_norm_vector_index(std::streamoff position,
+                                                             std::size_t length) {
   const auto foffset = _fs->tellp();
   const auto offset =
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header->version) +
@@ -744,133 +778,91 @@ inline void HiCFileWriter::write_norm_vector_index(std::streamoff position, std:
   _fs->seekp(static_cast<std::int64_t>(foffset));
 }
 
-inline std::size_t HiCFileWriter::write_matrix_metadata(std::uint32_t chrom1_id,
-                                                        std::uint32_t chrom2_id) {
-  assert(_header);
+inline auto ChromChromHiCFileWriter::write_matrix_metadata() -> HiCSectionOffsets {
+  SPDLOG_DEBUG(FMT_STRING("[{}::{}] writing matrix {}:{} metadata..."),
+               std::filesystem::path{_header->url}.filename(), resolution(), _chrom1.name(),
+               _chrom2.name());
 
   const auto offset = _fs->tellp();
 
-  MatrixMetadata m;
+  _matrix_metadata.chr1Idx = static_cast<std::int32_t>(_chrom1.id());
+  _matrix_metadata.chr2Idx = static_cast<std::int32_t>(_chrom2.id());
 
-  m.chr1Idx = static_cast<std::int32_t>(chrom1_id);
-  m.chr2Idx = static_cast<std::int32_t>(chrom2_id);
+  _matrix_metadata.nResolutions = 1;
 
-  // chrom_id is 0 when chromosome is ALL
-  m.nResolutions = chrom1_id == 0 ? std::int32_t(1) : std::int32_t(resolutions().size());
+  _fs->write(_matrix_metadata.serialize(_bbuffer));
 
-  _fs->write(m.serialize(_bbuffer));
-
-  return offset;
+  return {static_cast<std::streamoff>(offset), _fs->tellp() - offset};
 }
 
-inline auto HiCFileWriter::write_resolutions_metadata(std::uint32_t chrom1_id,
-                                                      std::uint32_t chrom2_id, float sum_counts,
-                                                      const std::string &unit) {
-  struct Result {
-    std::size_t file_offset{};
-    std::size_t matrix_metadata_bytes{};
-  };
-
-  Result res{};
-
-  // chrom_id is 0 when chromosome is ALL
-  const auto nResolutions = chrom1_id == 0 ? std::size_t(1) : std::size_t(resolutions().size());
-
+inline auto ChromChromHiCFileWriter::write_resolution_metadata(float sum_counts,
+                                                               const std::string &unit)
+    -> HiCSectionOffsets {
+  SPDLOG_DEBUG(FMT_STRING("[{}::{}] writing matrix resolution {}:{} metadata..."),
+               std::filesystem::path{_header->url}.filename(), resolution(), _chrom1.name(),
+               _chrom2.name());
   const auto offset1 = _fs->tellp();
-  for (std::size_t i = 0; i < nResolutions; ++i) {
-    const auto bin_size = resolutions()[i];
-    const auto num_bins = compute_num_bins(chrom1_id, chrom2_id, bin_size);
-    const auto num_columns = compute_block_column_count(
-        num_bins, bin_size, chrom1_id == chrom2_id ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
-    const auto num_rows = num_bins / num_columns + 1;
+  const auto num_bins = compute_num_bins(_chrom1.id(), _chrom2.id(), resolution());
+  const auto num_columns = compute_block_column_count(
+      num_bins, resolution(), _chrom1 == _chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
+  const auto num_rows = num_bins / num_columns + 1;
 
-    MatrixResolutionMetadata m{};
-    m.unit = unit;
-    m.resIdx = static_cast<std::int32_t>(i);
-    m.sumCounts = sum_counts;
-    m.occupiedCellCount = 0;  // not used
-    m.percent5 = 0;           // not used
-    m.percent95 = 0;          // not used
-    m.binSize = static_cast<std::int32_t>(bin_size);
-    m.blockSize = static_cast<std::int32_t>(num_rows);
-    m.blockColumnCount = static_cast<std::int32_t>(num_columns);
+  MatrixResolutionMetadata m{};
+  m.unit = unit;
+  m.resIdx = 0;
+  m.sumCounts = sum_counts;
+  m.occupiedCellCount = 0;  // not used
+  m.percent5 = 0;           // not used
+  m.percent95 = 0;          // not used
+  m.binSize = static_cast<std::int32_t>(resolution());
+  m.blockSize = static_cast<std::int32_t>(num_rows);
+  m.blockColumnCount = static_cast<std::int32_t>(num_columns);
 
-    const BlockIndexKey key{chromosomes().at(chrom1_id), chromosomes().at(chrom2_id), bin_size};
+  const BlockIndexKey key{_chrom1, _chrom2, resolution()};
 
-    auto it = _block_index.find(key);
-    m.blockCount = static_cast<std::int32_t>(it != _block_index.end() ? it->second.size() : 0);
+  auto it = _block_index.find(key);
+  m.blockCount = static_cast<std::int32_t>(it != _block_index.end() ? it->second.size() : 0);
 
-    // write resolution metadata
-    _fs->write(m.serialize(_bbuffer));
+  // write resolution metadata
+  _fs->write(m.serialize(_bbuffer));
 
-    // write block index
+  // write block index
 
-    if (it != _block_index.end()) {
-      for (const auto &blk : it->second) {
-        _fs->write(blk.serialize(_bbuffer));
-      }
+  if (it != _block_index.end()) {
+    for (const auto &blk : it->second) {
+      _fs->write(blk.serialize(_bbuffer));
     }
   }
 
   const auto offset2 = _fs->tellp();
 
-  res.file_offset = offset1;
-  res.matrix_metadata_bytes = offset2 - offset1;
-
-  return res;
+  return {static_cast<std::streamoff>(offset1), offset2 - offset1};
 }
 
-inline void HiCFileWriter::coarsen_pixels() {
-  assert(!resolutions().empty());
-  const auto base_resolution = resolutions().front();
-  _pixel_tank.at(base_resolution).finalize();
-
-  for (std::size_t i = 1; i < resolutions().size(); ++i) {
-    const auto &resolution = resolutions()[i];
-    assert(resolution % base_resolution == 0);
-    const auto factor = resolution / resolutions().front();
-    for (const auto &[k, v] : _pixel_tank.at(base_resolution).pixels()) {
-      transformers::CoarsenPixels coarsener(v.begin(), v.end(), _bin_tables.at(base_resolution),
-                                            factor);
-      _pixel_tank.at(resolution).add_pixels(coarsener.begin(), coarsener.end());
-    }
-    _pixel_tank.at(resolution).finalize();
+inline auto ChromChromHiCFileWriter::write_body_metadata(const std::string &unit)
+    -> HiCSectionOffsets {
+  if (!_pixel_tank.contains(_chrom1, _chrom2)) {
+    return {static_cast<std::streamoff>(_fs->tellp()), 0};
   }
+  const auto tot_counts = _pixel_tank.matrix_counts(_chrom1, _chrom2);
+
+  const auto pos = _fs->tellp();
+  write_matrix_metadata();
+  write_resolution_metadata(tot_counts, unit);
+  const auto size = _fs->tellp() - static_cast<std::size_t>(pos);
+
+  return {static_cast<std::streamoff>(pos), size};
 }
 
-inline auto HiCFileWriter::write_body_metadata(std::uint32_t resolution, const Chromosome &chrom1,
-                                               const Chromosome &chrom2, const std::string &unit) {
-  struct Result {
-    std::size_t matrix_metadata_offset;
-    std::size_t matrix_metadata_bytes;
-  };
-
-  const auto tot_counts = _pixel_tank.at(resolution).contains(chrom1, chrom2)
-                              ? _pixel_tank.at(resolution).matrix_counts(chrom1, chrom2)
-                              : 0.0F;
-
-  Result offsets{};
-  offsets.matrix_metadata_offset = write_matrix_metadata(chrom1.id(), chrom2.id());
-  write_resolutions_metadata(chrom1.id(), chrom2.id(), tot_counts, unit);
-
-  offsets.matrix_metadata_bytes = _fs->tellp() - offsets.matrix_metadata_offset;
-
-  for (const auto &res : resolutions()) {
-    _block_index.erase(BlockIndexKey{chrom1, chrom2, res});
-  }
-  return offsets;
-}
-
-inline std::streamoff HiCFileWriter::write_interaction_block(
-    std::uint64_t block_id, const Chromosome &chrom1, const Chromosome &chrom2,
-    std::uint32_t resolution, const std::vector<ThinPixel<float>> &pixels,
-    std::size_t bin_column_offset, std::size_t bin_row_offset) {
+inline auto ChromChromHiCFileWriter::write_interaction_block(
+    std::uint64_t block_id, const std::vector<ThinPixel<float>> &pixels,
+    std::size_t bin_column_offset, std::size_t bin_row_offset) -> HiCSectionOffsets {
   const auto offset = _fs->tellp();
 
   // TODO support dense layout
   // TODO support representation using shorts
 
-  MatrixInteractionBlock m(bins(resolution), pixels, bin_row_offset);
+  MatrixInteractionBlock m(bins(), pixels, bin_row_offset);
 
   m.nRecords = static_cast<std::int32_t>(pixels.size());
   m.binColumnOffset = static_cast<std::int32_t>(bin_column_offset);
@@ -885,133 +877,79 @@ inline std::streamoff HiCFileWriter::write_interaction_block(
   MatrixBlockMetadata mm{static_cast<std::int32_t>(block_id), static_cast<std::int64_t>(offset),
                          static_cast<std::int32_t>(_fs->tellp() - offset)};
 
-  const BlockIndexKey key{chrom1, chrom2, resolution};
+  const BlockIndexKey key{_chrom1, _chrom2, resolution()};
   auto idx = _block_index.find(key);
   if (idx != _block_index.end()) {
     idx->second.emplace(std::move(mm));
   } else {
     _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
   }
-  return static_cast<std::streamoff>(offset);
+  return {static_cast<std::streamoff>(offset), _fs->tellp() - offset};
 }
 
-inline std::streamoff HiCFileWriter::write_footers() {
+inline auto ChromChromHiCFileWriter::write_footer() -> HiCSectionOffsets {
+  _footer.masterIndex.key = fmt::format(FMT_STRING("{}_{}"), _chrom1.id(), _chrom2.id());
+
+  _footer.masterIndex.position = static_cast<std::int64_t>(_body_metadata_offset.position);
+  _footer.masterIndex.size = static_cast<std::int32_t>(_body_metadata_offset.size);
+
   const auto offset = _fs->tellp();
   const std::int64_t nBytesV5 = -1;
-  const std::int32_t nEntries = static_cast<std::int32_t>(_footers.size());
+  const std::int32_t nEntries = 1;
   _fs->write(nBytesV5);
   _fs->write(nEntries);
 
-  for (const auto &f : _footers) {
-    _fs->write(f.masterIndex.serialize(_bbuffer));
-  }
+  _fs->write(_footer.masterIndex.serialize(_bbuffer));
 
-  return static_cast<std::streamoff>(offset);
+  return {static_cast<std::streamoff>(offset), _fs->tellp() - offset};
 }
 
-inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome &chrom2,
-                                      std::size_t file_offset, std::size_t matrix_metadata_bytes) {
-  FooterV5 f;
-  assert(file_offset < _fs->size());
-  assert(file_offset + matrix_metadata_bytes <= _fs->size());
-
-  f.masterIndex.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
-  f.masterIndex.position = static_cast<std::int64_t>(file_offset);
-  f.masterIndex.size = static_cast<std::int32_t>(matrix_metadata_bytes);
-
-  // TODO populate other fields
-  _footers.emplace_back(std::move(f));
-}
-
-inline void HiCFileWriter::write_footer_section_size(std::streamoff footer_offset,
-                                                     std::uint64_t bytes) {
+inline void ChromChromHiCFileWriter::write_footer_section_size(std::streamoff footer_offset,
+                                                               std::uint64_t bytes) {
   const auto offset = _fs->tellp();
   _fs->seekp(static_cast<std::int64_t>(footer_offset));
   _fs->write(static_cast<std::int64_t>(bytes));
   _fs->seekp(static_cast<std::int64_t>(offset));
 }
 
-inline void HiCFileWriter::write_expected_values(std::string_view unit) {
+inline void ChromChromHiCFileWriter::write_expected_values(std::string_view unit) {
   ExpectedValues evs{};
-  evs.nExpectedValueVectors = static_cast<std::int32_t>(_pixel_tank.size());
+  evs.nExpectedValueVectors = 1;
 
-  for (const auto &[resolution, pt] : _pixel_tank) {
-    std::vector<std::uint32_t> chrom_ids{};
-    std::vector<double> scale_factors{};
-    const auto &ev = _pixel_tank.at(resolution).expected_values();
-    assert(!ev.weights().empty());
-    for (const auto &[chrom, factor] : ev.scaling_factors()) {
-      chrom_ids.push_back(chrom.id());
-      scale_factors.push_back(factor);
-    }
-    evs.expectedValues.emplace_back(unit, resolution, ev.weights(), chrom_ids, scale_factors);
+  std::vector<std::uint32_t> chrom_ids{};
+  std::vector<double> scale_factors{};
+  const auto &ev = _pixel_tank.expected_values();
+  assert(!ev.weights().empty());
+  for (const auto &[chrom, factor] : ev.scaling_factors()) {
+    chrom_ids.push_back(chrom.id());
+    scale_factors.push_back(factor);
   }
+  evs.expectedValues.emplace_back(unit, resolution(), ev.weights(), chrom_ids, scale_factors);
 
   _fs->write(evs.serialize(_bbuffer));
 }
 
-inline void HiCFileWriter::finalize() {
-  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::size_t> file_offsets{};
-  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::size_t> matrix_size_bytes{};
-
-  std::size_t master_index_offset = std::numeric_limits<std::size_t>::max();
-
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
-    const auto &chrom1 = chromosomes().at(chrom1_id);
-    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
-      const auto &chrom2 = chromosomes().at(chrom2_id);  // TODO handle ALL
-      for (std::size_t i = 0; i < resolutions().size(); ++i) {
-        const auto res = resolutions()[i];
-        const auto offsets = write_body_metadata(res, chrom1, chrom2);
-        const auto key = std::make_pair(chrom1, chrom2);
-
-        if (i == 0) {
-          master_index_offset = std::min(offsets.matrix_metadata_offset, master_index_offset);
-          file_offsets[key] = offsets.matrix_metadata_offset;
-          matrix_size_bytes[key] = offsets.matrix_metadata_bytes;
-        }
-        if (chrom2.is_all()) {
-          break;
-        }
-      }
-      if (chrom2.is_all()) {
-        break;
-      }
-    }
-  }
-
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
-    const auto &chrom1 = chromosomes().at(chrom1_id);
-    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
-      const auto &chrom2 = chromosomes().at(chrom2_id);
-      const auto key = std::make_pair(chrom1, chrom2);
-      add_footer(chrom1, chrom2, file_offsets[key], matrix_size_bytes[key]);
-      if (chrom2.is_all()) {
-        break;
-      }
-    }
-  }
-
-  const auto footer_offset = write_footers();
+inline void ChromChromHiCFileWriter::finalize() {
+  const auto [footer_pos, footer_size] = write_footer();
 
   write_expected_values("BP");
 
-  write_footer_section_size(footer_offset, _fs->tellp() - static_cast<std::size_t>(footer_offset));
+  write_footer_section_size(footer_pos, _fs->tellp() - static_cast<std::size_t>(footer_pos));
 
   const auto normVectorIndexPosition = _fs->tellp();
   _fs->write(std::int32_t(0));  // no nNormExpectedValueVectors
   _fs->write(std::int32_t(0));  // no NormVectors
   const auto normVectorIndexLength = _fs->tellp() - normVectorIndexPosition;
 
-  write_footer_offset(footer_offset);
+  write_footer_offset(footer_pos);
   write_norm_vector_index(static_cast<std::streamoff>(normVectorIndexPosition),
                           normVectorIndexLength);
 }
 
-inline std::size_t HiCFileWriter::compute_block_column_count(std::size_t num_bins,
-                                                             std::uint32_t bin_size,
-                                                             std::uint32_t cutoff,
-                                                             std::size_t block_capacity) {
+inline std::size_t ChromChromHiCFileWriter::compute_block_column_count(std::size_t num_bins,
+                                                                       std::uint32_t bin_size,
+                                                                       std::uint32_t cutoff,
+                                                                       std::size_t block_capacity) {
   auto num_columns = num_bins / block_capacity + 1;
   if (bin_size < cutoff) {
     const auto genome_size = num_bins * bin_size;
@@ -1023,55 +961,63 @@ inline std::size_t HiCFileWriter::compute_block_column_count(std::size_t num_bin
   return std::clamp(num_columns, std::size_t(1), max_sqrt - 1);
 }
 
-inline std::size_t HiCFileWriter::compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                                   std::size_t bin_size) {
+inline std::shared_ptr<const HiCHeader> ChromChromHiCFileWriter::init_header(
+    const Chromosome &chrom1, const Chromosome &chrom2, HiCHeader &&header) {
+  header.chromosomes = chrom1 != chrom2 ? Reference{chrom1, chrom2} : Reference{chrom1};
+
+  return std::make_shared<const HiCHeader>(std::move(header));
+}
+
+inline std::size_t ChromChromHiCFileWriter::compute_num_bins(std::uint32_t chrom1_id,
+                                                             std::uint32_t chrom2_id,
+                                                             std::size_t bin_size) {
   const auto max_size =
       std::max(chromosomes().at(chrom1_id).size(), chromosomes().at(chrom2_id).size());
   return (max_size + bin_size - 1) / bin_size;
 }
 
-inline HiCFileWriter::BlockMapperInter::BlockMapperInter(std::uint64_t block_bin_count,
-                                                         std::uint64_t block_column_count)
+inline ChromChromHiCFileWriter::BlockMapperInter::BlockMapperInter(std::uint64_t block_bin_count,
+                                                                   std::uint64_t block_column_count)
     : _block_bin_count(block_bin_count), _block_column_count(block_column_count) {
   assert(_block_bin_count != 0);
   assert(_block_column_count != 0);
 }
 
-inline std::uint64_t HiCFileWriter::BlockMapperInter::block_column_count() const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperInter::block_column_count() const {
   return _block_column_count;
 }
 
-inline std::uint64_t HiCFileWriter::BlockMapperInter::block_bin_count() const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperInter::block_bin_count() const {
   return _block_bin_count;
 }
 
-inline std::uint64_t HiCFileWriter::BlockMapperInter::operator()(std::uint64_t bin1_id,
-                                                                 std::uint64_t bin2_id) const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperInter::operator()(
+    std::uint64_t bin1_id, std::uint64_t bin2_id) const {
   const auto i = bin1_id / block_bin_count();
   const auto j = bin2_id / block_bin_count();
 
   return (block_column_count() * j) + i;
 }
 
-inline HiCFileWriter::BlockMapperIntra::BlockMapperIntra(std::uint64_t block_bin_count,
-                                                         std::uint64_t block_column_count,
-                                                         std::int64_t base_depth)
+inline ChromChromHiCFileWriter::BlockMapperIntra::BlockMapperIntra(std::uint64_t block_bin_count,
+                                                                   std::uint64_t block_column_count,
+                                                                   std::int64_t base_depth)
     : _inter_mapper(block_bin_count, block_column_count), _base(init_base(base_depth)) {}
 
-inline std::uint64_t HiCFileWriter::BlockMapperIntra::block_column_count() const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperIntra::block_column_count() const {
   return _inter_mapper.block_column_count();
 }
 
-inline std::uint64_t HiCFileWriter::BlockMapperIntra::block_bin_count() const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperIntra::block_bin_count() const {
   return _inter_mapper.block_bin_count();
 }
 
-inline bool HiCFileWriter::BlockMapperIntra::use_inter_mapper() const noexcept {
+inline bool ChromChromHiCFileWriter::BlockMapperIntra::use_inter_mapper() const noexcept {
   return _base == 0;
 }
 
-inline std::uint64_t HiCFileWriter::BlockMapperIntra::operator()(std::uint64_t bin1_id,
-                                                                 std::uint64_t bin2_id) const {
+inline std::uint64_t ChromChromHiCFileWriter::BlockMapperIntra::operator()(
+    std::uint64_t bin1_id, std::uint64_t bin2_id) const {
   if (use_inter_mapper()) {
     return _inter_mapper(bin1_id, bin2_id);
   }
@@ -1085,7 +1031,8 @@ inline std::uint64_t HiCFileWriter::BlockMapperIntra::operator()(std::uint64_t b
   return depth * block_column_count() + position_along_diagonal;
 }
 
-inline double HiCFileWriter::BlockMapperIntra::init_base(std::int64_t base_depth) noexcept {
+inline double ChromChromHiCFileWriter::BlockMapperIntra::init_base(
+    std::int64_t base_depth) noexcept {
   if (base_depth > 1) {
     return std::log(static_cast<double>(base_depth));
   }

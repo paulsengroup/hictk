@@ -20,6 +20,7 @@
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
+#include "hictk/tmpdir.hpp"
 
 template <>
 struct std::default_delete<libdeflate_compressor> {
@@ -235,42 +236,83 @@ class PixelTank {
       -> const float&;
 };
 
-class HiCFileWriter {
+class MetadataOffsetTank {
+  struct Key {
+    Chromosome chrom1{};
+    Chromosome chrom2{};
+    std::uint32_t resolution{};
+
+    bool operator<(const Key& other) const noexcept;
+  };
+
+  struct Value {
+    std::streamoff matrix_metadata_offset{};
+    std::size_t matrix_size{};
+  };
+
+  phmap::btree_map<Key, Value> _tank{};
+
+ public:
+  MetadataOffsetTank() = default;
+
+  [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2,
+                              std::uint32_t resolution) const noexcept;
+  [[nodiscard]] auto at(const Chromosome& chrom1, const Chromosome& chrom2,
+                        std::uint32_t resolution) const -> const Value&;
+
+  void insert(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
+              std::size_t offset, std::size_t size);
+
+  auto operator()() const noexcept -> const phmap::btree_map<Key, Value>&;
+};
+
+struct HiCSectionOffsets {
+  std::streamoff position;
+  std::size_t size;
+};
+
+class ChromChromHiCFileWriter {
+  Chromosome _chrom1{};
+  Chromosome _chrom2{};
+
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
-  phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>> _bin_tables{};
+  std::shared_ptr<const BinTable> _bin_table{};
   phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
-  std::vector<MatrixMetadata> _matrix_metadata{};
-  std::vector<MatrixResolutionMetadata> _matrix_resolution_metadata{};
-  std::vector<FooterV5> _footers{};
+  MatrixMetadata _matrix_metadata{};
+  MatrixResolutionMetadata _matrix_resolution_metadata{};
+  FooterV5 _footer{};
 
   BinaryBuffer _bbuffer{};
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
-  phmap::flat_hash_map<std::uint32_t, PixelTank<float>> _pixel_tank{};
+  PixelTank<float> _pixel_tank{};
+
+  std::unique_ptr<const hictk::internal::TmpDir> _tmpdir{};
+
+  HiCSectionOffsets _header_offset{};
+  HiCSectionOffsets _body_offset{};
+  HiCSectionOffsets _body_metadata_offset{};
 
   static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
   static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
 
  public:
-  HiCFileWriter() = default;
-  explicit HiCFileWriter(HiCHeader header, std::int32_t compression_lvl = 9,
-                         std::size_t buffer_size = 32'000'000);
+  ChromChromHiCFileWriter() = default;
+  explicit ChromChromHiCFileWriter(
+      const Chromosome& chrom1, const Chromosome& chrom2, HiCHeader header,
+      const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
+      std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
-  [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
-  [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
+  [[nodiscard]] const BinTable& bins() const;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel,
-                     bool update_expected_values = true);
-
-  void write_pixels(bool write_chromosome_ALL = true);
-  void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution);
-  void write_pixels_ALL(std::size_t num_bins = 1000);
+  void write_pixels(PixelIt first_pixel, PixelIt last_pixel, bool update_expected_values = true);
 
   // Write header
   void write_header();
@@ -278,37 +320,36 @@ class HiCFileWriter {
   void write_norm_vector_index(std::streamoff position, std::size_t length);
 
   // Write body
-  auto write_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
-                           const Chromosome& chrom2, const std::string& unit = "BP");
+  auto write_body_metadata(const std::string& unit = "BP") -> HiCSectionOffsets;
 
-  std::streamoff write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
-                                         const Chromosome& chrom2, std::uint32_t resolution,
-                                         const std::vector<ThinPixel<float>>& pixels,
-                                         std::size_t bin_column_offset, std::size_t bin_row_offset);
+  auto write_interaction_block(std::uint64_t block_id, const std::vector<ThinPixel<float>>& pixels,
+                               std::size_t bin_column_offset, std::size_t bin_row_offset)
+      -> HiCSectionOffsets;
 
   // Write footer
-  std::streamoff write_footers();
-  void add_footer(const Chromosome& chrom1, const Chromosome& chrom2, std::size_t file_offset,
-                  std::size_t matrix_metadata_bytes);
+  auto write_footer() -> HiCSectionOffsets;
   void write_footer_section_size(std::streamoff footer_offset, std::uint64_t bytes);
 
   // Write expected/normalization values
   void write_expected_values(std::string_view unit);
 
+  // copy sections
+  void copy_body(std::ofstream& dest, std::size_t chunk_size = 32'000'000);
+
   void finalize();
 
  private:
+  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(const Chromosome& chrom1,
+                                                                    const Chromosome& chrom2,
+                                                                    HiCHeader&& header);
   [[nodiscard]] std::size_t compute_block_column_count(
       std::size_t num_bins, std::uint32_t bin_size, std::uint32_t cutoff,
       std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
   [[nodiscard]] std::size_t compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
                                              std::size_t bin_size);
 
-  std::size_t write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id);
-  auto write_resolutions_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                  float sum_counts, const std::string& unit);
-
-  void coarsen_pixels();
+  auto write_matrix_metadata() -> HiCSectionOffsets;
+  auto write_resolution_metadata(float sum_counts, const std::string& unit) -> HiCSectionOffsets;
 
  public:
   class BlockMapperInter {
@@ -341,6 +382,102 @@ class HiCFileWriter {
     [[nodiscard]] bool use_inter_mapper() const noexcept;
     [[nodiscard]] static double init_base(std::int64_t base_depth) noexcept;
   };
+};
+
+class HiCFileWriter {
+  std::shared_ptr<const HiCHeader> _header{};
+  std::shared_ptr<filestream::FileStream> _fs{};
+  phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>> _bin_tables{};
+  phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
+  std::vector<MatrixMetadata> _matrix_metadata{};
+  std::vector<MatrixResolutionMetadata> _matrix_resolution_metadata{};
+  std::vector<FooterV5> _footers{};
+
+  BinaryBuffer _bbuffer{};
+  std::unique_ptr<libdeflate_compressor> _compressor{};
+  std::string _compression_buffer{};
+
+  MetadataOffsetTank _metadata_offset_tank{};
+  phmap::flat_hash_map<std::uint32_t, PixelTank<float>> _pixel_tank{};
+
+  std::unique_ptr<const hictk::internal::TmpDir> _tmpdir{};
+
+  struct HiCSectionOffsets {
+    std::streamoff position;
+    std::size_t size;
+  };
+
+  HiCSectionOffsets _header_offsets{};
+  HiCSectionOffsets _body_offsets{};
+  [[maybe_unused]] HiCSectionOffsets _footer_offsets{};  // TODO
+
+  static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
+  static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
+  static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
+
+ public:
+  HiCFileWriter() = default;
+  explicit HiCFileWriter(
+      HiCHeader header,
+      const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
+      std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
+
+  [[nodiscard]] std::string_view url() const noexcept;
+  [[nodiscard]] const Reference& chromosomes() const noexcept;
+  [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
+  [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
+
+  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
+  void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel,
+                     bool update_expected_values = true);
+
+  void write_pixels(bool write_chromosome_ALL = true);
+  void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2);
+  void write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution);
+  void write_pixels_ALL(std::size_t num_bins = 1000);
+
+  // Write header
+  void write_header();
+  void write_footer_offset(std::streamoff master_index_offset);
+  void write_norm_vector_index(std::streamoff position, std::size_t length);
+
+  // Write body
+  auto write_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
+                           const Chromosome& chrom2, const std::string& unit = "BP")
+      -> HiCSectionOffsets;
+
+  auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
+                               const Chromosome& chrom2, std::uint32_t resolution,
+                               const std::vector<ThinPixel<float>>& pixels,
+                               std::size_t bin_column_offset, std::size_t bin_row_offset)
+      -> HiCSectionOffsets;
+
+  // Write footer
+  auto write_footers() -> HiCSectionOffsets;
+  void add_footer(const Chromosome& chrom1, const Chromosome& chrom2, std::size_t file_offset,
+                  std::size_t matrix_metadata_bytes);
+  void write_footer_section_size(std::streamoff footer_offset, std::uint64_t bytes);
+
+  // Write expected/normalization values
+  void write_expected_values(std::string_view unit);
+
+  // copy sections
+  void copy_body(HiCFileWriter& dest, std::size_t chunk_size = 32'000'000);
+
+  void finalize();
+
+ private:
+  [[nodiscard]] std::size_t compute_block_column_count(
+      std::size_t num_bins, std::uint32_t bin_size, std::uint32_t cutoff,
+      std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
+  [[nodiscard]] std::size_t compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                             std::size_t bin_size);
+
+  auto write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id) -> HiCSectionOffsets;
+  auto write_resolutions_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+                                  float sum_counts, const std::string& unit) -> HiCSectionOffsets;
+
+  void coarsen_pixels();
 };
 }  // namespace hictk::hic::internal
 
