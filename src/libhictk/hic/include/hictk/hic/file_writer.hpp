@@ -200,6 +200,41 @@ class ExpectedValuesAggregator {
   [[nodiscard]] double& at(const Chromosome& chrom1, const Chromosome& chrom2);
 };
 
+template <typename N>
+class PixelTank {
+  using ChromosomePair = std::pair<Chromosome, Chromosome>;
+  using ChromPixelTank = std::vector<ThinPixel<N>>;
+
+  std::shared_ptr<const BinTable> _bin_table{};
+  phmap::flat_hash_map<ChromosomePair, ChromPixelTank> _pixel_tank{};
+  phmap::flat_hash_map<ChromosomePair, float> _matrix_tot_counts{};
+  ExpectedValuesAggregator _expected_values{};
+
+ public:
+  PixelTank() = default;
+  explicit PixelTank(std::shared_ptr<const BinTable> bins);
+
+  [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
+
+  void add_pixel(const ThinPixel<N>& p, bool update_expected_values = true);
+  void add_pixel(const Pixel<N>& p, bool update_expected_values = true);
+  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
+  void add_pixels(PixelIt first_pixel, PixelIt last_pixel, bool update_expected_values = true);
+
+  void finalize();
+
+  [[nodiscard]] auto pixels() const noexcept
+      -> const phmap::flat_hash_map<ChromosomePair, ChromPixelTank>&;
+  [[nodiscard]] auto matrix_counts() const noexcept
+      -> const phmap::flat_hash_map<ChromosomePair, float>&;
+  [[nodiscard]] auto expected_values() const noexcept;
+
+  [[nodiscard]] auto pixels(const Chromosome& chrom1, const Chromosome& chrom2) const
+      -> const ChromPixelTank&;
+  [[nodiscard]] auto matrix_counts(const Chromosome& chrom1, const Chromosome& chrom2) const
+      -> const float&;
+};
+
 class HiCFileWriter {
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
@@ -213,14 +248,7 @@ class HiCFileWriter {
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
-  using ChromosomePair = std::pair<Chromosome, Chromosome>;
-  using ChromPixelTank = phmap::btree_set<ThinPixel<float>>;
-  using PixelTank = phmap::flat_hash_map<ChromosomePair, ChromPixelTank>;
-  using MatrixCounts = phmap::flat_hash_map<ChromosomePair, float>;
-  PixelTank _pixel_tank{};
-  MatrixCounts _matrix_tot_counts{};
-
-  phmap::flat_hash_map<std::uint32_t, ExpectedValuesAggregator> _expected_values{};
+  phmap::flat_hash_map<std::uint32_t, PixelTank<float>> _pixel_tank{};
 
   static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
@@ -234,7 +262,7 @@ class HiCFileWriter {
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
   [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
-  [[nodiscard]] const std::vector<std::uint32_t> resolutions() const noexcept;
+  [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel,
@@ -250,8 +278,8 @@ class HiCFileWriter {
   void write_norm_vector_index(std::streamoff position, std::size_t length);
 
   // Write body
-  auto write_body_metadata(const Chromosome& chrom1, const Chromosome& chrom2,
-                           const std::string& unit = "BP");
+  auto write_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
+                           const Chromosome& chrom2, const std::string& unit = "BP");
 
   std::streamoff write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                          const Chromosome& chrom2, std::uint32_t resolution,
@@ -279,6 +307,8 @@ class HiCFileWriter {
   std::size_t write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id);
   auto write_resolutions_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
                                   float sum_counts, const std::string& unit);
+
+  void coarsen_pixels();
 
  public:
   class BlockMapperInter {
