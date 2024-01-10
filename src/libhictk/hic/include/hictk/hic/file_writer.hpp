@@ -244,8 +244,8 @@ class HiCFileWriter {
 
   // Write header
   void write_header();
-  void write_footer_offset(std::int64_t master_index_offset);
-  void write_norm_vector_index(std::size_t position, std::size_t length);
+  void write_footer_offset(std::streamoff master_index_offset);
+  void write_norm_vector_index(std::streamoff position, std::size_t length);
 
   // Write body
   auto write_body_metadata(const Chromosome& chrom1, const Chromosome& chrom2,
@@ -260,7 +260,7 @@ class HiCFileWriter {
   std::streamoff write_footers();
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2, std::size_t file_offset,
                   std::size_t matrix_metadata_bytes);
-  void write_footer_section_size(std::uint64_t footer_offset, std::uint64_t bytes);
+  void write_footer_section_size(std::streamoff footer_offset, std::uint64_t bytes);
 
   // Write expected/normalization values
   void write_expected_values(std::string_view unit);

@@ -367,6 +367,9 @@ inline const phmap::btree_map<Chromosome, double> &ExpectedValuesAggregator::sca
 }
 
 inline void ExpectedValuesAggregator::compute_density_cis() {
+  // Re-implementation of the algorithm used by HiCTools:
+  // https://github.com/aidenlab/HiCTools/blob/6b2fab8e78685deae199c33bbb167dcab1dbfbb3/src/hic/tools/utils/original/ExpectedValueCalculation.java#L184
+
   auto num_sum = _actual_distances.front();
   auto den_sum = _possible_distances.front();
   std::size_t bound1 = 0;
@@ -378,7 +381,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
   _weights.resize(max_num_bins);
   std::fill(_weights.begin(), _weights.end(), 0.0);
 
-  for (auto ii = 0UL; ii < max_num_bins; ii++) {
+  for (std::size_t ii = 0; ii < max_num_bins; ii++) {
     if (num_sum < shot_noise_minimum) {
       while (num_sum < shot_noise_minimum && bound2 < max_num_bins) {
         bound2++;
@@ -386,7 +389,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
         den_sum += _possible_distances[bound2];
       }
     } else if (num_sum >= shot_noise_minimum && bound2 - bound1 > 0) {
-      while (bound2 - bound1 > 0 && bound2 < _num_bins_gw && bound1 < _num_bins_gw &&
+      while (bound2 > bound1 && bound2 < _num_bins_gw && bound1 < _num_bins_gw &&
              num_sum - _actual_distances[bound1] - _actual_distances[bound2] >=
                  shot_noise_minimum) {
         num_sum = num_sum - _actual_distances[bound1] - _actual_distances[bound2];
@@ -657,7 +660,7 @@ inline void HiCFileWriter::write_footer_offset(std::int64_t master_index_offset)
   _fs->seekp(static_cast<std::int64_t>(foffset));
 }
 
-inline void HiCFileWriter::write_norm_vector_index(std::size_t position, std::size_t length) {
+inline void HiCFileWriter::write_norm_vector_index(std::streamoff position, std::size_t length) {
   const auto foffset = _fs->tellp();
   const auto offset =
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header->version) +
@@ -825,7 +828,7 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
   _footers.emplace_back(std::move(f));
 }
 
-inline void HiCFileWriter::write_footer_section_size(std::uint64_t footer_offset,
+inline void HiCFileWriter::write_footer_section_size(std::streamoff footer_offset,
                                                      std::uint64_t bytes) {
   const auto offset = _fs->tellp();
   _fs->seekp(static_cast<std::int64_t>(footer_offset));
@@ -893,7 +896,7 @@ inline void HiCFileWriter::finalize() {
 
   write_expected_values("BP");
 
-  write_footer_section_size(footer_offset, _fs->tellp() - footer_offset);
+  write_footer_section_size(footer_offset, _fs->tellp() - static_cast<std::size_t>(footer_offset));
 
   const auto normVectorIndexPosition = _fs->tellp();
   _fs->write(std::int32_t(0));  // no nNormExpectedValueVectors
@@ -901,7 +904,8 @@ inline void HiCFileWriter::finalize() {
   const auto normVectorIndexLength = _fs->tellp() - normVectorIndexPosition;
 
   write_footer_offset(footer_offset);
-  write_norm_vector_index(normVectorIndexPosition, normVectorIndexLength);
+  write_norm_vector_index(static_cast<std::streamoff>(normVectorIndexPosition),
+                          normVectorIndexLength);
 }
 
 inline std::size_t HiCFileWriter::compute_block_column_count(std::size_t num_bins,
