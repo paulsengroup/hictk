@@ -507,8 +507,11 @@ inline void HiCFileWriter::append_pixels(std::uint32_t resolution, PixelIt first
     auto it = _pixel_tank.find(key);
     if (it != _pixel_tank.end()) {
       it->second.emplace(p);
+      assert(_matrix_tot_counts.contains(key));
+      _matrix_tot_counts.at(key) += 1;
     } else {
       _pixel_tank.emplace(key, ChromPixelTank{p});
+      _matrix_tot_counts.emplace(key, 1.0F);
     }
 
     if (update_expected_values) {
@@ -691,7 +694,7 @@ inline std::size_t HiCFileWriter::write_matrix_metadata(std::uint32_t chrom1_id,
 }
 
 inline auto HiCFileWriter::write_resolutions_metadata(std::uint32_t chrom1_id,
-                                                      std::uint32_t chrom2_id,
+                                                      std::uint32_t chrom2_id, float sum_counts,
                                                       const std::string &unit) {
   struct Result {
     std::size_t file_offset{};
@@ -714,7 +717,7 @@ inline auto HiCFileWriter::write_resolutions_metadata(std::uint32_t chrom1_id,
     MatrixResolutionMetadata m{};
     m.unit = unit;
     m.resIdx = static_cast<std::int32_t>(i);
-    m.sumCounts = 0;
+    m.sumCounts = sum_counts;
     m.occupiedCellCount = 0;  // not used
     m.percent5 = 0;           // not used
     m.percent95 = 0;          // not used
@@ -754,9 +757,13 @@ inline auto HiCFileWriter::write_body_metadata(const Chromosome &chrom1, const C
     std::size_t matrix_metadata_bytes;
   };
 
+  const auto tot_counts = _matrix_tot_counts.contains(std::make_pair(chrom1, chrom2))
+                              ? _matrix_tot_counts.at(std::make_pair(chrom1, chrom2))
+                              : 0.0F;
+
   Result offsets{};
   offsets.matrix_metadata_offset = write_matrix_metadata(chrom1.id(), chrom2.id());
-  write_resolutions_metadata(chrom1.id(), chrom2.id(), unit);
+  write_resolutions_metadata(chrom1.id(), chrom2.id(), tot_counts, unit);
 
   offsets.matrix_metadata_bytes = _fs->tellp() - offsets.matrix_metadata_offset;
 

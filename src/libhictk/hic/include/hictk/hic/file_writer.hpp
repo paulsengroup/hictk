@@ -213,10 +213,12 @@ class HiCFileWriter {
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
-  using PixelTankKey = std::pair<Chromosome, Chromosome>;
+  using ChromosomePair = std::pair<Chromosome, Chromosome>;
   using ChromPixelTank = phmap::btree_set<ThinPixel<float>>;
-  using PixelTank = phmap::flat_hash_map<PixelTankKey, ChromPixelTank>;
+  using PixelTank = phmap::flat_hash_map<ChromosomePair, ChromPixelTank>;
+  using MatrixCounts = phmap::flat_hash_map<ChromosomePair, float>;
   PixelTank _pixel_tank{};
+  MatrixCounts _matrix_tot_counts{};
 
   phmap::flat_hash_map<std::uint32_t, ExpectedValuesAggregator> _expected_values{};
 
@@ -276,7 +278,7 @@ class HiCFileWriter {
 
   std::size_t write_matrix_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id);
   auto write_resolutions_metadata(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                  const std::string& unit);
+                                  float sum_counts, const std::string& unit);
 
  public:
   class BlockMapperInter {
