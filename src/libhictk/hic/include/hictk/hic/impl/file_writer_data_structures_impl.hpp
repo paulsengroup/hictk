@@ -50,7 +50,17 @@ inline bool MatrixBlockMetadata::operator<(const MatrixBlockMetadata &other) con
   return blockNumber < other.blockNumber;
 }
 
+inline bool MatrixResolutionMetadata::operator<(
+    const MatrixResolutionMetadata &other) const noexcept {
+  if (unit != other.unit) {
+    return unit < other.unit;
+  }
+  return binSize < other.binSize;
+}
+
 inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
+  assert(!_block_metadata.empty());
+
   if (clear) {
     buffer.clear();
   }
@@ -66,7 +76,18 @@ inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, boo
   buffer.write(blockColumnCount);
   buffer.write(blockCount);
 
+  for (const auto &blk : _block_metadata) {
+    std::ignore = blk.serialize(buffer, false);
+  }
+
   return buffer.get();
+}
+
+template <typename It>
+inline void MatrixResolutionMetadata::set_block_metadata(It first_block, It last_block) {
+  _block_metadata.clear();
+  std::copy(first_block, last_block, std::back_inserter(_block_metadata));
+  blockCount = static_cast<std::int32_t>(_block_metadata.size());
 }
 
 inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
@@ -101,11 +122,17 @@ inline void MatrixInteractionBlock<N>::finalize() {
   for (auto &[_, v] : _interactions) {
     std::sort(v.begin(), v.end());
   }
+
+  // TODO tweak
+  useFloatContact = 1;
+  useIntXPos = 1;
+  useIntYPos = 1;
+  matrixRepresentation = 1;
 }
 
 template <typename N>
 inline auto MatrixInteractionBlock<N>::operator()() const noexcept
-    -> const phmap::btree_map<RowID, Row> & {
+    -> const phmap::btree_map<ColID, Col> & {
   return _interactions;
 }
 
@@ -129,21 +156,21 @@ inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
   buffer.write(useIntYPos);
   buffer.write(matrixRepresentation);
 
-  const auto rowCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
-  buffer.write(rowCount);
+  const auto colCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
+  buffer.write(colCount);
 
-  for (const auto &[row, pixels] : _interactions) {
-    assert(static_cast<std::int32_t>(row) >= binRowOffset);
-    const auto rowNumber = static_cast<std::int32_t>(row) - binRowOffset;  // TODO support short
-    const auto recordCount = static_cast<std::int32_t>(pixels.size());     // TODO support short
+  for (const auto &[col, pixels] : _interactions) {
+    assert(static_cast<std::int32_t>(col) >= binColumnOffset);
+    const auto rowNumber = static_cast<std::int32_t>(col) - binColumnOffset;  // TODO support short
+    const auto recordCount = static_cast<std::int32_t>(pixels.size());        // TODO support short
     buffer.write(rowNumber);
     buffer.write(recordCount);
 
     assert(std::is_sorted(pixels.begin(), pixels.end()));
     for (const auto &p : pixels) {
       const auto bin_id = static_cast<std::int32_t>(p.coords.bin1.rel_id());
-      assert(bin_id >= binColumnOffset);
-      const auto binColumn = bin_id - binColumnOffset;
+      assert(bin_id >= binRowOffset);
+      const auto binColumn = bin_id - binRowOffset;
       const auto value = p.count;
       buffer.write(binColumn);
       buffer.write(value);

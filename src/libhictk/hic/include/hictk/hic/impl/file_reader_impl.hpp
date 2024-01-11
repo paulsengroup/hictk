@@ -376,6 +376,7 @@ inline std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key)
   auto nEntries = _fs->read<std::int32_t>();
   for (int i = 0; i < nEntries; i++) {
     const auto strbuff = _fs->getline('\0');
+    assert(!strbuff.empty());
     const auto fpos = _fs->read<std::int64_t>();
     std::ignore = _fs->read<std::int32_t>();  // sizeInBytes
     if (strbuff == key) {

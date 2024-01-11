@@ -81,78 +81,6 @@ class MatrixBodyMetadataTank {
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
-/*
-class ChromChromHiCFileWriter {
-  Chromosome _chrom1{};
-  Chromosome _chrom2{};
-
-  std::shared_ptr<const HiCHeader> _header{};
-  std::shared_ptr<filestream::FileStream> _fs{};
-  std::shared_ptr<const BinTable> _bin_table{};
-  phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>> _block_index{};
-  MatrixMetadata _matrix_metadata{};
-  MatrixResolutionMetadata _matrix_resolution_metadata{};
-  FooterV5 _footer{};
-
-  BinaryBuffer _bbuffer{};
-  std::unique_ptr<libdeflate_compressor> _compressor{};
-  std::string _compression_buffer{};
-
-  std::unique_ptr<const hictk::internal::TmpDir> _tmpdir{};
-
-  HiCSectionOffsets _header_offset{};
-  HiCSectionOffsets _body_offset{};
-  HiCSectionOffsets _body_metadata_offset{};
-
- public:
-  ChromChromHiCFileWriter() = default;
-  explicit ChromChromHiCFileWriter(
-      const Chromosome& chrom1, const Chromosome& chrom2, HiCHeader header,
-      const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-      std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
-
-  [[nodiscard]] std::string_view url() const noexcept;
-  [[nodiscard]] const Reference& chromosomes() const noexcept;
-  [[nodiscard]] const BinTable& bins() const;
-  [[nodiscard]] std::uint32_t resolution() const noexcept;
-
-  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void write_pixels(PixelIt first_pixel, PixelIt last_pixel, bool update_expected_values = true);
-
-  // Write header
-  void write_header();
-  void write_footer_offset(std::streamoff master_index_offset);
-  void write_norm_vector_index(std::streamoff position, std::size_t length);
-
-  // Write body
-  auto write_body_metadata(const std::string& unit = "BP") -> HiCSectionOffsets;
-
-  auto write_interaction_block(std::uint64_t block_id, const std::vector<ThinPixel<float>>& pixels,
-                               std::size_t bin_column_offset, std::size_t bin_row_offset)
-      -> HiCSectionOffsets;
-
-  // Write footer
-  auto write_footer() -> HiCSectionOffsets;
-  void write_footer_section_size(std::streamoff footer_offset, std::uint64_t bytes);
-
-  // Write expected/normalization values
-  void write_expected_values(std::string_view unit);
-
-  // copy sections
-  void copy_body(std::ofstream& dest, std::size_t chunk_size = 32'000'000);
-
-  void finalize();
-
- private:
-  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(const Chromosome& chrom1,
-                                                                    const Chromosome& chrom2,
-                                                                    HiCHeader&& header);
-
-  auto write_matrix_metadata() -> HiCSectionOffsets;
-  auto write_resolution_metadata(float sum_counts, const std::string& unit) -> HiCSectionOffsets;
-};
- */
-
 class HiCFileWriter {
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
@@ -198,7 +126,7 @@ class HiCFileWriter {
   // Write pixels
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void add_pixels(PixelIt first_pixel, PixelIt last_pixel);
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
+  void write_pixels();
 
   // Write body
   auto write_body_metadata() -> HiCSectionOffsets;
@@ -224,6 +152,7 @@ class HiCFileWriter {
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
+  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
       -> HiCSectionOffsets;
 
