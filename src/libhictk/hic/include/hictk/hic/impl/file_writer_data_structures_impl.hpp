@@ -298,14 +298,6 @@ inline std::string FooterV5::serialize(BinaryBuffer &buffer, bool clear) const {
     buffer.clear();
   }
 
-  std::string data = masterIndex.serialize(buffer);
-  data += expectedValues.serialize(buffer);
-  data += normExpectedValues.serialize(buffer);
-  data += normVectIndex.serialize(buffer);
-  for (const auto &v : normVectArray) {
-    data += v.serialize(buffer);
-  }
-
-  return data;
+  return masterIndex.serialize(buffer);
 }
 }  // namespace hictk::hic::internal

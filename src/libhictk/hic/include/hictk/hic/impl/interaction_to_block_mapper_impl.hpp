@@ -144,10 +144,10 @@ template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
                                                        std::size_t chunk_size) {
   while (first_pixel != last_pixel) {
-    if (++_pixels_processed >= chunk_size) {
+    if (++_pending_pixels >= chunk_size) {
       write_blocks();
       _blocks.clear();
-      _pixels_processed = 0;
+      _pending_pixels = 0;
     }
 
     auto p = *first_pixel;
@@ -170,11 +170,12 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   }
 }
 
-inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const BlockIndexMap& {
+inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const BlockIndexMap & {
   return _block_index;
 }
 
-inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept -> const ChromosomeIndexMap& {
+inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept
+    -> const ChromosomeIndexMap & {
   return _chromosome_index;
 }
 
@@ -195,14 +196,17 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(
 
 inline float HiCInteractionToBlockMapper::pixel_sum(const Chromosome &chrom1,
                                                     const Chromosome &chrom2) {
-  return _pixel_sums.at(std::make_pair(chrom1, chrom2));
+  auto match = _pixel_sums.find(std::make_pair(chrom1, chrom2));
+  if (match == _pixel_sums.end()) {
+    return 0;
+  }
+  return match->second;
 }
 
 inline void HiCInteractionToBlockMapper::finalize() {
   write_blocks();
-  index_chromosomes();
   _blocks.clear();
-  _pixels_processed = 0;
+  _pending_pixels = 0;
   _fs.flush();
 }
 
@@ -262,18 +266,15 @@ inline auto HiCInteractionToBlockMapper::map(const Pixel<N> &p) const -> BlockID
 inline void HiCInteractionToBlockMapper::write_blocks() {
   for (auto &[bid, blk] : _blocks) {
     const auto [offset, size] = write_block(blk);
-
-    auto match = _block_index.find(bid);
-    if (match != _block_index.end()) {
-      match->second.emplace_back(BlockIndex{offset, size});
-    } else {
-      _block_index.emplace(bid, std::vector<BlockIndex>{{offset, size}});
+    {
+      auto match = _block_index.find(bid);
+      if (match != _block_index.end()) {
+        match->second.emplace_back(BlockIndex{offset, size});
+      } else {
+        _block_index.emplace(bid, std::vector<BlockIndex>{{offset, size}});
+      }
     }
-  }
-}
 
-inline void HiCInteractionToBlockMapper::index_chromosomes() {
-  for (const auto &[bid, _] : _block_index) {
     const auto key = std::make_pair(_bin_table->chromosomes().at(bid.chrom1_id),
                                     _bin_table->chromosomes().at(bid.chrom2_id));
     auto match = _chromosome_index.find(key);
@@ -282,10 +283,6 @@ inline void HiCInteractionToBlockMapper::index_chromosomes() {
     } else {
       _chromosome_index.emplace(key, std::vector<BlockID>{bid});
     }
-  }
-
-  for (auto &[_, v] : _chromosome_index) {
-    std::sort(v.begin(), v.end());
   }
 }
 

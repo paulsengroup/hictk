@@ -256,7 +256,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     }
 
     const File f(std::string{url()}, base_resolution);
-    const auto sel = f.fetch();
+    const auto sel = f.fetch(chrom1.name(), chrom2.name());
     const auto factor = res / base_resolution;
     const transformers::CoarsenPixels coarsener(
         sel.begin<float>(), sel.end<float>(),
@@ -440,8 +440,15 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
 
   auto &mapper = _block_mappers.at(resolution);
   mapper.finalize();
-  const auto &block_ids = mapper.chromosome_index().at(std::make_pair(chrom1, chrom2));
-  for (const auto &bid : block_ids) {
+
+  const auto block_ids = mapper.chromosome_index().find(std::make_pair(chrom1, chrom2));
+  if (block_ids == mapper.chromosome_index().end()) {
+    SPDLOG_DEBUG(FMT_STRING("no pixels to write for {}:{} matrix at {} resolution"), chrom1.name(),
+                 chrom2.name(), resolution);
+    return {static_cast<std::streamoff>(offset), 0};
+  }
+
+  for (const auto &bid : block_ids->second) {
     const auto pixels = mapper.merge_blocks(bid);
     pixels_written += static_cast<std::size_t>(pixels.nRecords);
     write_interaction_block(bid.bid, chrom1, chrom2, resolution, pixels);
