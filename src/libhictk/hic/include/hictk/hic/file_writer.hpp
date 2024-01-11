@@ -314,12 +314,16 @@ class HiCBlockPartitioner {
 
   std::filesystem::path _path;
   filestream::FileStream _fs;
-  phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
-  std::size_t _pixels_processed = 0;
+  std::shared_ptr<const BinTable> _bin_table{};
+
   phmap::btree_map<BlockID, std::vector<BlockIndex>> _block_index{};
+  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::vector<BlockID>> _chromosome_index{};
+
+  phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
+  std::size_t _pixels_processed{};
+
   phmap::flat_hash_map<Chromosome, BlockMapperIntra> _mappers_intra{};
   phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, BlockMapperInter> _mappers_inter{};
-  std::shared_ptr<const BinTable> _bin_table{};
 
   BinaryBuffer _bbuffer{};
   int _compression_lvl{};
@@ -355,6 +359,7 @@ class HiCBlockPartitioner {
   [[nodiscard]] auto map(const Pixel<N>& p) const -> BlockID;
 
   void write_blocks();
+  void index_chromosomes();
   std::pair<std::uint64_t, std::uint32_t> write_block(const MatrixInteractionBlockFlat<float>& blk);
 
   [[nodiscard]] std::size_t compute_block_column_count(
