@@ -17,10 +17,13 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/binary_buffer.hpp"
+#include "hictk/hic/expected_values_aggregator.hpp"
+#include "hictk/hic/file_writer_data_structures.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
+#include "hictk/hic/interaction_to_block_mapper.hpp"
 #include "hictk/tmpdir.hpp"
 
 template <>
@@ -30,154 +33,7 @@ struct std::default_delete<libdeflate_compressor> {
   }
 };
 
-template <>
-struct std::default_delete<ZSTD_CCtx_s> {
-  void operator()(ZSTD_CCtx_s* ctx) const { ZSTD_freeCCtx(ctx); }  // NOLINT
-};
-
-template <>
-struct std::default_delete<ZSTD_DCtx_s> {
-  void operator()(ZSTD_DCtx_s* ctx) const { ZSTD_freeDCtx(ctx); }  // NOLINT
-};
-
 namespace hictk::hic::internal {
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#matrix-metadata
-struct MatrixMetadata {
-  std::int32_t chr1Idx{};
-  std::int32_t chr2Idx{};
-  std::int32_t nResolutions{};
-
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-struct MatrixBlockMetadata {
-  std::int32_t blockNumber{};
-  std::int64_t blockPosition{};
-  std::int32_t blockSizeBytes{};
-
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] bool operator<(const MatrixBlockMetadata& other) const noexcept;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#resolution-zoom-level-metadata
-struct MatrixResolutionMetadata {
-  std::string unit{};
-  std::int32_t resIdx{};
-  float sumCounts{};
-  std::int32_t occupiedCellCount = 0;  // Not used
-  float percent5 = 0;                  // Not used
-  float percent95 = 0;                 // Not used
-  std::int32_t binSize{};
-  std::int32_t blockSize{};
-  std::int32_t blockColumnCount{};
-  std::int32_t blockCount{};
-
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#blocks
-template <typename N = float>
-struct MatrixInteractionBlock {
-  std::int32_t nRecords{};
-  std::int32_t binColumnOffset{std::numeric_limits<std::int32_t>::max()};
-  std::int32_t binRowOffset{std::numeric_limits<std::int32_t>::max()};
-  std::uint8_t useFloatContact{};
-  std::uint8_t useIntXPos{};
-  std::uint8_t useIntYPos{};
-  std::uint8_t matrixRepresentation{};
-
-  void emplace_back(Pixel<N>&& p);
-  void finalize();
-
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
-                                      std::string& compression_buffer, bool clear = true) const;
-
- private:
-  using RowID = std::int32_t;
-  using Row = std::vector<Pixel<N>>;
-  phmap::btree_map<RowID, Row> _interactions;
-};
-
-template <typename N = float>
-struct MatrixInteractionBlockFlat {
-  std::vector<std::uint64_t> bin1_ids{};
-  std::vector<std::uint64_t> bin2_ids{};
-  std::vector<N> counts{};
-
-  void emplace_back(ThinPixel<N>&& p);
-  void emplace_back(Pixel<N>&& p);
-
-  [[nodiscard]] std::size_t size() const noexcept;
-
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, ZSTD_CCtx_s& compressor,
-                                      std::string& compression_buffer, int compression_lvl,
-                                      bool clear = true) const;
-  [[nodiscard]] static std::vector<ThinPixel<N>> deserialize(BinaryBuffer& buffer,
-                                                             ZSTD_DCtx_s& decompressor,
-                                                             std::string& decompression_buffer);
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index
-struct MasterIndex {
-  std::string key;
-  std::int64_t position;
-  std::int32_t size;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-struct ExpectedValuesBlock {
-  std::string unit{};
-  std::int32_t binSize{};
-  std::int64_t nValues{};
-  std::vector<float> value{};
-  std::int32_t nChrScaleFactors{};
-  std::vector<std::int32_t> chrIndex{};
-  std::vector<float> chrScaleFactor{};
-
-  ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
-                      const std::vector<double>& weights,
-                      const std::vector<std::uint32_t>& chrom_ids,
-                      const std::vector<double>& scale_factors);
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
-struct ExpectedValues {
-  std::int32_t nExpectedValueVectors = 0;
-  std::vector<ExpectedValuesBlock> expectedValues;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
-struct NormalizedExpectedValues {
-  std::int32_t nNormExpectedValueVectors = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-index
-struct NormalizationVectorIndex {
-  std::int32_t nNormVectors = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
-struct NormalizationVectorArray {
-  std::int64_t nValues = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-struct FooterV5 {
-  MasterIndex masterIndex{};
-
-  ExpectedValues expectedValues{};
-  NormalizedExpectedValues normExpectedValues{};
-  NormalizationVectorIndex normVectIndex{};
-  std::vector<NormalizationVectorArray> normVectArray{};
-
-  FooterV5() = default;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
 
 struct BlockIndexKey {
   Chromosome chrom1;
@@ -185,47 +41,6 @@ struct BlockIndexKey {
   std::uint32_t resolution;
 
   [[nodiscard]] bool operator<(const BlockIndexKey& other) const noexcept;
-};
-
-class ExpectedValuesAggregator {
-  std::shared_ptr<const BinTable> _bins{};
-  std::size_t _num_bins_gw{};
-
-  using CisKey = Chromosome;
-  using TransKey = std::pair<CisKey, CisKey>;
-  phmap::flat_hash_map<CisKey, double> _cis_sum{};
-  phmap::flat_hash_map<TransKey, double> _trans_sum{};
-
-  std::vector<double> _possible_distances{};
-  std::vector<double> _actual_distances{};
-
-  std::vector<double> _weights{};
-  phmap::btree_map<Chromosome, double> _scaling_factors{};
-
- public:
-  ExpectedValuesAggregator() = default;
-  explicit ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins);
-  void add(const ThinPixel<float>& p);
-  void add(const Pixel<float>& p);
-
-  void compute_density();
-
-  [[nodiscard]] const std::vector<double>& weights() const noexcept;
-
-  [[nodiscard]] double scaling_factor(const Chromosome& chrom) const;
-  [[nodiscard]] const phmap::btree_map<Chromosome, double>& scaling_factors() const noexcept;
-
- private:
-  [[nodiscard]] const Reference& chromosomes() const noexcept;
-
-  void compute_density_cis();
-  void compute_density_trans();
-
-  [[nodiscard]] double at(const Chromosome& chrom) const;
-  [[nodiscard]] double at(const Chromosome& chrom1, const Chromosome& chrom2) const;
-
-  [[nodiscard]] double& at(const Chromosome& chrom);
-  [[nodiscard]] double& at(const Chromosome& chrom1, const Chromosome& chrom2);
 };
 
 template <typename N>
@@ -291,114 +106,6 @@ class MetadataOffsetTank {
               std::size_t offset, std::size_t size);
 
   auto operator()() const noexcept -> const phmap::btree_map<Key, Value>&;
-};
-
-class HiCBlockPartitioner {
- public:
-  class BlockMapperIntra;
-  class BlockMapperInter;
-
- private:
-  struct BlockID {
-    std::uint32_t chrom1_id;
-    std::uint32_t chrom2_id;
-    std::uint64_t bid;
-
-    [[nodiscard]] bool operator<(const BlockID& other) const noexcept;
-  };
-
-  struct BlockIndex {
-    std::uint64_t offset;
-    std::uint32_t size;
-  };
-
-  std::filesystem::path _path;
-  filestream::FileStream _fs;
-  std::shared_ptr<const BinTable> _bin_table{};
-
-  phmap::btree_map<BlockID, std::vector<BlockIndex>> _block_index{};
-  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::vector<BlockID>> _chromosome_index{};
-
-  phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
-  std::size_t _pixels_processed{};
-
-  phmap::flat_hash_map<Chromosome, BlockMapperIntra> _mappers_intra{};
-  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, BlockMapperInter> _mappers_inter{};
-
-  BinaryBuffer _bbuffer{};
-  int _compression_lvl{};
-  std::unique_ptr<ZSTD_CCtx_s> _zstd_cctx{};
-  std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
-  std::string _compression_buffer{};
-
-  static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
-  static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
-  static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
-
- public:
-  HiCBlockPartitioner(std::filesystem::path path, std::shared_ptr<const BinTable> bins,
-                      int compression_lvl);
-
-  const Reference& chromosomes() const noexcept;
-
-  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, std::size_t chunk_size = 100'000'000);
-
-  [[nodiscard]] auto block_index() const noexcept
-      -> phmap::btree_map<BlockID, std::vector<BlockIndex>>;
-  [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
-
-  void finalize();
-
- private:
-  void init_block_mappers();
-
-  template <typename N>
-  [[nodiscard]] auto map(const ThinPixel<N>& p) const -> BlockID;
-  template <typename N>
-  [[nodiscard]] auto map(const Pixel<N>& p) const -> BlockID;
-
-  void write_blocks();
-  void index_chromosomes();
-  std::pair<std::uint64_t, std::uint32_t> write_block(const MatrixInteractionBlockFlat<float>& blk);
-
-  [[nodiscard]] std::size_t compute_block_column_count(
-      std::size_t num_bins, std::uint32_t bin_size, std::uint32_t cutoff,
-      std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
-  [[nodiscard]] std::size_t compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                             std::size_t bin_size);
-
- public:
-  class BlockMapperInter {
-    std::uint64_t _block_bin_count{};
-    std::uint64_t _block_column_count{};
-
-   public:
-    BlockMapperInter(std::uint64_t block_bin_count, std::uint64_t block_column_count);
-    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id) const;
-
-    [[nodiscard]] std::uint64_t block_bin_count() const;
-    [[nodiscard]] std::uint64_t block_column_count() const;
-  };
-
-  class BlockMapperIntra {
-    BlockMapperInter _inter_mapper;
-    double _base{};
-
-    static constexpr std::int64_t DEFAULT_BASE_DEPTH = 2;
-
-   public:
-    BlockMapperIntra(std::uint64_t block_bin_count, std::uint64_t block_column_count,
-                     std::int64_t base_depth = DEFAULT_BASE_DEPTH);
-    [[nodiscard]] std::uint64_t operator()(std::uint64_t bin1_id, std::uint64_t bin2_id) const;
-
-    [[nodiscard]] std::uint64_t block_bin_count() const;
-    [[nodiscard]] std::uint64_t block_column_count() const;
-
-   private:
-    [[nodiscard]] bool use_inter_mapper() const noexcept;
-    [[nodiscard]] static double init_base(std::int64_t base_depth) noexcept;
-  };
 };
 
 struct HiCSectionOffsets {
