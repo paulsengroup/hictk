@@ -5,6 +5,7 @@
 find_package(FMT REQUIRED)
 find_package(libdeflate REQUIRED)
 find_package(phmap REQUIRED)
+find_package(zstd REQUIRED)
 
 if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET REQUIRED)
@@ -36,4 +37,5 @@ target_link_system_libraries(
   "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   fmt::fmt-header-only
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-  phmap)
+  phmap
+  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")

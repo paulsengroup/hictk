@@ -21,14 +21,22 @@ inline T BinaryBuffer::read() {
   return x;
 }
 
+inline void BinaryBuffer::read(std::string &buff, std::size_t n) {
+  static_assert(sizeof(char) == 1);
+  assert(_i < _buffer.size());
+  buff.resize(n);
+  std::memcpy(static_cast<void *>(buff.data()), _buffer.data() + _i, sizeof(char));
+  _i += sizeof(char);
+}
+
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline void BinaryBuffer::write(T data) {
   static_assert(sizeof(char) == 1);
   _buffer.append(reinterpret_cast<const char *>(&data), sizeof(T));
 }
 
-inline void BinaryBuffer::write(const std::string &data) {
-  _buffer.append(data.c_str(), data.size() + 1);
+inline void BinaryBuffer::write(const std::string &data, bool add_nullterm) {
+  _buffer.append(data.c_str(), data.size() + add_nullterm);
 }
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>

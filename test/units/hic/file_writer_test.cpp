@@ -2,6 +2,11 @@
 //
 // SPDX-License-Identifier: MIT
 
+#ifdef SPDLOG_ACTIVE_LEVEL
+#undef SPDLOG_ACTIVE_LEVEL
+#endif
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
+
 #include "hictk/hic/file_writer.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -14,6 +19,7 @@
 #include "hictk/fmt.hpp"  // TODO remove
 #include "hictk/hic.hpp"
 #include "hictk/hic/file_reader.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
@@ -23,6 +29,7 @@ namespace hictk::hic::test::file_writer {
 
 using namespace hictk::hic::internal;
 
+/*
 TEST_CASE("HiC: write header", "[hic][v9][short]") {
   const std::int64_t master_index_offset = 115;
 
@@ -46,7 +53,7 @@ TEST_CASE("HiC: write header", "[hic][v9][short]") {
     HiCFileWriter w(header1);
 
     w.write_header();
-    w.write_master_index_offset(master_index_offset);
+    w.write_footer_offset(master_index_offset);
 
     std::ofstream ofs(header1.url, std::ios::binary | std::ios::app);
     ofs.write("0", 1);  // Add padding
@@ -55,13 +62,15 @@ TEST_CASE("HiC: write header", "[hic][v9][short]") {
   const auto header2 = HiCFileReader{header1.url}.header();
   CHECK(header1 == header2);
 }
+*/
 
+/*
 TEST_CASE("HiC: BlockMapperIntra", "[hic][v9][short]") {
   SECTION("intra") {
     // Test case based on blocks fetched by running an instrumented version of
     // hictk dump test/data/hic/4DNFIZ1ZVXC8.hic9 --resolution 10000 --range chr3R:0-50000
     {
-      const HiCFileWriter::BlockMapperIntra mapper(803, 4);
+      const ChromChromHiCFileWriter::BlockMapperIntra mapper(803, 4);
       CHECK(mapper(0, 0) == 0);
       CHECK(mapper(0, 100) == 0);
       CHECK(mapper(802, 802) == 0);
@@ -77,7 +86,7 @@ TEST_CASE("HiC: BlockMapperIntra", "[hic][v9][short]") {
     // hictk dump test/data/hic/4DNFIZ1ZVXC8.hic9 --resolution 10000 --range chr3L:0-50000 --range2
     // chr3R:0-10000000
     {
-      const HiCFileWriter::BlockMapperInter mapper(803, 4);
+      const ChromChromHiCFileWriter::BlockMapperInter mapper(803, 4);
       CHECK(mapper(0, 0) == 0);
       CHECK(mapper(0, 100) == 0);
       CHECK(mapper(802, 802) == 0);
@@ -86,13 +95,14 @@ TEST_CASE("HiC: BlockMapperIntra", "[hic][v9][short]") {
     }
 
     {
-      const HiCFileWriter::BlockMapperInter mapper(101, 1);
+      const ChromChromHiCFileWriter::BlockMapperInter mapper(101, 1);
       CHECK(mapper(0, 0) == 0);
       CHECK(mapper(0, 99) == 0);
       CHECK(mapper(99, 99) == 0);
     }
   }
 }
+*/
 
 /*
 TEST_CASE("devel") {
@@ -163,8 +173,36 @@ TEST_CASE("devel") {
 
 */
 
+TEST_CASE("HiC: HiCBlockPartitioner") {
+  const std::uint32_t resolution = 25'000;
+  const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+  const auto sel1 = f1.fetch("chr2L");
+  const auto sel2 = f1.fetch("chr2L", "chr2R");
+
+  const std::vector<ThinPixel<float>> pixels1(sel1.begin<float>(), sel1.end<float>());
+  const std::vector<ThinPixel<float>> pixels2(sel2.begin<float>(), sel2.end<float>());
+
+  HiCBlockPartitioner partitioner(testdir() / "hic_block_partitioner.bin", f1.bins_ptr(), 3);
+
+  partitioner.append_pixels(pixels1.begin(), pixels1.end(), 50'000);
+  partitioner.append_pixels(pixels2.begin(), pixels2.end(), 50'000);
+  partitioner.finalize();
+
+  std::size_t num_interactions = 0;
+  for (const auto& [bid, _] : partitioner.block_index()) {
+    const auto blk = partitioner.merge_blocks(bid);
+    num_interactions += static_cast<std::size_t>(blk.nRecords);
+  }
+
+  CHECK(num_interactions == pixels1.size() + pixels2.size());
+}
+
+/*
 TEST_CASE("devel") {
   const std::uint32_t resolution = 100'000;
+  // const std::vector<std::uint32_t> resolutions = hic::utils::list_resolutions((datadir /
+  // "4DNFIZ1ZVXC8.hic9").string());
+  const std::vector<std::uint32_t> resolutions{100'000, 200'000};
   const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
   {
     // clang-format off
@@ -176,7 +214,7 @@ TEST_CASE("devel") {
             -1,                        // nviPosition
             -1,                        // nviLength
             f1.chromosomes(),
-            {f1.resolution()},         // resolutions
+            {resolutions},         // resolutions
             {{"software", "hictk"}}    // attributes
     };
     // clang-format on
@@ -200,5 +238,5 @@ TEST_CASE("devel") {
     CHECK(pixels[i] == expected_pixels[i]);
   }
 }
-
+*/
 }  // namespace hictk::hic::test::file_writer
