@@ -60,6 +60,10 @@ class HiCInteractionToBlockMapper {
   class BlockMapperIntra;
   class BlockMapperInter;
 
+  static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
+  static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
+  static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
+
  private:
   struct BlockID {
     std::uint32_t chrom1_id;
@@ -74,14 +78,18 @@ class HiCInteractionToBlockMapper {
     std::uint32_t size;
   };
 
-  std::filesystem::path _path;
-  filestream::FileStream _fs;
+  std::filesystem::path _path{};
+  filestream::FileStream _fs{};
   std::shared_ptr<const BinTable> _bin_table{};
 
-  phmap::btree_map<BlockID, std::vector<BlockIndex>> _block_index{};
-  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::vector<BlockID>> _chromosome_index{};
+  using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;
+  using ChromosomeIndexMap =
+      phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::vector<BlockID>>;
+  BlockIndexMap _block_index{};
+  ChromosomeIndexMap _chromosome_index{};
 
   phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
+  phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, float> _pixel_sums{};
   std::size_t _pixels_processed{};
 
   phmap::flat_hash_map<Chromosome, BlockMapperIntra> _mappers_intra{};
@@ -93,11 +101,8 @@ class HiCInteractionToBlockMapper {
   std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
   std::string _compression_buffer{};
 
-  static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
-  static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
-  static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
-
  public:
+  HiCInteractionToBlockMapper() = default;
   HiCInteractionToBlockMapper(std::filesystem::path path, std::shared_ptr<const BinTable> bins,
                               int compression_lvl);
 
@@ -106,11 +111,18 @@ class HiCInteractionToBlockMapper {
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel, std::size_t chunk_size = 100'000'000);
 
-  [[nodiscard]] auto block_index() const noexcept
-      -> phmap::btree_map<BlockID, std::vector<BlockIndex>>;
+  [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
+  [[nodiscard]] auto chromosome_index() const noexcept -> const ChromosomeIndexMap&;
   [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
+  [[nodiscard]] float pixel_sum(const Chromosome& chrom1, const Chromosome& chrom2);
 
   void finalize();
+
+  [[nodiscard]] static std::size_t compute_block_column_count(
+      const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t bin_size,
+      std::uint32_t cutoff, std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
+  [[nodiscard]] static std::size_t compute_num_bins(const Chromosome& chrom1,
+                                                    const Chromosome& chrom2, std::size_t bin_size);
 
  private:
   void init_block_mappers();
@@ -123,12 +135,6 @@ class HiCInteractionToBlockMapper {
   void write_blocks();
   void index_chromosomes();
   std::pair<std::uint64_t, std::uint32_t> write_block(const MatrixInteractionBlockFlat<float>& blk);
-
-  [[nodiscard]] std::size_t compute_block_column_count(
-      std::size_t num_bins, std::uint32_t bin_size, std::uint32_t cutoff,
-      std::size_t block_capacity = DEFAULT_BLOCK_CAPACITY);
-  [[nodiscard]] std::size_t compute_num_bins(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
-                                             std::size_t bin_size);
 
  public:
   class BlockMapperInter {

@@ -173,7 +173,7 @@ TEST_CASE("devel") {
 
 */
 
-TEST_CASE("HiC: HiCBlockPartitioner") {
+TEST_CASE("HiC: HiCInteractionToBlockMapper") {
   const std::uint32_t resolution = 25'000;
   const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
   const auto sel1 = f1.fetch("chr2L");
@@ -182,7 +182,8 @@ TEST_CASE("HiC: HiCBlockPartitioner") {
   const std::vector<ThinPixel<float>> pixels1(sel1.begin<float>(), sel1.end<float>());
   const std::vector<ThinPixel<float>> pixels2(sel2.begin<float>(), sel2.end<float>());
 
-  HiCBlockPartitioner partitioner(testdir() / "hic_block_partitioner.bin", f1.bins_ptr(), 3);
+  HiCInteractionToBlockMapper partitioner(testdir() / "hic_block_partitioner.bin", f1.bins_ptr(),
+                                          3);
 
   partitioner.append_pixels(pixels1.begin(), pixels1.end(), 50'000);
   partitioner.append_pixels(pixels2.begin(), pixels2.end(), 50'000);
@@ -197,7 +198,6 @@ TEST_CASE("HiC: HiCBlockPartitioner") {
   CHECK(num_interactions == pixels1.size() + pixels2.size());
 }
 
-/*
 TEST_CASE("devel") {
   const std::uint32_t resolution = 100'000;
   // const std::vector<std::uint32_t> resolutions = hic::utils::list_resolutions((datadir /
@@ -223,8 +223,9 @@ TEST_CASE("devel") {
     w.write_header();
 
     const auto sel = f1.fetch();
-    w.append_pixels(f1.bin_size(), sel.begin<float>(), sel.end<float>());
-    w.write_pixels();
+    w.add_pixels(sel.begin<float>(), sel.end<float>());
+    w.write_pixels(f1.chromosomes().at("chr2L"), f1.chromosomes().at("chr2L"));
+
     // w.write_pixels_ALL();
     w.finalize();
   }
@@ -238,5 +239,5 @@ TEST_CASE("devel") {
     CHECK(pixels[i] == expected_pixels[i]);
   }
 }
-*/
+
 }  // namespace hictk::hic::test::file_writer

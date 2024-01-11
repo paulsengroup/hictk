@@ -69,6 +69,15 @@ inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, boo
   return buffer.get();
 }
 
+inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
+  std::ignore = matrixMetadata.serialize(buffer, clear);
+  for (const auto &metadata : resolutionMetadata) {
+    std::ignore = metadata.serialize(buffer, false);
+  }
+
+  return buffer.get();
+}
+
 template <typename N>
 inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   nRecords++;
@@ -92,6 +101,12 @@ inline void MatrixInteractionBlock<N>::finalize() {
   for (auto &[_, v] : _interactions) {
     std::sort(v.begin(), v.end());
   }
+}
+
+template <typename N>
+inline auto MatrixInteractionBlock<N>::operator()() const noexcept
+    -> const phmap::btree_map<RowID, Row> & {
+  return _interactions;
 }
 
 template <typename N>

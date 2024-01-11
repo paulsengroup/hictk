@@ -153,10 +153,16 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     auto p = *first_pixel;
     auto bid = map(p);
 
+    const auto &chrom1 = chromosomes().at(bid.chrom1_id);
+    const auto &chrom2 = chromosomes().at(bid.chrom2_id);
+    const auto chrom_pair = std::make_pair(chrom1, chrom2);
+
     auto match = _blocks.find(bid);
     if (match != _blocks.end()) {
+      _pixel_sums.at(chrom_pair) += p.count;
       match->second.emplace_back(std::move(p));
     } else {
+      _pixel_sums.emplace(chrom_pair, p.count);
       auto [it, _] = _blocks.emplace(std::move(bid), MatrixInteractionBlockFlat<float>{});
       it->second.emplace_back(std::move(p));
     }
@@ -164,9 +170,12 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   }
 }
 
-inline auto HiCInteractionToBlockMapper::block_index() const noexcept
-    -> phmap::btree_map<BlockID, std::vector<BlockIndex>> {
+inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const BlockIndexMap& {
   return _block_index;
+}
+
+inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept -> const ChromosomeIndexMap& {
+  return _chromosome_index;
 }
 
 inline auto HiCInteractionToBlockMapper::merge_blocks(
@@ -184,6 +193,11 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(
   return blk;
 }
 
+inline float HiCInteractionToBlockMapper::pixel_sum(const Chromosome &chrom1,
+                                                    const Chromosome &chrom2) {
+  return _pixel_sums.at(std::make_pair(chrom1, chrom2));
+}
+
 inline void HiCInteractionToBlockMapper::finalize() {
   write_blocks();
   index_chromosomes();
@@ -198,9 +212,9 @@ inline void HiCInteractionToBlockMapper::init_block_mappers() {
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
       const auto &chrom2 = chromosomes().at(chrom2_id);
 
-      const auto num_bins = compute_num_bins(chrom1.id(), chrom2.id(), _bin_table->bin_size());
+      const auto num_bins = compute_num_bins(chrom1, chrom2, _bin_table->bin_size());
       const auto num_columns = compute_block_column_count(
-          num_bins, _bin_table->bin_size(),
+          chrom1, chrom2, _bin_table->bin_size(),
           chrom1 == chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
       const auto num_rows = num_bins / num_columns + 1;
 
@@ -276,8 +290,9 @@ inline void HiCInteractionToBlockMapper::index_chromosomes() {
 }
 
 inline std::size_t HiCInteractionToBlockMapper::compute_block_column_count(
-    std::size_t num_bins, std::uint32_t bin_size, std::uint32_t cutoff,
-    std::size_t block_capacity) {
+    const Chromosome &chrom1, const Chromosome &chrom2, std::uint32_t bin_size,
+    std::uint32_t cutoff, std::size_t block_capacity) {
+  const auto num_bins = compute_num_bins(chrom1, chrom2, bin_size);
   auto num_columns = num_bins / block_capacity + 1;
   if (bin_size < cutoff) {
     const auto genome_size = num_bins * bin_size;
@@ -289,11 +304,10 @@ inline std::size_t HiCInteractionToBlockMapper::compute_block_column_count(
   return std::clamp(num_columns, std::size_t(1), max_sqrt - 1);
 }
 
-inline std::size_t HiCInteractionToBlockMapper::compute_num_bins(std::uint32_t chrom1_id,
-                                                                 std::uint32_t chrom2_id,
+inline std::size_t HiCInteractionToBlockMapper::compute_num_bins(const Chromosome &chrom1,
+                                                                 const Chromosome &chrom2,
                                                                  std::size_t bin_size) {
-  const auto max_size =
-      std::max(chromosomes().at(chrom1_id).size(), chromosomes().at(chrom2_id).size());
+  const auto max_size = std::max(chrom1.size(), chrom2.size());
   return (max_size + bin_size - 1) / bin_size;
 }
 

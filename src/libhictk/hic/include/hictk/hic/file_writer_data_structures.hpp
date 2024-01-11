@@ -53,9 +53,21 @@ struct MatrixResolutionMetadata {
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
+struct MatrixBodyMetadata {
+  MatrixMetadata matrixMetadata;
+  std::vector<MatrixResolutionMetadata> resolutionMetadata;
+
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+};
+
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#blocks
 template <typename N = float>
 struct MatrixInteractionBlock {
+ private:
+  using RowID = std::int32_t;
+  using Row = std::vector<Pixel<N>>;
+
+ public:
   std::int32_t nRecords{};
   std::int32_t binColumnOffset{std::numeric_limits<std::int32_t>::max()};
   std::int32_t binRowOffset{std::numeric_limits<std::int32_t>::max()};
@@ -67,12 +79,11 @@ struct MatrixInteractionBlock {
   void emplace_back(Pixel<N>&& p);
   void finalize();
 
+  [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<RowID, Row>&;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
                                       std::string& compression_buffer, bool clear = true) const;
 
  private:
-  using RowID = std::int32_t;
-  using Row = std::vector<Pixel<N>>;
   phmap::btree_map<RowID, Row> _interactions;
 };
 
