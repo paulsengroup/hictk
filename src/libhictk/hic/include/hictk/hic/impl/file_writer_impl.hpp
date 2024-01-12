@@ -232,6 +232,59 @@ inline void HiCFileWriter::write_pixels() {
       write_pixels(chrom1, chrom2);
     }
   }
+  write_all_matrix();
+}
+
+inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
+  auto base_resolution = resolutions().front();
+  const auto factor = target_resolution / base_resolution;
+  target_resolution = factor * base_resolution;
+
+  for (const auto &res : resolutions()) {
+    if (res > target_resolution) {
+      break;
+    }
+
+    if (target_resolution % res == 0) {
+      base_resolution = res;
+    }
+  }
+
+  SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
+               chromosomes().at(0).name());
+
+  const auto num_bins = [&]() {
+    std::uint32_t num_bins_ = 0;
+    for (const auto &chrom : chromosomes()) {
+      num_bins_ += (chrom.size() + target_resolution - 1) / target_resolution;
+    }
+    return num_bins_;
+  }();
+  BinTable bin_table_(Reference{Chromosome{0, "__ALL__", num_bins}}, 1);
+  File f(std::string{url()}, base_resolution);
+  auto sel = f.fetch();
+
+  MatrixInteractionBlock<float> blk{};
+  if (base_resolution == target_resolution) {
+    std::for_each(sel.begin<float>(), sel.end<float>(),
+                  [&](const ThinPixel<float> &p) { blk.emplace_back(Pixel(bin_table_, p)); });
+  } else {
+    transformers::CoarsenPixels coarsener(sel.begin<float>(), sel.end<float>(),
+                                          std::make_shared<const BinTable>(bins(base_resolution)),
+                                          factor);
+    std::for_each(coarsener.begin(), coarsener.end(),
+                  [&](const ThinPixel<float> &p) { blk.emplace_back(Pixel(bin_table_, p)); });
+  }
+  const auto chrom = chromosomes().at(0);
+  assert(chrom.is_all());
+  write_interaction_block(0, chrom, chrom, target_resolution, blk);
+
+  add_body_metadata(target_resolution, chrom, chrom);
+  _body_metadata_offsets = write_body_metadata();
+  add_footer(chrom, chrom);
+  _footer_offsets = write_footers();
+
+  finalize();
 }
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
@@ -306,7 +359,8 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
                                              const Chromosome &chrom2, const std::string &unit) {
   SPDLOG_DEBUG(FMT_STRING("adding MatrixBodyMetadata for {}:{} at {} {}"), chrom1.name(),
                chrom2.name(), resolution, unit);
-  const auto sum_counts = _block_mappers.at(resolution).pixel_sum(chrom1, chrom2);
+  const auto sum_counts =
+      chrom1.is_all() ? 1.0F : _block_mappers.at(resolution).pixel_sum(chrom1, chrom2);
   if (sum_counts == 0) {
     return;
   }
@@ -318,8 +372,9 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
   MatrixResolutionMetadata mrm{};
 
   const auto num_bins = compute_num_bins(chrom1, chrom2, resolution);
-  const auto num_columns = compute_block_column_count(chrom1, chrom2, resolution);
-  const auto num_rows = num_bins / num_columns + 1;
+  const auto num_columns =
+      chrom1.is_all() ? std::size_t(1) : compute_block_column_count(chrom1, chrom2, resolution);
+  const auto num_rows = chrom1.is_all() ? std::size_t(1) : num_bins / num_columns + 1;
 
   mrm.unit = unit;
   mrm.resIdx = static_cast<std::int32_t>(std::distance(
@@ -449,9 +504,9 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   }
 
   for (const auto &bid : block_ids->second) {
-    const auto pixels = mapper.merge_blocks(bid);
-    pixels_written += static_cast<std::size_t>(pixels.nRecords);
-    write_interaction_block(bid.bid, chrom1, chrom2, resolution, pixels);
+    const auto blk = mapper.merge_blocks(bid);
+    pixels_written += static_cast<std::size_t>(blk.nRecords);
+    write_interaction_block(bid.bid, chrom1, chrom2, resolution, blk);
   }
 
   SPDLOG_DEBUG(FMT_STRING("written {} pixels for {}:{} matrix at {} resolution"), pixels_written,
