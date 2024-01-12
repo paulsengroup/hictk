@@ -148,6 +148,9 @@ inline const Reference &HiCInteractionToBlockMapper::chromosomes() const noexcep
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
                                                        std::size_t chunk_size) {
+  using PixelT = remove_cvref_t<decltype(*first_pixel)>;
+  static_assert(std::is_same_v<PixelT, ThinPixel<float>>);
+
   while (first_pixel != last_pixel) {
     ++_processed_pixels;
     if (_pending_pixels++ >= chunk_size) {

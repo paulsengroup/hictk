@@ -258,24 +258,40 @@ inline std::size_t Reference::find_longest_chromosome(const ChromBuff& chroms) n
     return Chromosome{}.id();
   }
 
-  const auto match = std::max_element(chroms.begin(), chroms.end(),
-                                      [](const Chromosome& chrom1, const Chromosome& chrom2) {
-                                        return chrom1.size() < chrom2.size();
-                                      });
+  std::uint32_t max_length = 0;
+  std::size_t i = Chromosome{}.id();
+  for (std::size_t j = 0; j < chroms.size(); ++j) {
+    const auto& chrom = chroms[j];
+    if (chrom.is_all()) {
+      continue;
+    }
+    if (chrom.size() > max_length) {
+      max_length = chrom.size();
+      i = j;
+    }
+  }
 
-  return static_cast<std::size_t>(std::distance(chroms.begin(), match));
+  return i;
 }
 inline std::size_t Reference::find_chromosome_with_longest_name(const ChromBuff& chroms) noexcept {
   if (chroms.empty()) {
     return Chromosome{}.id();
   }
 
-  const auto match = std::max_element(chroms.begin(), chroms.end(),
-                                      [](const Chromosome& chrom1, const Chromosome& chrom2) {
-                                        return chrom1.name().size() < chrom2.name().size();
-                                      });
+  std::size_t max_length = 0;
+  std::size_t i = Chromosome{}.id();
+  for (std::size_t j = 0; j < chroms.size(); ++j) {
+    const auto& chrom = chroms[j];
+    if (chrom.is_all()) {
+      continue;
+    }
+    if (chrom.name().size() > max_length) {
+      max_length = chrom.name().size();
+      i = j;
+    }
+  }
 
-  return static_cast<std::size_t>(std::distance(chroms.begin(), match));
+  return i;
 }
 
 inline std::vector<std::uint64_t> Reference::compute_size_prefix_sum(

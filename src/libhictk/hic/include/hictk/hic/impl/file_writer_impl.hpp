@@ -355,8 +355,8 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
                                              const Chromosome &chrom2, const std::string &unit) {
   SPDLOG_DEBUG(FMT_STRING("adding MatrixBodyMetadata for {}:{} at {} {}"), chrom1.name(),
                chrom2.name(), resolution, unit);
-  const auto sum_counts = chrom1.is_all() ? _block_mappers.at(resolutions().front()).pixel_sum()
-                                          : _block_mappers.at(resolution).pixel_sum(chrom1, chrom2);
+  const auto sum_counts =
+      chrom1.is_all() ? 1.0F : _block_mappers.at(resolution).pixel_sum(chrom1, chrom2);
   if (sum_counts == 0) {
     return;
   }
