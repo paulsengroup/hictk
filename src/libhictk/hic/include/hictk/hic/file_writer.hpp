@@ -144,6 +144,8 @@ class HiCFileWriter {
   void finalize();
 
  private:
+  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(
+      HiCHeader&& header, std::uint32_t all_scale_factor = 1'000);
   [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
                                             const std::vector<std::uint32_t>& resolutions)
       -> BinTables;

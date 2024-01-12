@@ -114,7 +114,7 @@ inline std::string MatrixBodyMetadataTank::serialize(BinaryBuffer &buffer, bool 
 
 inline HiCFileWriter::HiCFileWriter(HiCHeader header, const std::filesystem::path &tmpdir,
                                     std::int32_t compression_lvl, std::size_t buffer_size)
-    : _header(std::make_shared<const HiCHeader>(std::move(header))),
+    : _header(init_header(std::move(header))),
       _fs(std::make_shared<filestream::FileStream>(filestream::FileStream::create(_header->url))),
       _tmpdir(tmpdir.empty() ? nullptr
                              : std::make_unique<const hictk::internal::TmpDir>(
@@ -253,14 +253,10 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
   SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
                chromosomes().at(0).name());
 
-  const auto num_bins = [&]() {
-    std::uint32_t num_bins_ = 0;
-    for (const auto &chrom : chromosomes()) {
-      num_bins_ += (chrom.size() + target_resolution - 1) / target_resolution;
-    }
-    return num_bins_;
-  }();
-  BinTable bin_table_(Reference{Chromosome{0, "__ALL__", num_bins}}, 1);
+  // Dummy bin table that always map to chromosome #1
+  BinTable bin_table_(
+      Reference{Chromosome{0, "__ALL__", std::numeric_limits<std::uint32_t>::max()}}, 1);
+
   File f(std::string{url()}, base_resolution);
   auto sel = f.fetch();
 
@@ -452,6 +448,12 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
 inline void HiCFileWriter::finalize() {
   write_footer_offset();
   _fs->flush();
+}
+
+inline std::shared_ptr<const HiCHeader> HiCFileWriter::init_header(HiCHeader &&header,
+                                                                   std::uint32_t all_scale_factor) {
+  header.chromosomes = header.chromosomes.add_ALL(all_scale_factor);
+  return std::make_shared<const HiCHeader>(std::move(header));
 }
 
 inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,

@@ -181,6 +181,27 @@ inline const Chromosome& Reference::chromosome_with_longest_name() const {
   return _buff[_chrom_with_longest_name];
 }
 
+inline Reference Reference::remove_ALL() const {
+  std::vector<Chromosome> chroms{};
+  std::copy_if(begin(), end(), std::back_inserter(chroms),
+               [](const Chromosome& chrom) { return !chrom.is_all(); });
+
+  return {chroms.begin(), chroms.end()};
+}
+
+inline Reference Reference::add_ALL(std::uint32_t scaling_factor) const {
+  std::uint32_t all_size = 0;
+  for (const auto& chrom : *this) {
+    all_size += (chrom.size() + scaling_factor - 1) / scaling_factor;
+  }
+
+  std::vector<Chromosome> chroms{Chromosome{0, "All", all_size}};
+  std::copy_if(begin(), end(), std::back_inserter(chroms),
+               [](const Chromosome& chrom) { return !chrom.is_all(); });
+
+  return {chroms.begin(), chroms.end()};
+}
+
 inline void Reference::validate_chrom_id(std::uint32_t chrom_id) const {
   if (static_cast<std::size_t>(chrom_id) >= size()) {
     throw std::out_of_range(fmt::format(FMT_STRING("chromosome with id {} not found"), chrom_id));
