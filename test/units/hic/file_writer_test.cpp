@@ -174,6 +174,7 @@ TEST_CASE("devel") {
 */
 
 TEST_CASE("HiC: HiCInteractionToBlockMapper") {
+  spdlog::default_logger()->set_level(spdlog::level::debug);
   const std::uint32_t resolution = 25'000;
   const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
   const auto sel1 = f1.fetch("chr2L");
@@ -199,12 +200,12 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper") {
 }
 
 TEST_CASE("devel") {
-  const std::uint32_t resolution = 100'000;
-  // const std::vector<std::uint32_t> resolutions = hic::utils::list_resolutions((datadir /
-  // "4DNFIZ1ZVXC8.hic9").string());
-  const std::vector<std::uint32_t> resolutions{100'000, 200'000};
-  const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+  spdlog::default_logger()->set_level(spdlog::level::debug);
+  const std::vector<std::uint32_t> resolutions =
+      hic::utils::list_resolutions((datadir / "4DNFIZ1ZVXC8.hic9").string());
+  // const std::vector<std::uint32_t> resolutions{50'000};
   {
+    const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolutions.front());
     // clang-format off
     const HiCHeader header{
             "/tmp/test.hic",           // url
@@ -224,19 +225,22 @@ TEST_CASE("devel") {
 
     const auto sel = f1.fetch();
     w.add_pixels(sel.begin<float>(), sel.end<float>());
-    w.write_pixels(f1.chromosomes().at("chr2L"), f1.chromosomes().at("chr2L"));
+    w.write_pixels();
 
     // w.write_pixels_ALL();
     w.finalize();
   }
 
-  const hic::File f2("/tmp/test.hic", resolution);
-  const auto expected_pixels = f1.fetch().read_all<float>();
-  const auto pixels = f2.fetch().read_all<float>();
+  for (const auto& resolution : resolutions) {
+    const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+    const hic::File f2("/tmp/test.hic", resolution);
+    const auto expected_pixels = f1.fetch().read_all<float>();
+    const auto pixels = f2.fetch().read_all<float>();
 
-  REQUIRE(expected_pixels.size() == pixels.size());
-  for (std::size_t i = 0; i < pixels.size(); ++i) {
-    CHECK(pixels[i] == expected_pixels[i]);
+    REQUIRE(expected_pixels.size() == pixels.size());
+    for (std::size_t i = 0; i < pixels.size(); ++i) {
+      CHECK(expected_pixels[i] == pixels[i]);
+    }
   }
 }
 

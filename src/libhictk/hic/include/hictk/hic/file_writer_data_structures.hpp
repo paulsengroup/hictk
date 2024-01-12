@@ -71,8 +71,8 @@ struct MatrixBodyMetadata {
 template <typename N = float>
 struct MatrixInteractionBlock {
  private:
-  using ColID = std::int32_t;
-  using Col = std::vector<Pixel<N>>;
+  using RowID = std::int32_t;
+  using Row = std::vector<Pixel<N>>;
 
  public:
   std::int32_t nRecords{};
@@ -86,12 +86,12 @@ struct MatrixInteractionBlock {
   void emplace_back(Pixel<N>&& p);
   void finalize();
 
-  [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<ColID, Col>&;
+  [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<RowID, Row>&;
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, libdeflate_compressor& compressor,
                                       std::string& compression_buffer, bool clear = true) const;
 
  private:
-  phmap::btree_map<ColID, Col> _interactions;
+  phmap::btree_map<RowID, Row> _interactions;
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index

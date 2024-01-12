@@ -103,17 +103,17 @@ template <typename N>
 inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   nRecords++;
 
-  const auto row = static_cast<std::int32_t>(p.coords.bin1.rel_id());
-  const auto col = static_cast<std::int32_t>(p.coords.bin2.rel_id());
+  const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
+  const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
 
   binRowOffset = std::min(binRowOffset, row);
   binColumnOffset = std::min(binColumnOffset, col);
 
-  auto it = _interactions.find(col);
+  auto it = _interactions.find(row);
   if (it != _interactions.end()) {
     it->second.push_back(std::move(p));
   } else {
-    _interactions.emplace(col, std::vector<Pixel<float>>{std::move(p)});
+    _interactions.emplace(row, std::vector<Pixel<float>>{std::move(p)});
   }
 }
 
@@ -132,7 +132,7 @@ inline void MatrixInteractionBlock<N>::finalize() {
 
 template <typename N>
 inline auto MatrixInteractionBlock<N>::operator()() const noexcept
-    -> const phmap::btree_map<ColID, Col> & {
+    -> const phmap::btree_map<RowID, Row> & {
   return _interactions;
 }
 
@@ -156,21 +156,21 @@ inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
   buffer.write(useIntYPos);
   buffer.write(matrixRepresentation);
 
-  const auto colCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
-  buffer.write(colCount);
+  const auto rowCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
+  buffer.write(rowCount);
 
-  for (const auto &[col, pixels] : _interactions) {
-    assert(static_cast<std::int32_t>(col) >= binColumnOffset);
-    const auto rowNumber = static_cast<std::int32_t>(col) - binColumnOffset;  // TODO support short
-    const auto recordCount = static_cast<std::int32_t>(pixels.size());        // TODO support short
+  for (const auto &[row, pixels] : _interactions) {
+    assert(static_cast<std::int32_t>(row) >= binRowOffset);
+    const auto rowNumber = static_cast<std::int32_t>(row) - binRowOffset;  // TODO support short
+    const auto recordCount = static_cast<std::int32_t>(pixels.size());     // TODO support short
     buffer.write(rowNumber);
     buffer.write(recordCount);
 
     assert(std::is_sorted(pixels.begin(), pixels.end()));
     for (const auto &p : pixels) {
-      const auto bin_id = static_cast<std::int32_t>(p.coords.bin1.rel_id());
-      assert(bin_id >= binRowOffset);
-      const auto binColumn = bin_id - binRowOffset;
+      const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
+      assert(col >= binColumnOffset);
+      const auto binColumn = col - binColumnOffset;
       const auto value = p.count;
       buffer.write(binColumn);
       buffer.write(value);

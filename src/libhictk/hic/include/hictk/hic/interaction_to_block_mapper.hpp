@@ -20,6 +20,7 @@
 
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/binary_buffer.hpp"
+#include "hictk/hic/file_writer_data_structures.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
@@ -64,13 +65,13 @@ class HiCInteractionToBlockMapper {
   static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
   static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
 
- private:
   struct BlockID {
     std::uint32_t chrom1_id;
     std::uint32_t chrom2_id;
     std::uint64_t bid;
 
     [[nodiscard]] bool operator<(const BlockID& other) const noexcept;
+    [[nodiscard]] bool operator==(const BlockID& other) const noexcept;
   };
 
   struct BlockIndex {
@@ -78,18 +79,20 @@ class HiCInteractionToBlockMapper {
     std::uint32_t size;
   };
 
+ private:
   std::filesystem::path _path{};
   filestream::FileStream _fs{};
   std::shared_ptr<const BinTable> _bin_table{};
 
   using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;
   using ChromosomeIndexMap =
-      phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, std::vector<BlockID>>;
+      phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, phmap::flat_hash_set<BlockID>>;
   BlockIndexMap _block_index{};
   ChromosomeIndexMap _chromosome_index{};
 
   phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
   phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, float> _pixel_sums{};
+  std::size_t _processed_pixels{};
   std::size_t _pending_pixels{};
 
   phmap::flat_hash_map<Chromosome, BlockMapperIntra> _mappers_intra{};
@@ -132,6 +135,8 @@ class HiCInteractionToBlockMapper {
   template <typename N>
   [[nodiscard]] auto map(const Pixel<N>& p) const -> BlockID;
 
+  [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid);
+
   void write_blocks();
   std::pair<std::uint64_t, std::uint32_t> write_block(const MatrixInteractionBlockFlat<float>& blk);
 
@@ -169,5 +174,13 @@ class HiCInteractionToBlockMapper {
 };
 
 }  // namespace hictk::hic::internal
+
+template <>
+struct std::hash<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
+  inline std::size_t operator()(
+      hictk::hic::internal::HiCInteractionToBlockMapper::BlockID const& bid) const noexcept {
+    return hictk::internal::hash_combine(0, bid.chrom1_id, bid.chrom2_id, bid.bid);
+  }
+};
 
 #include "./impl/interaction_to_block_mapper_impl.hpp"  // NOLINT
