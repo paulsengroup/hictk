@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -204,12 +205,18 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
 }
 
 inline float HiCInteractionToBlockMapper::pixel_sum(const Chromosome &chrom1,
-                                                    const Chromosome &chrom2) {
+                                                    const Chromosome &chrom2) const {
   auto match = _pixel_sums.find(std::make_pair(chrom1, chrom2));
   if (match == _pixel_sums.end()) {
     return 0;
   }
   return match->second;
+}
+
+inline float HiCInteractionToBlockMapper::pixel_sum() const {
+  return std::accumulate(
+      _pixel_sums.begin(), _pixel_sums.end(), 0.0F,
+      [](const float accumulator, const auto &kv) { return accumulator + kv.second; });
 }
 
 inline void HiCInteractionToBlockMapper::finalize() {

@@ -117,7 +117,8 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
   [[nodiscard]] auto chromosome_index() const noexcept -> const ChromosomeIndexMap&;
   [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
-  [[nodiscard]] float pixel_sum(const Chromosome& chrom1, const Chromosome& chrom2);
+  [[nodiscard]] float pixel_sum(const Chromosome& chrom1, const Chromosome& chrom2) const;
+  [[nodiscard]] float pixel_sum() const;
 
   void finalize();
 

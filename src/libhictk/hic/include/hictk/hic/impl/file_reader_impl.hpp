@@ -214,9 +214,8 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
 
     const auto nBlocks = static_cast<std::size_t>(_fs->read<std::int32_t>());
 
-    Index::BlkIdxBuffer buffer;
-    buffer.reserve(nBlocks);
     if (wantedUnit == foundUnit && wantedResolution == foundResolution) {
+      Index::BlkIdxBuffer buffer(nBlocks);
       for (std::size_t j = 0; j < nBlocks; ++j) {
         const auto block_id = static_cast<std::size_t>(_fs->read<std::int32_t>());
         const auto position = static_cast<std::size_t>(_fs->read<std::int64_t>());
