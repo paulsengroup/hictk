@@ -35,7 +35,7 @@ TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
 
   const auto header = internal::HiCFileReader(pathV8).header();
   CHECK(header.url == pathV8);
-  CHECK(header.masterIndexOffset == 131515430);
+  CHECK(header.footerPosition == 131515430);
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 8);
@@ -58,7 +58,7 @@ TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
   const auto header = internal::HiCFileReader(pathV9).header();
 
   CHECK(header.url == pathV9);
-  CHECK(header.masterIndexOffset == 130706734);
+  CHECK(header.footerPosition == 130706734);
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 9);

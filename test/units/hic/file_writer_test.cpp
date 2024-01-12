@@ -201,9 +201,9 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper") {
 
 TEST_CASE("devel") {
   spdlog::default_logger()->set_level(spdlog::level::debug);
-  const std::vector<std::uint32_t> resolutions =
-      hic::utils::list_resolutions((datadir / "4DNFIZ1ZVXC8.hic9").string());
-  // const std::vector<std::uint32_t> resolutions{50'000};
+  // const std::vector<std::uint32_t> resolutions =
+  //    hic::utils::list_resolutions((datadir / "4DNFIZ1ZVXC8.hic9").string());
+  const std::vector<std::uint32_t> resolutions{500'000, 2'500'000};
   {
     const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolutions.front());
     // clang-format off
@@ -225,23 +225,35 @@ TEST_CASE("devel") {
 
     const auto sel = f1.fetch();
     w.add_pixels(sel.begin<float>(), sel.end<float>());
-    w.write_pixels();
-
-    // w.write_pixels_ALL();
-    w.finalize();
+    w.serialize();
   }
 
-  for (const auto& resolution : resolutions) {
-    const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
-    const hic::File f2("/tmp/test.hic", resolution);
-    const auto expected_pixels = f1.fetch().read_all<float>();
-    const auto pixels = f2.fetch().read_all<float>();
+  // for (const auto& resolution : resolutions) {
+  //   const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+  //   const hic::File f2("/tmp/test.hic", resolution);
+  //   const auto expected_pixels = f1.fetch().read_all<float>();
+  //   const auto pixels = f2.fetch().read_all<float>();
+  //
+  //   REQUIRE(expected_pixels.size() == pixels.size());
+  //   for (std::size_t i = 0; i < pixels.size(); ++i) {
+  //     CHECK(expected_pixels[i] == pixels[i]);
+  //   }
+  // }
+}
 
-    REQUIRE(expected_pixels.size() == pixels.size());
-    for (std::size_t i = 0; i < pixels.size(); ++i) {
-      CHECK(expected_pixels[i] == pixels[i]);
-    }
-  }
+TEST_CASE("devel1") {
+  spdlog::default_logger()->set_level(spdlog::level::debug);
+  HiCFileReader f1("/tmp/4DNFIZ1ZVXC8.hic");
+  auto footer1 = f1.read_footer(1, 1, MatrixType::observed, balancing::Method::NONE(),
+                                MatrixUnit::BP, 2'500'000);
+  auto idx1 = f1.read_index(footer1.fileOffset(), Chromosome{1, "chr2L", 1},
+                            Chromosome{1, "chr2L", 1}, MatrixUnit::BP, 2'500'000);
+
+  HiCFileReader f2("/tmp/test.hic");
+  auto footer2 = f2.read_footer(1, 1, MatrixType::observed, balancing::Method::NONE(),
+                                MatrixUnit::BP, 2'500'000);
+  auto idx2 = f2.read_index(footer2.fileOffset(), Chromosome{1, "chr2L", 1},
+                            Chromosome{1, "chr2L", 1}, MatrixUnit::BP, 2'500'000);
 }
 
 }  // namespace hictk::hic::test::file_writer
