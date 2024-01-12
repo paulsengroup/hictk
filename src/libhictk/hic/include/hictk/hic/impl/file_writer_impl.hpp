@@ -143,6 +143,12 @@ inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noex
   return _header->resolutions;
 }
 
+inline void HiCFileWriter::serialize() {
+  write_pixels();
+  compute_and_write_expected_values();
+  finalize();
+}
+
 inline void HiCFileWriter::write_header() {
   assert(_fs->tellp() == 0);
 
@@ -195,24 +201,33 @@ inline void HiCFileWriter::write_header() {
   _header_offsets.size = offset2 - offset1;
 }
 
+inline void HiCFileWriter::write_footer_size() {
+  const auto nBytesV5 = static_cast<std::int64_t>(_footer_offsets.size);
+  _fs->seekp(_footer_offsets.position);
+  _fs->write(nBytesV5);
+}
+
 inline void HiCFileWriter::write_footer_offset() {
   SPDLOG_DEBUG(FMT_STRING("updating footer offset to {}"), _footer_offsets.position);
-  const auto foffset = _fs->tellp();
   const auto offset = sizeof("HIC") + sizeof(_header->version);
   _fs->seekp(offset);
   _fs->write(conditional_static_cast<std::int64_t>(_footer_offsets.position));
-  _fs->seekp(static_cast<std::int64_t>(foffset));
 }
 
-inline void HiCFileWriter::write_norm_vector_index(std::streamoff position, std::size_t length) {
-  const auto foffset = _fs->tellp();
+inline void HiCFileWriter::write_norm_vector_index() {
   const auto offset =
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header->version) +
-                                sizeof(_header->masterIndexOffset) + _header->genomeID.size() + 1);
+                                sizeof(_header->footerPosition) + _header->genomeID.size() + 1);
+  const auto normVectorIndexPosition =
+      conditional_static_cast<std::int64_t>(_expected_values_norm_offsets.position);
+  const auto normVectorIndexLength =
+      static_cast<std::int64_t>(_expected_values_norm_offsets.size + _norm_vectors_offsets.size);
+
+  SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
+               normVectorIndexLength, offset);
   _fs->seekp(offset);
-  _fs->write(static_cast<std::int64_t>(position));
-  _fs->write(static_cast<std::int64_t>(length));
-  _fs->seekp(static_cast<std::int64_t>(foffset));
+  _fs->write(normVectorIndexPosition);
+  _fs->write(normVectorIndexLength);
 }
 
 template <typename PixelIt, typename>
@@ -276,9 +291,9 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
   write_interaction_block(0, chrom, chrom, target_resolution, blk);
 
   add_body_metadata(target_resolution, chrom, chrom);
-  _body_metadata_offsets = write_body_metadata();
+  write_body_metadata();
   add_footer(chrom, chrom);
-  _footer_offsets = write_footers();
+  write_footers();
 
   finalize();
 }
@@ -288,9 +303,9 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   const auto pos = _fs->tellp();
   auto block_section = write_pixels(chrom1, chrom2, resolutions().front());
   add_body_metadata(resolutions().front(), chrom1, chrom2);
-  _body_metadata_offsets = write_body_metadata();
+  write_body_metadata();
   add_footer(chrom1, chrom2);
-  _footer_offsets = write_footers();
+  write_footers();
 
   finalize();
 
@@ -322,15 +337,15 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     for (std::size_t j = 0; j <= i; ++j) {
       add_body_metadata(resolutions()[j], chrom1, chrom2);
     }
-    _body_metadata_offsets = write_body_metadata();
+    write_body_metadata();
     add_footer(chrom1, chrom2);
-    _footer_offsets = write_footers();
+    write_footers();
     finalize();
   }
   return {static_cast<std::streamoff>(pos), _fs->tellp() - pos};
 }
 
-inline auto HiCFileWriter::write_body_metadata() -> HiCSectionOffsets {
+inline void HiCFileWriter::write_body_metadata() {
   const auto pos = _fs->tellp();
   for (const auto &[chroms, metadata] : _matrix_metadata()) {
     const auto pos1 = _fs->tellp();
@@ -348,7 +363,7 @@ inline auto HiCFileWriter::write_body_metadata() -> HiCSectionOffsets {
   }
   const auto size = _fs->tellp() - static_cast<std::size_t>(pos);
 
-  return {static_cast<std::streamoff>(pos), size};
+  _body_metadata_offsets = {static_cast<std::streamoff>(pos), size};
 }
 
 inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chromosome &chrom1,
@@ -393,10 +408,10 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
   _matrix_metadata.insert(chrom1, chrom2, mm, mrm);
 }
 
-inline auto HiCFileWriter::write_footers() -> HiCSectionOffsets {
+inline void HiCFileWriter::write_footers() {
   const auto offset1 = _fs->tellp();
   SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"), offset1);
-  std::int64_t nBytesV5 = -1;
+  const std::int64_t nBytesV5 = -1;
   const auto nEntries = static_cast<std::int32_t>(_footers.size());
   _fs->write(nBytesV5);
   _fs->write(nEntries);
@@ -407,24 +422,9 @@ inline auto HiCFileWriter::write_footers() -> HiCSectionOffsets {
     _fs->write(footer.serialize(_bbuffer));
   }
 
-  _fs->write(std::int32_t(0));  // no ExpectedValueVectors
+  write_empty_expected_values();
 
-  const auto offset2 = _fs->tellp();
-  nBytesV5 = static_cast<std::int64_t>(offset2 - offset1);
-
-  _fs->seekp(static_cast<std::streamoff>(offset1));
-  _fs->write(nBytesV5);
-  _fs->seekp(static_cast<std::streamoff>(offset2));
-
-  const auto normVectorIndexPosition = _fs->tellp();
-  _fs->write(std::int32_t(0));  // no NormExpectedValueVectors
-  _fs->write(std::int32_t(0));  // no NormVectors
-  const auto normVectorIndexLength = _fs->tellp() - normVectorIndexPosition;
-
-  write_norm_vector_index(static_cast<std::streamoff>(normVectorIndexPosition),
-                          normVectorIndexLength);
-
-  return {static_cast<std::streamoff>(offset1), offset2 - offset1};
+  _footer_offsets = {static_cast<std::streamoff>(offset1), _fs->tellp() - offset1};
 }
 
 inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome &chrom2) {
@@ -445,9 +445,83 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
   }
 }
 
+inline void HiCFileWriter::write_empty_expected_values() {
+  ExpectedValues ev{};
+  ev.nExpectedValueVectors = 0;
+
+  const auto offset = _fs->tellp();
+  SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."), offset);
+  _fs->write(ev.serialize(_bbuffer));
+
+  _expected_values_offsets = {static_cast<std::streamoff>(offset), _fs->tellp() - offset};
+}
+
+inline void HiCFileWriter::write_empty_normalized_expected_values() {
+  const auto offset = _expected_values_offsets.position +
+                      static_cast<std::streamoff>(_expected_values_offsets.size);
+  SPDLOG_DEBUG(FMT_STRING("writing empty expected values (normalized) section at offset {}..."),
+               offset);
+  _fs->seekp(offset);
+  _fs->write(std::int32_t(0));
+  _expected_values_norm_offsets = {offset, _fs->tellp() - static_cast<std::size_t>(offset)};
+}
+
+inline void HiCFileWriter::write_empty_norm_vectors() {
+  const auto offset = _expected_values_norm_offsets.position +
+                      static_cast<std::streamoff>(_expected_values_norm_offsets.size);
+  SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."), offset);
+  _fs->seekp(offset);
+  _fs->write(std::int32_t(0));
+  _norm_vectors_offsets = {offset, _fs->tellp() - static_cast<std::size_t>(offset)};
+}
+
+inline void HiCFileWriter::compute_and_write_expected_values() {
+  ExpectedValues ev{};
+  ev.nExpectedValueVectors = static_cast<std::int32_t>(resolutions().size());
+
+  for (const auto &resolution : resolutions()) {
+    SPDLOG_DEBUG(FMT_STRING("computing expected values at resolution {}..."), resolution);
+    File f(std::string{url()}, resolution);
+    auto sel = f.fetch();
+
+    ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
+    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
+    aggr.compute_density();
+
+    std::vector<float> weights(aggr.weights().size());
+    std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
+                   [](const auto w) { return static_cast<float>(w); });
+
+    std::vector<std::uint32_t> chrom_ids{};
+    std::vector<double> scaling_factors{};
+    std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(),
+                  [&](const auto &kv) {
+                    chrom_ids.push_back(kv.first.id());
+                    scaling_factors.push_back(kv.second);
+                  });
+
+    ev.expectedValues.emplace_back(
+        ExpectedValuesBlock{"BP", resolution, aggr.weights(), chrom_ids, scaling_factors});
+  }
+
+  const auto offset =
+      _footer_offsets.position +
+      static_cast<std::streamoff>(_footer_offsets.size - sizeof(ev.nExpectedValueVectors));
+  _fs->seekp(offset);
+  _fs->write(ev.serialize(_bbuffer));
+
+  _expected_values_offsets = {offset, _fs->tellp() - static_cast<std::size_t>(offset)};
+  _footer_offsets.size += _expected_values_offsets.size - sizeof(ev.nExpectedValueVectors);
+}
+
 inline void HiCFileWriter::finalize() {
+  write_footer_size();
   write_footer_offset();
+  write_empty_normalized_expected_values();
+  write_empty_norm_vectors();
+  write_norm_vector_index();
   _fs->flush();
+  _fs->seekp(0, std::ios::end);
 }
 
 inline std::shared_ptr<const HiCHeader> HiCFileWriter::init_header(HiCHeader &&header,

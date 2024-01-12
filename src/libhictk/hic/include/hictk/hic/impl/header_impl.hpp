@@ -11,10 +11,10 @@
 
 namespace hictk::hic::internal {
 
-constexpr HiCHeader::operator bool() const noexcept { return masterIndexOffset >= 0; }
+constexpr HiCHeader::operator bool() const noexcept { return footerPosition >= 0; }
 
 inline bool HiCHeader::operator==(const HiCHeader &other) const noexcept {
-  return url == other.url && masterIndexOffset == other.masterIndexOffset;
+  return url == other.url && footerPosition == other.footerPosition;
 }
 
 inline bool HiCHeader::operator!=(const HiCHeader &other) const noexcept {
@@ -26,6 +26,6 @@ inline bool HiCHeader::operator!=(const HiCHeader &other) const noexcept {
 template <>
 struct std::hash<hictk::hic::internal::HiCHeader> {
   inline std::size_t operator()(hictk::hic::internal::HiCHeader const &h) const noexcept {
-    return hictk::internal::hash_combine(0, h.url, h.masterIndexOffset);
+    return hictk::internal::hash_combine(0, h.url, h.footerPosition);
   }
 };

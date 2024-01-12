@@ -19,7 +19,7 @@ namespace hictk::hic::internal {
 struct HiCHeader {
   std::string url{};
   std::int32_t version{-1};
-  std::int64_t masterIndexOffset{-1};
+  std::int64_t footerPosition{-1};
   std::string genomeID{};
   std::int64_t normVectorIndexPosition{-1};
   std::int64_t normVectorIndexLength{-1};

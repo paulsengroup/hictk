@@ -105,6 +105,9 @@ class HiCFileWriter {
   HiCSectionOffsets _header_offsets{};
   HiCSectionOffsets _body_metadata_offsets{};
   HiCSectionOffsets _footer_offsets{};
+  HiCSectionOffsets _expected_values_offsets{};
+  HiCSectionOffsets _expected_values_norm_offsets{};
+  HiCSectionOffsets _norm_vectors_offsets{};
 
  public:
   HiCFileWriter() = default;
@@ -118,10 +121,12 @@ class HiCFileWriter {
   [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
   [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
 
+  void serialize();
+
   // Write header
   void write_header();
   void write_footer_offset();
-  void write_norm_vector_index(std::streamoff position, std::size_t length);
+  void write_norm_vector_index();
 
   // Write pixels
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
@@ -130,16 +135,21 @@ class HiCFileWriter {
   void write_all_matrix(std::uint32_t target_resolution = 2'500'000);
 
   // Write body
-  auto write_body_metadata() -> HiCSectionOffsets;
+  void write_body_metadata();
   void add_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
                          const Chromosome& chrom2, const std::string& unit = "BP");
 
   // Write footer
-  auto write_footers() -> HiCSectionOffsets;
+  void write_footers();
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
+  void write_footer_size();
 
   // Write expected/normalization values
-  void write_expected_values(std::string_view unit);
+  void compute_and_write_expected_values();
+
+  void write_empty_expected_values();
+  void write_empty_normalized_expected_values();
+  void write_empty_norm_vectors();
 
   void finalize();
 
@@ -158,7 +168,6 @@ class HiCFileWriter {
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
       -> HiCSectionOffsets;
-  auto write_pixels_all() -> HiCSectionOffsets;
 
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                const Chromosome& chrom2, std::uint32_t resolution,

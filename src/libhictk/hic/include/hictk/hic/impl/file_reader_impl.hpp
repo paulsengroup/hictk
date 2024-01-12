@@ -174,9 +174,7 @@ inline bool HiCFileReader::checkMagicString(filestream::FileStream &fs) {
   return fs.getline('\0') == "HIC";
 }
 
-inline std::int64_t HiCFileReader::masterOffset() const noexcept {
-  return _header->masterIndexOffset;
-}
+inline std::int64_t HiCFileReader::masterOffset() const noexcept { return _header->footerPosition; }
 
 inline auto HiCFileReader::init_decompressor() -> Decompressor {
   Decompressor zs(libdeflate_alloc_decompressor(),
@@ -260,13 +258,12 @@ inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
         FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
         header.version));
   }
-  fs.read(header.masterIndexOffset);
-  if (header.masterIndexOffset < 0 ||
-      header.masterIndexOffset >= static_cast<std::int64_t>(fs.size())) {
+  fs.read(header.footerPosition);
+  if (header.footerPosition < 0 || header.footerPosition >= static_cast<std::int64_t>(fs.size())) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("file appears to be corrupted: expected master index offset to "
                                "be between 0 and {}, found {}"),
-                    fs.size(), header.masterIndexOffset));
+                    fs.size(), header.footerPosition));
   }
 
   fs.getline(header.genomeID, '\0');
