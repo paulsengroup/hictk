@@ -130,7 +130,7 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
   return _tank;
 }
 
-inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads,
+inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads, std::size_t chunk_size,
                                     const std::filesystem::path &tmpdir,
                                     std::int32_t compression_lvl, std::size_t buffer_size)
     : _header(init_header(std::move(header))),
@@ -139,7 +139,7 @@ inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads,
                              : std::make_unique<const hictk::internal::TmpDir>(
                                    tmpdir / (_header->url + ".tmp/"))),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
-      _block_mappers(init_interaction_block_mappers((*_tmpdir)(), _bin_tables, 3)),
+      _block_mappers(init_interaction_block_mappers((*_tmpdir)(), _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
       _compressor(libdeflate_alloc_compressor(compression_lvl)),
       _compression_buffer(buffer_size, '\0'),
@@ -343,15 +343,16 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
       }
     }
 
-    const File f(std::string{url()}, base_resolution);
-    const auto sel = f.fetch(chrom1.name(), chrom2.name());
-    const auto factor = res / base_resolution;
-    const transformers::CoarsenPixels coarsener(
-        sel.begin<float>(), sel.end<float>(),
-        std::make_shared<const BinTable>(bins(base_resolution)), factor);
+    {
+      const File f(std::string{url()}, base_resolution);
+      const auto sel = f.fetch(chrom1.name(), chrom2.name());
+      const auto factor = res / base_resolution;
+      const transformers::CoarsenPixels coarsener(
+          sel.begin<float>(), sel.end<float>(),
+          std::make_shared<const BinTable>(bins(base_resolution)), factor);
 
-    auto &mapper = _block_mappers.at(res);
-    mapper.append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+      _block_mappers.at(res).append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+    }
 
     write_pixels(chrom1, chrom2, res);
     for (std::size_t j = 0; j <= i; ++j) {
@@ -361,7 +362,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     add_footer(chrom1, chrom2);
     write_footers();
     finalize();
-    mapper.clear();
+    _block_mappers.at(res).clear();
   }
   return {_data_block_section.start(),
           _fs->tellp() - static_cast<std::size_t>(_data_block_section.start())};
@@ -565,11 +566,12 @@ inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
 
 inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem::path &root_folder,
                                                           const BinTables &bin_tables,
+                                                          std::size_t chunk_size,
                                                           int compression_lvl) -> BlockMappers {
   BlockMappers mappers(bin_tables.size());
   for (const auto &[res, bin_table] : bin_tables) {
     const auto path = fmt::format(FMT_STRING("{}/{}.bin"), root_folder.string(), res);
-    mappers.emplace(res, HiCInteractionToBlockMapper{path, bin_table, compression_lvl});
+    mappers.emplace(res, HiCInteractionToBlockMapper{path, bin_table, chunk_size, compression_lvl});
   }
 
   return mappers;
@@ -629,30 +631,24 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
 
   std::mutex block_id_queue_mtx{};
   std::queue<std::uint64_t> block_id_queue{};
-  moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>
-      block_queue(_tpool.get_thread_count() * 4);
+  moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> block_queue(
+      block_ids->second.size());
 
   std::mutex serialized_block_tank_mtx{};
-  phmap::flat_hash_map<std::uint64_t, std::string> serialized_block_tank{_tpool.get_thread_count() *
-                                                                         4};
+  phmap::flat_hash_map<std::uint64_t, std::string> serialized_block_tank{block_ids->second.size()};
   const auto stop_token = std::numeric_limits<std::uint64_t>::max();
   std::atomic<bool> early_return = false;
 
   std::mutex mapper_mtx{};
 
-  std::vector<std::future<void>> worker_threads{};
+  std::vector<std::future<std::size_t>> worker_threads{};
   for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
     worker_threads.emplace_back(_tpool.submit([&]() {
-      compress_blocks_thr(block_queue, serialized_block_tank, serialized_block_tank_mtx,
-                          early_return, stop_token);
+      return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
+                                           block_queue, serialized_block_tank,
+                                           serialized_block_tank_mtx, early_return, stop_token);
     }));
   }
-
-  auto producer = _tpool.submit([&]() {
-    return merge_blocks_thr(block_ids->second, mapper, block_queue, block_id_queue,
-                            block_id_queue_mtx, mapper_mtx, early_return,
-                            std::vector<std::uint64_t>(worker_threads.size(), stop_token));
-  });
 
   auto writer = _tpool.submit([&]() {
     write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue, block_id_queue_mtx,
@@ -660,9 +656,36 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
                                 stop_token);
   });
 
-  const auto pixels_written = producer.get();
+  auto producer = _tpool.submit([&]() {
+    try {
+      for (const auto &bid : block_ids->second) {
+        if (early_return) {
+          break;
+        }
+
+        block_queue.enqueue(bid);
+        if (early_return) {
+          break;
+        }
+      }
+      for (std::size_t i = 0; i < worker_threads.size(); ++i) {
+        block_queue.enqueue(HiCInteractionToBlockMapper::BlockID{0, 0, stop_token});
+      }
+    } catch (...) {
+      early_return = true;
+      throw;
+    }
+  });
+
+  producer.get();
+  std::size_t pixels_written = 0;
   for (auto &worker : worker_threads) {
-    worker.get();
+    pixels_written += worker.get();
+  }
+  // signal no more blocks will be enqueued
+  {
+    std::scoped_lock lck(block_id_queue_mtx);
+    block_id_queue.emplace(stop_token);
   }
   writer.get();
 
@@ -709,80 +732,53 @@ inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &c
                        : HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
 }
 
-inline std::size_t HiCFileWriter::merge_blocks_thr(
-    const phmap::btree_set<HiCInteractionToBlockMapper::BlockID> &block_ids,
-    HiCInteractionToBlockMapper &mapper,
-    moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>
-        &block_queue,
+inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
+    HiCInteractionToBlockMapper &mapper, std::mutex &mapper_mtx,
     std::queue<std::uint64_t> &block_id_queue, std::mutex &block_id_queue_mtx,
-    std::mutex &mapper_mtx, std::atomic<bool> &early_return,
-    const std::vector<std::uint64_t> &stop_tokens) {
-  try {
-    std::size_t pixels_written = 0;
-    for (const auto &bid : block_ids) {
-      if (early_return) {
-        return pixels_written;
-      }
-
-      // merge blocks corresponding to bid
-      auto blk = mapper.merge_blocks(bid, mapper_mtx);
-      pixels_written += static_cast<std::size_t>(blk.nRecords);
-
-      // enqueue block
-      while (!block_queue.try_enqueue(std::make_pair(bid.bid, blk))) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        if (early_return) {
-          return pixels_written;
-        }
-      }
-      std::scoped_lock lck(block_id_queue_mtx);
-      block_id_queue.push(bid.bid);
-    }
-
-    // signal to consumers that no more blocks will be enqueued
-    for (const auto &tok : stop_tokens) {
-      block_queue.enqueue(std::make_pair(tok, MatrixInteractionBlock<float>{}));
-      std::scoped_lock lck(block_id_queue_mtx);
-      block_id_queue.push(tok);
-    }
-
-    return pixels_written;
-  } catch (...) {
-    early_return = true;
-    throw;
-  }
-}
-
-inline void HiCFileWriter::compress_blocks_thr(
-    moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>
-        &block_queue,
+    moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> &block_queue,
     phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
     std::mutex &serialized_block_tank_mtx, std::atomic<bool> &early_return,
     std::uint64_t stop_token) {
+  SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks thread: start-up..."));
   try {
-    std::pair<std::uint64_t, MatrixInteractionBlock<float>> buffer{};
+    HiCInteractionToBlockMapper::BlockID buffer{};
     BinaryBuffer bbuffer{};
     std::string compression_buffer(16'000'000, '\0');
-    std::unique_ptr<libdeflate_compressor> compressor(
+    std::unique_ptr<libdeflate_compressor> libdeflate_compressor(
         libdeflate_alloc_compressor(_compression_lvl));
+    std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
+    std::size_t pixels_processed = 0;
     while (!early_return) {
       // dequeue block
       if (!block_queue.wait_dequeue_timed(buffer, std::chrono::milliseconds(500))) {
         continue;
       }
-      const auto &[bid, blk] = buffer;
-      if (bid == stop_token) {
-        return;
+      if (buffer.bid == stop_token) {
+        SPDLOG_DEBUG(
+            FMT_STRING("merge_and_compress_blocks thread: processed all blocks. Returning!"));
+        return pixels_processed;
       }
 
+      SPDLOG_DEBUG(
+          FMT_STRING("merge_and_compress_blocks thread: merging partial blocks for block #{}"),
+          buffer.bid);
+      // read and merge partial blocks
+      auto blk = mapper.merge_blocks(buffer, bbuffer, *zstd_dctx, compression_buffer, mapper_mtx);
+      pixels_processed += static_cast<std::size_t>(blk.nRecords);
+
       // compress and serialize block
-      std::ignore = blk.serialize(bbuffer, *compressor, compression_buffer);
+      std::ignore = blk.serialize(bbuffer, *libdeflate_compressor, compression_buffer);
 
       // enqueue serialized block
-      std::scoped_lock lck(serialized_block_tank_mtx);
-      serialized_block_tank.emplace(std::make_pair(bid, compression_buffer));
+      std::scoped_lock lck(serialized_block_tank_mtx, block_id_queue_mtx);
+      SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks thread: done processing block #{}"),
+                   buffer.bid);
+      serialized_block_tank.emplace(std::make_pair(buffer.bid, compression_buffer));
+      block_id_queue.emplace(buffer.bid);
     }
+
+    return pixels_processed;
   } catch (...) {
     early_return = true;
     throw;
@@ -795,10 +791,19 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
     phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
     std::mutex &serialized_block_tank_mtx, std::atomic<bool> &early_return,
     std::uint64_t stop_token) {
+  SPDLOG_DEBUG(FMT_STRING("write_compressed_blocks thread: start-up..."));
   try {
     std::string buffer;
+
     while (!early_return) {
-      if (block_id_queue.empty()) {
+      const auto do_sleep = [&]() {
+        std::scoped_lock lck(block_id_queue_mtx);
+        return block_id_queue.empty();
+      }();
+
+      if (do_sleep) {
+        SPDLOG_DEBUG(
+            FMT_STRING("write_compressed_blocks thread: no blocks to consume. Sleeping..."));
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         continue;
       }
@@ -811,8 +816,12 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
       }();
 
       if (bid == stop_token) {
+        SPDLOG_DEBUG(FMT_STRING(
+            "write_compressed_blocks thread: no more blocks to be processed. Returning!"));
         return;
       }
+
+      SPDLOG_DEBUG(FMT_STRING("write_compressed_blocks thread: waiting for block #{}..."), bid);
       while (!early_return) {
         {
           std::scoped_lock lck(serialized_block_tank_mtx);

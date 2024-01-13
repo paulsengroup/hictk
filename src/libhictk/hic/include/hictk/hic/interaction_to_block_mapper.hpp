@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -100,6 +101,7 @@ class HiCInteractionToBlockMapper {
   phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, float> _pixel_sums{};
   std::size_t _processed_pixels{};
   std::size_t _pending_pixels{};
+  std::size_t _chunk_size{};
 
   phmap::flat_hash_map<Chromosome, BlockMapperIntra> _mappers_intra{};
   phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, BlockMapperInter> _mappers_inter{};
@@ -113,20 +115,20 @@ class HiCInteractionToBlockMapper {
  public:
   HiCInteractionToBlockMapper() = default;
   HiCInteractionToBlockMapper(std::filesystem::path path, std::shared_ptr<const BinTable> bins,
-                              int compression_lvl);
+                              std::size_t chunk_size, int compression_lvl);
 
   const Reference& chromosomes() const noexcept;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, std::size_t chunk_size = 100'000'000);
+  void append_pixels(PixelIt first_pixel, PixelIt last_pixel);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,
-                     std::size_t chunk_size = 100'000'000);
+  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool);
 
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
   [[nodiscard]] auto chromosome_index() const noexcept -> const ChromosomeIndexMap&;
   [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
-  [[nodiscard]] auto merge_blocks(const BlockID& bid, std::mutex& mtx)
+  [[nodiscard]] auto merge_blocks(const BlockID& bid, BinaryBuffer& bbuffer, ZSTD_DCtx_s& zstd_dctx,
+                                  std::string& compression_buffer, std::mutex& mtx)
       -> MatrixInteractionBlock<float>;
   [[nodiscard]] float pixel_sum(const Chromosome& chrom1, const Chromosome& chrom2) const;
   [[nodiscard]] float pixel_sum() const;
@@ -154,6 +156,10 @@ class HiCInteractionToBlockMapper {
   void add_pixel(const Pixel<N>& p);
 
   [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid);
+  [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid, BinaryBuffer& bbuffer,
+                                                       ZSTD_DCtx_s& zstd_dctx,
+                                                       std::string& compression_buffer,
+                                                       std::mutex& mtx);
 
   void write_blocks();
   std::pair<std::uint64_t, std::uint32_t> write_block(const MatrixInteractionBlockFlat<float>& blk);

@@ -134,7 +134,7 @@ class HiCFileWriter {
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(
-      HiCHeader header, std::size_t n_threads = 1,
+      HiCHeader header, std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
       std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
 
@@ -183,6 +183,7 @@ class HiCFileWriter {
       -> BinTables;
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
+                                                           std::size_t chunk_size,
                                                            int compression_lvl) -> BlockMappers;
   [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
 
@@ -206,17 +207,10 @@ class HiCFileWriter {
                                              std::uint32_t resolution);
 
   // Methods to be called from worker threads
-  std::size_t merge_blocks_thr(
-      const phmap::btree_set<HiCInteractionToBlockMapper::BlockID>& block_ids,
-      HiCInteractionToBlockMapper& mapper,
-      moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>&
-          block_queue,
+  std::size_t merge_and_compress_blocks_thr(
+      HiCInteractionToBlockMapper& mapper, std::mutex& mapper_mtx,
       std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
-      std::mutex& mapper_mtx, std::atomic<bool>& early_return,
-      const std::vector<std::uint64_t>& stop_tokens);
-  void compress_blocks_thr(
-      moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>&
-          block_queue,
+      moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID>& block_queue,
       phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
       std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
       std::uint64_t stop_token);

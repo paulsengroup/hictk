@@ -132,13 +132,15 @@ inline bool HiCInteractionToBlockMapper::BlockID::operator==(const BlockID &othe
 }
 
 inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
-    std::filesystem::path path, std::shared_ptr<const BinTable> bins, int compression_lvl)
+    std::filesystem::path path, std::shared_ptr<const BinTable> bins, std::size_t chunk_size,
+    int compression_lvl)
     : _path(std::move(path)),
-      _fs(filestream::FileStream::create(_path)),
       _bin_table(std::move(bins)),
+      _chunk_size(chunk_size),
       _compression_lvl(compression_lvl),
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {
+  assert(_chunk_size != 0);
   init_block_mappers();
 }
 
@@ -147,15 +149,14 @@ inline const Reference &HiCInteractionToBlockMapper::chromosomes() const noexcep
 }
 
 template <typename PixelIt, typename>
-inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
-                                                       std::size_t chunk_size) {
+inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
 
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks..."));
 
   while (first_pixel != last_pixel) {
-    if (_pending_pixels >= chunk_size) {
+    if (_pending_pixels >= _chunk_size) {
       write_blocks();
     }
 
@@ -168,14 +169,13 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
 
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
-                                                       BS::thread_pool &tpool,
-                                                       std::size_t chunk_size) {
+                                                       BS::thread_pool &tpool) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
   constexpr bool is_thin_pixel = std::is_same_v<PixelT, ThinPixel<float>>;
 
   if (tpool.get_thread_count() < 2) {
-    return append_pixels(first_pixel, last_pixel, chunk_size);
+    return append_pixels(first_pixel, last_pixel);
   }
 
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks using 2 threads..."));
@@ -213,7 +213,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     try {
       Pixel<float> p{};
       while (!early_return) {
-        if (_pending_pixels >= chunk_size) {
+        if (_pending_pixels >= _chunk_size) {
           write_blocks();
         }
 
@@ -248,14 +248,16 @@ inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept
 inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
     -> MatrixInteractionBlock<float> {
   std::mutex dummy_mtx{};
-  return merge_blocks(bid, dummy_mtx);
+  return merge_blocks(bid, _bbuffer, *_zstd_dctx, _compression_buffer, dummy_mtx);
 }
 
-inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid,
-                                                      [[maybe_unused]] std::mutex &mtx)
+inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid, BinaryBuffer &bbuffer,
+                                                      ZSTD_DCtx_s &zstd_dctx,
+                                                      std::string &compression_buffer,
+                                                      std::mutex &mtx)
     -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
-  for (auto &&pixel : fetch_pixels(bid)) {
+  for (auto &&pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
     blk.emplace_back(std::move(pixel));
   }
   blk.finalize();
@@ -292,8 +294,11 @@ inline void HiCInteractionToBlockMapper::clear() {
   _pixel_sums.clear();
   _processed_pixels = 0;
   _pending_pixels = 0;
-  std::filesystem::remove(_path);
-  _fs = filestream::FileStream::create(_path);
+  _bbuffer.reset().shrink_to_fit();
+  _compression_buffer.clear();
+  _compression_buffer.shrink_to_fit();
+  std::error_code ec{};
+  std::filesystem::remove(_path, ec);
 }
 
 inline void HiCInteractionToBlockMapper::init_block_mappers() {
@@ -381,6 +386,13 @@ inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
 }
 
 inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const BlockID &bid) {
+  std::mutex dummy_mtx{};
+  return fetch_pixels(bid, _bbuffer, *_zstd_dctx, _compression_buffer, dummy_mtx);
+}
+
+inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(
+    const BlockID &bid, BinaryBuffer &bbuffer, ZSTD_DCtx_s &zstd_dctx,
+    std::string &compression_buffer, std::mutex &mtx) {
   std::vector<Pixel<float>> pixels{};
   auto match = _blocks.find(bid);
   if (match != _blocks.end()) {
@@ -395,10 +407,13 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const
   }
 
   for (const auto &[pos, size] : _block_index.at(bid)) {
-    _fs.seekg(static_cast<std::streamoff>(pos));
-    _fs.read(_bbuffer.reset(), size);
+    {
+      std::scoped_lock lck(mtx);
+      _fs.seekg(static_cast<std::streamoff>(pos));
+      _fs.read(bbuffer.reset(), size);
+    }
     const auto flat_pixels =
-        MatrixInteractionBlockFlat<float>::deserialize(_bbuffer, *_zstd_dctx, _compression_buffer);
+        MatrixInteractionBlockFlat<float>::deserialize(bbuffer, zstd_dctx, compression_buffer);
     pixels.reserve(pixels.size() + flat_pixels.size());
     for (const auto &p : flat_pixels) {
       pixels.emplace_back(Pixel(*_bin_table, p));
@@ -408,6 +423,9 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const
 }
 
 inline void HiCInteractionToBlockMapper::write_blocks() {
+  if (!std::filesystem::exists(_path)) {
+    _fs = filestream::FileStream::create(_path);
+  }
   SPDLOG_DEBUG(FMT_STRING("writing {} pixels to file {}..."), _pending_pixels, _path);
   for (auto &[bid, blk] : _blocks) {
     const auto [offset, size] = write_block(blk);
@@ -418,6 +436,7 @@ inline void HiCInteractionToBlockMapper::write_blocks() {
       _block_index.emplace(bid, std::vector<BlockIndex>{{offset, size}});
     }
   }
+  _fs.flush();
   _blocks.clear();
   _pending_pixels = 0;
 }
