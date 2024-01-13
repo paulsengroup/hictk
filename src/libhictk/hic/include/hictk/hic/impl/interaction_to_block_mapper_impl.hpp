@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
 #include <parallel_hashmap/btree.h>
 #include <zstd.h>
 
@@ -149,43 +150,88 @@ template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
                                                        std::size_t chunk_size) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
-  static_assert(std::is_same_v<PixelT, ThinPixel<float>>);
+  static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
+
+  SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks..."));
 
   while (first_pixel != last_pixel) {
+    auto p = *first_pixel;
+    ++first_pixel;
     ++_processed_pixels;
     if (_pending_pixels++ >= chunk_size) {
       write_blocks();
-      _blocks.clear();
-      _pending_pixels = 0;
     }
 
-    auto p = *first_pixel;
-    ++first_pixel;
-    auto bid = map(p);
-
-    const auto &chrom1 = chromosomes().at(bid.chrom1_id);
-    const auto &chrom2 = chromosomes().at(bid.chrom2_id);
-    const auto chrom_pair = std::make_pair(chrom1, chrom2);
-
-    auto match1 = _blocks.find(bid);
-    if (match1 != _blocks.end()) {
-      _pixel_sums.at(chrom_pair) += p.count;
-      match1->second.emplace_back(std::move(p));
-    } else {
-      _pixel_sums.emplace(chrom_pair, p.count);
-      auto [it, _] = _blocks.emplace(std::move(bid), MatrixInteractionBlockFlat<float>{});
-      it->second.emplace_back(std::move(p));
-    }
-
-    const auto key = std::make_pair(_bin_table->chromosomes().at(bid.chrom1_id),
-                                    _bin_table->chromosomes().at(bid.chrom2_id));
-    auto match2 = _chromosome_index.find(key);
-    if (match2 != _chromosome_index.end()) {
-      match2->second.emplace(bid);
-    } else {
-      _chromosome_index.emplace(key, phmap::flat_hash_set<BlockID>{bid});
-    }
+    add_pixel(p);
   }
+}
+
+template <typename PixelIt, typename>
+inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+                                                       BS::thread_pool &tpool,
+                                                       std::size_t chunk_size) {
+  using PixelT = remove_cvref_t<decltype(*first_pixel)>;
+  static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
+  constexpr bool is_thin_pixel = std::is_same_v<PixelT, ThinPixel<float>>;
+
+  if (tpool.get_thread_count() < 2) {
+    return append_pixels(first_pixel, last_pixel, chunk_size);
+  }
+
+  std::atomic<bool> early_return = false;
+  moodycamel::BlockingReaderWriterQueue<Pixel<float>> queue(10'000);
+
+  auto writer = tpool.submit([&]() {
+    try {
+      while (first_pixel != last_pixel && !early_return) {
+        const auto pixel = [&]() {
+          if constexpr (is_thin_pixel) {
+            return Pixel(*_bin_table, *first_pixel);
+          } else {
+            return *first_pixel;
+          }
+        }();
+        ++first_pixel;
+
+        while (!queue.try_enqueue(pixel)) {
+          if (early_return) {
+            return;
+          }
+        }
+      }
+      queue.enqueue(Pixel<float>{});
+
+    } catch (...) {
+      early_return = true;
+      throw;
+    }
+  });
+
+  auto reader = tpool.submit([&]() {
+    try {
+      Pixel<float> p{};
+      while (!early_return) {
+        if (_pending_pixels >= chunk_size) {
+          write_blocks();
+        }
+
+        queue.wait_dequeue(p);
+        if (p.count == 0) {
+          return;
+        }
+
+        add_pixel(p);
+        ++_processed_pixels;
+        ++_pending_pixels;
+      }
+    } catch (...) {
+      early_return = true;
+      throw;
+    }
+  });
+
+  writer.get();
+  reader.get();
 }
 
 inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const BlockIndexMap & {
@@ -198,6 +244,13 @@ inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept
 }
 
 inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
+    -> MatrixInteractionBlock<float> {
+  std::mutex dummy_mtx{};
+  return merge_blocks(bid, dummy_mtx);
+}
+
+inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid,
+                                                      [[maybe_unused]] std::mutex &mtx)
     -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
   for (auto &&pixel : fetch_pixels(bid)) {
@@ -225,10 +278,20 @@ inline float HiCInteractionToBlockMapper::pixel_sum() const {
 inline void HiCInteractionToBlockMapper::finalize() {
   if (_processed_pixels < _pending_pixels) {
     write_blocks();
-    _blocks.clear();
     _pending_pixels = 0;
     _fs.flush();
   }
+}
+
+inline void HiCInteractionToBlockMapper::clear() {
+  _blocks.clear();
+  _block_index.clear();
+  _chromosome_index.clear();
+  _pixel_sums.clear();
+  _processed_pixels = 0;
+  _pending_pixels = 0;
+  std::filesystem::remove(_path);
+  _fs = filestream::FileStream::create(_path);
 }
 
 inline void HiCInteractionToBlockMapper::init_block_mappers() {
@@ -284,6 +347,37 @@ inline auto HiCInteractionToBlockMapper::map(const Pixel<N> &p) const -> BlockID
   return {chrom1.id(), chrom2.id(), block_id};
 }
 
+template <typename N>
+inline void HiCInteractionToBlockMapper::add_pixel(const ThinPixel<N> &p) {
+  add_pixel(Pixel(*_bin_table, p));
+}
+
+template <typename N>
+inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
+  auto bid = map(p);
+
+  const auto &chrom1 = p.coords.bin1.chrom();
+  const auto &chrom2 = p.coords.bin2.chrom();
+  const auto chrom_pair = std::make_pair(chrom1, chrom2);
+
+  auto match1 = _blocks.find(bid);
+  if (match1 != _blocks.end()) {
+    _pixel_sums.at(chrom_pair) += p.count;
+    match1->second.emplace_back(p.to_thin());
+  } else {
+    _pixel_sums.emplace(chrom_pair, p.count);
+    auto [it, _] = _blocks.emplace(std::move(bid), MatrixInteractionBlockFlat<float>{});
+    it->second.emplace_back(p.to_thin());
+  }
+
+  auto match2 = _chromosome_index.find(chrom_pair);
+  if (match2 != _chromosome_index.end()) {
+    match2->second.emplace(bid);
+  } else {
+    _chromosome_index.emplace(chrom_pair, phmap::btree_set<BlockID>{bid});
+  }
+}
+
 inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const BlockID &bid) {
   std::vector<Pixel<float>> pixels{};
   auto match = _blocks.find(bid);
@@ -312,17 +406,18 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const
 }
 
 inline void HiCInteractionToBlockMapper::write_blocks() {
+  SPDLOG_DEBUG(FMT_STRING("writing {} pixels to file {}..."), _pending_pixels, _path);
   for (auto &[bid, blk] : _blocks) {
     const auto [offset, size] = write_block(blk);
-    {
-      auto match = _block_index.find(bid);
-      if (match != _block_index.end()) {
-        match->second.emplace_back(BlockIndex{offset, size});
-      } else {
-        _block_index.emplace(bid, std::vector<BlockIndex>{{offset, size}});
-      }
+    auto match = _block_index.find(bid);
+    if (match != _block_index.end()) {
+      match->second.emplace_back(BlockIndex{offset, size});
+    } else {
+      _block_index.emplace(bid, std::vector<BlockIndex>{{offset, size}});
     }
   }
+  _blocks.clear();
+  _pending_pixels = 0;
 }
 
 inline std::size_t HiCInteractionToBlockMapper::compute_block_column_count(

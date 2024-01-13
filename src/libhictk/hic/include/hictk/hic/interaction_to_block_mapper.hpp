@@ -8,8 +8,14 @@
 
 #include <parallel_hashmap/btree.h>
 #include <parallel_hashmap/phmap.h>
+#if __has_include(<readerwriterqueue.h>)
+#include <readerwriterqueue.h>
+#else
+#include <readerwriterqueue/readerwriterqueue.h>
+#endif
 #include <zstd.h>
 
+#include <BS_thread_pool.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -86,7 +92,7 @@ class HiCInteractionToBlockMapper {
 
   using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;
   using ChromosomeIndexMap =
-      phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, phmap::flat_hash_set<BlockID>>;
+      phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, phmap::btree_set<BlockID>>;
   BlockIndexMap _block_index{};
   ChromosomeIndexMap _chromosome_index{};
 
@@ -113,14 +119,20 @@ class HiCInteractionToBlockMapper {
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel, std::size_t chunk_size = 100'000'000);
+  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
+  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,
+                     std::size_t chunk_size = 100'000'000);
 
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
   [[nodiscard]] auto chromosome_index() const noexcept -> const ChromosomeIndexMap&;
   [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
+  [[nodiscard]] auto merge_blocks(const BlockID& bid, std::mutex& mtx)
+      -> MatrixInteractionBlock<float>;
   [[nodiscard]] float pixel_sum(const Chromosome& chrom1, const Chromosome& chrom2) const;
   [[nodiscard]] float pixel_sum() const;
 
   void finalize();
+  void clear();
 
   [[nodiscard]] static std::size_t compute_block_column_count(
       const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t bin_size,
@@ -135,6 +147,11 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] auto map(const ThinPixel<N>& p) const -> BlockID;
   template <typename N>
   [[nodiscard]] auto map(const Pixel<N>& p) const -> BlockID;
+
+  template <typename N>
+  void add_pixel(const ThinPixel<N>& p);
+  template <typename N>
+  void add_pixel(const Pixel<N>& p);
 
   [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid);
 

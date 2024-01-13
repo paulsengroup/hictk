@@ -6,13 +6,22 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
+#if __has_include(<blockingconcurrentqueue.h>)
+#include <blockingconcurrentqueue.h>
+#else
+#include <concurrentqueue/blockingconcurrentqueue.h>
+#endif
 #include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
 #include <zstd.h>
 
+#include <BS_thread_pool.hpp>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <string>
 
 #include "hictk/bin_table.hpp"
@@ -36,9 +45,19 @@ struct std::default_delete<libdeflate_compressor> {
 
 namespace hictk::hic::internal {
 
-struct HiCSectionOffsets {
-  std::streamoff position;
-  std::size_t size;
+class HiCSectionOffsets {
+  std::streamoff _position{};
+  std::size_t _size{};
+
+ public:
+  HiCSectionOffsets() = default;
+  template <typename I1, typename I2>
+  HiCSectionOffsets(I1 start_, I2 size_);
+
+  [[nodiscard]] std::streamoff start() const noexcept;
+  [[nodiscard]] std::streamoff end() const noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] std::size_t& size() noexcept;
 };
 
 struct BlockIndexKey {
@@ -98,21 +117,25 @@ class HiCFileWriter {
   using FooterTank = phmap::btree_map<std::pair<Chromosome, Chromosome>, FooterV5>;
   FooterTank _footers{};
 
+  std::int32_t _compression_lvl{};
   BinaryBuffer _bbuffer{};
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
-  HiCSectionOffsets _header_offsets{};
-  HiCSectionOffsets _body_metadata_offsets{};
-  HiCSectionOffsets _footer_offsets{};
-  HiCSectionOffsets _expected_values_offsets{};
-  HiCSectionOffsets _expected_values_norm_offsets{};
-  HiCSectionOffsets _norm_vectors_offsets{};
+  HiCSectionOffsets _header_section{};
+  HiCSectionOffsets _data_block_section{};
+  HiCSectionOffsets _body_metadata_section{};
+  HiCSectionOffsets _footer_section{};
+  HiCSectionOffsets _expected_values_section{};
+  HiCSectionOffsets _expected_values_norm_section{};
+  HiCSectionOffsets _norm_vectors_section{};
+
+  BS::thread_pool _tpool{};
 
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(
-      HiCHeader header,
+      HiCHeader header, std::size_t n_threads = 1,
       const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
       std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
 
@@ -162,6 +185,8 @@ class HiCFileWriter {
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
                                                            int compression_lvl) -> BlockMappers;
+  [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
+
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
@@ -172,12 +197,36 @@ class HiCFileWriter {
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                const Chromosome& chrom2, std::uint32_t resolution,
                                const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
+  std::size_t write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
+                                       std::uint32_t resolution);
 
   [[nodiscard]] std::size_t compute_block_column_count(const Chromosome& chrom1,
                                                        const Chromosome& chrom2,
                                                        std::uint32_t resolution);
   [[nodiscard]] std::size_t compute_num_bins(const Chromosome& chrom1, const Chromosome& chrom2,
                                              std::uint32_t resolution);
+
+  // Methods to be called from worker threads
+  std::size_t merge_blocks_thr(
+      const phmap::btree_set<HiCInteractionToBlockMapper::BlockID>& block_ids,
+      HiCInteractionToBlockMapper& mapper,
+      moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>&
+          block_queue,
+      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
+      std::mutex& mapper_mtx, std::atomic<bool>& early_return,
+      const std::vector<std::uint64_t>& stop_tokens);
+  void compress_blocks_thr(
+      moodycamel::BlockingConcurrentQueue<std::pair<std::uint64_t, MatrixInteractionBlock<float>>>&
+          block_queue,
+      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
+      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
+      std::uint64_t stop_token);
+  void write_compressed_blocks_thr(
+      const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
+      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
+      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
+      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
+      std::uint64_t stop_token);
 };
 }  // namespace hictk::hic::internal
 
