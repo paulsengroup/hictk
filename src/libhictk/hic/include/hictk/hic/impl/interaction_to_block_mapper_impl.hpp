@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <parallel_hashmap/btree.h>
+#include <spdlog/spdlog.h>
 #include <zstd.h>
 
 #include <algorithm>
@@ -155,14 +155,14 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks..."));
 
   while (first_pixel != last_pixel) {
-    auto p = *first_pixel;
-    ++first_pixel;
-    ++_processed_pixels;
-    if (_pending_pixels++ >= chunk_size) {
+    if (_pending_pixels >= chunk_size) {
       write_blocks();
     }
 
-    add_pixel(p);
+    add_pixel(*first_pixel);
+    ++first_pixel;
+    ++_processed_pixels;
+    ++_pending_pixels;
   }
 }
 
@@ -177,6 +177,8 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   if (tpool.get_thread_count() < 2) {
     return append_pixels(first_pixel, last_pixel, chunk_size);
   }
+
+  SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks using 2 threads..."));
 
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<Pixel<float>> queue(10'000);

@@ -520,14 +520,14 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
 
   _fs->seekg(masterOffset());
 
-  metadata.footerOffset = read_footer_file_offset(key);
-  if (metadata.footerOffset == -1) {
+  metadata.matrixMetadataOffset = read_footer_file_offset(key);
+  if (metadata.matrixMetadataOffset == -1) {
     return {Index{}, std::move(metadata), {}, std::move(weights1), std::move(weights2)};
   }
 
   const auto file_offset = _fs->tellg();
   // NOTE: we read then move index to workaround assertion failures when compiling under MSVC
-  auto index = read_index(metadata.footerOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
+  auto index = read_index(metadata.matrixMetadataOffset, metadata.chrom1, metadata.chrom2, metadata.unit,
                           metadata.resolution);
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 

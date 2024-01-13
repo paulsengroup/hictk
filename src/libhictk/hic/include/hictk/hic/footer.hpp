@@ -29,7 +29,7 @@ struct HiCFooterMetadata {
   std::uint32_t resolution{std::numeric_limits<std::uint32_t>::max()};
   Chromosome chrom1{};
   Chromosome chrom2{};
-  std::int64_t footerOffset{-1};
+  std::int64_t matrixMetadataOffset{-1};
 
   constexpr explicit operator bool() const noexcept;
   bool operator==(const HiCFooterMetadata &other) const noexcept;

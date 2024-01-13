@@ -112,7 +112,8 @@ inline void MatrixBodyMetadataTank::insert(const Chromosome &chrom1, const Chrom
 inline void MatrixBodyMetadataTank::update_offsets(const Chromosome &chrom1,
                                                    const Chromosome &chrom2,
                                                    std::streamoff position, std::size_t size) {
-  auto [it, inserted] = _offsets.emplace(Key{chrom1, chrom2}, HiCSectionOffsets{position, size});
+  auto [it, inserted] =
+      _offsets.try_emplace(Key{chrom1, chrom2}, HiCSectionOffsets{position, size});
   if (!inserted) {
     it->second = HiCSectionOffsets{position, size};
   }
@@ -127,18 +128,6 @@ inline void MatrixBodyMetadataTank::remove(const Chromosome &chrom1, const Chrom
 inline auto MatrixBodyMetadataTank::operator()() const noexcept
     -> const phmap::flat_hash_map<Key, MatrixBodyMetadata> & {
   return _tank;
-}
-
-inline std::string MatrixBodyMetadataTank::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  for (const auto &[_, metadata] : _tank) {
-    std::ignore = metadata.serialize(buffer, false);
-  }
-
-  return buffer.get();
 }
 
 inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads,
@@ -382,18 +371,18 @@ inline void HiCFileWriter::write_body_metadata() {
   const auto pos = _data_block_section.end();
   _fs->seekp(pos);
   for (const auto &[chroms, metadata] : _matrix_metadata()) {
+    const auto &chrom1 = chroms.chrom1;
+    const auto &chrom2 = chroms.chrom2;
+    const auto &num_resolutions = metadata.resolutionMetadata.size();
     const auto pos1 = _fs->tellp();
     SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
-                 chroms.chrom1.name(), chroms.chrom2.name(), metadata.resolutionMetadata.size(),
-                 pos1);
+                 chrom1.name(), chrom2.name(), num_resolutions, pos1);
     _fs->write(metadata.serialize(_bbuffer));
     const auto pos2 = _fs->tellp();
     SPDLOG_DEBUG(FMT_STRING("updating MatrixBodyMetadata offset and size for {}:{} ({} "
                             "resolutions) to {} and {}"),
-                 chroms.chrom1.name(), chroms.chrom2.name(), metadata.resolutionMetadata.size(),
-                 pos1, pos2 - pos1);
-    _matrix_metadata.update_offsets(chroms.chrom1, chroms.chrom2, static_cast<std::streamoff>(pos1),
-                                    pos2 - pos1);
+                 chrom1.name(), chrom2.name(), num_resolutions, pos1, pos2 - pos1);
+    _matrix_metadata.update_offsets(chrom1, chrom2, static_cast<std::streamoff>(pos1), pos2 - pos1);
   }
 
   const auto size = _fs->tellp() - static_cast<std::size_t>(pos);
@@ -451,7 +440,10 @@ inline void HiCFileWriter::write_footers() {
   _fs->write(nBytesV5);
   _fs->write(nEntries);
 
-  for (const auto &[chroms, footer] : _footers) {
+  for (auto &[chroms, footer] : _footers) {
+    const auto offset = _matrix_metadata.offset(chroms.first, chroms.second);
+    footer.masterIndex.position = conditional_static_cast<std::int64_t>(offset.start());
+    footer.masterIndex.size = static_cast<std::int32_t>(offset.size());
     SPDLOG_DEBUG(FMT_STRING("writing FooterV5 for {}:{} at offset {}"), chroms.first.name(),
                  chroms.second.name(), _fs->tellp());
     _fs->write(footer.serialize(_bbuffer));
@@ -469,10 +461,8 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
 
   FooterV5 footer{};
   footer.masterIndex.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
-
-  const auto offset = _matrix_metadata.offset(chrom1, chrom2);
-  footer.masterIndex.position = conditional_static_cast<std::int64_t>(offset.start());
-  footer.masterIndex.size = static_cast<std::int32_t>(offset.size());
+  footer.masterIndex.position = -1;
+  footer.masterIndex.size = -1;
 
   auto [it, inserted] = _footers.emplace(std::make_pair(chrom1, chrom2), footer);
   if (!inserted) {
@@ -547,8 +537,8 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
 }
 
 inline void HiCFileWriter::finalize() {
-  write_footer_size();
   write_footer_offset();
+  write_footer_size();
   write_empty_normalized_expected_values();
   write_empty_norm_vectors();
   write_norm_vector_index();
@@ -598,11 +588,11 @@ inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pi
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
                                         std::uint32_t resolution) -> HiCSectionOffsets {
-  SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix at {} resolution..."), chrom1.name(),
-               chrom2.name(), resolution);
-
   const auto offset = _data_block_section.end();
   _fs->seekp(offset);
+
+  SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix ({} resolution) at offset {}..."),
+               chrom1.name(), chrom2.name(), resolution, offset);
 
   const auto pixels_written = write_interaction_blocks(chrom1, chrom2, resolution);
 

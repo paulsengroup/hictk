@@ -97,7 +97,6 @@ class MatrixBodyMetadataTank {
   void remove(const Chromosome& chrom1, const Chromosome& chrom2);
 
   auto operator()() const noexcept -> const phmap::flat_hash_map<Key, MatrixBodyMetadata>&;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
 };
 
 class HiCFileWriter {
