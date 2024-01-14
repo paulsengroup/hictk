@@ -280,10 +280,8 @@ inline float HiCInteractionToBlockMapper::pixel_sum() const {
 }
 
 inline void HiCInteractionToBlockMapper::finalize() {
-  if (_processed_pixels < _pending_pixels) {
+  if (_processed_pixels > _pending_pixels) {
     write_blocks();
-    _pending_pixels = 0;
-    _fs.flush();
   }
 }
 
