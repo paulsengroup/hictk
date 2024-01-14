@@ -45,7 +45,6 @@ struct ConvertConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path path_to_output{};
   std::filesystem::path tmp_dir{};
-  std::filesystem::path juicer_tools_jar{};
   std::string input_format{};
   std::string output_format{};
 
@@ -55,10 +54,10 @@ struct ConvertConfig {
   std::vector<balancing::Method> normalization_methods{};
   bool fail_if_normalization_method_is_not_avaliable{false};
 
-  std::uint8_t gzip_compression_lvl{6};
+  std::uint8_t zlib_compression_lvl{9};
   std::size_t threads{2};
+  std::size_t chunk_size{10'000'000};
 
-  std::size_t juicer_tools_xmx{32'000'000'000};
   std::uint8_t verbosity{4};
   bool force{false};
 };

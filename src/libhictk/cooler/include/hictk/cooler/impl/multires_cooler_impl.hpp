@@ -130,6 +130,12 @@ constexpr const std::vector<std::uint32_t>& MultiResFile::resolutions() const no
 constexpr const MultiResAttributes& MultiResFile::attributes() const noexcept { return _attrs; }
 
 inline File MultiResFile::open(std::uint32_t resolution) const {
+  const auto match = std::find(resolutions().begin(), resolutions().end(), resolution);
+
+  if (match == resolutions().end()) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("file \"{}\" does not contain interactions for resolution {}"), path(), resolution));
+  }
   return File(
       RootGroup{(*_root_grp)().getGroup(fmt::format(FMT_STRING("/resolutions/{}"), resolution))});
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)

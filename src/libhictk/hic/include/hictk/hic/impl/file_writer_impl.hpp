@@ -416,7 +416,7 @@ inline void HiCFileWriter::write_body_metadata() {
   for (const auto &[chroms, metadata] : _matrix_metadata()) {
     const auto &chrom1 = chroms.chrom1;
     const auto &chrom2 = chroms.chrom2;
-    const auto &num_resolutions = metadata.resolutionMetadata.size();
+    [[maybe_unused]] const auto &num_resolutions = metadata.resolutionMetadata.size();
     const auto pos1 = _fs->tellp();
     SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
                  chrom1.name(), chrom2.name(), num_resolutions, pos1);
@@ -629,7 +629,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix ({} resolution) at offset {}..."),
                chrom1.name(), chrom2.name(), resolution, offset);
 
-  const auto pixels_written = write_interaction_blocks(chrom1, chrom2, resolution);
+  [[maybe_unused]] const auto pixels_written = write_interaction_blocks(chrom1, chrom2, resolution);
 
   SPDLOG_DEBUG(FMT_STRING("written {} pixels for {}:{} matrix at {} resolution"), pixels_written,
                chrom1.name(), chrom2.name(), resolution);

@@ -63,11 +63,6 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::IsMember({"cool", "mcool", "hic"}))
       ->default_str("auto");
   sc.add_option(
-      "-j,--juicer-tools-jar",
-      c.juicer_tools_jar,
-      "Path to juicer_tools or hic_tools JAR.")
-      ->check(CLI::ExistingFile);
-  sc.add_option(
       "-r,--resolutions",
       c.resolutions,
       "One or more resolutions to be converted. By default all resolutions are converted.")
@@ -89,13 +84,6 @@ void Cli::make_convert_subcommand() {
       c.genome,
       "Genome assembly name. By default this is copied from the .hic file metadata.");
   sc.add_option(
-      "--juicer-tools-memory",
-      c.juicer_tools_xmx,
-      "Max heap size used by juicer_tools. Only used when converting from cool to hic")
-      ->default_str(fmt::format(FMT_STRING("{:.0f}GB"), double(c.juicer_tools_xmx) / 1.0e9))
-      ->check(CLI::PositiveNumber)
-      ->transform(CLI::AsSizeValue(true));
-  sc.add_option(
       "--tmpdir",
       c.tmp_dir,
       "Path where to store temporary files.");
@@ -114,10 +102,9 @@ void Cli::make_convert_subcommand() {
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-level",
-      c.gzip_compression_lvl,
-      "Compression level used to compress temporary files.\n"
-      "Pass 0 to disable compression.")
-      ->check(CLI::Range(0, 9))
+      c.zlib_compression_lvl,
+      "Compression level used to compress interaction blocks.")
+      ->check(CLI::Range(1, 12))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -172,11 +159,6 @@ void Cli::validate_convert_subcommand() const {
   if (!is_hic && !is_cool && !is_mcool) {
     errors.emplace_back(
         fmt::format(FMT_STRING("{} is not in .hic, .cool or .mcool format"), c.path_to_input));
-  }
-
-  if ((is_cool || is_mcool) && c.juicer_tools_jar.empty()) {
-    errors.emplace_back(
-        fmt::format(FMT_STRING("--juicer-tools-jar is required when converting to .hic.")));
   }
 
   if (!c.output_format.empty()) {
