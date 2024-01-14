@@ -131,6 +131,8 @@ class HiCFileWriter {
 
   BS::thread_pool _tpool{};
 
+  static constexpr std::uint32_t DEFAULT_CHROM_ALL_SCALE_FACTOR{1};
+
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(
@@ -176,8 +178,7 @@ class HiCFileWriter {
   void finalize();
 
  private:
-  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(
-      HiCHeader&& header, std::uint32_t all_scale_factor = 1);
+  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(HiCHeader&& header);
   [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
                                             const std::vector<std::uint32_t>& resolutions)
       -> BinTables;

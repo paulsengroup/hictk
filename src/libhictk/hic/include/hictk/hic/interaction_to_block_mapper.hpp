@@ -68,8 +68,8 @@ class HiCInteractionToBlockMapper {
   class BlockMapperIntra;
   class BlockMapperInter;
 
-  static constexpr std::int32_t DEFAULT_INTRA_CUTOFF = 500;
-  static constexpr std::int32_t DEFAULT_INTER_CUTOFF = 5'000;
+  static constexpr std::uint32_t DEFAULT_INTRA_CUTOFF = 500;
+  static constexpr std::uint32_t DEFAULT_INTER_CUTOFF = 5'000;
   static constexpr std::size_t DEFAULT_BLOCK_CAPACITY = 1'000;
 
   struct BlockID {
