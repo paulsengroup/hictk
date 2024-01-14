@@ -150,6 +150,11 @@ inline const Reference &HiCInteractionToBlockMapper::chromosomes() const noexcep
 
 inline std::size_t HiCInteractionToBlockMapper::size() const noexcept { return _processed_pixels; }
 inline bool HiCInteractionToBlockMapper::empty() const noexcept { return size() == 0; }
+inline bool HiCInteractionToBlockMapper::empty(const Chromosome &chrom1,
+                                               const Chromosome &chrom2) const noexcept {
+  auto it = _chromosome_index.find(std::make_pair(chrom1, chrom2));
+  return it == _chromosome_index.end();
+}
 
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel) {

@@ -368,7 +368,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     const auto res = resolutions()[i];
 
     auto &mapper = _block_mappers.at(res);
-    if (mapper.empty()) {
+    if (mapper.empty(chrom1, chrom2)) {
       for (std::size_t j = 0; j < i; ++j) {
         if (res % resolutions()[j] == 0) {
           base_resolution = resolutions()[j];
@@ -390,12 +390,13 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
       }
     }
 
-    if (mapper.empty()) {
+    if (mapper.empty(chrom1, chrom2)) {
       SPDLOG_WARN(FMT_STRING("no pixels found for {}:{} matrix at resolution {}: SKIPPING!"),
                   chrom1.name(), chrom2.name(), res);
       continue;
     }
 
+    mapper.finalize();
     write_pixels(chrom1, chrom2, res);
     for (std::size_t j = 0; j <= i; ++j) {
       add_body_metadata(resolutions()[j], chrom1, chrom2);
