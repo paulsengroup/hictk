@@ -167,7 +167,7 @@ inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noex
 inline void HiCFileWriter::serialize() {
   write_header();
   write_pixels();
-  compute_and_write_expected_values();
+  // compute_and_write_expected_values();
   finalize();
 }
 
@@ -313,7 +313,11 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
   }
   const auto chrom = chromosomes().at(0);
   assert(chrom.is_all());
+
+  const auto offset = _data_block_section.end();
+  _fs->seekp(offset);
   write_interaction_block(0, chrom, chrom, target_resolution, blk);
+  _data_block_section.size() += _fs->tellp() - static_cast<std::size_t>(offset);
 
   add_body_metadata(target_resolution, chrom, chrom);
   write_body_metadata();
@@ -844,7 +848,7 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
       _fs->write(buffer);
 
       MatrixBlockMetadata mm{static_cast<std::int32_t>(bid), static_cast<std::int64_t>(offset),
-                             static_cast<std::int32_t>(_fs->tellp() - offset)};
+                             static_cast<std::int32_t>(buffer.size())};
       const BlockIndexKey key{chrom1, chrom2, resolution};
       auto idx = _block_index.find(key);
       if (idx != _block_index.end()) {
