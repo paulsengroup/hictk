@@ -167,7 +167,7 @@ inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noex
 inline void HiCFileWriter::serialize() {
   write_header();
   write_pixels();
-  // compute_and_write_expected_values();
+  compute_and_write_expected_values();
   finalize();
 }
 
