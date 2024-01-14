@@ -44,7 +44,7 @@ void cool_to_hic(const ConvertConfig& c) {
       c.path_to_output,  // url
       9,                 // version
       -1,                // masterIndexOffset
-      "hg38",            // genomeID
+      c.genome,          // genomeID
       -1,                // nviPosition
       -1,                // nviLength
       chromosomes,
