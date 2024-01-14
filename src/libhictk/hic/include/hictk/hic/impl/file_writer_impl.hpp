@@ -256,8 +256,9 @@ inline void HiCFileWriter::write_norm_vector_index() {
 }
 
 template <typename PixelIt, typename>
-inline void HiCFileWriter::add_pixels(PixelIt first_pixel, PixelIt last_pixel) {
-  add_pixels(resolutions().front(), first_pixel, last_pixel);
+inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
+                                      PixelIt last_pixel) {
+  _block_mappers.at(resolution).append_pixels(first_pixel, last_pixel, _tpool);
 }
 
 inline void HiCFileWriter::write_pixels() {
@@ -366,21 +367,33 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     auto base_resolution = resolutions().front();
     const auto res = resolutions()[i];
 
-    for (std::size_t j = 0; j < i; ++j) {
-      if (resolutions()[j] % res == 0) {
-        base_resolution = resolutions()[j];
+    auto &mapper = _block_mappers.at(res);
+    if (mapper.empty()) {
+      for (std::size_t j = 0; j < i; ++j) {
+        if (res % resolutions()[j] == 0) {
+          base_resolution = resolutions()[j];
+        }
+      }
+      const File f(std::string{url()}, base_resolution);
+      const auto sel = f.fetch(chrom1.name(), chrom2.name());
+      if (!sel.empty()) {
+        SPDLOG_INFO(
+            FMT_STRING("no pixels provided for {}:{} matrix at resolution {}: generating pixels by "
+                       "coarsening resolution {}..."),
+            chrom1.name(), chrom2.name(), res, base_resolution);
+        const auto factor = res / base_resolution;
+        const transformers::CoarsenPixels coarsener(
+            sel.begin<float>(), sel.end<float>(),
+            std::make_shared<const BinTable>(bins(base_resolution)), factor);
+
+        mapper.append_pixels(coarsener.begin(), coarsener.end(), _tpool);
       }
     }
 
-    {
-      const File f(std::string{url()}, base_resolution);
-      const auto sel = f.fetch(chrom1.name(), chrom2.name());
-      const auto factor = res / base_resolution;
-      const transformers::CoarsenPixels coarsener(
-          sel.begin<float>(), sel.end<float>(),
-          std::make_shared<const BinTable>(bins(base_resolution)), factor);
-
-      _block_mappers.at(res).append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+    if (mapper.empty()) {
+      SPDLOG_WARN(FMT_STRING("no pixels found for {}:{} matrix at resolution {}: SKIPPING!"),
+                  chrom1.name(), chrom2.name(), res);
+      continue;
     }
 
     write_pixels(chrom1, chrom2, res);
@@ -391,7 +404,6 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     add_footer(chrom1, chrom2);
     write_footers();
     finalize();
-    _block_mappers.at(res).clear();
   }
   return {_data_block_section.start(),
           _fs->tellp() - static_cast<std::size_t>(_data_block_section.start())};
@@ -606,13 +618,6 @@ inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem:
 
 inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
   return {conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t(1) : n_threads)};
-}
-
-template <typename PixelIt, typename>
-inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
-                                      PixelIt last_pixel) {
-  auto &mapper = _block_mappers.at(resolution);
-  mapper.append_pixels(first_pixel, last_pixel, _tpool);
 }
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,

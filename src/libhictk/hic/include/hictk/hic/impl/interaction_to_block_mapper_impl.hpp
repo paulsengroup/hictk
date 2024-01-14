@@ -148,12 +148,16 @@ inline const Reference &HiCInteractionToBlockMapper::chromosomes() const noexcep
   return _bin_table->chromosomes();
 }
 
+inline std::size_t HiCInteractionToBlockMapper::size() const noexcept { return _processed_pixels; }
+inline bool HiCInteractionToBlockMapper::empty() const noexcept { return size() == 0; }
+
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
 
-  SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks..."));
+  SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks at resolution {}..."),
+               _bin_table->bin_size());
 
   while (first_pixel != last_pixel) {
     if (_pending_pixels >= _chunk_size) {
@@ -162,8 +166,6 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
 
     add_pixel(*first_pixel);
     ++first_pixel;
-    ++_processed_pixels;
-    ++_pending_pixels;
   }
 }
 
@@ -381,6 +383,8 @@ inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
   } else {
     _chromosome_index.emplace(chrom_pair, phmap::btree_set<BlockID>{bid});
   }
+  ++_processed_pixels;
+  ++_pending_pixels;
 }
 
 inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(const BlockID &bid) {

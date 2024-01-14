@@ -154,7 +154,7 @@ class HiCFileWriter {
 
   // Write pixels
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void add_pixels(PixelIt first_pixel, PixelIt last_pixel);
+  void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
   void write_pixels();
   void write_all_matrix(std::uint32_t target_resolution = 2'500'000);
 
@@ -187,9 +187,6 @@ class HiCFileWriter {
                                                            std::size_t chunk_size,
                                                            int compression_lvl) -> BlockMappers;
   [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
-
-  template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)

@@ -118,6 +118,8 @@ class HiCInteractionToBlockMapper {
                               std::size_t chunk_size, int compression_lvl);
 
   const Reference& chromosomes() const noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel);
