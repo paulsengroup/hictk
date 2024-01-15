@@ -68,14 +68,19 @@ inline Stats ingest_pairs_hic(std::string_view uri, const std::filesystem::path&
   const auto resolution = hf.resolutions().front();
   assert(buffer.capacity() != 0);
   buffer.reserve(buffer.capacity());
-  PairsAggregator<float>{hf.bins(resolution), format, offset}.read_next_chunk(buffer);
 
-  if (buffer.empty()) {
-    assert(std::cin.eof());
-    return {double{}, 0};
+  for (std::size_t i = 0; true; ++i) {
+    SPDLOG_INFO(FMT_STRING("preprocessing chunk #{}..."), i + 1);
+    PairsAggregator<float>{hf.bins(resolution), format, offset}.read_next_chunk(buffer);
+
+    if (buffer.empty()) {
+      assert(std::cin.eof());
+      break;
+    }
+
+    hf.add_pixels(resolution, buffer.begin(), buffer.end());
+    SPDLOG_INFO(FMT_STRING("done preprocessing chunk #{}"), i + 1);
   }
-
-  hf.add_pixels(resolution, buffer.begin(), buffer.end());
 
   hf.serialize();
   const auto stats = hf.stats(resolution);

@@ -131,7 +131,7 @@ void Cli::validate_load_subcommand() const {
         FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_path));
   }
 
-  if (c.path_to_bin_table.empty()) {
+  if (c.path_to_bin_table.empty() && c.bin_size == 0) {
     assert(c.bin_size == 0);
     errors.emplace_back("--bin-size is required when --bin-table is not specified.");
   }

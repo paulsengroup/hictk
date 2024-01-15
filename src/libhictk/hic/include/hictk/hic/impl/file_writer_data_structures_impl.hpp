@@ -100,6 +100,12 @@ inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clea
 }
 
 template <typename N>
+inline bool MatrixInteractionBlock<N>::PixelCoordCmp::operator()(
+    const Pixel<N> &p1, const Pixel<N> &p2) const noexcept {
+  return p1.coords < p2.coords;
+}
+
+template <typename N>
 inline std::size_t MatrixInteractionBlock<N>::size() const noexcept {
   return static_cast<std::size_t>(nRecords);
 }
@@ -120,20 +126,20 @@ inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   binRowOffset = std::min(binRowOffset, row);
   binColumnOffset = std::min(binColumnOffset, col);
 
-  auto it = _interactions.find(row);
-  if (it != _interactions.end()) {
-    it->second.push_back(std::move(p));
+  auto match1 = _interactions.find(row);
+  if (match1 != _interactions.end()) {
+    auto &pixels = match1->second;
+    auto [it, inserted] = pixels.emplace(p);
+    if (!inserted) {
+      it->count += p.count;
+    }
   } else {
-    _interactions.emplace(row, std::vector<Pixel<float>>{std::move(p)});
+    _interactions.emplace(row, Row{std::move(p)});
   }
 }
 
 template <typename N>
 inline void MatrixInteractionBlock<N>::finalize() {
-  for (auto &[_, v] : _interactions) {
-    std::sort(v.begin(), v.end());
-  }
-
   // TODO tweak
   useFloatContact = 1;
   useIntXPos = 1;

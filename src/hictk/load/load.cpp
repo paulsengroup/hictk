@@ -21,6 +21,7 @@
 #include "hictk/hic/file_writer.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
 
@@ -95,8 +96,10 @@ static Stats ingest_pairs_cooler(const LoadConfig& c) {
                   ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
                   : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
+
+  internal::TmpDir tmpdir{c.tmp_dir};
   const auto tmp_cooler_path =
-      (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
+      (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
   return ingest_pairs_cooler(c.output_path, tmp_cooler_path, bins, c.offset, format, c.batch_size,
                              c.force, c.count_as_float, c.validate_pixels);

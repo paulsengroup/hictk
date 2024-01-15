@@ -72,7 +72,10 @@ template <typename N = float>
 struct MatrixInteractionBlock {
  private:
   using RowID = std::int32_t;
-  using Row = std::vector<Pixel<N>>;
+  struct PixelCoordCmp {
+    [[nodiscard]] bool operator()(const Pixel<N>& p1, const Pixel<N>& p2) const noexcept;
+  };
+  using Row = phmap::btree_set<Pixel<N>, PixelCoordCmp>;
 
  public:
   std::int32_t nRecords{};
