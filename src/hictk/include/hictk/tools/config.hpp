@@ -54,7 +54,7 @@ struct ConvertConfig {
   std::vector<balancing::Method> normalization_methods{};
   bool fail_if_normalization_method_is_not_avaliable{false};
 
-  std::uint8_t zlib_compression_lvl{9};
+  std::uint32_t compression_lvl{6};
   std::size_t threads{2};
   std::size_t chunk_size{10'000'000};
 
@@ -123,7 +123,7 @@ struct LoadConfig {
   std::string output_format{};
 
   std::size_t threads{1};
-  std::int32_t compression_lvl{9};
+  std::uint32_t compression_lvl{9};
 
   std::uint8_t verbosity{4};
   std::size_t batch_size{20'000'000};
@@ -135,6 +135,7 @@ struct MergeConfig {
   std::filesystem::path tmp_dir{};
 
   std::size_t chunk_size{5'000'000};
+  std::uint32_t compression_lvl{6};
 
   bool force{false};
   std::uint8_t verbosity{4};
@@ -162,6 +163,8 @@ struct ZoomifyConfig {
   std::vector<std::uint32_t> resolutions{};
   bool copy_base_resolution{true};
   bool nice_resolution_steps{true};
+
+  std::uint32_t compression_lvl{6};
 
   bool force{false};
   std::uint8_t verbosity{4};

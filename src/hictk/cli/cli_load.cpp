@@ -106,6 +106,13 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_option(
+      "-l,--compression-lvl",
+      c.compression_lvl,
+      "Compression level used to compress interactions.\n"
+      "Defaults to 6 and 12 for .cool and .hic files, respectively.")
+      ->check(CLI::Bound(1, 12));
+
+  sc.add_option(
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
@@ -184,6 +191,10 @@ void Cli::transform_args_load_subcommand() {
   }
 
   c.tmp_dir /= (std::filesystem::path(c.output_path).filename().string() + ".tmp");
+
+  if (sc.get_option("--compression-lvl")->empty()) {
+    c.compression_lvl = c.output_format == "cool" ? 6 : 12;
+  }
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

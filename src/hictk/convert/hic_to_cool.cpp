@@ -153,19 +153,23 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
 
 [[nodiscard]] static cooler::File init_cooler(cooler::RootGroup entrypoint,
                                               std::uint32_t resolution, std::string_view genome,
-                                              const Reference& chroms) {
+                                              const Reference& chroms,
+                                              std::uint32_t compression_lvl) {
   auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs);
+  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs,
+                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,
-                                              std::string_view genome, const Reference& chroms) {
+                                              std::string_view genome, const Reference& chroms,
+                                              std::uint32_t compression_lvl) {
   auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(uri, chroms, resolution, true, attrs);
+  return cooler::File::create(uri, chroms, resolution, true, attrs,
+                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
@@ -363,7 +367,9 @@ void hic_to_cool(const ConvertConfig& c) {
 
   if (c.resolutions.size() == 1) {
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms),
+        hf,
+        init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms,
+                    c.compression_lvl),
         c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     return;
   }
@@ -375,8 +381,8 @@ void hic_to_cool(const ConvertConfig& c) {
     auto attrs = cooler::Attributes::init(res);
     attrs.assembly = c.genome.empty() ? "unknown" : std::string{c.genome};
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms), c.normalization_methods,
-        c.fail_if_normalization_method_is_not_avaliable);
+        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms, c.compression_lvl),
+        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     hf.clear_cache();
   });
 }

@@ -107,9 +107,10 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
-      "-l,--compression-level",
-      c.zlib_compression_lvl,
-      "Compression level used to compress interaction blocks.")
+      "-l,--compression-lvl",
+      c.compression_lvl,
+      "Compression level used to compress interactions.\n"
+      "Defaults to 6 and 12 for .cool and .hic files, respectively.")
       ->check(CLI::Range(1, 12))
       ->capture_default_str();
   sc.add_flag(
@@ -208,6 +209,7 @@ void Cli::validate_convert_subcommand() const {
 
 void Cli::transform_args_convert_subcommand() {
   auto& c = std::get<ConvertConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("convert");
 
   c.input_format = infer_input_format(c.path_to_input);
   if (c.output_format.empty()) {
@@ -232,6 +234,10 @@ void Cli::transform_args_convert_subcommand() {
 
   c.tmp_dir /= c.path_to_output.filename();
   c.tmp_dir.replace_extension(".tmp");
+
+  if (sc.get_option("--compression-lvl")->empty()) {
+    c.compression_lvl = c.output_format == "hic" ? 12 : 6;
+  }
 }
 
 }  // namespace hictk::tools

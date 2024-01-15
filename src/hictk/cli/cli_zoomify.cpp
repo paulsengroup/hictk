@@ -75,6 +75,14 @@ void Cli::make_zoomify_subcommand() {
       ->default_str("--nice-steps");
 
   sc.add_option(
+      "-l,--compression-lvl",
+      c.compression_lvl,
+      "Compression level used to compress interactions.")
+      ->check(CLI::Bound(1, 9))
+      ->capture_default_str();
+
+
+  sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")

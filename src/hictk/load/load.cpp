@@ -85,12 +85,13 @@ static Stats ingest_pixels_cooler(const LoadConfig& c) {
   const auto tmp_cooler_path =
       (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
-  return c.assume_sorted ? ingest_pixels_sorted_cooler(c.output_path, chroms, c.bin_size, c.offset,
-                                                       format, c.batch_size, c.force,
-                                                       c.count_as_float, c.validate_pixels)
-                         : ingest_pixels_unsorted_cooler(
-                               c.output_path, tmp_cooler_path, chroms, c.bin_size, c.offset, format,
-                               c.batch_size, c.force, c.count_as_float, c.validate_pixels);
+  return c.assume_sorted
+             ? ingest_pixels_sorted_cooler(c.output_path, chroms, c.bin_size, c.offset, format,
+                                           c.batch_size, c.compression_lvl, c.force,
+                                           c.count_as_float, c.validate_pixels)
+             : ingest_pixels_unsorted_cooler(c.output_path, tmp_cooler_path, chroms, c.bin_size,
+                                             c.offset, format, c.batch_size, c.compression_lvl,
+                                             c.force, c.count_as_float, c.validate_pixels);
 }
 
 static Stats ingest_pairs_cooler(const LoadConfig& c) {
@@ -104,7 +105,7 @@ static Stats ingest_pairs_cooler(const LoadConfig& c) {
       (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
   return ingest_pairs_cooler(c.output_path, tmp_cooler_path, bins, c.offset, format, c.batch_size,
-                             c.force, c.count_as_float, c.validate_pixels);
+                             c.compression_lvl, c.force, c.count_as_float, c.validate_pixels);
 }
 
 static Stats ingest_pairs_hic(const LoadConfig& c) {

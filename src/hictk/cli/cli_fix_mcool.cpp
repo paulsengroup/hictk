@@ -83,7 +83,7 @@ void Cli::make_fix_mcool_subcommand() {
       ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
-      "-l,--compression-level",
+      "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).")
       ->check(CLI::Range(0, 19))
@@ -116,9 +116,9 @@ void Cli::validate_fix_mcool_subcommand() const {
     if (!sc->get_option("--in-memory")->empty()) {
       warnings.emplace_back("option --in-memory is ignored when --skip-balancing is provided.");
     }
-    if (!sc->get_option("--compression-level")->empty()) {
+    if (!sc->get_option("--compression-lvl")->empty()) {
       warnings.emplace_back(
-          "option --compression-level is ignored when --skip-balancing is provided.");
+          "option --compression-lvl is ignored when --skip-balancing is provided.");
     }
     if (!sc->get_option("--chunk-size")->empty()) {
       warnings.emplace_back("option --chunk-size is ignored when --skip-balancing is provided.");

@@ -15,7 +15,7 @@ static Stats ingest_pixels_hic(std::string_view uri, const std::filesystem::path
                                const Reference& chromosomes, std::uint32_t bin_size,
                                const std::string& assembly, std::int64_t offset, Format format,
                                std::size_t threads, std::size_t batch_size,
-                               std::int32_t compression_lvl, bool force) {
+                               std::uint32_t compression_lvl, bool force) {
   SPDLOG_INFO(FMT_STRING("begin loading pixels into a .hic file..."));
 
   if (force) {
@@ -44,7 +44,7 @@ inline Stats ingest_pairs_hic(std::string_view uri, const std::filesystem::path&
                               const Reference& chromosomes, std::uint32_t bin_size,
                               const std::string& assembly, std::int64_t offset, Format format,
                               std::size_t threads, std::size_t batch_size,
-                              std::int32_t compression_lvl, bool force) {
+                              std::uint32_t compression_lvl, bool force) {
   if (force) {
     std::filesystem::remove(uri);
   }

@@ -26,8 +26,8 @@ namespace hictk::tools {
 inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_view tmp_cooler_path,
                                            const Reference& chromosomes, std::uint32_t bin_size,
                                            std::int64_t offset, Format format,
-                                           std::size_t batch_size, bool force, bool count_as_float,
-                                           bool validate_pixels) {
+                                           std::size_t batch_size, std::uint32_t compression_lvl,
+                                           bool force, bool count_as_float, bool validate_pixels) {
   SPDLOG_INFO(FMT_STRING("begin loading unsorted pixels into a .cool file..."));
   const BinTable bins(chromosomes, bin_size);
   PixelBuffer write_buffer{};
@@ -47,7 +47,9 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
             const auto partial_stats = ingest_pixels_unsorted(
-                tmp_clr.create_cell<N>(fmt::to_string(i)), buffer, format, offset, validate_pixels);
+                tmp_clr.create_cell<N>(fmt::to_string(i), cooler::Attributes::init(bins.bin_size()),
+                                       cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl),
+                buffer, format, offset, validate_pixels);
             local_stats += partial_stats;
             SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
                         tmp_cooler_path);
@@ -58,7 +60,7 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
         }
         const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
         SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), uri);
-        tmp_clr.aggregate<N>(uri, force);
+        tmp_clr.aggregate<N>(uri, force, compression_lvl);
 
         return local_stats;
       },
@@ -70,23 +72,27 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
 
 inline Stats ingest_pixels_sorted_cooler(std::string_view uri, const Reference& chromosomes,
                                          std::uint32_t bin_size, std::int64_t offset, Format format,
-                                         std::size_t batch_size, bool force, bool count_as_float,
-                                         bool validate_pixels) {
+                                         std::size_t batch_size, std::uint32_t compression_lvl,
+                                         bool force, bool count_as_float, bool validate_pixels) {
   SPDLOG_INFO(FMT_STRING("begin loading pre-sorted pixels into a .cool file..."));
   if (count_as_float) {
     return ingest_pixels_sorted<double>(
-        cooler::File::create<double>(uri, chromosomes, bin_size, force), format, offset, batch_size,
-        validate_pixels);
+        cooler::File::create<double>(uri, chromosomes, bin_size, force,
+                                     cooler::Attributes::init(bin_size),
+                                     cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl),
+        format, offset, batch_size, validate_pixels);
   }
   return ingest_pixels_sorted<std::int32_t>(
-      cooler::File::create<std::int32_t>(uri, chromosomes, bin_size, force), format, offset,
-      batch_size, validate_pixels);
+      cooler::File::create<std::int32_t>(uri, chromosomes, bin_size, force,
+                                         cooler::Attributes::init(bin_size),
+                                         cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl),
+      format, offset, batch_size, validate_pixels);
 }
 
 inline Stats ingest_pairs_cooler(std::string_view uri, std::string_view tmp_cooler_path,
                                  const BinTable& bins, std::int64_t offset, Format format,
-                                 std::size_t batch_size, bool force, bool count_as_float,
-                                 bool validate_pixels) {
+                                 std::size_t batch_size, std::uint32_t compression_lvl, bool force,
+                                 bool count_as_float, bool validate_pixels) {
   PixelBuffer write_buffer{};
   if (count_as_float) {
     write_buffer = FPBuff{};
@@ -103,9 +109,10 @@ inline Stats ingest_pairs_cooler(std::string_view uri, std::string_view tmp_cool
           for (std::size_t i = 0; true; ++i) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
-            const auto partial_stats =
-                ingest_pairs(tmp_clr.create_cell<N>(fmt::to_string(i)), buffer, batch_size, format,
-                             offset, validate_pixels);
+            const auto partial_stats = ingest_pairs(
+                tmp_clr.create_cell<N>(fmt::to_string(i), cooler::Attributes::init(bins.bin_size()),
+                                       cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl),
+                buffer, batch_size, format, offset, validate_pixels);
 
             SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
                         tmp_cooler_path);

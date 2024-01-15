@@ -130,7 +130,7 @@ void Cli::make_balance_subcommand() {
       ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
-      "-l,--compression-level",
+      "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
       ->check(CLI::Range(0, 19))

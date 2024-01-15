@@ -53,7 +53,7 @@ void cool_to_hic(const ConvertConfig& c) {
   };
 
   hictk::hic::internal::HiCFileWriter w(std::move(header), c.threads, c.chunk_size, c.tmp_dir,
-                                        c.zlib_compression_lvl);
+                                        c.compression_lvl);
   if (c.input_format == "cool") {
     w.add_pixels(base_clr.bin_size(), base_clr.begin<float>(), base_clr.end<float>());
   } else {
