@@ -100,17 +100,22 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_option(
+      "--batch-size",
+      c.batch_size,
+      "Number of pixels to buffer in memory.")
+      ->capture_default_str();
+
+  sc.add_option(
+      "--tmpdir",
+      c.tmp_dir,
+      "Path to a folder where to store temporary data.")
+      ->capture_default_str();
+
+  sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")
       ->check(CLI::Range(1, 4))
-      ->capture_default_str();
-
-  sc.add_option(
-      "--batch-size",
-      c.batch_size,
-      "Number of pixels to buffer in memory.\n"
-      "Only used when processing unsorted interactions or pairs.")
       ->capture_default_str();
   // clang-format on
 
@@ -178,10 +183,7 @@ void Cli::transform_args_load_subcommand() {
     c.offset = c.one_based ? -1 : 0;
   }
 
-  if (c.tmp_dir.empty()) {
-    c.tmp_dir = std::filesystem::temp_directory_path() /
-                (std::filesystem::path(c.output_path).filename().string() + ".tmp");
-  }
+  c.tmp_dir /= (std::filesystem::path(c.output_path).filename().string() + ".tmp");
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

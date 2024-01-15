@@ -108,7 +108,7 @@ struct LoadConfig {
 
   std::filesystem::path path_to_chrom_sizes{};
   std::filesystem::path path_to_bin_table{};
-  std::filesystem::path tmp_dir{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
   std::uint32_t bin_size{};
 
   std::string format{};

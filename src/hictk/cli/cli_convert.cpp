@@ -88,6 +88,12 @@ void Cli::make_convert_subcommand() {
       c.tmp_dir,
       "Path where to store temporary files.");
   sc.add_option(
+      "--batch-size",
+      c.chunk_size,
+      "Batch size to use when converting .[m]cool to .hic.")
+      ->check(CLI::PositiveNumber)
+      ->capture_default_str();
+  sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")
