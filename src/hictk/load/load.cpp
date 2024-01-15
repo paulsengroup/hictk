@@ -80,6 +80,8 @@ static Stats ingest_pixels_cooler(const LoadConfig& c) {
   assert(c.output_format == "cool");
   const auto format = format_from_string(c.format);
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+
+  const internal::TmpDir tmpdir{c.tmp_dir};
   const auto tmp_cooler_path =
       (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
@@ -97,7 +99,7 @@ static Stats ingest_pairs_cooler(const LoadConfig& c) {
                   : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
 
-  internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir};
   const auto tmp_cooler_path =
       (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 

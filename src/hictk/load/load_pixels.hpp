@@ -119,6 +119,7 @@ template <typename N>
       hf.add_pixels(bins.bin_size(), buffer.begin(), buffer.end());
       buffer.clear();
     }
+    hf.serialize();
     assert(buffer.empty());
     return stats;
   } catch (const std::exception& e) {

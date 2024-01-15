@@ -46,11 +46,12 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
           for (std::size_t i = 0; true; ++i) {
             SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
                         tmp_cooler_path);
-            local_stats += ingest_pixels_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)), buffer,
-                                                  format, offset, validate_pixels);
+            const auto partial_stats = ingest_pixels_unsorted(
+                tmp_clr.create_cell<N>(fmt::to_string(i)), buffer, format, offset, validate_pixels);
+            local_stats += partial_stats;
             SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
                         tmp_cooler_path);
-            if (local_stats.nnz == 0) {
+            if (partial_stats.nnz == 0) {
               break;
             }
           }
