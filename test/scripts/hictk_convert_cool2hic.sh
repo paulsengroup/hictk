@@ -30,7 +30,7 @@ function check_files_exist {
   return "$status"
 }
 
-function compare_coolers {
+function compare_files {
   set -o pipefail
   set -eu
 
@@ -56,13 +56,12 @@ export function readlink_py
 
 status=0
 
-if [ $# -ne 2 ]; then
-  2>&1 echo "Usage: $0 path_to_hictk juicer_tools.jar"
+if [ $# -ne 1 ]; then
+  2>&1 echo "Usage: $0 path_to_hictk"
   status=1
 fi
 
 hictk_bin="$1"
-juicer_tools_jar="$2"
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -71,7 +70,7 @@ ref_cool="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
 
 export PATH="$PATH:$script_dir"
 
-if ! check_files_exist "$ref_cool" "$juicer_tools_jar"; then
+if ! check_files_exist "$ref_cool"; then
   exit 1
 fi
 
@@ -84,10 +83,11 @@ resolutions=(100000 2500000)
              "$ref_cool" \
              "$outdir/out.hic" \
              --resolutions ${resolutions[*]} \
-             --juicer-tools-jar "$juicer_tools_jar"
+             --threads "$(nproc)" \
+             --batch-size 100000
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_coolers "$hictk_bin" "$outdir/out.hic" "$ref_cool" "$resolution"; then
+  if ! compare_files "$hictk_bin" "$outdir/out.hic" "$ref_cool" "$resolution"; then
     status=1
   fi
 done

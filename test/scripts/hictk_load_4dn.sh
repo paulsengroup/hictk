@@ -30,17 +30,41 @@ function check_files_exist {
   return "$status"
 }
 
-function compare_coolers {
+function compare_files_fixed_bins {
   set -o pipefail
-  set -e
+  set -eu
 
-  2>&1 echo "Comparing $1 with $2..."
-  if diff <(cooler dump -t chroms "$1") \
-          <(cooler dump -t chroms "$2") \
-     && \
-     diff <(cooler dump --join "$1") \
-          <(cooler dump --join "$2");
-  then
+  hictk="$1"
+  resolution="${4}"
+  f1="$2"
+  f2="$3"
+
+  2>&1 echo "Comparing $f1 with $f2..."
+  if diff <("$hictk" dump --join "$f1"   \
+                          --resolution   \
+                          "$resolution") \
+          <("$hictk" dump --join "$f2"   \
+                          --resolution   \
+                          "$resolution"); then
+    2>&1 echo "Files are identical"
+    return 0
+  else
+    2>&1 echo "Files differ"
+    return 1
+  fi
+}
+
+function compare_files_variable_bins {
+  set -o pipefail
+  set -eu
+
+  hictk="$1"
+  f1="$2"
+  f2="$3"
+
+  2>&1 echo "Comparing $f1 with $f2..."
+  if diff <("$hictk" dump --join "$f1") \
+          <("$hictk" dump --join "$f2"); then
     2>&1 echo "Files are identical"
     return 0
   else
@@ -69,15 +93,6 @@ ref_cooler_variable_bins="$data_dir/4DNFIKNWM36K.subset.variable-bins.cool"
 
 export PATH="$PATH:$script_dir"
 
-if ! command -v cooler &> /dev/null; then
-  2>&1 echo "Unable to find cooler in your PATH"
-  status=1
-fi
-
-# Try to detect the error outlined below as early as possible:
-# https://github.com/open2c/cooler/pull/298
-cooler --help > /dev/null
-
 if ! command -v xz &> /dev/null; then
   2>&1 echo "Unable to find xz in your PATH"
   status=1
@@ -94,6 +109,8 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
+resolution=10000
+
 cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 
 # Test cooler with fixed bin size
@@ -102,11 +119,12 @@ xzcat "$pairs" |
     -f 4dn \
     --assume-sorted \
     --batch-size 1000000 \
-    --bin-size 10000 \
+    --bin-size "$resolution" \
+    --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
     "$outdir/out.cool"
 
-if ! compare_coolers "$outdir/out.cool" "$ref_cooler_fixed_bins"; then
+if ! compare_files_fixed_bins "$hictk_bin" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 
@@ -120,10 +138,27 @@ xzcat "$pairs" |
     --batch-size 1000000 \
     --bin-table "$outdir/bins.bed" \
     --force \
+    --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
     "$outdir/out.cool"
 
-if ! compare_coolers "$outdir/out.cool" "$ref_cooler_variable_bins"; then
+if ! compare_files_variable_bins "$hictk_bin" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
+  status=1
+fi
+
+
+# Test hic with fixed bin size
+xzcat "$pairs" |
+  "$hictk_bin" load \
+    -f 4dn \
+    --assume-sorted \
+    --batch-size 1000000 \
+    --bin-size "$resolution" \
+    --tmpdir "$outdir" \
+    "$outdir/chrom.sizes" \
+    "$outdir/out.hic"
+
+if ! compare_files_fixed_bins "$hictk_bin" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 
