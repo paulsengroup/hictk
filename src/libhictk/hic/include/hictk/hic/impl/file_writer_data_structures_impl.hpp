@@ -117,7 +117,6 @@ inline double MatrixInteractionBlock<N>::sum() const noexcept {
 
 template <typename N>
 inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
-  nRecords++;
   _sum += conditional_static_cast<double>(p.count);
 
   const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
@@ -130,10 +129,12 @@ inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   if (match1 != _interactions.end()) {
     auto &pixels = match1->second;
     auto [it, inserted] = pixels.emplace(p);
+    nRecords += inserted;
     if (!inserted) {
       it->count += p.count;
     }
   } else {
+    nRecords++;
     _interactions.emplace(row, Row{std::move(p)});
   }
 }
