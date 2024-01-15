@@ -164,6 +164,14 @@ inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noex
   return _header->resolutions;
 }
 
+inline auto HiCFileWriter::stats(std::uint32_t resolution) const -> Stats {
+  auto match = _stats.find(resolution);
+  if (match != _stats.end()) {
+    return match->second;
+  }
+  return {};
+}
+
 inline void HiCFileWriter::serialize() {
   write_header();
   write_pixels();
@@ -629,18 +637,24 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix ({} resolution) at offset {}..."),
                chrom1.name(), chrom2.name(), resolution, offset);
 
-  [[maybe_unused]] const auto pixels_written = write_interaction_blocks(chrom1, chrom2, resolution);
+  const auto stats = write_interaction_blocks(chrom1, chrom2, resolution);
 
-  SPDLOG_DEBUG(FMT_STRING("written {} pixels for {}:{} matrix at {} resolution"), pixels_written,
+  SPDLOG_DEBUG(FMT_STRING("written {} pixels for {}:{} matrix at {} resolution"), stats.nnz,
                chrom1.name(), chrom2.name(), resolution);
+
+  auto [it, inserted] = _stats.try_emplace(resolution, stats);
+  if (!inserted) {
+    it->second.sum += stats.sum;
+    it->second.nnz += stats.nnz;
+  }
 
   _data_block_section.size() += _fs->tellp() - static_cast<std::size_t>(offset);
   return {offset, _fs->tellp() - static_cast<std::size_t>(offset)};
 }
 
-inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
-                                                           const Chromosome &chrom2,
-                                                           std::uint32_t resolution) {
+inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
+                                                    const Chromosome &chrom2,
+                                                    std::uint32_t resolution) -> Stats {
   auto &mapper = _block_mappers.at(resolution);
   mapper.finalize();
 
@@ -648,18 +662,19 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
   if (block_ids == mapper.chromosome_index().end()) {
     SPDLOG_DEBUG(FMT_STRING("no pixels to write for {}:{} matrix at {} resolution"), chrom1.name(),
                  chrom2.name(), resolution);
-    return 0;
+    return {};
   }
 
   if (_tpool.get_thread_count() < 3 || block_ids->second.size() == 1) {
-    std::size_t pixels_written = 0;
+    Stats stats{};
     for (const auto &bid : block_ids->second) {
       auto blk = mapper.merge_blocks(bid);
-      pixels_written += static_cast<std::size_t>(blk.nRecords);
+      stats.sum += blk.sum();
+      stats.nnz += blk.size();
       write_interaction_block(bid.bid, chrom1, chrom2, resolution, std::move(blk));
     }
 
-    return pixels_written;
+    return stats;
   }
 
   std::mutex block_id_queue_mtx{};
@@ -674,7 +689,7 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
 
   std::mutex mapper_mtx{};
 
-  std::vector<std::future<std::size_t>> worker_threads{};
+  std::vector<std::future<Stats>> worker_threads{};
   for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
     worker_threads.emplace_back(_tpool.submit([&]() {
       return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
@@ -711,9 +726,12 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
   });
 
   producer.get();
-  std::size_t pixels_written = 0;
+
+  Stats stats{};
   for (auto &worker : worker_threads) {
-    pixels_written += worker.get();
+    const auto partial_stats = worker.get();
+    stats.sum += partial_stats.sum;
+    stats.nnz += partial_stats.nnz;
   }
   // signal no more blocks will be enqueued
   {
@@ -722,7 +740,7 @@ inline std::size_t HiCFileWriter::write_interaction_blocks(const Chromosome &chr
   }
   writer.get();
 
-  return pixels_written;
+  return stats;
 }
 
 inline auto HiCFileWriter::write_interaction_block(std::uint64_t block_id, const Chromosome &chrom1,
@@ -765,13 +783,13 @@ inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &c
                        : HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
 }
 
-inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
+inline auto HiCFileWriter::merge_and_compress_blocks_thr(
     HiCInteractionToBlockMapper &mapper, std::mutex &mapper_mtx,
     std::queue<std::uint64_t> &block_id_queue, std::mutex &block_id_queue_mtx,
     moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> &block_queue,
     phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
     std::mutex &serialized_block_tank_mtx, std::atomic<bool> &early_return,
-    std::uint64_t stop_token) {
+    std::uint64_t stop_token) -> Stats {
   SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks thread: start-up..."));
   try {
     HiCInteractionToBlockMapper::BlockID buffer{};
@@ -781,7 +799,7 @@ inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
         libdeflate_alloc_compressor(_compression_lvl));
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
-    std::size_t pixels_processed = 0;
+    Stats stats{};
     while (!early_return) {
       // dequeue block
       if (!block_queue.wait_dequeue_timed(buffer, std::chrono::milliseconds(500))) {
@@ -790,7 +808,7 @@ inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
       if (buffer.bid == stop_token) {
         SPDLOG_DEBUG(
             FMT_STRING("merge_and_compress_blocks thread: processed all blocks. Returning!"));
-        return pixels_processed;
+        return stats;
       }
 
       SPDLOG_DEBUG(
@@ -798,7 +816,8 @@ inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
           buffer.bid);
       // read and merge partial blocks
       auto blk = mapper.merge_blocks(buffer, bbuffer, *zstd_dctx, compression_buffer, mapper_mtx);
-      pixels_processed += static_cast<std::size_t>(blk.nRecords);
+      stats.nnz += blk.size();
+      stats.sum += blk.sum();
 
       // compress and serialize block
       std::ignore = blk.serialize(bbuffer, *libdeflate_compressor, compression_buffer);
@@ -811,7 +830,7 @@ inline std::size_t HiCFileWriter::merge_and_compress_blocks_thr(
       block_id_queue.emplace(buffer.bid);
     }
 
-    return pixels_processed;
+    return stats;
   } catch (...) {
     early_return = true;
     throw;

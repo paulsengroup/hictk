@@ -104,10 +104,11 @@ struct FixMcoolConfig {
 };
 
 struct LoadConfig {
-  std::string uri{};
+  std::string output_path{};
 
   std::filesystem::path path_to_chrom_sizes{};
   std::filesystem::path path_to_bin_table{};
+  std::filesystem::path tmp_dir{};
   std::uint32_t bin_size{};
 
   std::string format{};
@@ -118,6 +119,11 @@ struct LoadConfig {
   bool assume_sorted{false};
   bool force{false};
   bool validate_pixels{true};
+
+  std::string output_format{};
+
+  std::size_t threads{1};
+  std::int32_t compression_lvl{9};
 
   std::uint8_t verbosity{4};
   std::size_t batch_size{20'000'000};

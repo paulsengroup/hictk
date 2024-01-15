@@ -83,6 +83,9 @@ struct MatrixInteractionBlock {
   std::uint8_t useIntYPos{};
   std::uint8_t matrixRepresentation{};
 
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] double sum() const noexcept;
+
   void emplace_back(Pixel<N>&& p);
   void finalize();
 
@@ -91,6 +94,7 @@ struct MatrixInteractionBlock {
                                       std::string& compression_buffer, bool clear = true) const;
 
  private:
+  double _sum{};
   phmap::btree_map<RowID, Row> _interactions;
 };
 

@@ -23,7 +23,8 @@ namespace hictk::tools {
 
 void Cli::make_load_subcommand() {
   auto& sc =
-      *_cli.add_subcommand("load", "Build .cool files from interactions in various text formats.")
+      *_cli.add_subcommand("load",
+                           "Build .cool and .hic files from interactions in various text formats.")
            ->fallthrough()
            ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
              assert(_config.index() == 0);
@@ -42,9 +43,9 @@ void Cli::make_load_subcommand() {
       ->required();
 
   sc.add_option(
-      "output-uri",
-      c.uri,
-      "Path to output Cooler (URI syntax supported).")
+      "output-path",
+      c.output_path,
+      "Path to output file.")
       ->required();
 
   sc.add_option(
@@ -125,14 +126,19 @@ void Cli::validate_load_subcommand() const {
   const auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
 
-  if (!c.force && std::filesystem::exists(c.uri)) {
+  if (!c.force && std::filesystem::exists(c.output_path)) {
     errors.emplace_back(fmt::format(
-        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_path));
   }
 
-  if (c.path_to_bin_table.empty() && c.path_to_chrom_sizes.empty()) {
+  if (c.path_to_bin_table.empty()) {
     assert(c.bin_size == 0);
     errors.emplace_back("--bin-size is required when --bin-table is not specified.");
+  }
+
+  const auto output_format = infer_output_format(c.output_path);
+  if (!c.path_to_bin_table.empty() && output_format == "hic") {
+    errors.emplace_back("--bin-table is not supported when generating .hic files.");
   }
 
   if ((c.format == "bg2" || c.format == "coo") && !sc.get_option("--bin-table")->empty()) {
@@ -162,12 +168,19 @@ void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
 
+  c.output_format = infer_output_format(c.output_path);
+
   if (sc.get_option("--one-based")->empty()) {
     if (c.format == "4dn" || c.format == "validpairs") {
       c.offset = -1;
     }
   } else {
     c.offset = c.one_based ? -1 : 0;
+  }
+
+  if (c.tmp_dir.empty()) {
+    c.tmp_dir = std::filesystem::temp_directory_path() /
+                (std::filesystem::path(c.output_path).filename().string() + ".tmp");
   }
 
   // in spdlog, high numbers correspond to low log levels

@@ -14,10 +14,11 @@
 #include <vector>
 
 #include "./common.hpp"
-#include "./load_pairs.hpp"
-#include "./load_pixels.hpp"
+#include "./load_cooler.hpp"
+#include "./load_hic.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"
+#include "hictk/hic/file_writer.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/tools/config.hpp"
@@ -67,106 +68,62 @@ namespace hictk::tools {
   return {chroms, start_pos, end_pos};
 }
 
-static void ingest_pixels_sorted(const LoadConfig& c) {
-  assert(c.assume_sorted);
+static Stats ingest_pixels_hic(const LoadConfig& c) {
+  const auto format = format_from_string(c.format);
+  const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+  return ingest_pixels_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
+                           format, c.threads, c.batch_size, c.compression_lvl, c.force);
+}
+
+static Stats ingest_pixels_cooler(const LoadConfig& c) {
+  assert(c.output_format == "cool");
+  const auto format = format_from_string(c.format);
   auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
-  const auto format = format_from_string(c.format);
+  const auto tmp_cooler_path =
+      (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
-  c.count_as_float ? ingest_pixels_sorted<double>(
-                         cooler::File::create<double>(c.uri, chroms, c.bin_size, c.force), format,
-                         c.offset, c.batch_size, c.validate_pixels)
-                   : ingest_pixels_sorted<std::int32_t>(
-                         cooler::File::create<std::int32_t>(c.uri, chroms, c.bin_size, c.force),
-                         format, c.offset, c.batch_size, c.validate_pixels);
+  return c.assume_sorted ? ingest_pixels_sorted_cooler(c.output_path, chroms, c.bin_size, c.offset,
+                                                       format, c.batch_size, c.force,
+                                                       c.count_as_float, c.validate_pixels)
+                         : ingest_pixels_unsorted_cooler(
+                               c.output_path, tmp_cooler_path, chroms, c.bin_size, c.offset, format,
+                               c.batch_size, c.force, c.count_as_float, c.validate_pixels);
 }
 
-static void ingest_pixels_unsorted(const LoadConfig& c) {
-  assert(!c.assume_sorted);
+static Stats ingest_pairs_cooler(const LoadConfig& c) {
   auto bins = c.path_to_bin_table.empty()
                   ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
                   : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
+  const auto tmp_cooler_path =
+      (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
-  const auto tmp_cooler_path = c.uri + ".tmp";
-
-  using IntBuff = std::vector<ThinPixel<std::int32_t>>;
-  using FPBuff = std::vector<ThinPixel<double>>;
-  std::variant<IntBuff, FPBuff> write_buffer{};
-  if (c.count_as_float) {
-    write_buffer = FPBuff(c.batch_size);
-  } else {
-    write_buffer = IntBuff(c.batch_size);
-  }
-
-  std::visit(
-      [&](auto& buffer) {
-        using N = decltype(buffer.front().count);
-        {
-          auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, c.force);
-          for (std::size_t i = 0; true; ++i) {
-            SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
-                        tmp_cooler_path);
-            const auto nnz = ingest_pixels_unsorted(tmp_clr.create_cell<N>(fmt::to_string(i)),
-                                                    buffer, format, c.offset, c.validate_pixels);
-            SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
-                        tmp_cooler_path);
-            if (nnz == 0) {
-              break;
-            }
-          }
-        }
-        const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
-        SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), c.uri);
-        tmp_clr.aggregate<N>(c.uri, c.force);
-      },
-      write_buffer);
-  std::filesystem::remove(tmp_cooler_path);
+  return ingest_pairs_cooler(c.output_path, tmp_cooler_path, bins, c.offset, format, c.batch_size,
+                             c.force, c.count_as_float, c.validate_pixels);
 }
 
-static void ingest_pairs(const LoadConfig& c) {
-  auto bins = c.path_to_bin_table.empty()
-                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
-                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
+static Stats ingest_pairs_hic(const LoadConfig& c) {
+  const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
-  const auto tmp_cooler_path = c.uri + ".tmp";
+  return ingest_pairs_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
+                          format, c.threads, c.batch_size, c.compression_lvl, c.force);
+}
 
-  using IntBuff = std::vector<ThinPixel<std::int32_t>>;
-  using FPBuff = std::vector<ThinPixel<double>>;
-  std::variant<IntBuff, FPBuff> write_buffer{};
-  if (c.count_as_float) {
-    write_buffer = FPBuff{};
-  } else {
-    write_buffer = IntBuff{};
+static Stats ingest_pixels(const LoadConfig& c) {
+  if (c.output_format == "hic") {
+    return ingest_pixels_hic(c);
   }
 
-  std::visit(
-      [&](auto& buffer) {
-        using N = decltype(buffer.begin()->count);
-        {
-          auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, c.force);
+  return ingest_pixels_cooler(c);
+}
 
-          for (std::size_t i = 0; true; ++i) {
-            SPDLOG_INFO(FMT_STRING("writing chunk #{} to intermediate file \"{}\"..."), i + 1,
-                        tmp_cooler_path);
-            const auto nnz = ingest_pairs(tmp_clr.create_cell<N>(fmt::to_string(i)), buffer,
-                                          c.batch_size, format, c.offset, c.validate_pixels);
+static Stats ingest_pairs(const LoadConfig& c) {
+  if (c.output_format == "hic") {
+    return ingest_pairs_hic(c);
+  }
 
-            SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1,
-                        tmp_cooler_path);
-            if (nnz == 0) {
-              break;
-            }
-          }
-        }
-
-        const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
-        SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), c.uri);
-        tmp_clr.aggregate<N>(c.uri, c.force);
-      },
-      write_buffer);
-
-  std::filesystem::remove(tmp_cooler_path);
+  return ingest_pairs_cooler(c);
 }
 
 int load_subcmd(const LoadConfig& c) {
@@ -174,28 +131,17 @@ int load_subcmd(const LoadConfig& c) {
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
   const auto t0 = std::chrono::system_clock::now();
 
-  if (c.assume_sorted && pixel_has_count) {
-    SPDLOG_INFO(FMT_STRING("begin loading presorted pixels..."));
-    ingest_pixels_sorted(c);
-  } else if (!c.assume_sorted && pixel_has_count) {
-    SPDLOG_INFO(FMT_STRING("begin loading un-sorted pixels..."));
-    ingest_pixels_unsorted(c);
-  } else if (!pixel_has_count) {
-    SPDLOG_INFO(FMT_STRING("begin loading pairs..."));
-    ingest_pairs(c);
-  }
-
-  const cooler::File clr(c.uri);
+  const auto stats = pixel_has_count ? ingest_pixels(c) : ingest_pairs(c);
 
   const auto t1 = std::chrono::system_clock::now();
   const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
   std::visit(
       [&](const auto& sum) {
-        SPDLOG_INFO(FMT_STRING("ingested {} interactions ({} nnz) in {}s!"), sum, clr.nnz(),
+        SPDLOG_INFO(FMT_STRING("ingested {} interactions ({} nnz) in {}s!"), sum, stats.nnz,
                     static_cast<double>(delta) / 1.0e9);
-      },  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-      *clr.attributes().sum);
+      },
+      stats.sum);
 
   return 0;
 }

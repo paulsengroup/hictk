@@ -100,6 +100,11 @@ class MatrixBodyMetadataTank {
 };
 
 class HiCFileWriter {
+  struct Stats {
+    double sum{};
+    std::uint64_t nnz{};
+  };
+
   std::shared_ptr<const HiCHeader> _header{};
   std::shared_ptr<filestream::FileStream> _fs{};
   std::unique_ptr<const hictk::internal::TmpDir> _tmpdir{};
@@ -112,9 +117,12 @@ class HiCFileWriter {
   BlockIndex _block_index{};
   BlockMappers _block_mappers{};
 
-  MatrixBodyMetadataTank _matrix_metadata{};
+  using StatsTank = phmap::flat_hash_map<std::uint32_t, Stats>;
   using FooterTank = phmap::btree_map<std::pair<Chromosome, Chromosome>, FooterV5>;
+
+  MatrixBodyMetadataTank _matrix_metadata{};
   FooterTank _footers{};
+  StatsTank _stats{};
 
   std::int32_t _compression_lvl{};
   BinaryBuffer _bbuffer{};
@@ -144,6 +152,7 @@ class HiCFileWriter {
   [[nodiscard]] const Reference& chromosomes() const noexcept;
   [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
   [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
+  [[nodiscard]] auto stats(std::uint32_t resolution) const -> Stats;
 
   void serialize();
 
@@ -195,8 +204,8 @@ class HiCFileWriter {
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                const Chromosome& chrom2, std::uint32_t resolution,
                                const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
-  std::size_t write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
-                                       std::uint32_t resolution);
+  auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
+                                std::uint32_t resolution) -> Stats;
 
   [[nodiscard]] std::size_t compute_block_column_count(const Chromosome& chrom1,
                                                        const Chromosome& chrom2,
@@ -205,13 +214,13 @@ class HiCFileWriter {
                                              std::uint32_t resolution);
 
   // Methods to be called from worker threads
-  std::size_t merge_and_compress_blocks_thr(
+  auto merge_and_compress_blocks_thr(
       HiCInteractionToBlockMapper& mapper, std::mutex& mapper_mtx,
       std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
       moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID>& block_queue,
       phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
       std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
-      std::uint64_t stop_token);
+      std::uint64_t stop_token) -> Stats;
   void write_compressed_blocks_thr(
       const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
       std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,

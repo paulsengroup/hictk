@@ -19,23 +19,31 @@
 #include "./common.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/hic/file_writer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {
 
 template <typename N>
-inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format,
-                       std::int64_t offset) {
+inline Stats read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format,
+                        std::int64_t offset) {
   buffer.clear();
+  Stats stats{N{}, 0};
   std::string line{};
   try {
     while (std::getline(std::cin, line)) {
       if (line_is_header(line)) {
         continue;
       }
-      buffer.emplace_back(parse_pixel<N>(bins, line, format, offset));
+      const auto& p = buffer.emplace_back(parse_pixel<N>(bins, line, format, offset));
+      stats.nnz++;
+      if constexpr (std::is_floating_point_v<N>) {
+        std::get<double>(stats.sum) += conditional_static_cast<double>(p.count);
+      } else {
+        std::get<std::uint64_t>(stats.sum) += conditional_static_cast<std::uint64_t>(p.count);
+      }
       if (buffer.size() == buffer.capacity()) {
-        return;
+        return stats;
       }
     }
   } catch (const std::exception& e) {
@@ -45,25 +53,74 @@ inline void read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, 
                                "Cause: {}"),
                     line, e.what()));
   }
+
+  return stats;
 }
 
 template <typename N>
-inline void ingest_pixels_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-                                 Format format, std::int64_t offset, std::size_t batch_size,
-                                 bool validate_pixels) {
+[[nodiscard]] inline Stats ingest_pixels_sorted(
+    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+    Format format, std::int64_t offset, std::size_t batch_size, bool validate_pixels) {
   std::vector<ThinPixel<N>> buffer(batch_size);
 
   std::size_t i = 0;
+  Stats stats{N{}, 0};
   try {
     for (; !std::cin.eof(); ++i) {
       SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
-      read_batch(clr.bins(), buffer, format, offset);
+      stats += read_batch(clr.bins(), buffer, format, offset);
       clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();
     }
-    if (!buffer.empty()) {
-      clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
+    assert(!buffer.empty());
+  } catch (const std::exception& e) {
+    const auto i0 = i * buffer.capacity();
+    const auto i1 = i0 + buffer.size();
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while processing chunk {}-{}: {}"), i0, i1, e.what()));
+  }
+
+  return stats;
+}
+
+template <typename N>
+[[nodiscard]] inline Stats ingest_pixels_unsorted(
+    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
+    std::vector<ThinPixel<N>>& buffer, Format format, std::int64_t offset, bool validate_pixels) {
+  assert(buffer.capacity() != 0);
+
+  auto stats = read_batch(clr.bins(), buffer, format, offset);
+
+  if (buffer.empty()) {
+    assert(std::cin.eof());
+    return {N{}, 0};
+  }
+
+  std::sort(buffer.begin(), buffer.end());
+  clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
+  buffer.clear();
+
+  clr.flush();
+  return stats;
+}
+
+[[nodiscard]] inline Stats ingest_pixels(
+    hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
+    std::vector<ThinPixel<float>>& buffer, Format format, std::int64_t offset) {
+  assert(buffer.capacity() != 0);
+
+  std::size_t i = 0;
+  Stats stats{0.0, 0};
+  try {
+    const auto& bins = hf.bins(hf.resolutions().front());
+    for (; !std::cin.eof(); ++i) {
+      SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
+      stats += read_batch(bins, buffer, format, offset);
+      hf.add_pixels(bins.bin_size(), buffer.begin(), buffer.end());
+      buffer.clear();
     }
+    assert(buffer.empty());
+    return stats;
   } catch (const std::exception& e) {
     const auto i0 = i * buffer.capacity();
     const auto i1 = i0 + buffer.size();
@@ -72,24 +129,4 @@ inline void ingest_pixels_sorted(cooler::File&& clr,  // NOLINT(*-rvalue-referen
   }
 }
 
-template <typename N>
-[[nodiscard]] inline std::size_t ingest_pixels_unsorted(
-    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, Format format, std::int64_t offset, bool validate_pixels) {
-  assert(buffer.capacity() != 0);
-
-  read_batch(clr.bins(), buffer, format, offset);
-
-  if (buffer.empty()) {
-    assert(std::cin.eof());
-    return {};
-  }
-
-  std::sort(buffer.begin(), buffer.end());
-  clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
-
-  clr.flush();
-  return clr.nnz();
-}
 }  // namespace hictk::tools

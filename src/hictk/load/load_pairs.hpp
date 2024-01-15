@@ -119,24 +119,4 @@ class PairsAggregator {
   }
 };
 
-template <typename N>
-[[nodiscard]] inline std::uint64_t ingest_pairs(cooler::File&& clr,
-                                                std::vector<ThinPixel<N>>& buffer,
-                                                std::size_t batch_size, Format format,
-                                                std::int64_t offset, bool validate_pixels) {
-  buffer.reserve(batch_size);
-  PairsAggregator<N>{clr.bins(), format, offset}.read_next_chunk(buffer);
-
-  if (buffer.empty()) {
-    assert(std::cin.eof());
-    return {};
-  }
-
-  clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
-
-  clr.flush();
-  return clr.nnz();
-}
-
 }  // namespace hictk::tools

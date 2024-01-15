@@ -100,8 +100,19 @@ inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clea
 }
 
 template <typename N>
+inline std::size_t MatrixInteractionBlock<N>::size() const noexcept {
+  return static_cast<std::size_t>(nRecords);
+}
+
+template <typename N>
+inline double MatrixInteractionBlock<N>::sum() const noexcept {
+  return _sum;
+}
+
+template <typename N>
 inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   nRecords++;
+  _sum += conditional_static_cast<double>(p.count);
 
   const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
   const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
