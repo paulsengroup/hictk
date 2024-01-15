@@ -64,27 +64,7 @@ inline Stats ingest_pairs_hic(std::string_view uri, const std::filesystem::path&
   hic::internal::HiCFileWriter hf(std::move(header), threads, batch_size, tmp_dir, compression_lvl);
 
   std::vector<ThinPixel<float>> buffer(batch_size);
-
-  const auto resolution = hf.resolutions().front();
-  assert(buffer.capacity() != 0);
-  buffer.reserve(buffer.capacity());
-
-  for (std::size_t i = 0; true; ++i) {
-    SPDLOG_INFO(FMT_STRING("preprocessing chunk #{}..."), i + 1);
-    PairsAggregator<float>{hf.bins(resolution), format, offset}.read_next_chunk(buffer);
-
-    if (buffer.empty()) {
-      assert(std::cin.eof());
-      break;
-    }
-
-    hf.add_pixels(resolution, buffer.begin(), buffer.end());
-    SPDLOG_INFO(FMT_STRING("done preprocessing chunk #{}"), i + 1);
-  }
-
-  hf.serialize();
-  const auto stats = hf.stats(resolution);
-  return {stats.sum, stats.nnz};
+  return ingest_pairs(std::move(hf), buffer, format, offset);
 }
 
 }  // namespace hictk::tools

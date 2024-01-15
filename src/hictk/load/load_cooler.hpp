@@ -68,32 +68,6 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
   return stats;
 }
 
-template <typename N>
-[[nodiscard]] inline Stats ingest_pairs(
-    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, std::size_t batch_size, Format format, std::int64_t offset,
-    bool validate_pixels) {
-  buffer.reserve(batch_size);
-  PairsAggregator<N>{clr.bins(), format, offset}.read_next_chunk(buffer);
-
-  if (buffer.empty()) {
-    assert(std::cin.eof());
-    return {N{}, 0};
-  }
-
-  clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
-
-  clr.flush();
-  const auto nnz = clr.nnz();
-  const auto sum = clr.attributes().sum.value();
-
-  if (clr.has_float_pixels()) {
-    return {std::get<double>(sum), nnz};
-  }
-  return {std::get<std::int64_t>(sum), nnz};
-}
-
 inline Stats ingest_pixels_sorted_cooler(std::string_view uri, const Reference& chromosomes,
                                          std::uint32_t bin_size, std::int64_t offset, Format format,
                                          std::size_t batch_size, bool force, bool count_as_float,
