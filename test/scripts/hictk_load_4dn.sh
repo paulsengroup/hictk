@@ -17,63 +17,7 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
-function compare_files_fixed_bins {
-  set -o pipefail
-  set -eu
-
-  hictk="$1"
-  resolution="${4}"
-  f1="$2"
-  f2="$3"
-
-  2>&1 echo "Comparing $f1 with $f2..."
-  if diff <("$hictk" dump --join "$f1"   \
-                          --resolution   \
-                          "$resolution") \
-          <("$hictk" dump --join "$f2"   \
-                          --resolution   \
-                          "$resolution"); then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
-function compare_files_variable_bins {
-  set -o pipefail
-  set -eu
-
-  hictk="$1"
-  f1="$2"
-  f2="$3"
-
-  2>&1 echo "Comparing $f1 with $f2..."
-  if diff <("$hictk" dump --join "$f1") \
-          <("$hictk" dump --join "$f2"); then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
-export function readlink_py shuffle
+export function readlink_py
 
 status=0
 
@@ -102,7 +46,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$pairs" "$ref_cooler_fixed_bins" "$ref_cooler_variable_bins"; then
+if ! check_test_files_exist.sh "$pairs" "$ref_cooler_fixed_bins" "$ref_cooler_variable_bins"; then
   exit 1
 fi
 
@@ -124,7 +68,7 @@ xzcat "$pairs" |
     "$outdir/chrom.sizes" \
     "$outdir/out.cool"
 
-if ! compare_files_fixed_bins "$hictk_bin" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 
@@ -141,7 +85,7 @@ xzcat "$pairs" |
     "$outdir/chrom.sizes" \
     "$outdir/out.cool"
 
-if ! compare_files_variable_bins "$hictk_bin" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
   status=1
 fi
 
@@ -156,7 +100,7 @@ xzcat "$pairs" |
     "$outdir/chrom.sizes" \
     "$outdir/out.hic"
 
-if ! compare_files_fixed_bins "$hictk_bin" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 

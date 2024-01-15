@@ -17,52 +17,7 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
-function compare_files {
-  set -o pipefail
-  set -eu
-
-  hictk="$1"
-  resolution="${4}"
-  f1="$2"
-  f2="$3"
-
-  2>&1 echo "Comparing $f1 with $f2..."
-  if diff <("$hictk" dump --join "$f1"   \
-                          --resolution   \
-                          "$resolution") \
-          <("$hictk" dump --join "$f2"   \
-                          --resolution   \
-                          "$resolution"); then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
-function shuffle {
-  if command -v shuf &> /dev/null; then
-    shuf
-  else
-    sort -R
-  fi
-}
-
-export function readlink_py shuffle
+export function readlink_py
 
 status=0
 
@@ -91,7 +46,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$ref_cooler"; then
+if ! check_test_files_exist.sh "$ref_cooler"; then
   exit 1
 fi
 
@@ -112,7 +67,7 @@ if [[ "$sorted" == true ]]; then
       "$outdir/out.cool"
 else
   "$hictk_bin" dump -t pixels "$ref_cooler" |
-     shuffle |
+     shuffle.sh |
     "$hictk_bin" load \
       -f coo \
       --assume-unsorted \
@@ -123,14 +78,14 @@ else
       "$outdir/out.cool"
 fi
 
-if ! compare_files "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
   status=1
 fi
 
 
 if [[ "$sorted" == false ]]; then
   "$hictk_bin" dump -t pixels "$ref_cooler" |
-    shuffle |
+    shuffle.sh |
     "$hictk_bin" load \
       -f coo \
       --assume-unsorted \
@@ -140,7 +95,7 @@ if [[ "$sorted" == false ]]; then
       "$outdir/chrom.sizes" \
       "$outdir/out.hic"
 
-  if ! compare_files "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
     status=1
   fi
 fi

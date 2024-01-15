@@ -17,24 +17,6 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function nproc_py {
-  set -eu
-  python3 -c 'import multiprocessing as mp; print(mp.cpu_count())'
-}
-
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
 function dump_interactions {
   set -o pipefail
   set -eu
@@ -99,8 +81,6 @@ function compare_matrices {
   fi
 }
 
-export function readlink_py
-
 status=0
 
 if [ $# -ne 2 ]; then
@@ -119,7 +99,7 @@ ref_hic="$data_dir/hic/ENCFF993FGR.hic"
 
 export PATH="$PATH:$script_dir"
 
-if ! check_files_exist "$ref_cool" "$ref_hic" "$juicer_tools_jar"; then
+if ! check_test_files_exist.sh "$ref_cool" "$ref_hic" "$juicer_tools_jar"; then
   exit 1
 fi
 
@@ -128,17 +108,17 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cp "$ref_cool" "$ref_hic" "$outdir"
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc_py) --chunk-size=100 --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool -t $(nproc.sh) --chunk-size=100 --mode=cis --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.hic -t $(nproc_py) --chunk-size=100 --mode=cis --force --juicer-tools-jar "$juicer_tools_jar"
+"$hictk_bin" balance "$outdir/"*.hic -t $(nproc.sh) --chunk-size=100 --mode=cis --force --juicer-tools-jar "$juicer_tools_jar"
 if ! compare_matrices "$hictk_bin" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc_py) --in-memory --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool -t $(nproc.sh) --in-memory --mode=cis --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
