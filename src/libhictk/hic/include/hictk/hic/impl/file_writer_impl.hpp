@@ -188,7 +188,7 @@ inline void HiCFileWriter::write_header() {
 
   const auto offset1 = _fs->tellp();
 
-  SPDLOG_DEBUG(FMT_STRING("writing header at offset {}"), offset1);
+  SPDLOG_INFO(FMT_STRING("writing header at offset {}"), offset1);
 
   _fs->write("HIC\0", 4);
   _fs->write(_header->version);
@@ -270,7 +270,7 @@ inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pi
 }
 
 inline void HiCFileWriter::write_pixels() {
-  SPDLOG_DEBUG(FMT_STRING("begin writing interaction blocks..."));
+  SPDLOG_INFO(FMT_STRING("begin writing interaction blocks to file \"{}\"..."), url());
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto &chrom1 = chromosomes().at(chrom1_id);
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
@@ -634,13 +634,13 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   const auto offset = _data_block_section.end();
   _fs->seekp(offset);
 
-  SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix ({} resolution) at offset {}..."),
-               chrom1.name(), chrom2.name(), resolution, offset);
+  SPDLOG_INFO(FMT_STRING("[{} bp] writing pixels for {}:{} matrix at offset {}..."), resolution,
+              chrom1.name(), chrom2.name(), offset);
 
   const auto stats = write_interaction_blocks(chrom1, chrom2, resolution);
 
-  SPDLOG_DEBUG(FMT_STRING("written {} pixels for {}:{} matrix at {} resolution"), stats.nnz,
-               chrom1.name(), chrom2.name(), resolution);
+  SPDLOG_INFO(FMT_STRING("[{} bp] written {} pixels for {}:{} matrix"), resolution, stats.nnz,
+              chrom1.name(), chrom2.name());
 
   auto [it, inserted] = _stats.try_emplace(resolution, stats);
   if (!inserted) {

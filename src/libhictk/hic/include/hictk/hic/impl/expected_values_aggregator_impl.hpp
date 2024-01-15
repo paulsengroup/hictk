@@ -22,7 +22,7 @@ namespace hictk::hic::internal {
 
 inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins)
     : _bins(std::move(bins)) {
-  SPDLOG_INFO(FMT_STRING("[{}] initializing expected value vector"), _bins->bin_size());
+  SPDLOG_INFO(FMT_STRING("[{} bp] initializing expected value vector"), _bins->bin_size());
   std::uint32_t max_length = 0;
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto &chrom1 = chromosomes().at(chrom1_id);
@@ -80,7 +80,7 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
 }
 
 inline void ExpectedValuesAggregator::compute_density() {
-  SPDLOG_INFO(FMT_STRING("[{}] computing expected vector density"), _bins->bin_size());
+  SPDLOG_INFO(FMT_STRING("[{} bp] computing expected vector density"), _bins->bin_size());
   compute_density_cis();
   compute_density_trans();
 }

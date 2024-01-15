@@ -112,10 +112,24 @@ template <typename N>
   std::size_t i = 0;
   Stats stats{0.0, 0};
   try {
+    auto t0 = std::chrono::steady_clock::now();
     const auto& bins = hf.bins(hf.resolutions().front());
     for (; !std::cin.eof(); ++i) {
-      SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
       stats += read_batch(bins, buffer, format, offset);
+
+      if (buffer.empty()) {
+        assert(std::cin.eof());
+        break;
+      }
+
+      const auto t1 = std::chrono::steady_clock::now();
+      const auto delta =
+          static_cast<double>(
+              std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+          1000.0;
+      t0 = t1;
+      SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
+                  double(buffer.size()) / delta);
       hf.add_pixels(bins.bin_size(), buffer.begin(), buffer.end());
       buffer.clear();
     }
