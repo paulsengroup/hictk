@@ -82,15 +82,15 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
 namespace fmt {
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusCooler> {
-  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator;
 
-  static auto format(const hictk::cooler::utils::ValidationStatusCooler& s,
-                     format_context& ctx) -> format_context::iterator;
+  static auto format(const hictk::cooler::utils::ValidationStatusCooler& s, format_context& ctx)
+      -> format_context::iterator;
 };
 
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusMultiresCooler> {
-  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator;
 
   static auto format(const hictk::cooler::utils::ValidationStatusMultiresCooler& s,
                      format_context& ctx) -> format_context::iterator;
@@ -98,10 +98,10 @@ struct formatter<hictk::cooler::utils::ValidationStatusMultiresCooler> {
 
 template <>
 struct formatter<hictk::cooler::utils::ValidationStatusScool> {
-  static constexpr auto parse(format_parse_context& ctx)  -> format_parse_context::iterator;
+  static constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator;
 
-  static auto format(const hictk::cooler::utils::ValidationStatusScool& s,
-                     format_context& ctx) -> format_context::iterator;
+  static auto format(const hictk::cooler::utils::ValidationStatusScool& s, format_context& ctx)
+      -> format_context::iterator;
 };
 }  // namespace fmt
 

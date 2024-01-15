@@ -76,7 +76,9 @@ class SingleCellFile {
   [[nodiscard]] constexpr const SingleCellAttributes& attributes() const noexcept;
   [[nodiscard]] File open(std::string_view cell) const;
   template <typename N>
-  File create_cell(std::string_view cell, Attributes attrs = Attributes::init<N>(0));
+  File create_cell(std::string_view cell, Attributes attrs = Attributes::init<N>(0),
+                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
+                   std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   [[nodiscard]] explicit operator bool() const noexcept;
   [[nodiscard]] std::string path() const;
@@ -89,6 +91,7 @@ class SingleCellFile {
 
   template <typename N>
   File aggregate(std::string_view uri, bool overwrite_if_exists = false,
+                 std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL,
                  std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000) const;
 
  private:
@@ -102,7 +105,8 @@ class SingleCellFile {
   static void write_standard_attributes(RootGroup& root_grp, const SingleCellAttributes& attrs);
 
   template <typename PixelT>
-  static void create_cell_datasets(RootGroup& root_grp, std::size_t cache_size_bytes, double w0);
+  static void create_cell_datasets(RootGroup& root_grp, std::size_t cache_size_bytes,
+                                   std::uint32_t compression_lvl, double w0);
 };
 
 }  // namespace hictk::cooler

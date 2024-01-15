@@ -338,7 +338,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     return false;
   }
 
-  File clr(uri, DEFAULT_HDF5_CACHE_SIZE, false);
+  File clr(uri, DEFAULT_HDF5_CACHE_SIZE * 4, false);
   const auto bin1_dset = clr.dataset("indexes/bin1_offset");
   const auto bin2_dset = clr.dataset("pixels/bin2_id");
 

@@ -106,7 +106,7 @@ class File {
 
   template <typename PixelT>
   File(RootGroup entrypoint, BinTable bins, PixelT pixel, Attributes attributes,
-       std::size_t cache_size_bytes, double w0);
+       std::size_t cache_size_bytes, std::uint32_t compression_lvl, double w0);
 
   // Ctor for SingleCellCooler
   template <typename PixelT>
@@ -121,45 +121,51 @@ class File {
   File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
-  explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+  explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
                 bool validate = true);
-  explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+  explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
                 bool validate = true);
 
   [[nodiscard]] static File open_random_access(
-      std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+      std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
       bool validate = true);
   [[nodiscard]] static File open_read_once(std::string_view uri,
-                                           std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                                           std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE *
+                                                                          4,
                                            bool validate = true);
   template <typename PixelT = DefaultPixelT>
   [[nodiscard]] static File create(std::string_view uri, const Reference &chroms,
                                    std::uint32_t bin_size, bool overwrite_if_exists = false,
                                    Attributes attributes = Attributes::init<PixelT>(0),
-                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
+                                   std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   template <typename PixelT = DefaultPixelT>
   [[nodiscard]] static File create(std::string_view uri, BinTable bins,
                                    bool overwrite_if_exists = false,
                                    Attributes attributes = Attributes::init<PixelT>(0),
-                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
+                                   std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   [[nodiscard]] static File open_random_access(
-      RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+      RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
       bool validate = true);
   [[nodiscard]] static File open_read_once(RootGroup entrypoint,
-                                           std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE,
+                                           std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE *
+                                                                          4,
                                            bool validate = true);
   template <typename PixelT = DefaultPixelT>
   [[nodiscard]] static File create(RootGroup entrypoint, const Reference &chroms,
                                    std::uint32_t bin_size,
                                    Attributes attributes = Attributes::init<PixelT>(0),
-                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
+                                   std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   template <typename PixelT = DefaultPixelT>
   [[nodiscard]] static File create(RootGroup entrypoint, BinTable bins,
                                    Attributes attributes = Attributes::init<PixelT>(0),
-                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+                                   std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
+                                   std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   ~File() noexcept;
 
@@ -313,7 +319,8 @@ class File {
       -> GroupMap;
   template <typename PixelT>
   [[nodiscard]] static auto create_datasets(RootGroup &root_grp, const Reference &chroms,
-                                            std::size_t cache_size_bytes, double w0) -> DatasetMap;
+                                            std::size_t cache_size_bytes,
+                                            std::uint32_t compression_lvl, double w0) -> DatasetMap;
   static void write_standard_attributes(RootGroup &root_grp, const Attributes &attributes,
                                         bool skip_sentinel_attr = true);
 
