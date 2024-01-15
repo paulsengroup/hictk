@@ -124,7 +124,7 @@ class HiCFileWriter {
   FooterTank _footers{};
   StatsTank _stats{};
 
-  std::int32_t _compression_lvl{};
+  std::uint32_t _compression_lvl{};
   BinaryBuffer _bbuffer{};
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
@@ -146,7 +146,7 @@ class HiCFileWriter {
   explicit HiCFileWriter(
       HiCHeader header, std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-      std::int32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
+      std::uint32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;

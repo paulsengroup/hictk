@@ -132,7 +132,7 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
 
 inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads, std::size_t chunk_size,
                                     const std::filesystem::path &tmpdir,
-                                    std::int32_t compression_lvl, std::size_t buffer_size)
+                                    std::uint32_t compression_lvl, std::size_t buffer_size)
     : _header(init_header(std::move(header))),
       _fs(std::make_shared<filestream::FileStream>(filestream::FileStream::create(_header->url))),
       _tmpdir(tmpdir.empty() ? nullptr
@@ -141,7 +141,7 @@ inline HiCFileWriter::HiCFileWriter(HiCHeader header, std::size_t n_threads, std
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
       _block_mappers(init_interaction_block_mappers((*_tmpdir)(), _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
-      _compressor(libdeflate_alloc_compressor(compression_lvl)),
+      _compressor(libdeflate_alloc_compressor(static_cast<std::int32_t>(compression_lvl))),
       _compression_buffer(buffer_size, '\0'),
       _tpool(init_tpool(n_threads)) {}
 
@@ -796,7 +796,7 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
     BinaryBuffer bbuffer{};
     std::string compression_buffer(16'000'000, '\0');
     std::unique_ptr<libdeflate_compressor> libdeflate_compressor(
-        libdeflate_alloc_compressor(_compression_lvl));
+        libdeflate_alloc_compressor(static_cast<std::int32_t>(_compression_lvl)));
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
     Stats stats{};
