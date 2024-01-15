@@ -117,7 +117,6 @@ cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --assume-sorted \
     --batch-size 1000000 \
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
@@ -134,7 +133,6 @@ cooler dump -t bins "$ref_cooler_variable_bins" > "$outdir/bins.bed"
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --assume-sorted \
     --batch-size 1000000 \
     --bin-table "$outdir/bins.bed" \
     --force \
@@ -151,7 +149,6 @@ fi
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --assume-sorted \
     --batch-size 1000000 \
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
