@@ -193,7 +193,7 @@ jobs:
           test/scripts/hictk_balance.sh build/src/hictk/hictk hic_tools.jar
 
           test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
-          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk hic_tools.jar
+          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
 
           test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
           test/scripts/hictk_dump_bins.sh build/src/hictk/hictk

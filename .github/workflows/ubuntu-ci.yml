@@ -429,7 +429,7 @@ jobs:
 
       - name: Test hictk convert (cool2hic)
         run: |
-          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk
 
       - name: Test hictk dump chroms
         run: |
