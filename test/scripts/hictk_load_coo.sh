@@ -30,17 +30,22 @@ function check_files_exist {
   return "$status"
 }
 
-function compare_coolers {
+function compare_files {
   set -o pipefail
-  set -e
+  set -eu
 
-  2>&1 echo "Comparing $1 with $2..."
-  if diff <(cooler dump -t chroms "$1") \
-          <(cooler dump -t chroms "$2") \
-     && \
-     diff <(cooler dump --join "$1") \
-          <(cooler dump --join "$2");
-  then
+  hictk="$1"
+  resolution="${4}"
+  f1="$2"
+  f2="$3"
+
+  2>&1 echo "Comparing $f1 with $f2..."
+  if diff <("$hictk" dump --join "$f1"   \
+                          --resolution   \
+                          "$resolution") \
+          <("$hictk" dump --join "$f2"   \
+                          --resolution   \
+                          "$resolution"); then
     2>&1 echo "Files are identical"
     return 0
   else
@@ -77,17 +82,10 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 ref_cooler="$data_dir/4DNFIKNWM36K.subset.fixed-bins.cool"
+resolution=10000
+batch_size=999999
 
 export PATH="$PATH:$script_dir"
-
-if ! command -v cooler &> /dev/null; then
-  2>&1 echo "Unable to find cooler in your PATH"
-  status=1
-fi
-
-# Try to detect the error outlined below as early as possible:
-# https://github.com/open2c/cooler/pull/298
-cooler --help > /dev/null
 
 if [ $status -ne 0 ]; then
   exit $status
@@ -100,31 +98,51 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-cooler dump -t chroms "$ref_cooler" > "$outdir/chrom.sizes"
+"$hictk_bin" dump -t chroms "$ref_cooler" > "$outdir/chrom.sizes"
 
 if [[ "$sorted" == true ]]; then
-  cooler dump -t pixels "$ref_cooler" |
+  "$hictk_bin" dump -t pixels "$ref_cooler" |
     "$hictk_bin" load \
       -f coo \
       --assume-sorted \
-      --batch-size 1000000 \
-      --bin-size 10000 \
+      --batch-size "$batch_size" \
+      --bin-size "$resolution" \
+      --tmpdir "$outdir" \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 else
-  cooler dump -t pixels "$ref_cooler" |
+  "$hictk_bin" dump -t pixels "$ref_cooler" |
      shuffle |
     "$hictk_bin" load \
       -f coo \
       --assume-unsorted \
-      --batch-size 1000000 \
-      --bin-size 10000 \
+      --batch-size "$batch_size" \
+      --bin-size "$resolution" \
+      --tmpdir "$outdir" \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 fi
 
-if ! compare_coolers "$outdir/out.cool" "$ref_cooler"; then
+if ! compare_files "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
   status=1
+fi
+
+
+if [[ "$sorted" == false ]]; then
+  "$hictk_bin" dump -t pixels "$ref_cooler" |
+    shuffle |
+    "$hictk_bin" load \
+      -f coo \
+      --assume-unsorted \
+      --batch-size "$batch_size" \
+      --bin-size "$resolution" \
+      --tmpdir "$outdir" \
+      "$outdir/chrom.sizes" \
+      "$outdir/out.hic"
+
+  if ! compare_files "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
+    status=1
+  fi
 fi
 
 if [ "$status" -eq 0 ]; then

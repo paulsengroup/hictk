@@ -110,6 +110,7 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 resolution=10000
+batch_size=999999
 
 cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 
@@ -117,7 +118,7 @@ cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --batch-size 1000000 \
+    --batch-size "$batch_size" \
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
@@ -133,7 +134,7 @@ cooler dump -t bins "$ref_cooler_variable_bins" > "$outdir/bins.bed"
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --batch-size 1000000 \
+    --batch-size "$batch_size" \
     --bin-table "$outdir/bins.bed" \
     --force \
     --tmpdir "$outdir" \
@@ -149,7 +150,7 @@ fi
 xzcat "$pairs" |
   "$hictk_bin" load \
     -f 4dn \
-    --batch-size 1000000 \
+    --batch-size "$batch_size" \
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
