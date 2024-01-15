@@ -72,10 +72,13 @@ template <typename N = float>
 struct MatrixInteractionBlock {
  private:
   using RowID = std::int32_t;
-  struct PixelCoordCmp {
-    [[nodiscard]] bool operator()(const Pixel<N>& p1, const Pixel<N>& p2) const noexcept;
+
+  struct Pixel {
+    std::int32_t column;
+    N count;
+    [[nodiscard]] bool operator<(const Pixel& other) const noexcept;
   };
-  using Row = phmap::btree_set<Pixel<N>, PixelCoordCmp>;
+  using Row = phmap::btree_set<Pixel>;
 
  public:
   std::int32_t nRecords{};
@@ -86,10 +89,12 @@ struct MatrixInteractionBlock {
   std::uint8_t useIntYPos{};
   std::uint8_t matrixRepresentation{};
 
+  std::int16_t w{};
+
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] double sum() const noexcept;
 
-  void emplace_back(Pixel<N>&& p);
+  void emplace_back(hictk::Pixel<N>&& p);
   void finalize();
 
   [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<RowID, Row>&;
@@ -99,6 +104,23 @@ struct MatrixInteractionBlock {
  private:
   double _sum{};
   phmap::btree_map<RowID, Row> _interactions;
+
+  std::int32_t _min_col{std::numeric_limits<std::int32_t>::max()};
+  std::int32_t _max_col{};
+
+  [[nodiscard]] std::size_t compute_size_lor_repr() const noexcept;
+  [[nodiscard]] std::size_t compute_size_dense_repr() const noexcept;
+
+  [[nodiscard]] std::size_t compute_dense_width() const noexcept;
+
+  [[nodiscard]] std::string serialize_lor(BinaryBuffer& buffer, libdeflate_compressor& compressor,
+                                          std::string& compression_buffer, bool clear = true) const;
+  [[nodiscard]] std::string serialize_dense(BinaryBuffer& buffer, libdeflate_compressor& compressor,
+                                            std::string& compression_buffer,
+                                            bool clear = true) const;
+
+  static void compress(const std::string& buffer_in, std::string& buffer_out,
+                       libdeflate_compressor& compressor);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index

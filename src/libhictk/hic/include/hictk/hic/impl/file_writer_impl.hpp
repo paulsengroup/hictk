@@ -399,8 +399,8 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     }
 
     if (mapper.empty(chrom1, chrom2)) {
-      SPDLOG_WARN(FMT_STRING("no pixels found for {}:{} matrix at resolution {}: SKIPPING!"),
-                  chrom1.name(), chrom2.name(), res);
+      SPDLOG_WARN(FMT_STRING("[{} bp] no pixels found for {}:{} matrix: SKIPPING!"), res,
+                  chrom1.name(), chrom2.name());
       continue;
     }
 

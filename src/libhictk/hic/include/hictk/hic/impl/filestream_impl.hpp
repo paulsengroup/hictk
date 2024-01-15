@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iosfwd>

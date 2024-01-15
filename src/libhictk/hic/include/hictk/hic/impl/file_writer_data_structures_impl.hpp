@@ -100,9 +100,8 @@ inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clea
 }
 
 template <typename N>
-inline bool MatrixInteractionBlock<N>::PixelCoordCmp::operator()(
-    const Pixel<N> &p1, const Pixel<N> &p2) const noexcept {
-  return p1.coords < p2.coords;
+inline bool MatrixInteractionBlock<N>::Pixel::operator<(const Pixel &other) const noexcept {
+  return column < other.column;
 }
 
 template <typename N>
@@ -116,11 +115,14 @@ inline double MatrixInteractionBlock<N>::sum() const noexcept {
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
+inline void MatrixInteractionBlock<N>::emplace_back(hictk::Pixel<N> &&p) {
   _sum += conditional_static_cast<double>(p.count);
 
   const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
   const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
+
+  _min_col = std::min(col, _min_col);
+  _max_col = std::max(col, _max_col);
 
   binRowOffset = std::min(binRowOffset, row);
   binColumnOffset = std::min(binColumnOffset, col);
@@ -128,24 +130,32 @@ inline void MatrixInteractionBlock<N>::emplace_back(Pixel<N> &&p) {
   auto match1 = _interactions.find(row);
   if (match1 != _interactions.end()) {
     auto &pixels = match1->second;
-    auto [it, inserted] = pixels.emplace(p);
+    auto [it, inserted] = pixels.emplace(Pixel{col, p.count});
     nRecords += inserted;
     if (!inserted) {
       it->count += p.count;
     }
   } else {
     nRecords++;
-    _interactions.emplace(row, Row{std::move(p)});
+    _interactions.emplace(row, Row{Pixel{col, p.count}});
   }
 }
 
 template <typename N>
 inline void MatrixInteractionBlock<N>::finalize() {
-  // TODO tweak
+  const auto size_lor = compute_size_lor_repr();
+  const auto size_dense = compute_size_dense_repr();
+  const auto width = compute_dense_width();
+
+  const auto use_lor = size_lor < size_dense && width <= std::numeric_limits<std::int16_t>::max();
+
   useFloatContact = 1;
   useIntXPos = 1;
   useIntYPos = 1;
-  matrixRepresentation = 1;
+  matrixRepresentation = use_lor ? 1 : 2;
+
+  // his can overflow, but it's ok because in this case use_lor=true
+  w = static_cast<std::int16_t>(width);
 }
 
 template <typename N>
@@ -159,7 +169,55 @@ inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
                                                         libdeflate_compressor &compressor,
                                                         std::string &compression_buffer,
                                                         bool clear) const {
-  // TODO support dense layout
+  if (matrixRepresentation == 1) {
+    return serialize_lor(buffer, compressor, compression_buffer, clear);
+  }
+  return serialize_dense(buffer, compressor, compression_buffer, clear);
+}
+
+template <typename N>
+inline std::size_t MatrixInteractionBlock<N>::compute_size_lor_repr() const noexcept {
+  std::size_t size_ = sizeof(nRecords) + sizeof(binColumnOffset) + sizeof(binRowOffset) +
+                      sizeof(useFloatContact) + sizeof(useIntXPos) + sizeof(useIntYPos) +
+                      sizeof(matrixRepresentation);
+
+  // compute space taken up by rows
+  size_ += (_interactions.size() * sizeof(std::int32_t)) + sizeof(std::int32_t);
+
+  // compute space taken up by columns
+  size_ += size() * (sizeof(std::int32_t) + sizeof(N));
+
+  return size_;
+}
+
+template <typename N>
+inline std::size_t MatrixInteractionBlock<N>::compute_size_dense_repr() const noexcept {
+  const auto width = compute_dense_width();
+  const auto npixels = width * width;
+
+  const std::size_t size_ = sizeof(nRecords) + sizeof(binColumnOffset) + sizeof(binRowOffset) +
+                            sizeof(useFloatContact) + sizeof(useIntXPos) + sizeof(useIntYPos) +
+                            sizeof(matrixRepresentation);
+  return size_ + (sizeof(std::int32_t) + sizeof(std::int16_t)) + (npixels * sizeof(N));
+}
+
+template <typename N>
+inline std::size_t MatrixInteractionBlock<N>::compute_dense_width() const noexcept {
+  const auto min_row = _interactions.begin()->first;
+  const auto max_row = (--_interactions.end())->first;
+  const auto height = max_row - min_row;
+
+  const auto width = _max_col - _min_col;
+
+  return static_cast<std::size_t>(std::max(height, width) + 1);
+}
+
+template <typename N>
+inline std::string MatrixInteractionBlock<N>::serialize_lor(BinaryBuffer &buffer,
+                                                            libdeflate_compressor &compressor,
+                                                            std::string &compression_buffer,
+                                                            bool clear) const {
+  assert(matrixRepresentation == 1);
   // TODO support representation using shorts
 
   if (clear) {
@@ -185,31 +243,82 @@ inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
     buffer.write(recordCount);
 
     assert(std::is_sorted(pixels.begin(), pixels.end()));
-    for (const auto &p : pixels) {
-      const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
+    for (const auto &[col, count] : pixels) {
       assert(col >= binColumnOffset);
       const auto binColumn = col - binColumnOffset;
-      const auto value = p.count;
       buffer.write(binColumn);
-      buffer.write(value);
+      buffer.write(count);
     }
   }
 
-  assert(compression_buffer.capacity() != 0);
-  compression_buffer.resize(compression_buffer.capacity());
+  compress(buffer.get(), compression_buffer, compressor);
+  return compression_buffer;
+}
+
+template <typename N>
+inline std::string MatrixInteractionBlock<N>::serialize_dense(BinaryBuffer &buffer,
+                                                              libdeflate_compressor &compressor,
+                                                              std::string &compression_buffer,
+                                                              bool clear) const {
+  assert(matrixRepresentation == 2);
+  // TODO support representation using shorts
+
+  if (clear) {
+    buffer.clear();
+  }
+
+  const N fill_value = -32768;
+  std::vector<N> counts(static_cast<std::size_t>(w) * static_cast<std::size_t>(w), fill_value);
+
+  for (const auto &[row, pixels] : _interactions) {
+    assert(row >= binRowOffset);
+    const auto i = static_cast<std::size_t>(row - binRowOffset);
+    for (const auto &[col, value] : pixels) {
+      const auto j = static_cast<std::size_t>(col - binColumnOffset);
+      const auto idx = (i * static_cast<std::size_t>(w)) + j;
+      assert(idx < counts.size());
+      counts[idx] = value;
+    }
+  }
+
+  if constexpr (std::is_floating_point_v<N>) {
+    std::transform(counts.begin(), counts.end(), counts.begin(), [&](const auto n) {
+      return n == fill_value ? std::numeric_limits<N>::quiet_NaN() : n;
+    });
+  }
+
+  buffer.write(nRecords);
+  buffer.write(binColumnOffset);
+  buffer.write(binRowOffset);
+  buffer.write(useFloatContact);
+  buffer.write(useIntXPos);
+  buffer.write(useIntYPos);
+  buffer.write(matrixRepresentation);
+
+  buffer.write(static_cast<std::int32_t>(counts.size()));
+  buffer.write(w);
+  buffer.write(counts);
+
+  compress(buffer.get(), compression_buffer, compressor);
+  return compression_buffer;
+}
+
+template <typename N>
+inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
+                                                std::string &buffer_out,
+                                                libdeflate_compressor &compressor) {
+  assert(buffer_out.capacity() != 0);
+  buffer_out.resize(buffer_out.capacity());
   while (true) {
-    const auto compressed_size =
-        libdeflate_zlib_compress(&compressor, buffer.get().data(), buffer.get().size(),
-                                 compression_buffer.data(), compression_buffer.size());
+    const auto compressed_size = libdeflate_zlib_compress(
+        &compressor, buffer_in.data(), buffer_in.size(), buffer_out.data(), buffer_out.size());
     if (compressed_size != 0) {
-      compression_buffer.resize(compressed_size);
+      buffer_out.resize(compressed_size);
       break;
     }
 
-    compression_buffer.resize(compression_buffer.size() * 2);
+    buffer_out.resize(buffer_out.size() * 2);
   }
-
-  return compression_buffer;
 }
 
 inline std::string MasterIndex::serialize(BinaryBuffer &buffer, bool clear) const {
