@@ -48,7 +48,7 @@ resolutions=(50000 2500000)
              --resolutions ${resolutions[*]}
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_matrix_files "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then
     status=1
   fi
 done
