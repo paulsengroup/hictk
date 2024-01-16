@@ -56,7 +56,7 @@ void Cli::make_load_subcommand() {
       ->check(CLI::PositiveNumber);
 
   sc.add_option(
-      "-t,--bin-table",
+      "--bin-table",
       c.path_to_bin_table,
       "Path to a BED3+ file with the bin table.")
       ->check(CLI::ExistingFile);
@@ -111,6 +111,14 @@ void Cli::make_load_subcommand() {
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 12 for .cool and .hic files, respectively.")
       ->check(CLI::Bound(1, 12));
+
+  sc.add_option(
+      "-t,--threads",
+      c.threads,
+      "Maximum number of parallel threads to spawn.\n"
+      "When loading interactions in a .cool file, only a single thread will be used.")
+      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->capture_default_str();
 
   sc.add_option(
       "--tmpdir",
