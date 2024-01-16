@@ -536,7 +536,10 @@ inline void HiCFileWriter::write_empty_normalized_expected_values() {
   SPDLOG_DEBUG(FMT_STRING("writing empty expected values (normalized) section at offset {}..."),
                offset);
   _fs.seekp(offset);
+  DISABLE_WARNING_PUSH
+  DISABLE_WARNING_USELESS_CAST
   _fs.write(std::int32_t(0));
+  DISABLE_WARNING_POP
   _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
@@ -544,7 +547,10 @@ inline void HiCFileWriter::write_empty_norm_vectors() {
   const auto offset = _expected_values_norm_section.end();
   SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."), offset);
   _fs.seekp(offset);
+  DISABLE_WARNING_PUSH
+  DISABLE_WARNING_USELESS_CAST
   _fs.write(std::int32_t(0));
+  DISABLE_WARNING_POP0
   _norm_vectors_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
