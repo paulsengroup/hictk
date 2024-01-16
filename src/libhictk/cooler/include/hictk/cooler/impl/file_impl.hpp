@@ -76,6 +76,14 @@ inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT p
   write_chromosomes();
   write_bin_table();
 
+  if constexpr (std::is_floating_point_v<PixelT>) {
+    _attrs.sum = 0.0;
+    _attrs.cis = 0.0;
+  } else {
+    _attrs.sum = std::int64_t(0);
+    _attrs.cis = std::int64_t(0);
+  }
+
   write_sentinel_attr();
 }
 
