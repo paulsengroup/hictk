@@ -80,14 +80,9 @@ TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
-  FileStream s(path_plaintext);
-  {
-    std::string buff;
-    s.read(buff, 1);
-    s.seekg(0);
-  }
-  SECTION("seek within chunk") {
-    SECTION("read") {
+  SECTION("read") {
+    FileStream s(path_plaintext);
+    SECTION("seek within chunk") {
       s.seekg(5);
       CHECK(s.tellg() == 5);
 
@@ -95,22 +90,11 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       CHECK(s.tellg() == 10);
     }
 
-    SECTION("write") {
-      s.seekp(5);
-      CHECK(s.tellp() == 5);
-
-      s.seekp(10);
-      CHECK(s.tellp() == 10);
+    SECTION("negative seek from beg") {
+      CHECK_THROWS(s.seekg(-10));
     }
-  }
 
-  SECTION("negative seek from beg") {
-    CHECK_THROWS(s.seekg(-10));
-    CHECK_THROWS(s.seekp(-10));
-  }
-
-  SECTION("seek from current") {
-    SECTION("read") {
+    SECTION("seek from current") {
       s.seekg(10);
       CHECK(s.tellg() == 10);
 
@@ -120,7 +104,39 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       s.seekg(-10, std::ios::cur);
       CHECK(s.tellg() == 10);
     }
-    SECTION("write") {
+
+    SECTION("seek at end") {
+      s.seekg(0, std::ios::end);
+      CHECK(!s.eof());
+    }
+
+    SECTION("seek past end") {
+      s.seekg(0, std::ios::end);
+      CHECK_THROWS(s.seekg(1, std::ios::cur));
+
+      s.seekg(0);
+      CHECK_THROWS(s.seekg(1, std::ios::end));
+      CHECK(s.tellg() == 0);
+    }
+  }
+  SECTION("write") {
+    const auto path1 = testdir() / "filestream_seek.bin";
+    std::filesystem::remove(path1);
+    auto s = FileStream::create(path1);
+
+    SECTION("seek within chunk") {
+      s.seekp(5);
+      CHECK(s.tellp() == 5);
+
+      s.seekp(10);
+      CHECK(s.tellp() == 10);
+    }
+
+    SECTION("negative seek from beg") {
+      CHECK_THROWS(s.seekp(-10));
+    }
+
+    SECTION("seek from current") {
       s.seekp(10);
       CHECK(s.tellp() == 10);
 
@@ -130,23 +146,13 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       s.seekp(-10, std::ios::cur);
       CHECK(s.tellp() == 10);
     }
-  }
 
-  SECTION("seek at end") {
-    s.seekg(0, std::ios::end);
-    CHECK(!s.eof());
-  }
-
-  SECTION("seek past end") {
-    SECTION("read") {
+    SECTION("seek at end") {
       s.seekg(0, std::ios::end);
-      CHECK_THROWS(s.seekg(1, std::ios::cur));
-
-      s.seekg(0);
-      CHECK_THROWS(s.seekg(1, std::ios::end));
-      CHECK(s.tellg() == 0);
+      CHECK(!s.eof());
     }
-    SECTION("write") {
+
+    SECTION("seek past end") {
       s.seekp(0, std::ios::end);
       CHECK_NOTHROW(s.seekp(1, std::ios::cur));
     }
@@ -324,6 +330,7 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
+  std::filesystem::remove(tmpfile);
   auto s = FileStream::create(tmpfile);
 
   SECTION("small write") {
@@ -356,6 +363,7 @@ TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
 template <typename T>
 static void write_and_compare(FileStream& s, const T& data) {
   s.write(data);
+  s.flush();
   REQUIRE(s.size() == sizeof(T));
   CHECK(s.read<T>() == data);
 }
@@ -363,6 +371,7 @@ static void write_and_compare(FileStream& s, const T& data) {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write_binary.bin";
+  std::filesystem::remove(tmpfile);
   auto s = FileStream::create(tmpfile);
 
   DISABLE_WARNING_PUSH
@@ -394,6 +403,7 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
         1294996684,  -1436898904, 1231094186,  1614771469};
 
     s.write(data);
+    s.flush();
     REQUIRE(s.size() == sizeof(std::int32_t) * data.size());
     const auto buffer = s.read<std::int32_t>(data.size());
     REQUIRE(data.size() == buffer.size());

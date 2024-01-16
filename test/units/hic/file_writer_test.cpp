@@ -61,16 +61,18 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper::BlockMapper", "[hic][v9][short]") {
 }
 
 TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
+  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path2 = (testdir() / "hic_block_partitioner.bin").string();
   const std::uint32_t resolution = 25'000;
-  const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+
+  const hic::File f1(path1, resolution);
   const auto sel1 = f1.fetch("chr2L");
   const auto sel2 = f1.fetch("chr2L", "chr2R");
 
   const std::vector<ThinPixel<float>> pixels1(sel1.begin<float>(), sel1.end<float>());
   const std::vector<ThinPixel<float>> pixels2(sel2.begin<float>(), sel2.end<float>());
 
-  HiCInteractionToBlockMapper partitioner(testdir() / "hic_block_partitioner.bin", f1.bins_ptr(),
-                                          50'000, 3);
+  HiCInteractionToBlockMapper partitioner(path2, f1.bins_ptr(), 50'000, 3);
 
   partitioner.append_pixels(pixels1.begin(), pixels1.end());
   partitioner.append_pixels(pixels2.begin(), pixels2.end());
@@ -85,15 +87,14 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   CHECK(num_interactions == pixels1.size() + pixels2.size());
 }
 
-TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
-  const std::vector<std::uint32_t> resolutions{100'000, 200'000, 500'000, 1'000'000};
+TEST_CASE("HiC: HiCFileWriter", "[hic][v9][medium]") {
+  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path2 = (testdir() / "hic_writer.hic").string();
+  const std::vector<std::uint32_t> resolutions{500'000, 1'000'000, 2'500'000};
 
-  const auto chromosomes =
-      hic::File((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolutions.front()).chromosomes();
-
-  const auto path = testdir() / "hic_writer.hic";
   {
-    HiCFileWriter w(path.string(), chromosomes, resolutions, "hg38", 16);
+    const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
+    HiCFileWriter w(path2, chromosomes, resolutions, "dm6", 16);
     for (std::size_t i = 0; i < resolutions.size(); ++i) {
       if (i % 2 == 0) {
         const auto resolution = resolutions[i];
@@ -107,8 +108,8 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
 
   for (const auto& resolution : resolutions) {
     fmt::print(FMT_STRING("Comparing {}...\n"), resolution);
-    const hic::File f1((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
-    const hic::File f2(path.string(), resolution);
+    const hic::File f1(path1, resolution);
+    const hic::File f2(path2, resolution);
     const auto expected_pixels = f1.fetch().read_all<float>();
     const auto pixels = f2.fetch().read_all<float>();
 
