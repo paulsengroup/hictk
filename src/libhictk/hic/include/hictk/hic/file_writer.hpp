@@ -105,9 +105,9 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  std::shared_ptr<const HiCHeader> _header{};
-  std::shared_ptr<filestream::FileStream> _fs{};
-  std::unique_ptr<const hictk::internal::TmpDir> _tmpdir{};
+  HiCHeader _header{};
+  filestream::FileStream _fs{};
+  std::filesystem::path _tmpdir{};
 
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
   using BlockIndex = phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>>;
@@ -144,7 +144,9 @@ class HiCFileWriter {
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(
-      HiCHeader header, std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
+      std::string_view path_, Reference chromosomes_, std::vector<std::uint32_t> resolutions_,
+      std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
+      std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
       std::uint32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
 
@@ -187,7 +189,9 @@ class HiCFileWriter {
   void finalize();
 
  private:
-  [[nodiscard]] static std::shared_ptr<const HiCHeader> init_header(HiCHeader&& header);
+  [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
+                                             std::vector<std::uint32_t> resolutions,
+                                             std::string_view assembly);
   [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
                                             const std::vector<std::uint32_t>& resolutions)
       -> BinTables;
