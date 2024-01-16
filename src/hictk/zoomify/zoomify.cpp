@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 
 #include <cassert>
@@ -19,12 +18,9 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
-#include "hictk/cooler/utils.hpp"
-#include "hictk/hic.hpp"
 #include "hictk/hic/file_zoomify.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/transformers/coarsen.hpp"
 
 namespace hictk::tools {
 
@@ -75,10 +71,37 @@ void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
     mclr.create_resolution(resolutions[i]);
   }
 }
+
+void print_zooming_plan_hic(std::string_view path_to_input,
+                            const std::vector<std::uint32_t>& resolutions) {
+  const auto avail_resolutions = hic::utils::list_resolutions(path_to_input);
+  for (const auto& res : resolutions) {
+    const auto match = std::find(avail_resolutions.begin(), avail_resolutions.end(), res);
+    if (match != avail_resolutions.end()) {
+      SPDLOG_INFO(FMT_STRING("copying resolution {} from \"{}\""), res, path_to_input);
+    } else {
+      auto base_resolution = resolutions.front();
+      for (const auto& avail_res : resolutions) {
+        if (avail_res >= res) {
+          break;
+        }
+        if (res % avail_res == 0) {
+          base_resolution = avail_res;
+        }
+      }
+      SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), res, base_resolution,
+                  res / base_resolution);
+    }
+  }
+}
+
 void zoomify_hic(const ZoomifyConfig& c) {
   if (c.force) {
     std::filesystem::remove(c.path_to_output);
   }
+
+  print_zooming_plan_hic(c.path_to_input, c.resolutions);
+
   const internal::TmpDir tmpdir{c.tmp_dir};
   hic::internal::HiCFileZoomify{c.path_to_input, c.path_to_output, c.resolutions,    c.threads,
                                 c.batch_size,    tmpdir(),         c.compression_lvl}

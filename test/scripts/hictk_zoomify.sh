@@ -46,6 +46,7 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 # Test cooler (multiple resolutions)
 "$hictk_bin" zoomify \
+  -t $(nproc.sh) \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
   "$outdir/out.mcool"
 
@@ -59,6 +60,7 @@ done
 "$hictk_bin" zoomify \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
   "$outdir/out.cool" \
+  -t $(nproc.sh) \
   --no-copy-base-resolution \
   --resolutions "${resolutions[1]}"
 
@@ -68,6 +70,7 @@ fi
 
 # Test hic (multiple resolutions)
 "$hictk_bin" zoomify \
+  -t $(nproc.sh) \
   "$ref_hic" \
   "$outdir/out.hic"
 
