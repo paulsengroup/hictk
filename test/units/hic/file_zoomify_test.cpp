@@ -31,10 +31,8 @@ TEST_CASE("HiC: HiCFileZoomify") {
   REQUIRE(std::find(avail_resolutions.begin(), avail_resolutions.end(), 400'000) ==
           avail_resolutions.end());
 
-  {
-    hic::internal::HiCFileZoomify hzmf(path1, path2, resolutions);
-    hzmf.zoomify();
-  }
+  hic::internal::HiCFileZoomify{path1, path2, resolutions}.zoomify();
+
   for (const auto& resolution : {100'000U, 1'000'000U}) {
     const hic::File f1(path1, resolution);
     const hic::File f2(path2, resolution);
