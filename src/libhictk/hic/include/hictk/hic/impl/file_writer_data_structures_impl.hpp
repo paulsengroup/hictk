@@ -147,14 +147,14 @@ inline void MatrixInteractionBlock<N>::finalize() {
   const auto size_dense = compute_size_dense_repr();
   const auto width = compute_dense_width();
 
-  const auto use_lor = size_lor < size_dense && width <= std::numeric_limits<std::int16_t>::max();
+  const auto use_lor = (size_lor < size_dense) || (width > std::numeric_limits<std::int16_t>::max());
 
   useFloatContact = 1;
   useIntXPos = 1;
   useIntYPos = 1;
   matrixRepresentation = use_lor ? 1 : 2;
 
-  // his can overflow, but it's ok because in this case use_lor=true
+  // this can overflow, but it's ok because in this case use_lor=true
   w = static_cast<std::int16_t>(width);
 }
 
