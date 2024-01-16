@@ -550,7 +550,7 @@ inline void HiCFileWriter::write_empty_norm_vectors() {
   DISABLE_WARNING_PUSH
   DISABLE_WARNING_USELESS_CAST
   _fs.write(std::int32_t(0));
-  DISABLE_WARNING_POP0
+  DISABLE_WARNING_POP
   _norm_vectors_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
