@@ -22,19 +22,8 @@ static Stats ingest_pixels_hic(std::string_view uri, const std::filesystem::path
     std::filesystem::remove(uri);
   }
 
-  hic::internal::HiCHeader header{
-      std::string{uri},  // url
-      9,                 // version
-      -1,                // masterIndexOffset
-      assembly,          // genomeID
-      -1,                // nviPosition
-      -1,                // nviLength
-      chromosomes,
-      {bin_size},              // resolutions
-      {{"software", "hictk"}}  // attributes
-  };
-
-  hic::internal::HiCFileWriter hf(std::move(header), threads, batch_size, tmp_dir, compression_lvl);
+  hic::internal::HiCFileWriter hf(uri, chromosomes, {bin_size}, assembly, threads, batch_size,
+                                  tmp_dir, compression_lvl);
 
   std::vector<ThinPixel<float>> write_buffer(batch_size);
   return ingest_pixels(std::move(hf), write_buffer, format, offset);
@@ -49,19 +38,8 @@ inline Stats ingest_pairs_hic(std::string_view uri, const std::filesystem::path&
     std::filesystem::remove(uri);
   }
 
-  hic::internal::HiCHeader header{
-      std::string{uri},  // url
-      9,                 // version
-      -1,                // masterIndexOffset
-      assembly,          // genomeID
-      -1,                // nviPosition
-      -1,                // nviLength
-      chromosomes,
-      {bin_size},              // resolutions
-      {{"software", "hictk"}}  // attributes
-  };
-
-  hic::internal::HiCFileWriter hf(std::move(header), threads, batch_size, tmp_dir, compression_lvl);
+  hic::internal::HiCFileWriter hf(uri, chromosomes, {bin_size}, assembly, threads, batch_size,
+                                  tmp_dir, compression_lvl);
 
   std::vector<ThinPixel<float>> buffer(batch_size);
   return ingest_pairs(std::move(hf), buffer, format, offset);

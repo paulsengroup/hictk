@@ -40,19 +40,8 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto chromosomes = cooler::File(base_uri).chromosomes();
   const auto& resolutions = c.resolutions;
 
-  hic::internal::HiCHeader header{
-      c.path_to_output,  // url
-      9,                 // version
-      -1,                // masterIndexOffset
-      c.genome,          // genomeID
-      -1,                // nviPosition
-      -1,                // nviLength
-      chromosomes,
-      {resolutions},           // resolutions
-      {{"software", "hictk"}}  // attributes
-  };
-
-  hictk::hic::internal::HiCFileWriter w(std::move(header), c.threads, c.chunk_size, c.tmp_dir,
+  hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
+                                        c.genome, c.threads, c.chunk_size, c.tmp_dir,
                                         c.compression_lvl);
   if (c.input_format == "cool") {
     w.add_pixels(base_clr.bin_size(), base_clr.begin<float>(), base_clr.end<float>());
@@ -66,7 +55,7 @@ void cool_to_hic(const ConvertConfig& c) {
         w.add_pixels(res, clr.begin<float>(), clr.end<float>());
       } catch (const std::exception& e) {
         const std::string_view msg{e.what()};
-        const auto pos = msg.find("does not contain interactions for resolution");
+        const auto pos = msg.find("does not have interactions for resolution");
         if (pos == std::string_view::npos) {
           throw;
         }
