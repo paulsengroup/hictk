@@ -48,6 +48,7 @@ inline void HiCFileZoomify::init() {
     const auto res_avail = std::find(avail_resolutions.begin(), avail_resolutions.end(), res) !=
                            avail_resolutions.end();
     if (res_avail) {
+      SPDLOG_INFO(FMT_STRING("[{} bp] ingesting interactions..."), res);
       const File hf(_path_to_input_hic, res);
       const auto sel = hf.fetch();
       _hfw.add_pixels(res, sel.begin<float>(), sel.end<float>());

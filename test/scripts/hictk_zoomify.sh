@@ -32,22 +32,10 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 ref_cooler="$data_dir/4DNFIZ1ZVXC8.mcool"
+ref_hic="$data_dir/4DNFIZ1ZVXC8.500000.hic"
 resolutions=(50000 100000 250000 2500000)
 
 export PATH="$PATH:$script_dir"
-
-if ! command -v cooler &> /dev/null; then
-  2>&1 echo "Unable to find cooler in your PATH"
-  status=1
-fi
-
-# Try to detect the error outlined below as early as possible:
-# https://github.com/open2c/cooler/pull/298
-cooler --help > /dev/null
-
-if [ $status -ne 0 ]; then
-  exit $status
-fi
 
 if ! check_test_files_exist.sh "$ref_cooler"; then
   exit 1
@@ -56,7 +44,7 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-
+# Test cooler (multiple resolutions)
 "$hictk_bin" zoomify \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
   "$outdir/out.mcool"
@@ -67,6 +55,7 @@ for res in "${resolutions[@]}"; do
   fi
 done
 
+# Test cooler (single resolution)
 "$hictk_bin" zoomify \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
   "$outdir/out.cool" \
@@ -76,6 +65,17 @@ done
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
   status=1
 fi
+
+# Test hic (multiple resolutions)
+"$hictk_bin" zoomify \
+  "$ref_hic" \
+  "$outdir/out.hic"
+
+for res in "${resolutions[@]}"; do
+  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$res"; then
+    status=1
+  fi
+done
 
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'

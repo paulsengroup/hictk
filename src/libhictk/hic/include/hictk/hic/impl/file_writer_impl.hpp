@@ -138,7 +138,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::uint32_t compression_lvl, std::size_t buffer_size)
     : _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_)),
       _fs(filestream::FileStream::create(_header.url)),
-      _tmpdir(tmpdir.empty() ? "" : tmpdir / (_header.url + ".tmp/")),
+      _tmpdir(tmpdir),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
       _block_mappers(init_interaction_block_mappers(_tmpdir, _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),

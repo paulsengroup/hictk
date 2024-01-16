@@ -37,16 +37,17 @@ void Cli::make_zoomify_subcommand() {
 
   // clang-format off
   sc.add_option(
-      "cooler",
-       c.input_uri,
-      "Path to a .cool file (Cooler URI syntax supported).")
-      ->check(IsValidCoolerFile)
+      "cooler/hic",
+       c.path_to_input,
+      "Path to a .cool or .hic file (Cooler URI syntax supported).")
+      ->check(IsValidCoolerFile | IsValidHiCFile)
       ->required();
 
   sc.add_option(
-      "mcool",
-      c.output_path,
-      "Output path.");
+      "mcool/hic",
+      c.path_to_output,
+      "Output path.")
+      ->required();
 
   sc.add_flag(
       "--force",
@@ -77,10 +78,31 @@ void Cli::make_zoomify_subcommand() {
   sc.add_option(
       "-l,--compression-lvl",
       c.compression_lvl,
-      "Compression level used to compress interactions.")
-      ->check(CLI::Bound(1, 9))
+      "Compression level used to compress interactions.\n"
+      "Defaults to 6 and 12 for .mcool and .hic files, respectively.")
+      ->check(CLI::Bound(1, 12))
       ->capture_default_str();
 
+  sc.add_option(
+      "-t,--threads",
+      c.threads,
+      "Maximum number of parallel threads to spawn.\n"
+      "When zoomifying interactions from a .cool file, only a single thread will be used.")
+            ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+            ->capture_default_str();
+
+  sc.add_option(
+      "--batch-size",
+      c.batch_size,
+      "Number of pixels to buffer in memory.\n"
+      "Only used when zoomifying .hic files.")
+      ->capture_default_str();
+
+  sc.add_option(
+      "--tmpdir",
+      c.tmp_dir,
+      "Path to a folder where to store temporary data.")
+      ->capture_default_str();
 
   sc.add_option(
       "-v,--verbosity",
@@ -117,8 +139,7 @@ void Cli::make_zoomify_subcommand() {
 }
 
 static std::vector<std::uint32_t> detect_invalid_resolutions(
-    const cooler::File& clr, const std::vector<std::uint32_t>& resolutions) {
-  const auto base_resolution = clr.bin_size();
+    std::uint32_t base_resolution, const std::vector<std::uint32_t>& resolutions) {
   std::vector<std::uint32_t> invalid_resolutions{};
   for (const auto& res : resolutions) {
     if (res % base_resolution != 0 || res < base_resolution) {
@@ -128,6 +149,16 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
   return invalid_resolutions;
 }
 
+[[nodiscard]] static std::uint32_t detect_base_resolution(std::string_view path,
+                                                          std::string_view format) {
+  if (format == "cool") {
+    return cooler::File(path).bin_size();
+  }
+
+  assert(format == "hic");
+  return hic::utils::list_resolutions(std::string{path}, true).front();
+}
+
 void Cli::validate_zoomify_subcommand() const {
   assert(_cli.get_subcommand("zoomify")->parsed());
 
@@ -135,13 +166,26 @@ void Cli::validate_zoomify_subcommand() const {
   std::vector<std::string> errors;
   const auto& c = std::get<ZoomifyConfig>(_config);
 
-  const cooler::File clr(c.input_uri);
-  const auto output_path = c.output_path.empty()
-                               ? std::filesystem::path(clr.path()).replace_extension(".mcool")
-                               : std::filesystem::path(c.output_path);
-  if (!c.force && std::filesystem::exists(output_path)) {
+  if (!c.force && std::filesystem::exists(c.path_to_output)) {
     errors.emplace_back(fmt::format(
-        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_path));
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.path_to_output));
+  }
+
+  const auto input_format = infer_input_format(c.path_to_input);
+  const auto output_format = infer_output_format(c.path_to_output);
+  if ((input_format == "hic" && output_format != "hic") ||
+      (input_format != "hic" && output_format == "hic")) {
+    errors.emplace_back(
+        fmt::format(FMT_STRING("Zoomifying a .{} file to produce .{} file is not supported."),
+                    input_format, output_format));
+  }
+
+  const auto base_resolution = detect_base_resolution(c.path_to_input, input_format);
+
+  if (base_resolution == 0) {  // Variable bin size
+    errors.clear();
+    warnings.clear();
+    errors.emplace_back("zoomifying files with variable bin size is currently not supported.");
   }
 
   if (const auto dupl = detect_duplicate_resolutions(c.resolutions); !dupl.empty()) {
@@ -149,11 +193,12 @@ void Cli::validate_zoomify_subcommand() const {
         fmt::format(FMT_STRING("Found duplicate resolution(s):\n - {}"), fmt::join(dupl, "\n - ")));
   }
 
-  if (const auto invalid = detect_invalid_resolutions(clr, c.resolutions); !invalid.empty()) {
+  if (const auto invalid = detect_invalid_resolutions(base_resolution, c.resolutions);
+      !invalid.empty()) {
     errors.emplace_back(
         fmt::format(FMT_STRING("Found the following invalid resolution(s):\n   - {}\n"
                                "Resolutions should be a multiple of the base resolution ({})."),
-                    fmt::join(invalid, "\n    - "), clr.bin_size()));
+                    fmt::join(invalid, "\n    - "), base_resolution));
   }
 
   const auto* sc = _cli.get_subcommand("zoomify");
@@ -163,12 +208,6 @@ void Cli::validate_zoomify_subcommand() const {
     warnings.emplace_back(
         "--nice-steps and --pow2-steps are ignored when resolutions are explicitly set with "
         "--resolutions.");
-  }
-
-  if (clr.bin_size() == 0) {  // Variable bin size
-    errors.clear();
-    warnings.clear();
-    errors.emplace_back("zoomifying files with variable bin size is not currently supported.");
   }
 
   for (const auto& w : warnings) {
@@ -224,26 +263,33 @@ static std::vector<std::uint32_t> generate_resolutions_nice(
 
 void Cli::transform_args_zoomify_subcommand() {
   auto& c = std::get<ZoomifyConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("zoomify");
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
-  const cooler::File clr(c.input_uri);
 
-  if (c.output_path.empty()) {
-    c.output_path = std::filesystem::path(clr.path()).replace_extension(".mcool").string();
-  }
+  c.input_format = infer_input_format(c.path_to_input);
+  c.output_format = infer_output_format(c.path_to_output);
+
+  const auto base_resolution = detect_base_resolution(c.path_to_input, c.input_format);
 
   if (c.resolutions.empty()) {
-    c.resolutions = c.nice_resolution_steps ? generate_resolutions_nice(clr.bin_size())
-                                            : generate_resolutions_pow2(clr.bin_size());
+    c.resolutions = c.nice_resolution_steps ? generate_resolutions_nice(base_resolution)
+                                            : generate_resolutions_pow2(base_resolution);
   } else {
     std::sort(c.resolutions.begin(), c.resolutions.end());
   }
 
-  if (c.resolutions.front() != clr.bin_size()) {
-    c.resolutions.insert(c.resolutions.begin(), clr.bin_size());
+  if (c.output_format == "cool" && c.resolutions.front() != base_resolution) {
+    c.resolutions.insert(c.resolutions.begin(), base_resolution);
   }
+
+  if (sc.get_option("--compression-lvl")->empty()) {
+    c.compression_lvl = c.output_format == "cool" ? 6 : 12;
+  }
+
+  c.tmp_dir /= (std::filesystem::path(c.path_to_output).filename().string() + ".tmp");
 }
 
 }  // namespace hictk::tools

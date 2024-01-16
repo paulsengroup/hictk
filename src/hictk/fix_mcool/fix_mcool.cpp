@@ -39,8 +39,10 @@ static void run_hictk_zoomify(const FixMcoolConfig& c,
                               const std::vector<std::uint32_t>& resolutions,
                               std::string_view base_uri) {
   ZoomifyConfig zc{};
-  zc.input_uri = std::string{base_uri};
-  zc.output_path = c.path_to_output.string();
+  zc.path_to_input = std::string{base_uri};
+  zc.path_to_output = c.path_to_output.string();
+  zc.input_format = "cool";
+  zc.output_format = "cool";
   zc.resolutions = resolutions;
   zc.copy_base_resolution = true;
   zc.force = c.force;

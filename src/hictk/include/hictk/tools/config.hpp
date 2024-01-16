@@ -157,14 +157,19 @@ struct ValidateConfig {
 };
 
 struct ZoomifyConfig {
-  std::string input_uri{};
-  std::string output_path{};
+  std::string path_to_input{};
+  std::string path_to_output{};
+  std::string input_format{};
+  std::string output_format{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
 
   std::vector<std::uint32_t> resolutions{};
   bool copy_base_resolution{true};
   bool nice_resolution_steps{true};
 
   std::uint32_t compression_lvl{6};
+  std::uint32_t threads{1};
+  std::size_t batch_size{10'000};
 
   bool force{false};
   std::uint8_t verbosity{4};
