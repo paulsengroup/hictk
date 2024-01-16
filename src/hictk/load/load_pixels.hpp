@@ -72,7 +72,7 @@ template <typename N>
       clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();
     }
-    assert(!buffer.empty());
+    assert(buffer.empty());
   } catch (const std::exception& e) {
     const auto i0 = i * buffer.capacity();
     const auto i1 = i0 + buffer.size();
