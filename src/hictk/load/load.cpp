@@ -72,6 +72,8 @@ namespace hictk::tools {
 static Stats ingest_pixels_hic(const LoadConfig& c) {
   const auto format = format_from_string(c.format);
   const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
+
+  [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir};
   return ingest_pixels_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
                            format, c.threads, c.batch_size, c.compression_lvl, c.force);
 }
@@ -112,6 +114,7 @@ static Stats ingest_pairs_hic(const LoadConfig& c) {
   const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
   const auto format = format_from_string(c.format);
 
+  [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir};
   return ingest_pairs_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
                           format, c.threads, c.batch_size, c.compression_lvl, c.force);
 }
@@ -135,8 +138,8 @@ static Stats ingest_pairs(const LoadConfig& c) {
 int load_subcmd(const LoadConfig& c) {
   const auto format = format_from_string(c.format);
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
-  const auto t0 = std::chrono::system_clock::now();
 
+  const auto t0 = std::chrono::system_clock::now();
   const auto stats = pixel_has_count ? ingest_pixels(c) : ingest_pairs(c);
 
   const auto t1 = std::chrono::system_clock::now();

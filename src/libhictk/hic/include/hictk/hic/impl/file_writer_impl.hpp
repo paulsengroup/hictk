@@ -144,7 +144,12 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
       _compression_lvl(compression_lvl),
       _compressor(libdeflate_alloc_compressor(static_cast<std::int32_t>(compression_lvl))),
       _compression_buffer(buffer_size, '\0'),
-      _tpool(init_tpool(n_threads)) {}
+      _tpool(init_tpool(n_threads)) {
+  if (!std::filesystem::exists(_tmpdir)) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("temporary directory {} does not exist"), _tmpdir));
+  }
+}
 
 inline std::string_view HiCFileWriter::url() const noexcept { return _header.url; }
 
@@ -171,7 +176,9 @@ inline void HiCFileWriter::serialize() {
   write_pixels();
   compute_and_write_expected_values();
   finalize();
-  std::filesystem::remove(_tmpdir);
+  for (auto &[_, mapper] : _block_mappers) {
+    mapper.clear();
+  }
 }
 
 inline void HiCFileWriter::write_header() {
