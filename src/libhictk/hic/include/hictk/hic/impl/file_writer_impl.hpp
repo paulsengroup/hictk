@@ -381,7 +381,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
       if (!sel.empty()) {
         SPDLOG_INFO(FMT_STRING("[{} bp] no pixels provided for {}:{} matrix: generating pixels by "
                                "coarsening resolution {}..."),
-                    chrom1.name(), chrom2.name(), res, base_resolution);
+                    res, chrom1.name(), chrom2.name(), base_resolution);
         const auto factor = res / base_resolution;
         const transformers::CoarsenPixels coarsener(
             sel.begin<float>(), sel.end<float>(),
