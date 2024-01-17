@@ -46,7 +46,7 @@ resolutions=(100000 2500000)
              "$ref_cool" \
              "$outdir/out.hic" \
              --resolutions ${resolutions[*]} \
-             --threads "$(nproc)" \
+             --threads "$(nproc.sh)" \
              --batch-size 100000
 
 for resolution in "${resolutions[@]}"; do
