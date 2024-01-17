@@ -16,7 +16,6 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic/file_writer.hpp"
-#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

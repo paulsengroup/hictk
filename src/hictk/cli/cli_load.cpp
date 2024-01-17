@@ -201,7 +201,7 @@ void Cli::transform_args_load_subcommand() {
   c.tmp_dir /= (std::filesystem::path(c.output_path).filename().string() + ".tmp");
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "cool" ? 6 : 12;
+    c.compression_lvl = c.output_format == "hic" ? 12 : 6;
   }
 
   // in spdlog, high numbers correspond to low log levels

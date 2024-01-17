@@ -29,11 +29,11 @@
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/default_delete.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
-#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/juicer_tools.hpp"
 

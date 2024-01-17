@@ -126,7 +126,7 @@ struct LoadConfig {
   std::uint32_t compression_lvl{9};
 
   std::uint8_t verbosity{4};
-  std::size_t batch_size{20'000'000};
+  std::size_t batch_size{10'000'000};
 };
 
 struct MergeConfig {
@@ -169,7 +169,7 @@ struct ZoomifyConfig {
 
   std::uint32_t compression_lvl{6};
   std::uint32_t threads{1};
-  std::size_t batch_size{10'000};
+  std::size_t batch_size{10'000'000};
 
   bool force{false};
   std::uint8_t verbosity{4};
