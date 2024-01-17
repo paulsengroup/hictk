@@ -33,7 +33,8 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 input_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
-resolution=10000
+input_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic9"
+resolution=100000
 
 export PATH="$PATH:$script_dir"
 
@@ -58,9 +59,23 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 cooler merge "$outdir/expected.cool" "$input_cooler::/resolutions/$resolution" "$input_cooler::/resolutions/$resolution"
-"$hictk_bin" merge -o "$outdir/out.cool" "$input_cooler::/resolutions/$resolution" "$input_cooler::/resolutions/$resolution"
 
+# Test merrging coolers
+"$hictk_bin" merge "$input_cooler::/resolutions/$resolution" \
+                   "$input_cooler::/resolutions/$resolution" \
+                   -o "$outdir/out.cool" \
+                   --chunk-size=9999
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.cool" "$resolution"; then
+  status=1
+fi
+
+# Test merging .hic
+"$hictk_bin" merge "$input_hic" \
+                   "$input_hic" \
+                   -o "$outdir/out.hic" \
+                   --resolution "$resolution" \
+                   --chunk-size=9999
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.hic" "$resolution"; then
   status=1
 fi
 
