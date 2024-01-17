@@ -130,12 +130,16 @@ struct LoadConfig {
 };
 
 struct MergeConfig {
-  std::vector<std::string> input_uris{};
-  std::filesystem::path output_uri{};
-  std::filesystem::path tmp_dir{};
+  std::vector<std::string> input_files{};
+  std::filesystem::path output_file{};
+  std::string output_format{};
+  std::uint32_t resolution{};
 
-  std::size_t chunk_size{5'000'000};
-  std::uint32_t compression_lvl{6};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+
+  std::size_t chunk_size{10'000'000};
+  std::uint32_t compression_lvl{9};
+  std::size_t threads{1};
 
   bool force{false};
   std::uint8_t verbosity{4};
