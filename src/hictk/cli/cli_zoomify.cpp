@@ -92,7 +92,7 @@ void Cli::make_zoomify_subcommand() {
             ->capture_default_str();
 
   sc.add_option(
-      "--batch-size",
+      "--chunk-size",
       c.batch_size,
       "Number of pixels to buffer in memory.\n"
       "Only used when zoomifying .hic files.")

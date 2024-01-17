@@ -100,7 +100,7 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_option(
-      "--batch-size",
+      "--chunk-size",
       c.batch_size,
       "Number of pixels to buffer in memory.")
       ->capture_default_str();

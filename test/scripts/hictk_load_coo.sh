@@ -60,7 +60,7 @@ if [[ "$sorted" == true ]]; then
     "$hictk_bin" load \
       -f coo \
       --assume-sorted \
-      --batch-size "$batch_size" \
+      --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       "$outdir/chrom.sizes" \
@@ -71,7 +71,7 @@ else
     "$hictk_bin" load \
       -f coo \
       --assume-unsorted \
-      --batch-size "$batch_size" \
+      --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       "$outdir/chrom.sizes" \
@@ -89,7 +89,7 @@ if [[ "$sorted" == false ]]; then
     "$hictk_bin" load \
       -f coo \
       --assume-unsorted \
-      --batch-size "$batch_size" \
+      --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       "$outdir/chrom.sizes" \
