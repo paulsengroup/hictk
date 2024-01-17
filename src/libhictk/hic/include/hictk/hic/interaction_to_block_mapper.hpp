@@ -26,21 +26,12 @@
 #include <vector>
 
 #include "hictk/chromosome.hpp"
+#include "hictk/default_delete.hpp"
 #include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/file_writer_data_structures.hpp"
 #include "hictk/hic/filestream.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
-
-template <>
-struct std::default_delete<ZSTD_CCtx_s> {
-  void operator()(ZSTD_CCtx_s* ctx) const { ZSTD_freeCCtx(ctx); }  // NOLINT
-};
-
-template <>
-struct std::default_delete<ZSTD_DCtx_s> {
-  void operator()(ZSTD_DCtx_s* ctx) const { ZSTD_freeDCtx(ctx); }  // NOLINT
-};
 
 namespace hictk::hic::internal {
 

@@ -170,7 +170,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     }
 
     add_pixel(*first_pixel);
-    ++first_pixel;
+    std::ignore = ++first_pixel;
   }
 }
 
@@ -200,7 +200,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
             return *first_pixel;
           }
         }();
-        ++first_pixel;
+        std::ignore = ++first_pixel;
 
         while (!queue.try_enqueue(pixel)) {
           if (early_return) {

@@ -115,8 +115,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
 
   for (std::size_t ii = 0; ii < max_num_bins; ii++) {
     if (num_sum < shot_noise_minimum) {
-      while (num_sum < shot_noise_minimum && bound2 < max_num_bins) {
-        bound2++;
+      while (num_sum < shot_noise_minimum && ++bound2 < max_num_bins) {
         num_sum += _actual_distances[bound2];
         den_sum += _possible_distances[bound2];
       }

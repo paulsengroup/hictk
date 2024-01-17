@@ -25,6 +25,7 @@
 #include <string>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/default_delete.hpp"
 #include "hictk/hash.hpp"
 #include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/expected_values_aggregator.hpp"
@@ -35,13 +36,6 @@
 #include "hictk/hic/interaction_block.hpp"
 #include "hictk/hic/interaction_to_block_mapper.hpp"
 #include "hictk/tmpdir.hpp"
-
-template <>
-struct std::default_delete<libdeflate_compressor> {
-  void operator()(libdeflate_compressor* compressor) const {
-    libdeflate_free_compressor(compressor);
-  }
-};
 
 namespace hictk::hic::internal {
 
@@ -148,7 +142,7 @@ class HiCFileWriter {
       std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
       std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-      std::uint32_t compression_lvl = 9, std::size_t buffer_size = 32'000'000);
+      std::uint32_t compression_lvl = 12, std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
