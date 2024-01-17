@@ -17,7 +17,7 @@
 
 namespace hictk::cooler::utils {
 
-/// Iterable of hictk::File or strings
+/// Iterable of strings
 template <typename N, typename Str>
 void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool overwrite_if_exists = false,
            std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000,

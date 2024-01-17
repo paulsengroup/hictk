@@ -20,18 +20,7 @@
 #include <vector>
 
 #include "hictk/common.hpp"
-
-namespace std {
-template <>
-struct default_delete<ZSTD_CCtx_s> {
-  void operator()(ZSTD_CCtx_s* ctx) const { ZSTD_freeCCtx(ctx); }  // NOLINT
-};
-
-template <>
-struct default_delete<ZSTD_DCtx_s> {
-  void operator()(ZSTD_DCtx_s* ctx) const { ZSTD_freeDCtx(ctx); }  // NOLINT
-};
-}  // namespace std
+#include "hictk/default_delete.hpp"
 
 namespace hictk::balancing {
 
