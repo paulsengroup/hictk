@@ -110,7 +110,7 @@ jobs:
 
       - name: Restore Conan cache
         id: cache-conan
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: conan-${{ steps.cache-key.outputs.conan-restore-key }}
           path: ${{ env.CONAN_HOME }}
@@ -148,14 +148,14 @@ jobs:
           conan cache clean "*" --source
 
       - name: Save Conan cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
           key: conan-${{ steps.cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Cache Ccache folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: ${{ steps.cache-key.outputs.ccache-key }}
           restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
@@ -182,7 +182,7 @@ jobs:
         run: ccache -s
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.xz

@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.xz
