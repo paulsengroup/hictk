@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "hictk/hic/binary_buffer.hpp"
+#include "hictk/hic/filestream.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
@@ -124,7 +125,7 @@ struct MatrixInteractionBlock {
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index
-struct MasterIndex {
+struct FooterMasterIndex {
   std::string key;
   std::int64_t position;
   std::int32_t size;
@@ -134,54 +135,103 @@ struct MasterIndex {
 struct ExpectedValuesBlock {
   std::string unit{};
   std::int32_t binSize{};
-  std::int64_t nValues{};
+  [[nodiscard]] std::int64_t nValues() const noexcept;
   std::vector<float> value{};
-  std::int32_t nChrScaleFactors{};
+  [[nodiscard]] std::int32_t nChrScaleFactors() const noexcept;
   std::vector<std::int32_t> chrIndex{};
   std::vector<float> chrScaleFactor{};
 
+  ExpectedValuesBlock() = default;
   ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
                       const std::vector<double>& weights,
                       const std::vector<std::uint32_t>& chrom_ids,
                       const std::vector<double>& scale_factors);
+
+  [[nodiscard]] bool operator<(const ExpectedValuesBlock& other) const noexcept;
+
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static ExpectedValuesBlock deserialize(filestream::FileStream& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
-struct ExpectedValues {
-  std::int32_t nExpectedValueVectors = 0;
-  std::vector<ExpectedValuesBlock> expectedValues;
+class ExpectedValues {
+  std::vector<ExpectedValuesBlock> _expected_values;
+
+ public:
+  [[nodiscard]] std::int32_t nExpectedValueVectors() const noexcept;
+  [[nodiscard]] const std::vector<ExpectedValuesBlock>& expectedValues() const noexcept;
+  void emplace_back(ExpectedValuesBlock evb);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static ExpectedValues deserialize(filestream::FileStream& fs);
+};
+
+struct NormalizedExpectedValuesBlock {
+  std::string type{};
+  std::string unit{};
+  std::int32_t binSize{};
+  [[nodiscard]] std::int64_t nValues() const noexcept;
+  std::vector<float> value{};
+  [[nodiscard]] std::int32_t nChrScaleFactors() const noexcept;
+  std::vector<std::int32_t> chrIndex{};
+  std::vector<float> chrScaleFactor{};
+
+  NormalizedExpectedValuesBlock() = default;
+  NormalizedExpectedValuesBlock(std::string_view type_, std::string_view unit_,
+                                std::uint32_t bin_size, const std::vector<double>& weights,
+                                const std::vector<std::uint32_t>& chrom_ids,
+                                const std::vector<double>& scale_factors);
+
+  [[nodiscard]] bool operator<(const NormalizedExpectedValuesBlock& other) const noexcept;
+
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static NormalizedExpectedValuesBlock deserialize(filestream::FileStream& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
-struct NormalizedExpectedValues {
-  std::int32_t nNormExpectedValueVectors = 0;
+class NormalizedExpectedValues {
+  std::vector<NormalizedExpectedValuesBlock> _normalized_expected_values;
+
+ public:
+  [[nodiscard]] std::int32_t nNormExpectedValueVectors() const noexcept;
+  [[nodiscard]] const std::vector<NormalizedExpectedValuesBlock>& normExpectedValues()
+      const noexcept;
+  void emplace_back(NormalizedExpectedValuesBlock evb);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static NormalizedExpectedValues deserialize(filestream::FileStream& fs);
+};
+
+struct NormalizationVectorIndexBlock {
+  std::string type{};
+  std::int32_t chrIdx{};
+  std::string unit{};
+  std::int32_t binSize{};
+  std::int64_t position{};
+  std::int64_t nBytes{};
+
+ private:
+ public:
+  NormalizationVectorIndexBlock() = default;
+  NormalizationVectorIndexBlock(std::string type_, std::uint32_t chrom_idx, std::string unit_,
+                                std::uint32_t bin_size, std::size_t position_, std::size_t n_bytes);
+
+  [[nodiscard]] bool operator<(const NormalizationVectorIndexBlock& other) const noexcept;
+
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static NormalizationVectorIndexBlock deserialize(filestream::FileStream& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-index
-struct NormalizationVectorIndex {
-  std::int32_t nNormVectors = 0;
+class NormalizationVectorIndex {
+  std::vector<NormalizationVectorIndexBlock> _norm_vect_idx{};
+
+ public:
+  [[nodiscard]] std::int32_t nNormVectors() const noexcept;
+  [[nodiscard]] const std::vector<NormalizationVectorIndexBlock> normalizationVectorIndex()
+      const noexcept;
+  void emplace_back(NormalizationVectorIndexBlock blk);
+
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-// https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
-struct NormalizationVectorArray {
-  std::int64_t nValues = 0;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-};
-
-struct FooterV5 {
-  MasterIndex masterIndex{};
-
-  ExpectedValues expectedValues{};
-  NormalizedExpectedValues normExpectedValues{};
-  NormalizationVectorIndex normVectIndex{};
-  std::vector<NormalizationVectorArray> normVectArray{};
-
-  FooterV5() = default;
-  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static NormalizationVectorIndex deserialize(filestream::FileStream& fs);
 };
 
 }  // namespace hictk::hic::internal

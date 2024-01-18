@@ -147,7 +147,8 @@ inline void MatrixInteractionBlock<N>::finalize() {
   const auto size_dense = compute_size_dense_repr();
   const auto width = compute_dense_width();
 
-  const auto use_lor = (size_lor < size_dense) || (width > std::numeric_limits<std::int16_t>::max());
+  const auto use_lor =
+      (size_lor < size_dense) || (width > std::numeric_limits<std::int16_t>::max());
 
   useFloatContact = 1;
   useIntXPos = 1;
@@ -321,7 +322,7 @@ inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
   }
 }
 
-inline std::string MasterIndex::serialize(BinaryBuffer &buffer, bool clear) const {
+inline std::string FooterMasterIndex::serialize(BinaryBuffer &buffer, bool clear) const {
   if (clear) {
     buffer.clear();
   }
@@ -333,15 +334,22 @@ inline std::string MasterIndex::serialize(BinaryBuffer &buffer, bool clear) cons
   return buffer.get();
 }
 
+inline std::int64_t ExpectedValuesBlock::nValues() const noexcept {
+  return static_cast<std::int64_t>(value.size());
+}
+
+inline std::int32_t ExpectedValuesBlock::nChrScaleFactors() const noexcept {
+  assert(chrIndex.size() == chrScaleFactor.size());
+  return static_cast<std::int32_t>(chrIndex.size());
+}
+
 inline ExpectedValuesBlock::ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
                                                 const std::vector<double> &weights,
                                                 const std::vector<std::uint32_t> &chrom_ids,
                                                 const std::vector<double> &scale_factors)
     : unit(std::string{unit_}),
       binSize(static_cast<std::int32_t>(bin_size)),
-      nValues(static_cast<std::int32_t>(weights.size())),
       value(weights.size()),
-      nChrScaleFactors(static_cast<std::int32_t>(chrom_ids.size())),
       chrIndex(chrom_ids.size()),
       chrScaleFactor(chrom_ids.size()) {
   std::transform(weights.begin(), weights.end(), value.begin(),
@@ -352,6 +360,14 @@ inline ExpectedValuesBlock::ExpectedValuesBlock(std::string_view unit_, std::uin
                  [](const auto n) { return static_cast<float>(n); });
 }
 
+inline bool ExpectedValuesBlock::operator<(const ExpectedValuesBlock &other) const noexcept {
+  if (unit != other.unit) {
+    return unit < other.unit;
+  }
+
+  return binSize < other.binSize;
+}
+
 inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool clear) const {
   if (clear) {
     buffer.clear();
@@ -359,9 +375,9 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
 
   buffer.write(unit);
   buffer.write(binSize);
-  buffer.write(nValues);
+  buffer.write(nValues());
   buffer.write(value);
-  buffer.write(nChrScaleFactors);
+  buffer.write(nChrScaleFactors());
 
   assert(chrIndex.size() == chrScaleFactor.size());
   for (std::size_t i = 0; i < chrIndex.size(); ++i) {
@@ -372,22 +388,156 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
   return buffer.get();
 }
 
+inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(filestream::FileStream &fs) {
+  ExpectedValuesBlock evb{};
+  evb.unit = fs.getline('\0');
+  fs.read(evb.binSize);
+  const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+  evb.value.resize(nValues);
+  fs.read(evb.value);
+  const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+  evb.chrIndex.resize(nChrScaleFactors);
+  evb.chrScaleFactor.resize(nChrScaleFactors);
+
+  for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
+    evb.chrIndex.emplace_back(fs.read<std::int32_t>());
+    evb.chrScaleFactor.emplace_back(fs.read<float>());
+  }
+
+  return evb;
+}
+
+inline std::int32_t ExpectedValues::nExpectedValueVectors() const noexcept {
+  return static_cast<std::int32_t>(expectedValues().size());
+}
+
+inline const std::vector<ExpectedValuesBlock> &ExpectedValues::expectedValues() const noexcept {
+  return _expected_values;
+}
+
+inline void ExpectedValues::emplace_back(ExpectedValuesBlock evb) {
+  _expected_values.emplace_back(std::move(evb));
+}
+
 inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
   if (clear) {
     buffer.clear();
   }
 
-  buffer.write(nExpectedValueVectors);
+  buffer.write(nExpectedValueVectors());
 
-  if (nExpectedValueVectors == 0) {
+  if (nExpectedValueVectors() == 0) {
     return buffer.get();
   }
 
-  for (const auto &ev : expectedValues) {
+  for (const auto &ev : expectedValues()) {
     std::ignore = ev.serialize(buffer, false);
   }
 
   return buffer.get();
+}
+
+inline ExpectedValues ExpectedValues::deserialize(filestream::FileStream &fs) {
+  ExpectedValues evs{};
+  const auto nExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+  for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
+    evs.emplace_back(ExpectedValuesBlock::deserialize(fs));
+  }
+  return evs;
+}
+
+inline std::int64_t NormalizedExpectedValuesBlock::nValues() const noexcept {
+  return static_cast<std::int64_t>(value.size());
+}
+
+inline std::int32_t NormalizedExpectedValuesBlock::nChrScaleFactors() const noexcept {
+  assert(chrIndex.size() == chrScaleFactor.size());
+  return static_cast<std::int32_t>(chrIndex.size());
+}
+
+inline NormalizedExpectedValuesBlock::NormalizedExpectedValuesBlock(
+    std::string_view type_, std::string_view unit_, std::uint32_t bin_size,
+    const std::vector<double> &weights, const std::vector<std::uint32_t> &chrom_ids,
+    const std::vector<double> &scale_factors)
+    : type(std::string{type_}),
+      unit(std::string{unit_}),
+      binSize(static_cast<std::int32_t>(bin_size)),
+      value(weights.size()),
+      chrIndex(chrom_ids.size()),
+      chrScaleFactor(chrom_ids.size()) {
+  std::transform(weights.begin(), weights.end(), value.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
+  std::transform(chrom_ids.begin(), chrom_ids.end(), chrIndex.begin(),
+                 [](const auto n) { return static_cast<std::int32_t>(n); });
+  std::transform(scale_factors.begin(), scale_factors.end(), chrScaleFactor.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
+}
+
+inline bool NormalizedExpectedValuesBlock::operator<(
+    const NormalizedExpectedValuesBlock &other) const noexcept {
+  if (type != other.type) {
+    return type < other.type;
+  }
+  if (unit != other.unit) {
+    return unit < other.unit;
+  }
+  return binSize < other.binSize;
+}
+
+inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer,
+                                                            bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
+  buffer.write(type);
+  buffer.write(unit);
+  buffer.write(binSize);
+  buffer.write(nValues());
+  buffer.write(value);
+  buffer.write(nChrScaleFactors());
+
+  assert(chrIndex.size() == chrScaleFactor.size());
+  for (std::size_t i = 0; i < chrIndex.size(); ++i) {
+    buffer.write(chrIndex[i]);
+    buffer.write(chrScaleFactor[i]);
+  }
+
+  return buffer.get();
+}
+
+inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::deserialize(
+    filestream::FileStream &fs) {
+  NormalizedExpectedValuesBlock nevb{};
+  nevb.type = fs.getline('\0');
+  nevb.unit = fs.getline('\0');
+  fs.read(nevb.binSize);
+  const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+  nevb.value.resize(nValues);
+  fs.read(nevb.value);
+  const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+  nevb.chrIndex.resize(nChrScaleFactors);
+  nevb.chrScaleFactor.resize(nChrScaleFactors);
+
+  for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
+    nevb.chrIndex.emplace_back(fs.read<std::int32_t>());
+    nevb.chrScaleFactor.emplace_back(fs.read<float>());
+  }
+
+  return nevb;
+}
+
+inline std::int32_t NormalizedExpectedValues::nNormExpectedValueVectors() const noexcept {
+  return static_cast<std::int32_t>(_normalized_expected_values.size());
+}
+
+inline const std::vector<NormalizedExpectedValuesBlock> &
+NormalizedExpectedValues::normExpectedValues() const noexcept {
+  return _normalized_expected_values;
+}
+
+inline void NormalizedExpectedValues::emplace_back(NormalizedExpectedValuesBlock evb) {
+  _normalized_expected_values.emplace_back(std::move(evb));
 }
 
 inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
@@ -395,9 +545,89 @@ inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, boo
     buffer.clear();
   }
 
-  buffer.write(nNormExpectedValueVectors);
+  buffer.write(nNormExpectedValueVectors());
+  for (const auto &nev : _normalized_expected_values) {
+    std::ignore = nev.serialize(buffer, false);
+  }
 
   return buffer.get();
+}
+
+inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(filestream::FileStream &fs) {
+  NormalizedExpectedValues nevs{};
+  const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+  nevs._normalized_expected_values.reserve(nNormExpectedValueVectors);
+  for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
+    nevs.emplace_back(NormalizedExpectedValuesBlock::deserialize(fs));
+  }
+  return nevs;
+}
+
+inline NormalizationVectorIndexBlock::NormalizationVectorIndexBlock(
+    std::string type_, std::uint32_t chrom_idx, std::string unit_, std::uint32_t bin_size,
+    std::size_t position_, std::size_t n_bytes)
+    : type(std::move(type_)),
+      chrIdx(static_cast<std::int32_t>(chrom_idx)),
+      unit(std::move(unit_)),
+      binSize(static_cast<std::int32_t>(bin_size)),
+      position(static_cast<std::int64_t>(position_)),
+      nBytes(static_cast<std::int64_t>(n_bytes)) {}
+
+inline bool NormalizationVectorIndexBlock::operator<(
+    const NormalizationVectorIndexBlock &other) const noexcept {
+  if (type != other.type) {
+    return type < other.type;
+  }
+  if (chrIdx != other.chrIdx) {
+    return chrIdx < other.chrIdx;
+  }
+  if (unit != other.unit) {
+    return unit < other.unit;
+  }
+  return binSize < other.binSize;
+}
+
+inline std::string NormalizationVectorIndexBlock::serialize(BinaryBuffer &buffer,
+                                                            bool clear) const {
+  if (clear) {
+    buffer.clear();
+  }
+
+  buffer.write(type);
+  buffer.write(chrIdx);
+  buffer.write(unit);
+  buffer.write(binSize);
+  buffer.write(position);
+  buffer.write(nBytes);
+
+  return buffer.get();
+}
+
+inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::deserialize(
+    filestream::FileStream &fs) {
+  NormalizationVectorIndexBlock nvib{};
+
+  nvib.type = fs.getline('\0');
+  nvib.chrIdx = fs.read<std::int32_t>();
+  nvib.unit = fs.getline('\0');
+  nvib.binSize = fs.read<std::int32_t>();
+  nvib.position = fs.read<std::int64_t>();
+  nvib.nBytes = fs.read<std::int64_t>();
+
+  return nvib;
+}
+
+inline std::int32_t NormalizationVectorIndex::nNormVectors() const noexcept {
+  return static_cast<std::int32_t>(_norm_vect_idx.size());
+}
+
+inline const std::vector<NormalizationVectorIndexBlock>
+NormalizationVectorIndex::normalizationVectorIndex() const noexcept {
+  return _norm_vect_idx;
+}
+
+inline void NormalizationVectorIndex::emplace_back(NormalizationVectorIndexBlock blk) {
+  _norm_vect_idx.emplace_back(std::move(blk));
 }
 
 inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, bool clear) const {
@@ -405,26 +635,22 @@ inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, boo
     buffer.clear();
   }
 
-  buffer.write(nNormVectors);
+  buffer.write(nNormVectors());
+
+  for (const auto &nv : _norm_vect_idx) {
+    std::ignore = nv.serialize(buffer, false);
+  }
 
   return buffer.get();
 }
 
-inline std::string NormalizationVectorArray::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
+inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(filestream::FileStream &fs) {
+  NormalizationVectorIndex nvi{};
+  const auto nNormVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+  for (std::size_t i = 0; i < nNormVectors; ++i) {
+    nvi.emplace_back(NormalizationVectorIndexBlock::deserialize(fs));
   }
-
-  buffer.write(nValues);
-
-  return buffer.get();
+  return nvi;
 }
 
-inline std::string FooterV5::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  return masterIndex.serialize(buffer);
-}
 }  // namespace hictk::hic::internal

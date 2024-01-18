@@ -23,9 +23,12 @@
 
 namespace hictk::hic::internal::filestream {
 
-inline FileStream::FileStream(std::string path)
+inline FileStream::FileStream(std::string path, std::ios::openmode mode)
     : _path(std::move(path)),
-      _ifs(open_file_read(_path, std::ios::binary | std::ios::ate)),
+      _ifs(open_file_read(_path, std::ios::in | std::ios::binary | std::ios::ate)),
+      _ofs(mode & std::ios::out
+               ? open_file_write(_path, std::ios::in | std::ios::out | std::ios::binary)
+               : std::ofstream{}),
       _file_size(static_cast<std::size_t>(_ifs.tellg())) {
   _ifs.seekg(0, std::ios::beg);
 }

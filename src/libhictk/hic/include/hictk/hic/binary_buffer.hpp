@@ -20,7 +20,13 @@ class BinaryBuffer {
   // NOLINTNEXTLINE
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
   T read();
+  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  void read(T& buff);
+  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  void read(std::vector<T>& data);
   void read(std::string& buff, std::size_t n);
+  void read(char* buff, std::size_t n);
+  std::string getline(char delim = '\n');
   // NOLINTNEXTLINE
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
   void write(T data);

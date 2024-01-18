@@ -241,6 +241,66 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
                std::move(norm));
 }
 
+inline balancing::Weights File::normalization(balancing::Method norm,
+                                              const Chromosome& chrom) const {
+  std::vector<double> weights_{};
+  const auto expected_length = (chrom.size() + bins().bin_size() - 1) / bins().bin_size();
+  try {
+    auto weights = fetch(chrom.name(), norm).weights1();
+    if (!!weights && weights().size() != expected_length) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
+                                 "expected {} values, found {}"),
+                      norm, chrom.name(), expected_length, weights().size()));
+    }
+    weights_ = weights();
+  } catch (const std::exception& e) {
+    const std::string_view msg{e.what()};
+
+    const auto missing_interactions =
+        msg.find("unable to read file offset") != std::string_view::npos;
+
+    const auto missing_norm_vect =
+        msg.find(fmt::format(FMT_STRING("unable to find {} normalization vector"), norm)) !=
+        std::string_view::npos;
+
+    if (!missing_interactions && !missing_norm_vect) {
+      throw;
+    }
+  }
+
+  if (weights_.empty()) {
+    weights_.resize(expected_length, std::numeric_limits<double>::quiet_NaN());
+  }
+
+  return {weights_, balancing::Weights::Type::DIVISIVE};
+}
+
+inline balancing::Weights File::normalization(std::string_view norm,
+                                              const Chromosome& chrom) const {
+  return normalization(balancing::Method{norm}, chrom);
+}
+
+inline balancing::Weights File::normalization(balancing::Method norm) const {
+  std::vector<double> weights{};
+  weights.reserve(bins().size());
+  for (const auto& chrom : chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+
+    const auto chrom_weights = normalization(norm, chrom);
+    weights.insert(weights.end(), chrom_weights().begin(), chrom_weights().end());
+  }
+
+  assert(weights.size() == bins().size());
+  return {weights, balancing::Weights::Type::DIVISIVE};
+}
+
+inline balancing::Weights File::normalization(std::string_view norm) const {
+  return normalization(balancing::Method{norm});
+}
+
 inline std::size_t File::num_cached_footers() const noexcept { return _footers.size(); }
 
 inline void File::purge_footer_cache() { _footers.clear(); }

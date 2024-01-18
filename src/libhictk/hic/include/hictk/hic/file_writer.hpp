@@ -24,6 +24,7 @@
 #include <queue>
 #include <string>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/default_delete.hpp"
 #include "hictk/hash.hpp"
@@ -112,7 +113,7 @@ class HiCFileWriter {
   BlockMappers _block_mappers{};
 
   using StatsTank = phmap::flat_hash_map<std::uint32_t, Stats>;
-  using FooterTank = phmap::btree_map<std::pair<Chromosome, Chromosome>, FooterV5>;
+  using FooterTank = phmap::btree_map<std::pair<Chromosome, Chromosome>, FooterMasterIndex>;
 
   MatrixBodyMetadataTank _matrix_metadata{};
   FooterTank _footers{};
@@ -122,6 +123,9 @@ class HiCFileWriter {
   BinaryBuffer _bbuffer{};
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
+
+  phmap::btree_set<NormalizedExpectedValuesBlock> _normalized_expected_values{};
+  phmap::btree_map<NormalizationVectorIndexBlock, std::vector<float>> _normalization_vectors{};
 
   HiCSectionOffsets _header_section{};
   HiCSectionOffsets _data_block_section{};
@@ -137,12 +141,12 @@ class HiCFileWriter {
 
  public:
   HiCFileWriter() = default;
-  explicit HiCFileWriter(
-      std::string_view path_, Reference chromosomes_, std::vector<std::uint32_t> resolutions_,
-      std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
-      std::size_t chunk_size = 10'000'000,
-      const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-      std::uint32_t compression_lvl = 12, std::size_t buffer_size = 32'000'000);
+  explicit HiCFileWriter(std::string_view path_);
+  HiCFileWriter(std::string_view path_, Reference chromosomes_,
+                std::vector<std::uint32_t> resolutions_, std::string_view assembly_ = "unknown",
+                std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
+                const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
+                std::uint32_t compression_lvl = 12, std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view url() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -176,13 +180,26 @@ class HiCFileWriter {
   // Write expected/normalization values
   void compute_and_write_expected_values();
 
+  // Write normalization vectors
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights);
+  void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
+                       std::uint32_t bin_size, const std::vector<float>& weights,
+                       std::size_t position = std::numeric_limits<std::size_t>::max(),
+                       std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights);
+  void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
+                       std::uint32_t bin_size, const balancing::Weights& weights,
+                       std::size_t position = std::numeric_limits<std::size_t>::max(),
+                       std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
+  void write_norm_vectors();
+
   void write_empty_expected_values();
   void write_empty_normalized_expected_values();
-  void write_empty_norm_vectors();
 
   void finalize();
 
  private:
+  [[nodiscard]] static HiCHeader read_header(std::string_view path);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly);
@@ -210,6 +227,10 @@ class HiCFileWriter {
                                                        std::uint32_t resolution);
   [[nodiscard]] std::size_t compute_num_bins(const Chromosome& chrom1, const Chromosome& chrom2,
                                              std::uint32_t resolution);
+
+  void read_normalized_expected_values();
+  void read_norm_vectors();
+  [[nodiscard]] std::vector<float> read_norm_vector(const NormalizationVectorIndexBlock& blk);
 
   // Methods to be called from worker threads
   auto merge_and_compress_blocks_thr(

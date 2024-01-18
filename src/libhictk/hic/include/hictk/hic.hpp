@@ -85,6 +85,13 @@ class File {
                                     std::uint64_t first_bin2, std::uint64_t last_bin2,
                                     balancing::Method norm = balancing::Method::NONE()) const;
 
+  [[nodiscard]] balancing::Weights normalization(balancing::Method norm,
+                                                 const Chromosome &chrom) const;
+  [[nodiscard]] balancing::Weights normalization(std::string_view norm,
+                                                 const Chromosome &chrom) const;
+  [[nodiscard]] balancing::Weights normalization(balancing::Method norm) const;
+  [[nodiscard]] balancing::Weights normalization(std::string_view norm) const;
+
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
 

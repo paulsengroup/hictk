@@ -25,7 +25,7 @@ class FileStream {
 
  public:
   FileStream() = default;
-  explicit FileStream(std::string path);
+  explicit FileStream(std::string path, std::ios::openmode mode = std::ios::in);
   static FileStream create(std::string path);
 
   [[nodiscard]] const std::string &path() const noexcept;

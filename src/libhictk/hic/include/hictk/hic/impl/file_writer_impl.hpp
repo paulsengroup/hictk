@@ -131,6 +131,15 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
   return _tank;
 }
 
+inline HiCFileWriter::HiCFileWriter(std::string_view path_)
+    : _header(read_header(path_)),
+      _fs(_header.url, std::ios::in | std::ios::out),
+      _norm_vectors_section(_header.normVectorIndexPosition,
+                            static_cast<std::size_t>(_header.normVectorIndexLength)) {
+  // read_normalized_expected_values();
+  read_norm_vectors();
+}
+
 inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosomes_,
                                     std::vector<std::uint32_t> resolutions_,
                                     std::string_view assembly_, std::size_t n_threads,
@@ -253,9 +262,8 @@ inline void HiCFileWriter::write_norm_vector_index() {
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header.version) +
                                 sizeof(_header.footerPosition) + _header.genomeID.size() + 1);
   const auto normVectorIndexPosition =
-      conditional_static_cast<std::int64_t>(_expected_values_norm_section.start());
-  const auto normVectorIndexLength = static_cast<std::int64_t>(
-      _expected_values_norm_section.size() + _norm_vectors_section.size());
+      conditional_static_cast<std::int64_t>(_norm_vectors_section.start());
+  const auto normVectorIndexLength = static_cast<std::int64_t>(_norm_vectors_section.size());
 
   SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
                normVectorIndexLength, offset);
@@ -492,10 +500,10 @@ inline void HiCFileWriter::write_footers() {
 
   for (auto &[chroms, footer] : _footers) {
     const auto offset = _matrix_metadata.offset(chroms.first, chroms.second);
-    footer.masterIndex.position = conditional_static_cast<std::int64_t>(offset.start());
-    footer.masterIndex.size = static_cast<std::int32_t>(offset.size());
-    SPDLOG_DEBUG(FMT_STRING("writing FooterV5 for {}:{} at offset {}"), chroms.first.name(),
-                 chroms.second.name(), _fs.tellp());
+    footer.position = conditional_static_cast<std::int64_t>(offset.start());
+    footer.size = static_cast<std::int32_t>(offset.size());
+    SPDLOG_DEBUG(FMT_STRING("writing FooterMasterIndex for {}:{} at offset {}"),
+                 chroms.first.name(), chroms.second.name(), _fs.tellp());
     _fs.write(footer.serialize(_bbuffer));
   }
 
@@ -509,10 +517,10 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
     return;
   }
 
-  FooterV5 footer{};
-  footer.masterIndex.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
-  footer.masterIndex.position = -1;
-  footer.masterIndex.size = -1;
+  FooterMasterIndex footer{};
+  footer.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
+  footer.position = -1;
+  footer.size = -1;
 
   auto [it, inserted] = _footers.emplace(std::make_pair(chrom1, chrom2), footer);
   if (!inserted) {
@@ -522,7 +530,6 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
 
 inline void HiCFileWriter::write_empty_expected_values() {
   ExpectedValues ev{};
-  ev.nExpectedValueVectors = 0;
 
   const auto offset = _fs.tellp();
   SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."), offset);
@@ -543,20 +550,8 @@ inline void HiCFileWriter::write_empty_normalized_expected_values() {
   _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
-inline void HiCFileWriter::write_empty_norm_vectors() {
-  const auto offset = _expected_values_norm_section.end();
-  SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."), offset);
-  _fs.seekp(offset);
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_USELESS_CAST
-  _fs.write(std::int32_t(0));
-  DISABLE_WARNING_POP
-  _norm_vectors_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
-}
-
 inline void HiCFileWriter::compute_and_write_expected_values() {
   ExpectedValues ev{};
-  ev.nExpectedValueVectors = static_cast<std::int32_t>(resolutions().size());
 
   for (const auto &resolution : resolutions()) {
     SPDLOG_DEBUG(FMT_STRING("computing expected values at resolution {}..."), resolution);
@@ -579,27 +574,125 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
                     scaling_factors.push_back(kv.second);
                   });
 
-    ev.expectedValues.emplace_back(
+    ev.emplace_back(
         ExpectedValuesBlock{"BP", resolution, aggr.weights(), chrom_ids, scaling_factors});
   }
 
-  const auto offset =
-      _footer_section.end() - static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors));
+  const auto offset = _footer_section.end() -
+                      conditional_static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors()));
   _fs.seekp(offset);
   _fs.write(ev.serialize(_bbuffer));
 
   _expected_values_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
-  _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors);
+  _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors());
+}
+
+inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
+                                           const std::vector<float> &weights) {
+  const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
+  SPDLOG_INFO(FMT_STRING("adding {} normalization vector for {} at resolution {} ({}): {} values"),
+              blk.type, chrom.name(), blk.binSize, blk.unit, weights.size());
+
+  const auto bin_size = static_cast<std::uint32_t>(blk.binSize);
+  const auto expected_shape = (chrom.size() + bin_size - 1) / bin_size;
+
+  if (weights.size() != expected_shape) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
+                    expected_shape, weights.size()));
+  }
+
+  const auto [_, inserted] = _normalization_vectors.emplace(blk, weights);
+  if (!inserted) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("file already contains {} normalization vector for {} at resolution {} ({})"),
+        blk.type, chrom.name(), blk.binSize, blk.unit));
+  }
+}
+
+inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
+                                           std::string_view unit, std::uint32_t bin_size,
+                                           const std::vector<float> &weights, std::size_t position,
+                                           std::size_t n_bytes) {
+  add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
+                                                bin_size, position, n_bytes},
+                  weights);
+}
+
+inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
+                                           const balancing::Weights &weights) {
+  std::vector<float> weights_f(weights().size());
+  if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {
+    std::transform(weights().begin(), weights().end(), weights_f.begin(),
+                   [](const double w) { return static_cast<float>(1.0 / w); });
+  } else {
+    std::transform(weights().begin(), weights().end(), weights_f.begin(),
+                   [](const double w) { return static_cast<float>(w); });
+  }
+  add_norm_vector(blk, weights_f);
+}
+
+inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
+                                           std::string_view unit, std::uint32_t bin_size,
+                                           const balancing::Weights &weights, std::size_t position,
+                                           std::size_t n_bytes) {
+  add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
+                                                bin_size, position, n_bytes},
+                  weights);
 }
 
 inline void HiCFileWriter::finalize() {
   write_footer_offset();
   write_footer_size();
   write_empty_normalized_expected_values();
-  write_empty_norm_vectors();
+  write_norm_vectors();
   write_norm_vector_index();
   _fs.flush();
   _fs.seekp(0, std::ios::end);
+}
+
+inline void HiCFileWriter::write_norm_vectors() {
+  const auto offset1 = std::max(_expected_values_norm_section.end(), _norm_vectors_section.start());
+  SPDLOG_DEBUG(FMT_STRING("writing {} normalization vectors at offset {}..."),
+               _normalization_vectors.size(), offset1);
+  _fs.seekp(offset1);
+
+  const auto nNormVectors = static_cast<std::int32_t>(_normalization_vectors.size());
+  _fs.write(nNormVectors);
+
+  phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> index_offsets{};
+  for (const auto &[blk, _] : _normalization_vectors) {
+    const auto offset2 = _fs.tellp();
+    _fs.write(blk.serialize(_bbuffer));
+    index_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+  }
+
+  phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> vector_offsets{};
+  for (const auto &[blk, weights] : _normalization_vectors) {
+    const auto offset2 = _fs.tellp();
+    const auto nValues = static_cast<std::int64_t>(weights.size());
+    _fs.write(nValues);
+    _fs.write(weights);
+    vector_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+  }
+  const auto offset3 = _fs.tellp();
+
+  for (const auto &[blk, idx_offsets] : index_offsets) {
+    const auto &vect_offsets = vector_offsets.at(blk);
+    auto new_blk = blk;
+    new_blk.position = vect_offsets.start();
+    new_blk.nBytes = static_cast<std::int64_t>(vect_offsets.size());
+    _fs.seekp(idx_offsets.start());
+    _fs.write(new_blk.serialize(_bbuffer));
+  }
+
+  _fs.flush();
+
+  _norm_vectors_section = {offset1, offset3 - static_cast<std::size_t>(offset1)};
+}
+
+inline HiCHeader HiCFileWriter::read_header(std::string_view path) {
+  return HiCFileReader(std::string{path}).header();
 }
 
 inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chromosomes,
@@ -790,6 +883,49 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
                                                    const Chromosome &chrom2,
                                                    std::uint32_t resolution) {
   return HiCInteractionToBlockMapper::compute_num_bins(chrom1, chrom2, resolution);
+}
+
+inline void HiCFileWriter::read_normalized_expected_values() {
+  const auto offset = _header.normVectorIndexPosition;
+  _fs.seekg(offset);
+  const auto nev = NormalizedExpectedValues::deserialize(_fs);
+
+  _expected_values_norm_section = {_header.normVectorIndexPosition,
+                                   _fs.tellg() - static_cast<std::size_t>(offset)};
+
+  std::copy(nev.normExpectedValues().begin(), nev.normExpectedValues().end(),
+            std::inserter(_normalized_expected_values, _normalized_expected_values.begin()));
+}
+
+inline void HiCFileWriter::read_norm_vectors() {
+  assert(_norm_vectors_section.start() != 0);
+  const auto offset = _norm_vectors_section.start();
+  _fs.seekg(offset);
+  const auto nvi = NormalizationVectorIndex::deserialize(_fs);
+
+  for (const auto &blk : nvi.normalizationVectorIndex()) {
+    add_norm_vector(blk, read_norm_vector(blk));
+  }
+}
+
+inline std::vector<float> HiCFileWriter::read_norm_vector(
+    const NormalizationVectorIndexBlock &blk) {
+  const auto offset = blk.position;
+  _fs.seekg(offset);
+
+  // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
+  const auto nValues = static_cast<std::size_t>(_fs.read<std::int64_t>());
+  std::vector<float> buffer(nValues);
+  _fs.read(buffer);
+  const auto bytes_read = _fs.tellg() - static_cast<std::size_t>(offset);
+  if (bytes_read != static_cast<std::size_t>(blk.nBytes)) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("{} normalization vector for {} at {} resolution is corrupted: "
+                               "expected to read {} bytes but read {}"),
+                    blk.type, _header.chromosomes.at(static_cast<std::uint32_t>(blk.chrIdx)).name(),
+                    blk.binSize, blk.nBytes, bytes_read));
+  }
+  return buffer;
 }
 
 inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &chrom1,

@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -87,35 +88,81 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   CHECK(num_interactions == pixels1.size() + pixels2.size());
 }
 
-TEST_CASE("HiC: HiCFileWriter", "[hic][v9][medium]") {
+TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
-  const auto path2 = (testdir() / "hic_writer.hic").string();
+  const auto path2 = (testdir() / "hic_writer_001.hic").string();
+  const auto path3 = (testdir() / "hic_writer_002.hic").string();
   const std::vector<std::uint32_t> resolutions{500'000, 1'000'000, 2'500'000};
 
-  {
-    const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
-    HiCFileWriter w(path2, chromosomes, resolutions, "dm6", 16);
-    for (std::size_t i = 0; i < resolutions.size(); ++i) {
-      if (i % 2 == 0) {
-        const auto resolution = resolutions[i];
-        const hic::File f((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
-        const auto sel = f.fetch();
-        w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+  SECTION("create file") {
+    {
+      const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
+      HiCFileWriter w(path2, chromosomes, resolutions, "dm6", 3);
+      for (std::size_t i = 0; i < resolutions.size(); ++i) {
+        if (i % 2 == 0) {
+          const auto resolution = resolutions[i];
+          const hic::File f((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+          const auto sel = f.fetch();
+          w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+        }
+      }
+      w.serialize();
+    }
+
+    for (const auto& resolution : resolutions) {
+      fmt::print(FMT_STRING("Comparing {}...\n"), resolution);
+      const hic::File f1(path1, resolution);
+      const hic::File f2(path2, resolution);
+      const auto expected_pixels = f1.fetch().read_all<float>();
+      const auto pixels = f2.fetch().read_all<float>();
+
+      REQUIRE(expected_pixels.size() == pixels.size());
+      for (std::size_t i = 0; i < pixels.size(); ++i) {
+        CHECK(expected_pixels[i] == pixels[i]);
       }
     }
-    w.serialize();
   }
 
-  for (const auto& resolution : resolutions) {
-    fmt::print(FMT_STRING("Comparing {}...\n"), resolution);
-    const hic::File f1(path1, resolution);
-    const hic::File f2(path2, resolution);
-    const auto expected_pixels = f1.fetch().read_all<float>();
-    const auto pixels = f2.fetch().read_all<float>();
+  SECTION("add weights") {
+    const std::uint32_t resolution = 500'000;
+    const hic::File hf1(path1, resolution);
 
-    REQUIRE(expected_pixels.size() == pixels.size());
-    for (std::size_t i = 0; i < pixels.size(); ++i) {
-      CHECK(expected_pixels[i] == pixels[i]);
+    {
+      // init file
+      HiCFileWriter w(path3, hf1.chromosomes(), {hf1.resolution()}, "dm6");
+      const auto sel = hf1.fetch();
+      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+      w.serialize();
+    }
+
+    // add normalization weights
+    {
+      HiCFileWriter w(path3);
+      for (const auto& chrom : w.chromosomes()) {
+        if (chrom.is_all()) {
+          continue;
+        }
+        w.add_norm_vector("SCALE", chrom, "BP", hf1.resolution(),
+                          hf1.normalization("SCALE", chrom));
+      }
+      w.write_norm_vectors();
+      CHECK_THROWS(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
+                                     std::vector<float>{1, 2, 3}));
+    }
+
+    // compare
+    const hic::File hf2(path3, resolution);
+    const auto pixels1 = hf1.fetch(balancing::Method::SCALE()).read_all<float>();
+    const auto pixels2 = hf2.fetch(balancing::Method::SCALE()).read_all<float>();
+
+    REQUIRE(pixels1.size() == pixels2.size());
+    for (std::size_t i = 0; i < pixels1.size(); ++i) {
+      CHECK(pixels1[i].coords == pixels2[i].coords);
+      if (std::isnan(pixels1[i].count)) {
+        CHECK(std::isnan(pixels2[i].count));
+      } else {
+        CHECK_THAT(pixels1[i].count, Catch::Matchers::WithinRel(pixels2[i].count));
+      }
     }
   }
 }
