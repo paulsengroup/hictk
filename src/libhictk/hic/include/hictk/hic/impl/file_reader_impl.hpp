@@ -490,6 +490,21 @@ inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32
       _fs->seekg(currentPos);
     }
   }
+
+  if (!*weights1) {
+    const auto num_bins =
+        static_cast<std::size_t>((chrom1.size() + wanted_resolution - 1) / wanted_resolution);
+    *weights1 =
+        balancing::Weights{std::vector<double>(num_bins, std::numeric_limits<double>::quiet_NaN()),
+                           balancing::Weights::Type::DIVISIVE};
+  }
+  if (!*weights2) {
+    const auto num_bins =
+        static_cast<std::size_t>((chrom2.size() + wanted_resolution - 1) / wanted_resolution);
+    *weights2 =
+        balancing::Weights{std::vector<double>(num_bins, std::numeric_limits<double>::quiet_NaN()),
+                           balancing::Weights::Type::DIVISIVE};
+  }
 }
 
 inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
@@ -570,7 +585,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
 
   if (!*weights1 && !*weights2) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("unable to find {} normalization vectors for {}:{} at {} ({})"),
+        fmt::format(FMT_STRING("unable to find {} normalization vector for {}:{} at {} ({})"),
                     wanted_norm, _header->chromosomes.at(chrom1_id).name(),
                     _header->chromosomes.at(chrom2_id).name(), wanted_resolution, wanted_unit));
   }
