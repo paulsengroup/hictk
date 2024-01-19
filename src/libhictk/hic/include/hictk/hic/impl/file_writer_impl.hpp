@@ -136,7 +136,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_)
       _fs(_header.url, std::ios::in | std::ios::out),
       _norm_vectors_section(_header.normVectorIndexPosition,
                             static_cast<std::size_t>(_header.normVectorIndexLength)) {
-  // read_normalized_expected_values();
+  read_normalized_expected_values();
   read_norm_vectors();
 }
 
@@ -262,8 +262,9 @@ inline void HiCFileWriter::write_norm_vector_index() {
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header.version) +
                                 sizeof(_header.footerPosition) + _header.genomeID.size() + 1);
   const auto normVectorIndexPosition =
-      conditional_static_cast<std::int64_t>(_norm_vectors_section.start());
-  const auto normVectorIndexLength = static_cast<std::int64_t>(_norm_vectors_section.size());
+      conditional_static_cast<std::int64_t>(_expected_values_norm_section.start());
+  const auto normVectorIndexLength = static_cast<std::int64_t>(
+      _expected_values_norm_section.size() + _norm_vectors_section.size());
 
   SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
                normVectorIndexLength, offset);
