@@ -88,39 +88,61 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   CHECK(num_interactions == pixels1.size() + pixels2.size());
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void hic_file_writer_create_file_test(const std::string& path1, const std::string& path2,
+                                             const std::vector<std::uint32_t>& resolutions,
+                                             std::size_t num_threads) {
+  {
+    const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
+    std::filesystem::remove(path2);
+    HiCFileWriter w(path2, chromosomes, resolutions, "dm6", num_threads);
+    for (std::size_t i = 0; i < resolutions.size(); ++i) {
+      if (i % 2 == 0) {
+        const auto resolution = resolutions[i];
+        const hic::File f((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+        const auto sel1 = f.fetch("chr3R");
+        const auto sel2 = f.fetch("chr3R", "chr4");
+        w.add_pixels(resolution, sel1.begin<float>(), sel1.end<float>());
+        w.add_pixels(resolution, sel2.begin<float>(), sel2.end<float>());
+      }
+    }
+    w.serialize();
+  }
+
+  for (const auto& resolution : resolutions) {
+    fmt::print(FMT_STRING("Comparing {}...\n"), resolution);
+    const hic::File f1(path1, resolution);
+    const hic::File f2(path2, resolution);
+
+    const auto expected_pixels1 = f1.fetch("chr3R").read_all<float>();
+    const auto expected_pixels2 = f1.fetch("chr3R", "chr4").read_all<float>();
+    const auto pixels1 = f2.fetch("chr3R").read_all<float>();
+    const auto pixels2 = f2.fetch("chr3R", "chr4").read_all<float>();
+
+    REQUIRE(expected_pixels1.size() == pixels1.size());
+    for (std::size_t i = 0; i < pixels1.size(); ++i) {
+      CHECK(expected_pixels1[i] == pixels1[i]);
+    }
+    REQUIRE(expected_pixels2.size() == pixels2.size());
+    for (std::size_t i = 0; i < pixels2.size(); ++i) {
+      CHECK(expected_pixels2[i] == pixels2[i]);
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
-  const std::vector<std::uint32_t> resolutions{500'000, 1'000'000, 2'500'000};
 
-  SECTION("create file") {
-    {
-      const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
-      HiCFileWriter w(path2, chromosomes, resolutions, "dm6", 3);
-      for (std::size_t i = 0; i < resolutions.size(); ++i) {
-        if (i % 2 == 0) {
-          const auto resolution = resolutions[i];
-          const hic::File f((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
-          const auto sel = f.fetch();
-          w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
-        }
-      }
-      w.serialize();
-    }
-
-    for (const auto& resolution : resolutions) {
-      fmt::print(FMT_STRING("Comparing {}...\n"), resolution);
-      const hic::File f1(path1, resolution);
-      const hic::File f2(path2, resolution);
-      const auto expected_pixels = f1.fetch().read_all<float>();
-      const auto pixels = f2.fetch().read_all<float>();
-
-      REQUIRE(expected_pixels.size() == pixels.size());
-      for (std::size_t i = 0; i < pixels.size(); ++i) {
-        CHECK(expected_pixels[i] == pixels[i]);
-      }
-    }
+  SECTION("create file (st)") {
+    const std::vector<std::uint32_t> resolutions{250'000, 500'000, 2'500'000};
+    hic_file_writer_create_file_test(path1, path2, resolutions, 1);
+  }
+  SECTION("create file (mt)") {
+    const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
+    hic_file_writer_create_file_test(path1, path2, resolutions, 3);
   }
 
   SECTION("add weights") {
@@ -145,9 +167,9 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
         w.add_norm_vector("SCALE", chrom, "BP", hf1.resolution(),
                           hf1.normalization("SCALE", chrom));
       }
-      w.write_norm_vectors();
       CHECK_THROWS(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
                                      std::vector<float>{1, 2, 3}));
+      w.write_norm_vectors();
     }
 
     // compare
