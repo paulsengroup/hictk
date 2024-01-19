@@ -55,6 +55,13 @@ for resolution in "${resolutions[@]}"; do
   fi
 done
 
+"$hictk_bin" dump -t normalizations "$ref_cool" | grep -v weights > "$outdir/normalizations.mcool"
+"$hictk_bin" dump -t normalizations "$outdir/out.hic" | grep -v ICE > "$outdir/normalizations.hic"
+
+if ! compare_plain_files.sh "$outdir/normalizations.mcool" "$outdir/normalizations.hic"; then
+  status=1
+fi
+
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'
 else
