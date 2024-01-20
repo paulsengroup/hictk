@@ -645,6 +645,29 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromoso
                   weights);
 }
 
+inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_view unit,
+                                           std::uint32_t bin_size,
+                                           const std::vector<float> &weights) {
+  const auto expected_shape = bins(bin_size).size();
+  if (weights.size() != expected_shape) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
+                    expected_shape, weights.size()));
+  }
+
+  std::ptrdiff_t i0 = 0;
+  std::ptrdiff_t i1 = 0;
+  for (const auto &chrom : chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+    i1 += static_cast<std::ptrdiff_t>((chrom.size() + bin_size - 1) / bin_size);
+    const std::vector<float> chrom_weights(weights.begin() + i0, weights.begin() + i1);
+    add_norm_vector(type, chrom, unit, bin_size, chrom_weights);
+    i0 = i1;
+  }
+}
+
 inline void HiCFileWriter::finalize() {
   write_footer_offset();
   write_footer_size();

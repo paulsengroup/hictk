@@ -192,6 +192,8 @@ class HiCFileWriter {
                        std::uint32_t bin_size, const balancing::Weights& weights,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
+  void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
+                       const std::vector<float>& weights);
   void write_norm_vectors();
 
   void write_empty_expected_values();
