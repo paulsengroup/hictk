@@ -174,6 +174,11 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
 
     // compare
     const hic::File hf2(path3, resolution);
+
+    const auto avail_norms = hf2.avail_normalizations();
+    REQUIRE(avail_norms.size() == 1);
+    CHECK(avail_norms.front() == balancing::Method::SCALE());
+
     const auto pixels1 = hf1.fetch(balancing::Method::SCALE()).read_all<float>();
     const auto pixels2 = hf2.fetch(balancing::Method::SCALE()).read_all<float>();
 
