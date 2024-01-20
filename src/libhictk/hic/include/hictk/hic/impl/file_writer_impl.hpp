@@ -136,7 +136,6 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_)
       _fs(_header.url, std::ios::in | std::ios::out),
       _norm_vector_index_section(_header.normVectorIndexPosition,
                                  static_cast<std::size_t>(_header.normVectorIndexLength)) {
-  read_normalized_expected_values();
   read_norm_vectors();
 }
 
@@ -679,7 +678,8 @@ inline void HiCFileWriter::finalize() {
 }
 
 inline void HiCFileWriter::write_norm_vectors() {
-  const auto offset1 = _expected_values_norm_section.end();
+  const auto offset1 =
+      std::max(_expected_values_norm_section.end(), _norm_vector_index_section.start());
   _fs.seekp(offset1);
 
   if (_normalization_vectors.empty()) {
@@ -706,7 +706,7 @@ inline void HiCFileWriter::write_norm_vectors() {
     const auto nValues = static_cast<std::int64_t>(weights.size());
     _fs.write(nValues);
     _fs.write(weights);
-    vector_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset3});
+    vector_offsets.emplace(blk, HiCSectionOffsets{offset3, _fs.tellp() - offset3});
   }
 
   const auto offset4 = _fs.tellp();
@@ -720,11 +720,12 @@ inline void HiCFileWriter::write_norm_vectors() {
     _fs.write(new_blk.serialize(_bbuffer));
   }
 
-  _fs.seekp(0, std::ios::end);
-  _fs.flush();
-
   _norm_vector_index_section = {offset1, offset2 - static_cast<std::size_t>(offset1)};
   _norm_vectors_section = {offset2, offset4 - static_cast<std::size_t>(offset2)};
+
+  write_norm_vector_index();
+  _fs.seekp(0, std::ios::end);
+  _fs.flush();
 }
 
 inline HiCHeader HiCFileWriter::read_header(std::string_view path) {
@@ -921,20 +922,8 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
   return HiCInteractionToBlockMapper::compute_num_bins(chrom1, chrom2, resolution);
 }
 
-inline void HiCFileWriter::read_normalized_expected_values() {
-  const auto offset = _header.normVectorIndexPosition;
-  _fs.seekg(offset);
-  const auto nev = NormalizedExpectedValues::deserialize(_fs);
-
-  _expected_values_norm_section = {_header.normVectorIndexPosition,
-                                   _fs.tellg() - static_cast<std::size_t>(offset)};
-
-  std::copy(nev.normExpectedValues().begin(), nev.normExpectedValues().end(),
-            std::inserter(_normalized_expected_values, _normalized_expected_values.begin()));
-}
-
 inline void HiCFileWriter::read_norm_vectors() {
-  assert(_norm_vectors_section.start() != 0);
+  assert(_norm_vector_index_section.start() != 0);
   const auto offset = _norm_vector_index_section.start();
   _fs.seekg(offset);
   const auto nvi = NormalizationVectorIndex::deserialize(_fs);

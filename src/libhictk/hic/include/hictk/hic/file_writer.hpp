@@ -231,7 +231,6 @@ class HiCFileWriter {
   [[nodiscard]] std::size_t compute_num_bins(const Chromosome& chrom1, const Chromosome& chrom2,
                                              std::uint32_t resolution);
 
-  void read_normalized_expected_values();
   void read_norm_vectors();
   [[nodiscard]] std::vector<float> read_norm_vector(const NormalizationVectorIndexBlock& blk);
 

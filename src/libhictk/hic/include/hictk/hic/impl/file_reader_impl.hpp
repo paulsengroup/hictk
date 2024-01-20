@@ -583,20 +583,6 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
   read_footer_norm(chrom1_id, chrom2_id, wanted_norm, wanted_unit, wanted_resolution,
                    metadata.chrom1, metadata.chrom2, weights1, weights2);
 
-  if (!*weights1 && !*weights2) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("unable to find {} normalization vector for {}:{} at {} ({})"),
-                    wanted_norm, _header->chromosomes.at(chrom1_id).name(),
-                    _header->chromosomes.at(chrom2_id).name(), wanted_resolution, wanted_unit));
-  }
-
-  if (!*weights1 || !*weights2) {
-    const auto chrom_id = !*weights1 ? chrom1_id : chrom2_id;
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("unable to find {} normalization vector for {} at {} ({})"), wanted_norm,
-        _header->chromosomes.at(chrom_id).name(), wanted_resolution, wanted_unit));
-  }
-
   return {std::move(index), std::move(metadata), std::move(expectedValues), std::move(weights1),
           std::move(weights2)};
 }
@@ -614,17 +600,21 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     return {};
   }
 
-  const auto nExpectedValues = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nExpectedValues; i++) {
+  std::ignore = read_footer_expected_values_norm(1, 1, matrix_type, balancing::Method::NONE(),
+                                                 wanted_unit, wanted_resolution);
+  if (_fs->tellg() == _fs->size()) {
+    return {};
+  }
+
+  const auto nNormVectors = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nNormVectors; i++) {
     const auto foundNorm = readNormalizationMethod();
     methods.emplace(foundNorm);
+    [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
     [[maybe_unused]] const auto foundUnit = readMatrixUnit();
     [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-
-    [[maybe_unused]] const auto nValues = readNValues();
-
-    discardExpectedVector(nValues);
-    discardNormalizationFactors(1);
+    [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
+    [[maybe_unused]] const auto nBytes = _fs->read<std::int64_t>();
   }
 
   std::vector<balancing::Method> methods_{methods.size()};
