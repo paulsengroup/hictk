@@ -21,6 +21,7 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
+#include "hictk/file.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
@@ -222,6 +223,17 @@ void Cli::transform_args_convert_subcommand() {
 
   if (c.genome.empty()) {
     c.genome = infer_assembly(c.path_to_input, c.resolutions.back(), c.input_format);
+  }
+
+  if (c.normalization_methods.empty()) {
+    if (c.input_format == "mcool") {
+      c.normalization_methods = cooler::MultiResFile(c.path_to_input.string())
+                                    .open(c.resolutions.back())
+                                    .avail_normalizations();
+    } else {
+      c.normalization_methods =
+          File(c.path_to_input.string(), c.resolutions.back()).avail_normalizations();
+    }
   }
 
   // in spdlog, high numbers correspond to low log levels
