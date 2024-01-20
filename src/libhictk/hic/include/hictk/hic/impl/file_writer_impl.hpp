@@ -134,8 +134,8 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
 inline HiCFileWriter::HiCFileWriter(std::string_view path_)
     : _header(read_header(path_)),
       _fs(_header.url, std::ios::in | std::ios::out),
-      _norm_vectors_section(_header.normVectorIndexPosition,
-                            static_cast<std::size_t>(_header.normVectorIndexLength)) {
+      _norm_vector_index_section(_header.normVectorIndexPosition,
+                                 static_cast<std::size_t>(_header.normVectorIndexLength)) {
   read_normalized_expected_values();
   read_norm_vectors();
 }
@@ -245,7 +245,9 @@ inline void HiCFileWriter::write_header() {
 
 inline void HiCFileWriter::write_footer_size() {
   SPDLOG_DEBUG(FMT_STRING("updating footer size to {}"), _footer_section.size());
-  const auto nBytesV5 = static_cast<std::int64_t>(_footer_section.size());
+  // This is not documented for v9, but nBytesV5 is not included in the footer size
+  const auto nBytesV5 = static_cast<std::int64_t>(_footer_section.size()) -
+                        static_cast<std::int64_t>(sizeof(std::int64_t));
   _fs.seekp(_footer_section.start());
   _fs.write(nBytesV5);
 }
@@ -262,9 +264,8 @@ inline void HiCFileWriter::write_norm_vector_index() {
       static_cast<std::int64_t>(sizeof("HIC") + sizeof(_header.version) +
                                 sizeof(_header.footerPosition) + _header.genomeID.size() + 1);
   const auto normVectorIndexPosition =
-      conditional_static_cast<std::int64_t>(_expected_values_norm_section.start());
-  const auto normVectorIndexLength = static_cast<std::int64_t>(
-      _expected_values_norm_section.size() + _norm_vectors_section.size());
+      conditional_static_cast<std::int64_t>(_norm_vector_index_section.start());
+  const auto normVectorIndexLength = static_cast<std::int64_t>(_norm_vector_index_section.size());
 
   SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
                normVectorIndexLength, offset);
@@ -581,6 +582,8 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
 
   const auto offset = _footer_section.end() -
                       conditional_static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors()));
+  SPDLOG_INFO(FMT_STRING("writing {} expected value vectors at offset {}..."),
+              ev.nExpectedValueVectors(), offset);
   _fs.seekp(offset);
   _fs.write(ev.serialize(_bbuffer));
 
@@ -591,8 +594,8 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
                                            const std::vector<float> &weights) {
   const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
-  SPDLOG_INFO(FMT_STRING("adding {} normalization vector for {} at resolution {} ({}): {} values"),
-              blk.type, chrom.name(), blk.binSize, blk.unit, weights.size());
+  SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector for {} ({}): {} values"), blk.binSize,
+              blk.type, chrom.name(), blk.unit, weights.size());
 
   const auto bin_size = static_cast<std::uint32_t>(blk.binSize);
   const auto expected_shape = (chrom.size() + bin_size - 1) / bin_size;
@@ -653,10 +656,15 @@ inline void HiCFileWriter::finalize() {
 }
 
 inline void HiCFileWriter::write_norm_vectors() {
-  const auto offset1 = std::max(_expected_values_norm_section.end(), _norm_vectors_section.start());
-  SPDLOG_DEBUG(FMT_STRING("writing {} normalization vectors at offset {}..."),
-               _normalization_vectors.size(), offset1);
+  const auto offset1 = _expected_values_norm_section.end();
   _fs.seekp(offset1);
+
+  if (_normalization_vectors.empty()) {
+    SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."), offset1);
+  } else {
+    SPDLOG_INFO(FMT_STRING("writing {} normalization vectors at offset {}..."),
+                _normalization_vectors.size(), offset1);
+  }
 
   const auto nNormVectors = static_cast<std::int32_t>(_normalization_vectors.size());
   _fs.write(nNormVectors);
@@ -667,16 +675,18 @@ inline void HiCFileWriter::write_norm_vectors() {
     _fs.write(blk.serialize(_bbuffer));
     index_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
   }
+  const auto offset2 = _fs.tellp();
 
   phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> vector_offsets{};
   for (const auto &[blk, weights] : _normalization_vectors) {
-    const auto offset2 = _fs.tellp();
+    const auto offset3 = _fs.tellp();
     const auto nValues = static_cast<std::int64_t>(weights.size());
     _fs.write(nValues);
     _fs.write(weights);
-    vector_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+    vector_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset3});
   }
-  const auto offset3 = _fs.tellp();
+
+  const auto offset4 = _fs.tellp();
 
   for (const auto &[blk, idx_offsets] : index_offsets) {
     const auto &vect_offsets = vector_offsets.at(blk);
@@ -687,9 +697,11 @@ inline void HiCFileWriter::write_norm_vectors() {
     _fs.write(new_blk.serialize(_bbuffer));
   }
 
+  _fs.seekp(0, std::ios::end);
   _fs.flush();
 
-  _norm_vectors_section = {offset1, offset3 - static_cast<std::size_t>(offset1)};
+  _norm_vector_index_section = {offset1, offset2 - static_cast<std::size_t>(offset1)};
+  _norm_vectors_section = {offset2, offset4 - static_cast<std::size_t>(offset2)};
 }
 
 inline HiCHeader HiCFileWriter::read_header(std::string_view path) {
@@ -900,7 +912,7 @@ inline void HiCFileWriter::read_normalized_expected_values() {
 
 inline void HiCFileWriter::read_norm_vectors() {
   assert(_norm_vectors_section.start() != 0);
-  const auto offset = _norm_vectors_section.start();
+  const auto offset = _norm_vector_index_section.start();
   _fs.seekg(offset);
   const auto nvi = NormalizationVectorIndex::deserialize(_fs);
 

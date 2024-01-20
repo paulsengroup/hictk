@@ -133,6 +133,7 @@ class HiCFileWriter {
   HiCSectionOffsets _footer_section{};
   HiCSectionOffsets _expected_values_section{};
   HiCSectionOffsets _expected_values_norm_section{};
+  HiCSectionOffsets _norm_vector_index_section{};
   HiCSectionOffsets _norm_vectors_section{};
 
   BS::thread_pool _tpool{};
