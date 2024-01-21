@@ -1008,14 +1008,12 @@ inline void HiCFileWriter::read_offsets() {
   const auto norm_vector_index_end = header.normVectorIndexPosition + header.normVectorIndexLength;
 
   // set the offsets
-  _header_section = {header_start, static_cast<std::size_t>(header_end - header_start)};
-  _footer_section = {footer_start, static_cast<std::size_t>(footer_end - footer_start)};
-  _expected_values_norm_section = {
-      norm_expected_values_start,
-      static_cast<std::size_t>(norm_expected_values_end - norm_expected_values_start)};
-  _norm_vector_index_section = {
-      norm_vector_index_start,
-      static_cast<std::size_t>(norm_vector_index_end - norm_vector_index_start)};
+  _header_section = {header_start, header_end - header_start};
+  _footer_section = {footer_start, footer_end - footer_start};
+  _expected_values_norm_section = {norm_expected_values_start,
+                                   norm_expected_values_end - norm_expected_values_start};
+  _norm_vector_index_section = {norm_vector_index_start,
+                                norm_vector_index_end - norm_vector_index_start};
 
   _fs.seekg(0, std::ios::end);
 }
