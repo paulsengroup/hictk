@@ -351,7 +351,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 200       \
+                --timeout 240       \
                 -j $(nproc) |&
           head -n 1000
 

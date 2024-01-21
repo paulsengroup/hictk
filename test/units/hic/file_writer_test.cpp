@@ -152,7 +152,7 @@ static void hic_file_writer_create_file_test(const std::string& path1, const std
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
+TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();

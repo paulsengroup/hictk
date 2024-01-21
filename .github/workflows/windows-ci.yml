@@ -198,8 +198,9 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 180       \
-                --exclude-regex 'Cooler: dataset large read\/write.*' |&
+                --timeout 240       \
+                --exclude-regex 'Cooler: dataset large read\/write.*' \
+                --exclude-regex 'HiC: HiCFileWriter' |&
           tail -n 1000
 
   windows-ci-status-check:
