@@ -691,6 +691,8 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_vi
 inline void HiCFileWriter::finalize(bool compute_expected_values) {
   if (compute_expected_values) {
     compute_and_write_expected_values();
+    write_empty_normalized_expected_values();
+    write_norm_vectors();
     compute_and_write_normalized_expected_values();
   } else {
     write_empty_expected_values();
@@ -700,7 +702,6 @@ inline void HiCFileWriter::finalize(bool compute_expected_values) {
   write_footer_offset();
   write_footer_size();
   write_norm_vectors();
-  write_norm_vector_index();
   _fs.flush();
   _fs.seekp(0, std::ios::end);
 }
