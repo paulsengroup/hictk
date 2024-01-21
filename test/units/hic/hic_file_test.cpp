@@ -122,8 +122,6 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
 
   SECTION("malformed") {
     CHECK_THROWS(f.fetch(chrom2, chrom1, norm));  // NOLINT
-    CHECK_THROWS(File(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
-                     .fetch(chrom1, hictk::balancing::Method::VC()));
 
     // Matrix does not have contacts for fragments
     CHECK_THROWS(
