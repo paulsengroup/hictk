@@ -147,7 +147,7 @@ jobs:
 
       - name: Restore Conan cache
         id: cache-conan
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: conan-${{ steps.cache-key.outputs.key }}
           path: ${{ env.CONAN_HOME }}
@@ -200,7 +200,7 @@ jobs:
           pip install . -v
 
       - name: Save Conan cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
           key: conan-${{ steps.cache-key.outputs.key }}
