@@ -212,11 +212,6 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
   }
 
-  if (_type == MatrixType::expected && norm != balancing::Method::NONE()) {
-    throw std::logic_error(fmt::format(
-        FMT_STRING("matrix type {} is incompatible with normalization method {}"), _type, norm));
-  }
-
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
   const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2 - 1)};
 

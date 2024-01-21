@@ -124,7 +124,6 @@ class HiCFileWriter {
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
-  phmap::btree_set<NormalizedExpectedValuesBlock> _normalized_expected_values{};
   phmap::btree_map<NormalizationVectorIndexBlock, std::vector<float>> _normalization_vectors{};
 
   HiCSectionOffsets _header_section{};
@@ -178,9 +177,6 @@ class HiCFileWriter {
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
   void write_footer_size();
 
-  // Write expected/normalization values
-  void compute_and_write_expected_values();
-
   // Write normalization vectors
   void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights);
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
@@ -194,12 +190,12 @@ class HiCFileWriter {
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
                        const std::vector<float>& weights);
-  void write_norm_vectors();
+  void write_norm_vectors_and_norm_expected_values();
 
   void write_empty_expected_values();
   void write_empty_normalized_expected_values();
 
-  void finalize();
+  void finalize(bool compute_expected_values = false);
 
  private:
   [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
@@ -225,11 +221,19 @@ class HiCFileWriter {
   auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
                                 std::uint32_t resolution) -> Stats;
 
+  void compute_and_write_expected_values();
+  void compute_and_write_normalized_expected_values();
+  void write_norm_vectors();
+
   [[nodiscard]] std::size_t compute_block_column_count(const Chromosome& chrom1,
                                                        const Chromosome& chrom2,
                                                        std::uint32_t resolution);
   [[nodiscard]] std::size_t compute_num_bins(const Chromosome& chrom1, const Chromosome& chrom2,
                                              std::uint32_t resolution);
+
+  [[nodiscard]] ExpectedValuesBlock compute_expected_values(std::uint32_t resolution);
+  [[nodiscard]] NormalizedExpectedValuesBlock compute_normalized_expected_values(
+      std::uint32_t resolution, const balancing::Method& norm);
 
   void read_norm_vectors();
   [[nodiscard]] std::vector<float> read_norm_vector(const NormalizationVectorIndexBlock& blk);

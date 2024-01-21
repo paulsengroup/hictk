@@ -67,6 +67,10 @@ inline void ExpectedValuesAggregator::add(const ThinPixel<float> &p) {
 }
 
 inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
+  if (std::isnan(p.count)) {
+    return;
+  }
+
   const auto &chrom1 = p.coords.bin1.chrom();
   const auto &chrom2 = p.coords.bin2.chrom();
 

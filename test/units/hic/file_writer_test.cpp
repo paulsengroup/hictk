@@ -7,6 +7,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -89,6 +90,21 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void hic_file_writer_compare_pixels(const std::vector<Pixel<float>>& expected,
+                                           const std::vector<Pixel<float>>& found) {
+  REQUIRE(expected.size() == found.size());
+
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    CHECK(expected[i].coords == found[i].coords);
+    if (std::isnan(expected[i].count)) {
+      CHECK(std::isnan(found[i].count));
+    } else {
+      CHECK_THAT(expected[i].count, Catch::Matchers::WithinRel(found[i].count));
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void hic_file_writer_create_file_test(const std::string& path1, const std::string& path2,
                                              const std::vector<std::uint32_t>& resolutions,
                                              std::size_t num_threads) {
@@ -114,19 +130,24 @@ static void hic_file_writer_create_file_test(const std::string& path1, const std
     const hic::File f1(path1, resolution);
     const hic::File f2(path2, resolution);
 
-    const auto expected_pixels1 = f1.fetch("chr3R").read_all<float>();
-    const auto expected_pixels2 = f1.fetch("chr3R", "chr4").read_all<float>();
+    const auto correct_pixels1 = f1.fetch("chr3R").read_all<float>();
+    const auto correct_pixels2 = f1.fetch("chr3R", "chr4").read_all<float>();
     const auto pixels1 = f2.fetch("chr3R").read_all<float>();
     const auto pixels2 = f2.fetch("chr3R", "chr4").read_all<float>();
 
-    REQUIRE(expected_pixels1.size() == pixels1.size());
-    for (std::size_t i = 0; i < pixels1.size(); ++i) {
-      CHECK(expected_pixels1[i] == pixels1[i]);
-    }
-    REQUIRE(expected_pixels2.size() == pixels2.size());
-    for (std::size_t i = 0; i < pixels2.size(); ++i) {
-      CHECK(expected_pixels2[i] == pixels2[i]);
-    }
+    hic_file_writer_compare_pixels(correct_pixels1, pixels1);
+    hic_file_writer_compare_pixels(correct_pixels2, pixels2);
+
+    const hic::File f3(path1, resolution, MatrixType::expected);
+    const hic::File f4(path2, resolution, MatrixType::expected);
+
+    const auto correct_expected_pixels1 = f3.fetch("chr3R").read_all<float>();
+    const auto correct_expected_pixels2 = f4.fetch("chr3R", "chr4").read_all<float>();
+    const auto expected_pixels1 = f3.fetch("chr3R").read_all<float>();
+    const auto expected_pixels2 = f4.fetch("chr3R", "chr4").read_all<float>();
+
+    hic_file_writer_compare_pixels(correct_expected_pixels1, expected_pixels1);
+    hic_file_writer_compare_pixels(correct_expected_pixels2, expected_pixels2);
   }
 }
 
@@ -167,9 +188,17 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
         w.add_norm_vector("SCALE", chrom, "BP", hf1.resolution(),
                           hf1.normalization("SCALE", chrom));
       }
-      CHECK_THROWS(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
-                                     std::vector<float>{1, 2, 3}));
-      w.write_norm_vectors();
+
+      CHECK_THROWS_WITH(
+          w.add_norm_vector("SCALE", hf1.chromosomes().at("chr2L"), "BP", hf1.resolution(),
+                            hf1.normalization("SCALE", hf1.chromosomes().at("chr2L"))),
+          Catch::Matchers::ContainsSubstring("file already contains"));
+
+      CHECK_THROWS_WITH(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
+                                          std::vector<float>{1, 2, 3}),
+                        Catch::Matchers::ContainsSubstring("weight shape mismatch"));
+
+      w.write_norm_vectors_and_norm_expected_values();
     }
 
     // compare
@@ -179,18 +208,18 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][short]") {
     REQUIRE(avail_norms.size() == 1);
     CHECK(avail_norms.front() == balancing::Method::SCALE());
 
-    const auto pixels1 = hf1.fetch(balancing::Method::SCALE()).read_all<float>();
-    const auto pixels2 = hf2.fetch(balancing::Method::SCALE()).read_all<float>();
+    const auto correct_pixels = hf1.fetch(balancing::Method::SCALE()).read_all<float>();
+    const auto pixels = hf2.fetch(balancing::Method::SCALE()).read_all<float>();
 
-    REQUIRE(pixels1.size() == pixels2.size());
-    for (std::size_t i = 0; i < pixels1.size(); ++i) {
-      CHECK(pixels1[i].coords == pixels2[i].coords);
-      if (std::isnan(pixels1[i].count)) {
-        CHECK(std::isnan(pixels2[i].count));
-      } else {
-        CHECK_THAT(pixels1[i].count, Catch::Matchers::WithinRel(pixels2[i].count));
-      }
-    }
+    hic_file_writer_compare_pixels(correct_pixels, pixels);
+
+    const hic::File f3(path1, resolution, MatrixType::expected);
+    const hic::File f4(path3, resolution, MatrixType::expected);
+
+    const auto correct_expected_pixels = f3.fetch(balancing::Method::SCALE()).read_all<float>();
+    const auto expected_pixels = f4.fetch(balancing::Method::SCALE()).read_all<float>();
+
+    hic_file_writer_compare_pixels(correct_expected_pixels, expected_pixels);
   }
 }
 

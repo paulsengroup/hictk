@@ -132,7 +132,9 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
 }
 
 inline HiCFileWriter::HiCFileWriter(std::string_view path_)
-    : _fs(std::string{path_}, std::ios::in | std::ios::out), _header(read_header(_fs)) {
+    : _fs(std::string{path_}, std::ios::in | std::ios::out),
+      _header(read_header(_fs)),
+      _bin_tables(init_bin_tables(chromosomes(), resolutions())) {
   read_offsets();
   read_norm_vectors();
 }
@@ -180,8 +182,7 @@ inline auto HiCFileWriter::stats(std::uint32_t resolution) const -> Stats {
 inline void HiCFileWriter::serialize() {
   write_header();
   write_pixels();
-  compute_and_write_expected_values();
-  finalize();
+  finalize(true);
   for (auto &[_, mapper] : _block_mappers) {
     mapper.clear();
   }
@@ -491,6 +492,14 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
   }
 }
 
+inline void HiCFileWriter::write_norm_vectors_and_norm_expected_values() {
+  // we are writing the norm vectors twice because the function computing the norm expected values
+  // expects the normalization vectors to be available in the file that is being written
+  write_norm_vectors();
+  compute_and_write_normalized_expected_values();
+  write_norm_vectors();
+}
+
 inline void HiCFileWriter::write_empty_expected_values() {
   ExpectedValues ev{};
 
@@ -513,32 +522,62 @@ inline void HiCFileWriter::write_empty_normalized_expected_values() {
   _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
+inline ExpectedValuesBlock HiCFileWriter::compute_expected_values(std::uint32_t resolution) {
+  SPDLOG_DEBUG(FMT_STRING("computing expected values at resolution {}..."), resolution);
+
+  const File f(std::string{path()}, resolution);
+  const auto sel = f.fetch();
+
+  ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
+  std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
+  aggr.compute_density();
+
+  std::vector<float> weights(aggr.weights().size());
+  std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
+                 [](const auto w) { return static_cast<float>(w); });
+
+  std::vector<std::uint32_t> chrom_ids{};
+  std::vector<double> scaling_factors{};
+  std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(), [&](const auto &kv) {
+    chrom_ids.push_back(kv.first.id());
+    scaling_factors.push_back(kv.second);
+  });
+
+  return {"BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+}
+
+inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_values(
+    std::uint32_t resolution, const balancing::Method &norm) {
+  assert(norm != balancing::Method::NONE());
+  SPDLOG_DEBUG(FMT_STRING("computing normalized expected values ({}) at resolution {}..."), norm,
+               resolution);
+
+  const File f(std::string{path()}, resolution);
+  const auto sel = f.fetch(norm);
+
+  ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
+  std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
+  aggr.compute_density();
+
+  std::vector<float> weights(aggr.weights().size());
+  std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
+                 [](const auto w) { return static_cast<float>(w); });
+
+  std::vector<std::uint32_t> chrom_ids{};
+  std::vector<double> scaling_factors{};
+  std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(), [&](const auto &kv) {
+    chrom_ids.push_back(kv.first.id());
+    scaling_factors.push_back(kv.second);
+  });
+
+  return {norm.to_string(), "BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+}
+
 inline void HiCFileWriter::compute_and_write_expected_values() {
   ExpectedValues ev{};
 
   for (const auto &resolution : resolutions()) {
-    SPDLOG_DEBUG(FMT_STRING("computing expected values at resolution {}..."), resolution);
-    File f(std::string{url()}, resolution);
-    auto sel = f.fetch();
-
-    ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
-    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
-    aggr.compute_density();
-
-    std::vector<float> weights(aggr.weights().size());
-    std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
-                   [](const auto w) { return static_cast<float>(w); });
-
-    std::vector<std::uint32_t> chrom_ids{};
-    std::vector<double> scaling_factors{};
-    std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(),
-                  [&](const auto &kv) {
-                    chrom_ids.push_back(kv.first.id());
-                    scaling_factors.push_back(kv.second);
-                  });
-
-    ev.emplace_back(
-        ExpectedValuesBlock{"BP", resolution, aggr.weights(), chrom_ids, scaling_factors});
+    ev.emplace_back(compute_expected_values(resolution));
   }
 
   const auto offset = _footer_section.end() -
@@ -550,6 +589,26 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
 
   _expected_values_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
   _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors());
+}
+
+inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
+  NormalizedExpectedValues ev{};
+
+  for (const auto &[blk, _] : _normalization_vectors) {
+    if (blk.chrIdx == 1) {
+      const auto resolution = static_cast<std::uint32_t>(blk.binSize);
+      const balancing::Method norm{blk.type};
+      ev.emplace_back(compute_normalized_expected_values(resolution, norm));
+    }
+  }
+
+  const auto offset = _footer_section.end();
+  SPDLOG_INFO(FMT_STRING("writing {} normalized expected value vectors at offset {}..."),
+              ev.nNormExpectedValueVectors(), offset);
+  _fs.seekp(offset);
+  _fs.write(ev.serialize(_bbuffer));
+
+  _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
@@ -629,10 +688,17 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_vi
   }
 }
 
-inline void HiCFileWriter::finalize() {
+inline void HiCFileWriter::finalize(bool compute_expected_values) {
+  if (compute_expected_values) {
+    compute_and_write_expected_values();
+    compute_and_write_normalized_expected_values();
+  } else {
+    write_empty_expected_values();
+    write_empty_normalized_expected_values();
+  }
+
   write_footer_offset();
   write_footer_size();
-  write_empty_normalized_expected_values();
   write_norm_vectors();
   write_norm_vector_index();
   _fs.flush();

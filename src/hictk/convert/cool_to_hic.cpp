@@ -88,6 +88,7 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
     for (const auto& norm : c.normalization_methods) {
       copy_normalization_vector(w, base_clr, norm, c.fail_if_normalization_method_is_not_avaliable);
     }
+    w.write_norm_vectors_and_norm_expected_values();
     return;
   }
 
@@ -100,6 +101,7 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
       copy_normalization_vector(w, clr, norm, c.fail_if_normalization_method_is_not_avaliable);
     }
   }
+  w.write_norm_vectors_and_norm_expected_values();
 }
 
 void cool_to_hic(const ConvertConfig& c) {
@@ -129,6 +131,5 @@ void cool_to_hic(const ConvertConfig& c) {
   w.serialize();
 
   copy_normalization_vectors(w, base_clr, c);
-  w.finalize();
 }
 }  // namespace hictk::tools
