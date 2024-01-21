@@ -52,6 +52,7 @@ class ExpectedValuesAggregator {
  private:
   [[nodiscard]] const Reference& chromosomes() const noexcept;
 
+  inline void init_possible_distances();
   void compute_density_cis();
   void compute_density_trans();
 

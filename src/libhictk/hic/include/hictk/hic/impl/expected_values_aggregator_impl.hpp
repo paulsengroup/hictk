@@ -24,42 +24,21 @@ inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const 
     : _bins(std::move(bins)) {
   SPDLOG_INFO(FMT_STRING("[{} bp] initializing expected value vector"), _bins->bin_size());
   std::uint32_t max_length = 0;
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
-    const auto &chrom1 = chromosomes().at(chrom1_id);
-    if (chrom1.is_all()) {
-      continue;
-    }
-
-    max_length = std::max(max_length, chrom1.size());
-    _cis_sum.emplace(chrom1, 0.0);
-
-    for (std::uint32_t chrom2_id = chrom1_id + 1; chrom2_id < chromosomes().size(); ++chrom2_id) {
-      const auto &chrom2 = chromosomes().at(chrom2_id);
-      _trans_sum.emplace(std::make_pair(chrom1, chrom2), 0.0);
-    }
-
-    for (const auto &chrom : chromosomes()) {
-      if (chrom.is_all()) {
-        continue;
-      }
-      _num_bins_gw += chrom.size();
-    }
-  }
-
-  const auto bin_size = _bins->bin_size();
-  const auto max_n_bins = (max_length + bin_size - 1) / bin_size;
-  _possible_distances.resize(max_n_bins, 0.0);
-  _actual_distances.resize(max_n_bins, 0.0);
-
   for (const auto &chrom : chromosomes()) {
     if (chrom.is_all()) {
       continue;
     }
-    const auto n_bins = chrom.size() / bin_size;
-    for (std::uint32_t i = 0; i < n_bins; ++i) {
-      _possible_distances[i] += n_bins - i;
-    }
+
+    max_length = std::max(max_length, chrom.size());
+
+    _num_bins_gw += chrom.size();
   }
+
+  const auto bin_size = _bins->bin_size();
+  // round down to mimick HiCTools' behavior
+  const auto max_n_bins = max_length / bin_size;
+  _possible_distances.resize(max_n_bins, 0.0);
+  _actual_distances.resize(max_n_bins, 0.0);
 }
 
 inline void ExpectedValuesAggregator::add(const ThinPixel<float> &p) {
@@ -77,7 +56,11 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
   if (p.coords.is_intra()) {
     at(chrom1) += static_cast<double>(p.count);
     const auto i = p.coords.bin2.id() - p.coords.bin1.id();
-    _actual_distances[i] += static_cast<double>(p.count);
+    // skip last bin in chromosome if chromosome size is not a multiple of bin size
+    // this is done to mimick HiCTools' behavior
+    if (i < _actual_distances.size()) {
+      _actual_distances[i] += static_cast<double>(p.count);
+    }
   } else {
     at(chrom1, chrom2) += static_cast<double>(p.count);
   }
@@ -85,6 +68,7 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
 
 inline void ExpectedValuesAggregator::compute_density() {
   SPDLOG_INFO(FMT_STRING("[{} bp] computing expected vector density"), _bins->bin_size());
+  init_possible_distances();
   compute_density_cis();
   compute_density_trans();
 }
@@ -100,6 +84,20 @@ inline double ExpectedValuesAggregator::scaling_factor(const Chromosome &chrom) 
 inline const phmap::btree_map<Chromosome, double> &ExpectedValuesAggregator::scaling_factors()
     const noexcept {
   return _scaling_factors;
+}
+
+inline void ExpectedValuesAggregator::init_possible_distances() {
+  const auto bin_size = _bins->bin_size();
+
+  for (const auto &[chrom, _] : _cis_sum) {
+    if (chrom.is_all()) {
+      continue;
+    }
+    const auto n_bins = chrom.size() / bin_size;
+    for (std::uint32_t i = 0; i < n_bins; ++i) {
+      _possible_distances[i] += n_bins - i;
+    }
+  }
 }
 
 inline void ExpectedValuesAggregator::compute_density_cis() {
@@ -145,7 +143,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
     }
   }
 
-  for (const auto &chrom : chromosomes()) {
+  for (const auto &[chrom, _] : _cis_sum) {
     if (chrom.is_all()) {
       continue;
     }
@@ -183,10 +181,14 @@ inline double ExpectedValuesAggregator::at(const Chromosome &chrom1,
   return _trans_sum.at(std::make_pair(chrom1, chrom2));
 }
 
-inline double &ExpectedValuesAggregator::at(const Chromosome &chrom) { return _cis_sum.at(chrom); }
+inline double &ExpectedValuesAggregator::at(const Chromosome &chrom) {
+  auto [it, _] = _cis_sum.try_emplace(chrom, 0.0);
+  return it->second;
+}
 
 inline double &ExpectedValuesAggregator::at(const Chromosome &chrom1, const Chromosome &chrom2) {
-  return _trans_sum.at(std::make_pair(chrom1, chrom2));
+  auto [it, _] = _trans_sum.try_emplace(std::make_pair(chrom1, chrom2), 0.0);
+  return it->second;
 }
 
 inline const Reference &ExpectedValuesAggregator::chromosomes() const noexcept {
