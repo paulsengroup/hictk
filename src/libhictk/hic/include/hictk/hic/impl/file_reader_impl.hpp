@@ -44,7 +44,7 @@ inline filestream::FileStream HiCFileReader::openStream(std::string url) {
   }
 }
 
-inline const std::string &HiCFileReader::url() const noexcept { return _fs->url(); }
+inline const std::string &HiCFileReader::path() const noexcept { return _fs->path(); }
 inline const HiCHeader &HiCFileReader::header() const noexcept { return *_header; }
 
 inline std::int32_t HiCFileReader::version() const noexcept {
@@ -242,79 +242,8 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
 
 inline bool HiCFileReader::checkMagicString() { return checkMagicString(*_fs); }
 
-// reads the header, storing the positions of the normalization vectors and returning the
-// masterIndexPosition pointer
 inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
-  if (!checkMagicString(fs)) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("Hi-C magic string is missing. {} does not appear to be a hic file"), fs.url()));
-  }
-
-  HiCHeader header{fs.url()};
-
-  fs.read(header.version);
-  if (header.version < 6) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
-        header.version));
-  }
-  fs.read(header.footerPosition);
-  if (header.footerPosition < 0 || header.footerPosition >= static_cast<std::int64_t>(fs.size())) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("file appears to be corrupted: expected master index offset to "
-                               "be between 0 and {}, found {}"),
-                    fs.size(), header.footerPosition));
-  }
-
-  fs.getline(header.genomeID, '\0');
-  if (header.genomeID.empty()) {
-    header.genomeID = "unknown";
-  }
-
-  if (header.version > 8) {
-    fs.read(header.normVectorIndexPosition);
-    fs.read(header.normVectorIndexLength);
-  }
-
-  const auto nAttributes = fs.read<std::int32_t>();
-
-  // reading attribute-value dictionary
-  for (std::int32_t i = 0; i < nAttributes; i++) {
-    auto key = fs.getline('\0');    // key
-    auto value = fs.getline('\0');  // value
-    header.attributes.emplace(std::move(key), std::move(value));
-  }
-
-  // Read chromosomes
-  auto numChromosomes = static_cast<std::uint32_t>(fs.read<std::int32_t>());
-  std::vector<std::string> chrom_names(numChromosomes);
-  std::vector<std::uint32_t> chrom_sizes(numChromosomes);
-  for (std::size_t i = 0; i < chrom_names.size(); ++i) {
-    fs.getline(chrom_names[i], '\0');
-    chrom_sizes[i] = static_cast<std::uint32_t>(
-        header.version > 8 ? fs.read<std::int64_t>()
-                           : static_cast<std::int64_t>(fs.read<std::int32_t>()));
-  }
-
-  if (chrom_names.empty()) {
-    throw std::runtime_error("unable to read chromosomes");
-  }
-
-  header.chromosomes = Reference(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
-
-  // Read resolutions
-  const auto numResolutions = static_cast<std::size_t>(fs.read<std::int32_t>());
-  if (numResolutions == 0) {
-    throw std::runtime_error("unable to read the list of available resolutions");
-  }
-  header.resolutions.resize(numResolutions);
-  std::generate(header.resolutions.begin(), header.resolutions.end(), [&]() {
-    const auto res = fs.read<std::int32_t>();
-    assert(res > 0);
-    return static_cast<std::uint32_t>(res);
-  });
-
-  return header;
+  return HiCHeader::deserialize(fs);
 }
 
 inline void HiCFileReader::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
@@ -521,7 +450,7 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
 
   // clang-format off
     HiCFooterMetadata metadata{
-        _fs->url(),
+        _fs->path(),
         matrix_type,
         wanted_norm,
         wanted_unit,

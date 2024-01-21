@@ -86,7 +86,7 @@ static void write_weights_hic(const hic::File& hf, const BalanceConfig& c,
       }
     }
 
-    auto jt = run_juicer_tools_add_norm(c.juicer_tools_jar, tmpfile, hf.url(), c.juicer_tools_xmx);
+    auto jt = run_juicer_tools_add_norm(c.juicer_tools_jar, tmpfile, hf.path(), c.juicer_tools_xmx);
     jt->wait();
     if (jt->exit_code() != 0) {
       throw std::runtime_error(

@@ -39,7 +39,7 @@ inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
-        FMT_STRING("file {} does not have interactions for resolution {}"), url(), resolution()));
+        FMT_STRING("file {} does not have interactions for resolution {}"), path(), resolution()));
   }
 
   if (block_cache_capacity == 0) {
@@ -49,7 +49,7 @@ inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
 
 inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
                         MatrixUnit unit_, std::uint64_t block_cache_capacity) {
-  if (_fs->url() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
+  if (_fs->path() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
     _block_cache->set_capacity(block_cache_capacity, false);
     return *this;
   }
@@ -65,7 +65,7 @@ inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType 
 
 inline File& File::open(std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
                         std::uint64_t block_cache_capacity) {
-  return open(url(), resolution_, type_, unit_, block_cache_capacity);
+  return open(path(), resolution_, type_, unit_, block_cache_capacity);
 }
 
 inline bool File::has_resolution(std::uint32_t resolution) const {
@@ -73,9 +73,9 @@ inline bool File::has_resolution(std::uint32_t resolution) const {
   return match != avail_resolutions().end();
 }
 
-inline const std::string& File::url() const noexcept { return _fs->url(); }
+inline const std::string& File::path() const noexcept { return _fs->path(); }
 
-inline const std::string& File::name() const noexcept { return url(); }
+inline const std::string& File::name() const noexcept { return path(); }
 
 inline std::int32_t File::version() const noexcept { return _fs->version(); }
 
@@ -115,7 +115,7 @@ inline std::uint32_t File::resolution() const noexcept { return _bins->bin_size(
 inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
     const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
     balancing::Method norm, MatrixUnit unit, std::uint32_t resolution) const {
-  const internal::HiCFooterMetadata metadata{url(),      matrix_type, norm,  unit,
+  const internal::HiCFooterMetadata metadata{path(),     matrix_type, norm,  unit,
                                              resolution, chrom1,      chrom2};
   auto it = _footers.find(metadata);
   if (it != _footers.end()) {

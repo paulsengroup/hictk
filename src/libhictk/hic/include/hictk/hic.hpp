@@ -49,7 +49,7 @@ class File {
              MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
-  [[nodiscard]] const std::string &url() const noexcept;
+  [[nodiscard]] const std::string &path() const noexcept;
   [[nodiscard]] const std::string &name() const noexcept;
   [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] const Reference &chromosomes() const noexcept;

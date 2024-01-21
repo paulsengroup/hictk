@@ -46,7 +46,6 @@ inline FileStream FileStream::create(std::string path) {
 }
 
 inline const std::string &FileStream::path() const noexcept { return _path; }
-inline const std::string &FileStream::url() const noexcept { return path(); }
 
 inline std::size_t FileStream::size() const { return _file_size; }
 

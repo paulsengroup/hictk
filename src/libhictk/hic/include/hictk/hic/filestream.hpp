@@ -29,7 +29,6 @@ class FileStream {
   static FileStream create(std::string path);
 
   [[nodiscard]] const std::string &path() const noexcept;
-  [[nodiscard]] const std::string &url() const noexcept;
   [[nodiscard]] std::size_t size() const;
 
   void seekg(std::streamoff offset, std::ios::seekdir way = std::ios::beg);

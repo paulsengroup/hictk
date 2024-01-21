@@ -68,6 +68,6 @@ inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err
 namespace hic::test::utils {
 inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hic::test::file_writer
+}  // namespace hic::test::utils
 
 }  // namespace hictk

@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "hictk/hic/binary_buffer.hpp"
+#include "hictk/hic/filestream.hpp"
 #include "hictk/reference.hpp"
 
 namespace hictk::hic::internal {
@@ -28,8 +30,11 @@ struct HiCHeader {
   phmap::flat_hash_map<std::string, std::string> attributes{};
 
   constexpr explicit operator bool() const noexcept;
-  bool operator==(const HiCHeader &other) const noexcept;
-  bool operator!=(const HiCHeader &other) const noexcept;
+  bool operator==(const HiCHeader& other) const noexcept;
+  bool operator!=(const HiCHeader& other) const noexcept;
+
+  [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
+  [[nodiscard]] static HiCHeader deserialize(filestream::FileStream& fs);
 };
 
 }  // namespace hictk::hic::internal

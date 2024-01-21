@@ -24,7 +24,7 @@ inline void validate_chromosomes(const std::vector<hic::File>& files) {
     if (chromosomes != files[i].chromosomes()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("files \"{}\" and \"{}\" use different reference genomes"),
-                      files.front().url(), files[i].url()));
+                      files.front().path(), files[i].path()));
     }
   }
 }

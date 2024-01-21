@@ -28,7 +28,7 @@ inline void BinaryBuffer::read(T &buff) {
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline void BinaryBuffer::read(std::vector<T> &buff) {
-  read(reinterpret_cast<char*>(buff.data()), sizeof(T) * buff.size());
+  read(reinterpret_cast<char *>(buff.data()), sizeof(T) * buff.size());
 }
 
 inline void BinaryBuffer::read(std::string &buff, std::size_t n) {

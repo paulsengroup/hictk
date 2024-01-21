@@ -100,7 +100,6 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  HiCHeader _header{};
   filestream::FileStream _fs{};
   std::filesystem::path _tmpdir{};
 
@@ -108,6 +107,7 @@ class HiCFileWriter {
   using BlockIndex = phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>>;
   using BlockMappers = phmap::flat_hash_map<std::uint32_t, HiCInteractionToBlockMapper>;
 
+  HiCHeader _header{};
   BinTables _bin_tables{};
   BlockIndex _block_index{};
   BlockMappers _block_mappers{};
@@ -149,7 +149,7 @@ class HiCFileWriter {
                 const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
                 std::uint32_t compression_lvl = 12, std::size_t buffer_size = 32'000'000);
 
-  [[nodiscard]] std::string_view url() const noexcept;
+  [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
   [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
   [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
@@ -202,7 +202,7 @@ class HiCFileWriter {
   void finalize();
 
  private:
-  [[nodiscard]] static HiCHeader read_header(std::string_view path);
+  [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly);
@@ -233,6 +233,8 @@ class HiCFileWriter {
 
   void read_norm_vectors();
   [[nodiscard]] std::vector<float> read_norm_vector(const NormalizationVectorIndexBlock& blk);
+
+  void read_offsets();
 
   // Methods to be called from worker threads
   auto merge_and_compress_blocks_thr(

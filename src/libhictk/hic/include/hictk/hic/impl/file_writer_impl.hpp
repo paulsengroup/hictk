@@ -132,10 +132,8 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
 }
 
 inline HiCFileWriter::HiCFileWriter(std::string_view path_)
-    : _header(read_header(path_)),
-      _fs(_header.url, std::ios::in | std::ios::out),
-      _norm_vector_index_section(_header.normVectorIndexPosition,
-                                 static_cast<std::size_t>(_header.normVectorIndexLength)) {
+    : _fs(std::string{path_}, std::ios::in | std::ios::out), _header(read_header(_fs)) {
+  read_offsets();
   read_norm_vectors();
 }
 
@@ -144,9 +142,9 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::string_view assembly_, std::size_t n_threads,
                                     std::size_t chunk_size, const std::filesystem::path &tmpdir,
                                     std::uint32_t compression_lvl, std::size_t buffer_size)
-    : _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_)),
-      _fs(filestream::FileStream::create(_header.url)),
+    : _fs(filestream::FileStream::create(std::string{path_})),
       _tmpdir(tmpdir),
+      _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
       _block_mappers(init_interaction_block_mappers(_tmpdir, _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
@@ -159,7 +157,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
   }
 }
 
-inline std::string_view HiCFileWriter::url() const noexcept { return _header.url; }
+inline std::string_view HiCFileWriter::path() const noexcept { return _header.url; }
 
 inline const Reference &HiCFileWriter::chromosomes() const noexcept { return _header.chromosomes; }
 
@@ -196,44 +194,8 @@ inline void HiCFileWriter::write_header() {
   assert(!chromosomes().empty());
 
   const auto offset1 = _fs.tellp();
-
   SPDLOG_INFO(FMT_STRING("writing header at offset {}"), offset1);
-
-  _fs.write("HIC\0", 4);
-  _fs.write(_header.version);
-  _fs.write(std::int64_t(-1));  // masterIndexOffset
-  _fs.write(_header.genomeID.c_str(), _header.genomeID.size() + 1);
-  _fs.write(std::int64_t(_fs.tellp() + sizeof(_header.normVectorIndexPosition)));
-  _fs.write(std::int64_t(0));
-
-  // Write attributes
-  const auto nAttributes = static_cast<std::int32_t>(_header.attributes.size());
-  _fs.write(nAttributes);
-  for (const auto &[k, v] : _header.attributes) {
-    _fs.write(k.c_str(), k.size() + 1);
-    _fs.write(v.c_str(), v.size() + 1);
-  }
-
-  // Write chromosomes
-  auto numChromosomes = static_cast<std::uint32_t>(chromosomes().size());
-  _fs.write(numChromosomes);
-
-  for (const Chromosome &c : chromosomes()) {
-    const auto name = std::string{c.name()};
-    _fs.write(name.c_str(), name.size() + 1);
-    _fs.write<std::int64_t>(c.size());
-  }
-
-  // write resolutions
-  _fs.write(static_cast<std::int32_t>(_header.resolutions.size()));
-  const std::vector<std::int32_t> resolutions(_header.resolutions.begin(),
-                                              _header.resolutions.end());
-  _fs.write(resolutions);
-
-  // write fragments: TODO
-  const std::int32_t nFragResolutions = 0;
-  _fs.write(nFragResolutions);
-
+  _fs.write(_header.serialize(_bbuffer));
   const auto offset2 = _fs.tellp();
 
   _header_section = {offset1, offset2 - offset1};
@@ -280,7 +242,7 @@ inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pi
 }
 
 inline void HiCFileWriter::write_pixels() {
-  SPDLOG_INFO(FMT_STRING("begin writing interaction blocks to file \"{}\"..."), url());
+  SPDLOG_INFO(FMT_STRING("begin writing interaction blocks to file \"{}\"..."), path());
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto &chrom1 = chromosomes().at(chrom1_id);
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
@@ -335,7 +297,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
 
   HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
 
-  File f(std::string{url()}, base_resolution);
+  File f(std::string{path()}, base_resolution);
   auto sel = f.fetch();
   phmap::btree_map<std::uint64_t, MatrixInteractionBlock<float>> blocks{};
   if (base_resolution == target_resolution) {
@@ -392,7 +354,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
           base_resolution = resolutions()[j];
         }
       }
-      const File f(std::string{url()}, base_resolution);
+      const File f(std::string{path()}, base_resolution);
       const auto sel = f.fetch(chrom1.name(), chrom2.name());
       if (!sel.empty()) {
         SPDLOG_INFO(FMT_STRING("[{} bp] no pixels provided for {}:{} matrix: generating pixels by "
@@ -728,8 +690,8 @@ inline void HiCFileWriter::write_norm_vectors() {
   _fs.flush();
 }
 
-inline HiCHeader HiCFileWriter::read_header(std::string_view path) {
-  return HiCFileReader(std::string{path}).header();
+inline HiCHeader HiCFileWriter::read_header(filestream::FileStream &fs) {
+  return HiCHeader::deserialize(fs);
 }
 
 inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chromosomes,
@@ -742,7 +704,7 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
       -1,                     // footerPosition
       std::string{assembly},  // genomeId
       -1,                     // normVectorIndexPosition
-      -1,                     // normVectorIndexLength
+      0,                      // normVectorIndexLength
       std::move(chromosomes),
       std::move(resolutions),                                   // resolutions
       {{"software", std::string{config::version::str_long()}}}  // attributes
@@ -951,6 +913,44 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
                     blk.binSize, blk.nBytes, bytes_read));
   }
   return buffer;
+}
+
+inline void HiCFileWriter::read_offsets() {
+  _fs.seekg(0, std::ios::beg);
+  const auto header_start = _fs.tellg();
+  const auto header = HiCHeader::deserialize(_fs);
+  const auto header_end = _fs.tellg();
+
+  // read footer offsets
+  _fs.seekg(header.footerPosition);
+  const auto footer_start = _fs.tellg();
+  const auto nBytesV5 = _fs.read<std::int64_t>();
+  _fs.seekg(nBytesV5, std::ios::cur);
+  const auto footer_end = _fs.tellg();
+
+  // read norm expected values offsets
+  const auto norm_expected_values_start = _fs.tellg();
+  const auto nNormExpectedValueVectors = _fs.read<std::int32_t>();
+  for (std::int32_t i = 0; i < nNormExpectedValueVectors; ++i) {
+    std::ignore = NormalizationVectorIndexBlock::deserialize(_fs);
+  }
+  const auto norm_expected_values_end = _fs.tellg();
+
+  // compute norm vector index offsets
+  const auto norm_vector_index_start = header.normVectorIndexPosition;
+  const auto norm_vector_index_end = header.normVectorIndexPosition + header.normVectorIndexLength;
+
+  // set the offsets
+  _header_section = {header_start, static_cast<std::size_t>(header_end - header_start)};
+  _footer_section = {footer_start, static_cast<std::size_t>(footer_end - footer_start)};
+  _expected_values_norm_section = {
+      norm_expected_values_start,
+      static_cast<std::size_t>(norm_expected_values_end - norm_expected_values_start)};
+  _norm_vector_index_section = {
+      norm_vector_index_start,
+      static_cast<std::size_t>(norm_vector_index_end - norm_vector_index_start)};
+
+  _fs.seekg(0, std::ios::end);
 }
 
 inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &chrom1,

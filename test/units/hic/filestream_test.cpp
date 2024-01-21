@@ -56,13 +56,13 @@ static std::vector<std::string> read_file_by_line(const std::string& path_, char
 TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
   SECTION("default") {
     const FileStream s{};
-    CHECK(s.url().empty());
+    CHECK(s.path().empty());
     CHECK(s.size() == 0);
   }
 
   SECTION("valid path (read)") {
     const FileStream s(path_plaintext);
-    CHECK(s.url() == path_plaintext);
+    CHECK(s.path() == path_plaintext);
     CHECK(s.size() == 502941);
     CHECK(!s.eof());
   }
@@ -70,7 +70,7 @@ TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
   SECTION("valid path (write)") {
     const auto path1 = testdir() / "filestream_ctor_write.bin";
     const auto s = FileStream::create(path1);
-    CHECK(s.url() == path1);
+    CHECK(s.path() == path1);
     CHECK(s.size() == 0);
     CHECK(!s.eof());
   }
@@ -90,9 +90,7 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       CHECK(s.tellg() == 10);
     }
 
-    SECTION("negative seek from beg") {
-      CHECK_THROWS(s.seekg(-10));
-    }
+    SECTION("negative seek from beg") { CHECK_THROWS(s.seekg(-10)); }
 
     SECTION("seek from current") {
       s.seekg(10);
@@ -132,9 +130,7 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       CHECK(s.tellp() == 10);
     }
 
-    SECTION("negative seek from beg") {
-      CHECK_THROWS(s.seekp(-10));
-    }
+    SECTION("negative seek from beg") { CHECK_THROWS(s.seekp(-10)); }
 
     SECTION("seek from current") {
       s.seekp(10);

@@ -34,7 +34,7 @@ TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
 TEST_CASE("HiC: file accessors", "[hic][short]") {
   File f(pathV8, 1'000);
 
-  CHECK(f.url() == pathV8);
+  CHECK(f.path() == pathV8);
   CHECK(f.name() == pathV8);
   CHECK(f.version() == 8);
   CHECK(f.chromosomes().size() == 9);

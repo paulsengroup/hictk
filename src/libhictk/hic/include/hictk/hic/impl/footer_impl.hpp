@@ -53,7 +53,7 @@ inline bool HiCFooter::operator!=(const HiCFooter &other) const noexcept {
 constexpr const HiCFooterMetadata &HiCFooter::metadata() const noexcept { return _metadata; }
 constexpr HiCFooterMetadata &HiCFooter::metadata() noexcept { return _metadata; }
 inline const Index &HiCFooter::index() const noexcept { return _index; }
-constexpr const std::string &HiCFooter::url() const noexcept { return metadata().url; }
+constexpr const std::string &HiCFooter::path() const noexcept { return metadata().url; }
 constexpr MatrixType HiCFooter::matrix_type() const noexcept { return metadata().matrix_type; }
 inline balancing::Method HiCFooter::normalization() const noexcept {
   return metadata().normalization;

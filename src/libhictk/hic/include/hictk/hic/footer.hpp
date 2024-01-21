@@ -57,7 +57,7 @@ class HiCFooter {
   [[nodiscard]] constexpr HiCFooterMetadata &metadata() noexcept;
   [[nodiscard]] const Index &index() const noexcept;
 
-  [[nodiscard]] constexpr const std::string &url() const noexcept;
+  [[nodiscard]] constexpr const std::string &path() const noexcept;
   [[nodiscard]] constexpr MatrixType matrix_type() const noexcept;
   [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] constexpr MatrixUnit unit() const noexcept;

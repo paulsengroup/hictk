@@ -42,7 +42,7 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
         fmt::format(FMT_STRING("### FAILURE: \"{}\" is not a valid .hic file:\n"
                                "Validation failed for {}:{} map at {} resolution:\n"
                                "{}"),
-                    hf.url(), chrom1.name(), chrom2.name(), hf.resolution(), e.what()));
+                    hf.path(), chrom1.name(), chrom2.name(), hf.resolution(), e.what()));
   }
 }
 
