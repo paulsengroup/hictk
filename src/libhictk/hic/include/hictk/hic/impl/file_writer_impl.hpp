@@ -804,11 +804,14 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
     }
 
     auto [it, inserted] = _normalization_vectors.emplace(blk, weights);
-    if (!inserted && !force_overwrite) {
-      throw std::runtime_error("file already contains normalization vector");
+    if (!inserted) {
+      if (force_overwrite) {
+        it->second = weights;
+      } else {
+        throw std::runtime_error("file already contains normalization vector");
+      }
     }
 
-    it->second = weights;
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
@@ -1225,10 +1228,22 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
     const auto offset = blk.position;
     _fs.seekg(offset);
 
+    const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
+    const auto bin_size = static_cast<std::size_t>(blk.binSize);
+    const auto nValuesExpected = (static_cast<std::size_t>(chrom.size()) + bin_size - 1) / bin_size;
+
     // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
     const auto nValues = static_cast<std::size_t>(_fs.read<std::int64_t>());
+    // We cannot use numValues directly because sometimes hic files have few trailing zeros for some
+    // reason
+    if (nValues < nValuesExpected) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected {} values, found {}"), nValuesExpected, nValues));
+    }
+
     std::vector<float> buffer(nValues);
     _fs.read(buffer);
+    buffer.resize(nValuesExpected);
     const auto bytes_read = _fs.tellg() - static_cast<std::size_t>(offset);
     if (bytes_read != static_cast<std::size_t>(blk.nBytes)) {
       throw std::runtime_error(

@@ -25,16 +25,10 @@ function dump_interactions {
   resolution="$3"
   f="$2"
 
-  if [[ "$f"  == *.hic ]]; then
-    weight=WEIGHT
-  else
-    weight=weight
-  fi
-
-  "$hictk" dump "$f"                \
-                --balance="$weight" \
-                --resolution        \
-                "$resolution"       |
+  "$hictk" dump "$f"             \
+                --balance=weight \
+                --resolution     \
+                "$resolution"    |
                 cut -f 3
 }
 
@@ -83,13 +77,12 @@ function compare_matrices {
 
 status=0
 
-if [ $# -ne 2 ]; then
-  2>&1 echo "Usage: $0 path_to_hictk juicer_tools.jar"
+if [ $# -ne 1 ]; then
+  2>&1 echo "Usage: $0 path_to_hictk"
   status=1
 fi
 
 hictk_bin="$1"
-juicer_tools_jar="$2"
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -99,7 +92,7 @@ ref_hic="$data_dir/hic/ENCFF993FGR.hic"
 
 export PATH="$PATH:$script_dir"
 
-if ! check_test_files_exist.sh "$ref_cool" "$ref_hic" "$juicer_tools_jar"; then
+if ! check_test_files_exist.sh "$ref_cool" "$ref_hic"; then
   exit 1
 fi
 
@@ -108,17 +101,33 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cp "$ref_cool" "$ref_hic" "$outdir"
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc.sh) --chunk-size=100 --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool   \
+                     -t $(nproc.sh)     \
+                     --chunk-size=100   \
+                     --mode=cis         \
+                     --tmpdir="$outdir" \
+                     --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.hic -t $(nproc.sh) --chunk-size=100 --mode=cis --force --juicer-tools-jar "$juicer_tools_jar"
+"$hictk_bin" balance "$outdir/"*.hic    \
+                     -t $(nproc.sh)     \
+                     --chunk-size=100   \
+                     --mode=cis         \
+                     --tmpdir="$outdir" \
+                     --name=weight      \
+                     --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.cool -t $(nproc.sh) --in-memory --mode=cis --force
+"$hictk_bin" balance "$outdir/"*.cool   \
+                     -t $(nproc.sh)     \
+                     --in-memory        \
+                     --mode=cis         \
+                     --tmpdir="$outdir" \
+                     --force
 if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
