@@ -142,7 +142,7 @@ class HiCFileWriter {
 
  public:
   HiCFileWriter() = default;
-  explicit HiCFileWriter(std::string_view path_);
+  explicit HiCFileWriter(std::string_view path_, std::size_t n_threads = 1);
   HiCFileWriter(std::string_view path_, Reference chromosomes_,
                 std::vector<std::uint32_t> resolutions_, std::string_view assembly_ = "unknown",
                 std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,

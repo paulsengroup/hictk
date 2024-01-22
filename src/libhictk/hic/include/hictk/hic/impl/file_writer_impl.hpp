@@ -163,10 +163,11 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
   return _tank;
 }
 
-inline HiCFileWriter::HiCFileWriter(std::string_view path_)
+inline HiCFileWriter::HiCFileWriter(std::string_view path_, std::size_t n_threads)
     : _fs(std::string{path_}, std::ios::in | std::ios::out),
       _header(read_header(_fs)),
-      _bin_tables(init_bin_tables(chromosomes(), resolutions())) {
+      _bin_tables(init_bin_tables(chromosomes(), resolutions())),
+      _tpool(init_tpool(n_threads)) {
   read_offsets();
   read_norm_expected_values();
   read_norm_vectors();
@@ -705,8 +706,8 @@ inline ExpectedValuesBlock HiCFileWriter::compute_expected_values(std::uint32_t 
 inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_values(
     std::uint32_t resolution, const balancing::Method &norm) {
   assert(norm != balancing::Method::NONE());
-  SPDLOG_DEBUG(FMT_STRING("computing normalized expected values ({}) at resolution {}..."), norm,
-               resolution);
+  SPDLOG_INFO(FMT_STRING("computing normalized expected values ({}) at resolution {}..."), norm,
+              resolution);
 
   try {
     const File f(std::string{path()}, resolution);
@@ -738,10 +739,17 @@ inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_
 }
 
 inline void HiCFileWriter::compute_and_write_expected_values() {
+  assert(_tpool.get_thread_count() != 0);
   ExpectedValues ev{};
 
+  std::vector<std::future<ExpectedValuesBlock>> results{};
   for (const auto &resolution : resolutions()) {
-    ev.emplace(compute_expected_values(resolution));
+    results.emplace_back(
+        _tpool.submit([&, res = resolution]() { return compute_expected_values(res); }));
+  }
+
+  for (auto &res : results) {
+    ev.emplace(res.get());
   }
 
   try {
@@ -762,20 +770,31 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
 }
 
 inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
+  assert(_tpool.get_thread_count() != 0);
   NormalizedExpectedValues ev{};
 
+  phmap::btree_map<NormalizedExpectedValuesBlock, std::future<NormalizedExpectedValuesBlock>>
+      results{};
   for (const auto &[blk, _] : _normalization_vectors) {
     const NormalizedExpectedValuesBlock key{
         blk.type, blk.unit, static_cast<std::uint32_t>(blk.binSize), {}, {}, {}};
-    const auto match = _normalized_expected_values.find(key);
-    if (match == _normalized_expected_values.end()) {
-      const auto resolution = static_cast<std::uint32_t>(blk.binSize);
-      const balancing::Method norm{blk.type};
-      _normalized_expected_values.emplace(compute_normalized_expected_values(resolution, norm));
+    const auto nev_available =
+        _normalized_expected_values.find(key) != _normalized_expected_values.end();
+    const auto nev_already_submitted_for_computation = results.find(key) != results.end();
+    if (!nev_available && !nev_already_submitted_for_computation) {
+      results.emplace(
+          key, _tpool.submit([&, res = static_cast<std::uint32_t>(blk.binSize), type = blk.type]() {
+            const balancing::Method norm{type};
+            return compute_normalized_expected_values(res, norm);
+          }));
     }
   }
 
-  for (const auto& nev : _normalized_expected_values) {
+  for (auto &[_, res] : results) {
+    _normalized_expected_values.emplace(res.get());
+  }
+
+  for (const auto &nev : _normalized_expected_values) {
     ev.emplace(nev);
   }
 
