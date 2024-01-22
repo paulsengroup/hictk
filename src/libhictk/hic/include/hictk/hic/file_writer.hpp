@@ -124,6 +124,7 @@ class HiCFileWriter {
   std::unique_ptr<libdeflate_compressor> _compressor{};
   std::string _compression_buffer{};
 
+  phmap::btree_set<NormalizedExpectedValuesBlock> _normalized_expected_values{};
   phmap::btree_map<NormalizationVectorIndexBlock, std::vector<float>> _normalization_vectors{};
 
   HiCSectionOffsets _header_section{};
@@ -195,7 +196,6 @@ class HiCFileWriter {
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
                        const std::vector<float>& weights, bool force_overwrite = false);
   void write_norm_vectors_and_norm_expected_values();
-
   void write_empty_expected_values();
   void write_empty_normalized_expected_values();
 
@@ -239,6 +239,9 @@ class HiCFileWriter {
   [[nodiscard]] NormalizedExpectedValuesBlock compute_normalized_expected_values(
       std::uint32_t resolution, const balancing::Method& norm);
 
+  void add_norm_expected_values(const NormalizedExpectedValuesBlock& blk,
+                                bool force_overwrite = false);
+  void read_norm_expected_values();
   void read_norm_vectors();
   [[nodiscard]] std::vector<float> read_norm_vector(const NormalizationVectorIndexBlock& blk);
 

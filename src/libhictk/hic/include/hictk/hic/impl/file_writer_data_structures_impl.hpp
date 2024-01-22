@@ -491,12 +491,22 @@ inline std::int32_t ExpectedValues::nExpectedValueVectors() const noexcept {
   return static_cast<std::int32_t>(expectedValues().size());
 }
 
-inline const std::vector<ExpectedValuesBlock> &ExpectedValues::expectedValues() const noexcept {
+inline const phmap::btree_set<ExpectedValuesBlock> &ExpectedValues::expectedValues()
+    const noexcept {
   return _expected_values;
 }
 
-inline void ExpectedValues::emplace_back(ExpectedValuesBlock evb) {
-  _expected_values.emplace_back(std::move(evb));
+inline void ExpectedValues::emplace(const ExpectedValuesBlock &evb, bool force_overwrite) {
+  auto [it, inserted] = _expected_values.emplace(evb);
+  if (!inserted) {
+    if (force_overwrite) {
+      *it = evb;
+    } else {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("ExpectedValues already contains vector for {} resolution ({})"),
+                      it->binSize, it->unit));
+    }
+  }
 }
 
 inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
@@ -528,7 +538,7 @@ inline ExpectedValues ExpectedValues::deserialize(filestream::FileStream &fs) {
   try {
     const auto nExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
     for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
-      evs.emplace_back(ExpectedValuesBlock::deserialize(fs));
+      evs.emplace(ExpectedValuesBlock::deserialize(fs), true);
     }
   } catch (const std::exception &e) {
     throw std::runtime_error("an error occurred while deserializing an ExpectedValues object: " +
@@ -635,13 +645,22 @@ inline std::int32_t NormalizedExpectedValues::nNormExpectedValueVectors() const 
   return static_cast<std::int32_t>(_normalized_expected_values.size());
 }
 
-inline const std::vector<NormalizedExpectedValuesBlock> &
+inline const phmap::btree_set<NormalizedExpectedValuesBlock> &
 NormalizedExpectedValues::normExpectedValues() const noexcept {
   return _normalized_expected_values;
 }
 
-inline void NormalizedExpectedValues::emplace_back(NormalizedExpectedValuesBlock evb) {
-  _normalized_expected_values.emplace_back(std::move(evb));
+inline void NormalizedExpectedValues::emplace(const NormalizedExpectedValuesBlock& evb, bool force_overwrite) {
+  auto [it, inserted] = _normalized_expected_values.emplace(evb);
+  if (!inserted) {
+    if (force_overwrite) {
+      *it = evb;
+    } else {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("NormalizedExpectedValues already contains {} vector for {} resolution ({})"),
+          it->type, it->binSize, it->unit));
+    }
+  }
 }
 
 inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
@@ -668,9 +687,8 @@ inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(filestream
 
   try {
     const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
-    nevs._normalized_expected_values.reserve(nNormExpectedValueVectors);
     for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
-      nevs.emplace_back(NormalizedExpectedValuesBlock::deserialize(fs));
+      nevs.emplace(NormalizedExpectedValuesBlock::deserialize(fs), true);
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(

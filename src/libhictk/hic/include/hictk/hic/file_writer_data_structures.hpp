@@ -155,12 +155,12 @@ struct ExpectedValuesBlock {
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
 class ExpectedValues {
-  std::vector<ExpectedValuesBlock> _expected_values;
+  phmap::btree_set<ExpectedValuesBlock> _expected_values;
 
  public:
   [[nodiscard]] std::int32_t nExpectedValueVectors() const noexcept;
-  [[nodiscard]] const std::vector<ExpectedValuesBlock>& expectedValues() const noexcept;
-  void emplace_back(ExpectedValuesBlock evb);
+  [[nodiscard]] const phmap::btree_set<ExpectedValuesBlock>& expectedValues() const noexcept;
+  void emplace(const ExpectedValuesBlock& evb, bool force_overwrite = false);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
   [[nodiscard]] static ExpectedValues deserialize(filestream::FileStream& fs);
 };
@@ -189,13 +189,13 @@ struct NormalizedExpectedValuesBlock {
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
 class NormalizedExpectedValues {
-  std::vector<NormalizedExpectedValuesBlock> _normalized_expected_values;
+  phmap::btree_set<NormalizedExpectedValuesBlock> _normalized_expected_values;
 
  public:
   [[nodiscard]] std::int32_t nNormExpectedValueVectors() const noexcept;
-  [[nodiscard]] const std::vector<NormalizedExpectedValuesBlock>& normExpectedValues()
+  [[nodiscard]] const phmap::btree_set<NormalizedExpectedValuesBlock>& normExpectedValues()
       const noexcept;
-  void emplace_back(NormalizedExpectedValuesBlock evb);
+  void emplace(const NormalizedExpectedValuesBlock& evb, bool force_overwrite = false);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
   [[nodiscard]] static NormalizedExpectedValues deserialize(filestream::FileStream& fs);
 };

@@ -5,8 +5,11 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <ios>
 #include <stdexcept>
@@ -141,12 +144,14 @@ inline HiCHeader HiCHeader::deserialize(filestream::FileStream &fs) {
   if (numResolutions == 0) {
     throw std::runtime_error("unable to read the list of available resolutions");
   }
-  header.resolutions.resize(numResolutions);
-  std::generate(header.resolutions.begin(), header.resolutions.end(), [&]() {
-    const auto res = fs.read<std::int32_t>();
-    assert(res > 0);
-    return static_cast<std::uint32_t>(res);
-  });
+
+  // sometimes .hic files have duplicate resolutions for some obscure reason...
+  phmap::btree_set<std::uint32_t> resolutions{};
+  for (std::size_t i = 0; i < numResolutions; ++i) {
+    const auto res = fs.read_as_unsigned<std::int32_t>();
+    resolutions.emplace(res);
+  }
+  std::copy(resolutions.begin(), resolutions.end(), std::back_inserter(header.resolutions));
 
   return header;
 }

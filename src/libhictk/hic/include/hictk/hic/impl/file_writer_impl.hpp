@@ -168,6 +168,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_)
       _header(read_header(_fs)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())) {
   read_offsets();
+  read_norm_expected_values();
   read_norm_vectors();
 }
 
@@ -740,7 +741,7 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
   ExpectedValues ev{};
 
   for (const auto &resolution : resolutions()) {
-    ev.emplace_back(compute_expected_values(resolution));
+    ev.emplace(compute_expected_values(resolution));
   }
 
   try {
@@ -764,11 +765,18 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
   NormalizedExpectedValues ev{};
 
   for (const auto &[blk, _] : _normalization_vectors) {
-    if (blk.chrIdx == 1) {
+    const NormalizedExpectedValuesBlock key{
+        blk.type, blk.unit, static_cast<std::uint32_t>(blk.binSize), {}, {}, {}};
+    const auto match = _normalized_expected_values.find(key);
+    if (match == _normalized_expected_values.end()) {
       const auto resolution = static_cast<std::uint32_t>(blk.binSize);
       const balancing::Method norm{blk.type};
-      ev.emplace_back(compute_normalized_expected_values(resolution, norm));
+      _normalized_expected_values.emplace(compute_normalized_expected_values(resolution, norm));
     }
+  }
+
+  for (const auto& nev : _normalized_expected_values) {
+    ev.emplace(nev);
   }
 
   try {
@@ -807,6 +815,9 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
     if (!inserted) {
       if (force_overwrite) {
         it->second = weights;
+        const NormalizedExpectedValuesBlock key{
+            blk.type, blk.unit, static_cast<std::uint32_t>(blk.binSize), {}, {}, {}};
+        _normalized_expected_values.erase(key);
       } else {
         throw std::runtime_error("file already contains normalization vector");
       }
@@ -1205,6 +1216,43 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
   return HiCInteractionToBlockMapper::compute_num_bins(chrom1, chrom2, resolution);
 }
 
+inline void HiCFileWriter::add_norm_expected_values(const NormalizedExpectedValuesBlock &blk,
+                                                    bool force_overwrite) {
+  try {
+    auto [it, inserted] = _normalized_expected_values.emplace(blk);
+    if (!inserted) {
+      if (force_overwrite) {
+        *it = blk;
+      } else {
+        throw std::runtime_error("file already contains normalized expected values");
+      }
+    }
+
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while adding {} normalized expected values at {} resolution: {}"),
+        blk.type, blk.binSize, e.what()));
+  }
+}
+
+inline void HiCFileWriter::read_norm_expected_values() {
+  assert(_expected_values_norm_section.start() != 0);
+  try {
+    const auto offset = _expected_values_norm_section.start();
+    _fs.seekg(offset);
+    const auto nev = NormalizedExpectedValues::deserialize(_fs);
+
+    for (const auto &ev : nev.normExpectedValues()) {
+      add_norm_expected_values(ev);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(FMT_STRING("an error occurred while reading normalized "
+                                                    "expected value vectors from file \"{}\": {}"),
+                                         path(), e.what()));
+  }
+}
+
 inline void HiCFileWriter::read_norm_vectors() {
   assert(_norm_vector_index_section.start() != 0);
   try {
@@ -1213,7 +1261,7 @@ inline void HiCFileWriter::read_norm_vectors() {
     const auto nvi = NormalizationVectorIndex::deserialize(_fs);
 
     for (const auto &blk : nvi.normalizationVectorIndex()) {
-      add_norm_vector(blk, read_norm_vector(blk));
+      add_norm_vector(blk, read_norm_vector(blk), true);
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
