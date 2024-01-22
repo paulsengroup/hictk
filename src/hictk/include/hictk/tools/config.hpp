@@ -19,7 +19,6 @@ namespace hictk::tools {
 struct BalanceConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
-  std::filesystem::path juicer_tools_jar{};
 
   std::string mode{"gw"};
   std::size_t masked_diags{2};
@@ -29,13 +28,13 @@ struct BalanceConfig {
   double tolerance{1.0e-5};
   std::size_t max_iters{500};
   bool rescale_marginals{true};
-  std::string name{"weight"};
+  std::string name{};
   bool in_memory{false};
+  bool symlink_to_weight{true};
   bool stdout_{false};
   std::uint8_t zstd_compression_lvl{3};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
-  std::size_t juicer_tools_xmx{256'000'000};
 
   std::uint8_t verbosity{4};
   bool force{false};

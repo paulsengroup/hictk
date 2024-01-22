@@ -178,18 +178,22 @@ class HiCFileWriter {
   void write_footer_size();
 
   // Write normalization vectors
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights);
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
+                       bool force_overwrite = false);
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
                        std::uint32_t bin_size, const std::vector<float>& weights,
+                       bool force_overwrite = false,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights);
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
+                       bool force_overwrite = false);
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
                        std::uint32_t bin_size, const balancing::Weights& weights,
+                       bool force_overwrite = false,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
-                       const std::vector<float>& weights);
+                       const std::vector<float>& weights, bool force_overwrite = false);
   void write_norm_vectors_and_norm_expected_values();
 
   void write_empty_expected_values();
