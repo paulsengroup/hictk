@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/fmt/pixel.hpp"
 #include "hictk/hic/binary_buffer.hpp"
 #include "hictk/pixel.hpp"
 
@@ -27,10 +28,14 @@ inline std::string MatrixMetadata::serialize(BinaryBuffer &buffer, bool clear) c
     buffer.clear();
   }
 
-  buffer.write(chr1Idx);
-  buffer.write(chr2Idx);
-  buffer.write(nResolutions);
-
+  try {
+    buffer.write(chr1Idx);
+    buffer.write(chr2Idx);
+    buffer.write(nResolutions);
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing a MatrixMetadata object: " +
+                             std::string{e.what()});
+  }
   return buffer.get();
 }
 
@@ -39,9 +44,14 @@ inline std::string MatrixBlockMetadata::serialize(BinaryBuffer &buffer, bool cle
     buffer.clear();
   }
 
-  buffer.write(blockNumber);
-  buffer.write(blockPosition);
-  buffer.write(blockSizeBytes);
+  try {
+    buffer.write(blockNumber);
+    buffer.write(blockPosition);
+    buffer.write(blockSizeBytes);
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing a MatrixBlockMetadata object: " +
+                             std::string{e.what()});
+  }
 
   return buffer.get();
 }
@@ -65,16 +75,22 @@ inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, boo
     buffer.clear();
   }
 
-  buffer.write(unit);
-  buffer.write(resIdx);
-  buffer.write(sumCounts);
-  buffer.write(occupiedCellCount);
-  buffer.write(percent5);
-  buffer.write(percent95);
-  buffer.write(binSize);
-  buffer.write(blockSize);
-  buffer.write(blockColumnCount);
-  buffer.write(blockCount);
+  try {
+    buffer.write(unit);
+    buffer.write(resIdx);
+    buffer.write(sumCounts);
+    buffer.write(occupiedCellCount);
+    buffer.write(percent5);
+    buffer.write(percent95);
+    buffer.write(binSize);
+    buffer.write(blockSize);
+    buffer.write(blockColumnCount);
+    buffer.write(blockCount);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a MatrixResolutionMetadata object: " +
+        std::string{e.what()});
+  }
 
   for (const auto &blk : _block_metadata) {
     std::ignore = blk.serialize(buffer, false);
@@ -91,9 +107,14 @@ inline void MatrixResolutionMetadata::set_block_metadata(It first_block, It last
 }
 
 inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  std::ignore = matrixMetadata.serialize(buffer, clear);
-  for (const auto &metadata : resolutionMetadata) {
-    std::ignore = metadata.serialize(buffer, false);
+  try {
+    std::ignore = matrixMetadata.serialize(buffer, clear);
+    for (const auto &metadata : resolutionMetadata) {
+      std::ignore = metadata.serialize(buffer, false);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing a MatrixBodyMetadata object: " +
+                             std::string{e.what()});
   }
 
   return buffer.get();
@@ -116,47 +137,60 @@ inline double MatrixInteractionBlock<N>::sum() const noexcept {
 
 template <typename N>
 inline void MatrixInteractionBlock<N>::emplace_back(hictk::Pixel<N> &&p) {
-  _sum += conditional_static_cast<double>(p.count);
+  try {
+    _sum += conditional_static_cast<double>(p.count);
 
-  const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
-  const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
+    const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
+    const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
 
-  _min_col = std::min(col, _min_col);
-  _max_col = std::max(col, _max_col);
+    _min_col = std::min(col, _min_col);
+    _max_col = std::max(col, _max_col);
 
-  binRowOffset = std::min(binRowOffset, row);
-  binColumnOffset = std::min(binColumnOffset, col);
+    binRowOffset = std::min(binRowOffset, row);
+    binColumnOffset = std::min(binColumnOffset, col);
 
-  auto match1 = _interactions.find(row);
-  if (match1 != _interactions.end()) {
-    auto &pixels = match1->second;
-    auto [it, inserted] = pixels.emplace(Pixel{col, p.count});
-    nRecords += inserted;
-    if (!inserted) {
-      it->count += p.count;
+    auto match1 = _interactions.find(row);
+    if (match1 != _interactions.end()) {
+      auto &pixels = match1->second;
+      auto [it, inserted] = pixels.emplace(Pixel{col, p.count});
+      nRecords += inserted;
+      if (!inserted) {
+        it->count += p.count;
+      }
+    } else {
+      nRecords++;
+      _interactions.emplace(row, Row{Pixel{col, p.count}});
     }
-  } else {
-    nRecords++;
-    _interactions.emplace(row, Row{Pixel{col, p.count}});
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while adding pixel {} to a MatrixInteractionBlock object: {}"),
+        p, e.what()));
   }
 }
 
 template <typename N>
 inline void MatrixInteractionBlock<N>::finalize() {
-  const auto size_lor = compute_size_lor_repr();
-  const auto size_dense = compute_size_dense_repr();
-  const auto width = compute_dense_width();
+  try {
+    const auto size_lor = compute_size_lor_repr();
+    const auto size_dense = compute_size_dense_repr();
+    const auto width = compute_dense_width();
 
-  const auto use_lor =
-      (size_lor < size_dense) || (width > std::numeric_limits<std::int16_t>::max());
+    const auto use_lor =
+        (size_lor < size_dense) || (width > std::numeric_limits<std::int16_t>::max());
 
-  useFloatContact = 1;
-  useIntXPos = 1;
-  useIntYPos = 1;
-  matrixRepresentation = use_lor ? 1 : 2;
+    useFloatContact = 1;
+    useIntXPos = 1;
+    useIntYPos = 1;
+    matrixRepresentation = use_lor ? 1 : 2;
 
-  // this can overflow, but it's ok because in this case use_lor=true
-  w = static_cast<std::int16_t>(width);
+    // this can overflow, but it's ok because in this case use_lor=true
+    w = static_cast<std::int16_t>(width);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while finalizing a MatrixInteractionBlock object: " +
+        std::string{e.what()});
+  }
 }
 
 template <typename N>
@@ -225,34 +259,48 @@ inline std::string MatrixInteractionBlock<N>::serialize_lor(BinaryBuffer &buffer
     buffer.clear();
   }
 
-  buffer.write(nRecords);
-  buffer.write(binColumnOffset);
-  buffer.write(binRowOffset);
-  buffer.write(useFloatContact);
-  buffer.write(useIntXPos);
-  buffer.write(useIntYPos);
-  buffer.write(matrixRepresentation);
+  try {
+    buffer.write(nRecords);
+    buffer.write(binColumnOffset);
+    buffer.write(binRowOffset);
+    buffer.write(useFloatContact);
+    buffer.write(useIntXPos);
+    buffer.write(useIntYPos);
+    buffer.write(matrixRepresentation);
 
-  const auto rowCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
-  buffer.write(rowCount);
+    const auto rowCount = static_cast<std::int32_t>(_interactions.size());  // TODO support short
+    buffer.write(rowCount);
 
-  for (const auto &[row, pixels] : _interactions) {
-    assert(static_cast<std::int32_t>(row) >= binRowOffset);
-    const auto rowNumber = static_cast<std::int32_t>(row) - binRowOffset;  // TODO support short
-    const auto recordCount = static_cast<std::int32_t>(pixels.size());     // TODO support short
-    buffer.write(rowNumber);
-    buffer.write(recordCount);
+    for (const auto &[row, pixels] : _interactions) {
+      assert(static_cast<std::int32_t>(row) >= binRowOffset);
+      const auto rowNumber = static_cast<std::int32_t>(row) - binRowOffset;  // TODO support short
+      const auto recordCount = static_cast<std::int32_t>(pixels.size());     // TODO support short
+      buffer.write(rowNumber);
+      buffer.write(recordCount);
 
-    assert(std::is_sorted(pixels.begin(), pixels.end()));
-    for (const auto &[col, count] : pixels) {
-      assert(col >= binColumnOffset);
-      const auto binColumn = col - binColumnOffset;
-      buffer.write(binColumn);
-      buffer.write(count);
+      assert(std::is_sorted(pixels.begin(), pixels.end()));
+      for (const auto &[col, count] : pixels) {
+        assert(col >= binColumnOffset);
+        const auto binColumn = col - binColumnOffset;
+        buffer.write(binColumn);
+        buffer.write(count);
+      }
     }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a MatrixInteractionBlock using the sparse "
+        "representation: " +
+        std::string{e.what()});
   }
 
-  compress(buffer.get(), compression_buffer, compressor);
+  try {
+    compress(buffer.get(), compression_buffer, compressor);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while compressing a serialized object of MatrixInteractionBlock type "
+        "(sparse representation): " +
+        std::string{e.what()});
+  }
   return compression_buffer;
 }
 
@@ -268,39 +316,54 @@ inline std::string MatrixInteractionBlock<N>::serialize_dense(BinaryBuffer &buff
     buffer.clear();
   }
 
-  const N fill_value = -32768;
-  std::vector<N> counts(static_cast<std::size_t>(w) * static_cast<std::size_t>(w), fill_value);
+  try {
+    const N fill_value = -32768;
+    std::vector<N> counts(static_cast<std::size_t>(w) * static_cast<std::size_t>(w), fill_value);
 
-  for (const auto &[row, pixels] : _interactions) {
-    assert(row >= binRowOffset);
-    const auto i = static_cast<std::size_t>(row - binRowOffset);
-    for (const auto &[col, value] : pixels) {
-      const auto j = static_cast<std::size_t>(col - binColumnOffset);
-      const auto idx = (i * static_cast<std::size_t>(w)) + j;
-      assert(idx < counts.size());
-      counts[idx] = value;
+    for (const auto &[row, pixels] : _interactions) {
+      assert(row >= binRowOffset);
+      const auto i = static_cast<std::size_t>(row - binRowOffset);
+      for (const auto &[col, value] : pixels) {
+        const auto j = static_cast<std::size_t>(col - binColumnOffset);
+        const auto idx = (i * static_cast<std::size_t>(w)) + j;
+        assert(idx < counts.size());
+        counts[idx] = value;
+      }
     }
+
+    if constexpr (std::is_floating_point_v<N>) {
+      std::transform(counts.begin(), counts.end(), counts.begin(), [&](const auto n) {
+        return n == fill_value ? std::numeric_limits<N>::quiet_NaN() : n;
+      });
+    }
+
+    buffer.write(nRecords);
+    buffer.write(binColumnOffset);
+    buffer.write(binRowOffset);
+    buffer.write(useFloatContact);
+    buffer.write(useIntXPos);
+    buffer.write(useIntYPos);
+    buffer.write(matrixRepresentation);
+
+    buffer.write(static_cast<std::int32_t>(counts.size()));
+    buffer.write(w);
+    buffer.write(counts);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a MatrixInteractionBlock using the dense "
+        "representation: " +
+        std::string{e.what()});
   }
 
-  if constexpr (std::is_floating_point_v<N>) {
-    std::transform(counts.begin(), counts.end(), counts.begin(), [&](const auto n) {
-      return n == fill_value ? std::numeric_limits<N>::quiet_NaN() : n;
-    });
+  try {
+    compress(buffer.get(), compression_buffer, compressor);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while compressing a serialized object of MatrixInteractionBlock type "
+        "(dense representation): " +
+        std::string{e.what()});
   }
 
-  buffer.write(nRecords);
-  buffer.write(binColumnOffset);
-  buffer.write(binRowOffset);
-  buffer.write(useFloatContact);
-  buffer.write(useIntXPos);
-  buffer.write(useIntYPos);
-  buffer.write(matrixRepresentation);
-
-  buffer.write(static_cast<std::int32_t>(counts.size()));
-  buffer.write(w);
-  buffer.write(counts);
-
-  compress(buffer.get(), compression_buffer, compressor);
   return compression_buffer;
 }
 
@@ -327,9 +390,14 @@ inline std::string FooterMasterIndex::serialize(BinaryBuffer &buffer, bool clear
     buffer.clear();
   }
 
-  buffer.write(key);
-  buffer.write(position);
-  buffer.write(size);
+  try {
+    buffer.write(key);
+    buffer.write(position);
+    buffer.write(size);
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing a FooterMasterIndex object: " +
+                             std::string{e.what()});
+  }
 
   return buffer.get();
 }
@@ -373,16 +441,21 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
     buffer.clear();
   }
 
-  buffer.write(unit);
-  buffer.write(binSize);
-  buffer.write(nValues());
-  buffer.write(value);
-  buffer.write(nChrScaleFactors());
+  try {
+    buffer.write(unit);
+    buffer.write(binSize);
+    buffer.write(nValues());
+    buffer.write(value);
+    buffer.write(nChrScaleFactors());
 
-  assert(chrIndex.size() == chrScaleFactor.size());
-  for (std::size_t i = 0; i < chrIndex.size(); ++i) {
-    buffer.write(chrIndex[i]);
-    buffer.write(chrScaleFactor[i]);
+    assert(chrIndex.size() == chrScaleFactor.size());
+    for (std::size_t i = 0; i < chrIndex.size(); ++i) {
+      buffer.write(chrIndex[i]);
+      buffer.write(chrScaleFactor[i]);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing an ExpectedValuesBlock object: " +
+                             std::string{e.what()});
   }
 
   return buffer.get();
@@ -390,18 +463,25 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
 
 inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(filestream::FileStream &fs) {
   ExpectedValuesBlock evb{};
-  evb.unit = fs.getline('\0');
-  fs.read(evb.binSize);
-  const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
-  evb.value.resize(nValues);
-  fs.read(evb.value);
-  const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
-  evb.chrIndex.resize(nChrScaleFactors);
-  evb.chrScaleFactor.resize(nChrScaleFactors);
 
-  for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-    evb.chrIndex.emplace_back(fs.read<std::int32_t>());
-    evb.chrScaleFactor.emplace_back(fs.read<float>());
+  try {
+    evb.unit = fs.getline('\0');
+    fs.read(evb.binSize);
+    const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+    evb.value.resize(nValues);
+    fs.read(evb.value);
+    const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    evb.chrIndex.resize(nChrScaleFactors);
+    evb.chrScaleFactor.resize(nChrScaleFactors);
+
+    for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
+      evb.chrIndex.emplace_back(fs.read<std::int32_t>());
+      evb.chrScaleFactor.emplace_back(fs.read<float>());
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while deserializing an ExpectedValuesBlock object: " +
+        std::string{e.what()});
   }
 
   return evb;
@@ -424,14 +504,19 @@ inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) c
     buffer.clear();
   }
 
-  buffer.write(nExpectedValueVectors());
+  try {
+    buffer.write(nExpectedValueVectors());
 
-  if (nExpectedValueVectors() == 0) {
-    return buffer.get();
-  }
+    if (nExpectedValueVectors() == 0) {
+      return buffer.get();
+    }
 
-  for (const auto &ev : expectedValues()) {
-    std::ignore = ev.serialize(buffer, false);
+    for (const auto &ev : expectedValues()) {
+      std::ignore = ev.serialize(buffer, false);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while serializing an ExpectedValues object: " +
+                             std::string{e.what()});
   }
 
   return buffer.get();
@@ -439,9 +524,15 @@ inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) c
 
 inline ExpectedValues ExpectedValues::deserialize(filestream::FileStream &fs) {
   ExpectedValues evs{};
-  const auto nExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
-  for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
-    evs.emplace_back(ExpectedValuesBlock::deserialize(fs));
+
+  try {
+    const auto nExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
+      evs.emplace_back(ExpectedValuesBlock::deserialize(fs));
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error("an error occurred while deserializing an ExpectedValues object: " +
+                             std::string{e.what()});
   }
   return evs;
 }
@@ -490,17 +581,23 @@ inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer
     buffer.clear();
   }
 
-  buffer.write(type);
-  buffer.write(unit);
-  buffer.write(binSize);
-  buffer.write(nValues());
-  buffer.write(value);
-  buffer.write(nChrScaleFactors());
+  try {
+    buffer.write(type);
+    buffer.write(unit);
+    buffer.write(binSize);
+    buffer.write(nValues());
+    buffer.write(value);
+    buffer.write(nChrScaleFactors());
 
-  assert(chrIndex.size() == chrScaleFactor.size());
-  for (std::size_t i = 0; i < chrIndex.size(); ++i) {
-    buffer.write(chrIndex[i]);
-    buffer.write(chrScaleFactor[i]);
+    assert(chrIndex.size() == chrScaleFactor.size());
+    for (std::size_t i = 0; i < chrIndex.size(); ++i) {
+      buffer.write(chrIndex[i]);
+      buffer.write(chrScaleFactor[i]);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a NormalizedExpectedValuesBlock object: " +
+        std::string{e.what()});
   }
 
   return buffer.get();
@@ -509,19 +606,26 @@ inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer
 inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::deserialize(
     filestream::FileStream &fs) {
   NormalizedExpectedValuesBlock nevb{};
-  nevb.type = fs.getline('\0');
-  nevb.unit = fs.getline('\0');
-  fs.read(nevb.binSize);
-  const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
-  nevb.value.resize(nValues);
-  fs.read(nevb.value);
-  const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
-  nevb.chrIndex.resize(nChrScaleFactors);
-  nevb.chrScaleFactor.resize(nChrScaleFactors);
 
-  for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-    nevb.chrIndex.emplace_back(fs.read<std::int32_t>());
-    nevb.chrScaleFactor.emplace_back(fs.read<float>());
+  try {
+    nevb.type = fs.getline('\0');
+    nevb.unit = fs.getline('\0');
+    fs.read(nevb.binSize);
+    const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+    nevb.value.resize(nValues);
+    fs.read(nevb.value);
+    const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    nevb.chrIndex.resize(nChrScaleFactors);
+    nevb.chrScaleFactor.resize(nChrScaleFactors);
+
+    for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
+      nevb.chrIndex.emplace_back(fs.read<std::int32_t>());
+      nevb.chrScaleFactor.emplace_back(fs.read<float>());
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while deserializing a NormalizedExpectedValuesBlock object: " +
+        std::string{e.what()});
   }
 
   return nevb;
@@ -545,9 +649,15 @@ inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, boo
     buffer.clear();
   }
 
-  buffer.write(nNormExpectedValueVectors());
-  for (const auto &nev : _normalized_expected_values) {
-    std::ignore = nev.serialize(buffer, false);
+  try {
+    buffer.write(nNormExpectedValueVectors());
+    for (const auto &nev : _normalized_expected_values) {
+      std::ignore = nev.serialize(buffer, false);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a NormalizedExpectedValues object: " +
+        std::string{e.what()});
   }
 
   return buffer.get();
@@ -555,11 +665,19 @@ inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, boo
 
 inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(filestream::FileStream &fs) {
   NormalizedExpectedValues nevs{};
-  const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
-  nevs._normalized_expected_values.reserve(nNormExpectedValueVectors);
-  for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
-    nevs.emplace_back(NormalizedExpectedValuesBlock::deserialize(fs));
+
+  try {
+    const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    nevs._normalized_expected_values.reserve(nNormExpectedValueVectors);
+    for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
+      nevs.emplace_back(NormalizedExpectedValuesBlock::deserialize(fs));
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while deserializing a NormalizedExpectedValues object: " +
+        std::string{e.what()});
   }
+
   return nevs;
 }
 
@@ -593,12 +711,18 @@ inline std::string NormalizationVectorIndexBlock::serialize(BinaryBuffer &buffer
     buffer.clear();
   }
 
-  buffer.write(type);
-  buffer.write(chrIdx);
-  buffer.write(unit);
-  buffer.write(binSize);
-  buffer.write(position);
-  buffer.write(nBytes);
+  try {
+    buffer.write(type);
+    buffer.write(chrIdx);
+    buffer.write(unit);
+    buffer.write(binSize);
+    buffer.write(position);
+    buffer.write(nBytes);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a NormalizationVectorIndexBlock object: " +
+        std::string{e.what()});
+  }
 
   return buffer.get();
 }
@@ -607,12 +731,18 @@ inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::deserialize(
     filestream::FileStream &fs) {
   NormalizationVectorIndexBlock nvib{};
 
-  nvib.type = fs.getline('\0');
-  nvib.chrIdx = fs.read<std::int32_t>();
-  nvib.unit = fs.getline('\0');
-  nvib.binSize = fs.read<std::int32_t>();
-  nvib.position = fs.read<std::int64_t>();
-  nvib.nBytes = fs.read<std::int64_t>();
+  try {
+    nvib.type = fs.getline('\0');
+    nvib.chrIdx = fs.read<std::int32_t>();
+    nvib.unit = fs.getline('\0');
+    nvib.binSize = fs.read<std::int32_t>();
+    nvib.position = fs.read<std::int64_t>();
+    nvib.nBytes = fs.read<std::int64_t>();
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while deserializing a NormalizationVectorIndexBlock object: " +
+        std::string{e.what()});
+  }
 
   return nvib;
 }
@@ -635,10 +765,16 @@ inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, boo
     buffer.clear();
   }
 
-  buffer.write(nNormVectors());
+  try {
+    buffer.write(nNormVectors());
 
-  for (const auto &nv : _norm_vect_idx) {
-    std::ignore = nv.serialize(buffer, false);
+    for (const auto &nv : _norm_vect_idx) {
+      std::ignore = nv.serialize(buffer, false);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while serializing a NormalizationVectorIndex object: " +
+        std::string{e.what()});
   }
 
   return buffer.get();
@@ -646,9 +782,16 @@ inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, boo
 
 inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(filestream::FileStream &fs) {
   NormalizationVectorIndex nvi{};
-  const auto nNormVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
-  for (std::size_t i = 0; i < nNormVectors; ++i) {
-    nvi.emplace_back(NormalizationVectorIndexBlock::deserialize(fs));
+
+  try {
+    const auto nNormVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    for (std::size_t i = 0; i < nNormVectors; ++i) {
+      nvi.emplace_back(NormalizationVectorIndexBlock::deserialize(fs));
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        "an error occurred while deserializing a NormalizationVectorIndex object: " +
+        std::string{e.what()});
   }
   return nvi;
 }
