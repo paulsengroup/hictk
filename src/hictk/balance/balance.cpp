@@ -94,7 +94,9 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
 
   if (c.symlink_to_weight) {
     SPDLOG_INFO(FMT_STRING("Linking weights to {}::{}..."), file, link_path);
-    clr.unlink(link_path);
+    if (clr.exist(link_path)) {
+      clr.unlink(link_path);
+    }
     clr.getGroup(grp).createSoftLink(link_path, dset());
   }
 }
