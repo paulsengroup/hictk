@@ -98,7 +98,7 @@ TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
 
   SECTION("merge - different reference") {
     const auto src1 = datadir / "4DNFIZ1ZVXC8.hic9";
-    const auto src2 = datadir / "ENCFF993FGR.hic";
+    const auto src2 = datadir / "ENCFF993FGR.2500000.hic";
     const auto dest = testdir() / "cooler_merge_test_003.cool";
 
     const std::array<std::string, 2> sources{src1.string(), src2.string()};

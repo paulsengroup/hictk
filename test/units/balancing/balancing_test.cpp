@@ -172,7 +172,7 @@ TEST_CASE("Balancing: SparseMatrixChunked", "[balancing][short]") {
 TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_intra.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.cis.txt";
@@ -208,7 +208,7 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
 TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.trans.txt";
@@ -244,7 +244,7 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
 TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.hic")};
+      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.gw.txt";

@@ -88,7 +88,7 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 ref_cool="$data_dir/cooler/ENCFF993FGR.2500000.cool"
-ref_hic="$data_dir/hic/ENCFF993FGR.hic"
+ref_hic="$data_dir/hic/ENCFF993FGR.2500000.hic"
 
 export PATH="$PATH:$script_dir"
 
