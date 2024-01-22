@@ -41,8 +41,8 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.assembly() == "dm6");
 
   CHECK(f.avail_resolutions().size() == 10);
-  CHECK(f.avail_resolutions().front() == 2'500'000);
-  CHECK(f.avail_resolutions().back() == 1000);
+  CHECK(f.avail_resolutions().front() == 1'000);
+  CHECK(f.avail_resolutions().back() == 2'500'000);
 
   CHECK(f.avail_normalizations().size() == 4);
   CHECK(f.avail_normalizations().front() == "KR");

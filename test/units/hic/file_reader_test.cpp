@@ -28,8 +28,8 @@ const auto pathV9 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
-  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                      50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{
+      1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
@@ -50,8 +50,8 @@ TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
-  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                      50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{
+      1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
