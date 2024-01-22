@@ -157,26 +157,41 @@ inline bool HiCInteractionToBlockMapper::empty(const Chromosome &chrom1,
 }
 
 template <typename PixelIt, typename>
-inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel) {
+inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+                                                       std::uint32_t update_frequency) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
 
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks at resolution {}..."),
                _bin_table->bin_size());
 
-  while (first_pixel != last_pixel) {
+  auto t0 = std::chrono::steady_clock::now();
+  for (std::size_t i = 0; first_pixel != last_pixel; ++i) {
     if (_pending_pixels >= _chunk_size) {
       write_blocks();
     }
 
     add_pixel(*first_pixel);
     std::ignore = ++first_pixel;
+
+    if (i == update_frequency) {
+      const auto t1 = std::chrono::steady_clock::now();
+      const auto delta =
+          static_cast<double>(
+              std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+          1000.0;
+      SPDLOG_INFO(FMT_STRING("ingesting pixels at {:.0f} pixels/s..."),
+                  double(update_frequency) / delta);
+      t0 = t1;
+      i = 0;
+    }
   }
 }
 
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
-                                                       BS::thread_pool &tpool) {
+                                                       BS::thread_pool &tpool,
+                                                       std::uint32_t update_frequency) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
   constexpr bool is_thin_pixel = std::is_same_v<PixelT, ThinPixel<float>>;
@@ -192,7 +207,8 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
 
   auto writer = tpool.submit([&]() {
     try {
-      while (first_pixel != last_pixel && !early_return) {
+      auto t0 = std::chrono::steady_clock::now();
+      for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
         const auto pixel = [&]() {
           if constexpr (is_thin_pixel) {
             return Pixel(*_bin_table, *first_pixel);
@@ -206,6 +222,17 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
           if (early_return) {
             return;
           }
+        }
+        if (i == update_frequency) {
+          const auto t1 = std::chrono::steady_clock::now();
+          const auto delta =
+              static_cast<double>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
+              1000.0;
+          SPDLOG_INFO(FMT_STRING("ingesting pixels at {:.0f} pixels/s..."),
+                      double(update_frequency) / delta);
+          t0 = t1;
+          i = 0;
         }
       }
       queue.enqueue(Pixel<float>{});
