@@ -76,11 +76,16 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
 
     if (cis_only) {
       c.mode = "cis";
+      c.name = "ICE";
     } else if (trans_only) {
       c.mode = "trans";
+      c.name = "INTER_ICE";
     } else {
       c.mode = "gw";
+      c.name = "GW_ICE";
     }
+
+    c.symlink_to_weight = true;
 
     c.masked_diags = dset.read_attribute<std::size_t>("ignore_diags");
     c.mad_max = dset.read_attribute<double>("mad_max");
