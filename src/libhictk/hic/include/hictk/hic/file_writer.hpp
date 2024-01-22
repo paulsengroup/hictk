@@ -152,7 +152,7 @@ class HiCFileWriter {
   [[nodiscard]] const Reference& chromosomes() const noexcept;
   [[nodiscard]] const BinTable& bins(std::uint32_t resolution) const;
   [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
-  [[nodiscard]] auto stats(std::uint32_t resolution) const -> Stats;
+  [[nodiscard]] auto stats(std::uint32_t resolution) const noexcept -> Stats;
 
   void serialize();
 

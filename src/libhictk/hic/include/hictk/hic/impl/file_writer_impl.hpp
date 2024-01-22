@@ -87,43 +87,75 @@ inline bool MatrixBodyMetadataTank::contains(const Chromosome &chrom1,
 
 inline auto MatrixBodyMetadataTank::at(const Chromosome &chrom1, const Chromosome &chrom2) const
     -> const MatrixBodyMetadata & {
-  return _tank.at({chrom1, chrom2});
+  const auto match = _tank.find({chrom1, chrom2});
+  if (match != _tank.end()) {
+    return match->second;
+  }
+  throw std::out_of_range(
+      fmt::format(FMT_STRING("MatrixBodyMetadataTank does not contain metadata for {}:{}"),
+                  chrom1.name(), chrom2.name()));
 }
 
 inline HiCSectionOffsets MatrixBodyMetadataTank::offset(const Chromosome &chrom1,
                                                         const Chromosome &chrom2) const {
-  return _offsets.at(Key{chrom1, chrom2});
+  const auto match = _offsets.find(Key{chrom1, chrom2});
+  if (match != _offsets.end()) {
+    return match->second;
+  }
+  throw std::out_of_range(
+      fmt::format(FMT_STRING("MatrixBodyMetadataTank does not contain file offsets for {}:{}"),
+                  chrom1.name(), chrom2.name()));
 }
 
 inline void MatrixBodyMetadataTank::insert(const Chromosome &chrom1, const Chromosome &chrom2,
                                            MatrixMetadata matrix_metadata,
                                            MatrixResolutionMetadata matrix_resolution_metadata) {
-  auto match = _tank.find(Key{chrom1, chrom2});
-  if (match != _tank.end()) {
-    match->second.matrixMetadata = std::move(matrix_metadata);
-    match->second.resolutionMetadata.emplace(std::move(matrix_resolution_metadata));
-  } else {
-    _tank.emplace(
-        Key{chrom1, chrom2},
-        MatrixBodyMetadata{std::move(matrix_metadata), phmap::btree_set<MatrixResolutionMetadata>{
-                                                           std::move(matrix_resolution_metadata)}});
+  try {
+    auto match = _tank.find(Key{chrom1, chrom2});
+    if (match != _tank.end()) {
+      match->second.matrixMetadata = std::move(matrix_metadata);
+      match->second.resolutionMetadata.emplace(std::move(matrix_resolution_metadata));
+    } else {
+      _tank.emplace(Key{chrom1, chrom2},
+                    MatrixBodyMetadata{std::move(matrix_metadata),
+                                       phmap::btree_set<MatrixResolutionMetadata>{
+                                           std::move(matrix_resolution_metadata)}});
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while inserting metadata for {}:{} into a "
+                               "MatrixBodyMetadataTank object: {}"),
+                    chrom1.name(), chrom2.name(), e.what()));
   }
 }
 
 inline void MatrixBodyMetadataTank::update_offsets(const Chromosome &chrom1,
                                                    const Chromosome &chrom2,
                                                    std::streamoff position, std::size_t size) {
-  auto [it, inserted] =
-      _offsets.try_emplace(Key{chrom1, chrom2}, HiCSectionOffsets{position, size});
-  if (!inserted) {
-    it->second = HiCSectionOffsets{position, size};
+  try {
+    auto [it, inserted] =
+        _offsets.try_emplace(Key{chrom1, chrom2}, HiCSectionOffsets{position, size});
+    if (!inserted) {
+      it->second = HiCSectionOffsets{position, size};
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while updating MatrixBodyMetadata file offsets for {}:{}: {}"),
+        chrom1.name(), chrom2.name(), e.what()));
   }
 }
 
 inline void MatrixBodyMetadataTank::remove(const Chromosome &chrom1, const Chromosome &chrom2) {
-  const Key k{chrom1, chrom2};
-  _tank.erase(k);
-  _offsets.erase(k);
+  try {
+    const Key k{chrom1, chrom2};
+    _tank.erase(k);
+    _offsets.erase(k);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while removing the MatrixBodyMetadata entry for {}:{}: {}"),
+        chrom1.name(), chrom2.name(), e.what()));
+  }
 }
 
 inline auto MatrixBodyMetadataTank::operator()() const noexcept
@@ -171,7 +203,7 @@ inline const std::vector<std::uint32_t> &HiCFileWriter::resolutions() const noex
   return _header.resolutions;
 }
 
-inline auto HiCFileWriter::stats(std::uint32_t resolution) const -> Stats {
+inline auto HiCFileWriter::stats(std::uint32_t resolution) const noexcept -> Stats {
   auto match = _stats.find(resolution);
   if (match != _stats.end()) {
     return match->second;
@@ -180,11 +212,16 @@ inline auto HiCFileWriter::stats(std::uint32_t resolution) const -> Stats {
 }
 
 inline void HiCFileWriter::serialize() {
-  write_header();
-  write_pixels();
-  finalize(true);
-  for (auto &[_, mapper] : _block_mappers) {
-    mapper.clear();
+  try {
+    write_header();
+    write_pixels();
+    finalize(true);
+    for (auto &[_, mapper] : _block_mappers) {
+      mapper.clear();
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing file \"{}\": {}"), path(), e.what()));
   }
 }
 
@@ -194,15 +231,21 @@ inline void HiCFileWriter::write_header() {
   assert(_header.version == 9);
   assert(!chromosomes().empty());
 
-  const auto offset1 = _fs.tellp();
-  SPDLOG_INFO(FMT_STRING("writing header at offset {}"), offset1);
-  _fs.write(_header.serialize(_bbuffer));
-  const auto offset2 = _fs.tellp();
+  try {
+    const auto offset1 = _fs.tellp();
+    SPDLOG_INFO(FMT_STRING("writing header at offset {}"), offset1);
+    _fs.write(_header.serialize(_bbuffer));
+    const auto offset2 = _fs.tellp();
 
-  _header_section = {offset1, offset2 - offset1};
-  _data_block_section = {offset2, 0};
-  _body_metadata_section = {offset2, 0};
-  _footer_section = {offset2, 0};
+    _header_section = {offset1, offset2 - offset1};
+    _data_block_section = {offset2, 0};
+    _body_metadata_section = {offset2, 0};
+    _footer_section = {offset2, 0};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing the .hic header for file \"{}\" to disk: {}"),
+        path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_footer_size() {
@@ -210,15 +253,29 @@ inline void HiCFileWriter::write_footer_size() {
   // This is not documented for v9, but nBytesV5 is not included in the footer size
   const auto nBytesV5 = static_cast<std::int64_t>(_footer_section.size()) -
                         static_cast<std::int64_t>(sizeof(std::int64_t));
-  _fs.seekp(_footer_section.start());
-  _fs.write(nBytesV5);
+
+  try {
+    _fs.seekp(_footer_section.start());
+    _fs.write(nBytesV5);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing the footer size for file \"{}\" to disk: {}"),
+        path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_footer_offset() {
   SPDLOG_DEBUG(FMT_STRING("updating footer offset to {}"), _footer_section.start());
   const auto offset = sizeof("HIC") + sizeof(_header.version);
-  _fs.seekp(offset);
-  _fs.write(conditional_static_cast<std::int64_t>(_footer_section.start()));
+
+  try {
+    _fs.seekp(offset);
+    _fs.write(conditional_static_cast<std::int64_t>(_footer_section.start()));
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing the footer offset for file \"{}\" to disk: {}"),
+        path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_norm_vector_index() {
@@ -231,15 +288,29 @@ inline void HiCFileWriter::write_norm_vector_index() {
 
   SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
                normVectorIndexLength, offset);
-  _fs.seekp(offset);
-  _fs.write(normVectorIndexPosition);
-  _fs.write(normVectorIndexLength);
+
+  try {
+    _fs.seekp(offset);
+    _fs.write(normVectorIndexPosition);
+    _fs.write(normVectorIndexLength);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while writing the normVectorIndex position and "
+                               "length for file \"{}\" to disk: {}"),
+                    path(), e.what()));
+  }
 }
 
 template <typename PixelIt, typename>
 inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
                                       PixelIt last_pixel) {
-  _block_mappers.at(resolution).append_pixels(first_pixel, last_pixel, _tpool);
+  try {
+    _block_mappers.at(resolution).append_pixels(first_pixel, last_pixel, _tpool);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while adding pixels for resolution {} to file \"{}\": {}"),
+        resolution, path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_pixels() {
@@ -258,91 +329,104 @@ inline void HiCFileWriter::write_pixels() {
 }
 
 inline void HiCFileWriter::write_all_matrix(std::uint32_t target_resolution) {
-  // TODO the ALL matrix is not propelry diplayed in JuiceBox
-  auto base_resolution = resolutions().front();
-  const auto factor = target_resolution / base_resolution;
-  target_resolution = factor * base_resolution;
-  const auto target_resolution_scaled = target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR;
+  try {
+    // TODO the ALL matrix is not propelry diplayed in JuiceBox
+    auto base_resolution = resolutions().front();
+    const auto factor = target_resolution / base_resolution;
+    target_resolution = factor * base_resolution;
+    const auto target_resolution_scaled = target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR;
 
-  for (const auto &res : resolutions()) {
-    if (res > target_resolution) {
-      break;
+    for (const auto &res : resolutions()) {
+      if (res > target_resolution) {
+        break;
+      }
+
+      if (target_resolution % res == 0) {
+        base_resolution = res;
+      }
     }
 
-    if (target_resolution % res == 0) {
-      base_resolution = res;
+    SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
+                 chromosomes().at(0).name());
+
+    std::uint32_t genome_size = 0;  // TODO deal with large genomes
+    for (const auto &chrom : chromosomes()) {
+      if (chrom.is_all()) {
+        continue;
+      }
+      const auto num_bins = (chrom.size() + target_resolution - 1) / target_resolution;
+      genome_size += static_cast<std::uint32_t>(num_bins) * target_resolution;
     }
-  }
 
-  SPDLOG_DEBUG(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
-               chromosomes().at(0).name());
+    const auto bin_table_ALL = std::make_shared<const BinTable>(
+        Reference{Chromosome{0, "__ALL__", genome_size}}, target_resolution_scaled);
+    const auto chrom = bin_table_ALL->chromosomes().at(0);
 
-  std::uint32_t genome_size = 0;  // TODO deal with large genomes
-  for (const auto &chrom : chromosomes()) {
-    if (chrom.is_all()) {
-      continue;
+    const auto num_bins =
+        HiCInteractionToBlockMapper::compute_num_bins(chrom, chrom, target_resolution);
+    const auto num_columns = HiCInteractionToBlockMapper::compute_block_column_count(
+        chrom, chrom, target_resolution, HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
+    const auto num_rows = num_bins / num_columns + 1;
+
+    HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
+
+    File f(std::string{path()}, base_resolution);
+    auto sel = f.fetch();
+    phmap::btree_map<std::uint64_t, MatrixInteractionBlock<float>> blocks{};
+    if (base_resolution == target_resolution) {
+      std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
+        const auto bid = mapper(p.bin1_id, p.bin2_id);
+        auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
+        it->second.emplace_back(Pixel(*bin_table_ALL, p));
+      });
+    } else {
+      transformers::CoarsenPixels coarsener(sel.begin<float>(), sel.end<float>(),
+                                            _bin_tables.at(base_resolution), factor);
+      std::for_each(coarsener.begin(), coarsener.end(), [&](const ThinPixel<float> &p) {
+        const auto bid = mapper(p.bin1_id, p.bin2_id);
+        auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
+        it->second.emplace_back(Pixel(*bin_table_ALL, p));
+      });
     }
-    const auto num_bins = (chrom.size() + target_resolution - 1) / target_resolution;
-    genome_size += static_cast<std::uint32_t>(num_bins) * target_resolution;
+
+    const auto offset = _data_block_section.end();
+    _fs.seekp(offset);
+
+    for (auto &[bid, blk] : blocks) {
+      blk.finalize();
+      write_interaction_block(bid, chrom, chrom, target_resolution, blk);
+    }
+    _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
+
+    add_body_metadata(target_resolution, chrom, chrom);
+    write_body_metadata();
+    add_footer(chrom, chrom);
+    write_footers();
+
+    finalize();
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing the All:All matrix to file \"{}\": {}"), path(),
+        e.what()));
   }
-
-  const auto bin_table_ALL = std::make_shared<const BinTable>(
-      Reference{Chromosome{0, "__ALL__", genome_size}}, target_resolution_scaled);
-  const auto chrom = bin_table_ALL->chromosomes().at(0);
-
-  const auto num_bins =
-      HiCInteractionToBlockMapper::compute_num_bins(chrom, chrom, target_resolution);
-  const auto num_columns = HiCInteractionToBlockMapper::compute_block_column_count(
-      chrom, chrom, target_resolution, HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
-  const auto num_rows = num_bins / num_columns + 1;
-
-  HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
-
-  File f(std::string{path()}, base_resolution);
-  auto sel = f.fetch();
-  phmap::btree_map<std::uint64_t, MatrixInteractionBlock<float>> blocks{};
-  if (base_resolution == target_resolution) {
-    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
-      const auto bid = mapper(p.bin1_id, p.bin2_id);
-      auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-      it->second.emplace_back(Pixel(*bin_table_ALL, p));
-    });
-  } else {
-    transformers::CoarsenPixels coarsener(sel.begin<float>(), sel.end<float>(),
-                                          _bin_tables.at(base_resolution), factor);
-    std::for_each(coarsener.begin(), coarsener.end(), [&](const ThinPixel<float> &p) {
-      const auto bid = mapper(p.bin1_id, p.bin2_id);
-      auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-      it->second.emplace_back(Pixel(*bin_table_ALL, p));
-    });
-  }
-
-  const auto offset = _data_block_section.end();
-  _fs.seekp(offset);
-
-  for (auto &[bid, blk] : blocks) {
-    blk.finalize();
-    write_interaction_block(bid, chrom, chrom, target_resolution, blk);
-  }
-  _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
-
-  add_body_metadata(target_resolution, chrom, chrom);
-  write_body_metadata();
-  add_footer(chrom, chrom);
-  write_footers();
-
-  finalize();
 }
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
     -> HiCSectionOffsets {
-  write_pixels(chrom1, chrom2, resolutions().front());
-  add_body_metadata(resolutions().front(), chrom1, chrom2);
-  write_body_metadata();
-  add_footer(chrom1, chrom2);
-  write_footers();
+  try {
+    write_pixels(chrom1, chrom2, resolutions().front());
+    add_body_metadata(resolutions().front(), chrom1, chrom2);
+    write_body_metadata();
+    add_footer(chrom1, chrom2);
+    write_footers();
 
-  finalize();
+    finalize();
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while writing the {}:{} matrix at {} resolution to file \"{}\": {}"),
+        chrom1.name(), chrom2.name(), resolutions().front(), path(), e.what()));
+  }
 
   for (std::size_t i = 1; i < resolutions().size(); ++i) {
     auto base_resolution = resolutions().front();
@@ -350,23 +434,31 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
 
     auto &mapper = _block_mappers.at(res);
     if (mapper.empty(chrom1, chrom2)) {
-      for (std::size_t j = 0; j < i; ++j) {
-        if (res % resolutions()[j] == 0) {
-          base_resolution = resolutions()[j];
+      try {
+        for (std::size_t j = 0; j < i; ++j) {
+          if (res % resolutions()[j] == 0) {
+            base_resolution = resolutions()[j];
+          }
         }
-      }
-      const File f(std::string{path()}, base_resolution);
-      const auto sel = f.fetch(chrom1.name(), chrom2.name());
-      if (!sel.empty()) {
-        SPDLOG_INFO(FMT_STRING("[{} bp] no pixels provided for {}:{} matrix: generating pixels by "
-                               "coarsening resolution {}..."),
-                    res, chrom1.name(), chrom2.name(), base_resolution);
-        const auto factor = res / base_resolution;
-        const transformers::CoarsenPixels coarsener(
-            sel.begin<float>(), sel.end<float>(),
-            std::make_shared<const BinTable>(bins(base_resolution)), factor);
+        const File f(std::string{path()}, base_resolution);
+        const auto sel = f.fetch(chrom1.name(), chrom2.name());
+        if (!sel.empty()) {
+          SPDLOG_INFO(
+              FMT_STRING("[{} bp] no pixels provided for {}:{} matrix: generating pixels by "
+                         "coarsening resolution {}..."),
+              res, chrom1.name(), chrom2.name(), base_resolution);
+          const auto factor = res / base_resolution;
+          const transformers::CoarsenPixels coarsener(
+              sel.begin<float>(), sel.end<float>(),
+              std::make_shared<const BinTable>(bins(base_resolution)), factor);
 
-        mapper.append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+          mapper.append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+        }
+      } catch (const std::exception &e) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("an error occurred while coarsening interactions for {}:{} from "
+                                   "resolution {} to resolution {}: {}"),
+                        chrom1.name(), chrom2.name(), base_resolution, res, e.what()));
       }
     }
 
@@ -376,15 +468,21 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
       continue;
     }
 
-    mapper.finalize();
-    write_pixels(chrom1, chrom2, res);
-    for (std::size_t j = 0; j <= i; ++j) {
-      add_body_metadata(resolutions()[j], chrom1, chrom2);
+    try {
+      mapper.finalize();
+      write_pixels(chrom1, chrom2, res);
+      for (std::size_t j = 0; j <= i; ++j) {
+        add_body_metadata(resolutions()[j], chrom1, chrom2);
+      }
+      write_body_metadata();
+      add_footer(chrom1, chrom2);
+      write_footers();
+      finalize();
+    } catch (const std::exception &e) {
+      throw std::runtime_error(fmt::format(FMT_STRING("an error occurred while writing the {}:{} "
+                                                      "matrix at {} resolution to file \"{}\": {}"),
+                                           chrom1.name(), chrom2.name(), res, path(), e.what()));
     }
-    write_body_metadata();
-    add_footer(chrom1, chrom2);
-    write_footers();
-    finalize();
   }
   return {_data_block_section.start(),
           _fs.tellp() - static_cast<std::size_t>(_data_block_section.start())};
@@ -397,15 +495,24 @@ inline void HiCFileWriter::write_body_metadata() {
     const auto &chrom1 = chroms.chrom1;
     const auto &chrom2 = chroms.chrom2;
     [[maybe_unused]] const auto &num_resolutions = metadata.resolutionMetadata.size();
-    const auto pos1 = _fs.tellp();
-    SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
-                 chrom1.name(), chrom2.name(), num_resolutions, pos1);
-    _fs.write(metadata.serialize(_bbuffer));
-    const auto pos2 = _fs.tellp();
-    SPDLOG_DEBUG(FMT_STRING("updating MatrixBodyMetadata offset and size for {}:{} ({} "
-                            "resolutions) to {} and {}"),
-                 chrom1.name(), chrom2.name(), num_resolutions, pos1, pos2 - pos1);
-    _matrix_metadata.update_offsets(chrom1, chrom2, static_cast<std::streamoff>(pos1), pos2 - pos1);
+
+    try {
+      const auto pos1 = _fs.tellp();
+      SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
+                   chrom1.name(), chrom2.name(), num_resolutions, pos1);
+      _fs.write(metadata.serialize(_bbuffer));
+      const auto pos2 = _fs.tellp();
+      SPDLOG_DEBUG(FMT_STRING("updating MatrixBodyMetadata offset and size for {}:{} ({} "
+                              "resolutions) to {} and {}"),
+                   chrom1.name(), chrom2.name(), num_resolutions, pos1, pos2 - pos1);
+      _matrix_metadata.update_offsets(chrom1, chrom2, static_cast<std::streamoff>(pos1),
+                                      pos2 - pos1);
+    } catch (const std::exception &e) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("an error occurred while writing the MatrixBodyMetadata for {}:{} "
+                                 "to file \"{}\": {}"),
+                      chrom1.name(), chrom2.name(), path(), e.what()));
+    }
   }
 
   const auto size = _fs.tellp() - static_cast<std::size_t>(pos);
@@ -422,56 +529,76 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
     return;
   }
 
-  auto metadata = _matrix_metadata.contains(chrom1, chrom2) ? _matrix_metadata.at(chrom1, chrom2)
-                                                            : MatrixBodyMetadata{};
+  try {
+    auto metadata = _matrix_metadata.contains(chrom1, chrom2) ? _matrix_metadata.at(chrom1, chrom2)
+                                                              : MatrixBodyMetadata{};
 
-  auto &mm = metadata.matrixMetadata;
-  MatrixResolutionMetadata mrm{};
+    auto &mm = metadata.matrixMetadata;
+    MatrixResolutionMetadata mrm{};
 
-  const auto num_bins = compute_num_bins(chrom1, chrom2, resolution);
-  const auto num_columns = compute_block_column_count(chrom1, chrom2, resolution);
-  const auto num_rows = num_bins / num_columns + 1;
+    const auto num_bins = compute_num_bins(chrom1, chrom2, resolution);
+    const auto num_columns = compute_block_column_count(chrom1, chrom2, resolution);
+    const auto num_rows = num_bins / num_columns + 1;
 
-  mrm.unit = unit;
-  mrm.resIdx = static_cast<std::int32_t>(std::distance(
-      resolutions().begin(), std::find(resolutions().begin(), resolutions().end(), resolution)));
-  mrm.sumCounts = sum_counts;
-  mrm.occupiedCellCount = 0;  // not used
-  mrm.percent5 = 0;           // not used
-  mrm.percent95 = 0;          // not used
-  mrm.binSize = static_cast<std::int32_t>(resolution);
-  mrm.blockSize = static_cast<std::int32_t>(num_rows);
-  mrm.blockColumnCount = static_cast<std::int32_t>(num_columns);
+    mrm.unit = unit;
+    mrm.resIdx = static_cast<std::int32_t>(std::distance(
+        resolutions().begin(), std::find(resolutions().begin(), resolutions().end(), resolution)));
+    mrm.sumCounts = sum_counts;
+    mrm.occupiedCellCount = 0;  // not used
+    mrm.percent5 = 0;           // not used
+    mrm.percent95 = 0;          // not used
+    mrm.binSize = static_cast<std::int32_t>(resolution);
+    mrm.blockSize = static_cast<std::int32_t>(num_rows);
+    mrm.blockColumnCount = static_cast<std::int32_t>(num_columns);
 
-  const auto &blks = _block_index.at(BlockIndexKey{chrom1, chrom2, resolution});
-  mrm.set_block_metadata(blks.begin(), blks.end());
+    const auto &blks = _block_index.at(BlockIndexKey{chrom1, chrom2, resolution});
+    mrm.set_block_metadata(blks.begin(), blks.end());
 
-  mm.chr1Idx = static_cast<std::int32_t>(chrom1.id());
-  mm.chr2Idx = static_cast<std::int32_t>(chrom2.id());
-  mm.nResolutions = static_cast<std::int32_t>(metadata.resolutionMetadata.size() + 1);
+    mm.chr1Idx = static_cast<std::int32_t>(chrom1.id());
+    mm.chr2Idx = static_cast<std::int32_t>(chrom2.id());
+    mm.nResolutions = static_cast<std::int32_t>(metadata.resolutionMetadata.size() + 1);
 
-  _matrix_metadata.insert(chrom1, chrom2, mm, mrm);
+    _matrix_metadata.insert(chrom1, chrom2, mm, mrm);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while adding or updating the MatrixBodyMetadata for {}:{}: {}"),
+        chrom1.name(), chrom2.name(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_footers() {
   const auto offset1 = _body_metadata_section.end();
-  _fs.seekp(offset1);
-  SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"), offset1);
-  const std::int64_t nBytesV5 = -1;
-  const auto nEntries = static_cast<std::int32_t>(_footers.size());
-  _fs.write(nBytesV5);
-  _fs.write(nEntries);
 
-  for (auto &[chroms, footer] : _footers) {
-    const auto offset = _matrix_metadata.offset(chroms.first, chroms.second);
-    footer.position = conditional_static_cast<std::int64_t>(offset.start());
-    footer.size = static_cast<std::int32_t>(offset.size());
-    SPDLOG_DEBUG(FMT_STRING("writing FooterMasterIndex for {}:{} at offset {}"),
-                 chroms.first.name(), chroms.second.name(), _fs.tellp());
-    _fs.write(footer.serialize(_bbuffer));
+  try {
+    _fs.seekp(offset1);
+    SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"), offset1);
+    const std::int64_t nBytesV5 = -1;
+    const auto nEntries = static_cast<std::int32_t>(_footers.size());
+    _fs.write(nBytesV5);
+    _fs.write(nEntries);
+
+    for (auto &[chroms, footer] : _footers) {
+      try {
+        const auto offset = _matrix_metadata.offset(chroms.first, chroms.second);
+        footer.position = conditional_static_cast<std::int64_t>(offset.start());
+        footer.size = static_cast<std::int32_t>(offset.size());
+        SPDLOG_DEBUG(FMT_STRING("writing FooterMasterIndex for {}:{} at offset {}"),
+                     chroms.first.name(), chroms.second.name(), _fs.tellp());
+        _fs.write(footer.serialize(_bbuffer));
+      } catch (const std::exception &e) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("an error occurred while writing the footer for {}:{}: {}"),
+                        chroms.first.name(), chroms.second.name(), e.what()));
+      }
+    }
+
+    write_empty_expected_values();
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing the footer section to file \"{}\": {}"), path(),
+        e.what()));
   }
-
-  write_empty_expected_values();
 
   _footer_section = {offset1, _fs.tellp() - static_cast<std::size_t>(offset1)};
 }
@@ -481,14 +608,20 @@ inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome
     return;
   }
 
-  FooterMasterIndex footer{};
-  footer.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
-  footer.position = -1;
-  footer.size = -1;
+  try {
+    FooterMasterIndex footer{};
+    footer.key = fmt::format(FMT_STRING("{}_{}"), chrom1.id(), chrom2.id());
+    footer.position = -1;
+    footer.size = -1;
 
-  auto [it, inserted] = _footers.emplace(std::make_pair(chrom1, chrom2), footer);
-  if (!inserted) {
-    it->second = std::move(footer);
+    auto [it, inserted] = _footers.emplace(std::make_pair(chrom1, chrom2), footer);
+    if (!inserted) {
+      it->second = std::move(footer);
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while adding the footer for {}:{}: {}"),
+                    chrom1.name(), chrom2.name(), e.what()));
   }
 }
 
@@ -503,47 +636,69 @@ inline void HiCFileWriter::write_norm_vectors_and_norm_expected_values() {
 inline void HiCFileWriter::write_empty_expected_values() {
   ExpectedValues ev{};
 
-  const auto offset = _fs.tellp();
-  SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."), offset);
-  _fs.write(ev.serialize(_bbuffer));
+  try {
+    const auto offset = _fs.tellp();
+    SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."), offset);
+    _fs.write(ev.serialize(_bbuffer));
 
-  _expected_values_section = {offset, _fs.tellp() - offset};
+    _expected_values_section = {offset, _fs.tellp() - offset};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "an error occurred while writing an empty expected values section to file \"{}\": {}"),
+        path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_empty_normalized_expected_values() {
   const auto offset = _expected_values_section.end();
   SPDLOG_DEBUG(FMT_STRING("writing empty expected values (normalized) section at offset {}..."),
                offset);
-  _fs.seekp(offset);
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_USELESS_CAST
-  _fs.write(std::int32_t(0));
-  DISABLE_WARNING_POP
+  try {
+    _fs.seekp(offset);
+    DISABLE_WARNING_PUSH
+    DISABLE_WARNING_USELESS_CAST
+    _fs.write(std::int32_t(0));
+    DISABLE_WARNING_POP
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while writing an empty normalized expected "
+                               "values section to file \"{}\": {}"),
+                    path(), e.what()));
+  }
   _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
 inline ExpectedValuesBlock HiCFileWriter::compute_expected_values(std::uint32_t resolution) {
   SPDLOG_DEBUG(FMT_STRING("computing expected values at resolution {}..."), resolution);
 
-  const File f(std::string{path()}, resolution);
-  const auto sel = f.fetch();
+  try {
+    const File f(std::string{path()}, resolution);
+    const auto sel = f.fetch();
 
-  ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
-  std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
-  aggr.compute_density();
+    ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
+    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
+    aggr.compute_density();
 
-  std::vector<float> weights(aggr.weights().size());
-  std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
-                 [](const auto w) { return static_cast<float>(w); });
+    std::vector<float> weights(aggr.weights().size());
+    std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
+                   [](const auto w) { return static_cast<float>(w); });
 
-  std::vector<std::uint32_t> chrom_ids{};
-  std::vector<double> scaling_factors{};
-  std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(), [&](const auto &kv) {
-    chrom_ids.push_back(kv.first.id());
-    scaling_factors.push_back(kv.second);
-  });
+    std::vector<std::uint32_t> chrom_ids{};
+    std::vector<double> scaling_factors{};
+    std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(),
+                  [&](const auto &kv) {
+                    chrom_ids.push_back(kv.first.id());
+                    scaling_factors.push_back(kv.second);
+                  });
 
-  return {"BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+    return {"BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while computing the expected values for file "
+                               "\"{}\" at {} resolution: {}"),
+                    path(), resolution, e.what()));
+  }
 }
 
 inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_values(
@@ -552,25 +707,33 @@ inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_
   SPDLOG_DEBUG(FMT_STRING("computing normalized expected values ({}) at resolution {}..."), norm,
                resolution);
 
-  const File f(std::string{path()}, resolution);
-  const auto sel = f.fetch(norm);
+  try {
+    const File f(std::string{path()}, resolution);
+    const auto sel = f.fetch(norm);
 
-  ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
-  std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
-  aggr.compute_density();
+    ExpectedValuesAggregator aggr(_bin_tables.at(resolution));
+    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const auto &p) { aggr.add(p); });
+    aggr.compute_density();
 
-  std::vector<float> weights(aggr.weights().size());
-  std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
-                 [](const auto w) { return static_cast<float>(w); });
+    std::vector<float> weights(aggr.weights().size());
+    std::transform(aggr.weights().begin(), aggr.weights().end(), weights.begin(),
+                   [](const auto w) { return static_cast<float>(w); });
 
-  std::vector<std::uint32_t> chrom_ids{};
-  std::vector<double> scaling_factors{};
-  std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(), [&](const auto &kv) {
-    chrom_ids.push_back(kv.first.id());
-    scaling_factors.push_back(kv.second);
-  });
+    std::vector<std::uint32_t> chrom_ids{};
+    std::vector<double> scaling_factors{};
+    std::for_each(aggr.scaling_factors().begin(), aggr.scaling_factors().end(),
+                  [&](const auto &kv) {
+                    chrom_ids.push_back(kv.first.id());
+                    scaling_factors.push_back(kv.second);
+                  });
 
-  return {norm.to_string(), "BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+    return {norm.to_string(), "BP", resolution, aggr.weights(), chrom_ids, scaling_factors};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while computing the normalized expected values for file "
+                   "\"{}\" at {} resolution: {}"),
+        path(), resolution, e.what()));
+  }
 }
 
 inline void HiCFileWriter::compute_and_write_expected_values() {
@@ -580,15 +743,21 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
     ev.emplace_back(compute_expected_values(resolution));
   }
 
-  const auto offset = _footer_section.end() -
-                      conditional_static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors()));
-  SPDLOG_INFO(FMT_STRING("writing {} expected value vectors at offset {}..."),
-              ev.nExpectedValueVectors(), offset);
-  _fs.seekp(offset);
-  _fs.write(ev.serialize(_bbuffer));
+  try {
+    const auto offset = _footer_section.end() -
+                        conditional_static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors()));
+    SPDLOG_INFO(FMT_STRING("writing {} expected value vectors at offset {}..."),
+                ev.nExpectedValueVectors(), offset);
+    _fs.seekp(offset);
+    _fs.write(ev.serialize(_bbuffer));
 
-  _expected_values_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
-  _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors());
+    _expected_values_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+    _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors());
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing expected values to file \"{}\": {}"), path(),
+        e.what()));
+  }
 }
 
 inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
@@ -602,13 +771,19 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
     }
   }
 
-  const auto offset = _footer_section.end();
-  SPDLOG_INFO(FMT_STRING("writing {} normalized expected value vectors at offset {}..."),
-              ev.nNormExpectedValueVectors(), offset);
-  _fs.seekp(offset);
-  _fs.write(ev.serialize(_bbuffer));
+  try {
+    const auto offset = _footer_section.end();
+    SPDLOG_INFO(FMT_STRING("writing {} normalized expected value vectors at offset {}..."),
+                ev.nNormExpectedValueVectors(), offset);
+    _fs.seekp(offset);
+    _fs.write(ev.serialize(_bbuffer));
 
-  _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+    _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing normalized expected values to file \"{}\": {}"),
+        path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
@@ -617,20 +792,27 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
   SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector for {} ({}): {} values"), blk.binSize,
               blk.type, chrom.name(), blk.unit, weights.size());
 
-  const auto bin_size = static_cast<std::uint32_t>(blk.binSize);
-  const auto expected_shape = (chrom.size() + bin_size - 1) / bin_size;
+  try {
+    const auto bin_size = static_cast<std::uint32_t>(blk.binSize);
+    const auto expected_shape = (chrom.size() + bin_size - 1) / bin_size;
 
-  if (weights.size() != expected_shape) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
-                    expected_shape, weights.size()));
-  }
+    if (weights.size() != expected_shape) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
+                      expected_shape, weights.size()));
+    }
 
-  const auto [_, inserted] = _normalization_vectors.emplace(blk, weights);
-  if (!inserted) {
+    const auto [_, inserted] = _normalization_vectors.emplace(blk, weights);
+    if (!inserted) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("file already contains {} normalization vector for {} at resolution {} ({})"),
+          blk.type, chrom.name(), blk.binSize, blk.unit));
+    }
+  } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
-        FMT_STRING("file already contains {} normalization vector for {} at resolution {} ({})"),
-        blk.type, chrom.name(), blk.binSize, blk.unit));
+        FMT_STRING(
+            "an error occurred while adding {} normalization vector for {} at {} resolution: {}"),
+        blk.type, chrom.name(), blk.binSize, e.what()));
   }
 }
 
@@ -668,93 +850,136 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromoso
 inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_view unit,
                                            std::uint32_t bin_size,
                                            const std::vector<float> &weights) {
-  const auto expected_shape = bins(bin_size).size();
-  if (weights.size() != expected_shape) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
-                    expected_shape, weights.size()));
-  }
-
-  std::ptrdiff_t i0 = 0;
-  std::ptrdiff_t i1 = 0;
-  for (const auto &chrom : chromosomes()) {
-    if (chrom.is_all()) {
-      continue;
+  try {
+    const auto expected_shape = bins(bin_size).size();
+    if (weights.size() != expected_shape) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("weight shape mismatch: expected {} values, found {}"),
+                      expected_shape, weights.size()));
     }
-    i1 += static_cast<std::ptrdiff_t>((chrom.size() + bin_size - 1) / bin_size);
-    const std::vector<float> chrom_weights(weights.begin() + i0, weights.begin() + i1);
-    add_norm_vector(type, chrom, unit, bin_size, chrom_weights);
-    i0 = i1;
+
+    std::ptrdiff_t i0 = 0;
+    std::ptrdiff_t i1 = 0;
+    for (const auto &chrom : chromosomes()) {
+      if (chrom.is_all()) {
+        continue;
+      }
+      i1 += static_cast<std::ptrdiff_t>((chrom.size() + bin_size - 1) / bin_size);
+      const std::vector<float> chrom_weights(weights.begin() + i0, weights.begin() + i1);
+      add_norm_vector(type, chrom, unit, bin_size, chrom_weights);
+      i0 = i1;
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(FMT_STRING("an error occurred while adding {} genome-wide "
+                                                    "normalization vector at {} resolution: {}"),
+                                         type, bin_size, e.what()));
   }
 }
 
 inline void HiCFileWriter::finalize(bool compute_expected_values) {
-  if (compute_expected_values) {
-    compute_and_write_expected_values();
-    write_empty_normalized_expected_values();
-    write_norm_vectors();
-    compute_and_write_normalized_expected_values();
-  } else {
-    write_empty_expected_values();
-    write_empty_normalized_expected_values();
-  }
+  try {
+    if (compute_expected_values) {
+      compute_and_write_expected_values();
+      write_empty_normalized_expected_values();
+      write_norm_vectors();
+      compute_and_write_normalized_expected_values();
+    } else {
+      write_empty_expected_values();
+      write_empty_normalized_expected_values();
+    }
 
-  write_footer_offset();
-  write_footer_size();
-  write_norm_vectors();
-  _fs.flush();
-  _fs.seekp(0, std::ios::end);
+    write_footer_offset();
+    write_footer_size();
+    write_norm_vectors();
+    _fs.flush();
+    _fs.seekp(0, std::ios::end);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while finalizing file \"{}\": {}"), path(), e.what()));
+  }
 }
 
 inline void HiCFileWriter::write_norm_vectors() {
-  const auto offset1 =
-      std::max(_expected_values_norm_section.end(), _norm_vector_index_section.start());
-  _fs.seekp(offset1);
+  try {
+    const auto offset1 =
+        std::max(_expected_values_norm_section.end(), _norm_vector_index_section.start());
+    _fs.seekp(offset1);
 
-  if (_normalization_vectors.empty()) {
-    SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."), offset1);
-  } else {
-    SPDLOG_INFO(FMT_STRING("writing {} normalization vectors at offset {}..."),
-                _normalization_vectors.size(), offset1);
-  }
+    if (_normalization_vectors.empty()) {
+      SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."),
+                   offset1);
+    } else {
+      SPDLOG_INFO(FMT_STRING("writing {} normalization vectors at offset {}..."),
+                  _normalization_vectors.size(), offset1);
+    }
 
-  const auto nNormVectors = static_cast<std::int32_t>(_normalization_vectors.size());
-  _fs.write(nNormVectors);
+    const auto nNormVectors = static_cast<std::int32_t>(_normalization_vectors.size());
+    _fs.write(nNormVectors);
 
-  phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> index_offsets{};
-  for (const auto &[blk, _] : _normalization_vectors) {
+    phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> index_offsets{};
+    for (const auto &[blk, _] : _normalization_vectors) {
+      try {
+        const auto offset2 = _fs.tellp();
+        _fs.write(blk.serialize(_bbuffer));
+        index_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+      } catch (const std::exception &e) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING(
+                "an error occurred while writing the {} NormalizationVectorIndexBlock for {} "
+                "at {} resolution to file \"{}\": {}"),
+            blk.type, chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx)).name(), blk.binSize,
+            path(), e.what()));
+      }
+    }
     const auto offset2 = _fs.tellp();
-    _fs.write(blk.serialize(_bbuffer));
-    index_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+
+    phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> vector_offsets{};
+    for (const auto &[blk, weights] : _normalization_vectors) {
+      try {
+        const auto offset3 = _fs.tellp();
+        const auto nValues = static_cast<std::int64_t>(weights.size());
+        _fs.write(nValues);
+        _fs.write(weights);
+        vector_offsets.emplace(blk, HiCSectionOffsets{offset3, _fs.tellp() - offset3});
+      } catch (const std::exception &e) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("an error occurred while writing the {} normalization vector for {} "
+                       "at {} resolution to file \"{}\": {}"),
+            blk.type, chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx)).name(), blk.binSize,
+            path(), e.what()));
+      }
+    }
+
+    const auto offset4 = _fs.tellp();
+
+    for (const auto &[blk, idx_offsets] : index_offsets) {
+      try {
+        const auto &vect_offsets = vector_offsets.at(blk);
+        auto new_blk = blk;
+        new_blk.position = vect_offsets.start();
+        new_blk.nBytes = static_cast<std::int64_t>(vect_offsets.size());
+        _fs.seekp(idx_offsets.start());
+        _fs.write(new_blk.serialize(_bbuffer));
+      } catch (const std::exception &e) {
+        throw std::runtime_error(fmt::format(
+            FMT_STRING("an error occurred while updating file offsets in the {} "
+                       "NormalizationVectorIndexBlock for {} at {} resolution to file \"{}\": {}"),
+            blk.type, chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx)).name(), blk.binSize,
+            path(), e.what()));
+      }
+    }
+
+    _norm_vector_index_section = {offset1, offset2 - static_cast<std::size_t>(offset1)};
+    _norm_vectors_section = {offset2, offset4 - static_cast<std::size_t>(offset2)};
+
+    write_norm_vector_index();
+    _fs.seekp(0, std::ios::end);
+    _fs.flush();
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing normalization vectors to file \"{}\": {}"),
+        path(), e.what()));
   }
-  const auto offset2 = _fs.tellp();
-
-  phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> vector_offsets{};
-  for (const auto &[blk, weights] : _normalization_vectors) {
-    const auto offset3 = _fs.tellp();
-    const auto nValues = static_cast<std::int64_t>(weights.size());
-    _fs.write(nValues);
-    _fs.write(weights);
-    vector_offsets.emplace(blk, HiCSectionOffsets{offset3, _fs.tellp() - offset3});
-  }
-
-  const auto offset4 = _fs.tellp();
-
-  for (const auto &[blk, idx_offsets] : index_offsets) {
-    const auto &vect_offsets = vector_offsets.at(blk);
-    auto new_blk = blk;
-    new_blk.position = vect_offsets.start();
-    new_blk.nBytes = static_cast<std::int64_t>(vect_offsets.size());
-    _fs.seekp(idx_offsets.start());
-    _fs.write(new_blk.serialize(_bbuffer));
-  }
-
-  _norm_vector_index_section = {offset1, offset2 - static_cast<std::size_t>(offset1)};
-  _norm_vectors_section = {offset2, offset4 - static_cast<std::size_t>(offset2)};
-
-  write_norm_vector_index();
-  _fs.seekp(0, std::ios::end);
-  _fs.flush();
 }
 
 inline HiCHeader HiCFileWriter::read_header(filestream::FileStream &fs) {
@@ -808,25 +1033,31 @@ inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
                                         std::uint32_t resolution) -> HiCSectionOffsets {
-  const auto offset = _data_block_section.end();
-  _fs.seekp(offset);
+  try {
+    const auto offset = _data_block_section.end();
+    _fs.seekp(offset);
 
-  SPDLOG_INFO(FMT_STRING("[{} bp] writing pixels for {}:{} matrix at offset {}..."), resolution,
-              chrom1.name(), chrom2.name(), offset);
+    SPDLOG_INFO(FMT_STRING("[{} bp] writing pixels for {}:{} matrix at offset {}..."), resolution,
+                chrom1.name(), chrom2.name(), offset);
 
-  const auto stats = write_interaction_blocks(chrom1, chrom2, resolution);
+    const auto stats = write_interaction_blocks(chrom1, chrom2, resolution);
 
-  SPDLOG_INFO(FMT_STRING("[{} bp] written {} pixels for {}:{} matrix"), resolution, stats.nnz,
-              chrom1.name(), chrom2.name());
+    SPDLOG_INFO(FMT_STRING("[{} bp] written {} pixels for {}:{} matrix"), resolution, stats.nnz,
+                chrom1.name(), chrom2.name());
 
-  auto [it, inserted] = _stats.try_emplace(resolution, stats);
-  if (!inserted) {
-    it->second.sum += stats.sum;
-    it->second.nnz += stats.nnz;
+    auto [it, inserted] = _stats.try_emplace(resolution, stats);
+    if (!inserted) {
+      it->second.sum += stats.sum;
+      it->second.nnz += stats.nnz;
+    }
+
+    _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
+    return {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while writing pixels for {}:{} to file \"{}\": {}"),
+        chrom1.name(), chrom2.name(), path(), e.what()));
   }
-
-  _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
-  return {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
 inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
@@ -843,81 +1074,98 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
   }
 
   if (_tpool.get_thread_count() < 3 || block_ids->second.size() == 1) {
-    Stats stats{};
-    for (const auto &bid : block_ids->second) {
-      auto blk = mapper.merge_blocks(bid);
-      stats.sum += blk.sum();
-      stats.nnz += blk.size();
-      write_interaction_block(bid.bid, chrom1, chrom2, resolution, std::move(blk));
+    try {
+      Stats stats{};
+      for (const auto &bid : block_ids->second) {
+        auto blk = mapper.merge_blocks(bid);
+        stats.sum += blk.sum();
+        stats.nnz += blk.size();
+        write_interaction_block(bid.bid, chrom1, chrom2, resolution, std::move(blk));
+      }
+
+      return stats;
+    } catch (const std::exception &e) {
+      throw std::runtime_error(
+          "an error occurred while writing interaction blocks using a single thread: " +
+          std::string{e.what()});
     }
+  }
+
+  try {
+    std::mutex block_id_queue_mtx{};
+    std::queue<std::uint64_t> block_id_queue{};
+    moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> block_queue(
+        block_ids->second.size());
+
+    std::mutex serialized_block_tank_mtx{};
+    phmap::flat_hash_map<std::uint64_t, std::string> serialized_block_tank{
+        block_ids->second.size()};
+    const auto stop_token = std::numeric_limits<std::uint64_t>::max();
+    std::atomic<bool> early_return = false;
+
+    std::mutex mapper_mtx{};
+
+    std::vector<std::future<Stats>> worker_threads{};
+    for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
+      worker_threads.emplace_back(_tpool.submit([&]() {
+        return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
+                                             block_queue, serialized_block_tank,
+                                             serialized_block_tank_mtx, early_return, stop_token);
+      }));
+    }
+
+    auto writer = _tpool.submit([&]() {
+      write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue, block_id_queue_mtx,
+                                  serialized_block_tank, serialized_block_tank_mtx, early_return,
+                                  stop_token);
+    });
+
+    auto producer = _tpool.submit([&]() {
+      try {
+        for (const auto &bid : block_ids->second) {
+          if (early_return) {
+            break;
+          }
+
+          block_queue.enqueue(bid);
+          if (early_return) {
+            break;
+          }
+        }
+        for (std::size_t i = 0; i < worker_threads.size(); ++i) {
+          block_queue.enqueue(HiCInteractionToBlockMapper::BlockID{0, 0, stop_token});
+        }
+      } catch (const std::exception &e) {
+        early_return = true;
+        throw std::runtime_error("an error occurred in the producer thread: " +
+                                 std::string{e.what()});
+      } catch (...) {
+        early_return = true;
+        throw;
+      }
+    });
+
+    producer.get();
+
+    Stats stats{};
+    for (auto &worker : worker_threads) {
+      const auto partial_stats = worker.get();
+      stats.sum += partial_stats.sum;
+      stats.nnz += partial_stats.nnz;
+    }
+    // signal no more blocks will be enqueued
+    {
+      std::scoped_lock lck(block_id_queue_mtx);
+      block_id_queue.emplace(stop_token);
+    }
+    writer.get();
 
     return stats;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
+                    _tpool.get_thread_count(), e.what()));
   }
-
-  std::mutex block_id_queue_mtx{};
-  std::queue<std::uint64_t> block_id_queue{};
-  moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> block_queue(
-      block_ids->second.size());
-
-  std::mutex serialized_block_tank_mtx{};
-  phmap::flat_hash_map<std::uint64_t, std::string> serialized_block_tank{block_ids->second.size()};
-  const auto stop_token = std::numeric_limits<std::uint64_t>::max();
-  std::atomic<bool> early_return = false;
-
-  std::mutex mapper_mtx{};
-
-  std::vector<std::future<Stats>> worker_threads{};
-  for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
-    worker_threads.emplace_back(_tpool.submit([&]() {
-      return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
-                                           block_queue, serialized_block_tank,
-                                           serialized_block_tank_mtx, early_return, stop_token);
-    }));
-  }
-
-  auto writer = _tpool.submit([&]() {
-    write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue, block_id_queue_mtx,
-                                serialized_block_tank, serialized_block_tank_mtx, early_return,
-                                stop_token);
-  });
-
-  auto producer = _tpool.submit([&]() {
-    try {
-      for (const auto &bid : block_ids->second) {
-        if (early_return) {
-          break;
-        }
-
-        block_queue.enqueue(bid);
-        if (early_return) {
-          break;
-        }
-      }
-      for (std::size_t i = 0; i < worker_threads.size(); ++i) {
-        block_queue.enqueue(HiCInteractionToBlockMapper::BlockID{0, 0, stop_token});
-      }
-    } catch (...) {
-      early_return = true;
-      throw;
-    }
-  });
-
-  producer.get();
-
-  Stats stats{};
-  for (auto &worker : worker_threads) {
-    const auto partial_stats = worker.get();
-    stats.sum += partial_stats.sum;
-    stats.nnz += partial_stats.nnz;
-  }
-  // signal no more blocks will be enqueued
-  {
-    std::scoped_lock lck(block_id_queue_mtx);
-    block_id_queue.emplace(stop_token);
-  }
-  writer.get();
-
-  return stats;
 }
 
 inline auto HiCFileWriter::write_interaction_block(std::uint64_t block_id, const Chromosome &chrom1,
@@ -953,69 +1201,86 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
 
 inline void HiCFileWriter::read_norm_vectors() {
   assert(_norm_vector_index_section.start() != 0);
-  const auto offset = _norm_vector_index_section.start();
-  _fs.seekg(offset);
-  const auto nvi = NormalizationVectorIndex::deserialize(_fs);
+  try {
+    const auto offset = _norm_vector_index_section.start();
+    _fs.seekg(offset);
+    const auto nvi = NormalizationVectorIndex::deserialize(_fs);
 
-  for (const auto &blk : nvi.normalizationVectorIndex()) {
-    add_norm_vector(blk, read_norm_vector(blk));
+    for (const auto &blk : nvi.normalizationVectorIndex()) {
+      add_norm_vector(blk, read_norm_vector(blk));
+    }
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while reading normalization vectors from file \"{}\": {}"),
+        path(), e.what()));
   }
 }
 
 inline std::vector<float> HiCFileWriter::read_norm_vector(
     const NormalizationVectorIndexBlock &blk) {
-  const auto offset = blk.position;
-  _fs.seekg(offset);
+  try {
+    const auto offset = blk.position;
+    _fs.seekg(offset);
 
-  // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
-  const auto nValues = static_cast<std::size_t>(_fs.read<std::int64_t>());
-  std::vector<float> buffer(nValues);
-  _fs.read(buffer);
-  const auto bytes_read = _fs.tellg() - static_cast<std::size_t>(offset);
-  if (bytes_read != static_cast<std::size_t>(blk.nBytes)) {
+    // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
+    const auto nValues = static_cast<std::size_t>(_fs.read<std::int64_t>());
+    std::vector<float> buffer(nValues);
+    _fs.read(buffer);
+    const auto bytes_read = _fs.tellg() - static_cast<std::size_t>(offset);
+    if (bytes_read != static_cast<std::size_t>(blk.nBytes)) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("expected to read {} bytes but read {}"), blk.nBytes, bytes_read));
+    }
+    return buffer;
+  } catch (const std::exception &e) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("{} normalization vector for {} at {} resolution is corrupted: "
-                               "expected to read {} bytes but read {}"),
+        fmt::format(FMT_STRING("{} normalization vector for {} at {} resolution is corrupted: {}"),
                     blk.type, _header.chromosomes.at(static_cast<std::uint32_t>(blk.chrIdx)).name(),
-                    blk.binSize, blk.nBytes, bytes_read));
+                    blk.binSize, e.what()));
   }
-  return buffer;
 }
 
 inline void HiCFileWriter::read_offsets() {
-  _fs.seekg(0, std::ios::beg);
-  const auto header_start = _fs.tellg();
-  const auto header = HiCHeader::deserialize(_fs);
-  const auto header_end = _fs.tellg();
+  try {
+    _fs.seekg(0, std::ios::beg);
+    const auto header_start = _fs.tellg();
+    const auto header = HiCHeader::deserialize(_fs);
+    const auto header_end = _fs.tellg();
 
-  // read footer offsets
-  _fs.seekg(header.footerPosition);
-  const auto footer_start = _fs.tellg();
-  const auto nBytesV5 = _fs.read<std::int64_t>();
-  _fs.seekg(nBytesV5, std::ios::cur);
-  const auto footer_end = _fs.tellg();
+    // read footer offsets
+    _fs.seekg(header.footerPosition);
+    const auto footer_start = _fs.tellg();
+    const auto nBytesV5 = _fs.read<std::int64_t>();
+    _fs.seekg(nBytesV5, std::ios::cur);
+    const auto footer_end = _fs.tellg();
 
-  // read norm expected values offsets
-  const auto norm_expected_values_start = _fs.tellg();
-  const auto nNormExpectedValueVectors = _fs.read<std::int32_t>();
-  for (std::int32_t i = 0; i < nNormExpectedValueVectors; ++i) {
-    std::ignore = NormalizationVectorIndexBlock::deserialize(_fs);
+    // read norm expected values offsets
+    const auto norm_expected_values_start = _fs.tellg();
+    const auto nNormExpectedValueVectors = _fs.read<std::int32_t>();
+    for (std::int32_t i = 0; i < nNormExpectedValueVectors; ++i) {
+      std::ignore = NormalizationVectorIndexBlock::deserialize(_fs);
+    }
+    const auto norm_expected_values_end = _fs.tellg();
+
+    // compute norm vector index offsets
+    const auto norm_vector_index_start = header.normVectorIndexPosition;
+    const auto norm_vector_index_end =
+        header.normVectorIndexPosition + header.normVectorIndexLength;
+
+    // set the offsets
+    _header_section = {header_start, header_end - header_start};
+    _footer_section = {footer_start, footer_end - footer_start};
+    _expected_values_norm_section = {norm_expected_values_start,
+                                     norm_expected_values_end - norm_expected_values_start};
+    _norm_vector_index_section = {norm_vector_index_start,
+                                  norm_vector_index_end - norm_vector_index_start};
+
+    _fs.seekg(0, std::ios::end);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while reading section offsets from file \"{}\": {}"), path(),
+        e.what()));
   }
-  const auto norm_expected_values_end = _fs.tellg();
-
-  // compute norm vector index offsets
-  const auto norm_vector_index_start = header.normVectorIndexPosition;
-  const auto norm_vector_index_end = header.normVectorIndexPosition + header.normVectorIndexLength;
-
-  // set the offsets
-  _header_section = {header_start, header_end - header_start};
-  _footer_section = {footer_start, footer_end - footer_start};
-  _expected_values_norm_section = {norm_expected_values_start,
-                                   norm_expected_values_end - norm_expected_values_start};
-  _norm_vector_index_section = {norm_vector_index_start,
-                                norm_vector_index_end - norm_vector_index_start};
-
-  _fs.seekg(0, std::ios::end);
 }
 
 inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &chrom1,
@@ -1075,6 +1340,11 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
     }
 
     return stats;
+  } catch (const std::exception &e) {
+    early_return = true;
+    throw std::runtime_error("an error occurred in merge_and_compress_blocks thread: " +
+                             std::string{e.what()});
+
   } catch (...) {
     early_return = true;
     throw;
@@ -1149,6 +1419,11 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
         _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
       }
     }
+  } catch (const std::exception &e) {
+    early_return = true;
+    throw std::runtime_error("an error occurred in write_compressed_blocks thread: " +
+                             std::string{e.what()});
+
   } catch (...) {
     early_return = true;
     throw;
