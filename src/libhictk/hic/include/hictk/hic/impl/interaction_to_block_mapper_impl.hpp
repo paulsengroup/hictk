@@ -144,6 +144,14 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
   init_block_mappers();
 }
 
+inline HiCInteractionToBlockMapper::~HiCInteractionToBlockMapper() noexcept {
+  try {
+    _fs = filestream::FileStream();
+    std::filesystem::remove(_path);
+  } catch (...) {
+  }
+}
+
 inline const Reference &HiCInteractionToBlockMapper::chromosomes() const noexcept {
   return _bin_table->chromosomes();
 }

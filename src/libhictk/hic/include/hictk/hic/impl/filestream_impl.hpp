@@ -58,6 +58,7 @@ inline void FileStream::seekg(std::streamoff offset, std::ios::seekdir way) {
 }
 
 inline std::size_t FileStream::tellg() const noexcept {
+  assert(_ifs.tellg() >= 0);
   return static_cast<std::size_t>(_ifs.tellg());
 }
 
@@ -66,6 +67,7 @@ inline void FileStream::seekp(std::streamoff offset, std::ios::seekdir way) {
 }
 
 inline std::size_t FileStream::tellp() const noexcept {
+  assert(_ofs.tellp() >= 0);
   return static_cast<std::size_t>(_ofs.tellp());
 }
 

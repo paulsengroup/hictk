@@ -108,6 +108,14 @@ class HiCInteractionToBlockMapper {
   HiCInteractionToBlockMapper(std::filesystem::path path, std::shared_ptr<const BinTable> bins,
                               std::size_t chunk_size, int compression_lvl);
 
+  HiCInteractionToBlockMapper(const HiCInteractionToBlockMapper& other) = delete;
+  HiCInteractionToBlockMapper(HiCInteractionToBlockMapper&& other) noexcept = default;
+
+  ~HiCInteractionToBlockMapper() noexcept;
+
+  HiCInteractionToBlockMapper& operator=(const HiCInteractionToBlockMapper& other) = delete;
+  HiCInteractionToBlockMapper& operator=(HiCInteractionToBlockMapper&& other) noexcept = default;
+
   const Reference& chromosomes() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
