@@ -69,7 +69,7 @@ TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
 
   SECTION("valid path (write)") {
     const auto path1 = testdir() / "filestream_ctor_write.bin";
-    const auto s = FileStream::create(path1);
+    const auto s = FileStream::create(path1.string());
     CHECK(s.path() == path1);
     CHECK(s.size() == 0);
     CHECK(!s.eof());
@@ -120,7 +120,7 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
   SECTION("write") {
     const auto path1 = testdir() / "filestream_seek.bin";
     std::filesystem::remove(path1);
-    auto s = FileStream::create(path1);
+    auto s = FileStream::create(path1.string());
 
     SECTION("seek within chunk") {
       s.seekp(5);
@@ -327,7 +327,7 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
 TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
   std::filesystem::remove(tmpfile);
-  auto s = FileStream::create(tmpfile);
+  auto s = FileStream::create(tmpfile.string());
 
   SECTION("small write") {
     constexpr std::string_view buffer{"test"};
@@ -368,7 +368,7 @@ static void write_and_compare(FileStream& s, const T& data) {
 TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write_binary.bin";
   std::filesystem::remove(tmpfile);
-  auto s = FileStream::create(tmpfile);
+  auto s = FileStream::create(tmpfile.string());
 
   DISABLE_WARNING_PUSH
   DISABLE_WARNING_USELESS_CAST

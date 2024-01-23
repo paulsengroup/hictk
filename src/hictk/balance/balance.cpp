@@ -143,7 +143,7 @@ static int balance_cooler(cooler::File&& f, const BalanceConfig& c) {
 static int balance_hic(const BalanceConfig& c) {
   const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
-    const hic::File f(c.path_to_input, res);
+    const hic::File f(c.path_to_input.string(), res);
     if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
@@ -169,7 +169,7 @@ static int balance_hic(const BalanceConfig& c) {
   phmap::flat_hash_map<std::uint32_t, std::vector<double>> weights{resolutions.size()};
   for (const auto& res : resolutions) {
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
-    const hic::File f(c.path_to_input, res);
+    const hic::File f(c.path_to_input.string(), res);
     const balancing::ICE balancer(f, mode, params);
 
     if (c.stdout_) {
