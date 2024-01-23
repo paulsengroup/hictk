@@ -157,6 +157,15 @@ void Cli::validate_balance_subcommand() const {
   [[maybe_unused]] const auto& c = std::get<BalanceConfig>(_config);
   std::vector<std::string> errors;
 
+  const auto input_format = infer_input_format(c.path_to_input);
+  if (input_format == "hic") {
+    const auto avail_resolutions = hic::utils::list_resolutions(c.path_to_input);
+    const hic::File f(c.path_to_input.string(), avail_resolutions.back());
+    if (f.version() < 9) {
+      errors.emplace_back("balancing .hic files v8 and older is not currently supported.");
+    }
+  }
+
   if (!errors.empty()) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
