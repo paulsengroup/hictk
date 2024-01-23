@@ -286,7 +286,7 @@ void Cli::transform_args_zoomify_subcommand() {
   }
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 12 : 6;
+    c.compression_lvl = c.output_format == "hic" ? 9 : 6;
   }
 
   c.tmp_dir /= (std::filesystem::path(c.path_to_output).filename().string() + ".tmp");

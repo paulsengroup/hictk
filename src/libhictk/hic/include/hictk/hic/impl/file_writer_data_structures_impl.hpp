@@ -650,7 +650,8 @@ NormalizedExpectedValues::normExpectedValues() const noexcept {
   return _normalized_expected_values;
 }
 
-inline void NormalizedExpectedValues::emplace(const NormalizedExpectedValuesBlock& evb, bool force_overwrite) {
+inline void NormalizedExpectedValues::emplace(const NormalizedExpectedValuesBlock &evb,
+                                              bool force_overwrite) {
   auto [it, inserted] = _normalized_expected_values.emplace(evb);
   if (!inserted) {
     if (force_overwrite) {
