@@ -155,28 +155,8 @@ class HiCFileWriter {
   [[nodiscard]] const std::vector<std::uint32_t>& resolutions() const noexcept;
   [[nodiscard]] auto stats(std::uint32_t resolution) const noexcept -> Stats;
 
-  void serialize();
-
-  // Write header
-  void write_header();
-  void write_footer_offset();
-  void write_norm_vector_index();
-
-  // Write pixels
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
-  void write_pixels();
-  void write_all_matrix(std::uint32_t target_resolution = 2'500'000);
-
-  // Write body
-  void write_body_metadata();
-  void add_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
-                         const Chromosome& chrom2, const std::string& unit = "BP");
-
-  // Write footer
-  void write_footers();
-  void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
-  void write_footer_size();
 
   // Write normalization vectors
   void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
@@ -195,11 +175,10 @@ class HiCFileWriter {
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
                        const std::vector<float>& weights, bool force_overwrite = false);
-  void write_norm_vectors_and_norm_expected_values();
-  void write_empty_expected_values();
-  void write_empty_normalized_expected_values();
 
-  void finalize(bool compute_expected_values = false);
+  void write_norm_vectors_and_norm_expected_values();
+
+  void serialize();
 
  private:
   [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
@@ -215,9 +194,17 @@ class HiCFileWriter {
                                                            int compression_lvl) -> BlockMappers;
   [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
 
+  // Write header
+  void write_header();
+  void write_footer_offset();
+  void write_norm_vector_index();
+
+  // Write pixels
+  void write_pixels();
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
       -> HiCSectionOffsets;
+  void write_all_matrix(std::uint32_t target_resolution = 2'500'000);
 
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                const Chromosome& chrom2, std::uint32_t resolution,
@@ -225,9 +212,23 @@ class HiCFileWriter {
   auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
                                 std::uint32_t resolution) -> Stats;
 
+  // Write body
+  void write_body_metadata();
+  void add_body_metadata(std::uint32_t resolution, const Chromosome& chrom1,
+                         const Chromosome& chrom2, const std::string& unit = "BP");
+
+  // Write footer
+  void write_footers();
+  void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
+  void write_footer_size();
+
+  void write_empty_expected_values();
+  void write_empty_normalized_expected_values();
   void compute_and_write_expected_values();
   void compute_and_write_normalized_expected_values();
   void write_norm_vectors();
+
+  void finalize(bool compute_expected_values = false);
 
   [[nodiscard]] std::size_t compute_block_column_count(const Chromosome& chrom1,
                                                        const Chromosome& chrom2,
