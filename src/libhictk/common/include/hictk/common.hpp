@@ -35,7 +35,7 @@ inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::
 
 [[nodiscard]] constexpr bool noexcept_move_ctor() noexcept {
 #if defined(__GNUC__) && !defined(__clang__)
-  return __GNUC__ > 7;
+  return __GNUC__ > 8;
 #else
   return true;
 #endif
