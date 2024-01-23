@@ -194,7 +194,7 @@ void Cli::transform_args_balance_subcommand() {
     input_path = cooler::File(c.path_to_input.string()).path();
   }
 
-  c.tmp_dir /= (std::filesystem::path(input_path).filename().string() + ".tmp");
+  c.tmp_dir /= input_path.filename().string() + ".tmp";
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

@@ -100,22 +100,27 @@ void zoomify_hic(const ZoomifyConfig& c) {
     std::filesystem::remove(c.path_to_output);
   }
 
-  print_zooming_plan_hic(c.path_to_input, c.resolutions);
+  print_zooming_plan_hic(c.path_to_input.string(), c.resolutions);
 
   const internal::TmpDir tmpdir{c.tmp_dir};
-  hic::internal::HiCFileZoomify{c.path_to_input, c.path_to_output, c.resolutions,    c.threads,
-                                c.batch_size,    tmpdir(),         c.compression_lvl}
+  hic::internal::HiCFileZoomify{c.path_to_input.string(),
+                                c.path_to_output.string(),
+                                c.resolutions,
+                                c.threads,
+                                c.batch_size,
+                                tmpdir(),
+                                c.compression_lvl}
       .zoomify();
 }
 
 void zoomify_cooler(const ZoomifyConfig& c, bool output_is_multires) {
   if (output_is_multires) {
-    zoomify_many_cooler(c.path_to_input, c.path_to_output, c.resolutions, c.copy_base_resolution,
-                        c.force, c.compression_lvl);
+    zoomify_many_cooler(c.path_to_input.string(), c.path_to_output.string(), c.resolutions,
+                        c.copy_base_resolution, c.force, c.compression_lvl);
     return;
   }
-  zoomify_once_cooler(c.path_to_input, c.path_to_output, c.resolutions.back(), c.force,
-                      c.compression_lvl);
+  zoomify_once_cooler(c.path_to_input.string(), c.path_to_output.string(), c.resolutions.back(),
+                      c.force, c.compression_lvl);
 }
 
 int zoomify_subcmd(const ZoomifyConfig& c) {

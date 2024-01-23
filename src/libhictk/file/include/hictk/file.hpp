@@ -125,12 +125,6 @@ class File {
                 hic::MatrixType type = hic::MatrixType::observed,
                 hic::MatrixUnit unit = hic::MatrixUnit::BP);
 
-  File(const File &other) = delete;
-  File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
-
-  File &operator=(const File &other) = delete;
-  File &operator=(File &&other) noexcept(noexcept_move_assignment_op()) = default;  // NOLINT
-
   [[nodiscard]] std::string uri() const;
   [[nodiscard]] std::string path() const;
 

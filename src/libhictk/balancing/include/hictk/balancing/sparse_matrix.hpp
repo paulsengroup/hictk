@@ -125,8 +125,13 @@ class SparseMatrixChunked {
   ~SparseMatrixChunked() noexcept;
 
   SparseMatrixChunked& operator=(const SparseMatrixChunked& other) = delete;
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept(
-      noexcept_move_assignment_op()) = default;
+#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+#elif defined(__GNUC__) && __GNUC__ > 9
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+#else
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) = default;
+#endif
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

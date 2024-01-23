@@ -160,8 +160,8 @@ struct ValidateConfig {
 };
 
 struct ZoomifyConfig {
-  std::string path_to_input{};
-  std::string path_to_output{};
+  std::filesystem::path path_to_input{};
+  std::filesystem::path path_to_output{};
   std::string input_format{};
   std::string output_format{};
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};

@@ -109,14 +109,23 @@ class HiCInteractionToBlockMapper {
                               std::size_t chunk_size, int compression_lvl);
 
   HiCInteractionToBlockMapper(const HiCInteractionToBlockMapper& other) = delete;
-  HiCInteractionToBlockMapper(HiCInteractionToBlockMapper&& other) noexcept(noexcept_move_ctor()) =
-      default;
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 9
+  HiCInteractionToBlockMapper(HiCInteractionToBlockMapper&& other) noexcept = default;
+#else
+  HiCInteractionToBlockMapper(HiCInteractionToBlockMapper&& other) = default;
+#endif
 
   ~HiCInteractionToBlockMapper() noexcept;
 
   HiCInteractionToBlockMapper& operator=(const HiCInteractionToBlockMapper& other) = delete;
-  HiCInteractionToBlockMapper& operator=(HiCInteractionToBlockMapper&& other) noexcept(
-      noexcept_move_assignment_op()) = default;
+
+#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
+  HiCInteractionToBlockMapper& operator=(HiCInteractionToBlockMapper&& other) noexcept = default;
+#elif defined(__GNUC__) && __GNUC__ > 8
+  HiCInteractionToBlockMapper& operator=(HiCInteractionToBlockMapper&& other) noexcept = default;
+#else
+  HiCInteractionToBlockMapper& operator=(HiCInteractionToBlockMapper&& other) = default;
+#endif
 
   const Reference& chromosomes() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

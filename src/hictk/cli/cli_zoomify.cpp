@@ -180,7 +180,7 @@ void Cli::validate_zoomify_subcommand() const {
                     input_format, output_format));
   }
 
-  const auto base_resolution = detect_base_resolution(c.path_to_input, input_format);
+  const auto base_resolution = detect_base_resolution(c.path_to_input.string(), input_format);
 
   if (base_resolution == 0) {  // Variable bin size
     errors.clear();
@@ -272,7 +272,7 @@ void Cli::transform_args_zoomify_subcommand() {
   c.input_format = infer_input_format(c.path_to_input);
   c.output_format = infer_output_format(c.path_to_output);
 
-  const auto base_resolution = detect_base_resolution(c.path_to_input, c.input_format);
+  const auto base_resolution = detect_base_resolution(c.path_to_input.string(), c.input_format);
 
   if (c.resolutions.empty()) {
     c.resolutions = c.nice_resolution_steps ? generate_resolutions_nice(base_resolution)
@@ -289,7 +289,7 @@ void Cli::transform_args_zoomify_subcommand() {
     c.compression_lvl = c.output_format == "hic" ? 9 : 6;
   }
 
-  c.tmp_dir /= (std::filesystem::path(c.path_to_output).filename().string() + ".tmp");
+  c.tmp_dir /= c.path_to_output.filename().string() + ".tmp";
 }
 
 }  // namespace hictk::tools

@@ -118,7 +118,12 @@ class File {
 
   File() = default;
   File(const File &other) = delete;
-  File(File &&other) noexcept(noexcept_move_ctor()) = default;  // NOLINT
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 7
+  File(File &&other) noexcept = default;
+#else
+  File(File &&other) = default;
+#endif
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
   explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
@@ -170,7 +175,13 @@ class File {
   ~File() noexcept;
 
   File &operator=(const File &other) = delete;
-  File &operator=(File &&other) noexcept(noexcept_move_assignment_op()) = default;  // NOLINT
+#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
+  File &operator=(File &&other) noexcept = default;
+#elif defined(__GNUC__) && __GNUC__ > 9
+  File &operator=(File &&other) noexcept = default;
+#else
+  File &operator=(File &&other) = default;
+#endif
 
   [[nodiscard]] explicit operator bool() const noexcept;
 
