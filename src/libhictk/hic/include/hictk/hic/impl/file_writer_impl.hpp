@@ -317,15 +317,17 @@ inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pi
 
 inline void HiCFileWriter::write_pixels() {
   SPDLOG_INFO(FMT_STRING("begin writing interaction blocks to file \"{}\"..."), path());
-  for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
-    const auto &chrom1 = chromosomes().at(chrom1_id);
-    for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
-      const auto &chrom2 = chromosomes().at(chrom2_id);
-      if (chrom2.is_all()) {
-        break;
-      }
-      write_pixels(chrom1, chrom2);
+  const auto &chrom_idx = _block_mappers.at(resolutions().front()).chromosome_index();
+  std::vector<std::pair<Chromosome, Chromosome>> chroms{chrom_idx.size()};
+  std::transform(chrom_idx.begin(), chrom_idx.end(), chroms.begin(),
+                 [](const auto &kv) { return kv.first; });
+  std::sort(chroms.begin(), chroms.end());
+
+  for (const auto &[chrom1, chrom2] : chroms) {
+    if (chrom1.is_all() || chrom2.is_all()) {
+      continue;
     }
+    write_pixels(chrom1, chrom2);
   }
   write_all_matrix();
 }
