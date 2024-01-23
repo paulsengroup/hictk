@@ -200,7 +200,7 @@ jobs:
                 --no-tests=error    \
                 --timeout 240       \
                 --exclude-regex 'Cooler: dataset large read\/write.*' \
-                --exclude-regex 'HiC: HiCFileWriter' |&
+                --exclude-regex 'HiC: HiCFileWriter.*' |&
           tail -n 1000
 
   windows-ci-status-check:
