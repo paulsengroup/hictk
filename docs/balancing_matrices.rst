@@ -47,4 +47,4 @@ It should be noted that when using a large number of threads (e.g. more than 16)
 
 When the ``--in-memory`` option is not used, ``hictk`` will create a temporary file under the default temporary folder. This file stores interactions using a layout and compression that are optimized for the access pattern used by ``hictk balance``. When balancing large matrices, this file can be quite large (sometimes tens of GBs). If this is the case, it may be appropriate to change the temporary folder using the ``--tmpdir`` option.
 
-Finally, when balancing .hic files, ``hictk`` depends on `JuicerTools <https://github.com/aidenlab/Juicebox/releases/latest>`_ or `HiCTools <https://github.com/aidenlab/HiCTools/releases/latest>`_ to write balancing weights back to the file. Thus, when balancing .hic files, the JAR file to one of the tools should be specified through the ``--juicer-tools-jar`` option. You should use JuicerTools when balancing .hic files in .hic v8 format or older and HiCTools when balancing .hic v9 files.
+Finally, when balancing .hic files, only .hic v9 files and newer are supported.
