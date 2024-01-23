@@ -240,12 +240,7 @@ void Cli::transform_args_convert_subcommand() {
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
-  if (c.tmp_dir.empty()) {
-    c.tmp_dir = c.path_to_output.parent_path();
-  }
-
-  c.tmp_dir /= c.path_to_output.filename();
-  c.tmp_dir.replace_extension(".tmp");
+  c.tmp_dir /= (std::filesystem::path(c.path_to_output).filename().string() + ".tmp");
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 12 : 6;

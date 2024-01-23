@@ -43,7 +43,7 @@ struct BalanceConfig {
 struct ConvertConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path path_to_output{};
-  std::filesystem::path tmp_dir{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
   std::string input_format{};
   std::string output_format{};
 
