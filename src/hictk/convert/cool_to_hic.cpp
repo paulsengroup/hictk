@@ -62,7 +62,7 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
 
     const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
     SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), clr.bin_size(), norm_name);
-    w.add_norm_vector(norm_name, "BP", clr.bin_size(), weights_f);
+    w.add_norm_vector(norm_name, "BP", clr.bin_size(), weights_f, true);
 
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
