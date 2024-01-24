@@ -138,7 +138,7 @@ class HiCFileWriter {
 
   BS::thread_pool _tpool{};
 
-  static constexpr std::uint32_t DEFAULT_CHROM_ALL_SCALE_FACTOR{1};
+  static constexpr std::uint32_t DEFAULT_CHROM_ALL_SCALE_FACTOR{1000};
 
  public:
   HiCFileWriter() = default;
@@ -204,7 +204,7 @@ class HiCFileWriter {
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
       -> HiCSectionOffsets;
-  void write_all_matrix(std::uint32_t target_resolution = 2'500'000);
+  void write_all_matrix(std::uint32_t target_num_bins = 500);
 
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
                                const Chromosome& chrom2, std::uint32_t resolution,
