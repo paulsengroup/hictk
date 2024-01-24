@@ -24,22 +24,22 @@ Single-resolution Cooler (.cool)
   **Constructors**
 
   .. cpp:function:: File(const File &other) = delete;
-  .. cpp:function:: File(File &&other) noexcept(noexcept_move_ctor()) = default;
+  .. cpp:function:: File(File &&other) noexcept = default;
 
-  .. cpp:function:: [[nodiscard]] explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
-  .. cpp:function:: [[nodiscard]] explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
+  .. cpp:function:: [[nodiscard]] explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
+  .. cpp:function:: [[nodiscard]] explicit File(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
 
   **Factory functions**
 
-  .. cpp:function:: [[nodiscard]] static File open_random_access(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
-  .. cpp:function:: [[nodiscard]] static File open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
-  .. cpp:function:: template <typename PixelT = DefaultPixelT> [[nodiscard]] static File create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size, Attributes attributes = Attributes::init<PixelT>(0), std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+  .. cpp:function:: [[nodiscard]] static File open_random_access(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
+  .. cpp:function:: [[nodiscard]] static File open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
+  .. cpp:function:: template <typename PixelT = DefaultPixelT> [[nodiscard]] static File create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size, Attributes attributes = Attributes::init<PixelT>(0), std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
+  .. cpp:function:: template <typename PixelT = DefaultPixelT> [[nodiscard]] static File create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size, bool overwrite_if_exists = false, Attributes attributes = Attributes::init<PixelT>(0), std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
   **Open/close methods**
 
-  .. cpp:function:: [[nodiscard]] static File open_random_access(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
-  .. cpp:function:: [[nodiscard]] static File open_read_once(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE, bool validate = true);
-  .. cpp:function:: template <typename PixelT = DefaultPixelT> [[nodiscard]] static File create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size, bool overwrite_if_exists = false, Attributes attributes = Attributes::init<PixelT>(0), std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4);
+  .. cpp:function:: [[nodiscard]] static File open_random_access(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
+  .. cpp:function:: [[nodiscard]] static File open_read_once(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4, bool validate = true);
 
   .. cpp:function:: void close();
 
@@ -48,7 +48,7 @@ Single-resolution Cooler (.cool)
   **Operators**
 
   .. cpp:function:: File &operator=(const File &other) = delete;
-  .. cpp:function:: File &operator=(File &&other) noexcept(noexcept_move_assigment_op()) = default;
+  .. cpp:function:: File &operator=(File &&other) noexcept = default;
 
   .. cpp:function:: [[nodiscard]] explicit operator bool() const noexcept;
 
