@@ -146,7 +146,9 @@ static void hic_file_writer_create_file_test(const std::string& path1, const std
     const auto expected_pixels1 = f3.fetch("chr3R").read_all<float>();
     const auto expected_pixels2 = f4.fetch("chr3R", "chr4").read_all<float>();
 
+    // NOLINTNEXTLINE(*-suspicious-call-argument)
     hic_file_writer_compare_pixels(correct_expected_pixels1, expected_pixels1);
+    // NOLINTNEXTLINE(*-suspicious-call-argument)
     hic_file_writer_compare_pixels(correct_expected_pixels2, expected_pixels2);
   }
 }
@@ -219,6 +221,7 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
     const auto correct_expected_pixels = f3.fetch(balancing::Method::SCALE()).read_all<float>();
     const auto expected_pixels = f4.fetch(balancing::Method::SCALE()).read_all<float>();
 
+    // NOLINTNEXTLINE(*-suspicious-call-argument)
     hic_file_writer_compare_pixels(correct_expected_pixels, expected_pixels);
   }
 }

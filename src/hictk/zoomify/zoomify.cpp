@@ -47,7 +47,7 @@ void zoomify_once_cooler(std::string_view uri1, std::string_view uri2, std::uint
   cooler::RootGroup entrypoint2{HighFive::File(std::string{uri2}, mode).getGroup("/")};
 
   return zoomify_once_cooler(clr1, std::move(entrypoint2), resolution, compression_lvl);
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
                          const std::vector<std::uint32_t>& resolutions, bool copy_base_resolution,
