@@ -71,7 +71,7 @@ void Cli::make_merge_subcommand() {
       "-l,--compression-lvl",
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
-      "Defaults to 6 and 9 for .cool and .hic files, respectively.")
+      "Defaults to 6 and 10 for .cool and .hic files, respectively.")
       ->check(CLI::Bound(1, 12));
 
   sc.add_option(
@@ -181,7 +181,7 @@ void Cli::transform_args_merge_subcommand() {
   c.output_format = c.output_file.empty() ? "text" : infer_output_format(c.output_file);
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 9 : 6;
+    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 
   c.tmp_dir /= c.output_file.filename().string() + ".tmp";

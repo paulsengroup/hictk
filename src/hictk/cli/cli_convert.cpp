@@ -111,7 +111,7 @@ void Cli::make_convert_subcommand() {
       "-l,--compression-lvl",
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
-      "Defaults to 6 and 9 for .cool and .hic files, respectively.")
+      "Defaults to 6 and 10 for .cool and .hic files, respectively.")
       ->check(CLI::Range(1, 12))
       ->capture_default_str();
   sc.add_flag(
@@ -243,7 +243,7 @@ void Cli::transform_args_convert_subcommand() {
   c.tmp_dir /= c.path_to_output.filename().string() + ".tmp";
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 9 : 6;
+    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 }
 

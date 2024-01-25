@@ -115,7 +115,7 @@ hictk convert
                                 When converting from hic to cool, only two threads will be used.
     -l,--compression-lvl UINT:INT in [1 - 12] [6]
                                 Compression level used to compress interactions.
-                                Defaults to 6 and 9 for .cool and .hic files, respectively.
+                                Defaults to 6 and 10 for .cool and .hic files, respectively.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
@@ -215,7 +215,7 @@ hictk load
                                 Number of pixels to buffer in memory.
     -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
-                                Defaults to 6 and 9 for .cool and .hic files, respectively.
+                                Defaults to 6 and 10 for .cool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 16] [1]
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only a single thread will be used.
@@ -244,7 +244,7 @@ hictk merge
                                 Number of pixels to store in memory before writing to disk.
     -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
-                                Defaults to 6 and 9 for .cool and .hic files, respectively.
+                                Defaults to 6 and 10 for .cool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 16] [1]
                                 Maximum number of parallel threads to spawn.
                                 When merging interactions in Cooler format, only a single thread will be used.
