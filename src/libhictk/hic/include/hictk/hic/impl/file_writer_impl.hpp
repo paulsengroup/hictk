@@ -388,21 +388,25 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
     const File f(std::string{path()}, base_resolution);
     auto sel = f.fetch();
     phmap::btree_map<std::uint64_t, MatrixInteractionBlock<float>> blocks{};
-    if (base_resolution == target_resolution) {
-      std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
-        const auto bid = mapper(p.bin1_id, p.bin2_id);
-        auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-        it->second.emplace_back(Pixel(*bin_table_ALL, p));
-      });
-    } else {
-      transformers::CoarsenPixels coarsener(sel.begin<float>(), sel.end<float>(),
-                                            _bin_tables.at(base_resolution), factor);
-      std::for_each(coarsener.begin(), coarsener.end(), [&](const ThinPixel<float> &p) {
-        const auto bid = mapper(p.bin1_id, p.bin2_id);
-        auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-        it->second.emplace_back(Pixel(*bin_table_ALL, p));
-      });
-    }
+
+    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
+      const Pixel<float> pixel(*_bin_tables.at(base_resolution), p);
+      // The result of this coarsening is not correct, as the last bin in a chromosome will
+      // have the same ID as the first bin in the next chromosome, but this is what JuiceBox
+      // expects.
+      // We subtract the chromosome ID as JuiceBox's chromosome grid expects pixels boundaries to be
+      // multiples of the bin size. This turns out to be correct as long as chromosome sizes are not
+      // multiples of the bin size (which should happen extremely rarely), in which case the result
+      // is off by one.
+      Pixel<float> coarsened_pixel(
+          *bin_table_ALL, (p.bin1_id - (pixel.coords.bin1.chrom().id() - 1)) / factor,
+          (p.bin2_id - (pixel.coords.bin2.chrom().id() - 1)) / factor, p.count);
+
+      const auto bid =
+          mapper(coarsened_pixel.coords.bin1.rel_id(), coarsened_pixel.coords.bin2.rel_id());
+      auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
+      it->second.emplace_back(std::move(coarsened_pixel));
+    });
 
     const auto offset = _data_block_section.end();
     _fs.seekp(offset);

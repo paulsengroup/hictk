@@ -192,7 +192,7 @@ inline Reference Reference::remove_ALL() const {
 inline Reference Reference::add_ALL(std::uint32_t scaling_factor) const {
   std::uint32_t all_size = 0;
   for (const auto& chrom : *this) {
-    all_size += (chrom.size() + scaling_factor - 1) / scaling_factor;
+    all_size += chrom.size() / scaling_factor;
   }
 
   std::vector<Chromosome> chroms{Chromosome{0, "All", all_size}};

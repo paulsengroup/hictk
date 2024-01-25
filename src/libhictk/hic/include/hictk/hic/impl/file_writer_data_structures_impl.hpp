@@ -136,12 +136,15 @@ inline double MatrixInteractionBlock<N>::sum() const noexcept {
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::emplace_back(hictk::Pixel<N> &&p) {
+inline void MatrixInteractionBlock<N>::emplace_back(hictk::Pixel<N> &&p,
+                                                    std::uint32_t bin_id_offset) {
   try {
     _sum += conditional_static_cast<double>(p.count);
 
-    const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id());
-    const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id());
+    assert(p.coords.bin1.rel_id() >= bin_id_offset);
+    assert(p.coords.bin2.rel_id() >= bin_id_offset);
+    const auto row = static_cast<std::int32_t>(p.coords.bin2.rel_id() - bin_id_offset);
+    const auto col = static_cast<std::int32_t>(p.coords.bin1.rel_id() - bin_id_offset);
 
     _min_col = std::min(col, _min_col);
     _max_col = std::max(col, _max_col);

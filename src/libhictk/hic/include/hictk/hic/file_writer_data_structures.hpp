@@ -95,7 +95,7 @@ struct MatrixInteractionBlock {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] double sum() const noexcept;
 
-  void emplace_back(hictk::Pixel<N>&& p);
+  void emplace_back(hictk::Pixel<N>&& p, std::uint32_t bin_id_offset = 0);
   void finalize();
 
   [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<RowID, Row>&;
