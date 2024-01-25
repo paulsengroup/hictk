@@ -518,19 +518,24 @@ inline HiCFooter HiCFileReader::read_footer(std::uint32_t chrom1_id, std::uint32
 
 inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  if (version() >= 9) {
+    return list_avail_normalizations_v9();
+  }
+
   phmap::flat_hash_set<balancing::Method> methods{};
   _fs->seekg(masterOffset());
   [[maybe_unused]] const auto offset = read_footer_file_offset("1_1");
   assert(offset != -1);
 
-  std::ignore = read_footer_expected_values(1, 1, matrix_type, balancing::Method::NONE(),
-                                            wanted_unit, wanted_resolution);
+  const auto chrom_id = _header->chromosomes.longest_chromosome().id();
+  std::ignore = read_footer_expected_values(
+      chrom_id, chrom_id, matrix_type, balancing::Method::NONE(), wanted_unit, wanted_resolution);
   if (_fs->tellg() == _fs->size()) {
     return {};
   }
 
-  std::ignore = read_footer_expected_values_norm(1, 1, matrix_type, balancing::Method::NONE(),
-                                                 wanted_unit, wanted_resolution);
+  std::ignore = read_footer_expected_values_norm(
+      chrom_id, chrom_id, matrix_type, balancing::Method::NONE(), wanted_unit, wanted_resolution);
   if (_fs->tellg() == _fs->size()) {
     return {};
   }
@@ -543,11 +548,31 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     [[maybe_unused]] const auto foundUnit = readMatrixUnit();
     [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
     [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
-    if (version() > 8) {
-      [[maybe_unused]] const auto nBytes = _fs->read<std::int64_t>();
-    } else {
-      [[maybe_unused]] const auto nBytes = _fs->read<std::int32_t>();
-    }
+    [[maybe_unused]] const auto nBytes = _fs->read<std::int32_t>();
+  }
+
+  std::vector<balancing::Method> methods_{methods.size()};
+  std::copy(methods.begin(), methods.end(), methods_.begin());
+  std::sort(methods_.begin(), methods_.end(),
+            [&](const auto &m1, const auto &m2) { return m1.to_string() < m2.to_string(); });
+  return methods_;
+}
+
+inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9() {
+  if (_header->normVectorIndexPosition <= 0) {
+    return {};
+  }
+  phmap::flat_hash_set<balancing::Method> methods{};
+  _fs->seekg(_header->normVectorIndexPosition);
+  const auto nNormVectors = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nNormVectors; i++) {
+    const auto foundNorm = readNormalizationMethod();
+    methods.emplace(foundNorm);
+    [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
+    [[maybe_unused]] const auto foundUnit = readMatrixUnit();
+    [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
+    [[maybe_unused]] const auto nBytes = _fs->read<std::int64_t>();
   }
 
   std::vector<balancing::Method> methods_{methods.size()};

@@ -64,6 +64,7 @@ class HiCFileReader {
 
   [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations(
       MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+  [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations_v9();
 
   [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
   [[nodiscard]] static balancing::Method readNormalizationMethod(filestream::FileStream &fs,
