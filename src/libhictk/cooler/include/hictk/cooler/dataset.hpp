@@ -73,8 +73,8 @@ class Dataset {
   template <typename T>
   using const_iterator = iterator<T>;
 
-  [[nodiscard]] static HighFive::DataSetCreateProps init_create_props(
-      std::uint_fast8_t compression_lvl, std::size_t chunk_size);
+  [[nodiscard]] static HighFive::DataSetCreateProps init_create_props(std::uint32_t compression_lvl,
+                                                                      std::size_t chunk_size);
   [[nodiscard]] static HighFive::DataSetAccessProps init_access_props(std::size_t chunk_size,
                                                                       std::size_t cache_size,
                                                                       double w0);

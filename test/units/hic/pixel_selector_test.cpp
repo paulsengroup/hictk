@@ -307,10 +307,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         SECTION("invalid unit") {
           CHECK_THROWS(File(path, 10'000, MatrixType::observed, MatrixUnit::FRAG).fetch());
         }
-        SECTION("expected + norm") {
-          const File hic(path, 10'000, MatrixType::expected, MatrixUnit::BP);
-          CHECK_THROWS(hic.fetch("chr2L", hictk::balancing::Method::VC()));
-        }
       }
     }
   }

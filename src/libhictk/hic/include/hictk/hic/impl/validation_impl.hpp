@@ -13,7 +13,7 @@
 
 namespace hictk::hic::utils {
 inline bool is_hic_file(const std::filesystem::path& path) {
-  return internal::HiCFileReader::checkMagicString(path.string());
+  return hictk::hic::internal::HiCFileReader::checkMagicString(path.string());
 }
 
 }  // namespace hictk::hic::utils

@@ -2,9 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(bshoshany-thread-pool REQUIRED)
+find_package(concurrentqueue REQUIRED)
 find_package(FMT REQUIRED)
 find_package(libdeflate REQUIRED)
 find_package(phmap REQUIRED)
+find_package(readerwriterqueue REQUIRED)
+find_package(zstd REQUIRED)
 
 if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET REQUIRED)
@@ -27,12 +31,17 @@ target_link_libraries(
   INTERFACE hictk::balancing
             hictk::common
             hictk::chromosome
-            hictk::reference)
+            hictk::reference
+            hictk::transformers)
 
 target_link_system_libraries(
   hic
   INTERFACE
+  bshoshany-thread-pool::bshoshany-thread-pool
+  concurrentqueue::concurrentqueue
   "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   fmt::fmt-header-only
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-  phmap)
+  phmap
+  readerwriterqueue::readerwriterqueue
+  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")

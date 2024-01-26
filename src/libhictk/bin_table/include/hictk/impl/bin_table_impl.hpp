@@ -184,7 +184,7 @@ inline bool BinTable::operator==(const BinTable &other) const {
       _table);
 }
 
-inline bool BinTable::operator!=(const BinTable &other) const { return !(*this == other); };
+inline bool BinTable::operator!=(const BinTable &other) const { return !(*this == other); }
 
 template <typename BinTableT>
 constexpr const BinTableT &BinTable::get() const {

@@ -89,7 +89,8 @@ inline void validate_chromosomes(const std::vector<LightCooler<N>>& coolers) {
 
 template <typename N, typename Str>
 inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool overwrite_if_exists,
-                  std::size_t chunk_size, std::size_t update_frequency) {
+                  std::size_t chunk_size, std::size_t update_frequency,
+                  std::uint32_t compression_lvl) {
   static_assert(std::is_constructible_v<std::string, decltype(*first_uri)>);
   assert(chunk_size != 0);
   try {
@@ -116,7 +117,7 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
     }
 
     merge(heads, tails, cooler::File(clrs.front().uri).bins(), dest_uri, overwrite_if_exists,
-          chunk_size, update_frequency);
+          chunk_size, update_frequency, compression_lvl);
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
                                          std::distance(first_uri, last_uri), e.what()));
@@ -126,14 +127,17 @@ inline void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool o
 template <typename PixelIt>
 inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
                   const BinTable& bins, std::string_view dest_uri, bool overwrite_if_exists,
-                  std::size_t chunk_size, std::size_t update_frequency) {
+                  std::size_t chunk_size, std::size_t update_frequency,
+                  std::uint32_t compression_lvl) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
   hictk::transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
-  auto dest = File::create<N>(dest_uri, bins, overwrite_if_exists);
+  auto dest =
+      File::create<N>(dest_uri, bins, overwrite_if_exists, Attributes::init(bins.bin_size()),
+                      DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 
   std::size_t pixels_processed{};
   auto t0 = std::chrono::steady_clock::now();

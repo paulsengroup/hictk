@@ -4,8 +4,8 @@
 
 # cmake-format: off
 file(
-  DOWNLOAD https://zenodo.org/records/10289491/files/hictk_test_data.tar.xz?download=1
-  EXPECTED_HASH SHA256=5e69dceb8789d923a38aed7add8fc18abfdfe531aea6effcdb7efe3c9bcf5246
+  DOWNLOAD https://zenodo.org/records/10552012/files/hictk_test_data.tar.xz?download=1
+  EXPECTED_HASH SHA256=f49c9fdd6e27f3d318cc0544510d89ed57ddd4d56b71ad32bb499895e94f396b
   "${PROJECT_SOURCE_DIR}/test/data/hictk_test_data.tar.xz")
 # cmake-format: on
 

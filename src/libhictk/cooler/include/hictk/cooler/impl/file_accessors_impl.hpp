@@ -61,7 +61,7 @@ inline auto File::attributes() const noexcept -> const Attributes & { return _at
 
 inline HighFive::File File::file_handle() { return _root_group().getFile(); }
 
-inline const HighFive::File& File::file_handle() const { return _root_group().getFile(); }
+inline const HighFive::File &File::file_handle() const { return _root_group().getFile(); }
 
 inline auto File::group(std::string_view group_name) -> Group & {
   try {

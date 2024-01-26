@@ -221,7 +221,7 @@ inline std::string File::uri() const {
       [&](auto& fp) {
         using T = std::decay_t<decltype(fp)>;
         if constexpr (std::is_same_v<hic::File, T>) {
-          return fp.url();
+          return fp.path();
         } else {
           return fp.uri();
         }
@@ -234,7 +234,7 @@ inline std::string File::path() const {
       [&](auto& fp) {
         using T = std::decay_t<decltype(fp)>;
         if constexpr (std::is_same_v<hic::File, T>) {
-          return fp.url();
+          return fp.path();
         } else {
           return fp.path();
         }

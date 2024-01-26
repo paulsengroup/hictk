@@ -15,33 +15,32 @@
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/hic/common.hpp"
+#include "tmpdir.hpp"
 
 using namespace hictk::hic;
 
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+namespace hictk::hic::test::file_reader {
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
+const auto pathV8 = (datadir / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
+const auto pathV9 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
-  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                      50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{
+      1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
   const auto header = internal::HiCFileReader(pathV8).header();
   CHECK(header.url == pathV8);
-  CHECK(header.masterIndexOffset == 131515430);
+  CHECK(header.footerPosition == 131515430);
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 8);
-  CHECK(header.nviPosition == -1);
-  CHECK(header.nviLength == -1);
+  CHECK(header.normVectorIndexPosition == -1);
+  CHECK(header.normVectorIndexLength == -1);
 
   REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
@@ -51,20 +50,20 @@ TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
-  constexpr std::array<std::uint32_t, 10> resolutions{2500000, 1000000, 500000, 250000, 100000,
-                                                      50000,   25000,   10000,  5000,   1000};
+  constexpr std::array<std::uint32_t, 10> resolutions{
+      1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
   constexpr auto* genomeID = "dm6";
   constexpr auto nChromosomes = 9;
 
   const auto header = internal::HiCFileReader(pathV9).header();
 
   CHECK(header.url == pathV9);
-  CHECK(header.masterIndexOffset == 130706734);
+  CHECK(header.footerPosition == 130706734);
   CHECK(header.genomeID == genomeID);
   CHECK(header.chromosomes.size() == nChromosomes);
   CHECK(header.version == 9);
-  CHECK(header.nviPosition == 131417220);
-  CHECK(header.nviLength == 6600);
+  CHECK(header.normVectorIndexPosition == 131417220);
+  CHECK(header.normVectorIndexLength == 6600);
 
   REQUIRE(header.resolutions.size() == resolutions.size());
   for (std::size_t i = 0; i < resolutions.size(); ++i) {
@@ -305,3 +304,5 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     }
   }
 }
+
+}  // namespace hictk::hic::test::file_reader

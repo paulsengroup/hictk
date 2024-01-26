@@ -16,6 +16,7 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/file.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -99,7 +100,14 @@ void Cli::make_balance_subcommand() {
   sc.add_option(
       "--name",
       c.name,
-      "Name to use when writing weights to file.")
+      "Name to use when writing weights to file.\n"
+      "Defaults to ICE, INTER_ICE and GW_ICE when --mode is cis, trans and gw, respectively.")
+      ->capture_default_str();
+  sc.add_flag(
+      "--create-weight-link" ,
+      c.symlink_to_weight,
+      "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
+      "Ignored when balancing .hic files")
       ->capture_default_str();
   sc.add_flag(
       "--in-memory",
@@ -130,23 +138,11 @@ void Cli::make_balance_subcommand() {
       ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
-      "-l,--compression-level",
+      "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
       ->check(CLI::Range(0, 19))
       ->capture_default_str();
-  sc.add_option(
-      "--juicer-tools-jar",
-      c.juicer_tools_jar,
-      "Path to juicer_tools or hic_tools JAR.")
-      ->check(CLI::ExistingFile);
-  sc.add_option(
-      "--juicer-tools-memory",
-      c.juicer_tools_xmx,
-      "Max heap size used by juicer_tools.")
-      ->default_str(fmt::format(FMT_STRING("{:.0f}MB"), double(c.juicer_tools_xmx) / 1.0e6))
-      ->check(CLI::PositiveNumber)
-      ->transform(CLI::AsSizeValue(true));
   sc.add_flag(
       "-f,--force",
       c.force,
@@ -158,14 +154,16 @@ void Cli::make_balance_subcommand() {
 }
 
 void Cli::validate_balance_subcommand() const {
-  const auto& c = std::get<BalanceConfig>(_config);
+  [[maybe_unused]] const auto& c = std::get<BalanceConfig>(_config);
   std::vector<std::string> errors;
 
-  const auto juicer_tools_jar_parsed =
-      !_cli.get_subcommand("balance")->get_option("--juicer-tools-jar")->empty();
-  if (hic::utils::is_hic_file(c.path_to_input) && !c.stdout_ && !juicer_tools_jar_parsed) {
-    errors.emplace_back(
-        "option --juicer-tools-jar is required when balancing files in .hic format.");
+  const auto input_format = infer_input_format(c.path_to_input);
+  if (input_format == "hic") {
+    const auto avail_resolutions = hic::utils::list_resolutions(c.path_to_input);
+    const hic::File f(c.path_to_input.string(), avail_resolutions.back());
+    if (f.version() < 9) {
+      errors.emplace_back("balancing .hic files v8 and older is not currently supported.");
+    }
   }
 
   if (!errors.empty()) {
@@ -178,6 +176,25 @@ void Cli::validate_balance_subcommand() const {
 
 void Cli::transform_args_balance_subcommand() {
   auto& c = std::get<BalanceConfig>(_config);
+
+  if (c.name.empty()) {
+    if (c.mode == "cis") {
+      c.name = "ICE";
+    } else if (c.mode == "trans") {
+      c.name = "INTER_ICE";
+    } else {
+      assert(c.mode == "gw");
+      c.name = "GW_ICE";
+    }
+  }
+
+  const auto input_format = infer_input_format(c.path_to_input);
+  auto input_path = c.path_to_input;
+  if (input_format == "cool") {
+    input_path = cooler::File(c.path_to_input.string()).path();
+  }
+
+  c.tmp_dir /= input_path.filename().string() + ".tmp";
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

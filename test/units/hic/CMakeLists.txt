@@ -13,8 +13,11 @@ target_sources(
   hictk_hic_tests
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/filestream_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/file_reader_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/file_writer_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/file_zoomify_test.cpp"
           "${CMAKE_CURRENT_SOURCE_DIR}/hic_file_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp")
+          "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_test.cpp"
+          "${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp")
 
 target_link_libraries(
   hictk_hic_tests

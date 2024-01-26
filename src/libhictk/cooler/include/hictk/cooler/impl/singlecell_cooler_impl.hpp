@@ -148,7 +148,9 @@ inline File SingleCellFile::open(std::string_view cell) const {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename N>
-inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs) {
+inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs,
+                                        std::size_t cache_size_bytes,
+                                        std::uint32_t compression_lvl) {
   if (_cells.contains(cell)) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("failed to create cell \"{}\" in file {}: cell already exists"), cell, path()));
@@ -179,9 +181,9 @@ inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs)
       File::create_groups(entrypoint, Group{*_root_grp, _root_grp->group.getGroup("/chroms")},
                           Group{*_root_grp, _root_grp->group.getGroup("/bins")});
 
-  create_cell_datasets<N>(entrypoint, DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0);
+  create_cell_datasets<N>(entrypoint, cache_size_bytes, compression_lvl, DEFAULT_HDF5_CACHE_W0);
 
-  return {entrypoint, N{}, std::move(attrs), DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0};
+  return {entrypoint, N{}, std::move(attrs), cache_size_bytes, DEFAULT_HDF5_CACHE_W0};
 }
 
 inline SingleCellFile::operator bool() const noexcept { return !!_root_grp; }
@@ -201,7 +203,8 @@ inline const HighFive::File& SingleCellFile::file_handle() const {
 
 template <typename N>
 inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_exists,
-                                      std::size_t chunk_size, std::size_t update_frequency) const {
+                                      std::uint32_t compression_lvl, std::size_t chunk_size,
+                                      std::size_t update_frequency) const {
   if (_cells.size() == 1) {
     utils::copy(open(*_cells.begin()).uri(), uri);
     return File(uri);
@@ -219,7 +222,8 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
       tails.emplace_back(std::move(last));
     }
   });
-  utils::merge(heads, tails, bins(), uri, overwrite_if_exists, chunk_size, update_frequency);
+  utils::merge(heads, tails, bins(), uri, overwrite_if_exists, chunk_size, update_frequency,
+               compression_lvl);
 
   return File(uri);
 }
@@ -341,7 +345,7 @@ inline void SingleCellFile::create_datasets(RootGroup& root_grp, const BinTable&
 
 template <typename PixelT>
 inline void SingleCellFile::create_cell_datasets(RootGroup& root_grp, std::size_t cache_size_bytes,
-                                                 double w0) {
+                                                 std::uint32_t compression_lvl, double w0) {
   const std::size_t num_pixel_datasets = 3;
   const std::size_t num_read_once_dataset = MANDATORY_DATASET_NAMES.size() - num_pixel_datasets;
 
@@ -354,16 +358,18 @@ inline void SingleCellFile::create_cell_datasets(RootGroup& root_grp, std::size_
   const auto pixels_aprop = Dataset::init_access_props(
       DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
-  auto create_dataset = [&](const auto& path, const auto& type, auto aprop) {
-    Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop};
+  const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
+
+  auto create_dataset = [&](const auto& path, const auto& type, auto aprop, auto cprop) {
+    Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop, cprop};
   };
 
-  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/count", PixelT{}, pixels_aprop);
+  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/count", PixelT{}, pixels_aprop, default_cprop);
 
-  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop);
-  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop);
+  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop, default_cprop);
+  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop, default_cprop);
 }
 
 }  // namespace hictk::cooler

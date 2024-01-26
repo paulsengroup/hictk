@@ -136,7 +136,7 @@ template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
                                 It last_weight, bool overwrite_if_exists, bool divisive) {
   File(open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, true), uri),
-       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0, true)
+       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE * 4, DEFAULT_HDF5_CACHE_W0, true)
       .write_weights(name, first_weight, last_weight, overwrite_if_exists, divisive);
 }
 
@@ -222,7 +222,8 @@ inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bin
 
 template <typename PixelT>
 inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
-                                  std::size_t cache_size_bytes, double w0) -> DatasetMap {
+                                  std::size_t cache_size_bytes, std::uint32_t compression_lvl,
+                                  double w0) -> DatasetMap {
   DatasetMap datasets(MANDATORY_DATASET_NAMES.size() + 1);
 
   const std::size_t num_pixel_datasets = 3;
@@ -237,30 +238,33 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
   const auto pixels_aprop = Dataset::init_access_props(
       DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
-  auto create_dataset = [&](const auto &path, const auto &type, auto aprop) {
+  const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
+
+  auto create_dataset = [&](const auto &path, const auto &type, auto aprop, auto cprop) {
     using T = remove_cvref_t<decltype(type)>;
     if constexpr (is_string_v<T>) {
       const auto &chrom_with_longest_name = chroms.chromosome_with_longest_name();
       datasets.emplace(path, Dataset{root_grp, path, chrom_with_longest_name.name(),
-                                     HighFive::DataSpace::UNLIMITED, aprop});
+                                     HighFive::DataSpace::UNLIMITED, aprop, cprop});
     } else {
-      datasets.emplace(path, Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop});
+      datasets.emplace(path,
+                       Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop, cprop});
     }
   };
 
-  create_dataset("chroms/name", std::string{}, default_aprop);
-  create_dataset("chroms/length", std::int32_t{}, default_aprop);
+  create_dataset("chroms/name", std::string{}, default_aprop, default_cprop);
+  create_dataset("chroms/length", std::int32_t{}, default_aprop, default_cprop);
 
-  create_dataset("bins/chrom", std::int32_t{}, default_aprop);
-  create_dataset("bins/start", std::int32_t{}, default_aprop);
-  create_dataset("bins/end", std::int32_t{}, default_aprop);
+  create_dataset("bins/chrom", std::int32_t{}, default_aprop, default_cprop);
+  create_dataset("bins/start", std::int32_t{}, default_aprop, default_cprop);
+  create_dataset("bins/end", std::int32_t{}, default_aprop, default_cprop);
 
-  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/count", PixelT{}, pixels_aprop);
+  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/count", PixelT{}, pixels_aprop, default_cprop);
 
-  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop);
-  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop);
+  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop, default_cprop);
+  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop, default_cprop);
 
   assert(datasets.size() == MANDATORY_DATASET_NAMES.size());
 

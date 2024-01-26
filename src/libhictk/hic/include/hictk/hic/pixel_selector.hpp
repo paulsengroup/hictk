@@ -194,6 +194,8 @@ class PixelSelectorAll {
   PixelSelectorAll() = default;
   explicit PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept;
 
+  [[nodiscard]] bool empty() const noexcept;
+
   template <typename N>
   [[nodiscard]] auto begin(bool sorted = true) const -> iterator<N>;
   template <typename N>

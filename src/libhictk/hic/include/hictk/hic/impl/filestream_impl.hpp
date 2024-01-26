@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iosfwd>
@@ -22,31 +23,57 @@
 
 namespace hictk::hic::internal::filestream {
 
-inline FileStream::FileStream(std::string path)
-    : path_(std::move(path)),
-      handle_(open_file(path_, std::ios::binary | std::ios::ate)),
-      file_size_(static_cast<std::size_t>(handle_.tellg())) {
-  handle_.seekg(std::ios::beg);
+inline FileStream::FileStream(std::string path, std::ios::openmode mode)
+    : _path(std::move(path)),
+      _ifs(open_file_read(_path, std::ios::in | std::ios::binary | std::ios::ate)),
+      _ofs(mode & std::ios::out
+               ? open_file_write(_path, std::ios::in | std::ios::out | std::ios::binary)
+               : std::ofstream{}),
+      _file_size(static_cast<std::size_t>(_ifs.tellg())) {
+  _ifs.seekg(0, std::ios::beg);
 }
 
-inline const std::string &FileStream::path() const noexcept { return path_; }
-inline const std::string &FileStream::url() const noexcept { return path(); }
+inline FileStream FileStream::create(std::string path) {
+  if (std::filesystem::exists(path)) {
+    throw std::runtime_error("file\"" + path + "\" already exists");
+  }
+  FileStream fs{};
+  fs._path = std::move(path);
+  fs._ofs = open_file_write(fs._path, std::ios::trunc | std::ios::binary);
+  fs._ifs = open_file_read(fs._path, std::ios::binary);
 
-inline std::size_t FileStream::size() const { return file_size_; }
+  return fs;
+}
+
+inline const std::string &FileStream::path() const noexcept { return _path; }
+
+inline std::size_t FileStream::size() const { return _file_size; }
 
 inline void FileStream::seekg(std::streamoff offset, std::ios::seekdir way) {
-  const auto new_pos = this->new_pos(offset, way);
+  const auto new_pos = new_posg(offset, way);
   if (new_pos < 0 || new_pos >= std::int64_t(size() + 1)) {
     throw std::runtime_error("caught an attempt of out-of-bound read");
   }
-  handle_.seekg(new_pos, std::ios::beg);
+  _ifs.seekg(new_pos, std::ios::beg);
 }
 
 inline std::size_t FileStream::tellg() const noexcept {
-  return static_cast<std::size_t>(handle_.tellg());
+  assert(_ifs.tellg() >= 0);
+  return static_cast<std::size_t>(_ifs.tellg());
 }
 
-inline bool FileStream::eof() const noexcept { return handle_.eof(); }
+inline void FileStream::seekp(std::streamoff offset, std::ios::seekdir way) {
+  _ofs.seekp(new_posp(offset, way), std::ios::beg);
+}
+
+inline std::size_t FileStream::tellp() const noexcept {
+  assert(_ofs.tellp() >= 0);
+  return static_cast<std::size_t>(_ofs.tellp());
+}
+
+inline bool FileStream::eof() const noexcept { return _ifs.eof(); }
+
+inline void FileStream::flush() { _ofs.flush(); }
 
 inline void FileStream::read(std::string &buffer, std::size_t count) {
   buffer.resize(count);
@@ -56,37 +83,46 @@ inline void FileStream::read(std::string &buffer, std::size_t count) {
 }
 
 inline void FileStream::read(char *buffer, std::size_t count) {
-  handle_.read(buffer, std::int64_t(count));
+  _ifs.read(buffer, std::int64_t(count));
 }
 
-inline void FileStream::append(std::string &buffer, std::size_t count) {
+inline void FileStream::read_append(std::string &buffer, std::size_t count) {
   if (count == 0) {
     return;
   }
   const auto buff_size = buffer.size();
   buffer.resize(buffer.size() + count);
 
-  handle_.read(&(*buffer.begin()) + buff_size, std::int64_t(count));
+  _ifs.read(&(*buffer.begin()) + buff_size, std::int64_t(count));
 }
 
 inline bool FileStream::getline(std::string &buffer, char delim) {
   buffer.clear();
   if (eof()) {
-    handle_.setstate(std::ios::badbit);
+    _ifs.setstate(std::ios::badbit);
   }
   try {
-    return !!std::getline(handle_, buffer, delim);
+    return !!std::getline(_ifs, buffer, delim);
   } catch (const std::exception &) {
-    if (handle_.eof() && !handle_.bad()) {
-      return !!handle_;
+    if (_ifs.eof() && !_ifs.bad()) {
+      return !!_ifs;
     }
     throw;
   }
 }
 
+inline void FileStream::write(std::string_view buffer) {
+  return write(buffer.data(), buffer.size());
+}
+
+inline void FileStream::write(const char *buffer, std::size_t count) {
+  _ofs.write(buffer, std::int64_t(count));
+  _file_size = std::max(static_cast<std::size_t>(_ofs.tellp()), _file_size);
+}
+
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline void FileStream::read(T &buffer) {
-  static_assert(sizeof(char) == 1, "");
+  static_assert(sizeof(char) == 1);
   return read(reinterpret_cast<char *>(&buffer), sizeof(T));
 }
 
@@ -95,6 +131,12 @@ inline T FileStream::read() {
   T buffer{};
   read(buffer);
   return buffer;
+}
+
+template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+inline void FileStream::write(T buffer) {
+  static_assert(sizeof(char) == 1);
+  return write(reinterpret_cast<const char *>(&buffer), sizeof(T));
 }
 
 template <typename Tin, typename Tout,
@@ -117,8 +159,14 @@ inline double FileStream::read_as_double() {
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline void FileStream::read(std::vector<T> &buffer) {
-  static_assert(sizeof(char) == 1, "");
+  static_assert(sizeof(char) == 1);
   return read(reinterpret_cast<char *>(&(*buffer.begin())), buffer.size() * sizeof(T));
+}
+
+template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+inline void FileStream::write(const std::vector<T> &buffer) {
+  static_assert(sizeof(char) == 1);
+  return write(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(T));
 }
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
@@ -135,24 +183,53 @@ inline std::string FileStream::getline(char delim) {
   return buffer;
 }
 
-inline std::streampos FileStream::new_pos(std::streamoff offset, std::ios::seekdir way) {
+inline std::streampos FileStream::new_posg(std::streamoff offset, std::ios::seekdir way) {
   switch (way) {
     case std::ios::beg:
       return static_cast<std::streampos>(offset);
     case std::ios::cur:
       return std::int64_t(tellg()) + offset;
     case std::ios::end:
-      return std::int64_t(file_size_) + offset;
+      return std::int64_t(_file_size) + offset;
     default:
       HICTK_UNREACHABLE_CODE;
   }
 }
 
-inline std::ifstream FileStream::open_file(const std::string &path, std::ifstream::openmode mode) {
-  std::ifstream ifs;
-  ifs.exceptions(ifs.exceptions() | std::ios::failbit | std::ios::badbit);
-  ifs.open(path, mode);
-  return ifs;
+inline std::streampos FileStream::new_posp(std::streamoff offset, std::ios::seekdir way) {
+  switch (way) {
+    case std::ios::beg:
+      return static_cast<std::streampos>(offset);
+    case std::ios::cur:
+      return std::int64_t(tellp()) + offset;
+    case std::ios::end:
+      return std::int64_t(_file_size) + offset;
+    default:
+      HICTK_UNREACHABLE_CODE;
+  }
+}
+
+inline void FileStream::update_file_size() {
+  const auto offset = _ifs.tellg();
+  _ifs.seekg(0, std::ios::end);
+  _file_size = std::max(static_cast<std::size_t>(_ifs.tellg()), _file_size);
+  _ifs.seekg(offset, std::ios::beg);
+}
+
+inline std::ifstream FileStream::open_file_read(const std::string &path,
+                                                std::ifstream::openmode mode) {
+  std::ifstream fs;
+  fs.exceptions(fs.exceptions() | std::ios::failbit | std::ios::badbit);
+  fs.open(path, mode);
+  return fs;
+}
+
+inline std::ofstream FileStream::open_file_write(const std::string &path,
+                                                 std::ofstream::openmode mode) {
+  std::ofstream fs;
+  fs.exceptions(fs.exceptions() | std::ios::failbit | std::ios::badbit);
+  fs.open(path, mode);
+  return fs;
 }
 
 }  // namespace hictk::hic::internal::filestream

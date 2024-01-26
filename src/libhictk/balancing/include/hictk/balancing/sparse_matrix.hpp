@@ -20,18 +20,7 @@
 #include <vector>
 
 #include "hictk/common.hpp"
-
-namespace std {
-template <>
-struct default_delete<ZSTD_CCtx_s> {
-  void operator()(ZSTD_CCtx_s* ctx) const { ZSTD_freeCCtx(ctx); }  // NOLINT
-};
-
-template <>
-struct default_delete<ZSTD_DCtx_s> {
-  void operator()(ZSTD_DCtx_s* ctx) const { ZSTD_freeDCtx(ctx); }  // NOLINT
-};
-}  // namespace std
+#include "hictk/default_delete.hpp"
 
 namespace hictk::balancing {
 
@@ -136,8 +125,13 @@ class SparseMatrixChunked {
   ~SparseMatrixChunked() noexcept;
 
   SparseMatrixChunked& operator=(const SparseMatrixChunked& other) = delete;
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept(
-      noexcept_move_assignment_op()) = default;
+#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+#elif defined(__GNUC__) && __GNUC__ > 9
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+#else
+  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) = default;
+#endif
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

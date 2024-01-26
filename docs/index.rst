@@ -77,8 +77,8 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
    file_validation
    format_conversion
    reading_interactions
-   creating_coolers
-   creating_multires_coolers
+   creating_cool_and_hic_files
+   creating_multires_files
    balancing_matrices
 
 

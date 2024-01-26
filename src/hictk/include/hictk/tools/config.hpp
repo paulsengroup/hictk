@@ -19,7 +19,6 @@ namespace hictk::tools {
 struct BalanceConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
-  std::filesystem::path juicer_tools_jar{};
 
   std::string mode{"gw"};
   std::size_t masked_diags{2};
@@ -29,13 +28,13 @@ struct BalanceConfig {
   double tolerance{1.0e-5};
   std::size_t max_iters{500};
   bool rescale_marginals{true};
-  std::string name{"weight"};
+  std::string name{};
   bool in_memory{false};
+  bool symlink_to_weight{true};
   bool stdout_{false};
   std::uint8_t zstd_compression_lvl{3};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
-  std::size_t juicer_tools_xmx{256'000'000};
 
   std::uint8_t verbosity{4};
   bool force{false};
@@ -44,8 +43,7 @@ struct BalanceConfig {
 struct ConvertConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path path_to_output{};
-  std::filesystem::path tmp_dir{};
-  std::filesystem::path juicer_tools_jar{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
   std::string input_format{};
   std::string output_format{};
 
@@ -55,10 +53,10 @@ struct ConvertConfig {
   std::vector<balancing::Method> normalization_methods{};
   bool fail_if_normalization_method_is_not_avaliable{false};
 
-  std::uint8_t gzip_compression_lvl{6};
+  std::uint32_t compression_lvl{6};
   std::size_t threads{2};
+  std::size_t chunk_size{10'000'000};
 
-  std::size_t juicer_tools_xmx{32'000'000'000};
   std::uint8_t verbosity{4};
   bool force{false};
 };
@@ -105,10 +103,11 @@ struct FixMcoolConfig {
 };
 
 struct LoadConfig {
-  std::string uri{};
+  std::string output_path{};
 
   std::filesystem::path path_to_chrom_sizes{};
   std::filesystem::path path_to_bin_table{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
   std::uint32_t bin_size{};
 
   std::string format{};
@@ -120,16 +119,26 @@ struct LoadConfig {
   bool force{false};
   bool validate_pixels{true};
 
+  std::string output_format{};
+
+  std::size_t threads{1};
+  std::uint32_t compression_lvl{9};
+
   std::uint8_t verbosity{4};
-  std::size_t batch_size{20'000'000};
+  std::size_t batch_size{10'000'000};
 };
 
 struct MergeConfig {
-  std::vector<std::string> input_uris{};
-  std::filesystem::path output_uri{};
-  std::filesystem::path tmp_dir{};
+  std::vector<std::string> input_files{};
+  std::filesystem::path output_file{};
+  std::string output_format{};
+  std::uint32_t resolution{};
 
-  std::size_t chunk_size{5'000'000};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+
+  std::size_t chunk_size{10'000'000};
+  std::uint32_t compression_lvl{9};
+  std::size_t threads{1};
 
   bool force{false};
   std::uint8_t verbosity{4};
@@ -151,12 +160,19 @@ struct ValidateConfig {
 };
 
 struct ZoomifyConfig {
-  std::string input_uri{};
-  std::string output_path{};
+  std::filesystem::path path_to_input{};
+  std::filesystem::path path_to_output{};
+  std::string input_format{};
+  std::string output_format{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
 
   std::vector<std::uint32_t> resolutions{};
   bool copy_base_resolution{true};
   bool nice_resolution_steps{true};
+
+  std::uint32_t compression_lvl{6};
+  std::uint32_t threads{1};
+  std::size_t batch_size{10'000'000};
 
   bool force{false};
   std::uint8_t verbosity{4};

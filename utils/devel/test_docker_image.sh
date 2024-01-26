@@ -33,13 +33,10 @@ tar -xf test/data/hictk_test_data.tar.xz
 tmpdir="$(mktemp -d)"
 trap "rm -rf '$tmpdir'" EXIT
 
-hic_tools_url='https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar'
-curl -L "$hic_tools_url" -o "$tmpdir/hic_tools.jar"
-
 whereis -b hictk
 
 test/scripts/hictk_convert_hic2cool.sh "$(which hictk)"
-test/scripts/hictk_convert_cool2hic.sh "$(which hictk)" "$tmpdir/hic_tools.jar"
+test/scripts/hictk_convert_cool2hic.sh "$(which hictk)"
 
 EOM
 

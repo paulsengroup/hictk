@@ -34,15 +34,15 @@ TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
 TEST_CASE("HiC: file accessors", "[hic][short]") {
   File f(pathV8, 1'000);
 
-  CHECK(f.url() == pathV8);
+  CHECK(f.path() == pathV8);
   CHECK(f.name() == pathV8);
   CHECK(f.version() == 8);
   CHECK(f.chromosomes().size() == 9);
   CHECK(f.assembly() == "dm6");
 
   CHECK(f.avail_resolutions().size() == 10);
-  CHECK(f.avail_resolutions().front() == 2'500'000);
-  CHECK(f.avail_resolutions().back() == 1000);
+  CHECK(f.avail_resolutions().front() == 1'000);
+  CHECK(f.avail_resolutions().back() == 2'500'000);
 
   CHECK(f.avail_normalizations().size() == 4);
   CHECK(f.avail_normalizations().front() == "KR");
@@ -122,8 +122,6 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
 
   SECTION("malformed") {
     CHECK_THROWS(f.fetch(chrom2, chrom1, norm));  // NOLINT
-    CHECK_THROWS(File(pathV8, f.resolution(), MatrixType::expected, MatrixUnit::BP)
-                     .fetch(chrom1, hictk::balancing::Method::VC()));
 
     // Matrix does not have contacts for fragments
     CHECK_THROWS(

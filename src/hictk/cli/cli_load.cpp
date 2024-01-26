@@ -23,7 +23,8 @@ namespace hictk::tools {
 
 void Cli::make_load_subcommand() {
   auto& sc =
-      *_cli.add_subcommand("load", "Build .cool files from interactions in various text formats.")
+      *_cli.add_subcommand("load",
+                           "Build .cool and .hic files from interactions in various text formats.")
            ->fallthrough()
            ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
              assert(_config.index() == 0);
@@ -42,9 +43,9 @@ void Cli::make_load_subcommand() {
       ->required();
 
   sc.add_option(
-      "output-uri",
-      c.uri,
-      "Path to output Cooler (URI syntax supported).")
+      "output-path",
+      c.output_path,
+      "Path to output file.")
       ->required();
 
   sc.add_option(
@@ -55,7 +56,7 @@ void Cli::make_load_subcommand() {
       ->check(CLI::PositiveNumber);
 
   sc.add_option(
-      "-t,--bin-table",
+      "--bin-table",
       c.path_to_bin_table,
       "Path to a BED3+ file with the bin table.")
       ->check(CLI::ExistingFile);
@@ -99,17 +100,37 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_option(
+      "--chunk-size",
+      c.batch_size,
+      "Number of pixels to buffer in memory.")
+      ->capture_default_str();
+
+  sc.add_option(
+      "-l,--compression-lvl",
+      c.compression_lvl,
+      "Compression level used to compress interactions.\n"
+      "Defaults to 6 and 10 for .cool and .hic files, respectively.")
+      ->check(CLI::Bound(1, 12));
+
+  sc.add_option(
+      "-t,--threads",
+      c.threads,
+      "Maximum number of parallel threads to spawn.\n"
+      "When loading interactions in a .cool file, only a single thread will be used.")
+      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->capture_default_str();
+
+  sc.add_option(
+      "--tmpdir",
+      c.tmp_dir,
+      "Path to a folder where to store temporary data.")
+      ->capture_default_str();
+
+  sc.add_option(
       "-v,--verbosity",
       c.verbosity,
       "Set verbosity of output to the console.")
       ->check(CLI::Range(1, 4))
-      ->capture_default_str();
-
-  sc.add_option(
-      "--batch-size",
-      c.batch_size,
-      "Number of pixels to buffer in memory.\n"
-      "Only used when processing unsorted interactions or pairs.")
       ->capture_default_str();
   // clang-format on
 
@@ -125,14 +146,19 @@ void Cli::validate_load_subcommand() const {
   const auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
 
-  if (!c.force && std::filesystem::exists(c.uri)) {
+  if (!c.force && std::filesystem::exists(c.output_path)) {
     errors.emplace_back(fmt::format(
-        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.uri));
+        FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_path));
   }
 
-  if (c.path_to_bin_table.empty() && c.path_to_chrom_sizes.empty()) {
+  if (c.path_to_bin_table.empty() && c.bin_size == 0) {
     assert(c.bin_size == 0);
     errors.emplace_back("--bin-size is required when --bin-table is not specified.");
+  }
+
+  const auto output_format = infer_output_format(c.output_path);
+  if (!c.path_to_bin_table.empty() && output_format == "hic") {
+    errors.emplace_back("--bin-table is not supported when generating .hic files.");
   }
 
   if ((c.format == "bg2" || c.format == "coo") && !sc.get_option("--bin-table")->empty()) {
@@ -162,12 +188,20 @@ void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
 
+  c.output_format = infer_output_format(c.output_path);
+
   if (sc.get_option("--one-based")->empty()) {
     if (c.format == "4dn" || c.format == "validpairs") {
       c.offset = -1;
     }
   } else {
     c.offset = c.one_based ? -1 : 0;
+  }
+
+  c.tmp_dir /= (std::filesystem::path(c.output_path).filename().string() + ".tmp");
+
+  if (sc.get_option("--compression-lvl")->empty()) {
+    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 
   // in spdlog, high numbers correspond to low log levels

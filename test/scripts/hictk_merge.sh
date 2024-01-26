@@ -18,38 +18,6 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
-function compare_coolers {
-  set -o pipefail
-  set -e
-
-  2>&1 echo "Comparing $1 with $2..."
-  if diff <(cooler dump -t chroms "$1") \
-          <(cooler dump -t chroms "$2") \
-     && \
-     diff <(cooler dump --join "$1") \
-          <(cooler dump --join "$2");
-  then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
 export function readlink_py
 
 status=0
@@ -65,6 +33,8 @@ data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
 
 input_cooler="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
+input_hic="$data_dir/hic/4DNFIZ1ZVXC8.hic9"
+resolution=100000
 
 export PATH="$PATH:$script_dir"
 
@@ -81,17 +51,31 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$input_cooler"; then
+if ! check_test_files_exist.sh "$input_cooler"; then
   exit 1
 fi
 
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-cooler merge "$outdir/expected.cool" "$input_cooler::/resolutions/10000" "$input_cooler::/resolutions/10000"
-"$hictk_bin" merge -o "$outdir/out.cool" "$input_cooler::/resolutions/10000" "$input_cooler::/resolutions/10000"
+cooler merge "$outdir/expected.cool" "$input_cooler::/resolutions/$resolution" "$input_cooler::/resolutions/$resolution"
 
-if ! compare_coolers "$outdir/expected.cool" "$outdir/out.cool"; then
+# Test merrging coolers
+"$hictk_bin" merge "$input_cooler::/resolutions/$resolution" \
+                   "$input_cooler::/resolutions/$resolution" \
+                   -o "$outdir/out.cool" \
+                   --chunk-size=9999
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.cool" "$resolution"; then
+  status=1
+fi
+
+# Test merging .hic
+"$hictk_bin" merge "$input_hic" \
+                   "$input_hic" \
+                   -o "$outdir/out.hic" \
+                   --resolution "$resolution" \
+                   --chunk-size=9999
+if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.hic" "$resolution"; then
   status=1
 fi
 

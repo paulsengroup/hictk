@@ -38,7 +38,7 @@ inline constexpr std::array<std::string_view, 10> MANDATORY_DATASET_NAMES{
 };
 // clang-format on
 
-inline constexpr std::uint_fast8_t DEFAULT_COMPRESSION_LEVEL = 6;
+inline constexpr std::int32_t DEFAULT_COMPRESSION_LEVEL = 6;
 inline constexpr std::size_t DEFAULT_HDF5_CHUNK_SIZE = 64ULL << 10U;  // 64KB
 inline constexpr double DEFAULT_HDF5_CACHE_W0 = 0.75;
 inline constexpr std::size_t DEFAULT_HDF5_DATASET_CACHE_SIZE = 1ULL << 20U;        // 1MB
