@@ -27,7 +27,7 @@ if [ $# -ne 2 ]; then
 fi
 
 hictk_bin="$1"
-hictk_bin_opt="$(which hictk)"
+hictk_bin_opt="$(which hictk &> /dev/null || true)"
 if [ -z "$hictk_bin_opt" ]; then
   hictk_bin_opt="$hictk_bin"
 fi

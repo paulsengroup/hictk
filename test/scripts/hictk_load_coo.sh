@@ -54,7 +54,7 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 "$hictk_bin" dump -t chroms "$ref_cooler" > "$outdir/chrom.sizes"
-hictk_bin_opt="$(which hictk)"
+hictk_bin_opt="$(which hictk &> /dev/null || true)"
 if [ -z "$hictk_bin_opt" ]; then
   hictk_bin_opt="$hictk_bin"
 fi
