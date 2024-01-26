@@ -63,6 +63,7 @@ if [[ "$sorted" == true ]]; then
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 else
@@ -74,6 +75,7 @@ else
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 fi
@@ -92,6 +94,7 @@ if [[ "$sorted" == false ]]; then
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.hic"
 

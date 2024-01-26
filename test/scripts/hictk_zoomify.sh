@@ -48,6 +48,7 @@ trap 'rm -rf -- "$outdir"' EXIT
 "$hictk_bin" zoomify \
   -t $(nproc.sh) \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
+  --compression-lvl 1 \
   "$outdir/out.mcool"
 
 for res in "${resolutions[@]}"; do
@@ -62,6 +63,7 @@ done
   "$outdir/out.cool" \
   -t $(nproc.sh) \
   --no-copy-base-resolution \
+  --compression-lvl 1 \
   --resolutions "${resolutions[1]}"
 
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
@@ -71,6 +73,7 @@ fi
 # Test hic (multiple resolutions)
 "$hictk_bin" zoomify \
   -t $(nproc.sh) \
+  --compression-lvl 1 \
   "$ref_hic" \
   "$outdir/out.hic"
 

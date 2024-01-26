@@ -45,7 +45,8 @@ resolutions=(50000 2500000)
 "$hictk_bin" convert \
              "$hic" \
              "$outdir/out.mcool" \
-             --resolutions ${resolutions[*]}
+             --resolutions ${resolutions[*]} \
+             --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
   if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then

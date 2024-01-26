@@ -66,7 +66,8 @@ xzcat "$pairs" |
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
-    "$outdir/out.cool"
+    "$outdir/out.cool" \
+    --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
@@ -83,7 +84,8 @@ xzcat "$pairs" |
     --force \
     --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
-    "$outdir/out.cool"
+    "$outdir/out.cool" \
+    --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
   status=1
@@ -98,7 +100,8 @@ xzcat "$pairs" |
     --bin-size "$resolution" \
     --tmpdir "$outdir" \
     "$outdir/chrom.sizes" \
-    "$outdir/out.hic"
+    "$outdir/out.hic" \
+    --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1

@@ -47,7 +47,8 @@ resolutions=(100000 2500000)
              "$outdir/out.hic" \
              --resolutions ${resolutions[*]} \
              --threads "$(nproc.sh)" \
-             --chunk-size 100000
+             --chunk-size 100000 \
+             --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
   if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cool" "$resolution"; then
