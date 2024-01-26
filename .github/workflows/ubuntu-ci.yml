@@ -365,7 +365,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-22.04:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-23.04:latest
       options: "--user=root"
 
     steps:
