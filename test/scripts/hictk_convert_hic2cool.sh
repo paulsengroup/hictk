@@ -25,6 +25,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"

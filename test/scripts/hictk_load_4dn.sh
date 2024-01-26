@@ -27,6 +27,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -69,7 +73,7 @@ xzcat "$pairs" |
     "$outdir/out.cool" \
     --compression-lvl 1
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 
@@ -87,7 +91,7 @@ xzcat "$pairs" |
     "$outdir/out.cool" \
     --compression-lvl 1
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
   status=1
 fi
 
@@ -103,7 +107,7 @@ xzcat "$pairs" |
     "$outdir/out.hic" \
     --compression-lvl 1
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
 fi
 

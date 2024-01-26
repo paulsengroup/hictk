@@ -25,6 +25,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -46,7 +50,7 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 "$hictk_bin" fix-mcool "$invalid_mcool" "$outdir/out.mcool" --check-base-resolution --compression-lvl 1
 
-if ! "$hictk_bin" validate --validate-index "$outdir/out.mcool"; then
+if ! "$hictk_bin_opt" validate --validate-index "$outdir/out.mcool"; then
   status=1
 fi
 

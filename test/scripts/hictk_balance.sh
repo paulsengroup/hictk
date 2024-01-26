@@ -83,6 +83,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -107,7 +111,7 @@ cp "$ref_cool" "$ref_hic" "$outdir"
                      --mode=cis         \
                      --tmpdir="$outdir" \
                      --force
-if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
+if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
@@ -118,7 +122,7 @@ fi
                      --tmpdir="$outdir" \
                      --name=weight      \
                      --force
-if ! compare_matrices "$hictk_bin" "$outdir/"*.hic "$ref_cool" 2500000; then
+if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
@@ -128,7 +132,7 @@ fi
                      --mode=cis         \
                      --tmpdir="$outdir" \
                      --force
-if ! compare_matrices "$hictk_bin" "$outdir/"*.cool "$ref_cool" 2500000; then
+if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 

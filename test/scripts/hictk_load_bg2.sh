@@ -27,6 +27,11 @@ if [ $# -ne 2 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
+
 if [[ "$2" == 'sorted' ]]; then
   sorted=true
 else
@@ -80,7 +85,7 @@ else
       "$outdir/out.cool"
 fi
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
   status=1
 fi
 
@@ -97,7 +102,7 @@ if [[ "$sorted" == false ]]; then
       "$outdir/chrom.sizes" \
       "$outdir/out.hic"
 
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
     status=1
   fi
 fi

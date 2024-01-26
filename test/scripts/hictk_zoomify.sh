@@ -27,6 +27,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -52,7 +56,7 @@ trap 'rm -rf -- "$outdir"' EXIT
   "$outdir/out.mcool"
 
 for res in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$ref_cooler" "$res"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.mcool" "$ref_cooler" "$res"; then
     status=1
   fi
 done
@@ -66,7 +70,7 @@ done
   --compression-lvl 1 \
   --resolutions "${resolutions[1]}"
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
   status=1
 fi
 
@@ -78,7 +82,7 @@ fi
   "$outdir/out.hic"
 
 for res in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$res"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$res"; then
     status=1
   fi
 done
