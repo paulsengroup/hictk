@@ -53,7 +53,7 @@ resolutions=(50000 2500000)
              --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.mcool" "$hic" "$resolution"; then
     status=1
   fi
 done
