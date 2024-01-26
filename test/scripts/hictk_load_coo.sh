@@ -54,6 +54,10 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 "$hictk_bin" dump -t chroms "$ref_cooler" > "$outdir/chrom.sizes"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 if [[ "$sorted" == true ]]; then
   "$hictk_bin" dump -t pixels "$ref_cooler" |
@@ -63,6 +67,7 @@ if [[ "$sorted" == true ]]; then
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 else
@@ -74,11 +79,12 @@ else
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.cool"
 fi
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler" "$resolution"; then
   status=1
 fi
 
@@ -92,10 +98,11 @@ if [[ "$sorted" == false ]]; then
       --chunk-size "$batch_size" \
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
+      --compression-lvl 1 \
       "$outdir/chrom.sizes" \
       "$outdir/out.hic"
 
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
     status=1
   fi
 fi

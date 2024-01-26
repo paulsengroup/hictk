@@ -25,6 +25,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -47,10 +51,11 @@ resolutions=(100000 2500000)
              "$outdir/out.hic" \
              --resolutions ${resolutions[*]} \
              --threads "$(nproc.sh)" \
-             --chunk-size 100000
+             --chunk-size 100000 \
+             --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cool" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cool" "$resolution"; then
     status=1
   fi
 done

@@ -25,6 +25,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -45,10 +49,11 @@ resolutions=(50000 2500000)
 "$hictk_bin" convert \
              "$hic" \
              "$outdir/out.mcool" \
-             --resolutions ${resolutions[*]}
+             --resolutions ${resolutions[*]} \
+             --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$hic" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.mcool" "$hic" "$resolution"; then
     status=1
   fi
 done

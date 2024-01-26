@@ -28,6 +28,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -64,8 +68,9 @@ cooler merge "$outdir/expected.cool" "$input_cooler::/resolutions/$resolution" "
 "$hictk_bin" merge "$input_cooler::/resolutions/$resolution" \
                    "$input_cooler::/resolutions/$resolution" \
                    -o "$outdir/out.cool" \
+                   --compression-lvl 1 \
                    --chunk-size=9999
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.cool" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/expected.cool" "$outdir/out.cool" "$resolution"; then
   status=1
 fi
 
@@ -74,8 +79,9 @@ fi
                    "$input_hic" \
                    -o "$outdir/out.hic" \
                    --resolution "$resolution" \
+                   --compression-lvl 1 \
                    --chunk-size=9999
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/expected.cool" "$outdir/out.hic" "$resolution"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/expected.cool" "$outdir/out.hic" "$resolution"; then
   status=1
 fi
 

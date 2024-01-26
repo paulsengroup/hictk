@@ -27,6 +27,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/integration_tests")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -48,10 +52,11 @@ trap 'rm -rf -- "$outdir"' EXIT
 "$hictk_bin" zoomify \
   -t $(nproc.sh) \
   "$ref_cooler::/resolutions/${resolutions[0]}" \
+  --compression-lvl 1 \
   "$outdir/out.mcool"
 
 for res in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.mcool" "$ref_cooler" "$res"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.mcool" "$ref_cooler" "$res"; then
     status=1
   fi
 done
@@ -62,20 +67,22 @@ done
   "$outdir/out.cool" \
   -t $(nproc.sh) \
   --no-copy-base-resolution \
+  --compression-lvl 1 \
   --resolutions "${resolutions[1]}"
 
-if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
   status=1
 fi
 
 # Test hic (multiple resolutions)
 "$hictk_bin" zoomify \
   -t $(nproc.sh) \
+  --compression-lvl 1 \
   "$ref_hic" \
   "$outdir/out.hic"
 
 for res in "${resolutions[@]}"; do
-  if ! compare_matrix_files.sh "$hictk_bin" "$outdir/out.hic" "$ref_cooler" "$res"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$res"; then
     status=1
   fi
 done

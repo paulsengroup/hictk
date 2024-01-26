@@ -365,7 +365,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-23.04:latest
       options: "--user=root"
 
     steps:
@@ -375,13 +375,6 @@ jobs:
       - name: Fix permissions
         run: |
           chown -R $(id -u):$(id -g) $PWD
-
-      - name: Install test dependencies
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends default-jdk python3-pip xz-utils
-
-          python3 -m pip install 'cooler>=0.9.2'
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
