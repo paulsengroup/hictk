@@ -83,16 +83,16 @@ void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixe
                                fmt::to_string(internal::pixel_to_coords<PixelT, T>(pixel, bins)));
     }
 
-    sum += pixel.count;
+    sum += static_cast<N>(pixel.count);
     if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
       if (pixel.coords.bin1.chrom().id() == pixel.coords.bin2.chrom().id()) {
-        cis_sum += pixel.count;
+        cis_sum += static_cast<N>(pixel.count);
       }
     } else {
       const auto chrom1 = bins.at(pixel.bin1_id).chrom();
       const auto chrom2 = bins.at(pixel.bin2_id).chrom();
       if (chrom1 == chrom2) {
-        cis_sum += pixel.count;
+        cis_sum += static_cast<N>(pixel.count);
       }
     }
     return pixel.count;
@@ -120,14 +120,29 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
   File::append_bins(dataset("pixels/bin1_id"), dataset("pixels/bin2_id"), first_pixel, last_pixel);
 
   // NOLINTBEGIN(*-avoid-non-const-global-variables)
-  T sum{};
-  T cis_sum{};
-  // NOLINTEND(*-avoid-non-const-global-variables)
-  File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
-  _attrs.nnz = dataset("pixels/bin1_id").size();
+  Attributes::SumVar sumv{};
+  Attributes::SumVar cis_sumv{};
+  if constexpr (std::is_floating_point_v<T>) {
+    sumv = 0.0;
+    cis_sumv = 0.0;
+  } else {
+    sumv = std::int64_t(0);
+    cis_sumv = std::int64_t(0);
+  }
 
-  update_pixel_sum(sum);
-  update_pixel_sum<T, true>(cis_sum);
+  // NOLINTEND(*-avoid-non-const-global-variables)
+  std::visit(
+      [&](auto &sum) {
+        using N = remove_cvref_t<decltype(sum)>;
+        auto &cis_sum = std::get<N>(cis_sumv);
+
+        File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
+        _attrs.nnz = dataset("pixels/bin1_id").size();
+
+        update_pixel_sum(sum);
+        update_pixel_sum<N, true>(cis_sum);
+      },
+      sumv);
 }
 
 inline void File::flush() { _root_group().getFile().flush(); }
