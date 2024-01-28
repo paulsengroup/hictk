@@ -11,10 +11,8 @@ include(Catch)
 
 add_executable(bin_table_tests)
 
-target_sources(
-  bin_table_tests
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bin_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/bin_table_test.cpp")
+target_sources(bin_table_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bin_test.cpp"
+                                       "${CMAKE_CURRENT_SOURCE_DIR}/bin_table_test.cpp")
 
 target_link_libraries(
   bin_table_tests
