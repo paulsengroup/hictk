@@ -23,14 +23,15 @@
 namespace hictk::tools {
 
 void Cli::make_zoomify_subcommand() {
-  auto& sc = *_cli.add_subcommand(
-                      "zoomify",
-                      "Convert single-resolution Cooler file to multi-resolution by coarsening.")
-                  ->fallthrough()
-                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-                    assert(_config.index() == 0);
-                    _config = ZoomifyConfig{};
-                  });
+  auto& sc =
+      *_cli.add_subcommand(
+               "zoomify",
+               "Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.")
+           ->fallthrough()
+           ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+             assert(_config.index() == 0);
+             _config = ZoomifyConfig{};
+           });
 
   _config = ZoomifyConfig{};
   auto& c = std::get<ZoomifyConfig>(_config);
