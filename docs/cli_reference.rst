@@ -27,7 +27,7 @@ Subcommands
     rename-chromosomes, rename-chroms
                                 Rename chromosomes found in a Cooler file.
     validate                    Validate .hic and Cooler files.
-    zoomify                     Convert single-resolution Cooler file to multi-resolution by coarsening.
+    zoomify                     Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
 
 hictk balance
 -------------
@@ -293,7 +293,7 @@ hictk zoomify
 
 .. code-block:: text
 
-  Convert single-resolution Cooler file to multi-resolution by coarsening.
+  Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
   Usage: hictk zoomify [OPTIONS] cooler/hic mcool/hic
   Positionals:
     cooler/hic TEXT:(Cooler) OR (HiC) REQUIRED

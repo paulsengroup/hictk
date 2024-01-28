@@ -18,7 +18,7 @@ To install libhictk using Conan, first create a conanfile.txt like the following
 .. code-block::
 
   [requires]
-  hictk/0.0.6
+  hictk/0.0.7
 
   [generators]
   CMakeDeps
@@ -62,7 +62,7 @@ To install and configure hictk using `FetchContent <https://cmake.org/cmake/help
   FetchContent_Declare(
     hictk
     GIT_REPOSITORY  "https://github.com/paulsengroup/hictk.git"
-    GIT_TAG         v0.0.6
+    GIT_TAG         v0.0.7
     SYSTEM)
 
   # Customize hictk build flags
