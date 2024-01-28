@@ -119,6 +119,10 @@ jobs:
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           conan profile detect --force
+          conan_profile="$(conan profile path default)"
+
+          sed -i 's/build_type=Release/build_type=${{ matrix.build_type }}/' "$conan_profile"
+          sed -i 's/compiler\.cppstd=.*/compiler.cppstd=17/' "$conan_profile"
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
