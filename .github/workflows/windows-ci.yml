@@ -130,14 +130,18 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          conan install .                                         \
-             --build=missing                                      \
-             -pr:h default                                        \
-             -pr:b default                                        \
-             -s "compiler=${{ matrix.compiler-name }}"            \
-             -s "build_type=${{ matrix.build_type }}"             \
-             -s "compiler.runtime_type=${{ matrix.build_type }}"  \
-             -s compiler.cppstd=17                                \
+          conan install .                                           \
+             --build=missing                                        \
+             -pr:h default                                          \
+             -pr:b default                                          \
+             -s:h "compiler=${{ matrix.compiler-name }}"            \
+             -s:h "build_type=${{ matrix.build_type }}"             \
+             -s:h "compiler.runtime_type=${{ matrix.build_type }}"  \
+             -s:h compiler.cppstd=17                                \
+             -s:b "compiler=${{ matrix.compiler-name }}"            \
+             -s:b "build_type=${{ matrix.build_type }}"             \
+             -s:b "compiler.runtime_type=${{ matrix.build_type }}"  \
+             -s:b compiler.cppstd=17                                \
              --output-folder=build
 
       - name: Clean Conan cache (post-build)
