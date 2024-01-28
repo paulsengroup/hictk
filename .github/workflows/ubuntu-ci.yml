@@ -351,7 +351,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 200       \
+                --timeout 360       \
                 -j $(nproc) |&
           head -n 1000
 
@@ -365,7 +365,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-23.04:latest
       options: "--user=root"
 
     steps:
@@ -375,27 +375,6 @@ jobs:
       - name: Fix permissions
         run: |
           chown -R $(id -u):$(id -g) $PWD
-
-      - name: Install test dependencies
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends default-jdk python3-pip xz-utils
-
-          python3 -m pip install 'cooler>=0.9.2'
-
-      - name: Cache hic_tools
-        id: cache-hictools
-        uses: actions/cache@v4
-        with:
-          key: hic_tools
-          path: hic_tools.jar
-
-      - name: Download hic_tools
-        if: steps.cache-hictools.outputs.cache-hit != 'true'
-        run: |
-          apt-get install -y --no-install-recommends curl
-          curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' \
-               -o hic_tools.jar
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -421,7 +400,7 @@ jobs:
 
       - name: Test hictk balance
         run: |
-          test/scripts/hictk_balance.sh bin/hictk hic_tools.jar
+          test/scripts/hictk_balance.sh bin/hictk
 
       - name: Test hictk convert (hic2cool)
         run: |
@@ -429,7 +408,7 @@ jobs:
 
       - name: Test hictk convert (cool2hic)
         run: |
-          test/scripts/hictk_convert_cool2hic.sh bin/hictk hic_tools.jar
+          test/scripts/hictk_convert_cool2hic.sh bin/hictk
 
       - name: Test hictk dump chroms
         run: |

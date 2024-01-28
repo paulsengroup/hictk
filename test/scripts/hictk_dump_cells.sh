@@ -17,33 +17,6 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
-function compare_files {
-  set -o pipefail
-  set -e
-
-  2>&1 echo "Comparing $1 with $2..."
-  if diff "$1" "$2"; then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
 export function readlink_py
 
 status=0
@@ -72,7 +45,7 @@ expected_cells=(
 
 export PATH="$PATH:$script_dir"
 
-if ! check_files_exist "$mclr" "$sclr" "$hic"; then
+if ! check_test_files_exist.sh "$mclr" "$sclr" "$hic"; then
   exit 1
 fi
 
@@ -84,7 +57,7 @@ printf "%s\n" "${expected_cells[@]}" > "$outdir/expected.txt"
 
 "$hictk_bin" dump -t cells "$sclr" > "$outdir/scool.cells.txt"
 
-if ! compare_files "$outdir/expected.txt" "$outdir/scool.cells.txt"; then
+if ! compare_plain_files.sh "$outdir/expected.txt" "$outdir/scool.cells.txt"; then
   status=1
 fi
 

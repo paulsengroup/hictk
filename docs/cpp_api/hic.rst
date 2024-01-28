@@ -59,7 +59,7 @@ File handle
 
   .. cpp:function:: [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
-  .. cpp:function:: [[nodiscard]] const std::string &url() const noexcept;
+  .. cpp:function:: [[nodiscard]] const std::string &path() const noexcept;
   .. cpp:function:: [[nodiscard]] const std::string &name() const noexcept;
 
   .. cpp:function:: [[nodiscard]] std::int32_t version() const noexcept;

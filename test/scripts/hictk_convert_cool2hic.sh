@@ -17,52 +17,18 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
-function compare_coolers {
-  set -o pipefail
-  set -eu
-
-  hictk="$1"
-  resolution="$4"
-  hic="$2"
-  clr="$3::/resolutions/$resolution"
-
-  2>&1 echo "Comparing $hic with $clr..."
-  if diff <("$hictk" dump --join "$hic"   \
-                          --resolution    \
-                          "$resolution")  \
-          <("$hictk" dump --join "$clr"); then
-    2>&1 echo "Files are identical"
-    return 0
-  else
-    2>&1 echo "Files differ"
-    return 1
-  fi
-}
-
-export function readlink_py
-
 status=0
 
-if [ $# -ne 2 ]; then
-  2>&1 echo "Usage: $0 path_to_hictk juicer_tools.jar"
+if [ $# -ne 1 ]; then
+  2>&1 echo "Usage: $0 path_to_hictk"
   status=1
 fi
 
 hictk_bin="$1"
-juicer_tools_jar="$2"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -71,7 +37,7 @@ ref_cool="$data_dir/integration_tests/4DNFIZ1ZVXC8.mcool"
 
 export PATH="$PATH:$script_dir"
 
-if ! check_files_exist "$ref_cool" "$juicer_tools_jar"; then
+if ! check_test_files_exist.sh "$ref_cool"; then
   exit 1
 fi
 
@@ -84,13 +50,22 @@ resolutions=(100000 2500000)
              "$ref_cool" \
              "$outdir/out.hic" \
              --resolutions ${resolutions[*]} \
-             --juicer-tools-jar "$juicer_tools_jar"
+             --threads "$(nproc.sh)" \
+             --chunk-size 100000 \
+             --compression-lvl 1
 
 for resolution in "${resolutions[@]}"; do
-  if ! compare_coolers "$hictk_bin" "$outdir/out.hic" "$ref_cool" "$resolution"; then
+  if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cool" "$resolution"; then
     status=1
   fi
 done
+
+"$hictk_bin" dump -t normalizations "$ref_cool" | sed 's/weight/ICE/' | sort > "$outdir/normalizations.mcool"
+"$hictk_bin" dump -t normalizations "$outdir/out.hic" | sort > "$outdir/normalizations.hic"
+
+if ! compare_plain_files.sh "$outdir/normalizations.mcool" "$outdir/normalizations.hic"; then
+  status=1
+fi
 
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'

@@ -39,8 +39,10 @@ static void run_hictk_zoomify(const FixMcoolConfig& c,
                               const std::vector<std::uint32_t>& resolutions,
                               std::string_view base_uri) {
   ZoomifyConfig zc{};
-  zc.input_uri = std::string{base_uri};
-  zc.output_path = c.path_to_output.string();
+  zc.path_to_input = std::string{base_uri};
+  zc.path_to_output = c.path_to_output.string();
+  zc.input_format = "cool";
+  zc.output_format = "cool";
   zc.resolutions = resolutions;
   zc.copy_base_resolution = true;
   zc.force = c.force;
@@ -74,11 +76,16 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
 
     if (cis_only) {
       c.mode = "cis";
+      c.name = "ICE";
     } else if (trans_only) {
       c.mode = "trans";
+      c.name = "INTER_ICE";
     } else {
       c.mode = "gw";
+      c.name = "GW_ICE";
     }
+
+    c.symlink_to_weight = true;
 
     c.masked_diags = dset.read_attribute<std::size_t>("ignore_diags");
     c.mad_max = dset.read_attribute<double>("mad_max");

@@ -49,7 +49,7 @@ class File {
              MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
 
-  [[nodiscard]] const std::string &url() const noexcept;
+  [[nodiscard]] const std::string &path() const noexcept;
   [[nodiscard]] const std::string &name() const noexcept;
   [[nodiscard]] std::int32_t version() const noexcept;
   [[nodiscard]] const Reference &chromosomes() const noexcept;
@@ -84,6 +84,13 @@ class File {
   [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
                                     std::uint64_t first_bin2, std::uint64_t last_bin2,
                                     balancing::Method norm = balancing::Method::NONE()) const;
+
+  [[nodiscard]] balancing::Weights normalization(balancing::Method norm,
+                                                 const Chromosome &chrom) const;
+  [[nodiscard]] balancing::Weights normalization(std::string_view norm,
+                                                 const Chromosome &chrom) const;
+  [[nodiscard]] balancing::Weights normalization(balancing::Method norm) const;
+  [[nodiscard]] balancing::Weights normalization(std::string_view norm) const;
 
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();

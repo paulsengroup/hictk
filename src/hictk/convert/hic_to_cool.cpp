@@ -55,7 +55,7 @@ static bool missing_norm_or_interactions(const std::exception& e, balancing::Met
   return missing_interactions || missing_norm_vect;
 }
 
-bool check_if_norm_exists(hic::File& f, balancing::Method norm) {
+static bool check_if_norm_exists(hic::File& f, balancing::Method norm) {
   return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
     try {
       if (!chrom.is_all()) {
@@ -69,53 +69,6 @@ bool check_if_norm_exists(hic::File& f, balancing::Method norm) {
     }
     return false;
   });
-}
-
-static std::vector<double> read_weights_or_throw(hic::File& f, balancing::Method norm,
-                                                 const Chromosome& chrom,
-                                                 std::size_t expected_length) {
-  std::vector<double> weights_{};
-  try {
-    auto weights = f.fetch(chrom.name(), norm).weights1();
-    if (!!weights && weights().size() != expected_length) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
-                                 "expected {} values, found {}"),
-                      norm, chrom.name(), expected_length, weights().size()));
-    }
-    weights_ = weights();
-  } catch (const std::exception& e) {
-    if (!missing_norm_or_interactions(e, norm)) {
-      throw;
-    }
-  }
-  return weights_;
-}
-
-static std::vector<double> read_weights(hic::File& f, const BinTable& bins,
-                                        balancing::Method norm) {
-  std::vector<double> weights{};
-  weights.reserve(bins.size());
-  std::size_t missing_norms = 0;
-  for (const auto& chrom : bins.chromosomes()) {
-    if (chrom.is_all()) {
-      continue;
-    }
-    const auto expected_length = (chrom.size() + bins.bin_size() - 1) / bins.bin_size();
-    auto chrom_weights = read_weights_or_throw(f, norm, chrom, expected_length);
-    if (chrom_weights.empty()) {
-      chrom_weights.resize(expected_length, std::numeric_limits<double>::quiet_NaN());
-      ++missing_norms;
-    }
-    weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
-  }
-  if (missing_norms == f.chromosomes().size() - 1) {
-    SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), bins.bin_size(),
-                norm);
-  }
-
-  assert(weights.size() == bins.size());
-  return weights;
 }
 
 template <typename CoolerFile>
@@ -142,30 +95,34 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
 
   SPDLOG_INFO(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().bin_size(), norm);
 
-  const auto weights = read_weights(hf, hf.bins(), norm);
+  const auto weights = hf.normalization(norm);
   using T = std::remove_reference_t<decltype(cf)>;
   if constexpr (std::is_same_v<T, cooler::File>) {
-    cf.write_weights(dset_name, weights.begin(), weights.end(), false, true);
+    cf.write_weights(dset_name, weights().begin(), weights().end(), false, true);
   } else {
-    cooler::File::write_weights(cf, dset_name, weights.begin(), weights.end(), false, true);
+    cooler::File::write_weights(cf, dset_name, weights().begin(), weights().end(), false, true);
   }
 }
 
 [[nodiscard]] static cooler::File init_cooler(cooler::RootGroup entrypoint,
                                               std::uint32_t resolution, std::string_view genome,
-                                              const Reference& chroms) {
+                                              const Reference& chroms,
+                                              std::uint32_t compression_lvl) {
   auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs);
+  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs,
+                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,
-                                              std::string_view genome, const Reference& chroms) {
+                                              std::string_view genome, const Reference& chroms,
+                                              std::uint32_t compression_lvl) {
   auto attrs = cooler::Attributes::init(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(uri, chroms, resolution, true, attrs);
+  return cooler::File::create(uri, chroms, resolution, true, attrs,
+                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
@@ -363,7 +320,9 @@ void hic_to_cool(const ConvertConfig& c) {
 
   if (c.resolutions.size() == 1) {
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms),
+        hf,
+        init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms,
+                    c.compression_lvl),
         c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     return;
   }
@@ -375,8 +334,8 @@ void hic_to_cool(const ConvertConfig& c) {
     auto attrs = cooler::Attributes::init(res);
     attrs.assembly = c.genome.empty() ? "unknown" : std::string{c.genome};
     convert_resolution_multi_threaded<std::int32_t>(
-        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms), c.normalization_methods,
-        c.fail_if_normalization_method_is_not_avaliable);
+        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms, c.compression_lvl),
+        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
     hf.clear_cache();
   });
 }

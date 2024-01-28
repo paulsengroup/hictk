@@ -233,6 +233,10 @@ Reference genome
   .. cpp:function:: [[nodiscard]] const Chromosome& longest_chromosome() const;
   .. cpp:function:: [[nodiscard]] const Chromosome& chromosome_with_longest_name() const;
 
+  **Other**
+  .. cpp:function:: [[nodiscard]] Reference remove_ALL() const;
+  .. cpp:function:: [[nodiscard]] Reference add_ALL(std::uint32_t scaling_factor = 1) const;
+
 
 Bin Table
 ---------

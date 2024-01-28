@@ -17,19 +17,6 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
 export function readlink_py
 
 status=0
@@ -54,7 +41,7 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$input_cooler" "$input_mcool" "$input_scool"; then
+if ! check_test_files_exist.sh "$input_cooler" "$input_mcool" "$input_scool"; then
   exit 1
 fi
 

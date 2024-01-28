@@ -113,14 +113,6 @@ RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-a
 &&  if [ -z "$GIT_SHORT_HASH" ]; then echo "Missing GIT_SHORT_HASH --build-arg" && exit 1; fi \
 &&  if [ -z "$CREATION_DATE" ]; then echo "Missing CREATION_DATE --build-arg" && exit 1; fi
 
-# Install runtime dependencies
-RUN apt-get update \
-&& apt-get install -y ca-certificates-java \
-&& apt-get install -y \
-   openjdk-19-jre-headless \
-   pigz \
-&& rm -rf /var/lib/apt/lists/*
-
 # Export project binaries to the final build stage
 COPY --from=builder "$staging_dir" "$install_dir"
 

@@ -47,7 +47,7 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (ignored when file is not in .hic format).")
+      "HiC matrix resolution (ignored when file is in .cool format).")
       ->check(CLI::NonNegativeNumber);
 
   sc.add_option(

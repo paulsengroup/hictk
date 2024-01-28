@@ -51,4 +51,23 @@ inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::pixel_selector
 
+namespace hic::test::filestream {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
+}  // namespace hic::test::filestream
+
+namespace hic::test::file_reader {
+inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
+}  // namespace hic::test::file_reader
+
+namespace hic::test::file_writer {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
+}  // namespace hic::test::file_writer
+
+namespace hic::test::utils {
+inline const auto& testdir = hictk::test::testdir;
+inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
+}  // namespace hic::test::utils
+
 }  // namespace hictk

@@ -29,7 +29,7 @@ struct HiCFooterMetadata {
   std::uint32_t resolution{std::numeric_limits<std::uint32_t>::max()};
   Chromosome chrom1{};
   Chromosome chrom2{};
-  std::int64_t fileOffset{-1};
+  std::int64_t matrixMetadataOffset{-1};
 
   constexpr explicit operator bool() const noexcept;
   bool operator==(const HiCFooterMetadata &other) const noexcept;
@@ -57,7 +57,7 @@ class HiCFooter {
   [[nodiscard]] constexpr HiCFooterMetadata &metadata() noexcept;
   [[nodiscard]] const Index &index() const noexcept;
 
-  [[nodiscard]] constexpr const std::string &url() const noexcept;
+  [[nodiscard]] constexpr const std::string &path() const noexcept;
   [[nodiscard]] constexpr MatrixType matrix_type() const noexcept;
   [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] constexpr MatrixUnit unit() const noexcept;

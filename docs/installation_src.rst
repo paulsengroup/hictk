@@ -178,7 +178,7 @@ Example:
   cd /tmp/hictk
 
   # Make sure this is the URL listed in file cmake/FetchTestDataset.cmake
-  curl -L 'https://zenodo.org/record/8143316/files/hictk_test_data.tar.xz?download=1' | tar -xJf -
+  curl -L 'https://zenodo.org/records/10522583/files/hictk_test_data.tar.xz?download=1' | tar -xJf -
 
   # This should print "OK" if the check is successful
   (cd test/data && sha256sum --quiet -c checksums.sha256 && 2>&1 echo OK)

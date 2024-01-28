@@ -21,6 +21,7 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
+#include "hictk/file.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
@@ -63,11 +64,6 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::IsMember({"cool", "mcool", "hic"}))
       ->default_str("auto");
   sc.add_option(
-      "-j,--juicer-tools-jar",
-      c.juicer_tools_jar,
-      "Path to juicer_tools or hic_tools JAR.")
-      ->check(CLI::ExistingFile);
-  sc.add_option(
       "-r,--resolutions",
       c.resolutions,
       "One or more resolutions to be converted. By default all resolutions are converted.")
@@ -89,16 +85,15 @@ void Cli::make_convert_subcommand() {
       c.genome,
       "Genome assembly name. By default this is copied from the .hic file metadata.");
   sc.add_option(
-      "--juicer-tools-memory",
-      c.juicer_tools_xmx,
-      "Max heap size used by juicer_tools. Only used when converting from cool to hic")
-      ->default_str(fmt::format(FMT_STRING("{:.0f}GB"), double(c.juicer_tools_xmx) / 1.0e9))
-      ->check(CLI::PositiveNumber)
-      ->transform(CLI::AsSizeValue(true));
-  sc.add_option(
       "--tmpdir",
       c.tmp_dir,
       "Path where to store temporary files.");
+  sc.add_option(
+      "--chunk-size",
+      c.chunk_size,
+      "Batch size to use when converting .[m]cool to .hic.")
+      ->check(CLI::PositiveNumber)
+      ->capture_default_str();
   sc.add_option(
       "-v,--verbosity",
       c.verbosity,
@@ -113,11 +108,11 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
-      "-l,--compression-level",
-      c.gzip_compression_lvl,
-      "Compression level used to compress temporary files.\n"
-      "Pass 0 to disable compression.")
-      ->check(CLI::Range(0, 9))
+      "-l,--compression-lvl",
+      c.compression_lvl,
+      "Compression level used to compress interactions.\n"
+      "Defaults to 6 and 10 for .cool and .hic files, respectively.")
+      ->check(CLI::Range(1, 12))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -174,11 +169,6 @@ void Cli::validate_convert_subcommand() const {
         fmt::format(FMT_STRING("{} is not in .hic, .cool or .mcool format"), c.path_to_input));
   }
 
-  if ((is_cool || is_mcool) && c.juicer_tools_jar.empty()) {
-    errors.emplace_back(
-        fmt::format(FMT_STRING("--juicer-tools-jar is required when converting to .hic.")));
-  }
-
   if (!c.output_format.empty()) {
     if ((is_hic && c.output_format == "hic") || (is_cool && c.output_format == "cool") ||
         (is_mcool && c.output_format == "mcool")) {
@@ -220,6 +210,7 @@ void Cli::validate_convert_subcommand() const {
 
 void Cli::transform_args_convert_subcommand() {
   auto& c = std::get<ConvertConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("convert");
 
   c.input_format = infer_input_format(c.path_to_input);
   if (c.output_format.empty()) {
@@ -234,16 +225,26 @@ void Cli::transform_args_convert_subcommand() {
     c.genome = infer_assembly(c.path_to_input, c.resolutions.back(), c.input_format);
   }
 
+  if (c.normalization_methods.empty()) {
+    if (c.input_format == "mcool") {
+      c.normalization_methods = cooler::MultiResFile(c.path_to_input.string())
+                                    .open(c.resolutions.back())
+                                    .avail_normalizations();
+    } else {
+      c.normalization_methods =
+          File(c.path_to_input.string(), c.resolutions.back()).avail_normalizations();
+    }
+  }
+
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
-  if (c.tmp_dir.empty()) {
-    c.tmp_dir = c.path_to_output.parent_path();
-  }
+  c.tmp_dir /= c.path_to_output.filename().string() + ".tmp";
 
-  c.tmp_dir /= c.path_to_output.filename();
-  c.tmp_dir.replace_extension(".tmp");
+  if (sc.get_option("--compression-lvl")->empty()) {
+    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+  }
 }
 
 }  // namespace hictk::tools

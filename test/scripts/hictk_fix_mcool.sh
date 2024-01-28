@@ -17,19 +17,6 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function check_files_exist {
-  set -eu
-  status=0
-  for f in "$@"; do
-    if [ ! -f "$f" ]; then
-      2>&1 echo "Unable to find test file \"$f\""
-      status=1
-    fi
-  done
-
-  return "$status"
-}
-
 status=0
 
 if [ $# -ne 1 ]; then
@@ -38,6 +25,10 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
+hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+if [ -z "$hictk_bin_opt" ]; then
+  hictk_bin_opt="$hictk_bin"
+fi
 
 data_dir="$(readlink_py "$(dirname "$0")/../data/")"
 script_dir="$(readlink_py "$(dirname "$0")")"
@@ -50,16 +41,16 @@ if [ $status -ne 0 ]; then
   exit $status
 fi
 
-if ! check_files_exist "$invalid_mcool"; then
+if ! check_test_files_exist.sh "$invalid_mcool"; then
   exit 1
 fi
 
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-"$hictk_bin" fix-mcool "$invalid_mcool" "$outdir/out.mcool" --check-base-resolution
+"$hictk_bin" fix-mcool "$invalid_mcool" "$outdir/out.mcool" --check-base-resolution --compression-lvl 1
 
-if ! "$hictk_bin" validate --validate-index "$outdir/out.mcool"; then
+if ! "$hictk_bin_opt" validate --validate-index "$outdir/out.mcool"; then
   status=1
 fi
 

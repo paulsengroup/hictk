@@ -39,7 +39,7 @@ inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
       _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
   if (!has_resolution(resolution())) {
     throw std::runtime_error(fmt::format(
-        FMT_STRING("file {} does not have interactions for resolution {}"), url(), resolution()));
+        FMT_STRING("file {} does not have interactions for resolution {}"), path(), resolution()));
   }
 
   if (block_cache_capacity == 0) {
@@ -49,7 +49,7 @@ inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_,
 
 inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
                         MatrixUnit unit_, std::uint64_t block_cache_capacity) {
-  if (_fs->url() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
+  if (_fs->path() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
     _block_cache->set_capacity(block_cache_capacity, false);
     return *this;
   }
@@ -65,7 +65,7 @@ inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType 
 
 inline File& File::open(std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
                         std::uint64_t block_cache_capacity) {
-  return open(url(), resolution_, type_, unit_, block_cache_capacity);
+  return open(path(), resolution_, type_, unit_, block_cache_capacity);
 }
 
 inline bool File::has_resolution(std::uint32_t resolution) const {
@@ -73,9 +73,9 @@ inline bool File::has_resolution(std::uint32_t resolution) const {
   return match != avail_resolutions().end();
 }
 
-inline const std::string& File::url() const noexcept { return _fs->url(); }
+inline const std::string& File::path() const noexcept { return _fs->path(); }
 
-inline const std::string& File::name() const noexcept { return url(); }
+inline const std::string& File::name() const noexcept { return path(); }
 
 inline std::int32_t File::version() const noexcept { return _fs->version(); }
 
@@ -115,7 +115,7 @@ inline std::uint32_t File::resolution() const noexcept { return _bins->bin_size(
 inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
     const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
     balancing::Method norm, MatrixUnit unit, std::uint32_t resolution) const {
-  const internal::HiCFooterMetadata metadata{url(),      matrix_type, norm,  unit,
+  const internal::HiCFooterMetadata metadata{path(),     matrix_type, norm,  unit,
                                              resolution, chrom1,      chrom2};
   auto it = _footers.find(metadata);
   if (it != _footers.end()) {
@@ -212,11 +212,6 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
         "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
   }
 
-  if (_type == MatrixType::expected && norm != balancing::Method::NONE()) {
-    throw std::logic_error(fmt::format(
-        FMT_STRING("matrix type {} is incompatible with normalization method {}"), _type, norm));
-  }
-
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
   const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2 - 1)};
 
@@ -239,6 +234,66 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   return fetch(coord1.bin1.chrom().name(), coord1.bin1.start(), coord1.bin2.end() - 1,
                coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1,
                std::move(norm));
+}
+
+inline balancing::Weights File::normalization(balancing::Method norm,
+                                              const Chromosome& chrom) const {
+  std::vector<double> weights_{};
+  const auto expected_length = (chrom.size() + bins().bin_size() - 1) / bins().bin_size();
+  try {
+    auto weights = fetch(chrom.name(), norm).weights1();
+    if (!!weights && weights().size() != expected_length) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
+                                 "expected {} values, found {}"),
+                      norm, chrom.name(), expected_length, weights().size()));
+    }
+    weights_ = weights();
+  } catch (const std::exception& e) {
+    const std::string_view msg{e.what()};
+
+    const auto missing_interactions =
+        msg.find("unable to read file offset") != std::string_view::npos;
+
+    const auto missing_norm_vect =
+        msg.find(fmt::format(FMT_STRING("unable to find {} normalization vector"), norm)) !=
+        std::string_view::npos;
+
+    if (!missing_interactions && !missing_norm_vect) {
+      throw;
+    }
+  }
+
+  if (weights_.empty()) {
+    weights_.resize(expected_length, std::numeric_limits<double>::quiet_NaN());
+  }
+
+  return {weights_, balancing::Weights::Type::DIVISIVE};
+}
+
+inline balancing::Weights File::normalization(std::string_view norm,
+                                              const Chromosome& chrom) const {
+  return normalization(balancing::Method{norm}, chrom);
+}
+
+inline balancing::Weights File::normalization(balancing::Method norm) const {
+  std::vector<double> weights{};
+  weights.reserve(bins().size());
+  for (const auto& chrom : chromosomes()) {
+    if (chrom.is_all()) {
+      continue;
+    }
+
+    const auto chrom_weights = normalization(norm, chrom);
+    weights.insert(weights.end(), chrom_weights().begin(), chrom_weights().end());
+  }
+
+  assert(weights.size() == bins().size());
+  return {weights, balancing::Weights::Type::DIVISIVE};
+}
+
+inline balancing::Weights File::normalization(std::string_view norm) const {
+  return normalization(balancing::Method{norm});
 }
 
 inline std::size_t File::num_cached_footers() const noexcept { return _footers.size(); }

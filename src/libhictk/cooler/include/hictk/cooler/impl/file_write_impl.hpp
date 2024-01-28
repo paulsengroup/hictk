@@ -83,16 +83,16 @@ void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixe
                                fmt::to_string(internal::pixel_to_coords<PixelT, T>(pixel, bins)));
     }
 
-    sum += pixel.count;
+    sum += static_cast<N>(pixel.count);
     if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
       if (pixel.coords.bin1.chrom().id() == pixel.coords.bin2.chrom().id()) {
-        cis_sum += pixel.count;
+        cis_sum += static_cast<N>(pixel.count);
       }
     } else {
       const auto chrom1 = bins.at(pixel.bin1_id).chrom();
       const auto chrom2 = bins.at(pixel.bin2_id).chrom();
       if (chrom1 == chrom2) {
-        cis_sum += pixel.count;
+        cis_sum += static_cast<N>(pixel.count);
       }
     }
     return pixel.count;
@@ -120,14 +120,29 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
   File::append_bins(dataset("pixels/bin1_id"), dataset("pixels/bin2_id"), first_pixel, last_pixel);
 
   // NOLINTBEGIN(*-avoid-non-const-global-variables)
-  T sum{};
-  T cis_sum{};
-  // NOLINTEND(*-avoid-non-const-global-variables)
-  File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
-  _attrs.nnz = dataset("pixels/bin1_id").size();
+  Attributes::SumVar sumv{};
+  Attributes::SumVar cis_sumv{};
+  if constexpr (std::is_floating_point_v<T>) {
+    sumv = 0.0;
+    cis_sumv = 0.0;
+  } else {
+    sumv = std::int64_t(0);
+    cis_sumv = std::int64_t(0);
+  }
 
-  update_pixel_sum(sum);
-  update_pixel_sum<T, true>(cis_sum);
+  // NOLINTEND(*-avoid-non-const-global-variables)
+  std::visit(
+      [&](auto &sum) {
+        using N = remove_cvref_t<decltype(sum)>;
+        auto &cis_sum = std::get<N>(cis_sumv);
+
+        File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
+        _attrs.nnz = dataset("pixels/bin1_id").size();
+
+        update_pixel_sum(sum);
+        update_pixel_sum<N, true>(cis_sum);
+      },
+      sumv);
 }
 
 inline void File::flush() { _root_group().getFile().flush(); }
@@ -136,7 +151,7 @@ template <typename It>
 inline void File::write_weights(std::string_view uri, std::string_view name, It first_weight,
                                 It last_weight, bool overwrite_if_exists, bool divisive) {
   File(open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, true), uri),
-       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE, DEFAULT_HDF5_CACHE_W0, true)
+       HighFive::File::ReadWrite, DEFAULT_HDF5_CACHE_SIZE * 4, DEFAULT_HDF5_CACHE_W0, true)
       .write_weights(name, first_weight, last_weight, overwrite_if_exists, divisive);
 }
 
@@ -222,7 +237,8 @@ inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bin
 
 template <typename PixelT>
 inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
-                                  std::size_t cache_size_bytes, double w0) -> DatasetMap {
+                                  std::size_t cache_size_bytes, std::uint32_t compression_lvl,
+                                  double w0) -> DatasetMap {
   DatasetMap datasets(MANDATORY_DATASET_NAMES.size() + 1);
 
   const std::size_t num_pixel_datasets = 3;
@@ -237,30 +253,33 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
   const auto pixels_aprop = Dataset::init_access_props(
       DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
-  auto create_dataset = [&](const auto &path, const auto &type, auto aprop) {
+  const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
+
+  auto create_dataset = [&](const auto &path, const auto &type, auto aprop, auto cprop) {
     using T = remove_cvref_t<decltype(type)>;
     if constexpr (is_string_v<T>) {
       const auto &chrom_with_longest_name = chroms.chromosome_with_longest_name();
       datasets.emplace(path, Dataset{root_grp, path, chrom_with_longest_name.name(),
-                                     HighFive::DataSpace::UNLIMITED, aprop});
+                                     HighFive::DataSpace::UNLIMITED, aprop, cprop});
     } else {
-      datasets.emplace(path, Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop});
+      datasets.emplace(path,
+                       Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop, cprop});
     }
   };
 
-  create_dataset("chroms/name", std::string{}, default_aprop);
-  create_dataset("chroms/length", std::int32_t{}, default_aprop);
+  create_dataset("chroms/name", std::string{}, default_aprop, default_cprop);
+  create_dataset("chroms/length", std::int32_t{}, default_aprop, default_cprop);
 
-  create_dataset("bins/chrom", std::int32_t{}, default_aprop);
-  create_dataset("bins/start", std::int32_t{}, default_aprop);
-  create_dataset("bins/end", std::int32_t{}, default_aprop);
+  create_dataset("bins/chrom", std::int32_t{}, default_aprop, default_cprop);
+  create_dataset("bins/start", std::int32_t{}, default_aprop, default_cprop);
+  create_dataset("bins/end", std::int32_t{}, default_aprop, default_cprop);
 
-  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop);
-  create_dataset("pixels/count", PixelT{}, pixels_aprop);
+  create_dataset("pixels/bin1_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/bin2_id", std::int64_t{}, pixels_aprop, default_cprop);
+  create_dataset("pixels/count", PixelT{}, pixels_aprop, default_cprop);
 
-  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop);
-  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop);
+  create_dataset("indexes/bin1_offset", std::int64_t{}, default_aprop, default_cprop);
+  create_dataset("indexes/chrom_offset", std::int64_t{}, default_aprop, default_cprop);
 
   assert(datasets.size() == MANDATORY_DATASET_NAMES.size());
 

@@ -8,18 +8,14 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cerrno>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <highfive/H5File.hpp>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <variant>
 #include <vector>
 
@@ -31,72 +27,23 @@
 #include "hictk/cooler/uri.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/file_writer.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
-#include "hictk/tools/common.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/tools/juicer_tools.hpp"
 
 namespace hictk::tools {
 
-static void write_weights_hic(const hic::File& hf, const BalanceConfig& c,
-                              const std::vector<double>& weights) {
-  auto tmpfile = c.tmp_dir / std::filesystem::path{hf.name()}.filename();
-  for (std::size_t i = 0; i < 1024; ++i) {
-    if (!std::filesystem::exists(tmpfile)) {
-      break;
-    }
-
-    tmpfile.replace_extension(".tmp" + std::to_string(i));
+static void write_weights_hic(
+    hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
+    const phmap::flat_hash_map<std::uint32_t, std::vector<double>>& weights, bool force_overwrite) {
+  for (const auto& [resolution, weights_] : weights) {
+    std::vector<float> weights_f(weights_.size());
+    std::transform(weights_.begin(), weights_.end(), weights_f.begin(),
+                   [](const auto w) { return static_cast<float>(1.0 / w); });
+    hfw.add_norm_vector(c.name, "BP", resolution, weights_f, force_overwrite);
   }
-
-  if (std::filesystem::exists(tmpfile)) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("unable to create temporary file {}"), tmpfile));
-  }
-
-  try {
-    {
-      const std::unique_ptr<FILE> f(std::fopen(tmpfile.string().c_str(), "ae"));
-      if (!bool(f)) {
-        throw fmt::system_error(errno, FMT_STRING("cannot open file {}"), tmpfile);
-      }
-
-      std::ptrdiff_t i0 = 0;
-
-      for (const auto& chrom : hf.chromosomes()) {
-        if (chrom.is_all()) {
-          continue;
-        }
-        fmt::print(f.get(), FMT_STRING("vector\t{}\t{}\t{}\tBP\n"), c.name, chrom.name(),
-                   hf.bin_size());
-
-        const auto num_bins = (chrom.size() + hf.bin_size() - 1) / hf.bin_size();
-        const auto i1 = i0 + static_cast<std::ptrdiff_t>(num_bins);
-        std::for_each(weights.begin() + i0, weights.begin() + i1, [&](const double w) {
-          std::isnan(w) ? fmt::print(f.get(), FMT_COMPILE(".\n"))
-                        : fmt::print(f.get(), FMT_COMPILE("{}\n"), 1.0 / w);
-          if (!bool(f)) {  // NOLINT
-            throw fmt::system_error(
-                errno, FMT_STRING("an error occurred while writing weights to file {}"), tmpfile);
-          }
-        });
-
-        i0 = i1;
-      }
-    }
-
-    auto jt = run_juicer_tools_add_norm(c.juicer_tools_jar, tmpfile, hf.url(), c.juicer_tools_xmx);
-    jt->wait();
-    if (jt->exit_code() != 0) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("juicer_tools pre failed with exit code {}"), jt->exit_code()));
-    }
-  } catch (...) {
-    std::error_code ec{};
-    std::filesystem::remove(tmpfile, ec);
-  }
-  std::filesystem::remove(tmpfile);
+  hfw.write_norm_vectors_and_norm_expected_values();
 }
 
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
@@ -105,9 +52,15 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                                  const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
   const auto path = fmt::format(FMT_STRING("{}/bins/{}"), grp, c.name);
-  SPDLOG_INFO(FMT_STRING("Writing weights to {}::{}..."), file, path);
+  const auto link_path = fmt::format(FMT_STRING("{}/bins/weight"), grp);
 
+  SPDLOG_INFO(FMT_STRING("Writing weights to {}::{}..."), file, path);
   const HighFive::File clr(file, HighFive::File::ReadWrite);
+
+  if (c.symlink_to_weight && clr.exist(link_path) && !c.force) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("unable to create link to {}::{}: object already exists"), file, link_path));
+  }
 
   if (clr.exist(path)) {
     assert(c.force);
@@ -138,12 +91,18 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
     dset.write_attribute("scale", scale);
     dset.write_attribute("var", variance);
   }
+
+  if (c.symlink_to_weight) {
+    SPDLOG_INFO(FMT_STRING("Linking weights to {}::{}..."), file, link_path);
+    if (clr.exist(link_path)) {
+      clr.unlink(link_path);
+    }
+    clr.getGroup(grp).createSoftLink(link_path, dset());
+  }
 }
 
 // NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-static int balance_singleres_file(File&& f, const BalanceConfig& c) {
-  std::filesystem::path tmpfile{};
-
+static int balance_cooler(cooler::File&& f, const BalanceConfig& c) {
   if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
@@ -151,21 +110,7 @@ static int balance_singleres_file(File&& f, const BalanceConfig& c) {
                     c.name, f.path()));
   }
 
-  if (!c.in_memory) {
-    tmpfile = c.tmp_dir / std::filesystem::path{f.path()}.filename();
-    for (std::size_t i = 0; i < 1024; ++i) {
-      if (!std::filesystem::exists(tmpfile)) {
-        break;
-      }
-
-      tmpfile.replace_extension(".tmp" + std::to_string(i));
-    }
-
-    if (std::filesystem::exists(tmpfile)) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("unable to create temporary file {}"), tmpfile));
-    }
-  }
+  const auto tmpfile = c.tmp_dir / std::filesystem::path{f.path()}.filename();
 
   const balancing::ICE::Params params{c.tolerance, c.max_iters,  c.masked_diags,
                                       c.min_nnz,   c.min_count,  c.mad_max,
@@ -179,8 +124,7 @@ static int balance_singleres_file(File&& f, const BalanceConfig& c) {
     mode = balancing::ICE::Type::trans;
   }
 
-  const auto balancer =
-      std::visit([&](const auto& ff) { return balancing::ICE(ff, mode, params); }, f.get());
+  const balancing::ICE balancer(f, mode, params);
   const auto weights = balancer.get_weights(c.rescale_marginals);
 
   if (c.stdout_) {
@@ -189,43 +133,80 @@ static int balance_singleres_file(File&& f, const BalanceConfig& c) {
     return 0;
   }
 
-  if (f.is_cooler()) {
-    const auto uri = f.uri();
-    f.get<cooler::File>().close();
-    write_weights_cooler(uri, c, weights, balancer.variance(), balancer.scale());
-    return 0;
-  }
-
-  write_weights_hic(f.get<hic::File>(), c, weights);
-
+  const auto uri = f.uri();
+  f.close();
+  write_weights_cooler(uri, c, weights, balancer.variance(), balancer.scale());
   return 0;
 }
 
-static int balance_multires(const BalanceConfig& c) {
-  const auto resolutions = cooler::MultiResFile(c.path_to_input.string()).resolutions();
-
+// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+static int balance_hic(const BalanceConfig& c) {
+  const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
-    balance_singleres_file(
-        File(fmt::format(FMT_STRING("{}::/resolutions/{}"), c.path_to_input.string(), res)), c);
+    const hic::File f(c.path_to_input.string(), res);
+    if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
+                                 "--force to overwrite existing weights."),
+                      c.name, f.path()));
+    }
+  }
+
+  const auto tmpfile = c.tmp_dir / std::filesystem::path{c.path_to_input}.filename();
+
+  const balancing::ICE::Params params{c.tolerance, c.max_iters,  c.masked_diags,
+                                      c.min_nnz,   c.min_count,  c.mad_max,
+                                      tmpfile,     c.chunk_size, c.threads};
+  balancing::ICE::Type mode{};
+  if (c.mode == "gw") {
+    mode = balancing::ICE::Type::gw;
+  } else if (c.mode == "cis") {
+    mode = balancing::ICE::Type::cis;
+  } else {
+    mode = balancing::ICE::Type::trans;
+  }
+
+  phmap::flat_hash_map<std::uint32_t, std::vector<double>> weights{resolutions.size()};
+  for (const auto& res : resolutions) {
+    SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
+    const hic::File f(c.path_to_input.string(), res);
+    const balancing::ICE balancer(f, mode, params);
+
+    if (c.stdout_) {
+      std::for_each(weights.begin(), weights.end(),
+                    [&](const auto w) { fmt::print(FMT_COMPILE("{}\n"), w); });
+    } else {
+      weights.emplace(res, balancer.get_weights(c.rescale_marginals));
+    }
+  }
+
+  hic::internal::HiCFileWriter hfw(c.path_to_input.string(), c.threads);
+  write_weights_hic(hfw, c, weights, c.force);
+  return 0;
+}
+
+static int balance_multires_cooler(const BalanceConfig& c) {
+  const cooler::MultiResFile mclr(c.path_to_input.string());
+
+  for (const auto& res : mclr.resolutions()) {
+    SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
+    balance_cooler(mclr.open(res), c);
   }
   return 0;
 }
 
 int balance_subcmd(const BalanceConfig& c) {
+  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+
+  if (hic::utils::is_hic_file(c.path_to_input.string())) {
+    return balance_hic(c);
+  }
+
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires(c);
+    return balance_multires_cooler(c);
   }
 
-  std::vector<std::uint32_t> resolutions{};
-  if (hic::utils::is_hic_file(c.path_to_input)) {
-    resolutions = hic::utils::list_resolutions(c.path_to_input);
-  } else {
-    resolutions.push_back(File(c.path_to_input.string()).bin_size());
-  }
-
-  for (const auto& res : resolutions) {
-    balance_singleres_file(File(c.path_to_input.string(), res), c);
-  }
+  balance_cooler(cooler::File(c.path_to_input.string()), c);
 
   return 0;
 }

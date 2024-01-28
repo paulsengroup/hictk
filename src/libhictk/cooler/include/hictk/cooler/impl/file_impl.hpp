@@ -57,11 +57,13 @@ inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_siz
 
 template <typename PixelT>
 inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT pixel,
-                  Attributes attributes, std::size_t cache_size_bytes, double w0)
+                  Attributes attributes, std::size_t cache_size_bytes,
+                  std::uint32_t compression_lvl, double w0)
     : _mode(HighFive::File::ReadWrite),
       _root_group(std::move(entrypoint)),
       _groups(create_groups(_root_group)),
-      _datasets(create_datasets<PixelT>(_root_group, bins.chromosomes(), cache_size_bytes, w0)),
+      _datasets(create_datasets<PixelT>(_root_group, bins.chromosomes(), cache_size_bytes,
+                                        compression_lvl, w0)),
       _attrs(std::move(attributes)),
       _pixel_variant(PixelT(0)),
       _bins(std::make_shared<const BinTable>(std::move(bins))),
@@ -73,6 +75,14 @@ inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT p
   assert(std::holds_alternative<PixelT>(_pixel_variant));
   write_chromosomes();
   write_bin_table();
+
+  if constexpr (std::is_floating_point_v<PixelT>) {
+    _attrs.sum = 0.0;
+    _attrs.cis = 0.0;
+  } else {
+    _attrs.sum = std::int64_t(0);
+    _attrs.cis = std::int64_t(0);
+  }
 
   write_sentinel_attr();
 }
@@ -120,14 +130,15 @@ inline File File::open_read_once(std::string_view uri, std::size_t cache_size_by
 template <typename PixelT>
 inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
                          bool overwrite_if_exists, Attributes attributes,
-                         std::size_t cache_size_bytes) {
+                         std::size_t cache_size_bytes, std::uint32_t compression_lvl) {
   return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists, attributes,
-                              cache_size_bytes);
+                              cache_size_bytes, compression_lvl);
 }
 
 template <typename PixelT>
 inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_exists,
-                         Attributes attributes, std::size_t cache_size_bytes) {
+                         Attributes attributes, std::size_t cache_size_bytes,
+                         std::uint32_t compression_lvl) {
   try {
     const auto [file_path, root_path] = parse_cooler_uri(uri);
     const auto uri_is_file_path = root_path.empty() || root_path == "/";
@@ -169,7 +180,7 @@ inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_
 
     return create<PixelT>(
         open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), bins,
-        attributes, cache_size_bytes);
+        attributes, cache_size_bytes, compression_lvl);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
@@ -189,13 +200,15 @@ inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_by
 
 template <typename PixelT>
 inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size,
-                         Attributes attributes, std::size_t cache_size_bytes) {
-  return File::create<PixelT>(entrypoint, BinTable(chroms, bin_size), attributes, cache_size_bytes);
+                         Attributes attributes, std::size_t cache_size_bytes,
+                         std::uint32_t compression_lvl) {
+  return File::create<PixelT>(entrypoint, BinTable(chroms, bin_size), attributes, cache_size_bytes,
+                              compression_lvl);
 }
 
 template <typename PixelT>
 inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attributes,
-                         std::size_t cache_size_bytes) {
+                         std::size_t cache_size_bytes, std::uint32_t compression_lvl) {
   static_assert(std::is_arithmetic_v<PixelT>);
   if (std::holds_alternative<BinTableVariable<>>(bins.get())) {
     attributes.bin_type = "variable";
@@ -209,7 +222,8 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
     if (utils::is_cooler(entrypoint())) {
       throw std::runtime_error("URI points to an already existing cooler.");
     }
-    return File(entrypoint, bins, PixelT(0), attributes, cache_size_bytes, true);
+    return File(entrypoint, bins, PixelT(0), attributes, cache_size_bytes, compression_lvl,
+                DEFAULT_HDF5_CACHE_W0);
 
   } catch (const std::exception &e) {
     throw std::runtime_error(

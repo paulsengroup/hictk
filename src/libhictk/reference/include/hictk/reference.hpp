@@ -92,6 +92,10 @@ class Reference {
   [[nodiscard]] const Chromosome& longest_chromosome() const;
   [[nodiscard]] const Chromosome& chromosome_with_longest_name() const;
 
+  // Add/remove ALL chromosome
+  [[nodiscard]] Reference remove_ALL() const;
+  [[nodiscard]] Reference add_ALL(std::uint32_t scaling_factor = 1) const;
+
  private:
   void validate_chrom_id(std::uint32_t chrom_id) const;
 

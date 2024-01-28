@@ -713,6 +713,8 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
 inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
     : _selectors(std::move(selectors_)) {}
 
+inline bool PixelSelectorAll::empty() const noexcept { return begin<float>() == end<float>(); }
+
 template <typename N>
 inline auto PixelSelectorAll::begin(bool sorted) const -> iterator<N> {
   return cbegin<N>(sorted);

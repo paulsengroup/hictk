@@ -21,7 +21,7 @@
 
 namespace hictk::hic::internal {
 
-constexpr HiCFooterMetadata::operator bool() const noexcept { return fileOffset >= 0; }
+constexpr HiCFooterMetadata::operator bool() const noexcept { return matrixMetadataOffset >= 0; }
 
 inline bool HiCFooterMetadata::operator==(const HiCFooterMetadata &other) const noexcept {
   return url == other.url && matrix_type == other.matrix_type &&
@@ -53,7 +53,7 @@ inline bool HiCFooter::operator!=(const HiCFooter &other) const noexcept {
 constexpr const HiCFooterMetadata &HiCFooter::metadata() const noexcept { return _metadata; }
 constexpr HiCFooterMetadata &HiCFooter::metadata() noexcept { return _metadata; }
 inline const Index &HiCFooter::index() const noexcept { return _index; }
-constexpr const std::string &HiCFooter::url() const noexcept { return metadata().url; }
+constexpr const std::string &HiCFooter::path() const noexcept { return metadata().url; }
 constexpr MatrixType HiCFooter::matrix_type() const noexcept { return metadata().matrix_type; }
 inline balancing::Method HiCFooter::normalization() const noexcept {
   return metadata().normalization;
@@ -62,7 +62,9 @@ constexpr MatrixUnit HiCFooter::unit() const noexcept { return metadata().unit; 
 constexpr std::uint32_t HiCFooter::resolution() const noexcept { return metadata().resolution; }
 constexpr const Chromosome &HiCFooter::chrom1() const noexcept { return metadata().chrom1; }
 constexpr const Chromosome &HiCFooter::chrom2() const noexcept { return metadata().chrom2; }
-constexpr std::int64_t HiCFooter::fileOffset() const noexcept { return metadata().fileOffset; }
+constexpr std::int64_t HiCFooter::fileOffset() const noexcept {
+  return metadata().matrixMetadataOffset;
+}
 
 constexpr const std::vector<double> &HiCFooter::expectedValues() const noexcept {
   return _expectedValues;
