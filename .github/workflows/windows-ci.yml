@@ -131,7 +131,8 @@ jobs:
       - name: Install build dependencies
         run: |
           conan install .                                           \
-             --build="*"                                            \
+             --build=missing                                        \
+             --build="catch2/*"                                     \
              -pr:h default                                          \
              -pr:b default                                          \
              -s:h "compiler=${{ matrix.compiler-name }}"            \
