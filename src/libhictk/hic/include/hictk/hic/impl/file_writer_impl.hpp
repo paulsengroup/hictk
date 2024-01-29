@@ -348,24 +348,12 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
       genome_size += chrom.size();
     }
 
-    auto base_resolution = resolutions().front();
+    const auto base_resolution = resolutions().back();
     auto target_resolution =
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
-    auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
+    const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
     const auto target_resolution_scaled = target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR;
-
-    for (const auto &res : resolutions()) {
-      if (res > target_resolution) {
-        break;
-      }
-
-      if (target_resolution % res == 0) {
-        base_resolution = res;
-      }
-    }
-
-    factor = target_resolution / base_resolution;
 
     SPDLOG_INFO(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
                 chromosomes().at(0).name());
