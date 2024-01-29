@@ -177,16 +177,19 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::vector<std::uint32_t> resolutions_,
                                     std::string_view assembly_, std::size_t n_threads,
                                     std::size_t chunk_size, const std::filesystem::path &tmpdir,
-                                    std::uint32_t compression_lvl, std::size_t buffer_size)
+                                    std::uint32_t compression_lvl, bool skip_all_vs_all_matrix,
+                                    std::size_t buffer_size)
     : _fs(filestream::FileStream::create(std::string{path_})),
       _tmpdir(tmpdir),
-      _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_)),
+      _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
+                          skip_all_vs_all_matrix)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
       _block_mappers(init_interaction_block_mappers(_tmpdir, _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
       _compressor(libdeflate_alloc_compressor(static_cast<std::int32_t>(compression_lvl))),
       _compression_buffer(buffer_size, '\0'),
-      _tpool(init_tpool(n_threads)) {
+      _tpool(init_tpool(n_threads)),
+      _skip_all_vs_all_matrix(skip_all_vs_all_matrix) {
   if (!std::filesystem::exists(_tmpdir)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("temporary directory {} does not exist"), _tmpdir));
@@ -216,7 +219,7 @@ inline auto HiCFileWriter::stats(std::uint32_t resolution) const noexcept -> Sta
 inline void HiCFileWriter::serialize() {
   try {
     write_header();
-    write_pixels();
+    write_pixels(_skip_all_vs_all_matrix);
     finalize(true);
     for (auto &[_, mapper] : _block_mappers) {
       mapper.clear();
@@ -315,7 +318,7 @@ inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pi
   }
 }
 
-inline void HiCFileWriter::write_pixels() {
+inline void HiCFileWriter::write_pixels(bool skip_all_vs_all_matrix) {
   SPDLOG_INFO(FMT_STRING("begin writing interaction blocks to file \"{}\"..."), path());
   const auto &chrom_idx = _block_mappers.at(resolutions().front()).chromosome_index();
   std::vector<std::pair<Chromosome, Chromosome>> chroms{chrom_idx.size()};
@@ -329,7 +332,10 @@ inline void HiCFileWriter::write_pixels() {
     }
     write_pixels(chrom1, chrom2);
   }
-  write_all_matrix();
+
+  if (!skip_all_vs_all_matrix) {
+    write_all_matrix();
+  }
 }
 
 inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
@@ -1041,8 +1047,13 @@ inline HiCHeader HiCFileWriter::read_header(filestream::FileStream &fs) {
 
 inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chromosomes,
                                             std::vector<std::uint32_t> resolutions,
-                                            std::string_view assembly) {
-  chromosomes = chromosomes.add_ALL(DEFAULT_CHROM_ALL_SCALE_FACTOR);
+                                            std::string_view assembly,
+                                            bool skip_all_vs_all_matrix) {
+  if (skip_all_vs_all_matrix) {
+    chromosomes = chromosomes.remove_ALL();
+  } else {
+    chromosomes = chromosomes.add_ALL(DEFAULT_CHROM_ALL_SCALE_FACTOR);
+  }
   return {
       std::string{path},      // url
       9,                      // version

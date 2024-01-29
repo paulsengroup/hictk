@@ -209,6 +209,9 @@ hictk load
                                 By default coordinates are assumed to be one-based for interactions in
                                 4dn and validapairs formats and zero-based otherwise.
     --count-as-float            Interactions are floats.
+    --skip-all-vs-all,--no-skip-all-vs-all{false}
+                                Do not generate All vs All matrix.
+                                Has no effect when creating .cool files.
     --assume-sorted,--assume-unsorted{false}
                                 Assume input files are already sorted.
     --chunk-size UINT [10000000]

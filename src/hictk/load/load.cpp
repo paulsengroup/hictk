@@ -75,7 +75,8 @@ static Stats ingest_pixels_hic(const LoadConfig& c) {
 
   [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir};
   return ingest_pixels_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
-                           format, c.threads, c.batch_size, c.compression_lvl, c.force);
+                           c.skip_all_vs_all_matrix, format, c.threads, c.batch_size,
+                           c.compression_lvl, c.force);
 }
 
 static Stats ingest_pixels_cooler(const LoadConfig& c) {
@@ -116,7 +117,8 @@ static Stats ingest_pairs_hic(const LoadConfig& c) {
 
   [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir};
   return ingest_pairs_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
-                          format, c.threads, c.batch_size, c.compression_lvl, c.force);
+                          c.skip_all_vs_all_matrix, format, c.threads, c.batch_size,
+                          c.compression_lvl, c.force);
 }
 
 static Stats ingest_pixels(const LoadConfig& c) {

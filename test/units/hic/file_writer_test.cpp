@@ -107,11 +107,14 @@ static void hic_file_writer_compare_pixels(const std::vector<Pixel<float>>& expe
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void hic_file_writer_create_file_test(const std::string& path1, const std::string& path2,
                                              const std::vector<std::uint32_t>& resolutions,
-                                             std::size_t num_threads) {
+                                             std::size_t num_threads, bool skip_all_vs_all_matrix) {
   {
     const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
+    const auto tmpdir = testdir() / (path1 + ".tmp");
+    std::filesystem::create_directories(tmpdir);
     std::filesystem::remove(path2);
-    HiCFileWriter w(path2, chromosomes, resolutions, "dm6", num_threads);
+    HiCFileWriter w(path2, chromosomes, resolutions, "dm6", num_threads, 99'999, tmpdir, 1,
+                    skip_all_vs_all_matrix);
     for (std::size_t i = 0; i < resolutions.size(); ++i) {
       if (i % 2 == 0) {
         const auto resolution = resolutions[i];
@@ -161,11 +164,11 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
 
   SECTION("create file (st)") {
     const std::vector<std::uint32_t> resolutions{250'000, 500'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 1);
+    hic_file_writer_create_file_test(path1, path2, resolutions, 1, false);
   }
   SECTION("create file (mt)") {
     const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 3);
+    hic_file_writer_create_file_test(path1, path2, resolutions, 3, true);
   }
 
   SECTION("add weights") {
