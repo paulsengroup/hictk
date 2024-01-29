@@ -115,6 +115,12 @@ void Cli::make_convert_subcommand() {
       ->check(CLI::Range(1, 12))
       ->capture_default_str();
   sc.add_flag(
+      "--skip-all-vs-all,!--no-skip-all-vs-all",
+      c.skip_all_vs_all_matrix,
+      "Do not generate All vs All matrix.\n"
+      "Has no effect when creating .[m]cool files.")
+      ->capture_default_str();
+  sc.add_flag(
       "-f,--force",
       c.force,
       "Overwrite existing files (if any).")

@@ -52,6 +52,7 @@ struct ConvertConfig {
 
   std::vector<balancing::Method> normalization_methods{};
   bool fail_if_normalization_method_is_not_avaliable{false};
+  bool skip_all_vs_all_matrix{false};
 
   std::uint32_t compression_lvl{6};
   std::size_t threads{2};

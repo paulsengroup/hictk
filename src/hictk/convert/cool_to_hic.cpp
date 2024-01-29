@@ -126,7 +126,7 @@ void cool_to_hic(const ConvertConfig& c) {
   const internal::TmpDir tmpdir{c.tmp_dir};
   hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
                                         c.genome, c.threads, c.chunk_size, c.tmp_dir,
-                                        c.compression_lvl);
+                                        c.compression_lvl, c.skip_all_vs_all_matrix);
   copy_pixels(w, base_clr, c);
   w.serialize();
 
