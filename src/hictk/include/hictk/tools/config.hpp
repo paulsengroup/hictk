@@ -176,6 +176,7 @@ struct ZoomifyConfig {
   std::uint32_t compression_lvl{6};
   std::uint32_t threads{1};
   std::size_t batch_size{10'000'000};
+  bool skip_all_vs_all_matrix{false};
 
   bool force{false};
   std::uint8_t verbosity{4};
