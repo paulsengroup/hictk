@@ -141,6 +141,7 @@ struct MergeConfig {
   std::size_t chunk_size{10'000'000};
   std::uint32_t compression_lvl{9};
   std::size_t threads{1};
+  bool skip_all_vs_all_matrix{true};
 
   bool force{false};
   std::uint8_t verbosity{4};

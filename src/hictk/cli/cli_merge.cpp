@@ -88,6 +88,13 @@ void Cli::make_merge_subcommand() {
       "Path to a folder where to store temporary data.")
       ->capture_default_str();
 
+  sc.add_flag(
+      "--skip-all-vs-all,!--no-skip-all-vs-all",
+      c.skip_all_vs_all_matrix,
+      "Do not generate All vs All matrix.\n"
+      "Has no effect when merging .cool files.")
+      ->capture_default_str();
+
   sc.add_option(
       "-v,--verbosity",
       c.verbosity,
