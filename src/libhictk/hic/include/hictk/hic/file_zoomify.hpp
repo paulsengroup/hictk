@@ -22,7 +22,7 @@ class HiCFileZoomify {
                  const std::vector<std::uint32_t>& resolutions, std::size_t n_threads = 1,
                  std::size_t chunk_size = 10'000'000,
                  const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-                 std::uint32_t compression_lvl = 9);
+                 std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
   void zoomify();
 
  private:
@@ -31,7 +31,7 @@ class HiCFileZoomify {
                                                  const std::vector<std::uint32_t>& resolution,
                                                  std::size_t n_threads, std::size_t chunk_size,
                                                  const std::filesystem::path& tmpdir,
-                                                 std::uint32_t compression_lvl);
+                                                 std::uint32_t compression_lvl, bool skip_all_vs_all_matrix);
   void init();
 };
 

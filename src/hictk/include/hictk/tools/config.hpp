@@ -52,6 +52,7 @@ struct ConvertConfig {
 
   std::vector<balancing::Method> normalization_methods{};
   bool fail_if_normalization_method_is_not_avaliable{false};
+  bool skip_all_vs_all_matrix{false};
 
   std::uint32_t compression_lvl{6};
   std::size_t threads{2};
@@ -118,6 +119,7 @@ struct LoadConfig {
   bool assume_sorted{false};
   bool force{false};
   bool validate_pixels{true};
+  bool skip_all_vs_all_matrix{true};
 
   std::string output_format{};
 
@@ -139,6 +141,7 @@ struct MergeConfig {
   std::size_t chunk_size{10'000'000};
   std::uint32_t compression_lvl{9};
   std::size_t threads{1};
+  bool skip_all_vs_all_matrix{true};
 
   bool force{false};
   std::uint8_t verbosity{4};
@@ -173,6 +176,7 @@ struct ZoomifyConfig {
   std::uint32_t compression_lvl{6};
   std::uint32_t threads{1};
   std::size_t batch_size{10'000'000};
+  bool skip_all_vs_all_matrix{false};
 
   bool force{false};
   std::uint8_t verbosity{4};

@@ -109,7 +109,8 @@ void zoomify_hic(const ZoomifyConfig& c) {
                                 c.threads,
                                 c.batch_size,
                                 tmpdir(),
-                                c.compression_lvl}
+                                c.compression_lvl,
+                                c.skip_all_vs_all_matrix}
       .zoomify();
 }
 

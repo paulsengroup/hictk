@@ -34,7 +34,7 @@ template <typename Str>
 inline void merge(Str first_file, Str last_file, std::string_view dest_file,
                   std::uint32_t resolution, const std::filesystem::path& tmp_dir,
                   bool overwrite_if_exists, std::size_t chunk_size, std::size_t n_threads,
-                  std::uint32_t compression_lvl) {
+                  std::uint32_t compression_lvl, bool skip_all_vs_all) {
   static_assert(std::is_constructible_v<std::string, decltype(*first_file)>);
   assert(chunk_size != 0);
   try {
@@ -63,9 +63,9 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_file,
     }
 
     merge(heads, tails, files.front().bins(), dest_file, files.front().assembly(), tmp_dir,
-          overwrite_if_exists, chunk_size, n_threads, compression_lvl);
+          overwrite_if_exists, chunk_size, n_threads, compression_lvl, skip_all_vs_all);
   } catch (const std::exception& e) {
-    throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} cooler files: {}"),
+    throw std::runtime_error(fmt::format(FMT_STRING("failed to merge {} .hic files: {}"),
                                          std::distance(first_file, last_file), e.what()));
   }
 }
@@ -74,7 +74,8 @@ template <typename PixelIt>
 inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
                   const BinTable& bins, std::string_view dest_uri, std::string_view assembly,
                   const std::filesystem::path& tmp_dir, bool overwrite_if_exists,
-                  std::size_t chunk_size, std::size_t n_threads, std::uint32_t compression_lvl) {
+                  std::size_t chunk_size, std::size_t n_threads, std::uint32_t compression_lvl,
+                  bool skip_all_vs_all) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
   hictk::transformers::PixelMerger merger{heads, tails};
@@ -86,7 +87,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
   }
 
   hic::internal::HiCFileWriter w(dest_uri, bins.chromosomes(), {bins.bin_size()}, assembly,
-                                 n_threads, chunk_size, tmp_dir, compression_lvl);
+                                 n_threads, chunk_size, tmp_dir, compression_lvl, skip_all_vs_all);
 
   w.add_pixels(bins.bin_size(), merger.begin(), merger.end());
   w.serialize();

@@ -38,7 +38,8 @@ function dump_table {
     args+=(--resolution "$resolution")
   fi
 
-  "$hictk" dump "${args[@]}" --table "$table" "$f"
+  # https://stackoverflow.com/a/61551944
+  "$hictk" dump ${args[@]+"${args[@]}"} --table "$table" "$f"
 }
 
 

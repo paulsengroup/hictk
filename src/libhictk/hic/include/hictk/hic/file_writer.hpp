@@ -138,6 +138,8 @@ class HiCFileWriter {
 
   BS::thread_pool _tpool{};
 
+  bool _skip_all_vs_all_matrix{};
+
   static constexpr std::uint32_t DEFAULT_CHROM_ALL_SCALE_FACTOR{1000};
 
  public:
@@ -147,7 +149,8 @@ class HiCFileWriter {
                 std::vector<std::uint32_t> resolutions_, std::string_view assembly_ = "unknown",
                 std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
                 const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-                std::uint32_t compression_lvl = 12, std::size_t buffer_size = 32'000'000);
+                std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
+                std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -184,7 +187,8 @@ class HiCFileWriter {
   [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
-                                             std::string_view assembly);
+                                             std::string_view assembly,
+                                             bool skip_all_vs_all_matrix);
   [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
                                             const std::vector<std::uint32_t>& resolutions)
       -> BinTables;
@@ -200,7 +204,7 @@ class HiCFileWriter {
   void write_norm_vector_index();
 
   // Write pixels
-  void write_pixels();
+  void write_pixels(bool skip_all_vs_all_matrix);
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
       -> HiCSectionOffsets;

@@ -99,6 +99,13 @@ void Cli::make_zoomify_subcommand() {
       "Only used when zoomifying .hic files.")
       ->capture_default_str();
 
+  sc.add_flag(
+      "--skip-all-vs-all,!--no-skip-all-vs-all",
+      c.skip_all_vs_all_matrix,
+      "Do not generate All vs All matrix.\n"
+      "Has no effect when zoomifying .cool files.")
+      ->capture_default_str();
+
   sc.add_option(
       "--tmpdir",
       c.tmp_dir,

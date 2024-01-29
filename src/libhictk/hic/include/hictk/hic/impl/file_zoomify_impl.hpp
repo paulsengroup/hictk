@@ -22,10 +22,10 @@ inline HiCFileZoomify::HiCFileZoomify(std::string_view input_hic, std::string_vi
                                       const std::vector<std::uint32_t>& resolutions,
                                       std::size_t n_threads, std::size_t chunk_size,
                                       const std::filesystem::path& tmpdir,
-                                      std::uint32_t compression_lvl)
+                                      std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
     : _path_to_input_hic(std::string{input_hic}),
       _hfw(init_writer(input_hic, output_hic, resolutions, n_threads, chunk_size, tmpdir,
-                       compression_lvl)) {
+                       compression_lvl, skip_all_vs_all_matrix)) {
   const auto avail_resolutions = hic::utils::list_resolutions(input_hic);
   const auto base_resolution = avail_resolutions.front();
   for (const auto& res : resolutions) {
@@ -63,15 +63,17 @@ inline HiCFileWriter HiCFileZoomify::init_writer(std::string_view input_hic,
                                                  const std::vector<std::uint32_t>& resolutions,
                                                  std::size_t n_threads, std::size_t chunk_size,
                                                  const std::filesystem::path& tmpdir,
-                                                 std::uint32_t compression_lvl) {
+                                                 std::uint32_t compression_lvl,
+                                                 bool skip_all_vs_all_matrix) {
   auto resolutions_ = resolutions;
   std::sort(resolutions_.begin(), resolutions_.end());
 
   const auto avail_resolutions = hic::utils::list_resolutions(input_hic);
   const File hf(std::string{input_hic}, avail_resolutions.back());
 
-  return HiCFileWriter{output_hic, hf.chromosomes(), resolutions_, hf.assembly(),
-                       n_threads,  chunk_size,       tmpdir,       compression_lvl};
+  return HiCFileWriter{output_hic,    hf.chromosomes(), resolutions_,
+                       hf.assembly(), n_threads,        chunk_size,
+                       tmpdir,        compression_lvl,  skip_all_vs_all_matrix};
 }
 
 }  // namespace hictk::hic::internal
