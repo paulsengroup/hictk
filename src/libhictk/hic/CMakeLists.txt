@@ -45,22 +45,3 @@ target_link_system_libraries(
   phmap
   readerwriterqueue::readerwriterqueue
   "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
-
-if(BUILD_SHARED_LIBS AND HICTK_PREFER_STATIC_LINKING)
-  if(TARGET libdeflate::libdeflate_static)
-    target_link_system_libraries(hic INTERFACE libdeflate::libdeflate_static)
-  else()
-    target_link_system_libraries(hic INTERFACE libdeflate::libdeflate_shared)
-  endif()
-  if(TARGET zstd::libzstd_static)
-    target_link_system_libraries(hic INTERFACE zstd::libzstd_static)
-  else()
-    target_link_system_libraries(hic INTERFACE zstd::libzstd_shared)
-  endif()
-else()
-  target_link_system_libraries(
-    hic
-    INTERFACE
-    "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
-endif()

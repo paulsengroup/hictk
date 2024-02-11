@@ -136,7 +136,6 @@ option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
-option(HICTK_PREFER_STATIC_LINKING "Prefer linking to static libraries" OFF)
 
 if(HICTK_WITH_EIGEN)
   target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_EIGEN)
