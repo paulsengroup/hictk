@@ -230,6 +230,7 @@ void Cli::transform_args_dump_subcommand() {
       throw std::runtime_error("file does not contain any cell");
     }
     c.uri = fmt::format(FMT_STRING("{}::/cells/{}"), c.uri, *sclr.cells().begin());
+    c.format = "cool";
   }
 
   if (_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
