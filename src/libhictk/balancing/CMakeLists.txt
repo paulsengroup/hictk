@@ -26,7 +26,19 @@ target_link_system_libraries(
   INTERFACE
   bshoshany-thread-pool::bshoshany-thread-pool
   nonstd::span-lite
-  phmap
-  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
+  phmap)
+
+if(BUILD_SHARED_LIBS AND HICTK_PREFER_STATIC_LINKING)
+  if(TARGET zstd::libzstd_static)
+    target_link_system_libraries(balancing INTERFACE zstd::libzstd_static)
+  else()
+    target_link_system_libraries(balancing INTERFACE zstd::libzstd_shared)
+  endif()
+else()
+  target_link_system_libraries(
+          balancing
+          INTERFACE
+          "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
+endif()
 
 target_compile_definitions(balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
