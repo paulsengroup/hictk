@@ -94,6 +94,10 @@ inline const Reference& File::chromosomes() const noexcept { return bins().chrom
 
 inline const std::string& File::assembly() const noexcept { return _fs->header().genomeID; }
 
+inline const phmap::flat_hash_map<std::string, std::string>& File::attributes() const noexcept {
+  return _fs->header().attributes;
+}
+
 inline const std::vector<std::uint32_t>& File::avail_resolutions() const noexcept {
   return _fs->header().resolutions;
 }

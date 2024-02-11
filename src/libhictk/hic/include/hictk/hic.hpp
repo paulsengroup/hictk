@@ -59,6 +59,7 @@ class File {
   [[nodiscard]] std::uint64_t nbins() const;
   [[nodiscard]] std::uint64_t nchroms() const;
   [[nodiscard]] const std::string &assembly() const noexcept;
+  [[nodiscard]] const phmap::flat_hash_map<std::string, std::string> &attributes() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
