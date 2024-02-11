@@ -7,6 +7,18 @@
 set(HICTK_WITH_EIGEN @HICTK_WITH_EIGEN@)
 
 include(CMakeFindDependencyMacro)
+
+find_dependency(
+  bshoshany-thread-pool
+  CONFIG
+  QUIET
+  REQUIRED)
+find_dependency(
+  concurrentqueue
+  CONFIG
+  QUIET
+  REQUIRED)
+
 if(HICTK_WITH_EIGEN)
   find_dependency(
     Eigen3
@@ -48,7 +60,22 @@ find_dependency(
   QUIET
   REQUIRED)
 find_dependency(
+  readerwriterqueue
+  CONFIG
+  QUIET
+  REQUIRED)
+find_dependency(
+  span-lite
+  CONFIG
+  QUIET
+  REQUIRED)
+find_dependency(
   spdlog
+  CONFIG
+  QUIET
+  REQUIRED)
+find_dependency(
+  zstd
   CONFIG
   QUIET
   REQUIRED)
