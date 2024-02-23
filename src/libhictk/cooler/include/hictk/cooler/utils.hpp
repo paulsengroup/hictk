@@ -25,8 +25,9 @@ void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool overwrit
 
 template <typename PixelIt>
 void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
-           const BinTable& bins, std::string_view dest_uri, bool overwrite_if_exists = false,
-           std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000,
+           const BinTable& bins, std::string_view dest_uri, std::string_view assembly = "unknown",
+           bool overwrite_if_exists = false, std::size_t chunk_size = 500'000,
+           std::size_t update_frequency = 10'000'000,
            std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
 [[nodiscard]] bool equal(std::string_view uri1, std::string_view uri2,
