@@ -117,6 +117,7 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   RootGroup root_grp{fp.getGroup("/")};
 
   attributes.bin_size = bins.bin_size();
+  attributes.bin_type = bins.bin_size() == 0 ? "variable" : "fixed";
   create_groups(root_grp);
   create_datasets(root_grp, bins);
 
