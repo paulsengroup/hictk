@@ -247,8 +247,8 @@ inline void SparseMatrix::marginalize(MargsVector& marg, BS::thread_pool* tpool,
     return;
   }
 
-  tpool->push_loop(0, size(), marginalize_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), size(), marginalize_impl);
+  tpool->wait();
 }
 
 inline void SparseMatrix::marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool,
@@ -274,8 +274,8 @@ inline void SparseMatrix::marginalize_nnz(MargsVector& marg, BS::thread_pool* tp
     return;
   }
 
-  tpool->push_loop(0, size(), marginalize_nnz_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), size(), marginalize_nnz_impl);
+  tpool->wait();
 }
 
 inline void SparseMatrix::times_outer_product_marg(MargsVector& marg,
@@ -309,8 +309,8 @@ inline void SparseMatrix::times_outer_product_marg(MargsVector& marg,
     return;
   }
 
-  tpool->push_loop(0, size(), times_outer_product_marg_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), size(), times_outer_product_marg_impl);
+  tpool->wait();
 }
 
 inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
@@ -393,9 +393,9 @@ inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool*
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->push_task(marginalize_impl, i0, i1);
+    tpool->detach_task([&]() { marginalize_impl(i0, i1); });
   }
-  tpool->wait_for_tasks();
+  tpool->wait();
 }
 
 inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool,
@@ -428,9 +428,9 @@ inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_p
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->push_task(marginalize_nnz_impl, i0, i1);
+    tpool->detach_task([&]() { marginalize_nnz_impl(i0, i1); });
   }
-  tpool->wait_for_tasks();
+  tpool->wait();
 }
 
 inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
@@ -468,9 +468,9 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->push_task(times_outer_product_marg_impl, i0, i1);
+    tpool->detach_task([&]() { times_outer_product_marg_impl(i0, i1); });
   }
-  tpool->wait_for_tasks();
+  tpool->wait();
 }
 
 inline void SparseMatrixChunked::write_chunk() {

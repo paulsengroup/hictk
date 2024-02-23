@@ -557,8 +557,8 @@ inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const dou
     return std::make_pair(marg_sum, nnz_marg);
   }
 
-  tpool->push_loop(0, marg.size(), aggregate_marg_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), marg.size(), aggregate_marg_impl);
+  tpool->wait();
 
   return std::make_pair(marg_sum, nnz_marg);
 }
@@ -578,8 +578,8 @@ inline void ICE::update_biases(nonstd::span<const double> marg, nonstd::span<dou
     return update_biases_impl(0, marg.size());
   }
 
-  tpool->push_loop(0, marg.size(), update_biases_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), marg.size(), update_biases_impl);
+  tpool->wait();
 }
 
 inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double avg_nzmarg,
@@ -604,8 +604,8 @@ inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double av
     return ssq_nzmarg;
   }
 
-  tpool->push_loop(0, marg.size(), compute_ssq_nzmarg_impl);
-  tpool->wait_for_tasks();
+  tpool->detach_blocks(std::size_t(0), marg.size(), compute_ssq_nzmarg_impl);
+  tpool->wait();
   return ssq_nzmarg;
 }
 
