@@ -226,7 +226,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   std::atomic<bool> early_return = false;
   moodycamel::BlockingReaderWriterQueue<Pixel<float>> queue(10'000);
 
-  auto writer = tpool.submit([&]() {
+  auto writer = tpool.submit_task([&]() {
     try {
       auto t0 = std::chrono::steady_clock::now();
       for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
@@ -258,7 +258,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     }
   });
 
-  auto reader = tpool.submit([&]() {
+  auto reader = tpool.submit_task([&]() {
     try {
       Pixel<float> p{};
       while (!early_return) {

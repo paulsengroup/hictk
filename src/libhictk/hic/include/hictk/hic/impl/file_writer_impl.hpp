@@ -756,7 +756,7 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
   std::vector<std::future<ExpectedValuesBlock>> results{};
   for (const auto &resolution : resolutions()) {
     results.emplace_back(
-        _tpool.submit([&, res = resolution]() { return compute_expected_values(res); }));
+        _tpool.submit_task([&, res = resolution]() { return compute_expected_values(res); }));
   }
 
   for (auto &res : results) {
@@ -793,11 +793,11 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
         _normalized_expected_values.find(key) != _normalized_expected_values.end();
     const auto nev_already_submitted_for_computation = results.find(key) != results.end();
     if (!nev_available && !nev_already_submitted_for_computation) {
-      results.emplace(
-          key, _tpool.submit([&, res = static_cast<std::uint32_t>(blk.binSize), type = blk.type]() {
-            const balancing::Method norm{type};
-            return compute_normalized_expected_values(res, norm);
-          }));
+      results.emplace(key, _tpool.submit_task([&, res = static_cast<std::uint32_t>(blk.binSize),
+                                               type = blk.type]() {
+        const balancing::Method norm{type};
+        return compute_normalized_expected_values(res, norm);
+      }));
     }
   }
 
@@ -1080,7 +1080,8 @@ inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem:
 }
 
 inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
-  return {conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t(1) : n_threads)};
+  return BS::thread_pool{
+      conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t(1) : n_threads)};
 }
 
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
@@ -1159,20 +1160,20 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
 
     std::vector<std::future<Stats>> worker_threads{};
     for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
-      worker_threads.emplace_back(_tpool.submit([&]() {
+      worker_threads.emplace_back(_tpool.submit_task([&]() {
         return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
                                              block_queue, serialized_block_tank,
                                              serialized_block_tank_mtx, early_return, stop_token);
       }));
     }
 
-    auto writer = _tpool.submit([&]() {
+    auto writer = _tpool.submit_task([&]() {
       write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue, block_id_queue_mtx,
                                   serialized_block_tank, serialized_block_tank_mtx, early_return,
                                   stop_token);
     });
 
-    auto producer = _tpool.submit([&]() {
+    auto producer = _tpool.submit_task([&]() {
       try {
         for (const auto &bid : block_ids->second) {
           if (early_return) {
