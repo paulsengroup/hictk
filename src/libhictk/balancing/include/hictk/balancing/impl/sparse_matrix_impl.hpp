@@ -393,7 +393,7 @@ inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool*
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->detach_task([&]() { marginalize_impl(i0, i1); });
+    tpool->detach_task([&, ii = i0, jj = i1]() { marginalize_impl(ii, jj); });
   }
   tpool->wait();
 }
@@ -428,7 +428,7 @@ inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_p
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->detach_task([&]() { marginalize_nnz_impl(i0, i1); });
+    tpool->detach_task([&, ii = i0, jj = i1]() { marginalize_nnz_impl(ii, jj); });
   }
   tpool->wait();
 }
@@ -468,7 +468,7 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->detach_task([&]() { times_outer_product_marg_impl(i0, i1); });
+    tpool->detach_task([&, ii = i0, jj = i1]() { times_outer_product_marg_impl(ii, jj); });
   }
   tpool->wait();
 }
