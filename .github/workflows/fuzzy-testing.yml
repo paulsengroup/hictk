@@ -96,7 +96,7 @@ jobs:
           }
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-16
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-17
       options: "--user=root"
 
     env:
@@ -160,27 +160,13 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
-      - name: Install build dependencies
+      - name: Install Python bindings
+        working-directory: hictkpy
         run: |
-          conan install .                     \
-          --build=missing                     \
-          -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-          -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-          -s build_type=Release               \
-          -s compiler.libcxx=libstdc++11      \
-          -s compiler.cppstd=17               \
-          -o '*/*:shared=True'                \
-          --output-folder=build
-
-          conan install hictkpy               \
-          --build=missing                     \
-          -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-          -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-          -s build_type=Release               \
-          -s compiler.libcxx=libstdc++11      \
-          -s compiler.cppstd=17               \
-          -o '*/*:shared=True'                \
-          --output-folder=build
+          pip install --upgrade pip setuptools wheel
+          env CC=clang-17    \
+              CXX=clang++-17 \
+          pip install . -v
 
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -188,16 +174,6 @@ jobs:
           conan cache clean "*" --build
           conan cache clean "*" --download
           conan cache clean "*" --source
-
-      - name: Install Python bindings
-        working-directory: hictkpy
-        run: |
-          pip install --upgrade pip setuptools wheel pybind11
-          env CC=clang-16 \
-              CXX=clang++-16 \
-              CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$PWD/../build" \
-              HICTKPY_SETUP_SKIP_CONAN=1 \
-          pip install . -v
 
       - name: Save Conan cache
         uses: actions/cache/save@v4
