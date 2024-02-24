@@ -182,6 +182,7 @@ jobs:
         if: github.event_name != 'pull_request'
         with:
           context: ${{ github.workspace }}
+          load: true
           push: false
           cache-from: type=gha,scope=build-dockerfile
           cache-to: type=gha,mode=max,scope=build-dockerfile
