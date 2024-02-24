@@ -54,8 +54,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Debug,   developer_mode: OFF }
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.0.*', cmake-ver: '3.26.*', build_type: Release, developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Debug,   developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Release, developer_mode: OFF }
 
 
     steps:
@@ -68,7 +68,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Detect number available CPUs
