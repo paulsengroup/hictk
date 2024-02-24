@@ -54,14 +54,14 @@ inline MultiResFile::MultiResFile(std::string uri, hic::MatrixType type_, hic::M
 
 inline std::string MultiResFile::path() const { return _path; }
 
-constexpr bool MultiResFile::is_hic() const noexcept { return _format == "HIC"; }
-constexpr bool MultiResFile::is_mcool() const noexcept { return !is_hic(); }
+inline bool MultiResFile::is_hic() const noexcept { return _format == "HIC"; }
+inline bool MultiResFile::is_mcool() const noexcept { return !is_hic(); }
 
 constexpr hic::MatrixType MultiResFile::matrix_type() const noexcept { return _type; }
 constexpr hic::MatrixUnit MultiResFile::matrix_unit() const noexcept { return _unit; }
-constexpr std::string_view MultiResFile::format() const noexcept { return _format; }
+inline std::string_view MultiResFile::format() const noexcept { return _format; }
 constexpr std::uint8_t MultiResFile::version() const noexcept { return _format_version; }
-constexpr std::string_view MultiResFile::bin_type() const noexcept { return _bin_type; }
+inline std::string_view MultiResFile::bin_type() const noexcept { return _bin_type; }
 
 constexpr const std::vector<std::uint32_t>& MultiResFile::resolutions() const noexcept {
   return _resolutions;

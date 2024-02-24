@@ -36,14 +36,14 @@ class MultiResFile {
 
   [[nodiscard]] std::string path() const;
 
-  [[nodiscard]] constexpr bool is_hic() const noexcept;
-  [[nodiscard]] constexpr bool is_mcool() const noexcept;
+  [[nodiscard]] bool is_hic() const noexcept;
+  [[nodiscard]] bool is_mcool() const noexcept;
 
   [[nodiscard]] constexpr hic::MatrixType matrix_type() const noexcept;
   [[nodiscard]] constexpr hic::MatrixUnit matrix_unit() const noexcept;
-  [[nodiscard]] constexpr std::string_view format() const noexcept;
+  [[nodiscard]] std::string_view format() const noexcept;
   [[nodiscard]] constexpr std::uint8_t version() const noexcept;
-  [[nodiscard]] constexpr std::string_view bin_type() const noexcept;
+  [[nodiscard]] std::string_view bin_type() const noexcept;
   [[nodiscard]] constexpr const std::vector<std::uint32_t>& resolutions() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
 
