@@ -215,25 +215,25 @@ inline void File::validate_thin_pixels_before_append(PixelIt first_pixel,
   }
 }
 
+template <typename T1, typename T2>
+void assert_holds_alternative(const T2 &buff) {
+  if (buff.has_value()) {
+    assert(std::holds_alternative<T1>(*buff));
+  }
+}
+
 template <typename PixelT>
 inline void File::validate_pixel_type() const noexcept {
   static_assert(std::is_arithmetic_v<PixelT>);
 
-  auto assert_holds_alternative = [](const auto &buff, [[maybe_unused]] auto alt) {
-    using T [[maybe_unused]] = decltype(alt);
-    if (buff.has_value()) {
-      assert(std::holds_alternative<T>(*buff));
-    }
-  };
-
   if constexpr (std::is_floating_point_v<PixelT>) {
     assert(has_float_pixels());
-    assert_holds_alternative(_attrs.sum, double{});
-    assert_holds_alternative(_attrs.cis, double{});
+    assert_holds_alternative<double>(_attrs.sum);
+    assert_holds_alternative<double>(_attrs.cis);
   } else {
     assert(has_integral_pixels());
-    assert_holds_alternative(_attrs.sum, std::int64_t{});
-    assert_holds_alternative(_attrs.cis, std::int64_t{});
+    assert_holds_alternative<std::int64_t>(_attrs.sum);
+    assert_holds_alternative<std::int64_t>(_attrs.cis);
   }
 }
 

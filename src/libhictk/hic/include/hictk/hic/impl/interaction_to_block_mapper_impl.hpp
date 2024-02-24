@@ -196,14 +196,27 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   }
 }
 
+namespace internal {
+// I am declaring this as a freestanding funciton instead that as a lambda to work around a compiler
+// bug in MSVC
+template <typename PixelT>
+Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT &&pixel) {
+  using PixelT_ = remove_cvref_t<PixelT>;
+  static_assert(std::is_same_v<PixelT_, ThinPixel<float>> || std::is_same_v<PixelT_, Pixel<float>>);
+  constexpr bool is_thin_pixel = std::is_same_v<PixelT_, ThinPixel<float>>;
+
+  if constexpr (is_thin_pixel) {
+    return Pixel(bin_table, pixel);
+  } else {
+    return pixel;
+  }
+}
+}  // namespace internal
+
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
                                                        BS::thread_pool &tpool,
                                                        std::uint32_t update_frequency) {
-  using PixelT = remove_cvref_t<decltype(*first_pixel)>;
-  static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
-  constexpr bool is_thin_pixel = std::is_same_v<PixelT, ThinPixel<float>>;
-
   if (tpool.get_thread_count() < 2) {
     return append_pixels(first_pixel, last_pixel);
   }
@@ -217,13 +230,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     try {
       auto t0 = std::chrono::steady_clock::now();
       for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
-        const auto pixel = [&]() {
-          if constexpr (is_thin_pixel) {
-            return Pixel(*_bin_table, *first_pixel);
-          } else {
-            return *first_pixel;
-          }
-        }();
+        const auto pixel = internal::process_pixel_interaction_block(*_bin_table, *first_pixel);
         std::ignore = ++first_pixel;
 
         while (!queue.try_enqueue(pixel)) {
