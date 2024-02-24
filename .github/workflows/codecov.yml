@@ -170,9 +170,9 @@ jobs:
       - name: Install test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends default-jdk python3-pip xz-utils
+          apt-get install -y --no-install-recommends python3-pip xz-utils
 
-          python3 -m pip install 'cooler>=0.9.2'
+          python3 -m pip install 'cooler>=0.9.3'
 
       - name: Run integration tests
         run: |
