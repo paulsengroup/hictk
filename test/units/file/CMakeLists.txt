@@ -10,7 +10,8 @@ include(Catch)
 
 add_executable(hictk_file_tests)
 
-target_sources(hictk_file_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp)
+target_sources(hictk_file_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp
+                                        ${CMAKE_CURRENT_SOURCE_DIR}/multires_file_test.cpp)
 
 target_link_libraries(
   hictk_file_tests

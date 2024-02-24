@@ -135,6 +135,10 @@ inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
   return *node;
 }
 
+constexpr auto File::matrix_type() const noexcept -> MatrixType { return _type; }
+
+constexpr auto File::matrix_unit() const noexcept -> MatrixUnit { return _unit; }
+
 inline PixelSelectorAll File::fetch(balancing::Method norm) const {
   std::vector<PixelSelector> selectors;
 

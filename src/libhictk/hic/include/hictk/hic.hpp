@@ -64,6 +64,8 @@ class File {
   [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
+  [[nodiscard]] constexpr auto matrix_type() const noexcept -> MatrixType;
+  [[nodiscard]] constexpr auto matrix_unit() const noexcept -> MatrixUnit;
 
   [[nodiscard]] PixelSelectorAll fetch(balancing::Method norm = balancing::Method::NONE()) const;
 
