@@ -10,7 +10,7 @@
 
 namespace hictk::hic::utils {
 
-/// Iterable of hictk::File or strings
+/// Iterable of hictk::hic::File or strings
 template <typename Str>
 void merge(Str first_file, Str last_file, std::string_view dest_file, std::uint32_t resolution,
            const std::filesystem::path& tmp_dir = std::filesystem::temp_directory_path(),

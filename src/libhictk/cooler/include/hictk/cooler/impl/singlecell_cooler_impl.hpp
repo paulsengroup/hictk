@@ -95,12 +95,15 @@ inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigne
 
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path,
                                              const Reference& chroms, std::uint32_t bin_size,
-                                             bool force_overwrite) {
-  return SingleCellFile::create(path, BinTable{chroms, bin_size}, force_overwrite);
+                                             bool force_overwrite,
+                                             SingleCellAttributes attributes) {
+  return SingleCellFile::create(path, BinTable{chroms, bin_size}, force_overwrite,
+                                std::move(attributes));
 }
 
 inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, BinTable bins,
-                                             bool force_overwrite) {
+                                             bool force_overwrite,
+                                             SingleCellAttributes attributes) {
   if (!force_overwrite && std::filesystem::exists(path)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to initialize file \"{}\": file already exists"), path));
@@ -113,8 +116,8 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   HighFive::File fp(path.string(), HighFive::File::Create);
   RootGroup root_grp{fp.getGroup("/")};
 
-  auto attrs = SingleCellAttributes::init(bins.bin_size());
-
+  attributes.bin_size = bins.bin_size();
+  attributes.bin_type = bins.bin_size() == 0 ? "variable" : "fixed";
   create_groups(root_grp);
   create_datasets(root_grp, bins);
 
@@ -122,16 +125,16 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   Dataset chrom_size_dset(root_grp, root_grp().getDataSet("chroms/length"));
   File::write_chromosomes(chrom_name_dset, chrom_size_dset, bins.chromosomes().begin(),
                           bins.chromosomes().end());
-  attrs.nchroms = bins.chromosomes().size();
+  attributes.nchroms = bins.chromosomes().size();
 
   Dataset bins_chrom_dset(root_grp, root_grp().getDataSet("bins/chrom"));
   Dataset bins_start_dset(root_grp, root_grp().getDataSet("bins/start"));
   Dataset bins_end_dset(root_grp, root_grp().getDataSet("bins/end"));
   File::write_bin_table(bins_chrom_dset, bins_start_dset, bins_end_dset, bins);
-  attrs.nbins = bins.size();
+  attributes.nbins = bins.size();
 
-  write_standard_attributes(root_grp, attrs);
-  return {fp, bins, attrs};
+  write_standard_attributes(root_grp, attributes);
+  return {fp, bins, attributes};
 }
 
 constexpr const phmap::btree_set<std::string>& SingleCellFile::cells() const noexcept {
@@ -222,8 +225,9 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
       tails.emplace_back(std::move(last));
     }
   });
-  utils::merge(heads, tails, bins(), uri, overwrite_if_exists, chunk_size, update_frequency,
-               compression_lvl);
+  utils::merge(heads, tails, bins(), uri,
+               attributes().assembly.has_value() ? *attributes().assembly : "unknown",
+               overwrite_if_exists, chunk_size, update_frequency, compression_lvl);
 
   return File(uri);
 }
@@ -310,14 +314,30 @@ inline void SingleCellFile::create_groups(RootGroup& root_grp) {
 inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
                                                       const SingleCellAttributes& attrs) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  Attribute::write(root_grp(), "assembly",
+                   attrs.assembly.has_value() ? *attrs.assembly : "unknown");
   Attribute::write(root_grp(), "bin-size", attrs.bin_size);
   Attribute::write(root_grp(), "bin-type", attrs.bin_type);
+  if (attrs.creation_date.has_value()) {
+    Attribute::write(root_grp(), "creation-date", *attrs.creation_date);
+  }
   Attribute::write(root_grp(), "format", attrs.format);
+  if (attrs.format_url.has_value()) {
+    Attribute::write(root_grp(), "format-url", *attrs.format_url);
+  }
   Attribute::write(root_grp(), "format-version", std::int64_t(attrs.format_version));
-
+  if (attrs.generated_by.has_value()) {
+    Attribute::write(root_grp(), "generated-by", *attrs.generated_by);
+  }
+  if (attrs.metadata.has_value()) {
+    Attribute::write(root_grp(), "metadata", *attrs.metadata);
+  }
   Attribute::write(root_grp(), "nbins", *attrs.nbins);
   Attribute::write(root_grp(), "ncells", 0);
   Attribute::write(root_grp(), "nchroms", *attrs.nchroms);
+  if (attrs.storage_mode.has_value()) {
+    Attribute::write(root_grp(), "storage-mode", *attrs.storage_mode);
+  }
 }
 
 inline void SingleCellFile::create_datasets(RootGroup& root_grp, const BinTable& bins) {

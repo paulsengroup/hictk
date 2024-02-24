@@ -66,11 +66,12 @@ class SingleCellFile {
  public:
   explicit SingleCellFile(const std::filesystem::path& path,
                           unsigned int mode = HighFive::File::ReadOnly);
-  [[nodiscard]] static SingleCellFile create(const std::filesystem::path& path,
-                                             const Reference& chroms, std::uint32_t bin_size,
-                                             bool force_overwrite);
-  [[nodiscard]] static SingleCellFile create(const std::filesystem::path& path, BinTable bins,
-                                             bool force_overwrite = false);
+  [[nodiscard]] static SingleCellFile create(
+      const std::filesystem::path& path, const Reference& chroms, std::uint32_t bin_size,
+      bool force_overwrite, SingleCellAttributes attributes = SingleCellAttributes::init(0));
+  [[nodiscard]] static SingleCellFile create(
+      const std::filesystem::path& path, BinTable bins, bool force_overwrite = false,
+      SingleCellAttributes attributes = SingleCellAttributes::init(0));
 
   [[nodiscard]] constexpr const phmap::btree_set<std::string>& cells() const noexcept;
   [[nodiscard]] constexpr const SingleCellAttributes& attributes() const noexcept;
