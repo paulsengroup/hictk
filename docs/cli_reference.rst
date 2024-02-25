@@ -116,6 +116,9 @@ hictk convert
     -l,--compression-lvl UINT:INT in [1 - 12] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
+    --skip-all-vs-all,--no-skip-all-vs-all{false}
+                                Do not generate All vs All matrix.
+                                Has no effect when creating .[m]cool files.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
@@ -252,6 +255,9 @@ hictk merge
                                 Maximum number of parallel threads to spawn.
                                 When merging interactions in Cooler format, only a single thread will be used.
     --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --skip-all-vs-all,--no-skip-all-vs-all{false}
+                                Do not generate All vs All matrix.
+                                Has no effect when merging .cool files.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -323,6 +329,9 @@ hictk zoomify
     --chunk-size UINT [10000000]
                                 Number of pixels to buffer in memory.
                                 Only used when zoomifying .hic files.
+    --skip-all-vs-all,--no-skip-all-vs-all{false}
+                                Do not generate All vs All matrix.
+                                Has no effect when zoomifying .cool files.
     --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
