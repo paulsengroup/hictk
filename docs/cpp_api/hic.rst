@@ -68,7 +68,7 @@ File handle
   .. cpp:function:: [[nodiscard]] const BinTable &bins() const noexcept;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
 
-  .. cpp:function:: [[nodiscard]] std::uint32_t bin_size() const noexcept;
+  .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const noexcept;
   .. cpp:function:: [[nodiscard]] std::uint64_t nbins() const;
   .. cpp:function:: [[nodiscard]] std::uint64_t nchroms() const;
   .. cpp:function:: [[nodiscard]] const std::string &assembly() const noexcept;

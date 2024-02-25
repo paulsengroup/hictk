@@ -53,7 +53,7 @@ TEST_CASE("File", "[file][short]") {
       CHECK(hf.chromosomes() == ref_hic.chromosomes());
       CHECK(hf.bins() == ref_hic.bins());
 
-      CHECK(hf.bin_size() == ref_hic.bin_size());
+      CHECK(hf.resolution() == ref_hic.resolution());
       CHECK(hf.nbins() == ref_hic.nbins());
       CHECK(hf.nchroms() == ref_hic.nchroms());
     }
@@ -68,7 +68,7 @@ TEST_CASE("File", "[file][short]") {
       CHECK(clr.chromosomes() == ref.chromosomes());
       CHECK(clr.bins() == ref.bins());
 
-      CHECK(clr.bin_size() == ref.bin_size());
+      CHECK(clr.resolution() == ref.resolution());
       CHECK(clr.nbins() == ref.nbins());
       CHECK(clr.nchroms() == ref.nchroms());
     }
@@ -129,7 +129,7 @@ TEST_CASE("PixelSelector", "[file][short]") {
 
       CHECK(sel1.coord1().bin1.chrom().name() == "chr2L");
       CHECK(sel1.coord2().bin1.chrom().name() == "chr2R");
-      CHECK(sel1.bins().bin_size() == resolution);
+      CHECK(sel1.bins().resolution() == resolution);
 
       CHECK(sel1.read_all<std::int32_t>().size() == 624);
       CHECK(sel1.read_sparse<std::int32_t>().nonZeros() == 624);
@@ -151,7 +151,7 @@ TEST_CASE("PixelSelector", "[file][short]") {
 
       CHECK(sel1.coord1().bin1.chrom().name() == "chr2L");
       CHECK(sel1.coord2().bin1.chrom().name() == "chr2R");
-      CHECK(sel1.bins().bin_size() == resolution);
+      CHECK(sel1.bins().resolution() == resolution);
 
       CHECK(sel1.read_all<std::int32_t>().size() == 624);
       CHECK(sel1.read_sparse<std::int32_t>().nonZeros() == 624);

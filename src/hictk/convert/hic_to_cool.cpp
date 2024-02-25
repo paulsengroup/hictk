@@ -85,15 +85,16 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
     if (fail_if_missing) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("Unable to find {} normalization vector for resolution {}"), norm,
-                      hf.bins().bin_size()));
+                      hf.bins().resolution()));
     }
 
     SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"),
-                hf.bins().bin_size(), norm);
+                hf.bins().resolution(), norm);
     return;
   }
 
-  SPDLOG_INFO(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().bin_size(), norm);
+  SPDLOG_INFO(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().resolution(),
+              norm);
 
   const auto weights = hf.normalization(norm);
   using T = std::remove_reference_t<decltype(cf)>;
@@ -301,7 +302,7 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
     copy_weights(hf, clr, norm, fail_if_norm_not_found);
   }
 
-  const auto resolution = clr.bin_size();
+  const auto resolution = clr.resolution();
   clr.close();
   const auto t1 = std::chrono::steady_clock::now();
   const auto delta =

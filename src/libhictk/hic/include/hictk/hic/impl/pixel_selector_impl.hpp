@@ -156,7 +156,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 #ifdef HICTK_WITH_EIGEN
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
   const auto span1 = coord1().bin2.end() - coord1().bin1.start();
   const auto span2 = coord2().bin2.end() - coord2().bin1.start();
   const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);
@@ -176,7 +176,7 @@ inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
 
 template <typename N>
 [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
   const auto span1 = coord1().bin2.end() - coord1().bin1.start();
   const auto span2 = coord2().bin2.end() - coord2().bin1.start();
   const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);
@@ -264,7 +264,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 
   // Try to guess how many blocks overlap a single row of pixels
   std::size_t max_blocks_per_row = 0;
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
 
   const std::size_t first_bin_id = 0;
   const std::size_t last_bin_id =
@@ -457,10 +457,10 @@ inline std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
 template <typename N>
 inline std::vector<internal::BlockIndex>
 PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
 
   const auto end_pos = coord1().bin2.start();
-  const auto pos1 = (std::min)(end_pos, _bin1_id * bins().bin_size());
+  const auto pos1 = (std::min)(end_pos, _bin1_id * bins().resolution());
   const auto pos2 = (std::min)(end_pos, pos1 + static_cast<std::uint32_t>((num_bins * bin_size)));
 
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
@@ -472,13 +472,13 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
 template <typename N>
 inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
   assert(!!_reader);
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
   const auto num_bins = std::min(
       static_cast<std::uint32_t>(_reader->index().block_bin_count()),
       static_cast<std::uint32_t>(0.005 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
 
   const auto end_pos = coord1().bin2.start();
-  const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().bin_size());
+  const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().resolution());
   const auto pos2 = (std::min)(end_pos, pos1 + (num_bins * bin_size));
 
   return static_cast<std::uint32_t>((pos2 - pos1 + bin_size - 1) / bin_size);

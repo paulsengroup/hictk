@@ -160,7 +160,7 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
 [[nodiscard]] static std::uint32_t detect_base_resolution(std::string_view path,
                                                           std::string_view format) {
   if (format == "cool") {
-    return cooler::File(path).bin_size();
+    return cooler::File(path).resolution();
   }
 
   assert(format == "hic");

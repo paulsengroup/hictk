@@ -79,7 +79,7 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
 
   SECTION("write on file creation") {
     const File fin(path1.string());
-    auto fout = File::create(path3.string(), fin.chromosomes(), fin.bin_size());
+    auto fout = File::create(path3.string(), fin.chromosomes(), fin.resolution());
 
     const std::vector<double> weights(num_bins, 1.23);
     fout.write_weights("weight", weights.begin(), weights.end());

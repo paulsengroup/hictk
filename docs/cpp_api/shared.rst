@@ -272,7 +272,7 @@ Bin Table
   .. cpp:function:: [[nodiscard]] std::size_t size() const noexcept;
   .. cpp:function:: [[nodiscard]] bool empty() const noexcept;
   .. cpp:function:: [[nodiscard]] std::size_t num_chromosomes() const;
-  .. cpp:function:: [[nodiscard]] constexpr std::uint32_t bin_size() const noexcept;
+  .. cpp:function:: [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 

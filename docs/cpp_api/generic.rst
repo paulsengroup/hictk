@@ -63,7 +63,7 @@ File handle
 
   Accessors to the chromosomes and bin table of the open file.
 
-  .. cpp:function:: [[nodiscard]] std::uint32_t bin_size() const;
+  .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const;
   .. cpp:function:: [[nodiscard]] std::uint64_t nbins() const;
   .. cpp:function:: [[nodiscard]] std::uint64_t nchroms() const;
 
@@ -234,4 +234,4 @@ Pixel selector
       f.get<cooler::PixelSelector>();  // Throws an exception
 
       const auto selvar = sel.get();
-      std::visit([](const auto& s) { assert(s.bins().bin_size() == 1'000); }, selvar);
+      std::visit([](const auto& s) { assert(s.bins().resolution() == 1'000); }, selvar);

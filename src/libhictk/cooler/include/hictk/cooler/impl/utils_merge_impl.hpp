@@ -43,7 +43,7 @@ template <typename N>
 [[nodiscard]] inline LightCooler<N> preprocess_cooler(const std::string& uri) {
   auto clr = File::open_read_once(std::string{uri});
   auto sel = clr.fetch();
-  return {uri, clr.chromosomes(), clr.bin_size(), sel.begin<N>(), sel.end<N>()};
+  return {uri, clr.chromosomes(), clr.resolution(), sel.begin<N>(), sel.end<N>()};
 }
 
 template <typename N>
@@ -137,7 +137,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
-  auto attrs = Attributes::init(bins.bin_size());
+  auto attrs = Attributes::init(bins.resolution());
   attrs.assembly = assembly;
 
   auto dest = File::create<N>(dest_uri, bins, overwrite_if_exists, attrs,

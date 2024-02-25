@@ -86,10 +86,10 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
     std::filesystem::remove(dest_uri);
   }
 
-  hic::internal::HiCFileWriter w(dest_uri, bins.chromosomes(), {bins.bin_size()}, assembly,
+  hic::internal::HiCFileWriter w(dest_uri, bins.chromosomes(), {bins.resolution()}, assembly,
                                  n_threads, chunk_size, tmp_dir, compression_lvl, skip_all_vs_all);
 
-  w.add_pixels(bins.bin_size(), merger.begin(), merger.end());
+  w.add_pixels(bins.resolution(), merger.begin(), merger.end());
   w.serialize();
 }
 

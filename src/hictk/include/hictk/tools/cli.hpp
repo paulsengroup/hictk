@@ -291,10 +291,10 @@ class Cli {
 [[nodiscard]] inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& p,
                                                                  std::string_view format) {
   if (format == "cool") {
-    return {cooler::File(p.string()).bin_size()};
+    return {cooler::File(p.string()).resolution()};
   }
   if (format == "scool") {
-    return {cooler::SingleCellFile{p.string()}.bin_size()};
+    return {cooler::SingleCellFile{p.string()}.resolution()};
   }
   if (format == "mcool") {
     return cooler::utils::list_resolutions(p, true);

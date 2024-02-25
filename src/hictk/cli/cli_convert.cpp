@@ -142,7 +142,7 @@ static void check_requested_resolutions_avail(const std::filesystem::path& path_
       return cooler::utils::list_resolutions(path_to_input_file);
     }
 
-    return {cooler::File(path_to_input_file.string()).bin_size()};
+    return {cooler::File(path_to_input_file.string()).resolution()};
   }();
 
   std::vector<std::uint32_t> missing_resolutions;

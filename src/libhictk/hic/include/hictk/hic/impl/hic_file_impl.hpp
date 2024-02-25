@@ -86,7 +86,7 @@ inline const BinTable& File::bins() const noexcept {
 
 inline std::shared_ptr<const BinTable> File::bins_ptr() const noexcept { return _bins; }
 
-inline std::uint32_t File::bin_size() const noexcept { return bins().bin_size(); }
+inline std::uint32_t File::resolution() const noexcept { return bins().resolution(); }
 inline std::uint64_t File::nbins() const { return bins().size(); }
 inline std::uint64_t File::nchroms() const { return chromosomes().size(); }
 
@@ -111,10 +111,8 @@ inline bool File::has_normalization(std::string_view normalization) const {
 }
 
 inline std::vector<balancing::Method> File::avail_normalizations() const {
-  return _fs->list_avail_normalizations(_type, _unit, _bins->bin_size());
+  return _fs->list_avail_normalizations(_type, _unit, _bins->resolution());
 }
-
-inline std::uint32_t File::resolution() const noexcept { return _bins->bin_size(); }
 
 inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
     const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
@@ -247,7 +245,7 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
 inline balancing::Weights File::normalization(balancing::Method norm,
                                               const Chromosome& chrom) const {
   std::vector<double> weights_{};
-  const auto expected_length = (chrom.size() + bins().bin_size() - 1) / bins().bin_size();
+  const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
   try {
     auto weights = fetch(chrom.name(), norm).weights1();
     if (!!weights && weights().size() != expected_length) {

@@ -52,7 +52,7 @@ inline auto File::bins() const noexcept -> const BinTable & {
 
 inline auto File::bins_ptr() const noexcept -> std::shared_ptr<const BinTable> { return _bins; }
 
-inline std::uint32_t File::bin_size() const noexcept { return _attrs.bin_size; }
+inline std::uint32_t File::resolution() const noexcept { return _attrs.bin_size; }
 inline std::uint64_t File::nbins() const { return bins().size(); }
 inline std::uint64_t File::nchroms() const { return chromosomes().size(); }
 inline std::uint64_t File::nnz() const { return dataset("pixels/count").size(); }

@@ -91,7 +91,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
       for (const auto& chrom : clr.chromosomes()) {
         sources.emplace_back((testdir() / std::string{chrom.name()}).string());
 
-        auto clr1 = cooler::File::create(sources.back(), clr.chromosomes(), clr.bin_size());
+        auto clr1 = cooler::File::create(sources.back(), clr.chromosomes(), clr.resolution());
         const auto sel = clr.fetch(chrom.name());
         clr1.append_pixels(sel.begin<std::int32_t>(), sel.end<std::int32_t>());
       }

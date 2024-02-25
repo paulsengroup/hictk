@@ -41,7 +41,7 @@ TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
   const auto path = testdir() / "test_create_cells.scool";
 
   auto sclr =
-      SingleCellFile::create(path.string(), base_clr.chromosomes(), base_clr.bin_size(), true);
+      SingleCellFile::create(path.string(), base_clr.chromosomes(), base_clr.resolution(), true);
 
   SECTION("valid cells") {
     for (std::size_t i = 0; i < 10; ++i) {
@@ -67,7 +67,7 @@ TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
   const auto path2 = testdir() / "test_aggregate_cells.cool";
 
   auto sclr =
-      SingleCellFile::create(path1.string(), base_clr.chromosomes(), base_clr.bin_size(), true);
+      SingleCellFile::create(path1.string(), base_clr.chromosomes(), base_clr.resolution(), true);
 
   {
     auto clr1 = sclr.create_cell<std::int32_t>("A");

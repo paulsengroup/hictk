@@ -259,8 +259,8 @@ inline std::shared_ptr<const BinTable> File::bins_ptr() const {
                     _fp);
 }
 
-inline std::uint32_t File::bin_size() const {
-  return std::visit([&](const auto& fp) { return fp.bin_size(); }, _fp);
+inline std::uint32_t File::resolution() const {
+  return std::visit([&](const auto& fp) { return fp.resolution(); }, _fp);
 }
 
 inline std::uint64_t File::nbins() const {

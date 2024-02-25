@@ -26,7 +26,7 @@ namespace hictk::tools {
 
 void zoomify_once_cooler(const cooler::File& clr1, cooler::RootGroup entrypoint2,
                          std::uint32_t resolution, std::uint32_t compression_lvl) {
-  auto attrs = cooler::Attributes::init(clr1.bin_size());
+  auto attrs = cooler::Attributes::init(clr1.resolution());
   attrs.assembly = clr1.attributes().assembly;
 
   auto clr2 = cooler::File::create(std::move(entrypoint2), clr1.chromosomes(), resolution, attrs,
@@ -40,7 +40,7 @@ void zoomify_once_cooler(std::string_view uri1, std::string_view uri2, std::uint
                          bool force, std::uint32_t compression_lvl) {
   const cooler::File clr1(uri1);
 
-  SPDLOG_INFO(FMT_STRING("coarsening cooler at {} once ({} -> {})"), clr1.uri(), clr1.bin_size(),
+  SPDLOG_INFO(FMT_STRING("coarsening cooler at {} once ({} -> {})"), clr1.uri(), clr1.resolution(),
               resolution);
 
   auto mode = force ? HighFive::File::Overwrite : HighFive::File::Create;
@@ -56,10 +56,10 @@ void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
   auto mclr = cooler::MultiResFile::create(out_path, cooler::File(in_uri).chromosomes(), force);
 
   SPDLOG_INFO(FMT_STRING("coarsening cooler at {} {} times ({} -> {})"), clr.uri(),
-              resolutions.size(), clr.bin_size(), fmt::join(resolutions, " -> "));
+              resolutions.size(), clr.resolution(), fmt::join(resolutions, " -> "));
 
   if (copy_base_resolution) {
-    assert(resolutions.front() == clr.bin_size());
+    assert(resolutions.front() == clr.resolution());
     mclr.copy_resolution(clr);
   } else {
     assert(resolutions.size() > 1);

@@ -40,7 +40,7 @@ TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
-  const auto base_resolution = File(base_path.string()).bin_size();
+  const auto base_resolution = File(base_path.string()).resolution();
 
   const auto path = testdir() / "test_init.mcool";
   const std::array<std::uint32_t, 4> resolutions{
@@ -87,7 +87,7 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
   const File base_clr(base_path.string());
-  const auto base_resolution = base_clr.bin_size();
+  const auto base_resolution = base_clr.resolution();
 
   const auto path = testdir() / "test_create_resolutions.mcool";
   const std::array<std::uint32_t, 3> resolutions{

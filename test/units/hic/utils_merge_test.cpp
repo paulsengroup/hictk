@@ -71,7 +71,7 @@ TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
                                                         chrom1.name(), chrom2.name()))
                                    .string());
 
-          hic::internal::HiCFileWriter w(sources.back(), f.chromosomes(), {f.bin_size()}, "", 1,
+          hic::internal::HiCFileWriter w(sources.back(), f.chromosomes(), {f.resolution()}, "", 1,
                                          1'000, testdir());
 
           w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());

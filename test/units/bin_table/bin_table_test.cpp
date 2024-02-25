@@ -37,7 +37,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     CHECK(BinTable{}.empty());
     CHECK(table.size() == 11 + 6 + 2);
     CHECK(table.num_chromosomes() == 3);
-    CHECK(table.bin_size() == bin_size);
+    CHECK(table.resolution() == bin_size);
   }
 
   SECTION("at") {
@@ -103,7 +103,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK(table.has_fixed_bin_size());
+    CHECK(table.has_fixed_resolution());
     CHECK_NOTHROW(table.get<BinTableFixed>());
     CHECK_THROWS(table.get<BinTableVariable<>>());
   }
@@ -222,7 +222,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     CHECK(BinTable{}.empty());
     CHECK(table.size() == start_pos.size());
     CHECK(table.num_chromosomes() == 2);
-    CHECK(table.bin_size() == 0);
+    CHECK(table.resolution() == 0);
   }
 
   SECTION("at") {
@@ -292,7 +292,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK_FALSE(table.has_fixed_bin_size());
+    CHECK_FALSE(table.has_fixed_resolution());
     CHECK_NOTHROW(table.get<BinTableVariable<>>());
     CHECK_THROWS(table.get<BinTableFixed>());
   }
