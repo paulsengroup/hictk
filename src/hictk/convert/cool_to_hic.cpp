@@ -23,7 +23,7 @@ namespace hictk::tools {
 static void copy_pixels(hic::internal::HiCFileWriter& w, const cooler::File& base_clr,
                         const ConvertConfig& c) {
   if (c.input_format == "cool") {
-    w.add_pixels(base_clr.bin_size(), base_clr.begin<float>(), base_clr.end<float>());
+    w.add_pixels(base_clr.resolution(), base_clr.begin<float>(), base_clr.end<float>());
     return;
   }
 
@@ -61,8 +61,8 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
     });
 
     const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
-    SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), clr.bin_size(), norm_name);
-    w.add_norm_vector(norm_name, "BP", clr.bin_size(), weights_f, true);
+    SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), clr.resolution(), norm_name);
+    w.add_norm_vector(norm_name, "BP", clr.resolution(), weights_f, true);
 
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
@@ -73,9 +73,9 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
     if (throw_if_missing) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("Unable to find {} normalization vector for resolution {}"), norm,
-                      norm, clr.bin_size()));
+                      norm, clr.resolution()));
     }
-    SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), clr.bin_size(),
+    SPDLOG_WARN(FMT_STRING("[{}] {} normalization vector is missing. SKIPPING!"), clr.resolution(),
                 norm);
   }
 }
@@ -116,7 +116,7 @@ void cool_to_hic(const ConvertConfig& c) {
                                           c.path_to_input.string(), c.resolutions.front());
 
   const cooler::File base_clr{base_uri};
-  if (base_clr.bin_size() == 0) {
+  if (base_clr.resolution() == 0) {
     throw std::runtime_error("converting cooler files with variable bin size is not supported.");
   }
 

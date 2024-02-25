@@ -64,12 +64,12 @@ TEST_CASE("MultiResFile", "[file][short]") {
 
   SECTION("open") {
     SECTION("hic") {
-      CHECK(MultiResFile{path_hic}.open(resolution).bin_size() == resolution);
+      CHECK(MultiResFile{path_hic}.open(resolution).resolution() == resolution);
       CHECK_THROWS(MultiResFile{path_hic}.open(resolution + 1));
     }
 
     SECTION("mcool") {
-      CHECK(MultiResFile{path_mcool}.open(resolution).bin_size() == resolution);
+      CHECK(MultiResFile{path_mcool}.open(resolution).resolution() == resolution);
       CHECK_THROWS(MultiResFile{path_mcool}.open(resolution + 1));
     }
   }

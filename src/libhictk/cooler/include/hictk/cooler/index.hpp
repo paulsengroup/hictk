@@ -68,7 +68,7 @@ class Index {
   [[nodiscard]] bool empty(std::string_view chrom_name) const noexcept;
   [[nodiscard]] bool empty(std::uint32_t chrom_id) const noexcept;
 
-  [[nodiscard]] std::uint32_t bin_size() const noexcept;
+  [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   [[nodiscard]] auto begin() const noexcept -> const_iterator;
   [[nodiscard]] auto end() const noexcept -> const_iterator;

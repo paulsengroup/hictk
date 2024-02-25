@@ -43,11 +43,11 @@ inline Stats ingest_pixels_unsorted_cooler(std::string_view uri, std::string_vie
         using N = decltype(buffer.front().count);
         Stats local_stats{N{}, 0};
         {
-          auto sclr_attrs = cooler::SingleCellAttributes::init(bins.bin_size());
+          auto sclr_attrs = cooler::SingleCellAttributes::init(bins.resolution());
           sclr_attrs.assembly = assembly;
 
           auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, force, sclr_attrs);
-          auto attrs = cooler::Attributes::init(bins.bin_size());
+          auto attrs = cooler::Attributes::init(bins.resolution());
           attrs.assembly = assembly;
 
           for (std::size_t i = 0; true; ++i) {
@@ -113,11 +113,11 @@ inline Stats ingest_pairs_cooler(std::string_view uri, std::string_view tmp_cool
       [&](auto& buffer) {
         using N = decltype(buffer.begin()->count);
         {
-          auto sclr_attrs = cooler::SingleCellAttributes::init(bins.bin_size());
+          auto sclr_attrs = cooler::SingleCellAttributes::init(bins.resolution());
           sclr_attrs.assembly = assembly;
 
           auto tmp_clr = cooler::SingleCellFile::create(tmp_cooler_path, bins, force, sclr_attrs);
-          auto attrs = cooler::Attributes::init(bins.bin_size());
+          auto attrs = cooler::Attributes::init(bins.resolution());
           attrs.assembly = assembly;
 
           for (std::size_t i = 0; true; ++i) {

@@ -145,10 +145,10 @@ void dump_resolutions(std::string_view uri, std::string_view format, std::uint32
   } else if (format == "mcool") {
     resolutions = cooler::MultiResFile{uri}.resolutions();
   } else if (format == "scool") {
-    resolutions.push_back(cooler::SingleCellFile{uri}.bin_size());
+    resolutions.push_back(cooler::SingleCellFile{uri}.resolution());
   } else {
     assert(format == "cool");
-    resolutions.push_back(cooler::File{uri}.bin_size());
+    resolutions.push_back(cooler::File{uri}.resolution());
   }
 
   if (!resolutions.empty()) {

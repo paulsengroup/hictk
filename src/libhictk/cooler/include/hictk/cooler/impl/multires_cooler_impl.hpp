@@ -85,7 +85,7 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
                                          bool force_overwrite) {
   std::vector<std::uint32_t> resolutions_{first_res, last_res};
   std::sort(resolutions_.begin(), resolutions_.end());
-  const auto base_res = base.bin_size();
+  const auto base_res = base.resolution();
   const auto tgt_res = resolutions_.front();
 
   for (const auto& res : resolutions_) {
@@ -142,13 +142,13 @@ inline File MultiResFile::open(std::uint32_t resolution) const {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline File MultiResFile::copy_resolution(const File& clr) {
-  SPDLOG_INFO(FMT_STRING("copying {} resolution from {}"), clr.bin_size(), clr.uri());
-  auto dest = init_resolution(clr.bin_size());
+  SPDLOG_INFO(FMT_STRING("copying {} resolution from {}"), clr.resolution(), clr.uri());
+  auto dest = init_resolution(clr.resolution());
 
   cooler::utils::copy(clr.uri(), dest);
-  _resolutions.push_back(clr.bin_size());
+  _resolutions.push_back(clr.resolution());
   std::sort(_resolutions.begin(), _resolutions.end());
-  return open(clr.bin_size());
+  return open(clr.resolution());
 }
 
 template <typename N>
@@ -204,11 +204,11 @@ inline const HighFive::File& MultiResFile::file_handle() const {
 
 inline void MultiResFile::coarsen(const File& clr1, File& clr2,
                                   std::vector<ThinPixel<std::int32_t>>& buffer) {
-  SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.bin_size(),
-              clr1.bin_size(), clr2.bin_size() / clr1.bin_size());
+  SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.resolution(),
+              clr1.resolution(), clr2.resolution() / clr1.resolution());
   auto sel1 = clr1.fetch();
   auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
-                                          clr1.bins_ptr(), clr2.bin_size() / clr1.bin_size());
+                                          clr1.bins_ptr(), clr2.resolution() / clr1.resolution());
 
   const auto update_frequency =
       std::max(std::size_t(1'000'000), (clr1.dataset("pixels/bin1_id").size() / 100));
@@ -232,7 +232,7 @@ inline void MultiResFile::coarsen(const File& clr1, File& clr2,
           1000.0;
       const auto bin1 = clr2.bins().at(first->bin1_id);
       SPDLOG_INFO(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
-                  clr1.bin_size(), clr2.bin_size(), bin1, double(update_frequency) / delta);
+                  clr1.resolution(), clr2.resolution(), bin1, double(update_frequency) / delta);
       t0 = t1;
       j = 0;
     }

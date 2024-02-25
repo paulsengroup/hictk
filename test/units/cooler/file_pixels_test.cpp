@@ -25,7 +25,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   using T = std::int32_t;
   File f1(path1.string());
   {
-    auto f2 = File::create<T>(path2.string(), f1.chromosomes(), f1.bin_size(), true);
+    auto f2 = File::create<T>(path2.string(), f1.chromosomes(), f1.resolution(), true);
 
     const std::vector<ThinPixel<T>> expected(f1.begin<T>(), f1.end<T>());
     REQUIRE(expected.size() == 107041);

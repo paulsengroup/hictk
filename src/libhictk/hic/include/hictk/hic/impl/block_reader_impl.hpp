@@ -49,7 +49,7 @@ inline double HiCBlockReader::avg() const {
         "HiCBlockReader::avg is not implemented for intra-chromosomal matrices");
   }
 
-  const auto bin_size = bins().bin_size();
+  const auto bin_size = bins().resolution();
   // We round down for two reasons:
   // - to be consistent with straw
   // - because the last bin is usually smaller than the bin_size

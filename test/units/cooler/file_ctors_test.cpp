@@ -95,7 +95,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
     CHECK(f.path() == path);
     CHECK(f.uri() == path);
-    CHECK(f.bin_size() == 100'000);
+    CHECK(f.resolution() == 100'000);
     CHECK(f.chromosomes().size() == 20);
     CHECK(f.bins().size() == 26'398);
     CHECK(f.has_pixel_of_type<std::int32_t>());
@@ -107,7 +107,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
     CHECK(f.path() == path);
     CHECK(f.uri() == path);
-    CHECK(f.bin_size() == 0);
+    CHECK(f.resolution() == 0);
     CHECK(f.chromosomes().size() == 2);
     CHECK(f.bins().size() == 8);
     CHECK(f.has_pixel_of_type<std::int32_t>());

@@ -38,7 +38,7 @@ class BinTableFixed {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t num_chromosomes() const;
-  [[nodiscard]] constexpr std::uint32_t bin_size() const noexcept;
+  [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
 
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
@@ -133,7 +133,7 @@ class BinTableFixed {
     [[nodiscard]] static auto make_end_iterator(const BinTableFixed &table) noexcept -> iterator;
     [[nodiscard]] const Chromosome &chromosome(std::uint32_t chrom_id) const;
     [[nodiscard]] const Chromosome &chromosome() const;
-    [[nodiscard]] constexpr std::uint32_t bin_size() const noexcept;
+    [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
     [[nodiscard]] constexpr std::size_t bin_id() const noexcept;
     [[nodiscard]] std::uint32_t compute_num_chrom_bins() const noexcept;
     [[nodiscard]] std::size_t compute_bin_offset() const noexcept;

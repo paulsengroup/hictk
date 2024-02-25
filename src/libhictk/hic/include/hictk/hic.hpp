@@ -55,7 +55,6 @@ class File {
   [[nodiscard]] const Reference &chromosomes() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
-  [[nodiscard]] std::uint32_t bin_size() const noexcept;
   [[nodiscard]] std::uint64_t nbins() const;
   [[nodiscard]] std::uint64_t nchroms() const;
   [[nodiscard]] const std::string &assembly() const noexcept;

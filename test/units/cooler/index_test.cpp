@@ -33,7 +33,7 @@ TEST_CASE("Cooler: index ctor", "[index][short]") {
 
   const Index idx(bins);
 
-  CHECK(idx.bin_size() == bin_size);
+  CHECK(idx.resolution() == bin_size);
   CHECK(idx.chromosomes().size() == 2);
   CHECK(idx.size() == 151);
 

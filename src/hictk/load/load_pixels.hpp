@@ -130,7 +130,7 @@ template <typename N>
       t0 = t1;
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   double(buffer.size()) / delta);
-      hf.add_pixels(bins.bin_size(), buffer.begin(), buffer.end());
+      hf.add_pixels(bins.resolution(), buffer.begin(), buffer.end());
       buffer.clear();
     }
     hf.serialize();

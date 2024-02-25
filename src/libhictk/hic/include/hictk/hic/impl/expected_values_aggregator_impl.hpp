@@ -22,7 +22,7 @@ namespace hictk::hic::internal {
 
 inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins)
     : _bins(std::move(bins)) {
-  SPDLOG_INFO(FMT_STRING("[{} bp] initializing expected value vector"), _bins->bin_size());
+  SPDLOG_INFO(FMT_STRING("[{} bp] initializing expected value vector"), _bins->resolution());
   std::uint32_t max_length = 0;
   for (const auto &chrom : chromosomes()) {
     if (chrom.is_all()) {
@@ -34,7 +34,7 @@ inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const 
     _num_bins_gw += chrom.size();
   }
 
-  const auto bin_size = _bins->bin_size();
+  const auto bin_size = _bins->resolution();
   // round down to mimick HiCTools' behavior
   const auto max_n_bins = max_length / bin_size;
   _possible_distances.resize(max_n_bins, 0.0);
@@ -67,7 +67,7 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
 }
 
 inline void ExpectedValuesAggregator::compute_density() {
-  SPDLOG_INFO(FMT_STRING("[{} bp] computing expected vector density"), _bins->bin_size());
+  SPDLOG_INFO(FMT_STRING("[{} bp] computing expected vector density"), _bins->resolution());
   init_possible_distances();
   compute_density_cis();
   compute_density_trans();
@@ -87,7 +87,7 @@ inline const phmap::btree_map<Chromosome, double> &ExpectedValuesAggregator::sca
 }
 
 inline void ExpectedValuesAggregator::init_possible_distances() {
-  const auto bin_size = _bins->bin_size();
+  const auto bin_size = _bins->resolution();
 
   for (const auto &[chrom, _] : _cis_sum) {
     if (chrom.is_all()) {
@@ -147,7 +147,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
     if (chrom.is_all()) {
       continue;
     }
-    auto num_chrom_bins = chrom.size() / _bins->bin_size();
+    auto num_chrom_bins = chrom.size() / _bins->resolution();
     auto expected_count = 0.0;
     for (std::size_t n = 0; n < num_chrom_bins; n++) {
       if (n < max_num_bins) {
@@ -165,8 +165,8 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
 inline void ExpectedValuesAggregator::compute_density_trans() {
   for (auto &[k, v] : _trans_sum) {
     // We round-down to match HiCTools behavior
-    const auto num_bins1 = k.first.size() / _bins->bin_size();
-    const auto num_bins2 = k.second.size() / _bins->bin_size();
+    const auto num_bins1 = k.first.size() / _bins->resolution();
+    const auto num_bins2 = k.second.size() / _bins->resolution();
     const auto num_pixels = num_bins1 * num_bins2;
     v = num_pixels != 0 ? v / static_cast<double>(num_pixels) : 0.0;
   }

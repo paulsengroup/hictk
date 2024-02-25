@@ -17,7 +17,7 @@ TEST_CASE("Cooler: read attributes", "[cooler][short]") {
   auto path = datadir / "cooler_test_file.cool";
   const File f(path.string());
 
-  SECTION("bin size") { CHECK(f.bin_size() == 100'000); }
+  SECTION("bin size") { CHECK(f.resolution() == 100'000); }
 
   SECTION("common attributes") {
     const auto& attrs = f.attributes();

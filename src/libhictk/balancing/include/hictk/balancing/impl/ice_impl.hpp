@@ -653,7 +653,7 @@ inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
 
     const auto nbins = static_cast<double>(bins.size());
     const auto cnbins =
-        std::ceil(static_cast<double>(chrom.size()) / static_cast<double>(bins.bin_size()));
+        std::ceil(static_cast<double>(chrom.size()) / static_cast<double>(bins.resolution()));
 
     for (std::size_t j = i0; j < i1; ++j) {
       weights[j] = 1.0 / (1.0 - cnbins / nbins);

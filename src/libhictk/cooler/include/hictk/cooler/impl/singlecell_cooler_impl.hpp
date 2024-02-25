@@ -116,8 +116,8 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   HighFive::File fp(path.string(), HighFive::File::Create);
   RootGroup root_grp{fp.getGroup("/")};
 
-  attributes.bin_size = bins.bin_size();
-  attributes.bin_type = bins.bin_size() == 0 ? "variable" : "fixed";
+  attributes.bin_size = bins.resolution();
+  attributes.bin_type = bins.resolution() == 0 ? "variable" : "fixed";
   create_groups(root_grp);
   create_datasets(root_grp, bins);
 
@@ -194,7 +194,7 @@ inline SingleCellFile::operator bool() const noexcept { return !!_root_grp; }
 inline std::string SingleCellFile::path() const { return (*_root_grp)().getFile().getName(); }
 
 inline auto SingleCellFile::bins() const noexcept -> const BinTable& { return *_bins; }
-inline std::uint32_t SingleCellFile::bin_size() const noexcept { return bins().bin_size(); }
+inline std::uint32_t SingleCellFile::resolution() const noexcept { return bins().resolution(); }
 inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
   return bins().chromosomes();
 }

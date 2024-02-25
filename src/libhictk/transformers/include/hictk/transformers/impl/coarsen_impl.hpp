@@ -27,7 +27,7 @@ inline CoarsenPixels<PixelIt>::CoarsenPixels(PixelIt first_pixel, PixelIt last_p
       _last(std::move(last_pixel)),
       _src_bins(std::move(source_bins)),
       _dest_bins(std::make_shared<const BinTable>(_src_bins->chromosomes(),
-                                                  _src_bins->bin_size() * factor)),
+                                                  _src_bins->resolution() * factor)),
       _factor(factor) {
   if (factor < 2) {
     throw std::logic_error("coarsening factor should be > 1");
@@ -89,7 +89,7 @@ inline CoarsenPixels<PixelIt>::iterator::iterator(PixelIt first, PixelIt last,
       _src_bins(std::move(src_bins)),
       _dest_bins(std::move(dest_bins)),
       _buffer(std::make_shared<BufferT>()) {
-  assert(_dest_bins->bin_size() > _src_bins->bin_size());
+  assert(_dest_bins->resolution() > _src_bins->resolution());
 
   if (_pixel_it == _pixel_last) {
     *this = at_end(_pixel_last, _src_bins, _dest_bins);
@@ -131,7 +131,7 @@ inline auto CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass1() -> ColumnMer
   ColumnMerger merger{};
 
   // Compute the first and last bins mapping to chunk we are processing
-  const auto factor = _dest_bins->bin_size() / _src_bins->bin_size();
+  const auto factor = _dest_bins->resolution() / _src_bins->resolution();
   _bin1_id_chunk_start = (_src_bins->at(_pixel_it->bin1_id).rel_id() / factor) * factor;
   _bin1_id_chunk_end = _bin1_id_chunk_start + factor;
 

@@ -215,7 +215,7 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
     attributes.bin_size = 0;
   } else {
     attributes.bin_type = "fixed";
-    attributes.bin_size = bins.bin_size();
+    attributes.bin_size = bins.resolution();
   }
 
   try {

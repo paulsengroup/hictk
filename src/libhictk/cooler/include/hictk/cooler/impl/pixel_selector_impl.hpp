@@ -127,7 +127,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 #ifdef HICTK_WITH_EIGEN
 template <typename N>
 inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
-  const auto bin_size = _bins->bin_size();
+  const auto bin_size = _bins->resolution();
   const auto span1 = coord1().bin2.end() - coord1().bin1.start();
   const auto span2 = coord2().bin2.end() - coord2().bin1.start();
   const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);
@@ -147,7 +147,7 @@ inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
 
 template <typename N>
 [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
-  const auto bin_size = _bins->bin_size();
+  const auto bin_size = _bins->resolution();
   const auto span1 = coord1().bin2.end() - coord1().bin1.start();
   const auto span2 = coord2().bin2.end() - coord2().bin1.start();
   const auto num_rows = static_cast<std::int64_t>((span1 + bin_size - 1) / bin_size);

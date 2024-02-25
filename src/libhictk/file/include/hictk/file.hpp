@@ -135,7 +135,7 @@ class File {
   [[nodiscard]] auto bins() const -> const BinTable &;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const;
 
-  [[nodiscard]] std::uint32_t bin_size() const;
+  [[nodiscard]] std::uint32_t resolution() const;
   [[nodiscard]] std::uint64_t nbins() const;
   [[nodiscard]] std::uint64_t nchroms() const;
 

@@ -137,7 +137,7 @@ static transformers::PixelMerger<PixelIt> init_pixel_merger(const File& f,
   if (heads.empty()) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to find {} normalization vectors at {} ({})"), normalization,
-                    f.bin_size(), hic::MatrixUnit::BP));
+                    f.resolution(), hic::MatrixUnit::BP));
   }
 
   return {std::move(heads), std::move(tails)};

@@ -55,7 +55,7 @@ inline bool BinTableFixed::empty() const noexcept { return size() == 0; }
 
 inline std::size_t BinTableFixed::num_chromosomes() const { return _chroms.size(); }
 
-constexpr std::uint32_t BinTableFixed::bin_size() const noexcept { return _bin_size; }
+constexpr std::uint32_t BinTableFixed::resolution() const noexcept { return _bin_size; }
 
 constexpr const Reference &BinTableFixed::chromosomes() const noexcept { return _chroms; }
 
@@ -141,9 +141,9 @@ inline Bin BinTableFixed::at(std::uint64_t bin_id) const {
 inline Bin BinTableFixed::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
   const auto offset = _num_bins_prefix_sum[chrom.id()];
   const auto relative_bin_id = bin_id - offset;
-  const auto start = static_cast<uint32_t>(relative_bin_id * bin_size());
+  const auto start = static_cast<uint32_t>(relative_bin_id * resolution());
   assert(start < chrom.size());
-  const auto end = (std::min)(start + bin_size(), chrom.size());
+  const auto end = (std::min)(start + resolution(), chrom.size());
 
   return {bin_id, static_cast<std::uint32_t>(relative_bin_id), chrom, start, end};
 }
@@ -185,7 +185,7 @@ inline std::uint64_t BinTableFixed::map_to_bin_id(const Chromosome &chrom,
 
   const auto bin_offset = _num_bins_prefix_sum[chrom.id()] - _num_bins_prefix_sum.front();
 
-  return bin_offset + static_cast<std::uint64_t>(pos / bin_size());
+  return bin_offset + static_cast<std::uint64_t>(pos / resolution());
 }
 
 inline std::uint64_t BinTableFixed::map_to_bin_id(std::string_view chrom_name,
@@ -268,7 +268,7 @@ inline auto BinTableFixed::iterator::operator*() const -> value_type {
   assert(_bin_table);
 
   const auto &chrom = chromosome();
-  const auto bin_size = this->bin_size();
+  const auto bin_size = this->resolution();
 
   const auto start = std::min(_rel_bin_id * bin_size, chrom.size());
   const auto end = std::min(start + bin_size, chrom.size());
@@ -422,9 +422,9 @@ inline const Chromosome &BinTableFixed::iterator::chromosome() const {
   return chromosome(_chrom_id);
 }
 
-constexpr std::uint32_t BinTableFixed::iterator::bin_size() const noexcept {
+constexpr std::uint32_t BinTableFixed::iterator::resolution() const noexcept {
   assert(_bin_table);
-  return _bin_table->bin_size();
+  return _bin_table->resolution();
 }
 
 constexpr std::size_t BinTableFixed::iterator::bin_id() const noexcept {
@@ -439,7 +439,7 @@ inline std::uint32_t BinTableFixed::iterator::compute_num_chrom_bins() const noe
   assert(_bin_table);
 
   const auto chrom_size = chromosome().size();
-  const auto bin_size = this->bin_size();
+  const auto bin_size = this->resolution();
 
   return (chrom_size + bin_size - 1) / bin_size;
 }

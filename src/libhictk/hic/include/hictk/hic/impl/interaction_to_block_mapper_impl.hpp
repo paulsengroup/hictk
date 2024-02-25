@@ -171,7 +171,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
 
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks at resolution {}..."),
-               _bin_table->bin_size());
+               _bin_table->resolution());
 
   auto t0 = std::chrono::steady_clock::now();
   for (std::size_t i = 0; first_pixel != last_pixel; ++i) {
@@ -354,9 +354,9 @@ inline void HiCInteractionToBlockMapper::init_block_mappers() {
     for (std::uint32_t chrom2_id = chrom1_id; chrom2_id < chromosomes().size(); ++chrom2_id) {
       const auto &chrom2 = chromosomes().at(chrom2_id);
 
-      const auto num_bins = compute_num_bins(chrom1, chrom2, _bin_table->bin_size());
+      const auto num_bins = compute_num_bins(chrom1, chrom2, _bin_table->resolution());
       const auto num_columns = compute_block_column_count(
-          chrom1, chrom2, _bin_table->bin_size(),
+          chrom1, chrom2, _bin_table->resolution(),
           chrom1 == chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
       const auto num_rows = num_bins / num_columns + 1;
 
