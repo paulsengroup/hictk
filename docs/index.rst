@@ -7,7 +7,7 @@ Introduction
 
 hictk is a blazing fast toolkit to work with .hic and .cool files.
 
-hictk is capable of reading files in .cool, .mcool, .scool and .hic format (including hic v9) as well as writing .cool, .mcool and .scool files.
+hictk is capable of reading and writing files in .cool, .mcool, .scool and .hic format (including hic v9).
 
 .. only:: not latex
 
@@ -29,7 +29,10 @@ hictk is developed on Linux and tested on Linux, MacOS and Windows. CLI tools ca
 
 hictk can be compiled on most UNIX-like systems (including many Linux distributions and MacOS) as well as Windows. See the :doc:`build instructions <./installation_src>` for more details.
 
-Python bindings for hictk can be installed using pip or conda. Refer to hictkpy `documentation <https://hictkpy.readthedocs.io/en/latest/installation.html>`_ for more details.
+hictk can be used from languages other than C++ through the following bindings:
+
+* Python bindings through `hictkpy <https://github.com/paulsengroup/hictkpy>`_
+* R bindings through `hictkR <https://github.com/paulsengroup/hictkR>`_
 
 .. only:: not latex
 
@@ -94,3 +97,4 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
    cli_reference
    cpp_api/index
    Python API <https://hictkpy.readthedocs.io/en/latest/hictkpy.html>
+   R API <https://paulsengroup.github.io/hictkR/reference/index.html>
