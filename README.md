@@ -63,17 +63,23 @@ The public C++ API of hictk is documented in the [C++ API Reference](https://hic
 
 If you use hictk in you reaserch, please cite the following publication:
 
-Preprint available soon.
+Roberto Rossini, Jonas Paulsen hictk: blazing fast toolkit to work with .hic and .cool files.
+_bioRxiv_ __2023.11.26.568707__. [https://doi.org/10.1101/2023.11.26.568707](https://doi.org/10.1101/2023.11.26.568707)
 
 <details>
 <summary>BibTex</summary>
 
 ```bibtex
-@misc{hictk,
-author = {Roberto Rossini},
-year = {2023},
-note = {https://github.com/paulsengroup/hictk},
-title = {hictk: blazing fast toolkit to work with .hic and .cool files}
+@article {hictk,
+	author = {Roberto Rossini and Jonas Paulsen},
+	title = {hictk: blazing fast toolkit to work with .hic and .cool files},
+	elocation-id = {2023.11.26.568707},
+	year = {2023},
+	doi = {10.1101/2023.11.26.568707},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707},
+	eprint = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707.full.pdf},
+	journal = {bioRxiv}
 }
 ```
 
