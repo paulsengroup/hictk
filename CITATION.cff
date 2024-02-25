@@ -1,0 +1,39 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+cff-version: 1.2.0
+message: 'If you use this software, please cite it using the metadata from this file.'
+authors:
+  - given-names: Roberto
+    family-names: Rossini
+    orcid: 'https://orcid.org/0000-0003-3096-1470'
+    email: roberros@uio.no
+    affiliation: 'Department of Biosciences, University of Oslo'
+title: hictk
+abstract: 'Blazing fast toolkit to work with .hic and .cool files.'
+doi: '10.5281/zenodo.8214220'
+url: 'https://github.com/paulsengroup/hictk'
+repository-code: 'https://github.com/paulsengroup/hictk'
+type: software
+license: MIT
+preferred-citation:
+  type: article
+  authors:
+  - given-names: Roberto
+    family-names: Rossini
+    orcid: 'https://orcid.org/0000-0003-3096-1470'
+    email: roberros@uio.no
+    affiliation: 'Department of Biosciences, University of Oslo'
+  - given-names: Jonas
+    family-names: Paulsen
+    orcid: 'https://orcid.org/0000-0002-7918-5495'
+    email: jonas.paulsen@ibv.uio.no
+    affiliation: 'Department of Biosciences, University of Oslo'
+  doi: '10.1101/2023.11.26.568707'
+  url: 'https://doi.org/10.1101/2023.11.26.568707'
+  journal: 'Cold Spring Harbor Laboratory'
+  year: 2023
+  month: 11
+  title: 'hictk: blazing fast toolkit to work with .hic and .cool files'
+  abstract: 'We developed hictk, a toolkit that can transparently operate on .hic and .cool files with excellent performance. The toolkit is written in C++ and consists of a C++ library with Python bindings as well as CLI tools to perform common operations directly from the shell, including converting between .hic and .mcool formats. We benchmark the performance of hictk and compare it with other popular tools and libraries. We conclude that hictk significantly outperforms existing tools while providing the flexibility of natively working with both file formats without code duplication.'
