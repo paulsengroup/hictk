@@ -117,7 +117,7 @@ jobs:
         working-directory: hictkpy
         if: github.event_name != 'schedule'
         run: |
-          test/scripts/patch_hictkpy.py \
+          ../test/scripts/patch_hictkpy.py \
             --inplace \
             --cmakelists CMakeLists.txt \
             --git-tag="${{ github.event.after }}"
@@ -128,7 +128,7 @@ jobs:
         working-directory: hictkpy
         if: github.event_name == 'schedule'
         run: |
-          test/scripts/patch_hictkpy.py \
+          ../test/scripts/patch_hictkpy.py \
             --inplace \
             --cmakelists CMakeLists.txt \
             --git-tag=main
