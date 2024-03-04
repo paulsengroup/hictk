@@ -17,7 +17,21 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-export function readlink_py
+function check_resolution_available {
+  set -eu
+
+  hictk_bin="$1"
+  file="$2"
+  resolution="$3"
+
+  if ! "$hictk_bin" dump -t resolutions "$file" |
+    awk "END{exit !(NR == 1 && /${resolution}/)}"; then
+      echo 1>&2 "ERROR: Unable to find resolution ${resolutions}!"
+      return 1
+  fi
+}
+
+export function readlink_py check_resolution_available
 
 status=0
 
@@ -70,6 +84,10 @@ done
   --compression-lvl 1 \
   --resolutions "${resolutions[1]}"
 
+if ! check_resolution_available "$hictk_bin_opt" "$outdir/out.cool" "${resolutions[1]}" ; then
+  status=1
+fi
+
 if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler" "${resolutions[1]}"; then
   status=1
 fi
@@ -86,6 +104,25 @@ for res in "${resolutions[@]}"; do
     status=1
   fi
 done
+
+# Test hic (single resolution)
+"$hictk_bin" zoomify \
+  -t $(nproc.sh) \
+  --compression-lvl 1 \
+  --no-copy-base-resolution \
+  --resolutions "${resolutions[1]}" \
+  --force \
+  "$ref_hic" \
+  "$outdir/out.hic"
+
+
+if ! check_resolution_available "$hictk_bin_opt" "$outdir/out.hic" "${resolutions[1]}" ; then
+  status=1
+fi
+
+if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "${resolutions[1]}"; then
+  status=1
+fi
 
 if [ "$status" -eq 0 ]; then
   printf '\n### PASS ###\n'
