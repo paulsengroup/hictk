@@ -80,7 +80,7 @@ void print_zooming_plan_hic(std::string_view path_to_input,
     if (match != avail_resolutions.end()) {
       SPDLOG_INFO(FMT_STRING("copying resolution {} from \"{}\""), res, path_to_input);
     } else {
-      auto base_resolution = resolutions.front();
+      auto base_resolution = avail_resolutions.front();
       for (const auto& avail_res : resolutions) {
         if (avail_res >= res) {
           break;

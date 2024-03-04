@@ -34,6 +34,9 @@ class HiCFileZoomify {
                                                  std::uint32_t compression_lvl,
                                                  bool skip_all_vs_all_matrix);
   void init();
+
+  void ingest_interactions(std::uint32_t resolution);
+  void coarsen_interactions(std::uint32_t resolution, std::uint32_t base_resolution);
 };
 
 }  // namespace hictk::hic::internal

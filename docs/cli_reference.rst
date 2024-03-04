@@ -322,7 +322,7 @@ hictk zoomify
                                 Nice: 1000, 2000, 5000, 10000...
     -l,--compression-lvl UINT:INT bounded to [1 - 12] [6]
                                 Compression level used to compress interactions.
-                                Defaults to 6 and 12 for .mcool and .hic files, respectively.
+                                Defaults to 6 and 10 for .mcool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 16] [1]
                                 Maximum number of parallel threads to spawn.
                                 When zoomifying interactions from a .cool file, only a single thread will be used.
