@@ -80,7 +80,7 @@ void Cli::make_zoomify_subcommand() {
       "-l,--compression-lvl",
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
-      "Defaults to 6 and 12 for .mcool and .hic files, respectively.")
+      "Defaults to 6 and 10 for .mcool and .hic files, respectively.")
       ->check(CLI::Bound(1, 12))
       ->capture_default_str();
 
