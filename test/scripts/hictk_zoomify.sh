@@ -7,7 +7,6 @@
 set -e
 set -o pipefail
 set -u
-set -x
 
 echo "#######################"
 echo "#### hictk zoomify ####"
@@ -21,11 +20,11 @@ function readlink_py {
 function check_resolution_available {
   set -eu
 
-  hictk_bin="$1"
+  hictk_bin_="$1"
   file="$2"
   resolution="$3"
 
-  if ! "$hictk_bin" dump -t resolutions "$file" |
+  if ! "$hictk_bin_" dump -t resolutions "$file" |
     awk "END{exit !(NR == 1 && /${resolution}/)}"; then
       echo 1>&2 "ERROR: Unable to find resolution ${resolution}!"
       return 1
@@ -95,10 +94,10 @@ fi
 
 # Test hic (multiple resolutions)
 "$hictk_bin" zoomify \
-  -t $(nproc.sh) \
-  --compression-lvl 1 \
   "$ref_hic" \
-  "$outdir/out.hic"
+  "$outdir/out.hic" \
+  -t $(nproc.sh) \
+  --compression-lvl 1
 
 for res in "${resolutions[@]}"; do
   if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$res"; then
@@ -108,13 +107,13 @@ done
 
 # Test hic (single resolution)
 "$hictk_bin" zoomify \
+  "$ref_hic" \
+  "$outdir/out.hic" \
   -t $(nproc.sh) \
   --compression-lvl 1 \
   --no-copy-base-resolution \
   --resolutions "${resolutions[1]}" \
-  --force \
-  "$ref_hic" \
-  "$outdir/out.hic"
+  --force
 
 
 if ! check_resolution_available "$hictk_bin_opt" "$outdir/out.hic" "${resolutions[1]}" ; then
