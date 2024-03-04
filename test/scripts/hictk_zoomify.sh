@@ -7,6 +7,7 @@
 set -e
 set -o pipefail
 set -u
+set -x
 
 echo "#######################"
 echo "#### hictk zoomify ####"
@@ -26,7 +27,7 @@ function check_resolution_available {
 
   if ! "$hictk_bin" dump -t resolutions "$file" |
     awk "END{exit !(NR == 1 && /${resolution}/)}"; then
-      echo 1>&2 "ERROR: Unable to find resolution ${resolutions}!"
+      echo 1>&2 "ERROR: Unable to find resolution ${resolution}!"
       return 1
   fi
 }
@@ -55,7 +56,7 @@ resolutions=(50000 100000 250000 2500000)
 
 export PATH="$PATH:$script_dir"
 
-if ! check_test_files_exist.sh "$ref_cooler"; then
+if ! check_test_files_exist.sh "$ref_cooler" "$ref_hic"; then
   exit 1
 fi
 
@@ -84,7 +85,7 @@ done
   --compression-lvl 1 \
   --resolutions "${resolutions[1]}"
 
-if ! check_resolution_available "$hictk_bin_opt" "$outdir/out.cool" "${resolutions[1]}" ; then
+if ! check_resolution_available "$hictk_bin_opt" "$outdir/out.cool" "${resolutions[1]}"; then
   status=1
 fi
 
