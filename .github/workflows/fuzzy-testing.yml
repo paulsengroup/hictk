@@ -12,6 +12,7 @@ on:
       - "src/**"
       - "test/scripts/fuzzy_test.py"
       - "test/scripts/link_h5_dataset.py"
+      - "test/scripts/patch_hictkpy.py"
       - "CMakeLists.txt"
       - "conanfile.txt"
     tags:
@@ -22,6 +23,7 @@ on:
       - ".github/workflows/fuzzy-testing.yml"
       - "test/scripts/fuzzy_test.py"
       - "test/scripts/link_h5_dataset.py"
+      - "test/scripts/patch_hictkpy.py"
 
   schedule:
     # Run weekly
