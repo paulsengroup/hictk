@@ -35,7 +35,6 @@ class HiCFileZoomify {
                                                  bool skip_all_vs_all_matrix);
   void init();
 
-  std::vector<std::uint32_t> generate_base_resolutions() const;
   void ingest_interactions(std::uint32_t resolution);
   void coarsen_interactions(std::uint32_t resolution, std::uint32_t base_resolution);
 };
