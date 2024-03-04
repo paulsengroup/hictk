@@ -49,8 +49,6 @@ inline void HiCFileZoomify::init() {
 inline std::vector<std::uint32_t> HiCFileZoomify::generate_base_resolutions() const {
   auto avail_resolutions = hic::utils::list_resolutions(_path_to_input_hic, true);
   std::sort(avail_resolutions.begin(), avail_resolutions.end(), std::greater<>{});
-  const std::vector<std::uint32_t> target_resolutions{_hfw.resolutions().rbegin(),
-                                                      _hfw.resolutions().rend()};
   std::vector<std::uint32_t> base_resolutions{};
 
   for (const auto& tgt_res : _hfw.resolutions()) {
