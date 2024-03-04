@@ -206,7 +206,7 @@ jobs:
           cache-from: type=gha,scope=build-dockerfile
           cache-to: type=gha,mode=max,scope=build-dockerfile
           tags: ${{ steps.meta.outputs.tags }}
-          platforms: ${{ steps.build-args.outputs.PLATFORMS }}
+          platforms: linux/amd64,linux/arm64
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
             CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
