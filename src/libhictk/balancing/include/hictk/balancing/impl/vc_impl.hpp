@@ -4,6 +4,13 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 #include "hictk/chromosome.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
