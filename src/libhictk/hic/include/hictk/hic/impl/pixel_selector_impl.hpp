@@ -830,6 +830,36 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
 }
 
 template <typename N>
+inline PixelSelectorAll::iterator<N>::iterator(const iterator<N> &other)
+    : _selectors(other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr),
+      _active_selectors(other._active_selectors
+                            ? std::make_shared<SelectorQueue>(*other._active_selectors)
+                            : nullptr),
+      _its(other._its ? std::make_shared<ItPQueue>(*other._its) : nullptr),
+      _sorted(other._sorted),
+      _chrom1_id(other._chrom1_id),
+      _buff(other._buff ? std::make_shared<std::vector<ThinPixel<N>>>(*other._buff) : nullptr),
+      _i(other._i) {}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator=(const iterator<N> &other) -> iterator & {
+  if (this == &other) {
+    return *this;
+  }
+
+  _selectors = other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr;
+  _active_selectors =
+      other._active_selectors ? std::make_shared<SelectorQueue>(*other._active_selectors) : nullptr;
+  _its = other._its ? std::make_shared<ItPQueue>(*other._its) : nullptr;
+  _sorted = other._sorted;
+  _chrom1_id = other._chrom1_id;
+  _buff = other._buff ? std::make_shared<std::vector<ThinPixel<N>>>(*other._buff) : nullptr;
+  _i = other._i;
+
+  return *this;
+}
+
+template <typename N>
 inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
   if (!_buff || !other._buff) {
     return _buff == other._buff;
