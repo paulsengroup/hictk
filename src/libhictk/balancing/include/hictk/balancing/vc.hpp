@@ -26,7 +26,7 @@ class VC {
   template <typename File>
   explicit VC(const File& f, Type type = Type::gw);
   template <typename PixelIt>
-  explicit VC(PixelIt first, PixelIt last, const BinTable& bins);
+  VC(PixelIt first, PixelIt last, const BinTable& bins);
 
   [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;

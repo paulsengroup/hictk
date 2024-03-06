@@ -69,6 +69,8 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins) {
     }
   });
 
+  _chrom_offsets.push_back(0);
+  _chrom_offsets.push_back(_biases.size());
   _scale.push_back(std::sqrt(norm_sum / sum));
 }
 
