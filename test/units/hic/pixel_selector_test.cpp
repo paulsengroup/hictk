@@ -432,3 +432,16 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
     }
   }
 }
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("HiC: pixel selector fetch all repeatedly", "[hic][short]") {
+  const auto sel = File(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
+
+  const auto first = sel.template begin<std::int32_t>();
+  const auto last = sel.template end<std::int32_t>();
+
+  const auto num_pixel1 = std::distance(first, last);
+  const auto num_pixel2 = std::distance(first, last);
+
+  CHECK(num_pixel1 == num_pixel2);
+}
