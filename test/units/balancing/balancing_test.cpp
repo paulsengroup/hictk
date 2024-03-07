@@ -404,15 +404,4 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
   }
 }
 
-TEST_CASE("Debugging", "[balancing][short]") {
-  const auto path = datadir / "integration_tests/4DNFIZ1ZVXC8.mcool";
-
-  const hictk::File f(path.string(), 1000);
-
-  constexpr auto type = hictk::balancing::SCALE::Type::gw;
-  const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-
-  fmt::print(FMT_STRING("{}\n"), fmt::join(weights, ", "));
-}
-
 }  // namespace hictk::test::balancing
