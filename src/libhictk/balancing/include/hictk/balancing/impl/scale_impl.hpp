@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -107,6 +109,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     }
 
     const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
+
+    SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
     if (_convergence_stats.error < params.tol) {
       const auto status = handle_convergenece(pixels, dr, dc, row, offset);
