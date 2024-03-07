@@ -48,7 +48,8 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 
 template <typename PixelIt>
 inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
-    : _biases(VC{first, last, bins}.get_weights()) {
+    : _biases(VC{first, last, bins}.get_weights()),
+      _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}) {
   if (first == last) {
     std::fill(_biases.begin(), _biases.end(), 1.0);
     _scale.push_back(1.0);
@@ -57,278 +58,114 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
   }
 
   const auto offset = bins.num_bin_prefix_sum().front();
-  const auto size = _biases.size();
 
-  std::vector<bool> bad(size, false);
+  mask_bins_and_init_buffers(first, last, offset, params.max_percentile);
 
-  std::vector<double> z_target_vector(size, 1);
-  std::vector<double> calculated_vector_b(size, 0);
-  std::vector<double> one(size, 1);
+  const auto max_total_iters = params.max_iters * 3;
 
-  const auto total_iters = params.max_iters * 3;
-
-  std::vector<double> report_error_for_iteration{};
-  std::vector<std::uint32_t> num_iters_for_all_iterations{};
-
-  std::vector<std::size_t> row_wise_nnz(size, 0);
-  std::for_each(first, last, [&](const auto& p) {
-    row_wise_nnz[p.bin1_id - offset]++;
-    if (p.bin1_id != p.bin2_id) {
-      row_wise_nnz[p.bin2_id - offset]++;
-    }
-  });
-
-  std::vector<std::size_t> row_wise_nnz_sorted{};
-  std::copy_if(row_wise_nnz.begin(), row_wise_nnz.end(), std::back_inserter(row_wise_nnz_sorted),
-               [&](const auto n) { return n != 0; });
-  std::sort(row_wise_nnz_sorted.begin(), row_wise_nnz_sorted.end());
-  const auto nnz_rows =
-      row_wise_nnz_sorted.size() -
-      static_cast<std::size_t>(std::distance(
-          row_wise_nnz_sorted.begin(),
-          std::upper_bound(row_wise_nnz_sorted.begin(), row_wise_nnz_sorted.end(), 0)));
-
-  const auto upper_bound_idx =
-      static_cast<std::size_t>(params.max_percentile * static_cast<double>(nnz_rows) / 100.0);
-  const auto upper_bound = row_wise_nnz_sorted[upper_bound_idx];
-
-  std::size_t low_cutoff = 1;
-
-  for (std::size_t i = 0; i < row_wise_nnz.size(); ++i) {
-    if (row_wise_nnz[i] < low_cutoff) {
-      bad[i] = true;
-      one[i] = 0;
-      z_target_vector[i] = 0;
-    }
-  }
+  std::queue<double> error_queue_iter{};
+  std::queue<std::uint32_t> error_queue_all_iter{};
 
   // TODO avoid reading all interactions into memory
   const std::vector<ThinPixel<double>> pixels(first, last);
 
-  auto row = matrix_vect_mult(pixels, one, offset, 0);
-  multiply(row, _biases);
+  std::vector<double> column(size(), 0);
+  std::vector<double> row(size(), 0);
 
-  for (std::size_t i = 0; i < size; ++i) {
-    one[i] = 1 - bad[i];
-  }
+  matrix_vect_mult(row, pixels, _one, offset, 0);
+  multiply(row, _biases);
 
   auto dr = _biases;
   auto dc = _biases;
   auto current = _biases;
 
-  bool conv = false;
-  bool div = false;
-  std::uint32_t low_conv = 1000;
-  std::uint32_t low_div = 0;
+  std::vector<double> b_conv(size(), 0);
+  std::vector<double> b0(size(), 0);
+  std::vector<bool> bad_conv(size(), false);
+  _ber_conv = 10.0;
 
-  std::vector<double> b_conv(size, 0);
-  std::vector<double> b0(size, 0);
-  std::vector<bool> bad_conv(size, false);
-  auto ber_conv = 10.0;
-  bool yes = true;
+  for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
+                                 _iter < params.max_iters && _tot_iter < max_total_iters;
+       ++_iter, ++_tot_iter) {
+    update_weights(column, _bad, row, _z_target_vector, dr, pixels, offset);
+    multiply(column, dc);
 
-  auto converge_error = 10.0 * (1.0 + params.tol);
+    update_weights(row, _bad, column, _z_target_vector, dc, pixels, offset);
+    multiply(row, dr);
 
-  for (std::size_t iter = 0, all_iters_i = 0, real_iters = 0;
-       converge_error > params.tol && iter < params.max_iters && all_iters_i < total_iters;
-       ++iter, ++all_iters_i, ++real_iters) {
-    auto col = update_weights(bad, row, z_target_vector, dr, pixels, offset);
-
-    for (std::size_t i = 0; i < col.size(); ++i) {
-      col[i] *= dc[i];
-    }
-
-    row = update_weights(bad, col, z_target_vector, dc, pixels, offset);
-
-    for (std::size_t i = 0; i < col.size(); ++i) {
-      row[i] *= dr[i];
-    }
-
-    geometric_mean(dr, dc, calculated_vector_b);
-    const auto res = compute_convergence_error(calculated_vector_b, current, bad, params.tol);
-    converge_error = res.first;
+    geometric_mean(dr, dc, _biases1);
+    const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
+    _convergence_stats.error = res.first;
     const auto num_bad = res.second;
 
     b0 = current;
+    current = _biases1;
 
-    report_error_for_iteration.push_back(converge_error);
-    num_iters_for_all_iterations.push_back(static_cast<std::uint32_t>(iter));
+    error_queue_iter.push(_convergence_stats.error);
+    if (error_queue_iter.size() == 6) {
+      error_queue_iter.pop();
+    }
 
-    current = calculated_vector_b;
-    const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(nnz_rows);
+    const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
 
-    if (converge_error < params.tol) {
-      yes = true;
-      if (low_cutoff == 1) {
+    if (_convergence_stats.error < params.tol) {
+      const auto status = handle_convergenece(pixels, dr, dc, row, offset);
+      if (status == ControlFlow::break_) {
         break;
       }
-      conv = true;
-      b_conv = calculated_vector_b;
-      bad_conv = bad;
-      ber_conv = converge_error;
-      low_conv = static_cast<std::uint32_t>(low_cutoff);
-
-      if (div) {
-        if (low_conv - low_div <= 1) {
-          break;
-        }
-        low_cutoff = (low_conv + low_div) / 2;
-      } else {
-        low_cutoff = low_conv / 2;
-      }
-
-      for (std::size_t i = 0; i < size; ++i) {
-        if (row_wise_nnz[i] < low_cutoff) {
-          bad[i] = true;
-          one[i] = 0;
-        } else {
-          bad[i] = false;
-          one[i] = 1;
-        }
-      }
-
-      converge_error = 10.0;
-      iter = 0;
-      std::transform(bad.begin(), bad.end(), dr.begin(), [&](const auto b) { return !b; });
-      dc = dr;
-
-      row = matrix_vect_mult(pixels, dc, offset);
-      multiply(row, dr);
+      assert(status == ControlFlow::continue_);
+      _iter = 0;
       continue;
     }
 
-    if (iter <= 5) {
+    if (_iter <= 5) {
       continue;
     }
 
-    const auto err2 = report_error_for_iteration[report_error_for_iteration.size() - 1];
-    const auto err1 = report_error_for_iteration[report_error_for_iteration.size() - 6];
-
-    if (err2 * (1.0 + params.delta) < err1 && (iter < params.max_iters)) {
+    // check whether convergence rate is satisfactory
+    const auto err1 = error_queue_iter.front();
+    const auto err2 = error_queue_iter.back();
+    if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
       continue;
     }
 
-    div = true;
-    low_div = static_cast<std::uint32_t>(low_cutoff);
-    if (conv) {
-      if (low_conv - low_div <= 1) {
-        calculated_vector_b = b_conv;
-        bad = bad_conv;
-        converge_error = ber_conv;
-        break;
-
-      } else if (frac_bad < params.erez && yes) {
-        for (std::size_t i = 0; i < size; ++i) {
-          if (bad[i]) {
-            continue;
-          }
-          const auto rel_err =
-              std::abs((calculated_vector_b[i] - b0[i]) / (calculated_vector_b[i] + b0[i]));
-          if (rel_err > params.tol) {
-            bad[i] = true;
-            one[i] = 0;
-          }
-        }
-        yes = false;
-        converge_error = 10.0;
-        iter = 0;
-        std::transform(bad.begin(), bad.end(), dr.begin(), [&](const auto b) { return !b; });
-        dc = dr;
-
-        row = matrix_vect_mult(pixels, dc, offset);
-        multiply(row, dr);
-
-        if (low_cutoff > upper_bound) {
-          break;
-        }
-        if (all_iters_i > total_iters) {
-          break;
-        }
-        continue;
-      } else {
-        low_cutoff = (low_div + low_conv) / 2;
-        yes = true;
-      }
-    } else if (frac_bad < params.erez && yes) {
-      for (std::size_t i = 0; i < size; ++i) {
-        if (bad[i]) {
-          continue;
-        }
-        const auto rel_err =
-            std::abs((calculated_vector_b[i] - b0[i]) / (calculated_vector_b[i] + b0[i]));
-        if (rel_err > params.tol) {
-          bad[i] = true;
-          one[i] = 0;
-        }
-      }
-
-      yes = false;
-      converge_error = 10.0;
-      iter = 0;
-
-      std::transform(bad.begin(), bad.end(), dr.begin(), [&](const auto b) { return !b; });
-      dc = dr;
-      row = matrix_vect_mult(pixels, dc, offset);
-      multiply(row, dr);
-
-      if (low_cutoff > upper_bound) {
-        break;
-      }
-      if (all_iters_i > total_iters) {
-        break;
-      }
-      continue;
-    } else {
-      low_cutoff *= 2;
-      yes = true;
-    }
-
-    for (std::size_t i = 0; i < size; ++i) {
-      if (row_wise_nnz[i] < low_cutoff) {
-        bad[i] = true;
-        one[i] = 0;
-      } else {
-        bad[i] = false;
-        one[i] = 1;
-      }
-    }
-    converge_error = 10.0;
-    iter = 0;
-
-    std::transform(bad.begin(), bad.end(), dr.begin(), [&](const auto b) { return !b; });
-    dc = dr;
-    row = matrix_vect_mult(pixels, dc, offset);
-    multiply(row, dr);
-
-    if (low_cutoff > upper_bound) {
+    // handle divergence
+    _convergence_stats.diverged = true;
+    _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
+    const auto status = handle_diverged(pixels, b0, dr, dc, row, offset, frac_bad,
+                                        params.frac_bad_cutoff, params.tol);
+    if (status == ControlFlow::break_) {
       break;
     }
-    if (all_iters_i > total_iters) {
-      break;
-    }
+    assert(status == ControlFlow::continue_);
+    continue;
   }
 
-  const auto col = matrix_vect_mult(pixels, calculated_vector_b, offset);
-  const auto row_sum_error = compute_final_error(col, calculated_vector_b, z_target_vector, bad);
+  matrix_vect_mult(column, pixels, _biases1, offset);
+  const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
-  if (converge_error > params.tol || row_sum_error > params.max_row_sum_error ||
-      low_cutoff > upper_bound) {
+  // convergence not achieved, return vector of nans
+  if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
+      _low_cutoff > _upper_bound) {
     std::fill(_biases.begin(), _biases.end(), std::numeric_limits<double>::quiet_NaN());
     _scale.push_back(std::numeric_limits<double>::quiet_NaN());
     _chrom_offsets = bins.num_bin_prefix_sum();
     return;
   }
 
-  for (std::size_t i = 0; i < size; ++i) {
-    if (bad[i]) {
+  // convergence achieved
+  for (std::size_t i = 0; i < size(); ++i) {
+    if (_bad[i]) {
       _biases[i] = std::numeric_limits<double>::quiet_NaN();
     } else {
-      _biases[i] = 1.0 / calculated_vector_b[i];
+      _biases[i] = 1.0 / _biases1[i];
     }
   }
   _scale.push_back(compute_scale(pixels, _biases, offset));
   _chrom_offsets = bins.num_bin_prefix_sum();
 }
+
+inline std::size_t SCALE::size() const noexcept { return _biases.size(); }
 
 inline std::vector<double> SCALE::get_weights(bool rescale) const {
   if (!rescale) {
@@ -405,19 +242,13 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 
   return {{0, f.bins().size()}, scale.get_scale(), scale.get_weights(false)};
 }
-inline std::vector<double> SCALE::matrix_vect_mult(const std::vector<ThinPixel<double>>& pixels,
-                                                   const std::vector<double>& cfx,
-                                                   std::size_t offset, std::size_t i0,
-                                                   std::size_t i1) {
-  std::vector<double> v(cfx.size());
-  matrix_vect_mult(pixels, cfx, v, offset, i0, i1);
-  return v;
-}
 
-inline void SCALE::matrix_vect_mult(const std::vector<ThinPixel<double>>& pixels,
-                                    const std::vector<double>& cfx, std::vector<double>& sum_vect,
-                                    std::size_t offset, std::size_t i0, std::size_t i1) noexcept {
-  std::fill(sum_vect.begin(), sum_vect.end(), 0);
+inline void SCALE::matrix_vect_mult(std::vector<double>& buffer,
+                                    const std::vector<ThinPixel<double>>& pixels,
+                                    const std::vector<double>& cfx, std::size_t offset,
+                                    std::size_t i0, std::size_t i1) noexcept {
+  assert(buffer.size() == cfx.size());
+  std::fill(buffer.begin(), buffer.end(), 0);
 
   if (pixels.empty()) {
     return;
@@ -433,33 +264,32 @@ inline void SCALE::matrix_vect_mult(const std::vector<ThinPixel<double>>& pixels
   for (std::size_t i = i0; i < i1; ++i) {
     const auto& p = pixels[i];
 
-    assert(p.bin1_id - offset < sum_vect.size());
-    assert(p.bin2_id - offset < sum_vect.size());
+    assert(p.bin1_id - offset < buffer.size());
+    assert(p.bin2_id - offset < buffer.size());
 
     const auto f = p.bin1_id == p.bin2_id ? 0.5 : 1.0;
-    sum_vect[p.bin1_id - offset] += p.count * f * cfx[p.bin2_id - offset];
-    sum_vect[p.bin2_id - offset] += p.count * f * cfx[p.bin1_id - offset];
+    buffer[p.bin1_id - offset] += p.count * f * cfx[p.bin2_id - offset];
+    buffer[p.bin2_id - offset] += p.count * f * cfx[p.bin1_id - offset];
   }
 }
 
-inline std::vector<double> SCALE::update_weights(const std::vector<bool>& bad,
-                                                 std::vector<double>& weights,
-                                                 const std::vector<double>& target,
-                                                 std::vector<double>& d_vector,
-                                                 const std::vector<ThinPixel<double>>& pixels,
-                                                 std::size_t offset) noexcept {
-  assert(bad.size() == weights.size());
+inline void SCALE::update_weights(std::vector<double>& buffer, const std::vector<bool>& bad,
+                                  std::vector<double>& weights, const std::vector<double>& target,
+                                  std::vector<double>& d_vector,
+                                  const std::vector<ThinPixel<double>>& pixels,
+                                  std::size_t offset) noexcept {
+  assert(buffer.size() == bad.size());
+  assert(buffer.size() == weights.size());
+  assert(buffer.size() == target.size());
+  assert(buffer.size() == d_vector.size());
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (bad[i] == true) {
       weights[i] = 1.0;
     }
-  }
-
-  for (std::size_t i = 0; i < weights.size(); ++i) {
     d_vector[i] *= target[i] / weights[i];
   }
 
-  return matrix_vect_mult(pixels, d_vector, offset, 0);
+  matrix_vect_mult(buffer, pixels, d_vector, offset, 0);
 }
 
 inline void SCALE::geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
@@ -475,19 +305,18 @@ inline void SCALE::geometric_mean(const std::vector<double>& v1, const std::vect
 }
 
 inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
-    const std::vector<double>& calculated_vector_b, const std::vector<double>& current,
+    const std::vector<double>& _biases1, const std::vector<double>& current,
     const std::vector<bool>& bad, double tolerance) noexcept {
-  assert(calculated_vector_b.size() == current.size());
-  assert(calculated_vector_b.size() == bad.size());
+  assert(_biases1.size() == current.size());
+  assert(_biases1.size() == bad.size());
 
   double error = 0;
   std::uint64_t num_fail = 0;
-  for (std::size_t i = 0; i < calculated_vector_b.size(); ++i) {
+  for (std::size_t i = 0; i < _biases1.size(); ++i) {
     if (bad[i]) {
       continue;
     }
-    const auto rel_err =
-        std::abs((calculated_vector_b[i] - current[i]) / (calculated_vector_b[i] + current[i]));
+    const auto rel_err = std::abs((_biases1[i] - current[i]) / (_biases1[i] + current[i]));
     error = std::max(rel_err, error);
     num_fail = rel_err > tolerance;
   }
@@ -545,6 +374,183 @@ inline double SCALE::compute_scale(const std::vector<ThinPixel<double>>& pixels,
   }
 
   return std::sqrt(norm_sum / sum);
+}
+
+template <typename PixelIt>
+inline void SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
+                                              double max_percentile) {
+  assert(_bad.empty());
+  assert(_one.empty());
+  assert(_z_target_vector.empty());
+  assert(_row_wise_nnz.empty());
+  assert(_biases1.empty());
+
+  // init buffers
+  _bad.resize(size(), false);
+  _one.resize(size(), 1);
+  _z_target_vector.resize(size(), 1);
+  _row_wise_nnz.resize(size(), 0);
+  _biases1.resize(size(), 0);
+
+  // count nnz for each row
+  std::for_each(first, last, [&](const auto& p) {
+    _row_wise_nnz[p.bin1_id - offset]++;
+    if (p.bin1_id != p.bin2_id) {
+      _row_wise_nnz[p.bin2_id - offset]++;
+    }
+  });
+
+  // compute the number of non-zero rows
+  // we are sorting the vector the vector of nnz because anyways we will need that in a later stage
+  std::vector<std::uint64_t> row_wise_nnz_sorted{};
+  std::copy_if(_row_wise_nnz.begin(), _row_wise_nnz.end(), std::back_inserter(row_wise_nnz_sorted),
+               [&](const auto n) { return n != 0; });
+  std::sort(row_wise_nnz_sorted.begin(), row_wise_nnz_sorted.end());
+  _nnz_rows = row_wise_nnz_sorted.size() -
+              static_cast<std::size_t>(std::distance(
+                  row_wise_nnz_sorted.begin(),
+                  std::upper_bound(row_wise_nnz_sorted.begin(), row_wise_nnz_sorted.end(), 0)));
+
+  // compute the max number of nnz that can cause a row to be masked
+  const auto upper_bound_idx =
+      static_cast<std::size_t>(max_percentile * static_cast<double>(_nnz_rows) / 100.0);
+  _upper_bound = row_wise_nnz_sorted[upper_bound_idx];
+
+  // mask bad bins
+  _low_cutoff = 1;
+  for (std::size_t i = 0; i < _row_wise_nnz.size(); ++i) {
+    if (_row_wise_nnz[i] < _low_cutoff) {
+      _bad[i] = true;
+      _one[i] = 0;
+      _z_target_vector[i] = 0;
+    }
+  }
+}
+
+inline auto SCALE::handle_convergenece(const std::vector<ThinPixel<double>>& pixels,
+                                       std::vector<double>& dr, std::vector<double>& dc,
+                                       std::vector<double>& row, std::size_t offset)
+    -> ControlFlow {
+  _yes = true;
+  if (_low_cutoff == 1) {
+    return ControlFlow::break_;
+  }
+  _convergence_stats.converged = true;
+  _b_conv = _biases1;
+  _bad_conv = _bad;
+  _ber_conv = _convergence_stats.error;
+  _convergence_stats.low_convergence = static_cast<std::uint32_t>(_low_cutoff);
+
+  if (_convergence_stats.diverged) {
+    if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {
+      return ControlFlow::break_;
+    }
+    _low_cutoff = (_convergence_stats.low_convergence + _convergence_stats.low_divergence) / 2;
+  } else {
+    _low_cutoff = _convergence_stats.low_convergence / 2;
+  }
+
+  for (std::size_t i = 0; i < size(); ++i) {
+    if (_row_wise_nnz[i] < _low_cutoff) {
+      _bad[i] = true;
+      _one[i] = 0;
+    } else {
+      _bad[i] = false;
+      _one[i] = 1;
+    }
+  }
+
+  _convergence_stats.error = 10.0;
+  _iter = 0;
+  std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
+  dc = dr;
+
+  matrix_vect_mult(row, pixels, dc, offset);
+  multiply(row, dr);
+  return ControlFlow::continue_;
+}
+
+inline auto SCALE::handle_almost_converged(const std::vector<ThinPixel<double>>& pixels,
+                                           const std::vector<double>& b0, std::vector<double>& dr,
+                                           std::vector<double>& dc, std::vector<double>& row,
+                                           std::size_t offset, double tolerance) -> ControlFlow {
+  for (std::size_t i = 0; i < size(); ++i) {
+    if (_bad[i]) {
+      continue;
+    }
+    const auto rel_err = std::abs((_biases1[i] - b0[i]) / (_biases1[i] + b0[i]));
+    if (rel_err > tolerance) {
+      _bad[i] = true;
+      _one[i] = 0;
+    }
+  }
+  _yes = false;
+  _convergence_stats.error = 10.0;
+  _iter = 0;
+  std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
+  dc = dr;
+
+  matrix_vect_mult(row, pixels, dc, offset);
+  multiply(row, dr);
+
+  if (_low_cutoff > _upper_bound) {
+    return ControlFlow::break_;
+  }
+  if (_tot_iter > _max_tot_iters) {
+    return ControlFlow::break_;
+  }
+  return ControlFlow::continue_;
+}
+
+inline auto SCALE::handle_diverged(const std::vector<ThinPixel<double>>& pixels,
+                                   const std::vector<double>& b0, std::vector<double>& dr,
+                                   std::vector<double>& dc, std::vector<double>& row,
+                                   std::size_t offset, double frac_bad, double frac_bad_cutoff,
+                                   double tolerance) -> ControlFlow {
+  if (_convergence_stats.converged) {
+    if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {
+      const auto status = handle_almost_converged(pixels, b0, dr, dc, row, offset, tolerance);
+      if (status == ControlFlow::continue_) {
+        return ControlFlow::continue_;
+      }
+      assert(status == ControlFlow::break_);
+      return ControlFlow::break_;
+    } else {
+      _low_cutoff = (_convergence_stats.low_divergence + _convergence_stats.low_convergence) / 2;
+      _yes = true;
+    }
+  } else if (frac_bad < frac_bad_cutoff && _yes) {
+    const auto status = handle_almost_converged(pixels, b0, dr, dc, row, offset, tolerance);
+    if (status == ControlFlow::continue_) {
+      return ControlFlow::continue_;
+    }
+    assert(status == ControlFlow::break_);
+    return ControlFlow::break_;
+  } else {
+    _low_cutoff *= 2;
+    _yes = true;
+  }
+
+  for (std::size_t i = 0; i < size(); ++i) {
+    _bad[i] = _row_wise_nnz[i] < _low_cutoff;
+    _one[i] = !_bad[i];
+  }
+  _convergence_stats.error = 10.0;
+  _iter = 0;
+
+  dr = _one;
+  dc = _one;
+  matrix_vect_mult(row, pixels, dc, offset);
+  multiply(row, dr);
+
+  if (_low_cutoff > _upper_bound) {
+    return ControlFlow::break_;
+  }
+  if (_tot_iter > _max_tot_iters) {
+    return ControlFlow::break_;
+  }
+
+  return ControlFlow::continue_;
 }
 
 inline VC::Type SCALE::map_type_to_vc(Type type) noexcept {

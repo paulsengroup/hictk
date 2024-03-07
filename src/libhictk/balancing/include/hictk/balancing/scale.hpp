@@ -20,16 +20,48 @@
 namespace hictk::balancing {
 
 class SCALE {
-  std::vector<std::uint64_t> _chrom_offsets{};
-  std::vector<double> _biases{};
-  std::vector<double> _variance{};
-  std::vector<double> _scale{};
-
   struct Result {
     std::vector<std::uint64_t> offsets{};
     std::vector<double> scales{};
     std::vector<double> weights{};
   };
+
+  struct ConvergenceStats {
+    bool converged{false};
+    bool diverged{false};
+    std::uint32_t low_convergence{1000};
+    std::uint32_t low_divergence{0};
+    double error{10.0};
+  };
+
+  enum class ControlFlow { break_, continue_ };
+
+  // buffers to store final results
+  std::vector<std::uint64_t> _chrom_offsets{};
+  std::vector<double> _biases{};
+  std::vector<double> _variance{};
+  std::vector<double> _scale{};
+
+  // intermediate buffers
+  bool _yes{false};
+  ConvergenceStats _convergence_stats{};
+
+  std::vector<bool> _bad{};
+  std::vector<double> _one{};
+  std::vector<double> _biases1{};  // calculated_vector_b
+  std::vector<double> _z_target_vector{};
+  std::vector<std::uint64_t> _row_wise_nnz{};
+  std::uint64_t _nnz_rows{};
+  std::uint64_t _low_cutoff{};
+  std::uint64_t _upper_bound{};
+
+  std::vector<bool> _bad_conv{};
+  std::vector<double> _b_conv{};
+  double _ber_conv{};
+
+  std::size_t _iter{};
+  std::size_t _tot_iter{};
+  std::size_t _max_tot_iters{};
 
  public:
   enum Type { cis, trans, gw };
@@ -38,7 +70,7 @@ class SCALE {
     double tol{1.0e-4};
     std::size_t max_iters{200};
     double max_percentile{10};
-    double erez{1.0e-5};
+    double frac_bad_cutoff{1.0e-5};
     double max_row_sum_error = 0.05;
     double delta = 0.05;
   };
@@ -64,18 +96,15 @@ class SCALE {
 
   [[nodiscard]] static VC::Type map_type_to_vc(Type type) noexcept;
 
-  [[nodiscard]] static std::vector<double> matrix_vect_mult(
-      const std::vector<ThinPixel<double>>& pixels, const std::vector<double>& cfx,
-      std::size_t offset, std::size_t i0 = 0, std::size_t i1 = 0);
-  static void matrix_vect_mult(const std::vector<ThinPixel<double>>& pixels,
-                               const std::vector<double>& cfx, std::vector<double>& sum_vect,
-                               std::size_t offset, std::size_t i0 = 0, std::size_t i1 = 0) noexcept;
-  static std::vector<double> update_weights(const std::vector<bool>& bad,
-                                            std::vector<double>& weights,
-                                            const std::vector<double>& target,
-                                            std::vector<double>& d_vector,
-                                            const std::vector<ThinPixel<double>>& pixels,
-                                            std::size_t offset) noexcept;
+  static void matrix_vect_mult(std::vector<double>& buffer,
+                               const std::vector<ThinPixel<double>>& pixels,
+                               const std::vector<double>& cfx, std::size_t offset,
+                               std::size_t i0 = 0, std::size_t i1 = 0) noexcept;
+  static void update_weights(std::vector<double>& buffer, const std::vector<bool>& bad,
+                             std::vector<double>& weights, const std::vector<double>& target,
+                             std::vector<double>& d_vector,
+                             const std::vector<ThinPixel<double>>& pixels,
+                             std::size_t offset) noexcept;
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;
@@ -92,6 +121,26 @@ class SCALE {
   [[nodiscard]] static double compute_scale(const std::vector<ThinPixel<double>>& pixels,
                                             const std::vector<double>& weights,
                                             std::size_t offset) noexcept;
+  template <typename PixelIt>
+  void mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
+                                  double max_percentile);
+  [[nodiscard]] auto handle_convergenece(const std::vector<ThinPixel<double>>& pixels,
+                                         std::vector<double>& dr, std::vector<double>& dc,
+                                         std::vector<double>& row, std::size_t offset)
+      -> ControlFlow;
+
+  [[nodiscard]] auto handle_almost_converged(const std::vector<ThinPixel<double>>& pixels,
+                                             const std::vector<double>& b0, std::vector<double>& dr,
+                                             std::vector<double>& dc, std::vector<double>& row,
+                                             std::size_t offset, double tolerance) -> ControlFlow;
+
+  [[nodiscard]] auto handle_diverged(const std::vector<ThinPixel<double>>& pixels,
+                                     const std::vector<double>& b0, std::vector<double>& dr,
+                                     std::vector<double>& dc, std::vector<double>& row,
+                                     std::size_t offset, double frac_bad, double frac_bad_cutoff,
+                                     double tolerance) -> ControlFlow;
+
+  [[nodiscard]] std::size_t size() const noexcept;
 };
 
 }  // namespace hictk::balancing
