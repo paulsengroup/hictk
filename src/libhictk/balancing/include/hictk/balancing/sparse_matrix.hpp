@@ -46,6 +46,8 @@ class MargsVector {
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
   void add(std::size_t i, double n) noexcept;
+  // multiply is not atomic
+  void multiply(const std::vector<double>& v) noexcept;
 
   [[nodiscard]] const std::vector<double>& operator()() const noexcept;
   [[nodiscard]] std::vector<double>& operator()() noexcept;
@@ -92,6 +94,11 @@ class SparseMatrix {
   void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  void multiply(MargsVector& buffer, nonstd::span<const double> cfx,
+                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 };
 
 class SparseMatrixChunked {
@@ -148,6 +155,11 @@ class SparseMatrixChunked {
   void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  void multiply(MargsVector& buffer, nonstd::span<const double> cfx,
+                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 
  private:
   void write_chunk();

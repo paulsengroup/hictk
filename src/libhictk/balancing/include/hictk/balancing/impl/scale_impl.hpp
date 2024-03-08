@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/pixel.hpp"
@@ -68,14 +69,22 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
   std::queue<double> error_queue_iter{};
   std::queue<std::uint32_t> error_queue_all_iter{};
 
-  // TODO avoid reading all interactions into memory
-  const std::vector<ThinPixel<double>> pixels(first, last);
+  // TODO don't add blacklisted bins
+  const auto m = [&]() {
+    // SparseMatrixChunked m_("/tmp/matrix.bin", 1000);
+    SparseMatrix m_{};
+    std::for_each(first, last, [&](const auto& p) {
+      m_.push_back(p.bin1_id - offset, p.bin2_id - offset, p.count);
+    });
+    m_.finalize();
+    return m_;
+  }();
 
-  std::vector<double> column(size(), 0);
-  std::vector<double> row(size(), 0);
+  MargsVector column(size());
+  MargsVector row(size());
 
-  matrix_vect_mult(row, pixels, _one, offset, 0);
-  multiply(row, _biases);
+  m.multiply(row, _one);
+  row.multiply(_biases);
 
   auto dr = _biases;
   auto dc = _biases;
@@ -89,11 +98,11 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
   for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
                                  _iter < params.max_iters && _tot_iter < max_total_iters;
        ++_iter, ++_tot_iter) {
-    update_weights(column, _bad, row, _z_target_vector, dr, pixels, offset);
-    multiply(column, dc);
+    update_weights(column, _bad, row(), _z_target_vector, dr, m);
+    column.multiply(dc);
 
-    update_weights(row, _bad, column, _z_target_vector, dc, pixels, offset);
-    multiply(row, dr);
+    update_weights(row, _bad, column(), _z_target_vector, dc, m);
+    row.multiply(dr);
 
     geometric_mean(dr, dc, _biases1);
     const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
@@ -113,7 +122,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
     if (_convergence_stats.error < params.tol) {
-      const auto status = handle_convergenece(pixels, dr, dc, row, offset);
+      const auto status = handle_convergenece(m, dr, dc, row);
       if (status == ControlFlow::break_) {
         break;
       }
@@ -136,8 +145,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     // handle divergence
     _convergence_stats.diverged = true;
     _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
-    const auto status = handle_diverged(pixels, b0, dr, dc, row, offset, frac_bad,
-                                        params.frac_bad_cutoff, params.tol);
+    const auto status =
+        handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
     if (status == ControlFlow::break_) {
       break;
     }
@@ -145,7 +154,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     continue;
   }
 
-  matrix_vect_mult(column, pixels, _biases1, offset);
+  m.multiply(column, _biases1);
   const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
   // convergence not achieved, return vector of nans
@@ -165,7 +174,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
       _biases[i] = 1.0 / _biases1[i];
     }
   }
-  _scale.push_back(compute_scale(pixels, _biases, offset));
+  _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
   _chrom_offsets = bins.num_bin_prefix_sum();
 }
 
@@ -247,41 +256,10 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
   return {{0, f.bins().size()}, scale.get_scale(), scale.get_weights(false)};
 }
 
-inline void SCALE::matrix_vect_mult(std::vector<double>& buffer,
-                                    const std::vector<ThinPixel<double>>& pixels,
-                                    const std::vector<double>& cfx, std::size_t offset,
-                                    std::size_t i0, std::size_t i1) noexcept {
-  assert(buffer.size() == cfx.size());
-  std::fill(buffer.begin(), buffer.end(), 0);
-
-  if (pixels.empty()) {
-    return;
-  }
-
-  if (i1 == 0) {
-    i1 = pixels.size();
-  }
-
-  assert(i1 <= pixels.size());
-  assert(i0 < i1);
-
-  for (std::size_t i = i0; i < i1; ++i) {
-    const auto& p = pixels[i];
-
-    assert(p.bin1_id - offset < buffer.size());
-    assert(p.bin2_id - offset < buffer.size());
-
-    const auto f = p.bin1_id == p.bin2_id ? 0.5 : 1.0;
-    buffer[p.bin1_id - offset] += p.count * f * cfx[p.bin2_id - offset];
-    buffer[p.bin2_id - offset] += p.count * f * cfx[p.bin1_id - offset];
-  }
-}
-
-inline void SCALE::update_weights(std::vector<double>& buffer, const std::vector<bool>& bad,
+template <typename Matrix>
+inline void SCALE::update_weights(MargsVector& buffer, const std::vector<bool>& bad,
                                   std::vector<double>& weights, const std::vector<double>& target,
-                                  std::vector<double>& d_vector,
-                                  const std::vector<ThinPixel<double>>& pixels,
-                                  std::size_t offset) noexcept {
+                                  std::vector<double>& d_vector, const Matrix& m) noexcept {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
@@ -293,7 +271,7 @@ inline void SCALE::update_weights(std::vector<double>& buffer, const std::vector
     d_vector[i] *= target[i] / weights[i];
   }
 
-  matrix_vect_mult(buffer, pixels, d_vector, offset, 0);
+  m.multiply(buffer, d_vector);
 }
 
 inline void SCALE::geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
@@ -328,8 +306,7 @@ inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
   return std::make_pair(error, num_fail);
 }
 
-inline double SCALE::compute_final_error(const std::vector<double>& col,
-                                         const std::vector<double>& scale,
+inline double SCALE::compute_final_error(const MargsVector& col, const std::vector<double>& scale,
                                          const std::vector<double>& target,
                                          const std::vector<bool>& bad) noexcept {
   assert(col.size() == scale.size());
@@ -354,30 +331,6 @@ inline void SCALE::multiply(std::vector<double>& v1, const std::vector<double>& 
   for (std::size_t i = 0; i < v1.size(); ++i) {
     v1[i] *= v2[i];
   }
-}
-
-inline double SCALE::compute_scale(const std::vector<ThinPixel<double>>& pixels,
-                                   const std::vector<double>& weights,
-                                   std::size_t offset) noexcept {
-  if (pixels.size() == 0) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-
-  double sum = 0.0;
-  double norm_sum = 0.0;
-
-  for (const auto& p : pixels) {
-    const auto w1 = weights[p.bin1_id - offset];
-    const auto w2 = weights[p.bin2_id - offset];
-
-    if (!std::isnan(w1) && !std::isnan(w2)) {
-      const auto cfx = p.bin1_id != p.bin2_id ? 2.0 : 1.0;
-      sum += p.count * cfx;
-      norm_sum += (p.count * cfx) / (w1 * w2);
-    }
-  }
-
-  return std::sqrt(norm_sum / sum);
 }
 
 template <typename PixelIt>
@@ -431,10 +384,9 @@ inline void SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::
   }
 }
 
-inline auto SCALE::handle_convergenece(const std::vector<ThinPixel<double>>& pixels,
-                                       std::vector<double>& dr, std::vector<double>& dc,
-                                       std::vector<double>& row, std::size_t offset)
-    -> ControlFlow {
+template <typename Matrix>
+inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
+                                       std::vector<double>& dc, MargsVector& row) -> ControlFlow {
   _yes = true;
   if (_low_cutoff == 1) {
     return ControlFlow::break_;
@@ -469,15 +421,15 @@ inline auto SCALE::handle_convergenece(const std::vector<ThinPixel<double>>& pix
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
-  matrix_vect_mult(row, pixels, dc, offset);
-  multiply(row, dr);
+  m.multiply(row, dc);
+  row.multiply(dr);
   return ControlFlow::continue_;
 }
 
-inline auto SCALE::handle_almost_converged(const std::vector<ThinPixel<double>>& pixels,
-                                           const std::vector<double>& b0, std::vector<double>& dr,
-                                           std::vector<double>& dc, std::vector<double>& row,
-                                           std::size_t offset, double tolerance) -> ControlFlow {
+template <typename Matrix>
+inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
+                                           std::vector<double>& dr, std::vector<double>& dc,
+                                           MargsVector& row, double tolerance) -> ControlFlow {
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
       continue;
@@ -494,8 +446,8 @@ inline auto SCALE::handle_almost_converged(const std::vector<ThinPixel<double>>&
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
-  matrix_vect_mult(row, pixels, dc, offset);
-  multiply(row, dr);
+  m.multiply(row, dc);
+  row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {
     return ControlFlow::break_;
@@ -506,14 +458,14 @@ inline auto SCALE::handle_almost_converged(const std::vector<ThinPixel<double>>&
   return ControlFlow::continue_;
 }
 
-inline auto SCALE::handle_diverged(const std::vector<ThinPixel<double>>& pixels,
-                                   const std::vector<double>& b0, std::vector<double>& dr,
-                                   std::vector<double>& dc, std::vector<double>& row,
-                                   std::size_t offset, double frac_bad, double frac_bad_cutoff,
+template <typename Matrix>
+inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b0,
+                                   std::vector<double>& dr, std::vector<double>& dc,
+                                   MargsVector& row, double frac_bad, double frac_bad_cutoff,
                                    double tolerance) -> ControlFlow {
   if (_convergence_stats.converged) {
     if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {
-      const auto status = handle_almost_converged(pixels, b0, dr, dc, row, offset, tolerance);
+      const auto status = handle_almost_converged(m, b0, dr, dc, row, tolerance);
       if (status == ControlFlow::continue_) {
         return ControlFlow::continue_;
       }
@@ -524,7 +476,7 @@ inline auto SCALE::handle_diverged(const std::vector<ThinPixel<double>>& pixels,
       _yes = true;
     }
   } else if (frac_bad < frac_bad_cutoff && _yes) {
-    const auto status = handle_almost_converged(pixels, b0, dr, dc, row, offset, tolerance);
+    const auto status = handle_almost_converged(m, b0, dr, dc, row, tolerance);
     if (status == ControlFlow::continue_) {
       return ControlFlow::continue_;
     }
@@ -544,8 +496,8 @@ inline auto SCALE::handle_diverged(const std::vector<ThinPixel<double>>& pixels,
 
   dr = _one;
   dc = _one;
-  matrix_vect_mult(row, pixels, dc, offset);
-  multiply(row, dr);
+  m.multiply(row, dc);
+  row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {
     return ControlFlow::break_;

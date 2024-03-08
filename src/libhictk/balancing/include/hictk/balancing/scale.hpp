@@ -73,10 +73,14 @@ class SCALE {
     double frac_bad_cutoff{1.0e-5};
     double max_row_sum_error = 0.05;
     double delta = 0.05;
+    std::filesystem::path tmpfile{};
+    std::size_t chunk_size{10'000'000};
+    std::size_t threads{1};
   };
 
   // NOLINTNEXTLINE
-  inline static const Params DefaultParams{1.0e-4, 200, 10.0, 1.0e-5, 0.05, 0.05};
+  inline static const Params DefaultParams{1.0e-4, 200, 10.0,       1.0e-5, 0.05,
+                                           0.05,   "",  10'000'000, 1};
 
   template <typename File>
   explicit SCALE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);
@@ -96,15 +100,10 @@ class SCALE {
 
   [[nodiscard]] static VC::Type map_type_to_vc(Type type) noexcept;
 
-  static void matrix_vect_mult(std::vector<double>& buffer,
-                               const std::vector<ThinPixel<double>>& pixels,
-                               const std::vector<double>& cfx, std::size_t offset,
-                               std::size_t i0 = 0, std::size_t i1 = 0) noexcept;
-  static void update_weights(std::vector<double>& buffer, const std::vector<bool>& bad,
+  template <typename Matrix>
+  static void update_weights(MargsVector& buffer, const std::vector<bool>& bad,
                              std::vector<double>& weights, const std::vector<double>& target,
-                             std::vector<double>& d_vector,
-                             const std::vector<ThinPixel<double>>& pixels,
-                             std::size_t offset) noexcept;
+                             std::vector<double>& d_vector, const Matrix& m) noexcept;
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;
@@ -113,31 +112,28 @@ class SCALE {
       const std::vector<double>& calculated_vector_b, const std::vector<double>& current,
       const std::vector<bool>& bad, double tolerance) noexcept;
 
-  [[nodiscard]] static double compute_final_error(const std::vector<double>& col,
+  [[nodiscard]] static double compute_final_error(const MargsVector& col,
                                                   const std::vector<double>& scale,
                                                   const std::vector<double>& target,
                                                   const std::vector<bool>& bad) noexcept;
   static void multiply(std::vector<double>& v1, const std::vector<double>& v2) noexcept;
-  [[nodiscard]] static double compute_scale(const std::vector<ThinPixel<double>>& pixels,
-                                            const std::vector<double>& weights,
-                                            std::size_t offset) noexcept;
+
   template <typename PixelIt>
   void mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
                                   double max_percentile);
-  [[nodiscard]] auto handle_convergenece(const std::vector<ThinPixel<double>>& pixels,
-                                         std::vector<double>& dr, std::vector<double>& dc,
-                                         std::vector<double>& row, std::size_t offset)
-      -> ControlFlow;
+  template <typename Matrix>
+  [[nodiscard]] auto handle_convergenece(const Matrix& m, std::vector<double>& dr,
+                                         std::vector<double>& dc, MargsVector& row) -> ControlFlow;
 
-  [[nodiscard]] auto handle_almost_converged(const std::vector<ThinPixel<double>>& pixels,
-                                             const std::vector<double>& b0, std::vector<double>& dr,
-                                             std::vector<double>& dc, std::vector<double>& row,
-                                             std::size_t offset, double tolerance) -> ControlFlow;
+  template <typename Matrix>
+  [[nodiscard]] auto handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
+                                             std::vector<double>& dr, std::vector<double>& dc,
+                                             MargsVector& row, double tolerance) -> ControlFlow;
 
-  [[nodiscard]] auto handle_diverged(const std::vector<ThinPixel<double>>& pixels,
-                                     const std::vector<double>& b0, std::vector<double>& dr,
-                                     std::vector<double>& dc, std::vector<double>& row,
-                                     std::size_t offset, double frac_bad, double frac_bad_cutoff,
+  template <typename Matrix>
+  [[nodiscard]] auto handle_diverged(const Matrix& m, const std::vector<double>& b0,
+                                     std::vector<double>& dr, std::vector<double>& dc,
+                                     MargsVector& row, double frac_bad, double frac_bad_cutoff,
                                      double tolerance) -> ControlFlow;
 
   [[nodiscard]] std::size_t size() const noexcept;
