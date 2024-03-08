@@ -347,17 +347,31 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
+  const auto tmpfile = testdir() / "balancing_scale_cis.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
       const hictk::File f(path.string(), 2'500'000);
 
-      constexpr auto type = hictk::balancing::SCALE::Type::cis;
-      const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      SECTION("in-memory") {
+        constexpr auto type = hictk::balancing::SCALE::Type::cis;
+        const auto weights = hictk::balancing::SCALE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-      compare_weights(weights, expected_weights);
+        compare_weights(weights, expected_weights);
+      }
+      SECTION("chunked") {
+        auto params = hictk::balancing::SCALE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
+
+        constexpr auto type = hictk::balancing::SCALE::Type::cis;
+        const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
+      }
     }
   }
 }
@@ -368,17 +382,32 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
+  const auto tmpfile = testdir() / "balancing_scale_trans.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.inter.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
       const hictk::File f(path.string(), 2'500'000);
 
-      constexpr auto type = hictk::balancing::SCALE::Type::trans;
-      const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      SECTION("in-memory") {
+        constexpr auto type = hictk::balancing::SCALE::Type::trans;
+        const auto weights = hictk::balancing::SCALE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-      compare_weights(weights, expected_weights);
+        compare_weights(weights, expected_weights);
+      }
+
+      SECTION("chunked") {
+        auto params = hictk::balancing::SCALE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
+
+        constexpr auto type = hictk::balancing::SCALE::Type::trans;
+        const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
+      }
     }
   }
 }
@@ -389,17 +418,32 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
       std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
 
+  const auto tmpfile = testdir() / "balancing_scale_gw.tmp";
   const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.gw.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
       const hictk::File f(path.string(), 2'500'000);
 
-      constexpr auto type = hictk::balancing::SCALE::Type::gw;
-      const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      SECTION("in-memory") {
+        constexpr auto type = hictk::balancing::SCALE::Type::gw;
+        const auto weights = hictk::balancing::SCALE(f, type).get_weights();
+        const auto expected_weights = read_weights(path_weights);
 
-      compare_weights(weights, expected_weights);
+        compare_weights(weights, expected_weights);
+      }
+
+      SECTION("chunked") {
+        auto params = hictk::balancing::SCALE::DefaultParams;
+        params.tmpfile = tmpfile;
+        params.chunk_size = 1000;
+
+        constexpr auto type = hictk::balancing::SCALE::Type::gw;
+        const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
+        const auto expected_weights = read_weights(path_weights);
+
+        compare_weights(weights, expected_weights);
+      }
     }
   }
 }

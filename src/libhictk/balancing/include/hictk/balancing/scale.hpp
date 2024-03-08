@@ -136,6 +136,11 @@ class SCALE {
                                      MargsVector& row, double frac_bad, double frac_bad_cutoff,
                                      double tolerance) -> ControlFlow;
 
+  template <typename PixelIt>
+  static std::variant<SparseMatrix, SparseMatrixChunked> init_matrix(
+      PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
+      std::size_t chunk_size);
+
   [[nodiscard]] std::size_t size() const noexcept;
 };
 

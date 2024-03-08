@@ -69,113 +69,109 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
   std::queue<double> error_queue_iter{};
   std::queue<std::uint32_t> error_queue_all_iter{};
 
+  const auto matrix = init_matrix(first, last, offset, params.tmpfile, params.chunk_size);
+
   // TODO don't add blacklisted bins
-  const auto m = [&]() {
-    // SparseMatrixChunked m_("/tmp/matrix.bin", 1000);
-    SparseMatrix m_{};
-    std::for_each(first, last, [&](const auto& p) {
-      m_.push_back(p.bin1_id - offset, p.bin2_id - offset, p.count);
-    });
-    m_.finalize();
-    return m_;
-  }();
+  std::visit(
+      [&](const auto& m) {
+        MargsVector column(size());
+        MargsVector row(size());
 
-  MargsVector column(size());
-  MargsVector row(size());
+        m.multiply(row, _one);
+        row.multiply(_biases);
 
-  m.multiply(row, _one);
-  row.multiply(_biases);
+        auto dr = _biases;
+        auto dc = _biases;
+        auto current = _biases;
 
-  auto dr = _biases;
-  auto dc = _biases;
-  auto current = _biases;
+        std::vector<double> b_conv(size(), 0);
+        std::vector<double> b0(size(), 0);
+        std::vector<bool> bad_conv(size(), false);
+        _ber_conv = 10.0;
 
-  std::vector<double> b_conv(size(), 0);
-  std::vector<double> b0(size(), 0);
-  std::vector<bool> bad_conv(size(), false);
-  _ber_conv = 10.0;
+        for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
+                                       _iter < params.max_iters && _tot_iter < max_total_iters;
+             ++_iter, ++_tot_iter) {
+          update_weights(column, _bad, row(), _z_target_vector, dr, m);
+          column.multiply(dc);
 
-  for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
-                                 _iter < params.max_iters && _tot_iter < max_total_iters;
-       ++_iter, ++_tot_iter) {
-    update_weights(column, _bad, row(), _z_target_vector, dr, m);
-    column.multiply(dc);
+          update_weights(row, _bad, column(), _z_target_vector, dc, m);
+          row.multiply(dr);
 
-    update_weights(row, _bad, column(), _z_target_vector, dc, m);
-    row.multiply(dr);
+          geometric_mean(dr, dc, _biases1);
+          const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
+          _convergence_stats.error = res.first;
+          const auto num_bad = res.second;
 
-    geometric_mean(dr, dc, _biases1);
-    const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
-    _convergence_stats.error = res.first;
-    const auto num_bad = res.second;
+          b0 = current;
+          current = _biases1;
 
-    b0 = current;
-    current = _biases1;
+          error_queue_iter.push(_convergence_stats.error);
+          if (error_queue_iter.size() == 6) {
+            error_queue_iter.pop();
+          }
 
-    error_queue_iter.push(_convergence_stats.error);
-    if (error_queue_iter.size() == 6) {
-      error_queue_iter.pop();
-    }
+          const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
 
-    const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
+          SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
-    SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
+          if (_convergence_stats.error < params.tol) {
+            const auto status = handle_convergenece(m, dr, dc, row);
+            if (status == ControlFlow::break_) {
+              break;
+            }
+            assert(status == ControlFlow::continue_);
+            _iter = 0;
+            continue;
+          }
 
-    if (_convergence_stats.error < params.tol) {
-      const auto status = handle_convergenece(m, dr, dc, row);
-      if (status == ControlFlow::break_) {
-        break;
-      }
-      assert(status == ControlFlow::continue_);
-      _iter = 0;
-      continue;
-    }
+          if (_iter <= 5) {
+            continue;
+          }
 
-    if (_iter <= 5) {
-      continue;
-    }
+          // check whether convergence rate is satisfactory
+          const auto err1 = error_queue_iter.front();
+          const auto err2 = error_queue_iter.back();
+          if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
+            continue;
+          }
 
-    // check whether convergence rate is satisfactory
-    const auto err1 = error_queue_iter.front();
-    const auto err2 = error_queue_iter.back();
-    if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
-      continue;
-    }
+          // handle divergence
+          _convergence_stats.diverged = true;
+          _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
+          const auto status =
+              handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
+          if (status == ControlFlow::break_) {
+            break;
+          }
+          assert(status == ControlFlow::continue_);
+          continue;
+        }
 
-    // handle divergence
-    _convergence_stats.diverged = true;
-    _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
-    const auto status =
-        handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
-    if (status == ControlFlow::break_) {
-      break;
-    }
-    assert(status == ControlFlow::continue_);
-    continue;
-  }
+        m.multiply(column, _biases1);
+        const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
-  m.multiply(column, _biases1);
-  const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
+        // convergence not achieved, return vector of nans
+        if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
+            _low_cutoff > _upper_bound) {
+          std::fill(_biases.begin(), _biases.end(), std::numeric_limits<double>::quiet_NaN());
+          _scale.push_back(std::numeric_limits<double>::quiet_NaN());
+          _chrom_offsets = bins.num_bin_prefix_sum();
+          return;
+        }
 
-  // convergence not achieved, return vector of nans
-  if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
-      _low_cutoff > _upper_bound) {
-    std::fill(_biases.begin(), _biases.end(), std::numeric_limits<double>::quiet_NaN());
-    _scale.push_back(std::numeric_limits<double>::quiet_NaN());
-    _chrom_offsets = bins.num_bin_prefix_sum();
-    return;
-  }
-
-  // convergence achieved
-  for (std::size_t i = 0; i < size(); ++i) {
-    if (_bad[i]) {
-      _biases[i] = std::numeric_limits<double>::quiet_NaN();
-    } else {
-      _biases[i] = 1.0 / _biases1[i];
-    }
-  }
-  _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
-  _chrom_offsets = bins.num_bin_prefix_sum();
+        // convergence achieved
+        for (std::size_t i = 0; i < size(); ++i) {
+          if (_bad[i]) {
+            _biases[i] = std::numeric_limits<double>::quiet_NaN();
+          } else {
+            _biases[i] = 1.0 / _biases1[i];
+          }
+        }
+        _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
+        _chrom_offsets = bins.num_bin_prefix_sum();
+      },
+      matrix);
 }
 
 inline std::size_t SCALE::size() const noexcept { return _biases.size(); }
@@ -507,6 +503,27 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
   }
 
   return ControlFlow::continue_;
+}
+
+template <typename PixelIt>
+inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::init_matrix(
+    PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
+    std::size_t chunk_size) {
+  std::variant<SparseMatrix, SparseMatrixChunked> matrix{SparseMatrix{}};
+
+  if (!tmpfile.empty()) {
+    matrix = SparseMatrixChunked(tmpfile, chunk_size);
+  }
+  std::visit(
+      [&](auto& m) {
+        std::for_each(first, last, [&](const auto& p) {
+          m.push_back(p.bin1_id - offset, p.bin2_id - offset, p.count);
+        });
+        m.finalize();
+      },
+      matrix);
+
+  return matrix;
 }
 
 inline VC::Type SCALE::map_type_to_vc(Type type) noexcept {
