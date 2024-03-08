@@ -122,8 +122,9 @@ class SCALE {
   static void multiply(std::vector<double>& v1, const std::vector<double>& v2) noexcept;
 
   template <typename PixelIt>
-  void mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
-                                  double max_percentile);
+  [[nodiscard]] std::variant<SparseMatrix, SparseMatrixChunked> mask_bins_and_init_buffers(
+      PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
+      const std::filesystem::path& tmpfile, std::size_t chunk_size);
   template <typename Matrix>
   [[nodiscard]] auto handle_convergenece(const Matrix& m, std::vector<double>& dr,
                                          std::vector<double>& dc, MargsVector& row) -> ControlFlow;

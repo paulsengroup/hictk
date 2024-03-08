@@ -61,18 +61,15 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     return;
   }
 
-  const auto offset = bins.num_bin_prefix_sum().front();
-
-  mask_bins_and_init_buffers(first, last, offset, params.max_percentile);
-
   const auto max_total_iters = params.max_iters * 3;
 
   std::queue<double> error_queue_iter{};
   std::queue<std::uint32_t> error_queue_all_iter{};
 
-  const auto matrix = init_matrix(first, last, offset, params.tmpfile, params.chunk_size);
+  const auto offset = bins.num_bin_prefix_sum().front();
+  const auto matrix = mask_bins_and_init_buffers(first, last, offset, params.max_percentile,
+                                                 params.tmpfile, params.chunk_size);
 
-  // TODO don't add blacklisted bins
   std::visit(
       [&](const auto& m) {
         MargsVector column(size());
@@ -332,8 +329,9 @@ inline void SCALE::multiply(std::vector<double>& v1, const std::vector<double>& 
 }
 
 template <typename PixelIt>
-inline void SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
-                                              double max_percentile) {
+inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::mask_bins_and_init_buffers(
+    PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
+    const std::filesystem::path& tmpfile, std::size_t chunk_size) {
   assert(_bad.empty());
   assert(_one.empty());
   assert(_z_target_vector.empty());
@@ -347,16 +345,30 @@ inline void SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::
   _row_wise_nnz.resize(size(), 0);
   _biases1.resize(size(), 0);
 
-  // count nnz for each row
-  std::for_each(first, last, [&](const auto& p) {
-    _row_wise_nnz[p.bin1_id - offset]++;
-    if (p.bin1_id != p.bin2_id) {
-      _row_wise_nnz[p.bin2_id - offset]++;
-    }
-  });
+  std::variant<SparseMatrix, SparseMatrixChunked> matrix{SparseMatrix{}};
+
+  if (!tmpfile.empty()) {
+    matrix = SparseMatrixChunked(tmpfile, chunk_size);
+  }
+
+  std::visit(
+      [&](auto& m) {
+        std::for_each(first, last, [&](const auto& p) {
+          const auto bin1_id = p.bin1_id - offset;
+          const auto bin2_id = p.bin2_id - offset;
+          _row_wise_nnz[bin1_id]++;
+          if (bin1_id != bin2_id) {
+            _row_wise_nnz[bin2_id]++;
+          }
+
+          m.push_back(bin1_id, bin2_id, p.count);
+        });
+        m.finalize();
+      },
+      matrix);
 
   // compute the number of non-zero rows
-  // we are sorting the vector the vector of nnz because anyways we will need that in a later stage
+  // we are sorting the vector of nnz because anyways we will need that in a later stage
   std::vector<std::uint64_t> row_wise_nnz_sorted{};
   std::copy_if(_row_wise_nnz.begin(), _row_wise_nnz.end(), std::back_inserter(row_wise_nnz_sorted),
                [&](const auto n) { return n != 0; });
@@ -380,6 +392,7 @@ inline void SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::
       _z_target_vector[i] = 0;
     }
   }
+  return matrix;
 }
 
 template <typename Matrix>
