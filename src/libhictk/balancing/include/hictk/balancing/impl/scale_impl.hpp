@@ -52,7 +52,8 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 template <typename PixelIt>
 inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
     : _biases(VC{first, last, bins}.get_weights()),
-      _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}) {
+      _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
+      _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
   if (first == last) {
     std::fill(_biases.begin(), _biases.end(), 1.0);
     _scale.push_back(1.0);
@@ -77,7 +78,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
         MargsVector column(size());
         MargsVector row(size());
 
-        m.multiply(row, _one);
+        m.multiply(row, _one, _tpool.get());
         row.multiply(_biases);
 
         auto dr = _biases;
@@ -92,10 +93,10 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
         for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
                                        _iter < params.max_iters && _tot_iter < max_total_iters;
              ++_iter, ++_tot_iter) {
-          update_weights(column, _bad, row(), _z_target_vector, dr, m);
+          update_weights(column, _bad, row(), _z_target_vector, dr, m, _tpool.get());
           column.multiply(dc);
 
-          update_weights(row, _bad, column(), _z_target_vector, dc, m);
+          update_weights(row, _bad, column(), _z_target_vector, dc, m, _tpool.get());
           row.multiply(dr);
 
           geometric_mean(dr, dc, _biases1);
@@ -148,7 +149,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
           continue;
         }
 
-        m.multiply(column, _biases1);
+        m.multiply(column, _biases1, _tpool.get());
         const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
         // convergence not achieved, return vector of nans
@@ -255,7 +256,8 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 template <typename Matrix>
 inline void SCALE::update_weights(MargsVector& buffer, const std::vector<bool>& bad,
                                   std::vector<double>& weights, const std::vector<double>& target,
-                                  std::vector<double>& d_vector, const Matrix& m) noexcept {
+                                  std::vector<double>& d_vector, const Matrix& m,
+                                  BS::thread_pool* tpool) noexcept {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
@@ -267,7 +269,7 @@ inline void SCALE::update_weights(MargsVector& buffer, const std::vector<bool>& 
     d_vector[i] *= target[i] / weights[i];
   }
 
-  m.multiply(buffer, d_vector);
+  m.multiply(buffer, d_vector, tpool);
 }
 
 inline void SCALE::geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
@@ -417,7 +419,7 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
-  m.multiply(row, dc);
+  m.multiply(row, dc, _tpool.get());
   row.multiply(dr);
   return ControlFlow::continue_;
 }
@@ -442,7 +444,7 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
-  m.multiply(row, dc);
+  m.multiply(row, dc, _tpool.get());
   row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {
@@ -492,7 +494,7 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
 
   dr = _one;
   dc = _one;
-  m.multiply(row, dc);
+  m.multiply(row, dc, _tpool.get());
   row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {

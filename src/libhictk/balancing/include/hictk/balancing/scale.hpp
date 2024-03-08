@@ -63,6 +63,8 @@ class SCALE {
   std::size_t _tot_iter{};
   std::size_t _max_tot_iters{};
 
+  std::unique_ptr<BS::thread_pool> _tpool{};
+
  public:
   enum Type { cis, trans, gw };
 
@@ -103,7 +105,8 @@ class SCALE {
   template <typename Matrix>
   static void update_weights(MargsVector& buffer, const std::vector<bool>& bad,
                              std::vector<double>& weights, const std::vector<double>& target,
-                             std::vector<double>& d_vector, const Matrix& m) noexcept;
+                             std::vector<double>& d_vector, const Matrix& m,
+                             BS::thread_pool* tpool) noexcept;
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;
