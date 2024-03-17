@@ -72,8 +72,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 
   std::visit(
       [&](const auto& m) {
-        MargsVector column(size(), 9);
-        MargsVector row(size(), 9);
+        VectorOfAtomicDecimals column(size(), 9);
+        VectorOfAtomicDecimals row(size(), 9);
 
         m.multiply(row, _one, _tpool.get());
         row.multiply(_biases);
@@ -271,10 +271,10 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 }
 
 template <typename Matrix>
-inline void SCALE::update_weights(MargsVector& buffer, const std::vector<bool>& bad,
-                                  MargsVector& weights, const std::vector<double>& target,
-                                  std::vector<double>& d_vector, const Matrix& m,
-                                  BS::thread_pool* tpool) noexcept {
+inline void SCALE::update_weights(VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
+                                  VectorOfAtomicDecimals& weights,
+                                  const std::vector<double>& target, std::vector<double>& d_vector,
+                                  const Matrix& m, BS::thread_pool* tpool) noexcept {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
@@ -320,7 +320,8 @@ inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
   return std::make_pair(error, num_fail);
 }
 
-inline double SCALE::compute_final_error(const MargsVector& col, const std::vector<double>& scale,
+inline double SCALE::compute_final_error(const VectorOfAtomicDecimals& col,
+                                         const std::vector<double>& scale,
                                          const std::vector<double>& target,
                                          const std::vector<bool>& bad) noexcept {
   assert(col.size() == scale.size());
@@ -416,7 +417,8 @@ inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::mask_bins_and_init
 
 template <typename Matrix>
 inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
-                                       std::vector<double>& dc, MargsVector& row) -> ControlFlow {
+                                       std::vector<double>& dc, VectorOfAtomicDecimals& row)
+    -> ControlFlow {
   _yes = true;
   if (_low_cutoff == 1) {
     SPDLOG_DEBUG(FMT_STRING("low cutoff"));
@@ -461,7 +463,8 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
 template <typename Matrix>
 inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                            std::vector<double>& dr, std::vector<double>& dc,
-                                           MargsVector& row, double tolerance) -> ControlFlow {
+                                           VectorOfAtomicDecimals& row, double tolerance)
+    -> ControlFlow {
   throw std::runtime_error("");
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
@@ -494,8 +497,8 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
 template <typename Matrix>
 inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b0,
                                    std::vector<double>& dr, std::vector<double>& dc,
-                                   MargsVector& row, double frac_bad, double frac_bad_cutoff,
-                                   double tolerance) -> ControlFlow {
+                                   VectorOfAtomicDecimals& row, double frac_bad,
+                                   double frac_bad_cutoff, double tolerance) -> ControlFlow {
   const auto almost_converged = frac_bad < frac_bad_cutoff && _yes;
   if (_convergence_stats.converged) {
     if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {

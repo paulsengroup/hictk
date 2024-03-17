@@ -104,8 +104,8 @@ class SCALE {
   [[nodiscard]] static VC::Type map_type_to_vc(Type type) noexcept;
 
   template <typename Matrix>
-  static void update_weights(MargsVector& buffer, const std::vector<bool>& bad,
-                             MargsVector& weights, const std::vector<double>& target,
+  static void update_weights(VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
+                             VectorOfAtomicDecimals& weights, const std::vector<double>& target,
                              std::vector<double>& d_vector, const Matrix& m,
                              BS::thread_pool* tpool) noexcept;
 
@@ -116,7 +116,7 @@ class SCALE {
       const std::vector<double>& calculated_vector_b, const std::vector<double>& current,
       const std::vector<bool>& bad, double tolerance) noexcept;
 
-  [[nodiscard]] static double compute_final_error(const MargsVector& col,
+  [[nodiscard]] static double compute_final_error(const VectorOfAtomicDecimals& col,
                                                   const std::vector<double>& scale,
                                                   const std::vector<double>& target,
                                                   const std::vector<bool>& bad) noexcept;
@@ -128,18 +128,20 @@ class SCALE {
       const std::filesystem::path& tmpfile, std::size_t chunk_size);
   template <typename Matrix>
   [[nodiscard]] auto handle_convergenece(const Matrix& m, std::vector<double>& dr,
-                                         std::vector<double>& dc, MargsVector& row) -> ControlFlow;
+                                         std::vector<double>& dc, VectorOfAtomicDecimals& row)
+      -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                              std::vector<double>& dr, std::vector<double>& dc,
-                                             MargsVector& row, double tolerance) -> ControlFlow;
+                                             VectorOfAtomicDecimals& row, double tolerance)
+      -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_diverged(const Matrix& m, const std::vector<double>& b0,
                                      std::vector<double>& dr, std::vector<double>& dc,
-                                     MargsVector& row, double frac_bad, double frac_bad_cutoff,
-                                     double tolerance) -> ControlFlow;
+                                     VectorOfAtomicDecimals& row, double frac_bad,
+                                     double frac_bad_cutoff, double tolerance) -> ControlFlow;
 
   template <typename PixelIt>
   static std::variant<SparseMatrix, SparseMatrixChunked> init_matrix(

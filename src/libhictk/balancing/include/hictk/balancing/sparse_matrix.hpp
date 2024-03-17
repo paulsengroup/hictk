@@ -24,7 +24,7 @@
 
 namespace hictk::balancing {
 
-class MargsVector {
+class VectorOfAtomicDecimals {
   using I = std::uint64_t;
   using N = std::atomic<I>;
   std::vector<N> _margsi{};
@@ -33,16 +33,17 @@ class MargsVector {
   const static auto DEFAULT_DECIMAL_DIGITS = 9ULL;
 
  public:
-  MargsVector() = delete;
-  explicit MargsVector(std::size_t size_ = 0, std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
+  VectorOfAtomicDecimals() = delete;
+  explicit VectorOfAtomicDecimals(std::size_t size_ = 0,
+                                  std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
 
-  MargsVector(const MargsVector& other);
-  MargsVector(MargsVector&& other) noexcept = default;
+  VectorOfAtomicDecimals(const VectorOfAtomicDecimals& other);
+  VectorOfAtomicDecimals(VectorOfAtomicDecimals&& other) noexcept = default;
 
-  ~MargsVector() = default;
+  ~VectorOfAtomicDecimals() = default;
 
-  MargsVector& operator=(const MargsVector& other);
-  MargsVector& operator=(MargsVector&& other) noexcept = default;
+  VectorOfAtomicDecimals& operator=(const VectorOfAtomicDecimals& other);
+  VectorOfAtomicDecimals& operator=(VectorOfAtomicDecimals&& other) noexcept = default;
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
   void add(std::size_t i, double n) noexcept;
@@ -88,15 +89,15 @@ class SparseMatrix {
   void serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl = 3) const;
   void deserialize(std::fstream& fs, ZSTD_DCtx& ctx);
 
-  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
-  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+  void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
-  void multiply(MargsVector& buffer, nonstd::span<const double> cfx,
+  void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
   [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
@@ -149,15 +150,15 @@ class SparseMatrixChunked {
                  std::size_t bin_offset = 0);
   void finalize();
 
-  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
-  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+  void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
-  void multiply(MargsVector& buffer, nonstd::span<const double> cfx,
+  void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
   [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;

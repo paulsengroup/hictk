@@ -125,7 +125,8 @@ class ICE {
 
   template <typename MatrixT>
   [[nodiscard]] static auto inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
-                                       MargsVector& marg, nonstd::span<const double> weights = {},
+                                       VectorOfAtomicDecimals& marg,
+                                       nonstd::span<const double> weights = {},
                                        BS::thread_pool* tpool = nullptr) -> Result;
   [[nodiscard]] static std::pair<double, std::size_t> aggregate_marg(
       nonstd::span<const double> marg, BS::thread_pool* tpool);
@@ -137,7 +138,7 @@ class ICE {
                                                  BS::thread_pool* tpool);
 
   template <typename MatrixT>
-  static void min_nnz_filtering(MargsVector& marg, const MatrixT& matrix,
+  static void min_nnz_filtering(VectorOfAtomicDecimals& marg, const MatrixT& matrix,
                                 nonstd::span<double> biases, std::size_t min_nnz,
                                 BS::thread_pool* tpool);
 
