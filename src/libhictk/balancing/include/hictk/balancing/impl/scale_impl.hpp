@@ -61,10 +61,10 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     return;
   }
 
-  const auto max_total_iters = params.max_iters * 3;
+  std::transform(_biases.begin(), _biases.end(), _biases.begin(),
+                 [](const auto n) { return std::sqrt(n); });
 
-  std::queue<double> error_queue_iter{};
-  std::queue<std::uint32_t> error_queue_all_iter{};
+  _max_tot_iters = params.max_iters * 3;
 
   const auto offset = bins.num_bin_prefix_sum().front();
   const auto matrix = mask_bins_and_init_buffers(first, last, offset, params.max_percentile,
@@ -72,8 +72,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 
   std::visit(
       [&](const auto& m) {
-        MargsVector column(size());
-        MargsVector row(size());
+        MargsVector column(size(), 9);
+        MargsVector row(size(), 9);
 
         m.multiply(row, _one, _tpool.get());
         row.multiply(_biases);
@@ -88,12 +88,12 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
         _ber_conv = 10.0;
 
         for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
-                                       _iter < params.max_iters && _tot_iter < max_total_iters;
+                                       _iter < params.max_iters && _tot_iter < _max_tot_iters;
              ++_iter, ++_tot_iter) {
-          update_weights(column, _bad, row(), _z_target_vector, dr, m, _tpool.get());
+          update_weights(column, _bad, row, _z_target_vector, dr, m, _tpool.get());
           column.multiply(dc);
 
-          update_weights(row, _bad, column(), _z_target_vector, dc, m, _tpool.get());
+          update_weights(row, _bad, column, _z_target_vector, dc, m, _tpool.get());
           row.multiply(dr);
 
           geometric_mean(dr, dc, _biases1);
@@ -104,9 +104,9 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
           b0 = current;
           current = _biases1;
 
-          error_queue_iter.push(_convergence_stats.error);
-          if (error_queue_iter.size() == 6) {
-            error_queue_iter.pop();
+          _error_queue_iter.push(_convergence_stats.error);
+          if (_error_queue_iter.size() == 7) {
+            _error_queue_iter.pop();
           }
 
           const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
@@ -114,41 +114,54 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
           SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
           if (_convergence_stats.error < params.tol) {
+            SPDLOG_DEBUG(FMT_STRING("handle_convergence"));
             const auto status = handle_convergenece(m, dr, dc, row);
-            if (status == ControlFlow::break_) {
+            if (status == ControlFlow::break_loop) {
               break;
             }
-            assert(status == ControlFlow::continue_);
-            _iter = 0;
+            assert(status == ControlFlow::continue_loop);
+            reset_iter();
             continue;
           }
 
-          if (_iter <= 5) {
+          if (_iter <= 4) {
             continue;
           }
 
           // check whether convergence rate is satisfactory
-          const auto err1 = error_queue_iter.front();
-          const auto err2 = error_queue_iter.back();
+          const auto err1 = _error_queue_iter.front();
+          const auto err2 = _error_queue_iter.back();
           if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
             continue;
           }
 
           // handle divergence
+          SPDLOG_DEBUG(FMT_STRING("handle_divergence"));
           _convergence_stats.diverged = true;
           _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
           const auto status =
               handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
-          if (status == ControlFlow::break_) {
+          if (status == ControlFlow::break_loop) {
             break;
           }
-          assert(status == ControlFlow::continue_);
-          continue;
+          if (status == ControlFlow::continue_loop) {
+            continue;
+          }
         }
 
         m.multiply(column, _biases1, _tpool.get());
         const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
+        if (_convergence_stats.error > params.tol) {
+          SPDLOG_DEBUG(FMT_STRING("error > tol: {} > {}"), _convergence_stats.error, params.tol);
+        }
+        if (row_sum_error > params.max_row_sum_error) {
+          SPDLOG_DEBUG(FMT_STRING("row_sum_error > params.max_row_sum_error: {} > {}"),
+                       row_sum_error, params.max_row_sum_error);
+        }
+        if (_low_cutoff > _upper_bound) {
+          SPDLOG_DEBUG(FMT_STRING("low_cutoff > upper_bound: {} > {}"), _low_cutoff, _upper_bound);
+        }
         // convergence not achieved, return vector of nans
         if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
             _low_cutoff > _upper_bound) {
@@ -173,6 +186,13 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 }
 
 inline std::size_t SCALE::size() const noexcept { return _biases.size(); }
+
+inline void SCALE::reset_iter() noexcept {
+  _iter = 0;
+  while (!_error_queue_iter.empty()) {
+    _error_queue_iter.pop();
+  }
+}
 
 inline std::vector<double> SCALE::get_weights(bool rescale) const {
   if (!rescale) {
@@ -252,16 +272,17 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 
 template <typename Matrix>
 inline void SCALE::update_weights(MargsVector& buffer, const std::vector<bool>& bad,
-                                  std::vector<double>& weights, const std::vector<double>& target,
+                                  MargsVector& weights, const std::vector<double>& target,
                                   std::vector<double>& d_vector, const Matrix& m,
                                   BS::thread_pool* tpool) noexcept {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
   assert(buffer.size() == d_vector.size());
+
   for (std::size_t i = 0; i < weights.size(); ++i) {
-    if (bad[i] == true) {
-      weights[i] = 1.0;
+    if (bad[i]) {
+      weights.set(i, 1.0);
     }
     d_vector[i] *= target[i] / weights[i];
   }
@@ -274,28 +295,26 @@ inline void SCALE::geometric_mean(const std::vector<double>& v1, const std::vect
   assert(v1.size() == v2.size());
   assert(vout.size() == v1.size());
 
-  std::fill(vout.begin(), vout.end(), 0);
-
   for (std::size_t i = 0; i < v1.size(); ++i) {
     vout[i] = std::sqrt(v1[i] * v2[i]);
   }
 }
 
 inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
-    const std::vector<double>& _biases1, const std::vector<double>& current,
+    const std::vector<double>& biases, const std::vector<double>& current,
     const std::vector<bool>& bad, double tolerance) noexcept {
-  assert(_biases1.size() == current.size());
-  assert(_biases1.size() == bad.size());
+  assert(biases.size() == current.size());
+  assert(biases.size() == bad.size());
 
   double error = 0;
   std::uint64_t num_fail = 0;
-  for (std::size_t i = 0; i < _biases1.size(); ++i) {
+  for (std::size_t i = 0; i < biases.size(); ++i) {
     if (bad[i]) {
       continue;
     }
-    const auto rel_err = std::abs((_biases1[i] - current[i]) / (_biases1[i] + current[i]));
+    const auto rel_err = std::abs((biases[i] - current[i]) / (biases[i] + current[i]));
     error = std::max(rel_err, error);
-    num_fail = rel_err > tolerance;
+    num_fail += rel_err > tolerance;
   }
 
   return std::make_pair(error, num_fail);
@@ -400,8 +419,10 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
                                        std::vector<double>& dc, MargsVector& row) -> ControlFlow {
   _yes = true;
   if (_low_cutoff == 1) {
-    return ControlFlow::break_;
+    SPDLOG_DEBUG(FMT_STRING("low cutoff"));
+    return ControlFlow::break_loop;
   }
+  SPDLOG_DEBUG(FMT_STRING("non low cutoff"));
   _convergence_stats.converged = true;
   _b_conv = _biases1;
   _bad_conv = _bad;
@@ -410,7 +431,7 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
 
   if (_convergence_stats.diverged) {
     if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {
-      return ControlFlow::break_;
+      return ControlFlow::break_loop;
     }
     _low_cutoff = (_convergence_stats.low_convergence + _convergence_stats.low_divergence) / 2;
   } else {
@@ -428,19 +449,20 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
   }
 
   _convergence_stats.error = 10.0;
-  _iter = 0;
+  reset_iter();
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
   m.multiply(row, dc, _tpool.get());
   row.multiply(dr);
-  return ControlFlow::continue_;
+  return ControlFlow::continue_loop;
 }
 
 template <typename Matrix>
 inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                            std::vector<double>& dr, std::vector<double>& dc,
                                            MargsVector& row, double tolerance) -> ControlFlow {
+  throw std::runtime_error("");
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
       continue;
@@ -453,7 +475,7 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
   }
   _yes = false;
   _convergence_stats.error = 10.0;
-  _iter = 0;
+  reset_iter();
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
 
@@ -461,12 +483,12 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
   row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {
-    return ControlFlow::break_;
+    return ControlFlow::break_loop;
   }
   if (_tot_iter > _max_tot_iters) {
-    return ControlFlow::break_;
+    return ControlFlow::break_loop;
   }
-  return ControlFlow::continue_;
+  return ControlFlow::continue_loop;
 }
 
 template <typename Matrix>
@@ -474,25 +496,31 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
                                    std::vector<double>& dr, std::vector<double>& dc,
                                    MargsVector& row, double frac_bad, double frac_bad_cutoff,
                                    double tolerance) -> ControlFlow {
+  const auto almost_converged = frac_bad < frac_bad_cutoff && _yes;
   if (_convergence_stats.converged) {
     if (_convergence_stats.low_convergence - _convergence_stats.low_divergence <= 1) {
+      _biases1 = _b_conv;
+      _bad = _bad_conv;
+      _convergence_stats.error = _ber_conv;
+      return ControlFlow::break_loop;
+    }
+    if (almost_converged) {
       const auto status = handle_almost_converged(m, b0, dr, dc, row, tolerance);
-      if (status == ControlFlow::continue_) {
-        return ControlFlow::continue_;
+      if (status == ControlFlow::continue_loop) {
+        return ControlFlow::continue_loop;
       }
-      assert(status == ControlFlow::break_);
-      return ControlFlow::break_;
-    } else {
-      _low_cutoff = (_convergence_stats.low_divergence + _convergence_stats.low_convergence) / 2;
-      _yes = true;
+      assert(status == ControlFlow::break_loop);
+      return ControlFlow::break_loop;
     }
-  } else if (frac_bad < frac_bad_cutoff && _yes) {
+    _low_cutoff = (_convergence_stats.low_divergence + _convergence_stats.low_convergence) / 2;
+    _yes = true;
+  } else if (almost_converged) {
     const auto status = handle_almost_converged(m, b0, dr, dc, row, tolerance);
-    if (status == ControlFlow::continue_) {
-      return ControlFlow::continue_;
+    if (status == ControlFlow::continue_loop) {
+      return ControlFlow::continue_loop;
     }
-    assert(status == ControlFlow::break_);
-    return ControlFlow::break_;
+    assert(status == ControlFlow::break_loop);
+    return ControlFlow::break_loop;
   } else {
     _low_cutoff *= 2;
     _yes = true;
@@ -503,7 +531,7 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
     _one[i] = !_bad[i];
   }
   _convergence_stats.error = 10.0;
-  _iter = 0;
+  reset_iter();
 
   dr = _one;
   dc = _one;
@@ -511,13 +539,12 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
   row.multiply(dr);
 
   if (_low_cutoff > _upper_bound) {
-    return ControlFlow::break_;
+    return ControlFlow::break_loop;
   }
   if (_tot_iter > _max_tot_iters) {
-    return ControlFlow::break_;
+    return ControlFlow::break_loop;
   }
-
-  return ControlFlow::continue_;
+  return ControlFlow::continue_loop;
 }
 
 template <typename PixelIt>

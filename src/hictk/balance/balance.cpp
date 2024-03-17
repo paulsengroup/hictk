@@ -20,6 +20,8 @@
 #include <vector>
 
 #include "hictk/balancing/ice.hpp"
+#include "hictk/balancing/scale.hpp"
+#include "hictk/balancing/vc.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
@@ -79,17 +81,23 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   dset.write_attribute("tol", c.tolerance);
 
   if (c.mode != "cis") {
-    dset.write_attribute("converged", variance.front() < c.tolerance);
-    dset.write_attribute("scale", scale.front());
-    dset.write_attribute("var", variance.front());
+    if (variance.front() != -1) {
+      dset.write_attribute("converged", variance.front() < c.tolerance);
+      dset.write_attribute("scale", scale.front());
+      dset.write_attribute("var", variance.front());
+    }
   } else {
     std::vector<bool> converged{};
     for (const auto& var : variance) {
-      converged.push_back(var < c.tolerance);  // NOLINT
+      if (var != -1) {
+        converged.push_back(var < c.tolerance);  // NOLINT
+      }
     }
-    dset.write_attribute("converged", converged);
-    dset.write_attribute("scale", scale);
-    dset.write_attribute("var", variance);
+    if (!converged.empty()) {
+      dset.write_attribute("converged", converged);
+      dset.write_attribute("scale", scale);
+      dset.write_attribute("var", variance);
+    }
   }
 
   if (c.symlink_to_weight) {
@@ -101,8 +109,28 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
-static int balance_cooler(cooler::File&& f, const BalanceConfig& c) {
+static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
+                                 const std::vector<double>& weights) {
+  return write_weights_cooler(uri, c, weights, {-1}, {-1});
+}
+
+template <typename Balancer>
+static auto init_params(const BalanceConfig& c, const std::filesystem::path& tmpfile) ->
+    typename Balancer::Params {
+  if constexpr (std::is_same_v<Balancer, balancing::ICE>) {
+    return {c.tolerance, c.max_iters, c.masked_diags, c.min_nnz, c.min_count,
+            c.mad_max,   tmpfile,     c.chunk_size,   c.threads};
+  }
+
+  if constexpr (std::is_same_v<Balancer, balancing::SCALE>) {
+    return {c.tolerance, c.max_iters, 10.0, 1.0e-5, 0.05, 0.05, tmpfile, c.chunk_size, c.threads};
+  }
+
+  return {};
+}
+
+template <typename Balancer>
+static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
   if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
@@ -111,20 +139,18 @@ static int balance_cooler(cooler::File&& f, const BalanceConfig& c) {
   }
 
   const auto tmpfile = c.tmp_dir / std::filesystem::path{f.path()}.filename();
+  const auto params = init_params<Balancer>(c, tmpfile);
 
-  const balancing::ICE::Params params{c.tolerance, c.max_iters,  c.masked_diags,
-                                      c.min_nnz,   c.min_count,  c.mad_max,
-                                      tmpfile,     c.chunk_size, c.threads};
-  balancing::ICE::Type mode{};
+  typename Balancer::Type mode{};
   if (c.mode == "gw") {
-    mode = balancing::ICE::Type::gw;
+    mode = Balancer::Type::gw;
   } else if (c.mode == "cis") {
-    mode = balancing::ICE::Type::cis;
+    mode = Balancer::Type::cis;
   } else {
-    mode = balancing::ICE::Type::trans;
+    mode = Balancer::Type::trans;
   }
 
-  const balancing::ICE balancer(f, mode, params);
+  const Balancer balancer(f, mode, params);
   const auto weights = balancer.get_weights(c.rescale_marginals);
 
   if (c.stdout_) {
@@ -135,11 +161,15 @@ static int balance_cooler(cooler::File&& f, const BalanceConfig& c) {
 
   const auto uri = f.uri();
   f.close();
-  write_weights_cooler(uri, c, weights, balancer.variance(), balancer.scale());
+  if constexpr (std::is_same_v<Balancer, balancing::ICE>) {
+    write_weights_cooler(uri, c, weights, balancer.variance(), balancer.scale());
+  } else {
+    write_weights_cooler(uri, c, weights);
+  }
   return 0;
 }
 
-// NOLINTNEXTLINE(*-rvalue-reference-param-not-moved)
+template <typename Balancer>
 static int balance_hic(const BalanceConfig& c) {
   const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
@@ -154,26 +184,26 @@ static int balance_hic(const BalanceConfig& c) {
 
   const auto tmpfile = c.tmp_dir / std::filesystem::path{c.path_to_input}.filename();
 
-  const balancing::ICE::Params params{c.tolerance, c.max_iters,  c.masked_diags,
-                                      c.min_nnz,   c.min_count,  c.mad_max,
-                                      tmpfile,     c.chunk_size, c.threads};
-  balancing::ICE::Type mode{};
+  const auto params = init_params<Balancer>(c, tmpfile);
+  typename Balancer::Type mode{};
   if (c.mode == "gw") {
-    mode = balancing::ICE::Type::gw;
+    mode = Balancer::Type::gw;
   } else if (c.mode == "cis") {
-    mode = balancing::ICE::Type::cis;
+    mode = Balancer::Type::cis;
   } else {
-    mode = balancing::ICE::Type::trans;
+    mode = Balancer::Type::trans;
   }
 
   phmap::flat_hash_map<std::uint32_t, std::vector<double>> weights{resolutions.size()};
   for (const auto& res : resolutions) {
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
     const hic::File f(c.path_to_input.string(), res);
-    const balancing::ICE balancer(f, mode, params);
+
+    const Balancer balancer(f, mode, params);
 
     if (c.stdout_) {
-      std::for_each(weights.begin(), weights.end(),
+      const auto weights_ = balancer.get_weights(c.rescale_marginals);
+      std::for_each(weights_.begin(), weights_.end(),
                     [&](const auto w) { fmt::print(FMT_COMPILE("{}\n"), w); });
     } else {
       weights.emplace(res, balancer.get_weights(c.rescale_marginals));
@@ -185,12 +215,14 @@ static int balance_hic(const BalanceConfig& c) {
   return 0;
 }
 
+template <typename Balancer>
 static int balance_multires_cooler(const BalanceConfig& c) {
-  const cooler::MultiResFile mclr(c.path_to_input.string());
+  const auto resolutions = cooler::utils::list_resolutions(c.path_to_input.string());
 
-  for (const auto& res : mclr.resolutions()) {
+  for (const auto& res : resolutions) {
+    auto clr = cooler::MultiResFile(c.path_to_input.string()).open(res);
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
-    balance_cooler(mclr.open(res), c);
+    balance_cooler<Balancer>(clr, c);
   }
   return 0;
 }
@@ -199,15 +231,35 @@ int balance_subcmd(const BalanceConfig& c) {
   [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic(c);
+    if (c.algorithm == "ICE") {
+      return balance_hic<balancing::ICE>(c);
+    }
+    if (c.algorithm == "SCALE") {
+      return balance_hic<balancing::SCALE>(c);
+    }
+    assert(c.algorithm == "VC");
+    return balance_hic<balancing::VC>(c);
   }
 
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler(c);
+    if (c.algorithm == "ICE") {
+      return balance_multires_cooler<balancing::ICE>(c);
+    }
+    if (c.algorithm == "SCALE") {
+      return balance_multires_cooler<balancing::SCALE>(c);
+    }
+    assert(c.algorithm == "VC");
+    return balance_multires_cooler<balancing::VC>(c);
   }
 
-  balance_cooler(cooler::File(c.path_to_input.string()), c);
-
-  return 0;
+  auto clr = cooler::File(c.path_to_input.string());
+  if (c.algorithm == "ICE") {
+    return balance_cooler<balancing::ICE>(clr, c);
+  }
+  if (c.algorithm == "SCALE") {
+    return balance_cooler<balancing::SCALE>(clr, c);
+  }
+  assert(c.algorithm == "VC");
+  return balance_cooler<balancing::VC>(clr, c);
 }
 }  // namespace hictk::tools

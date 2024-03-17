@@ -62,6 +62,11 @@ inline void MargsVector::add(std::size_t i, double n) noexcept {
   _margsi[i] += encode(n);
 }
 
+inline void MargsVector::set(std::size_t i, double n) noexcept {
+  assert(i < size());
+  _margsi[i] = encode(n);
+}
+
 inline void MargsVector::multiply(const std::vector<double>& v) noexcept {
   assert(size() == v.size());
   for (std::size_t i = 0; i < size(); ++i) {

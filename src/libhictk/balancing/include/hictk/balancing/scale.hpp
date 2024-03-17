@@ -34,7 +34,7 @@ class SCALE {
     double error{10.0};
   };
 
-  enum class ControlFlow { break_, continue_ };
+  enum class ControlFlow { break_loop, continue_loop };
 
   // buffers to store final results
   std::vector<std::uint64_t> _chrom_offsets{};
@@ -45,6 +45,7 @@ class SCALE {
   // intermediate buffers
   bool _yes{false};
   ConvergenceStats _convergence_stats{};
+  std::queue<double> _error_queue_iter{};
 
   std::vector<bool> _bad{};
   std::vector<double> _one{};
@@ -104,7 +105,7 @@ class SCALE {
 
   template <typename Matrix>
   static void update_weights(MargsVector& buffer, const std::vector<bool>& bad,
-                             std::vector<double>& weights, const std::vector<double>& target,
+                             MargsVector& weights, const std::vector<double>& target,
                              std::vector<double>& d_vector, const Matrix& m,
                              BS::thread_pool* tpool) noexcept;
 
@@ -146,6 +147,8 @@ class SCALE {
       std::size_t chunk_size);
 
   [[nodiscard]] std::size_t size() const noexcept;
+
+  void reset_iter() noexcept;
 };
 
 }  // namespace hictk::balancing

@@ -20,6 +20,7 @@ struct BalanceConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
 
+  std::string algorithm{"ICE"};
   std::string mode{"gw"};
   std::size_t masked_diags{2};
   double mad_max{5.0};

@@ -448,4 +448,21 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
   }
 }
 
+TEST_CASE("Balancing: SCALE (edge cases)", "[balancing][medium]") {
+  SECTION("diverged") {
+    const auto path = datadir / "hic/4DNFIZ1ZVXC8.hic9";
+    const auto path_weights = datadir / "balancing/4DNFIZ1ZVXC8.chr2L.10000.SCALE.txt";
+
+    const hictk::File f(path.string(), 10'000);
+    const auto sel = f.fetch("chr2L");
+    const auto weights =
+        hictk::balancing::SCALE(sel.template begin<double>(), sel.template end<double>(),
+                                f.bins().subset("chr2L"))
+            .get_weights();
+    const auto expected_weights = read_weights(path_weights);
+
+    compare_weights(weights, expected_weights);
+  }
+}
+
 }  // namespace hictk::test::balancing

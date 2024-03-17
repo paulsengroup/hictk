@@ -24,7 +24,7 @@
 namespace hictk::tools {
 
 void Cli::make_balance_subcommand() {
-  auto& sc = *_cli.add_subcommand("balance", "Balance HiC matrices using ICE.")
+  auto& sc = *_cli.add_subcommand("balance", "Balance HiC matrices using ICE or SCALE.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -41,6 +41,12 @@ void Cli::make_balance_subcommand() {
       "Path to the .hic, .cool or .mcool file to be balanced.")
       ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
       ->required();
+  sc.add_flag(
+     "--algorithm",
+     c.algorithm,
+     "Balancing algorithm.")
+     ->check(CLI::IsMember({"ICE", "SCALE", "VC"}))
+     ->capture_default_str();
   sc.add_option(
       "--mode",
       c.mode,
@@ -179,12 +185,12 @@ void Cli::transform_args_balance_subcommand() {
 
   if (c.name.empty()) {
     if (c.mode == "cis") {
-      c.name = "ICE";
+      c.name = c.algorithm;
     } else if (c.mode == "trans") {
-      c.name = "INTER_ICE";
+      c.name = "INTER_" + c.algorithm;
     } else {
       assert(c.mode == "gw");
-      c.name = "GW_ICE";
+      c.name = "GW_" + c.algorithm;
     }
   }
 

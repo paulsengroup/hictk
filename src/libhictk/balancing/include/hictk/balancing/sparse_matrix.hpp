@@ -46,6 +46,7 @@ class MargsVector {
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
   void add(std::size_t i, double n) noexcept;
+  void set(std::size_t i, double n) noexcept;
   // multiply is not atomic
   void multiply(const std::vector<double>& v) noexcept;
 
