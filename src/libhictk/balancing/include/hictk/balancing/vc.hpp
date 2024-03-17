@@ -23,10 +23,12 @@ class VC {
  public:
   enum Type { cis, trans, gw };
 
+  struct Params {};
+
   template <typename File>
-  explicit VC(const File& f, Type type = Type::gw);
+  explicit VC(const File& f, Type type = Type::gw, const Params& params = {});
   template <typename PixelIt>
-  VC(PixelIt first, PixelIt last, const BinTable& bins);
+  VC(PixelIt first, PixelIt last, const BinTable& bins, const Params& params = {});
 
   [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;

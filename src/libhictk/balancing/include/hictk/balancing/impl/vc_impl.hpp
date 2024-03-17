@@ -17,7 +17,7 @@
 namespace hictk::balancing {
 
 template <typename File>
-inline VC::VC(const File& f, Type type) {
+inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
   switch (type) {
     case Type::cis: {
       auto res = compute_cis(f);
@@ -43,7 +43,8 @@ inline VC::VC(const File& f, Type type) {
 }
 
 template <typename PixelIt>
-inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins) {
+inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
+              [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
 
   const auto offset = bins.num_bin_prefix_sum().front();
