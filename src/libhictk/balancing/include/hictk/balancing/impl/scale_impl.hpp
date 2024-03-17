@@ -465,7 +465,6 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
                                            std::vector<double>& dr, std::vector<double>& dc,
                                            VectorOfAtomicDecimals& row, double tolerance)
     -> ControlFlow {
-  throw std::runtime_error("");
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
       continue;
