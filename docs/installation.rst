@@ -22,6 +22,10 @@ hictk package for Linux and MacOS is available on bioconda and can be installed 
   (hictk) user@dev:/tmp$ hictk --version
   hictk-v0.0.10-bioconda
 
+If you are trying to install hictk on a Mac with an M chip, the above command may fail due to conda not being able to find a package for hictk.
+You can workaround the above issue by prefixing conda commands with :code:`CONDA_SUBDIR=osx-64`.
+Note that this will make hictk quite a bit slower, as the installed binary will be executed through Rosetta.
+If performance is important, please consider :doc:`compiling hictk from source <./installation_src>` or using containers (see below).
 
 Containers (Docker or Singularity/Apptainer)
 ============================================
