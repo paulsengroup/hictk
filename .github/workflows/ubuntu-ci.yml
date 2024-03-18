@@ -321,7 +321,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
       options: "--user=root"
 
     steps:
@@ -374,7 +374,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-23.04:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-24.04:latest
       options: "--user=root"
 
     steps:
