@@ -54,7 +54,7 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-23.04-cxx-gcc-13
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
       options: '--user=root'
 
     steps:
@@ -213,7 +213,7 @@ jobs:
         with:
           fail_ci_if_error: true
           gcov: true
-          gcov_executable: gcov-13
+          gcov_executable: gcov-14
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
