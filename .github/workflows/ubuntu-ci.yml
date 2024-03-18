@@ -72,13 +72,13 @@ jobs:
 
             // Debug builds (short CI)
             includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-23.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
             includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
 
             // Release builds (short CI)
-            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-23.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.27.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
 
             if (ci_short) {
               return { include: includes }
@@ -87,35 +87,41 @@ jobs:
             // Debug builds (long CI)
             includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-10',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             // Release builds (long CI)
             includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-16',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
 
             // Make sure project builds with CMake 3.25
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '3.25.2', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-22.04',  generator: 'Unix Makefiles', cmake: '3.28.*', conan: '2.1.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -211,6 +217,9 @@ jobs:
           conan cache clean "*" --download
           conan cache clean "*" --source
           conan remove --confirm "*"
+
+      - name: Copy Conan settings
+        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
 
       - name: Install build dependencies
         run: |
@@ -312,7 +321,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/modle/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
       options: "--user=root"
 
     steps:
@@ -365,7 +374,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-23.04:latest
+      image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-24.04:latest
       options: "--user=root"
 
     steps:
