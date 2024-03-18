@@ -169,9 +169,6 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
-      - name: Copy Conan settings
-        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
-
       - name: Install Python bindings
         working-directory: hictkpy
         run: |
