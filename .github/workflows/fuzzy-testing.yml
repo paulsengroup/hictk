@@ -98,7 +98,7 @@ jobs:
           }
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-17
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-18
       options: "--user=root"
 
     env:
@@ -173,8 +173,8 @@ jobs:
         working-directory: hictkpy
         run: |
           pip install --upgrade pip setuptools wheel
-          env CC=clang-17    \
-              CXX=clang++-17 \
+          env CC=clang-18    \
+              CXX=clang++-18 \
           pip install . -v
 
       - name: Clean Conan cache (post-build)
@@ -195,7 +195,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y curl zstd
-          pip install --no-cache-dir 'cooler>=0.9.2'
+          pip install --no-cache-dir 'cooler>=0.9.3'
 
       - name: Detect CI type
         id: ci-type
