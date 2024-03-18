@@ -55,8 +55,8 @@ Other operations
 ----------------
 
 * :doc:`Format conversion <./format_conversion>`
-* :doc:`Creating .cool files <./creating_coolers>`
-* :doc:`Converting .cool files to .mcool format <./creating_multires_coolers>`
+* :doc:`Creating .cool and .hic files <./creating_cool_and_hic_files>`
+* :doc:`Converting single-resolution files to multi-resolution <./creating_multires_files>`
 * :doc:`Balancing Hi-C matrices <./balancing_matrices>`
 
 

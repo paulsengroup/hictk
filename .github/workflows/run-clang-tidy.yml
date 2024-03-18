@@ -48,7 +48,7 @@ jobs:
   run-clang-tidy:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-17
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-18
       options: '--user=root'
 
     steps:
@@ -89,6 +89,9 @@ jobs:
           conan cache clean "*" --download
           conan cache clean "*" --source
           conan remove --confirm "*"
+
+      - name: Copy Conan settings
+        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
 
       - name: Install build dependencies
         run: |

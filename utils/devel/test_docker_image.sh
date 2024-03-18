@@ -9,7 +9,7 @@ set -o pipefail
 
 if [ $# -ne 1 ]; then
   2>&1 echo "Usage: $0 hictk:latest"
-  status=1
+  exit 1
 fi
 
 IMG="$1"
