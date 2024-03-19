@@ -52,8 +52,8 @@ static void run_hictk_zoomify(const FixMcoolConfig& c,
   assert(ec == 0);
 }
 
-static std::optional<BalanceConfig> detect_balancing_params(std::string_view file,
-                                                            std::uint32_t resolution) {
+static std::optional<BalanceICEConfig> detect_balancing_params(std::string_view file,
+                                                               std::uint32_t resolution) {
   const HighFive::File clr(std::string{file}, HighFive::File::ReadOnly);
   const auto path = fmt::format(FMT_STRING("resolutions/{}/bins/weight"), resolution);
 
@@ -65,7 +65,7 @@ static std::optional<BalanceConfig> detect_balancing_params(std::string_view fil
   }
 
   const cooler::Dataset dset(cooler::RootGroup{clr.getGroup("/")}, path);
-  BalanceConfig c{};
+  BalanceICEConfig c{};
 
   try {
     const auto cis_only = dset.read_attribute<bool>("cis_only");

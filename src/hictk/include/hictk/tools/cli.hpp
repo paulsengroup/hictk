@@ -227,6 +227,9 @@ class Cli {
   subcommand _subcommand{subcommand::help};
 
   void make_balance_subcommand();
+  void make_ice_balance_subcommand(CLI::App& app);
+  void make_scale_balance_subcommand(CLI::App& app);
+  void make_vc_balance_subcommand(CLI::App& app);
   void make_convert_subcommand();
   void make_dump_subcommand();
   void make_fix_mcool_subcommand();
@@ -248,6 +251,9 @@ class Cli {
   void validate_args() const;
 
   void transform_args_balance_subcommand();
+  void transform_args_ice_balance_subcommand();
+  void transform_args_scale_balance_subcommand();
+  void transform_args_vc_balance_subcommand();
   void transform_args_convert_subcommand();
   void transform_args_dump_subcommand();
   void transform_args_fix_mcool_subcommand();

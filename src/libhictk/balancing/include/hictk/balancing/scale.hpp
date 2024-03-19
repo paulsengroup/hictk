@@ -74,8 +74,8 @@ class SCALE {
     std::size_t max_iters{200};
     double max_percentile{10};
     double frac_bad_cutoff{1.0e-5};
-    double max_row_sum_error = 0.05;
-    double delta = 0.05;
+    double max_row_sum_error{0.05};
+    double delta{0.05};
     std::filesystem::path tmpfile{};
     std::size_t chunk_size{10'000'000};
     std::size_t threads{1};

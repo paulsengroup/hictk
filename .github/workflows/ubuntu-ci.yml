@@ -409,7 +409,7 @@ jobs:
 
       - name: Test hictk balance
         run: |
-          test/scripts/hictk_balance.sh bin/hictk
+          test/scripts/hictk_balance_ice.sh bin/hictk
 
       - name: Test hictk convert (hic2cool)
         run: |

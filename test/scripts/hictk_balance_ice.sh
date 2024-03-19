@@ -9,7 +9,7 @@ set -o pipefail
 set -u
 
 echo "##################################"
-echo "#### hictk balance            ####"
+echo "#### hictk balance (ICE)      ####"
 
 # readlink -f is not available on macos...
 function readlink_py {
@@ -105,33 +105,33 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cp "$ref_cool" "$ref_hic" "$outdir"
 
-"$hictk_bin" balance "$outdir/"*.cool   \
-                     -t $(nproc.sh)     \
-                     --chunk-size=100   \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.cool   \
+                         -t $(nproc.sh)     \
+                         --chunk-size=100   \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --force
 if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.hic    \
-                     -t $(nproc.sh)     \
-                     --chunk-size=100   \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --name=weight      \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.hic    \
+                         -t $(nproc.sh)     \
+                         --chunk-size=100   \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --name=weight      \
+                         --force
 if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.cool   \
-                     -t $(nproc.sh)     \
-                     --in-memory        \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.cool   \
+                         -t $(nproc.sh)     \
+                         --in-memory        \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --force
 if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi

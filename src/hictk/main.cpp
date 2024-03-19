@@ -104,7 +104,14 @@ int main(int argc, char** argv) noexcept {
     using sc = Cli::subcommand;
     switch (subcmd) {
       case sc::balance:
-        return balance_subcmd(std::get<BalanceConfig>(config));
+        if (std::holds_alternative<BalanceICEConfig>(config)) {
+          return balance_subcmd(std::get<BalanceICEConfig>(config));
+        }
+        if (std::holds_alternative<BalanceSCALEConfig>(config)) {
+          return balance_subcmd(std::get<BalanceSCALEConfig>(config));
+        }
+        assert(std::holds_alternative<BalanceVCConfig>(config));
+        return balance_subcmd(std::get<BalanceVCConfig>(config));
       case sc::convert:
         return convert_subcmd(std::get<ConvertConfig>(config));
       case sc::dump:

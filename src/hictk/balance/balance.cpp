@@ -36,6 +36,7 @@
 
 namespace hictk::tools {
 
+template <typename BalanceConfig>
 static void write_weights_hic(
     hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
     const phmap::flat_hash_map<std::uint32_t, std::vector<double>>& weights, bool force_overwrite) {
@@ -48,6 +49,7 @@ static void write_weights_hic(
   hfw.write_norm_vectors_and_norm_expected_values();
 }
 
+template <typename BalanceConfig>
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                                  const std::vector<double>& weights,
                                  const std::vector<double>& variance,
@@ -72,31 +74,33 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   cooler::Dataset dset(cooler::RootGroup{clr.getGroup(grp)}, path, 0.0);
   dset.append(weights);
 
-  dset.write_attribute("cis_only", c.mode == "cis");
-  dset.write_attribute("divisive_weights", false);
-  dset.write_attribute("ignore_diags", std::int64_t(c.masked_diags));
-  dset.write_attribute("mad_max", std::int64_t(c.mad_max));
-  dset.write_attribute("min_count", std::int64_t(c.min_count));
-  dset.write_attribute("min_nnz", std::int64_t(c.min_nnz));
-  dset.write_attribute("tol", c.tolerance);
+  if constexpr (std::is_same_v<BalanceICEConfig, BalanceConfig>) {
+    dset.write_attribute("cis_only", c.mode == "cis");
+    dset.write_attribute("divisive_weights", false);
+    dset.write_attribute("ignore_diags", std::int64_t(c.masked_diags));
+    dset.write_attribute("mad_max", std::int64_t(c.mad_max));
+    dset.write_attribute("min_count", std::int64_t(c.min_count));
+    dset.write_attribute("min_nnz", std::int64_t(c.min_nnz));
+    dset.write_attribute("tol", c.tolerance);
 
-  if (c.mode != "cis") {
-    if (variance.front() != -1) {
-      dset.write_attribute("converged", variance.front() < c.tolerance);
-      dset.write_attribute("scale", scale.front());
-      dset.write_attribute("var", variance.front());
-    }
-  } else {
-    std::vector<bool> converged{};
-    for (const auto& var : variance) {
-      if (var != -1) {
-        converged.push_back(var < c.tolerance);  // NOLINT
+    if (c.mode != "cis") {
+      if (variance.front() != -1) {
+        dset.write_attribute("converged", variance.front() < c.tolerance);
+        dset.write_attribute("scale", scale.front());
+        dset.write_attribute("var", variance.front());
       }
-    }
-    if (!converged.empty()) {
-      dset.write_attribute("converged", converged);
-      dset.write_attribute("scale", scale);
-      dset.write_attribute("var", variance);
+    } else {
+      std::vector<bool> converged{};
+      for (const auto& var : variance) {
+        if (var != -1) {
+          converged.push_back(var < c.tolerance);  // NOLINT
+        }
+      }
+      if (!converged.empty()) {
+        dset.write_attribute("converged", converged);
+        dset.write_attribute("scale", scale);
+        dset.write_attribute("var", variance);
+      }
     }
   }
 
@@ -109,12 +113,13 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 }
 
+template <typename BalanceConfig>
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                                  const std::vector<double>& weights) {
   return write_weights_cooler(uri, c, weights, {-1}, {-1});
 }
 
-template <typename Balancer>
+template <typename Balancer, typename BalanceConfig>
 static auto init_params(const BalanceConfig& c, const std::filesystem::path& tmpfile) ->
     typename Balancer::Params {
   if constexpr (std::is_same_v<Balancer, balancing::ICE>) {
@@ -129,7 +134,7 @@ static auto init_params(const BalanceConfig& c, const std::filesystem::path& tmp
   return {};
 }
 
-template <typename Balancer>
+template <typename Balancer, typename BalanceConfig>
 static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
   if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
     throw std::runtime_error(
@@ -169,7 +174,7 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
   return 0;
 }
 
-template <typename Balancer>
+template <typename Balancer, typename BalanceConfig>
 static int balance_hic(const BalanceConfig& c) {
   const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
@@ -210,12 +215,12 @@ static int balance_hic(const BalanceConfig& c) {
     }
   }
 
-  hic::internal::HiCFileWriter hfw(c.path_to_input.string(), c.threads);
+  hic::internal::HiCFileWriter hfw(c.path_to_input.string());
   write_weights_hic(hfw, c, weights, c.force);
   return 0;
 }
 
-template <typename Balancer>
+template <typename Balancer, typename BalanceConfig>
 static int balance_multires_cooler(const BalanceConfig& c) {
   const auto resolutions = cooler::utils::list_resolutions(c.path_to_input.string());
 
@@ -227,39 +232,41 @@ static int balance_multires_cooler(const BalanceConfig& c) {
   return 0;
 }
 
-int balance_subcmd(const BalanceConfig& c) {
+int balance_subcmd(const BalanceICEConfig& c) {
   [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    if (c.algorithm == "ICE") {
-      return balance_hic<balancing::ICE>(c);
-    }
-    if (c.algorithm == "SCALE") {
-      return balance_hic<balancing::SCALE>(c);
-    }
-    assert(c.algorithm == "VC");
+    return balance_hic<balancing::ICE>(c);
+  }
+  if (cooler::utils::is_multires_file(c.path_to_input.string())) {
+    return balance_multires_cooler<balancing::ICE>(c);
+  }
+  auto clr = cooler::File(c.path_to_input.string());
+  return balance_cooler<balancing::ICE>(clr, c);
+}
+
+int balance_subcmd(const BalanceSCALEConfig& c) {
+  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+
+  if (hic::utils::is_hic_file(c.path_to_input.string())) {
+    return balance_hic<balancing::SCALE>(c);
+  }
+  if (cooler::utils::is_multires_file(c.path_to_input.string())) {
+    return balance_multires_cooler<balancing::SCALE>(c);
+  }
+  auto clr = cooler::File(c.path_to_input.string());
+  return balance_cooler<balancing::SCALE>(clr, c);
+}
+
+int balance_subcmd(const BalanceVCConfig& c) {
+  if (hic::utils::is_hic_file(c.path_to_input.string())) {
     return balance_hic<balancing::VC>(c);
   }
-
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    if (c.algorithm == "ICE") {
-      return balance_multires_cooler<balancing::ICE>(c);
-    }
-    if (c.algorithm == "SCALE") {
-      return balance_multires_cooler<balancing::SCALE>(c);
-    }
-    assert(c.algorithm == "VC");
     return balance_multires_cooler<balancing::VC>(c);
   }
-
   auto clr = cooler::File(c.path_to_input.string());
-  if (c.algorithm == "ICE") {
-    return balance_cooler<balancing::ICE>(clr, c);
-  }
-  if (c.algorithm == "SCALE") {
-    return balance_cooler<balancing::SCALE>(clr, c);
-  }
-  assert(c.algorithm == "VC");
   return balance_cooler<balancing::VC>(clr, c);
 }
+
 }  // namespace hictk::tools
