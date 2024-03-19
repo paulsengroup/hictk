@@ -21,7 +21,6 @@
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
-#include "hictk/type_traits.hpp"
 #include "hictk/version.hpp"
 
 using namespace hictk::tools;
@@ -76,15 +75,6 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
             "FAILURE! An error occurred while setting up the main application logger: {}.\n"),
         e.what());
     return std::make_tuple(1, Cli::subcommand::help, Config());
-  }
-}
-
-template <typename... Args>
-static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args) {
-  if (spdlog::default_logger()) {
-    SPDLOG_ERROR(fmt, std::forward<Args>(args)...);
-  } else {
-    fmt::print(stderr, fmt, std::forward<Args>(args)...);
   }
 }
 

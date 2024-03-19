@@ -46,7 +46,7 @@ void zoomify_once_cooler(std::string_view uri1, std::string_view uri2, std::uint
   auto mode = force ? HighFive::File::Overwrite : HighFive::File::Create;
   cooler::RootGroup entrypoint2{HighFive::File(std::string{uri2}, mode).getGroup("/")};
 
-  return zoomify_once_cooler(clr1, std::move(entrypoint2), resolution, compression_lvl);
+  zoomify_once_cooler(clr1, std::move(entrypoint2), resolution, compression_lvl);
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
