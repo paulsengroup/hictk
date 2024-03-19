@@ -145,6 +145,7 @@ void Cli::make_dump_subcommand() {
   _config = std::monostate{};
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void Cli::validate_dump_subcommand() const {
   assert(_cli.get_subcommand("dump")->parsed());
 
