@@ -314,6 +314,13 @@ inline std::vector<balancing::Method> File::avail_normalizations() const {
   return std::visit([](const auto& fp) { return fp.avail_normalizations(); }, _fp);
 }
 
+inline balancing::Weights File::normalization(std::string_view normalization_) const {
+  if (std::holds_alternative<cooler::File>(_fp)) {
+    return *std::get<cooler::File>(_fp).normalization(normalization_);
+  }
+  return std::get<hic::File>(_fp).normalization(normalization_);
+}
+
 template <typename FileT>
 constexpr const FileT& File::get() const noexcept {
   return std::get<FileT>(_fp);

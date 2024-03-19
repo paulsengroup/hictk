@@ -51,7 +51,7 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
   }
 
   try {
-    const auto& weights = *clr.read_weights(norm);
+    const auto& weights = *clr.normalization(norm);
     std::vector<float> weights_f(weights().size());
     std::transform(weights().begin(), weights().end(), weights_f.begin(), [&](const double n) {
       if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {

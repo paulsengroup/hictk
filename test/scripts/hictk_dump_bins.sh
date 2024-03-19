@@ -59,22 +59,22 @@ fi
 outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
-cooler dump -t bins "$ref_cooler::/resolutions/100000" | cut -f 1-3 > "$outdir/expected1.chrom.sizes"
-cooler dump -t bins "$ref_scooler::/cells/$cell_id" | cut -f 1-3 > "$outdir/expected2.chrom.sizes"
+cooler dump -t bins "$ref_cooler::/resolutions/100000" | cut -f 1-3 > "$outdir/expected1.bins"
+cooler dump -t bins "$ref_scooler::/cells/$cell_id" | cut -f 1-3 > "$outdir/expected2.bins"
 
-"$hictk_bin" dump -t bins "$ref_cooler::/resolutions/100000" > "$outdir/out.cooler.chrom.sizes"
-"$hictk_bin" dump -t bins --resolution 100000 "$ref_hic" > "$outdir/out.hic.chrom.sizes"
-"$hictk_bin" dump -t bins "$ref_scooler" > "$outdir/out.scooler.chrom.sizes"
+"$hictk_bin" dump -t bins "$ref_cooler::/resolutions/100000" > "$outdir/out.cooler.bins"
+"$hictk_bin" dump -t bins --resolution 100000 "$ref_hic" > "$outdir/out.hic.bins"
+"$hictk_bin" dump -t bins "$ref_scooler" > "$outdir/out.scooler.bins"
 
-if ! compare_plain_files.sh "$outdir/expected1.chrom.sizes" "$outdir/out.cooler.chrom.sizes"; then
+if ! compare_plain_files.sh "$outdir/expected1.bins" "$outdir/out.cooler.bins"; then
   status=1
 fi
 
-if ! compare_plain_files.sh "$outdir/expected1.chrom.sizes" "$outdir/out.hic.chrom.sizes"; then
+if ! compare_plain_files.sh "$outdir/expected1.bins" "$outdir/out.hic.bins"; then
   status=1
 fi
 
-if ! compare_plain_files.sh "$outdir/expected2.chrom.sizes" "$outdir/out.scooler.chrom.sizes"; then
+if ! compare_plain_files.sh "$outdir/expected2.bins" "$outdir/out.scooler.bins"; then
   status=1
 fi
 

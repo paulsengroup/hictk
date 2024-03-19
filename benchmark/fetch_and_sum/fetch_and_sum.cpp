@@ -52,7 +52,7 @@ template <typename PixelIt>
 }
 
 void fetch_and_sum(const Config &c, cooler::File &&clr) {
-  auto weights = clr.read_weights(c.weights);
+  auto weights = clr.normalization(c.weights);
 
   std::string line;
   while (std::getline(std::cin, line)) {
