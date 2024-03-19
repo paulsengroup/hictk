@@ -42,10 +42,11 @@ template <typename PixelIt>
 static void dump_pixels(PixelIt first_pixel, PixelIt last_pixel,
                         const std::shared_ptr<const BinTable>& bins, bool join) {
   if (!join) {
-    return print_pixels(first_pixel, last_pixel);
+    print_pixels(first_pixel, last_pixel);
+    return;
   }
   auto jsel = transformers::JoinGenomicCoords(first_pixel, last_pixel, bins);
-  return print_pixels(jsel.begin(), jsel.end());
+  print_pixels(jsel.begin(), jsel.end());
 }
 
 static void dump_pixels_gw(File& f, std::string_view normalization, bool join, bool sorted) {
@@ -86,10 +87,11 @@ static void dump_pixels(File& f, std::string_view range1, std::string_view range
   auto norm = balancing::Method{std::string{normalization}};
   if (range1 == "all") {
     assert(range2 == "all");
-    return dump_pixels_gw(f, normalization, join, sorted);
+    dump_pixels_gw(f, normalization, join, sorted);
+    return;
   }
 
-  return dump_pixels_chrom_chrom(f, range1, range2, normalization, join, sorted);
+  dump_pixels_chrom_chrom(f, range1, range2, normalization, join, sorted);
 }
 
 static void process_query_cis_only(File& f, std::string_view normalization, bool join,
@@ -182,7 +184,8 @@ static void process_query(File& f, std::string_view table, std::string_view rang
                           std::string_view range2, std::string_view normalization, bool join,
                           bool sorted) {
   if (table == "bins") {
-    return dump_bins(f, range1);
+    dump_bins(f, range1);
+    return;
   }
 
   assert(table == "pixels");
