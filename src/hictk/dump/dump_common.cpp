@@ -60,7 +60,7 @@ void dump_weights(const File& f, std::string_view range) {
   const auto norms = f.avail_normalizations();
   std::vector<balancing::Weights> weights{};
   for (const auto& norm : norms) {
-    weights.emplace_back(f.normalization(norm.to_string()));
+    weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
   }
 
   const auto [i0, i1] = compute_bin_ids(f.bins(), range);
