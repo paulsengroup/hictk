@@ -162,22 +162,13 @@ class HiCFileWriter {
   void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
   // Write normalization vectors
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
-                       bool force_overwrite = false);
-  void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
-                       std::uint32_t bin_size, const std::vector<float>& weights,
-                       bool force_overwrite = false,
-                       std::size_t position = std::numeric_limits<std::size_t>::max(),
-                       std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
-                       bool force_overwrite = false);
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
                        std::uint32_t bin_size, const balancing::Weights& weights,
                        bool force_overwrite = false,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
-                       const std::vector<float>& weights, bool force_overwrite = false);
+                       const balancing::Weights& weights, bool force_overwrite = false);
 
   void write_norm_vectors_and_norm_expected_values();
 
@@ -215,6 +206,12 @@ class HiCFileWriter {
                                const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
   auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
                                 std::uint32_t resolution) -> Stats;
+
+  // Normalization
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
+                       bool force_overwrite = false);
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
+                       bool force_overwrite = false);
 
   // Write body
   void write_body_metadata();

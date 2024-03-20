@@ -75,9 +75,9 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
   _scale.push_back(std::sqrt(norm_sum / sum));
 }
 
-inline std::vector<double> VC::get_weights(bool rescale) const {
+inline balancing::Weights VC::get_weights(bool rescale) const {
   if (!rescale) {
-    return _biases;
+    return {_biases, balancing::Weights::Type::DIVISIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -96,7 +96,7 @@ inline std::vector<double> VC::get_weights(bool rescale) const {
     return n;
   });
 
-  return biases;
+  return {biases, balancing::Weights::Type::DIVISIVE};
 }
 
 inline const std::vector<double>& VC::get_scale() const noexcept { return _scale; }
@@ -115,7 +115,7 @@ inline auto VC::compute_cis(const File& f) -> Result {
 
     offsets.push_back(f.bins().subset(chrom).num_bin_prefix_sum().front());
 
-    const auto chrom_weights = vc.get_weights(false);
+    const auto chrom_weights = vc.get_weights(false)(balancing::Weights::Type::DIVISIVE);
     scales.push_back(vc.get_scale().front());
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
@@ -145,7 +145,9 @@ inline auto VC::compute_trans(const File& f) -> Result {
   const auto sel = transformers::PixelMerger(heads, tails);
   const VC vc{sel.begin(), sel.end(), f.bins()};
 
-  return {{0, f.bins().size()}, vc.get_scale(), vc.get_weights(false)};
+  return {{0, f.bins().size()},
+          vc.get_scale(),
+          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -153,7 +155,9 @@ inline auto VC::compute_gw(const File& f) -> Result {
   const auto sel = f.fetch();
   const VC vc{sel.template begin<double>(), sel.template end<double>(), f.bins()};
 
-  return {{0, f.bins().size()}, vc.get_scale(), vc.get_weights(false)};
+  return {{0, f.bins().size()},
+          vc.get_scale(),
+          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
 }
 
 }  // namespace hictk::balancing

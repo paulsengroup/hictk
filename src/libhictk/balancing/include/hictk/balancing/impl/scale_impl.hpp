@@ -51,7 +51,7 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 
 template <typename PixelIt>
 inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
-    : _biases(VC{first, last, bins}.get_weights()),
+    : _biases(VC{first, last, bins}.get_weights()(balancing::Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
   if (first == last) {
@@ -175,8 +175,6 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
         for (std::size_t i = 0; i < size(); ++i) {
           if (_bad[i]) {
             _biases[i] = std::numeric_limits<double>::quiet_NaN();
-          } else {
-            _biases[i] = 1.0 / _biases1[i];
           }
         }
         _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
@@ -194,9 +192,9 @@ inline void SCALE::reset_iter() noexcept {
   }
 }
 
-inline std::vector<double> SCALE::get_weights(bool rescale) const {
+inline balancing::Weights SCALE::get_weights(bool rescale) const {
   if (!rescale) {
-    return _biases;
+    return {_biases, balancing::Weights::Type::DIVISIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -208,7 +206,7 @@ inline std::vector<double> SCALE::get_weights(bool rescale) const {
     biases[i] = _biases[i] * _scale[chrom_id];
   }
 
-  return biases;
+  return {biases, balancing::Weights::Type::DIVISIVE};
 }
 
 inline const std::vector<double>& SCALE::get_scale() const noexcept { return _scale; }
@@ -229,7 +227,7 @@ inline auto SCALE::compute_cis(const File& f, const hictk::balancing::SCALE::Par
 
     offsets.push_back(f.bins().subset(chrom).num_bin_prefix_sum().front());
 
-    const auto chrom_weights = scale.get_weights(false);
+    const auto chrom_weights = scale.get_weights(false)(balancing::Weights::Type::DIVISIVE);
     scales.push_back(scale.get_scale().front());
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
@@ -259,7 +257,9 @@ inline auto SCALE::compute_trans(const File& f, const Params& params) -> Result 
   const auto sel = transformers::PixelMerger(heads, tails);
   const SCALE scale{sel.begin(), sel.end(), f.bins(), params};
 
-  return {{0, f.bins().size()}, scale.get_scale(), scale.get_weights(false)};
+  return {{0, f.bins().size()},
+          scale.get_scale(),
+          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -267,7 +267,9 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
   const auto sel = f.fetch();
   const SCALE scale{sel.template begin<double>(), sel.template end<double>(), f.bins(), params};
 
-  return {{0, f.bins().size()}, scale.get_scale(), scale.get_weights(false)};
+  return {{0, f.bins().size()},
+          scale.get_scale(),
+          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename Matrix>

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "hictk/balancing/sparse_matrix.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 
@@ -50,7 +51,7 @@ class ICE {
   template <typename File>
   explicit ICE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);
 
-  [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
+  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
   [[nodiscard]] std::vector<double> scale() const noexcept;
   [[nodiscard]] std::vector<double> variance() const noexcept;
 

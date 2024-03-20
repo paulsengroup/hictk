@@ -114,7 +114,6 @@ struct DumpConfig {
   bool trans_only{false};
 
   std::string normalization{"NONE"};
-  std::string weight_type{"infer"};
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};

@@ -52,17 +52,10 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
 
   try {
     const auto& weights = *clr.normalization(norm);
-    std::vector<float> weights_f(weights().size());
-    std::transform(weights().begin(), weights().end(), weights_f.begin(), [&](const double n) {
-      if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {
-        return static_cast<float>(1.0 / n);
-      }
-      return static_cast<float>(n);
-    });
 
     const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
     SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), clr.resolution(), norm_name);
-    w.add_norm_vector(norm_name, "BP", clr.resolution(), weights_f, true);
+    w.add_norm_vector(norm_name, "BP", clr.resolution(), weights, true);
 
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};

@@ -30,7 +30,7 @@ class VC {
   template <typename PixelIt>
   VC(PixelIt first, PixelIt last, const BinTable& bins, const Params& params = {});
 
-  [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
+  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;
 
  private:

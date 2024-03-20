@@ -69,7 +69,12 @@ void dump_weights(const File& f, std::string_view range) {
   std::vector<double> record(norms.size());
   for (std::size_t i = i0; i < i1; ++i) {
     for (std::size_t j = 0; j < norms.size(); ++j) {
-      record[j] = weights[j][i];
+      const auto& w = weights[j];
+      if (w.type() == balancing::Weights::Type::DIVISIVE) {
+        record[j] = w[i];
+      } else {
+        record[j] = 1.0 / w[i];
+      }
     }
     fmt::print(FMT_COMPILE("{}\n"), fmt::join(record, "\t"));
   }

@@ -90,7 +90,7 @@ class SCALE {
   template <typename PixelIt>
   SCALE(PixelIt first, PixelIt last, const BinTable& bins, const Params& params = DefaultParams);
 
-  [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
+  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;
 
  private:

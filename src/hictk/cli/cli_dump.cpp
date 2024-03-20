@@ -118,14 +118,6 @@ void Cli::make_dump_subcommand() {
       c.join,
       "Output pixels in BG2 format.")
       ->capture_default_str();
-
-  sc.add_option(
-      "--weight-type",
-      c.weight_type,
-      "How balancing weights should be applied to raw interactions (ignored when file is in .hic format).")
-      ->check(CLI::IsMember({"infer", "divisive", "multiplicative"}))
-      ->capture_default_str();
-
   // clang-format on
 
   sc.get_option("--range2")->needs(sc.get_option("--range"));
@@ -171,19 +163,13 @@ void Cli::validate_dump_subcommand() const {
     warnings.emplace_back("--resolution is ignored when file is in .[s]cool format.");
   }
 
-  const auto weight_type_parsed = !subcmd.get_option("--weight-type")->empty();
-
-  if (is_hic && weight_type_parsed) {
-    warnings.emplace_back("--weight-type is ignored when file is in .hic format.");
-  }
-
   const auto range_parsed = !subcmd.get_option("--range")->empty();
   if (range_parsed && c.table != "bins" && c.table != "pixels" && c.table != "weights") {
     warnings.emplace_back(
         "--range and --range2 are ignored when --table is not bins, pixels, or weights");
   }
 
-  if (!c.range2.empty() && c.weight_type == "weights") {
+  if (!c.range2.empty() && c.range2 != "all" && c.table == "weights") {
     warnings.emplace_back("--range2 is ignored when --table=weights.");
   }
 

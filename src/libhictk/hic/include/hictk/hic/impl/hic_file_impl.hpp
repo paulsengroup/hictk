@@ -248,13 +248,13 @@ inline balancing::Weights File::normalization(balancing::Method norm,
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
   try {
     auto weights = fetch(chrom.name(), norm).weights1();
-    if (!!weights && weights().size() != expected_length) {
+    if (!!weights && weights.size() != expected_length) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
                                  "expected {} values, found {}"),
-                      norm, chrom.name(), expected_length, weights().size()));
+                      norm, chrom.name(), expected_length, weights.size()));
     }
-    weights_ = weights();
+    weights_ = weights(balancing::Weights::Type::DIVISIVE);
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
 
@@ -290,8 +290,8 @@ inline balancing::Weights File::normalization(balancing::Method norm) const {
       continue;
     }
 
-    const auto chrom_weights = normalization(norm, chrom);
-    weights.insert(weights.end(), chrom_weights().begin(), chrom_weights().end());
+    const auto chrom_weights = normalization(norm, chrom)(balancing::Weights::Type::DIVISIVE);
+    weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
 
   assert(weights.size() == bins().size());

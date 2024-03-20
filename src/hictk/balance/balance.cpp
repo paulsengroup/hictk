@@ -37,21 +37,18 @@
 namespace hictk::tools {
 
 template <typename BalanceConfig>
-static void write_weights_hic(
-    hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
-    const phmap::flat_hash_map<std::uint32_t, std::vector<double>>& weights, bool force_overwrite) {
+static void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
+                              const phmap::flat_hash_map<std::uint32_t, balancing::Weights> weights,
+                              bool force_overwrite) {
   for (const auto& [resolution, weights_] : weights) {
-    std::vector<float> weights_f(weights_.size());
-    std::transform(weights_.begin(), weights_.end(), weights_f.begin(),
-                   [](const auto w) { return static_cast<float>(1.0 / w); });
-    hfw.add_norm_vector(c.name, "BP", resolution, weights_f, force_overwrite);
+    hfw.add_norm_vector(c.name, "BP", resolution, weights_, force_overwrite);
   }
   hfw.write_norm_vectors_and_norm_expected_values();
 }
 
 template <typename BalanceConfig>
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                                 const std::vector<double>& weights,
+                                 const balancing::Weights& weights,
                                  const std::vector<double>& variance,
                                  const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
@@ -72,11 +69,11 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 
   cooler::Dataset dset(cooler::RootGroup{clr.getGroup(grp)}, path, 0.0);
-  dset.append(weights);
+  dset.append(weights(weights.type()));
 
+  dset.write_attribute("cis_only", c.mode == "cis");
+  dset.write_attribute("divisive_weights", weights.type() == balancing::Weights::Type::DIVISIVE);
   if constexpr (std::is_same_v<BalanceICEConfig, BalanceConfig>) {
-    dset.write_attribute("cis_only", c.mode == "cis");
-    dset.write_attribute("divisive_weights", false);
     dset.write_attribute("ignore_diags", std::int64_t(c.masked_diags));
     dset.write_attribute("mad_max", std::int64_t(c.mad_max));
     dset.write_attribute("min_count", std::int64_t(c.min_count));
@@ -115,7 +112,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
 
 template <typename BalanceConfig>
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                                 const std::vector<double>& weights) {
+                                 const balancing::Weights& weights) {
   return write_weights_cooler(uri, c, weights, {-1}, {-1});
 }
 
@@ -159,7 +156,8 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
   const auto weights = balancer.get_weights(c.rescale_marginals);
 
   if (c.stdout_) {
-    std::for_each(weights.begin(), weights.end(),
+    const auto weights_ = weights(balancing::Weights::Type::DIVISIVE);
+    std::for_each(weights_.begin(), weights_.end(),
                   [&](const auto w) { fmt::print(FMT_COMPILE("{}\n"), w); });
     return 0;
   }
@@ -199,7 +197,7 @@ static int balance_hic(const BalanceConfig& c) {
     mode = Balancer::Type::trans;
   }
 
-  phmap::flat_hash_map<std::uint32_t, std::vector<double>> weights{resolutions.size()};
+  phmap::flat_hash_map<std::uint32_t, balancing::Weights> weights{resolutions.size()};
   for (const auto& res : resolutions) {
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
     const hic::File f(c.path_to_input.string(), res);
@@ -207,14 +205,14 @@ static int balance_hic(const BalanceConfig& c) {
     const Balancer balancer(f, mode, params);
 
     if (c.stdout_) {
-      const auto weights_ = balancer.get_weights(c.rescale_marginals);
+      const auto weights_ =
+          balancer.get_weights(c.rescale_marginals)(balancing::Weights::Type::DIVISIVE);
       std::for_each(weights_.begin(), weights_.end(),
                     [&](const auto w) { fmt::print(FMT_COMPILE("{}\n"), w); });
     } else {
       weights.emplace(res, balancer.get_weights(c.rescale_marginals));
     }
   }
-
 
   // NOLINTNEXTLINE(misc-const-correctness)
   hic::internal::HiCFileWriter hfw(c.path_to_input.string());

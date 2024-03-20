@@ -37,8 +37,9 @@ inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-
 
 namespace hictk::test::balancing {
 
-[[nodiscard]] static std::vector<double> read_weights(const std::filesystem::path& path,
-                                                      char sep = '\n') {
+[[nodiscard]] static hictk::balancing::Weights read_weights(const std::filesystem::path& path,
+                                                            hictk::balancing::Weights::Type type,
+                                                            char sep = '\n') {
   assert(std::filesystem::exists(path));
   std::ifstream ifs(path);
   std::string strbuf;
@@ -48,18 +49,21 @@ namespace hictk::test::balancing {
     buffer.push_back(std::stod(strbuf));
   }
 
-  return buffer;
+  return {buffer, type};
 }
 
-static void compare_weights(const std::vector<double>& weights, const std::vector<double>& expected,
-                            double tol = 1.0e-3) {
-  REQUIRE(weights.size() == expected.size());
+static void compare_weights(const hictk::balancing::Weights& weights_,
+                            const hictk::balancing::Weights& expected_, double tol = 1.0e-3) {
+  REQUIRE(weights_.size() == expected_.size());
+
+  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
+  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
 
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(weights[i])) {
       CHECK(std::isnan(expected[i]));
     } else {
-      CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], tol));
+      CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], tol));
     }
   }
 }
@@ -186,7 +190,8 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::ICE::Type::cis;
         const auto weights = hictk::balancing::ICE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -198,7 +203,8 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
 
         constexpr auto type = hictk::balancing::ICE::Type::cis;
         const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -222,7 +228,8 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::ICE::Type::trans;
         const auto weights = hictk::balancing::ICE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -234,7 +241,8 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
 
         constexpr auto type = hictk::balancing::ICE::Type::trans;
         const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -258,7 +266,8 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::ICE::Type::gw;
         const auto weights = hictk::balancing::ICE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -270,7 +279,8 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
 
         constexpr auto type = hictk::balancing::ICE::Type::gw;
         const auto weights = hictk::balancing::ICE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::MULTIPLICATIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -292,7 +302,8 @@ TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
 
       constexpr auto type = hictk::balancing::VC::Type::cis;
       const auto weights = hictk::balancing::VC(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      const auto expected_weights =
+          read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
       compare_weights(weights, expected_weights);
     }
@@ -313,7 +324,8 @@ TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
 
       constexpr auto type = hictk::balancing::VC::Type::trans;
       const auto weights = hictk::balancing::VC(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      const auto expected_weights =
+          read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
       compare_weights(weights, expected_weights);
     }
@@ -334,7 +346,8 @@ TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
 
       constexpr auto type = hictk::balancing::VC::Type::gw;
       const auto weights = hictk::balancing::VC(f, type).get_weights();
-      const auto expected_weights = read_weights(path_weights);
+      const auto expected_weights =
+          read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
       compare_weights(weights, expected_weights);
     }
@@ -357,7 +370,8 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::SCALE::Type::cis;
         const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -368,7 +382,8 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
 
         constexpr auto type = hictk::balancing::SCALE::Type::cis;
         const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -392,7 +407,8 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::SCALE::Type::trans;
         const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -404,7 +420,8 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
 
         constexpr auto type = hictk::balancing::SCALE::Type::trans;
         const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -428,7 +445,8 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
       SECTION("in-memory") {
         constexpr auto type = hictk::balancing::SCALE::Type::gw;
         const auto weights = hictk::balancing::SCALE(f, type).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -440,7 +458,8 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
 
         constexpr auto type = hictk::balancing::SCALE::Type::gw;
         const auto weights = hictk::balancing::SCALE(f, type, params).get_weights();
-        const auto expected_weights = read_weights(path_weights);
+        const auto expected_weights =
+            read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
         compare_weights(weights, expected_weights);
       }
@@ -459,7 +478,8 @@ TEST_CASE("Balancing: SCALE (edge cases)", "[balancing][medium]") {
         hictk::balancing::SCALE(sel.template begin<double>(), sel.template end<double>(),
                                 f.bins().subset("chr2L"))
             .get_weights();
-    const auto expected_weights = read_weights(path_weights);
+    const auto expected_weights =
+        read_weights(path_weights, hictk::balancing::Weights::Type::DIVISIVE);
 
     compare_weights(weights, expected_weights);
   }

@@ -663,9 +663,9 @@ inline std::vector<double> ICE::compute_weights_from_chromosome_sizes(
   return weights;
 }
 
-inline std::vector<double> ICE::get_weights(bool rescale) const {
+inline balancing::Weights ICE::get_weights(bool rescale) const {
   if (!rescale) {
-    return _biases;
+    return {_biases, balancing::Weights::Type::MULTIPLICATIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -685,7 +685,7 @@ inline std::vector<double> ICE::get_weights(bool rescale) const {
                      });
     }
   }
-  return biases;
+  return {biases, balancing::Weights::Type::MULTIPLICATIVE};
 }
 
 inline std::vector<double> ICE::scale() const noexcept { return _scale; }

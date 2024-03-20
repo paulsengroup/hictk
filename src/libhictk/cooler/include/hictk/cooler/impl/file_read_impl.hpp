@@ -256,8 +256,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization(
     return nullptr;
   }
 
-  return normalization(normalization_, balancing::Weights::infer_type(normalization_.to_string()),
-                       rescale);
+  return normalization(normalization_, balancing::Weights::Type::INFER, rescale);
 }
 
 inline std::shared_ptr<const balancing::Weights> File::normalization(
