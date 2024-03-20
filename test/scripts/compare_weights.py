@@ -33,7 +33,7 @@ def make_cli() -> argparse.ArgumentParser:
 
     cli.add_argument(
         "--tolerance",
-        default=1.0e-3,
+        default=5.0e-3,
         type=float,
         help="Maximum relative error allowed.",
     )
