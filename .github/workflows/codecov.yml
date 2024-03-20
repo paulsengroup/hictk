@@ -180,6 +180,8 @@ jobs:
       - name: Run integration tests
         run: |
           test/scripts/hictk_balance_ice.sh build/src/hictk/hictk
+          test/scripts/hictk_balance_scale.sh build/src/hictk/hictk
+          test/scripts/hictk_balance_vc.sh build/src/hictk/hictk
 
           test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
           test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
