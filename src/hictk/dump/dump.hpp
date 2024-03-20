@@ -23,6 +23,7 @@ void dump_cells(std::string_view uri, std::string_view format);
 void dump_chroms(std::string_view uri, std::string_view format, std::uint32_t resolution);
 void dump_normalizations(std::string_view uri, std::string_view format, std::uint32_t resolution);
 void dump_resolutions(std::string_view uri, std::string_view format, std::uint32_t resolution);
+void dump_weights(const File& f, std::string_view range);
 
 [[nodiscard]] std::pair<std::string, std::string> parse_bedpe(std::string_view line);
 

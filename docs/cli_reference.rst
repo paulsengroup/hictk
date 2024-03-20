@@ -139,7 +139,7 @@ hictk dump
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:value in {BP->0,FRAG->1} OR {0,1} [BP]
                                 Matrix unit (ignored when file is not in .hic format).
-    -t,--table TEXT:{chroms,bins,pixels,normalizations,resolutions,cells} [pixels]
+    -t,--table TEXT:{chroms,bins,pixels,normalizations,resolutions,cells,weights} [pixels]
                                 Name of the table to dump.
     -r,--range TEXT [all]  Excludes: --query-file --cis-only --trans-only
                                 Coordinates of the genomic regions to be dumped following UCSC-style notation (chr1:0-1000).

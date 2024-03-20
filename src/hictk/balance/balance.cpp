@@ -217,7 +217,7 @@ static int balance_hic(const BalanceConfig& c) {
 
 
   // NOLINTNEXTLINE(misc-const-correctness)
-  hic::internal::HiCFileWriter hfw(c.path_to_input.string(), c.threads);
+  hic::internal::HiCFileWriter hfw(c.path_to_input.string());
   write_weights_hic(hfw, c, weights, c.force);
   return 0;
 }

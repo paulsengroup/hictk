@@ -188,6 +188,11 @@ static void process_query(File& f, std::string_view table, std::string_view rang
     return;
   }
 
+  if (table == "weights") {
+    dump_weights(f, range1);
+    return;
+  }
+
   assert(table == "pixels");
   dump_pixels(f, range1, range2, normalization, join, sorted);
 }
@@ -238,7 +243,7 @@ static void dump_tables(const DumpConfig& c) {
 }
 
 int dump_subcmd(const DumpConfig& c) {
-  if (c.table == "bins" || c.table == "pixels") {
+  if (c.table == "bins" || c.table == "pixels" || c.table == "weights") {
     dump_tables(c);
     return 0;
   }

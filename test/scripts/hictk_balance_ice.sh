@@ -17,7 +17,7 @@ function readlink_py {
   python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
-function dump_interactions {
+function dump_weights {
   set -o pipefail
   set -eu
 
@@ -26,10 +26,11 @@ function dump_interactions {
   f="$2"
 
   "$hictk" dump "$f"             \
-                --balance=weight \
+                --table=weights  \
                 --resolution     \
                 "$resolution"    |
-                cut -f 3
+                python3 -c \
+  "import pandas as pd; import sys; df = pd.read_table(sys.stdin)['weight'].to_csv(sys.stdout);"
 }
 
 function absolute_error {
@@ -54,7 +55,7 @@ function absolute_error {
   fi
 }
 
-function compare_matrices {
+function compare_weights {
   set -o pipefail
   set -eu
 
@@ -65,8 +66,8 @@ function compare_matrices {
 
   2>&1 echo "Comparing $f1 with $f2..."
   if absolute_error \
-      <(dump_interactions "$hictk" "$f1" "$resolution") \
-      <(dump_interactions "$hictk" "$f2" "$resolution"); then
+      <(dump_weights "$hictk" "$f1" "$resolution") \
+      <(dump_weights "$hictk" "$f2" "$resolution"); then
     2>&1 echo "Files are identical"
     return 0
   else
@@ -111,7 +112,7 @@ cp "$ref_cool" "$ref_hic" "$outdir"
                          --mode=cis         \
                          --tmpdir="$outdir" \
                          --force
-if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
+if ! compare_weights "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
@@ -122,7 +123,7 @@ fi
                          --tmpdir="$outdir" \
                          --name=weight      \
                          --force
-if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.hic "$ref_cool" 2500000; then
+if ! compare_weights "$hictk_bin_opt" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
@@ -132,7 +133,7 @@ fi
                          --mode=cis         \
                          --tmpdir="$outdir" \
                          --force
-if ! compare_matrices "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
+if ! compare_weights "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
