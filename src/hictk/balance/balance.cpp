@@ -37,9 +37,9 @@
 namespace hictk::tools {
 
 template <typename BalanceConfig>
-static void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
-                              const phmap::flat_hash_map<std::uint32_t, balancing::Weights> weights,
-                              bool force_overwrite) {
+static void write_weights_hic(
+    hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
+    const phmap::flat_hash_map<std::uint32_t, balancing::Weights>& weights, bool force_overwrite) {
   for (const auto& [resolution, weights_] : weights) {
     hfw.add_norm_vector(c.name, "BP", resolution, weights_, force_overwrite);
   }
