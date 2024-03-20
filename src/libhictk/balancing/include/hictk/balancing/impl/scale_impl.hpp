@@ -173,9 +173,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 
         // convergence achieved
         for (std::size_t i = 0; i < size(); ++i) {
-          if (_bad[i]) {
-            _biases[i] = std::numeric_limits<double>::quiet_NaN();
-          }
+          _biases[i] = _bad[i] ? std::numeric_limits<double>::quiet_NaN() : 1.0 / _biases1[i];
         }
         _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
         _chrom_offsets = bins.num_bin_prefix_sum();

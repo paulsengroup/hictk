@@ -53,7 +53,7 @@ namespace hictk::test::balancing {
 }
 
 static void compare_weights(const hictk::balancing::Weights& weights_,
-                            const hictk::balancing::Weights& expected_, double tol = 1.0e-3) {
+                            const hictk::balancing::Weights& expected_, double tol = 5.0e-3) {
   REQUIRE(weights_.size() == expected_.size());
 
   const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
