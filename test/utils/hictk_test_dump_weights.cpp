@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 
 #include <CLI/CLI.hpp>
 #include <cstdint>
@@ -31,7 +32,7 @@ int main(int argc, char** argv) noexcept {
 
     cli.parse(argc, argv);
 
-    const hictk::File f(file, resolution);
+    const hictk::File f(file.string(), resolution);
     const auto weights = f.normalization(normalization);
 
     const auto weights_ = divisive_weights ? weights(hictk::balancing::Weights::Type::DIVISIVE)
