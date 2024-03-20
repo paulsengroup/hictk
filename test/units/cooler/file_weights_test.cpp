@@ -48,7 +48,7 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
     File::write_weights(path2.string(), "weight", weights.begin(), weights.end());
 
     const auto w = *File(path2.string()).normalization("weight");
-    CHECK(w().size() == weights.size());
+    CHECK(w.size() == weights.size());
   }
 
   SECTION("incorrect shape") {
