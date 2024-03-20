@@ -42,6 +42,39 @@ void dump_bins(const File& f, std::string_view range) {
   });
 }
 
+[[nodiscard]] static std::pair<std::size_t, std::size_t> compute_bin_ids(const BinTable& bins,
+                                                                         std::string_view range) {
+  if (range == "all") {
+    return {0, bins.size()};
+  }
+
+  const auto coords = GenomicInterval::parse_ucsc(bins.chromosomes(), std::string{range});
+  const auto [first_bin, last_bin] = bins.find_overlap(coords);
+  const auto i0 = (*first_bin).id();
+  const auto i1 = (*last_bin).id();
+
+  return {i0, i1};
+}
+
+void dump_weights(const File& f, std::string_view range) {
+  const auto norms = f.avail_normalizations();
+  std::vector<balancing::Weights> weights{};
+  for (const auto& norm : norms) {
+    weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
+  }
+
+  const auto [i0, i1] = compute_bin_ids(f.bins(), range);
+
+  fmt::print(FMT_STRING("{}\n"), fmt::join(norms, "\t"));
+  std::vector<double> record(norms.size());
+  for (std::size_t i = i0; i < i1; ++i) {
+    for (std::size_t j = 0; j < norms.size(); ++j) {
+      record[j] = weights[j][i];
+    }
+    fmt::print(FMT_COMPILE("{}\n"), fmt::join(record, "\t"));
+  }
+}
+
 void dump_cells(std::string_view uri, std::string_view format) {
   if (format != "scool") {
     throw std::runtime_error(fmt::format(FMT_STRING("\"{}\" is not a .scool file"), uri));

@@ -274,20 +274,20 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
-                                                         bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
-                                                         balancing::Weights::Type type,
-                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
+                                                          bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
+                                                          balancing::Weights::Type type,
+                                                          bool rescale = false) const;
 
-  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
-  [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
+  [[nodiscard]] bool has_normalization(std::string_view normalization_) const;
+  [[nodiscard]] bool has_normalization(const balancing::Method &normalization_) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
-                                                         bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
-                                                         balancing::Weights::Type type,
-                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
+                                                          bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
+                                                          balancing::Weights::Type type,
+                                                          bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 

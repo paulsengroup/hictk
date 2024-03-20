@@ -69,7 +69,7 @@ void Cli::make_dump_subcommand() {
       c.table,
       "Name of the table to dump.\n")
       ->check(CLI::IsMember({"chroms", "bins", "pixels", "normalizations",
-                             "resolutions", "cells"}))
+                             "resolutions", "cells", "weights"}))
       ->capture_default_str();
 
   sc.add_option(
@@ -145,6 +145,7 @@ void Cli::make_dump_subcommand() {
   _config = std::monostate{};
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void Cli::validate_dump_subcommand() const {
   assert(_cli.get_subcommand("dump")->parsed());
 
@@ -159,7 +160,8 @@ void Cli::validate_dump_subcommand() const {
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
   const auto is_scool = cooler::utils::is_scool_file(c.uri);
 
-  if ((is_hic || is_mcooler) && c.resolution == 0 && (c.table == "pixels" || c.table == "bins")) {
+  if ((is_hic || is_mcooler) && c.resolution == 0 &&
+      (c.table == "pixels" || c.table == "bins" || c.table == "weights")) {
     errors.emplace_back("--resolution is mandatory when file is in .hic or .mcool format.");
   }
 
@@ -176,9 +178,15 @@ void Cli::validate_dump_subcommand() const {
   }
 
   const auto range_parsed = !subcmd.get_option("--range")->empty();
-  if (range_parsed && c.table != "bins" && c.table != "pixels") {
-    warnings.emplace_back("--range and --range2 are ignore when --table is not bins or pixels");
+  if (range_parsed && c.table != "bins" && c.table != "pixels" && c.table != "weights") {
+    warnings.emplace_back(
+        "--range and --range2 are ignored when --table is not bins, pixels, or weights");
   }
+
+  if (!c.range2.empty() && c.weight_type == "weights") {
+    warnings.emplace_back("--range2 is ignored when --table=weights.");
+  }
+
   const auto query_file_parsed = !subcmd.get_option("--query-file")->empty();
   if (query_file_parsed && c.table != "bins" && c.table != "pixels") {
     warnings.emplace_back("--query-file is ignored when --table is not bins or pixels");
@@ -198,6 +206,16 @@ void Cli::validate_dump_subcommand() const {
 
   if ((c.cis_only || c.trans_only) && c.table != "pixels") {
     errors.emplace_back("--cis-only and --trans-only require --table=pixels.");
+  }
+
+  const auto join_parsed = !subcmd.get_option("--join")->empty();
+  if (join_parsed && c.table != "pixels") {
+    errors.emplace_back("--join requires --table=pixels.");
+  }
+
+  const auto balance_parsed = !subcmd.get_option("--balance")->empty();
+  if (balance_parsed && c.table != "pixels") {
+    errors.emplace_back("--balance requires --table=pixels.");
   }
 
   for (const auto& w : warnings) {
@@ -231,6 +249,10 @@ void Cli::transform_args_dump_subcommand() {
     }
     c.uri = fmt::format(FMT_STRING("{}::/cells/{}"), c.uri, *sclr.cells().begin());
     c.format = "cool";
+  }
+
+  if (c.table != "bins" && c.table != "pixels") {
+    c.query_file = "";
   }
 
   if (_cli.get_subcommand("dump")->get_option("--range2")->empty()) {

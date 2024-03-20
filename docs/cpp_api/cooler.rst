@@ -122,11 +122,11 @@ Single-resolution Cooler (.cool)
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp:function:: std::shared_ptr<const balancing::Weights> read_normalization(std::string_view normalization, bool rescale = false) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization, balancing::Weights::Type type, bool rescale = false) const;
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization, bool rescale = false) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization, bool rescale = false) const;
+  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization, balancing::Weights::Type type, bool rescale = false) const;
 
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
