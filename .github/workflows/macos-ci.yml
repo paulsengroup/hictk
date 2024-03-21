@@ -299,7 +299,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 240 2>&1 |
+                --timeout 360 2>&1 |
           head -n 1000
 
   run-integration-tests:
@@ -353,7 +353,9 @@ jobs:
 
       - name: Test hictk balance
         run: |
-          test/scripts/hictk_balance.sh bin/hictk
+          test/scripts/hictk_balance_ice.sh bin/hictk
+          test/scripts/hictk_balance_scale.sh bin/hictk
+          test/scripts/hictk_balance_vc.sh bin/hictk
 
       - name: Test hictk convert (hic2cool)
         run: |

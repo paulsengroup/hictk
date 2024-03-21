@@ -199,9 +199,10 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
                             hf1.normalization("SCALE", hf1.chromosomes().at("chr2L"))),
           Catch::Matchers::ContainsSubstring("file already contains"));
 
-      CHECK_THROWS_WITH(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
-                                          std::vector<float>{1, 2, 3}),
-                        Catch::Matchers::ContainsSubstring("weight shape mismatch"));
+      CHECK_THROWS_WITH(
+          w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
+                            balancing::Weights{{1, 2, 3}, balancing::Weights::Type::DIVISIVE}),
+          Catch::Matchers::ContainsSubstring("weight shape mismatch"));
 
       w.write_norm_vectors_and_norm_expected_values();
     }

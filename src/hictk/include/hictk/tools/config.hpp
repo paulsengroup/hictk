@@ -16,7 +16,7 @@
 
 namespace hictk::tools {
 
-struct BalanceConfig {
+struct BalanceICEConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
 
@@ -35,6 +35,42 @@ struct BalanceConfig {
   std::uint8_t zstd_compression_lvl{3};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
+
+  std::uint8_t verbosity{4};
+  bool force{false};
+};
+
+struct BalanceSCALEConfig {
+  std::filesystem::path path_to_input{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+
+  std::string mode{"gw"};
+  double max_percentile{10};
+  double max_row_sum_error{0.05};
+  double tolerance{1.0e-4};
+  std::size_t max_iters{500};
+  bool rescale_marginals{true};
+  std::string name{};
+  bool in_memory{false};
+  bool symlink_to_weight{true};
+  bool stdout_{false};
+  std::uint8_t zstd_compression_lvl{3};
+  std::size_t threads{1};
+  std::size_t chunk_size{10'000'000};
+
+  std::uint8_t verbosity{4};
+  bool force{false};
+};
+
+struct BalanceVCConfig {
+  std::filesystem::path path_to_input{};
+  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};  // unused
+
+  std::string mode{"gw"};
+  bool rescale_marginals{true};
+  std::string name{};
+  bool symlink_to_weight{true};
+  bool stdout_{false};
 
   std::uint8_t verbosity{4};
   bool force{false};
@@ -78,7 +114,6 @@ struct DumpConfig {
   bool trans_only{false};
 
   std::string normalization{"NONE"};
-  std::string weight_type{"infer"};
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};
@@ -184,7 +219,9 @@ struct ZoomifyConfig {
 
 // clang-format off
 using Config = std::variant<std::monostate,
-                            BalanceConfig,
+                            BalanceICEConfig,
+                            BalanceSCALEConfig,
+                            BalanceVCConfig,
                             ConvertConfig,
                             DumpConfig,
                             FixMcoolConfig,

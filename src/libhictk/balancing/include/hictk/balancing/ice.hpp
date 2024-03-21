@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "hictk/balancing/sparse_matrix.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 
@@ -50,7 +51,7 @@ class ICE {
   template <typename File>
   explicit ICE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);
 
-  [[nodiscard]] std::vector<double> get_weights(bool rescale = true) const;
+  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
   [[nodiscard]] std::vector<double> scale() const noexcept;
   [[nodiscard]] std::vector<double> variance() const noexcept;
 
@@ -125,7 +126,8 @@ class ICE {
 
   template <typename MatrixT>
   [[nodiscard]] static auto inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
-                                       MargsVector& marg, nonstd::span<const double> weights = {},
+                                       VectorOfAtomicDecimals& marg,
+                                       nonstd::span<const double> weights = {},
                                        BS::thread_pool* tpool = nullptr) -> Result;
   [[nodiscard]] static std::pair<double, std::size_t> aggregate_marg(
       nonstd::span<const double> marg, BS::thread_pool* tpool);
@@ -137,7 +139,7 @@ class ICE {
                                                  BS::thread_pool* tpool);
 
   template <typename MatrixT>
-  static void min_nnz_filtering(MargsVector& marg, const MatrixT& matrix,
+  static void min_nnz_filtering(VectorOfAtomicDecimals& marg, const MatrixT& matrix,
                                 nonstd::span<double> biases, std::size_t min_nnz,
                                 BS::thread_pool* tpool);
 

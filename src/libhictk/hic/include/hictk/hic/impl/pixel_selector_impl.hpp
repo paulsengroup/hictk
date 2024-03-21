@@ -97,8 +97,8 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
     }
   };
 
-  const auto &weights1 = _footer->weights1()();
-  const auto &weights2 = _footer->weights2()();
+  const auto &weights1 = _footer->weights1()(balancing::Weights::Type::DIVISIVE);
+  const auto &weights2 = _footer->weights2()(balancing::Weights::Type::DIVISIVE);
   const auto &expected = _footer->expectedValues();
 
   const auto bin1 = pixel.bin1_id;
@@ -664,8 +664,8 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
     }
   };
 
-  const auto &weights1 = _footer->weights1()();
-  const auto &weights2 = _footer->weights2()();
+  const auto &weights1 = _footer->weights1()(balancing::Weights::Type::DIVISIVE);
+  const auto &weights2 = _footer->weights2()(balancing::Weights::Type::DIVISIVE);
   const auto &expected = _footer->expectedValues();
 
   const auto bin1 = pixel.bin1_id;
@@ -793,7 +793,8 @@ inline std::vector<double> PixelSelectorAll::weights() const {
 
   std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
     if (sel.is_intra()) {
-      weights_.insert(weights_.end(), sel.weights1()().begin(), sel.weights1()().end());
+      const auto chrom_weights = sel.weights1()(balancing::Weights::Type::DIVISIVE);
+      weights_.insert(weights_.end(), chrom_weights.begin(), chrom_weights.end());
     }
   });
 
@@ -827,6 +828,36 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
   _chrom1_id = _selectors->front()->chrom1().id();
   init_iterators();
   read_next_chunk();
+}
+
+template <typename N>
+inline PixelSelectorAll::iterator<N>::iterator(const iterator<N> &other)
+    : _selectors(other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr),
+      _active_selectors(other._active_selectors
+                            ? std::make_shared<SelectorQueue>(*other._active_selectors)
+                            : nullptr),
+      _its(other._its ? std::make_shared<ItPQueue>(*other._its) : nullptr),
+      _sorted(other._sorted),
+      _chrom1_id(other._chrom1_id),
+      _buff(other._buff ? std::make_shared<std::vector<ThinPixel<N>>>(*other._buff) : nullptr),
+      _i(other._i) {}
+
+template <typename N>
+inline auto PixelSelectorAll::iterator<N>::operator=(const iterator<N> &other) -> iterator & {
+  if (this == &other) {
+    return *this;
+  }
+
+  _selectors = other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr;
+  _active_selectors =
+      other._active_selectors ? std::make_shared<SelectorQueue>(*other._active_selectors) : nullptr;
+  _its = other._its ? std::make_shared<ItPQueue>(*other._its) : nullptr;
+  _sorted = other._sorted;
+  _chrom1_id = other._chrom1_id;
+  _buff = other._buff ? std::make_shared<std::vector<ThinPixel<N>>>(*other._buff) : nullptr;
+  _i = other._i;
+
+  return *this;
 }
 
 template <typename N>

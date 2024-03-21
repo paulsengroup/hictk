@@ -255,6 +255,13 @@ class PixelSelectorAll {
 
     iterator() = default;
     explicit iterator(const PixelSelectorAll &selector, bool sorted);
+    iterator(const iterator &other);
+    iterator(iterator &&other) noexcept = default;
+
+    ~iterator() noexcept = default;
+
+    auto operator=(const iterator &other) -> iterator &;
+    auto operator=(iterator &&other) noexcept -> iterator & = default;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;

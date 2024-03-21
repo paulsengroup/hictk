@@ -9,7 +9,7 @@ set -o pipefail
 set -u
 
 echo "##################################"
-echo "#### hictk balance            ####"
+echo "#### hictk balance (ICE)      ####"
 
 # readlink -f is not available on macos...
 function readlink_py {
@@ -28,31 +28,7 @@ function dump_weights {
   "$hictk" dump "$f"             \
                 --table=weights  \
                 --resolution     \
-                "$resolution"    |
-                python3 -c \
-  "import pandas as pd; import sys; df = pd.read_table(sys.stdin)['weight'].to_csv(sys.stdout);"
-}
-
-function absolute_error {
-  set -o pipefail
-  set -eu
-
-  f1="$1"
-  f2="$2"
-
-  # shellcheck disable=SC2016
-  cmd='function abs(v) {
-          return v < 0 ? -v : v
-       }
-       ($2!=$1 && abs($1 - $2) > 1.0e-5) { print $0 }
-       '
-
-  # Fail if the absolute error is > 1.0e-5
-  if paste "$f1" "$f2" | awk -F '\t' "$cmd" | grep . ; then
-    return 1
-  else
-    return 0
-  fi
+                "$resolution"
 }
 
 function compare_weights {
@@ -63,11 +39,13 @@ function compare_weights {
   resolution="$4"
   f1="$2"
   f2="$3"
+  weights=weight
 
   2>&1 echo "Comparing $f1 with $f2..."
-  if absolute_error \
+  if compare_weights.py \
       <(dump_weights "$hictk" "$f1" "$resolution") \
-      <(dump_weights "$hictk" "$f2" "$resolution"); then
+      <(dump_weights "$hictk" "$f2" "$resolution") \
+      "$weights"; then
     2>&1 echo "Files are identical"
     return 0
   else
@@ -84,7 +62,7 @@ if [ $# -ne 1 ]; then
 fi
 
 hictk_bin="$1"
-hictk_bin_opt="$(which hictk 2> /dev/null || true)"
+hictk_bin_opt="$1"  # "$(which hictk 2> /dev/null || true)"
 if [ -z "$hictk_bin_opt" ]; then
   hictk_bin_opt="$hictk_bin"
 fi
@@ -106,33 +84,33 @@ trap 'rm -rf -- "$outdir"' EXIT
 
 cp "$ref_cool" "$ref_hic" "$outdir"
 
-"$hictk_bin" balance "$outdir/"*.cool   \
-                     -t $(nproc.sh)     \
-                     --chunk-size=100   \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.cool   \
+                         -t $(nproc.sh)     \
+                         --chunk-size=100   \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --force
 if ! compare_weights "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.hic    \
-                     -t $(nproc.sh)     \
-                     --chunk-size=100   \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --name=weight      \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.hic    \
+                         -t $(nproc.sh)     \
+                         --chunk-size=100   \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --name=weight      \
+                         --force
 if ! compare_weights "$hictk_bin_opt" "$outdir/"*.hic "$ref_cool" 2500000; then
   status=1
 fi
 
-"$hictk_bin" balance "$outdir/"*.cool   \
-                     -t $(nproc.sh)     \
-                     --in-memory        \
-                     --mode=cis         \
-                     --tmpdir="$outdir" \
-                     --force
+"$hictk_bin" balance ice "$outdir/"*.cool   \
+                         -t $(nproc.sh)     \
+                         --in-memory        \
+                         --mode=cis         \
+                         --tmpdir="$outdir" \
+                         --force
 if ! compare_weights "$hictk_bin_opt" "$outdir/"*.cool "$ref_cool" 2500000; then
   status=1
 fi

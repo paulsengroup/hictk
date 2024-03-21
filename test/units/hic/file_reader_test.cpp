@@ -107,8 +107,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -121,8 +121,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -135,8 +135,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -149,8 +149,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11389664);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -231,8 +231,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -245,8 +245,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 
@@ -259,8 +259,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     CHECK(f.unit() == MatrixUnit::BP);
     CHECK(f.resolution() == 5000);
     CHECK(f.fileOffset() == 11625116);
-    CHECK(f.weights1()().size() == 4703);
-    CHECK(f.weights2()().size() == 5058);
+    CHECK(f.weights1().size() == 4703);
+    CHECK(f.weights2().size() == 5058);
     CHECK(f.expectedValues().empty());
   }
 

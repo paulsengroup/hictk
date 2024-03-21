@@ -18,7 +18,7 @@ Subcommands
     -h,--help                   Print this help message and exit
     -V,--version                Display program version information and exit
   Subcommands:
-    balance                     Balance HiC matrices using ICE.
+    balance                     Balance Hi-C matrices using ICE, SCALE, or VC.
     convert                     Convert HiC matrices to a different format.
     dump                        Dump data from .hic and Cooler files to stdout.
     fix-mcool                   Fix corrupted .mcool files.
@@ -34,8 +34,22 @@ hictk balance
 
 .. code-block:: text
 
-  Balance HiC matrices using ICE.
-  Usage: hictk balance [OPTIONS] input
+  Balance Hi-C matrices using ICE, SCALE, or VC.
+  Usage: hictk balance [OPTIONS] [SUBCOMMAND]
+  Options:
+    -h,--help                   Print this help message and exit
+  Subcommands:
+    ice                         Balance Hi-C matrices using ICE.
+    scale                       Balance Hi-C matrices using SCALE.
+    vc                          Balance Hi-C matrices using VC.
+
+hictk balance ice
+-----------------
+
+.. code-block:: text
+
+  Balance Hi-C matrices using ICE.
+  Usage: hictk balance ice [OPTIONS] input
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
                                 Path to the .hic, .cool or .mcool file to be balanced.
@@ -76,6 +90,81 @@ hictk balance
                                 Maximum number of parallel threads to spawn.
     -l,--compression-lvl UINT:INT in [0 - 19] []
                                 Compression level used to compress temporary files using ZSTD.
+    -f,--force                  Overwrite existing files and datasets (if any).
+
+hictk balance scale
+-------------------
+
+.. code-block:: text
+
+  Balance Hi-C matrices using SCALE.
+  Usage: hictk balance scale [OPTIONS] input
+  Positionals:
+    input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
+                                Path to the .hic, .cool or .mcool file to be balanced.
+  Options:
+    -h,--help                   Print this help message and exit
+    --mode TEXT:{gw,trans,cis} [gw]
+                                Balance matrix using:
+                                 - genome-wide interactions (gw)
+                                 - trans-only interactions (trans)
+                                 - cis-only interactions (cis)
+    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --max-percentile FLOAT [10]
+                                Percentile used to compute the maximum number of nnz values that cause a row to be masked.
+    --max-row-sum-err FLOAT:NONNEGATIVE [0.05]
+                                Row sum threshold used to determine whether convergence has been achieved.
+    --tolerance FLOAT:NONNEGATIVE [1e-05]
+                                Threshold of the variance of marginals used to determine whether
+                                the algorithm has converged.
+    --max-iters UINT:POSITIVE [500]
+                                Maximum number of iterations.
+    --rescale-weights,--no-rescale-weights{false}
+                                Rescale weights such that the sum of the balanced matrix is similar
+                                to that of the input matrix.
+    --name TEXT                 Name to use when writing weights to file.
+                                Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.
+    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+                                Ignored when balancing .hic files
+    --in-memory                 Store all interactions in memory (greatly improves performance).
+    --stdout                    Write balancing weights to stdout instead of writing them to the input file.
+    --chunk-size UINT:POSITIVE [10000000]
+                                Number of interactions to process at once. Ignored when using --in-memory.
+    -v,--verbosity UINT:INT in [1 - 4] []
+                                Set verbosity of output to the console.
+    -t,--threads UINT:UINT in [1 - 16] [1]
+                                Maximum number of parallel threads to spawn.
+    -l,--compression-lvl UINT:INT in [0 - 19] []
+                                Compression level used to compress temporary files using ZSTD.
+    -f,--force                  Overwrite existing files and datasets (if any).
+
+hictk balance vc
+----------------
+
+.. code-block:: text
+
+  Balance Hi-C matrices using VC.
+  Usage: hictk balance vc [OPTIONS] input
+  Positionals:
+    input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
+                                Path to the .hic, .cool or .mcool file to be balanced.
+  Options:
+    -h,--help                   Print this help message and exit
+    --mode TEXT:{gw,trans,cis} [gw]
+                                Balance matrix using:
+                                 - genome-wide interactions (gw)
+                                 - trans-only interactions (trans)
+                                 - cis-only interactions (cis)
+    --rescale-weights,--no-rescale-weights{false}
+                                Rescale weights such that the sum of the balanced matrix is similar
+                                to that of the input matrix.
+    --name TEXT                 Name to use when writing weights to file.
+                                Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.
+    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+                                Ignored when balancing .hic files
+    --stdout                    Write balancing weights to stdout instead of writing them to the input file.
+    -v,--verbosity UINT:INT in [1 - 4] []
+                                Set verbosity of output to the console.
     -f,--force                  Overwrite existing files and datasets (if any).
 
 hictk convert
@@ -154,8 +243,6 @@ hictk dump
     -b,--balance TEXT [NONE]    Balance interactions using the given method.
     --sorted,--unsorted{false}  Return interactions in ascending order.
     --join,--no-join{false}     Output pixels in BG2 format.
-    --weight-type TEXT:{infer,divisive,multiplicative} [infer]
-                                How balancing weights should be applied to raw interactions (ignored when file is in .hic format).
 
 hictk fix-mcool
 ---------------

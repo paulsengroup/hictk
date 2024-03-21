@@ -8,7 +8,9 @@
 
 namespace hictk::tools {
 
-[[nodiscard]] int balance_subcmd(const BalanceConfig& c);
+[[nodiscard]] int balance_subcmd(const BalanceICEConfig& c);
+[[nodiscard]] int balance_subcmd(const BalanceSCALEConfig& c);
+[[nodiscard]] int balance_subcmd(const BalanceVCConfig& c);
 [[nodiscard]] int convert_subcmd(const ConvertConfig& c);
 [[nodiscard]] int dump_subcmd(const DumpConfig& c);
 [[nodiscard]] int fix_mcool_subcmd(const FixMcoolConfig& c);

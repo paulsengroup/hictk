@@ -42,7 +42,7 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_file,
     std::transform(first_file, last_file, std::back_inserter(files),
                    [&](const std::string& path) { return hic::File(path, resolution); });
     if (files.size() < 2) {
-      throw std::runtime_error("cannot merge less than 2 coolers");
+      throw std::runtime_error("cannot merge less than 2 .hic files");
     }
 
     internal::validate_chromosomes(files);

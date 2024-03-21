@@ -26,19 +26,20 @@
 
 namespace hictk::balancing {
 
-inline MargsVector::MargsVector(std::size_t size_, std::size_t decimals)
+inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(std::size_t size_, std::size_t decimals)
     : _margsi(size_), _margsd(size_), _cfx(static_cast<std::uint64_t>(std::pow(10, decimals - 1))) {
   fill(0);
 }
 
-inline MargsVector::MargsVector(const MargsVector& other)
+inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(const VectorOfAtomicDecimals& other)
     : _margsi(other.size()), _margsd(other.size()), _cfx(other._cfx) {
   for (std::size_t i = 0; i < size(); ++i) {
     _margsi[i] = other._margsi[i].load();
   }
 }
 
-inline MargsVector& MargsVector::operator=(const MargsVector& other) {
+inline VectorOfAtomicDecimals& VectorOfAtomicDecimals::operator=(
+    const VectorOfAtomicDecimals& other) {
   if (this == &other) {
     return *this;
   }
@@ -52,17 +53,30 @@ inline MargsVector& MargsVector::operator=(const MargsVector& other) {
   return *this;
 }
 
-inline double MargsVector::operator[](std::size_t i) const noexcept {
+inline double VectorOfAtomicDecimals::operator[](std::size_t i) const noexcept {
   assert(i < size());
   return decode(_margsi[i].load());
 }
 
-inline void MargsVector::add(std::size_t i, double n) noexcept {
+inline void VectorOfAtomicDecimals::add(std::size_t i, double n) noexcept {
   assert(i < size());
   _margsi[i] += encode(n);
 }
 
-inline const std::vector<double>& MargsVector::operator()() const noexcept {
+inline void VectorOfAtomicDecimals::set(std::size_t i, double n) noexcept {
+  assert(i < size());
+  _margsi[i] = encode(n);
+}
+
+inline void VectorOfAtomicDecimals::multiply(const std::vector<double>& v) noexcept {
+  assert(size() == v.size());
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto n = decode(_margsi[i]);
+    _margsi[i] = encode(n * v[i]);
+  }
+}
+
+inline const std::vector<double>& VectorOfAtomicDecimals::operator()() const noexcept {
   assert(_margsi.size() == _margsd.size());
   for (std::size_t i = 0; i < size(); ++i) {
     _margsd[i] = (*this)[i];
@@ -70,7 +84,7 @@ inline const std::vector<double>& MargsVector::operator()() const noexcept {
   return _margsd;
 }
 
-inline std::vector<double>& MargsVector::operator()() noexcept {
+inline std::vector<double>& VectorOfAtomicDecimals::operator()() noexcept {
   assert(_margsi.size() == _margsd.size());
   for (std::size_t i = 0; i < size(); ++i) {
     _margsd[i] = (*this)[i];
@@ -78,26 +92,26 @@ inline std::vector<double>& MargsVector::operator()() noexcept {
   return _margsd;
 }
 
-inline void MargsVector::fill(double value) noexcept {
+inline void VectorOfAtomicDecimals::fill(double value) noexcept {
   for (auto& n : _margsi) {
     n = encode(value);
   }
 }
 
-inline void MargsVector::resize(std::size_t size_) {
+inline void VectorOfAtomicDecimals::resize(std::size_t size_) {
   if (size_ != size()) {
     _margsi = std::vector<N>(size_);
   }
 }
 
-inline std::size_t MargsVector::size() const noexcept { return _margsi.size(); }
-inline bool MargsVector::empty() const noexcept { return size() == 0; }
+inline std::size_t VectorOfAtomicDecimals::size() const noexcept { return _margsi.size(); }
+inline bool VectorOfAtomicDecimals::empty() const noexcept { return size() == 0; }
 
-inline auto MargsVector::encode(double n) const noexcept -> I {
+inline auto VectorOfAtomicDecimals::encode(double n) const noexcept -> I {
   return static_cast<I>(n * static_cast<double>(_cfx));
 }
 
-inline double MargsVector::decode(I n) const noexcept {
+inline double VectorOfAtomicDecimals::decode(I n) const noexcept {
   return static_cast<double>(n) / static_cast<double>(_cfx);
 }
 
@@ -223,7 +237,7 @@ inline void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
   }
 }
 
-inline void SparseMatrix::marginalize(MargsVector& marg, BS::thread_pool* tpool,
+inline void SparseMatrix::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
                                       bool init_buffer) const {
   assert(!marg.empty());
   if (init_buffer) {
@@ -251,7 +265,7 @@ inline void SparseMatrix::marginalize(MargsVector& marg, BS::thread_pool* tpool,
   tpool->wait();
 }
 
-inline void SparseMatrix::marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool,
+inline void SparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
                                           bool init_buffer) const {
   if (init_buffer) {
     marg.fill(0);
@@ -278,7 +292,7 @@ inline void SparseMatrix::marginalize_nnz(MargsVector& marg, BS::thread_pool* tp
   tpool->wait();
 }
 
-inline void SparseMatrix::times_outer_product_marg(MargsVector& marg,
+inline void SparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
                                                    nonstd::span<const double> biases,
                                                    nonstd::span<const double> weights,
                                                    BS::thread_pool* tpool, bool init_buffer) const {
@@ -311,6 +325,64 @@ inline void SparseMatrix::times_outer_product_marg(MargsVector& marg,
 
   tpool->detach_blocks(std::size_t(0), size(), times_outer_product_marg_impl);
   tpool->wait();
+}
+
+inline void SparseMatrix::multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
+                                   BS::thread_pool* tpool, bool init_buffer) const {
+  buffer.resize(cfx.size());
+
+  if (init_buffer) {
+    buffer.fill(0);
+  }
+
+  auto matrix_mult_impl = [&](std::size_t istart, std::size_t iend) {
+    for (auto i = istart; i < iend; ++i) {
+      const auto bin1_id = _bin1_ids[i];
+      const auto bin2_id = _bin2_ids[i];
+      const auto count = _counts[i];
+      const auto w1 = cfx[bin1_id];
+      const auto w2 = cfx[bin2_id];
+
+      const auto f = bin1_id == bin2_id ? 0.5 : 1.0;
+      buffer.add(bin1_id, count * f * w2);
+      buffer.add(bin2_id, count * f * w1);
+    }
+  };
+
+  if (size() < 1'000'000 || !tpool) {
+    matrix_mult_impl(0, size());
+    return;
+  }
+
+  tpool->detach_blocks(std::size_t(0), size(), matrix_mult_impl);
+  tpool->wait();
+}
+
+inline double SparseMatrix::compute_scaling_factor_for_scale(
+    const std::vector<double>& weights) const {
+  if (empty()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  double sum = 0.0;
+  double norm_sum = 0.0;
+
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto bin1_id = bin1_ids()[i];
+    const auto bin2_id = bin2_ids()[i];
+    const auto count = counts()[i];
+
+    const auto w1 = weights[bin1_id];
+    const auto w2 = weights[bin2_id];
+
+    if (!std::isnan(w1) && !std::isnan(w2)) {
+      const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
+      sum += count * cfx;
+      norm_sum += (count * cfx) / (w1 * w2);
+    }
+  }
+
+  return std::sqrt(norm_sum / sum);
 }
 
 inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
@@ -362,7 +434,7 @@ inline void SparseMatrixChunked::finalize() {
   _fs.open(_path, std::ios::in | std::ios::binary);
 }
 
-inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool* tpool,
+inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
                                              bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
@@ -398,8 +470,8 @@ inline void SparseMatrixChunked::marginalize(MargsVector& marg, BS::thread_pool*
   tpool->wait();
 }
 
-inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool,
-                                                 bool init_buffer) const {
+inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
+                                                 BS::thread_pool* tpool, bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     std::fstream fs{};
@@ -433,7 +505,7 @@ inline void SparseMatrixChunked::marginalize_nnz(MargsVector& marg, BS::thread_p
   tpool->wait();
 }
 
-inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
+inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals& marg,
                                                           nonstd::span<const double> biases,
                                                           nonstd::span<const double> weights,
                                                           BS::thread_pool* tpool,
@@ -471,6 +543,82 @@ inline void SparseMatrixChunked::times_outer_product_marg(MargsVector& marg,
     tpool->detach_task([&, ii = i0, jj = i1]() { times_outer_product_marg_impl(ii, jj); });
   }
   tpool->wait();
+}
+
+inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
+                                          nonstd::span<const double> cfx, BS::thread_pool* tpool,
+                                          bool init_buffer) const {
+  auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
+    std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
+    std::fstream fs{};
+    fs.exceptions(_fs.exceptions());
+    fs.open(_path, std::ios::in | std::ios::binary);
+    auto matrix = _matrix;
+    for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
+      fs.seekg(offset);
+      matrix.deserialize(fs, *zstd_dctx);
+      matrix.multiply(buffer, cfx, nullptr, false);
+    }
+  };
+
+  buffer.resize(cfx.size());
+  if (init_buffer) {
+    buffer.fill(0);
+  }
+
+  if (_index.size() == 1 || !tpool) {
+    times_outer_product_marg_impl(0, _index.size());
+    return;
+  }
+
+  const auto offsets = compute_chunk_offsets(_index.size(), tpool->get_thread_count());
+
+  for (std::size_t i = 1; i < offsets.size(); ++i) {
+    const auto i0 = offsets[i - 1];
+    const auto i1 = offsets[i];
+
+    tpool->detach_task([&, ii = i0, jj = i1]() { times_outer_product_marg_impl(ii, jj); });
+  }
+  tpool->wait();
+}
+
+inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
+    const std::vector<double>& weights) const {
+  if (empty()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  double sum = 0.0;
+  double norm_sum = 0.0;
+
+  std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
+  std::fstream fs{};
+  fs.exceptions(_fs.exceptions());
+  fs.open(_path, std::ios::in | std::ios::binary);
+
+  for (const auto& offset : _index) {
+    fs.seekg(offset);
+    _matrix.deserialize(fs, *zstd_dctx);
+    for (std::size_t i = 0; i < _matrix.size(); ++i) {
+      const auto bin1_id = _matrix.bin1_ids()[i];
+      const auto bin2_id = _matrix.bin2_ids()[i];
+      const auto count = _matrix.counts()[i];
+
+      const auto w1 = weights[bin1_id];
+      const auto w2 = weights[bin2_id];
+
+      assert(std::isfinite(w1));
+      assert(std::isfinite(w2));
+
+      if (!std::isnan(w1) && !std::isnan(w2)) {
+        const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
+        sum += count * cfx;
+        norm_sum += (count * cfx) / (w1 * w2);
+      }
+    }
+  }
+
+  return std::sqrt(norm_sum / sum);
 }
 
 inline void SparseMatrixChunked::write_chunk() {

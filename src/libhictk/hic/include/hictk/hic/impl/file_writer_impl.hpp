@@ -863,7 +863,7 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
 
 inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
                                            std::string_view unit, std::uint32_t bin_size,
-                                           const std::vector<float> &weights, bool force_overwrite,
+                                           const balancing::Weights &weights, bool force_overwrite,
                                            std::size_t position, std::size_t n_bytes) {
   add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
                                                 bin_size, position, n_bytes},
@@ -873,29 +873,16 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromoso
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
                                            const balancing::Weights &weights,
                                            bool force_overwrite) {
-  std::vector<float> weights_f(weights().size());
-  if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {
-    std::transform(weights().begin(), weights().end(), weights_f.begin(),
-                   [](const double w) { return static_cast<float>(1.0 / w); });
-  } else {
-    std::transform(weights().begin(), weights().end(), weights_f.begin(),
-                   [](const double w) { return static_cast<float>(w); });
-  }
+  std::vector<float> weights_f(weights.size());
+  const auto weights_d = weights(balancing::Weights::Type::DIVISIVE);
+  std::transform(weights_d.begin(), weights_d.end(), weights_f.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
   add_norm_vector(blk, weights_f, force_overwrite);
-}
-
-inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
-                                           std::string_view unit, std::uint32_t bin_size,
-                                           const balancing::Weights &weights, bool force_overwrite,
-                                           std::size_t position, std::size_t n_bytes) {
-  add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
-                                                bin_size, position, n_bytes},
-                  weights, force_overwrite);
 }
 
 inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_view unit,
                                            std::uint32_t bin_size,
-                                           const std::vector<float> &weights,
+                                           const balancing::Weights &weights,
                                            bool force_overwrite) {
   try {
     const auto expected_shape = bins(bin_size).size();
@@ -907,13 +894,16 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_vi
 
     std::ptrdiff_t i0 = 0;
     std::ptrdiff_t i1 = 0;
+    const auto weights_ = weights(balancing::Weights::Type::DIVISIVE);
     for (const auto &chrom : chromosomes()) {
       if (chrom.is_all()) {
         continue;
       }
       i1 += static_cast<std::ptrdiff_t>((chrom.size() + bin_size - 1) / bin_size);
-      const std::vector<float> chrom_weights(weights.begin() + i0, weights.begin() + i1);
-      add_norm_vector(type, chrom, unit, bin_size, chrom_weights, force_overwrite);
+      std::vector<double> chrom_weights(weights_.begin() + i0, weights_.begin() + i1);
+      add_norm_vector(type, chrom, unit, bin_size,
+                      {std::move(chrom_weights), balancing::Weights::Type::DIVISIVE},
+                      force_overwrite);
       i0 = i1;
     }
   } catch (const std::exception &e) {
