@@ -89,6 +89,13 @@ If you use ``hictk convert`` to convert .[m]cool files to .hic format you should
    creating_multires_files
    balancing_matrices
 
+.. toctree::
+   :caption: Tutorials
+   :maxdepth: 2
+
+   tutorials/reordering_chromosomes
+   tutorials/dump_interactions_to_cool_hic_file
+
 
 .. toctree::
    :caption: CLI and API Reference
