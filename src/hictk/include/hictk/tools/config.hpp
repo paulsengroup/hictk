@@ -47,7 +47,7 @@ struct BalanceSCALEConfig {
   std::string mode{"gw"};
   double max_percentile{10};
   double max_row_sum_error{0.05};
-  double tolerance{1.0e-5};
+  double tolerance{1.0e-4};
   std::size_t max_iters{500};
   bool rescale_marginals{true};
   std::string name{};
