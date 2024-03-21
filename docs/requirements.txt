@@ -1,4 +1,4 @@
-furo==2023.09.10
+furo==2024.1.29
 sphinx==7.2.6
 sphinx-copybutton==0.5.2
 sphinxcontrib-moderncmakedomain==3.27.0
