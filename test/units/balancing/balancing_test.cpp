@@ -195,6 +195,7 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -233,6 +234,7 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
       }
 
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -271,6 +273,7 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
       }
 
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -374,6 +377,7 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
         compare_weights(weights, expected_weights);
       }
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -412,6 +416,7 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -450,6 +455,7 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
+        std::filesystem::remove(tmpfile);
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;

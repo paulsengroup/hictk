@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <string>
+#include <tuple>
 #include <type_traits>
 
 namespace hictk {
