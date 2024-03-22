@@ -37,8 +37,10 @@ class ExpectedValuesAggregator {
  public:
   ExpectedValuesAggregator() = default;
   explicit ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins);
-  void add(const ThinPixel<float>& p);
-  void add(const Pixel<float>& p);
+  template <typename N>
+  void add(const ThinPixel<N>& p);
+  template <typename N>
+  void add(const Pixel<N>& p);
 
   void compute_density();
 

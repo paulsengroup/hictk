@@ -94,6 +94,10 @@ class File {
   [[nodiscard]] balancing::Weights normalization(balancing::Method norm) const;
   [[nodiscard]] balancing::Weights normalization(std::string_view norm) const;
 
+  [[nodiscard]] std::vector<double> expected_values(
+      const Chromosome &chrom,
+      const balancing::Method &normalization_ = balancing::Method::NONE()) const;
+
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();
 

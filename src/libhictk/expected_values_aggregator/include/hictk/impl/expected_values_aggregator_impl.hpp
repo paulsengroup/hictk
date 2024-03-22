@@ -41,12 +41,15 @@ inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const 
   _actual_distances.resize(max_n_bins, 0.0);
 }
 
-inline void ExpectedValuesAggregator::add(const ThinPixel<float> &p) {
-  add(Pixel<float>{*_bins, p});
+template <typename N>
+inline void ExpectedValuesAggregator::add(const ThinPixel<N> &p) {
+  add(Pixel<N>{*_bins, p});
 }
 
-inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
-  if (std::isnan(p.count)) {
+template <typename N>
+inline void ExpectedValuesAggregator::add(const Pixel<N> &p) {
+  const auto count = conditional_static_cast<double>(p.count);
+  if (std::isnan(count)) {
     return;
   }
 
@@ -54,15 +57,15 @@ inline void ExpectedValuesAggregator::add(const Pixel<float> &p) {
   const auto &chrom2 = p.coords.bin2.chrom();
 
   if (p.coords.is_intra()) {
-    at(chrom1) += static_cast<double>(p.count);
+    at(chrom1) += count;
     const auto i = p.coords.bin2.id() - p.coords.bin1.id();
     // skip last bin in chromosome if chromosome size is not a multiple of bin size
     // this is done to mimick HiCTools' behavior
     if (i < _actual_distances.size()) {
-      _actual_distances[i] += static_cast<double>(p.count);
+      _actual_distances[i] += count;
     }
   } else {
-    at(chrom1, chrom2) += static_cast<double>(p.count);
+    at(chrom1, chrom2) += count;
   }
 }
 
@@ -79,7 +82,9 @@ inline const std::vector<double> &ExpectedValuesAggregator::weights() const noex
 
 inline std::vector<double> ExpectedValuesAggregator::weights(const Chromosome &chrom,
                                                              bool rescale) const {
-  const auto num_bins = _bins->subset(chrom).size();
+  // We round down to mach HiCTools behavior
+  const auto num_bins = chrom.size() / _bins->resolution();
+
   std::vector<double> w{_weights.begin(), _weights.begin() + static_cast<std::ptrdiff_t>(num_bins)};
   if (!rescale) {
     return w;
