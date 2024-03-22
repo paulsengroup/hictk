@@ -110,7 +110,7 @@ TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
     std::string buff{};
 
     SECTION("empty matrix") {
-      auto f = filestream::FileStream::create(tmpfile);
+      auto f = filestream::FileStream::create(tmpfile.string());
 
       SparseMatrix m1{};
       SparseMatrix m2{};
@@ -132,7 +132,7 @@ TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
       m1.finalize();
 
       std::filesystem::remove(tmpfile);
-      auto f = filestream::FileStream::create(tmpfile);
+      auto f = filestream::FileStream::create(tmpfile.string());
 
       SparseMatrix m2{};
       m1.serialize(f, buff, *zstd_cctx);
