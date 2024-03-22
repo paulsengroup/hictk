@@ -13,8 +13,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <ios>
 #include <memory>
 #include <string>
 #include <utility>
@@ -27,6 +25,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/file.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "tmpdir.hpp"
@@ -108,17 +107,17 @@ TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
     std::unique_ptr<ZSTD_CCtx_s> zstd_cctx{ZSTD_createCCtx()};
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
+    std::string buff{};
+
     SECTION("empty matrix") {
-      std::fstream f{};
-      f.open(tmpfile, std::ios::in | std::ios::out | std::ios::trunc);
-      f.exceptions(std::ios::badbit | std::ios::failbit);
+      auto f = filestream::FileStream::create(tmpfile);
 
       SparseMatrix m1{};
       SparseMatrix m2{};
       m1.finalize();
-      m1.serialize(f, *zstd_cctx);
+      m1.serialize(f, buff, *zstd_cctx);
       f.seekg(std::ios::beg);
-      m2.deserialize(f, *zstd_dctx);
+      m2.deserialize(f, buff, *zstd_dctx);
 
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());
@@ -132,14 +131,13 @@ TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
       }
       m1.finalize();
 
-      std::fstream f{};
-      f.open(tmpfile, std::ios::in | std::ios::out | std::ios::trunc);
-      f.exceptions(std::ios::badbit | std::ios::failbit);
+      std::filesystem::remove(tmpfile);
+      auto f = filestream::FileStream::create(tmpfile);
 
       SparseMatrix m2{};
-      m1.serialize(f, *zstd_cctx);
+      m1.serialize(f, buff, *zstd_cctx);
       f.seekg(std::ios::beg);
-      m2.deserialize(f, *zstd_dctx);
+      m2.deserialize(f, buff, *zstd_dctx);
 
       compare_vectors(m1.bin1_ids(), m2.bin1_ids());
       compare_vectors(m1.bin2_ids(), m2.bin2_ids());

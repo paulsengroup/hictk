@@ -13,4 +13,4 @@ target_sources(
             "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 target_include_directories(binary_buffer INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                                "$<INSTALL_INTERFACE:include>")
+                                                   "$<INSTALL_INTERFACE:include>")

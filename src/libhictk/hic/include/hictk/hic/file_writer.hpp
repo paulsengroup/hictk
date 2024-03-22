@@ -13,7 +13,6 @@
 #endif
 #include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
-#include <zstd.h>
 
 #include <BS_thread_pool.hpp>
 #include <atomic>

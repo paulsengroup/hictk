@@ -5,10 +5,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstring>
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <cstring>
 
 namespace hictk {
 
