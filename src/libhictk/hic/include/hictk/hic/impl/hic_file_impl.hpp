@@ -302,6 +302,21 @@ inline balancing::Weights File::normalization(std::string_view norm) const {
   return normalization(balancing::Method{norm});
 }
 
+inline std::vector<double> File::expected_values(const Chromosome& chrom,
+                                                 const balancing::Method& normalization_) const {
+  const File f(path(), resolution(), MatrixType::expected);
+  const auto sel = f.fetch(chrom.name(), normalization_);
+  const auto footer =
+      f._footers.find(internal::HiCFooterMetadata{f.path(), MatrixType::expected, normalization_,
+                                                  MatrixUnit::BP, resolution(), chrom, chrom, -1});
+  if (footer == f._footers.end()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to fetch expected values for \"{}\" ({})"), chrom.name(),
+                    normalization_.to_string()));
+  }
+  return (*footer)->expectedValues();
+}
+
 inline std::size_t File::num_cached_footers() const noexcept { return _footers.size(); }
 
 inline void File::purge_footer_cache() { _footers.clear(); }

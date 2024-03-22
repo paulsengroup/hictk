@@ -6,9 +6,10 @@
 
 #include <cassert>
 #include <string>
+#include <tuple>
 #include <type_traits>
 
-namespace hictk::hic::internal {
+namespace hictk {
 
 template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
 inline T BinaryBuffer::read() {
@@ -38,9 +39,10 @@ inline void BinaryBuffer::read(std::string &buff, std::size_t n) {
 
 inline void BinaryBuffer::read(char *buff, std::size_t n) {
   static_assert(sizeof(char) == 1);
-  assert(_i < _buffer.size());
-  std::memcpy(static_cast<void *>(buff), _buffer.data() + _i, n * sizeof(char));
-  _i += sizeof(char);
+  const auto size = n * sizeof(char);
+  assert(_i + size < _buffer.size());
+  std::memcpy(static_cast<void *>(buff), _buffer.data() + _i, size);
+  _i += size;
 }
 
 inline std::string BinaryBuffer::getline(char delim) {
@@ -76,4 +78,4 @@ inline void BinaryBuffer::clear() noexcept { std::ignore = reset(); }
 
 inline const std::string &BinaryBuffer::get() const noexcept { return _buffer; }
 
-}  // namespace hictk::hic::internal
+}  // namespace hictk

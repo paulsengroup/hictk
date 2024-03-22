@@ -153,12 +153,12 @@ inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id
   _counts.push_back(count);
 }
 
-inline void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl) const {
-  auto size_ = size();
-  fs.write(reinterpret_cast<const char*>(&size_), sizeof(std::size_t));
+inline void SparseMatrix::serialize(filestream::FileStream& fs, std::string& tmpbuff,
+                                    ZSTD_CCtx& ctx, int compression_lvl) const {
+  fs.write(size());
 
   const auto tmpbuff_size = ZSTD_compressBound(size() * sizeof(std::uint64_t));
-  std::string tmpbuff(tmpbuff_size, '\0');
+  tmpbuff.resize(tmpbuff_size);
 
   std::size_t compressed_size = ZSTD_compressCCtx(&ctx, reinterpret_cast<void*>(tmpbuff.data()),
                                                   tmpbuff.size() * sizeof(char),
@@ -168,8 +168,8 @@ inline void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compre
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
-  fs.write(reinterpret_cast<const char*>(&compressed_size), sizeof(std::size_t));
-  fs.write(tmpbuff.data(), static_cast<std::streamsize>(compressed_size));
+  fs.write(compressed_size);
+  fs.write(tmpbuff.data(), compressed_size);
 
   compressed_size = ZSTD_compressCCtx(&ctx, reinterpret_cast<void*>(tmpbuff.data()),
                                       tmpbuff.size() * sizeof(char),
@@ -179,8 +179,8 @@ inline void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compre
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
-  fs.write(reinterpret_cast<const char*>(&compressed_size), sizeof(std::size_t));
-  fs.write(tmpbuff.data(), static_cast<std::streamsize>(compressed_size));
+  fs.write(compressed_size);
+  fs.write(tmpbuff.data(), compressed_size);
 
   compressed_size = ZSTD_compressCCtx(
       &ctx, reinterpret_cast<void*>(tmpbuff.data()), tmpbuff.size() * sizeof(char),
@@ -189,26 +189,23 @@ inline void SparseMatrix::serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compre
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
-  fs.write(reinterpret_cast<const char*>(&compressed_size), sizeof(std::size_t));
-  fs.write(tmpbuff.data(), static_cast<std::streamsize>(compressed_size));
+  fs.write(compressed_size);
+  fs.write(tmpbuff.data(), compressed_size);
 
   fs.flush();
 }
 
-inline void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
-  std::size_t size_{};
-  fs.read(reinterpret_cast<char*>(&size_), sizeof(std::size_t));
+inline void SparseMatrix::deserialize(filestream::FileStream& fs, std::string& tmpbuff,
+                                      ZSTD_DCtx& ctx) {
+  const auto size_ = fs.read<std::size_t>();
 
   _bin1_ids.resize(size_);
   _bin2_ids.resize(size_);
   _counts.resize(size_);
 
-  std::string tmpbuff{};
-  std::size_t compressed_size{};
-  fs.read(reinterpret_cast<char*>(&compressed_size), sizeof(std::size_t));
+  auto compressed_size = fs.read<std::size_t>();
 
-  tmpbuff.resize(compressed_size);
-  fs.read(tmpbuff.data(), static_cast<std::streamsize>(tmpbuff.size() * sizeof(char)));
+  fs.read(tmpbuff, compressed_size);
   std::size_t decompressed_size = ZSTD_decompressDCtx(
       &ctx, reinterpret_cast<char*>(_bin1_ids.data()), _bin1_ids.size() * sizeof(std::uint64_t),
       tmpbuff.data(), tmpbuff.size() * sizeof(char));
@@ -216,9 +213,8 @@ inline void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
     throw std::runtime_error(ZSTD_getErrorName(decompressed_size));
   }
 
-  fs.read(reinterpret_cast<char*>(&compressed_size), sizeof(std::size_t));
-  tmpbuff.resize(compressed_size);
-  fs.read(tmpbuff.data(), static_cast<std::streamsize>(tmpbuff.size() * sizeof(char)));
+  fs.read(compressed_size);
+  fs.read(tmpbuff, compressed_size);
   decompressed_size = ZSTD_decompressDCtx(&ctx, reinterpret_cast<char*>(_bin2_ids.data()),
                                           _bin2_ids.size() * sizeof(std::uint64_t), tmpbuff.data(),
                                           tmpbuff.size() * sizeof(char));
@@ -226,9 +222,8 @@ inline void SparseMatrix::deserialize(std::fstream& fs, ZSTD_DCtx& ctx) {
     throw std::runtime_error(ZSTD_getErrorName(decompressed_size));
   }
 
-  fs.read(reinterpret_cast<char*>(&compressed_size), sizeof(std::size_t));
-  tmpbuff.resize(compressed_size);
-  fs.read(tmpbuff.data(), static_cast<std::streamsize>(tmpbuff.size() * sizeof(char)));
+  fs.read(compressed_size);
+  fs.read(tmpbuff, compressed_size);
   decompressed_size = ZSTD_decompressDCtx(&ctx, reinterpret_cast<char*>(_counts.data()),
                                           _counts.size() * sizeof(double), tmpbuff.data(),
                                           tmpbuff.size() * sizeof(char));
@@ -388,17 +383,16 @@ inline double SparseMatrix::compute_scaling_factor_for_scale(
 inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
                                                 std::size_t chunk_size, int compression_lvl)
     : _path(std::move(tmp_file)),
+      _fs(filestream::FileStream::create(_path.string())),
       _chunk_size(chunk_size),
       _compression_lvl(compression_lvl),
       _zstd_cctx(ZSTD_createCCtx()),
-      _zstd_dctx(ZSTD_createDCtx()) {
-  _fs.exceptions(std::ios::badbit);
-  _fs.open(_path, std::ios::out | std::ios::binary);
-}
+      _zstd_dctx(ZSTD_createDCtx()) {}
 
 inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
   try {
     if (!_path.empty() && std::filesystem::exists(_path)) {
+      _fs = filestream::FileStream{};
       std::filesystem::remove(_path);
     }
     // NOLINTNEXTLINE
@@ -410,7 +404,7 @@ inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
 inline std::size_t SparseMatrixChunked::size() const noexcept { return _size; }
 inline void SparseMatrixChunked::clear(bool shrink_to_fit_) {
   _index.clear();
-  _fs.close();
+  _fs = filestream::FileStream{};
   std::filesystem::remove(_path);
   _path = "";
   _size = 0;
@@ -431,20 +425,19 @@ inline void SparseMatrixChunked::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs.open(_path, std::ios::in | std::ios::binary);
+  _fs = filestream::FileStream(_path.string());
 }
 
 inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
                                              bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    std::fstream fs{};
-    fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in | std::ios::binary);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
+    std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(offset);
-      matrix.deserialize(fs, *zstd_dctx);
+      fs.seekg(static_cast<std::streamoff>(offset));
+      matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize(marg, nullptr, false);
     }
   };
@@ -474,13 +467,12 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
                                                  BS::thread_pool* tpool, bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    std::fstream fs{};
-    fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in | std::ios::binary);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
+    std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(offset);
-      matrix.deserialize(fs, *zstd_dctx);
+      fs.seekg(static_cast<std::streamoff>(offset));
+      matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize_nnz(marg, nullptr, false);
     }
   };
@@ -512,13 +504,12 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
                                                           bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    std::fstream fs{};
-    fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in | std::ios::binary);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
+    std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(offset);
-      matrix.deserialize(fs, *zstd_dctx);
+      fs.seekg(static_cast<std::streamoff>(offset));
+      matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.times_outer_product_marg(marg, biases, weights, nullptr, false);
     }
   };
@@ -550,13 +541,12 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
                                           bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    std::fstream fs{};
-    fs.exceptions(_fs.exceptions());
-    fs.open(_path, std::ios::in | std::ios::binary);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
+    std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(offset);
-      matrix.deserialize(fs, *zstd_dctx);
+      fs.seekg(static_cast<std::streamoff>(offset));
+      matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.multiply(buffer, cfx, nullptr, false);
     }
   };
@@ -592,13 +582,12 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
   double norm_sum = 0.0;
 
   std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-  std::fstream fs{};
-  fs.exceptions(_fs.exceptions());
-  fs.open(_path, std::ios::in | std::ios::binary);
+  filestream::FileStream fs(_path.string());
+  std::string buff{};
 
   for (const auto& offset : _index) {
-    fs.seekg(offset);
-    _matrix.deserialize(fs, *zstd_dctx);
+    fs.seekg(static_cast<std::streamoff>(offset));
+    _matrix.deserialize(fs, buff, *zstd_dctx);
     for (std::size_t i = 0; i < _matrix.size(); ++i) {
       const auto bin1_id = _matrix.bin1_ids()[i];
       const auto bin2_id = _matrix.bin2_ids()[i];
@@ -623,9 +612,9 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
 
 inline void SparseMatrixChunked::write_chunk() {
   assert(!_matrix.empty());
-  _index.push_back(_fs.tellg());
+  _index.push_back(_fs.tellp());
   _matrix.finalize();
-  _matrix.serialize(_fs, *_zstd_cctx, _compression_lvl);
+  _matrix.serialize(_fs, _buff, *_zstd_cctx, _compression_lvl);
   _matrix.clear();
 }
 

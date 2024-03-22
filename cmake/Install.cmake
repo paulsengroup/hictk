@@ -15,10 +15,13 @@ install(
   TARGETS libhictk
           balancing
           bin_table
+          binary_buffer
           chromosome
           common
           cooler
+          expected_values_aggregator
           file
+          filestream
           formatting
           genomic_interval
           hic

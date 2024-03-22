@@ -15,12 +15,12 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/file_reader.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/footer_cache.hpp"
 #include "hictk/hic/header.hpp"
@@ -93,6 +93,10 @@ class File {
                                                  const Chromosome &chrom) const;
   [[nodiscard]] balancing::Weights normalization(balancing::Method norm) const;
   [[nodiscard]] balancing::Weights normalization(std::string_view norm) const;
+
+  [[nodiscard]] std::vector<double> expected_values(
+      const Chromosome &chrom,
+      const balancing::Method &normalization_ = balancing::Method::NONE()) const;
 
   [[nodiscard]] std::size_t num_cached_footers() const noexcept;
   void purge_footer_cache();

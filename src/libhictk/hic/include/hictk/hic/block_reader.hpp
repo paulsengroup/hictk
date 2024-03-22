@@ -13,8 +13,8 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/binary_buffer.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"

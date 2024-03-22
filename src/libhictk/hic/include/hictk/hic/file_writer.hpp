@@ -13,7 +13,6 @@
 #endif
 #include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
-#include <zstd.h>
 
 #include <BS_thread_pool.hpp>
 #include <atomic>
@@ -26,12 +25,12 @@
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/binary_buffer.hpp"
 #include "hictk/default_delete.hpp"
+#include "hictk/expected_values_aggregator.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hash.hpp"
-#include "hictk/hic/binary_buffer.hpp"
-#include "hictk/hic/expected_values_aggregator.hpp"
 #include "hictk/hic/file_writer_data_structures.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"

@@ -21,7 +21,7 @@
 
 #include "hictk/common.hpp"
 
-namespace hictk::hic::internal::filestream {
+namespace hictk::filestream {
 
 inline FileStream::FileStream(std::string path, std::ios::openmode mode)
     : _path(std::move(path)),
@@ -232,4 +232,4 @@ inline std::ofstream FileStream::open_file_write(const std::string &path,
   return fs;
 }
 
-}  // namespace hictk::hic::internal::filestream
+}  // namespace hictk::filestream

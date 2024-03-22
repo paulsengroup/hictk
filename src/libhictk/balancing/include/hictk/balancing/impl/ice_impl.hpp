@@ -109,6 +109,7 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
     matrix = construct_sparse_matrix_chunked_cis(f, chrom, _chrom_offsets[i], num_masked_diags,
                                                  tmpfile, chunk_size);
     balance_cis(matrix, chrom, max_iters, tol, tpool);
+    matrix.clear();
   }
 }
 
