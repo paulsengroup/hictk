@@ -15,6 +15,7 @@ install(
   TARGETS libhictk
           balancing
           bin_table
+          binary_buffer
           chromosome
           common
           cooler

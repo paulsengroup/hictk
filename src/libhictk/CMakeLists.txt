@@ -4,6 +4,7 @@
 
 add_subdirectory(balancing)
 add_subdirectory(bin_table)
+add_subdirectory(binary_buffer)
 add_subdirectory(chromosome)
 add_subdirectory(common)
 add_subdirectory(cooler)
@@ -26,6 +27,7 @@ target_link_libraries(
   libhictk
   INTERFACE hictk::balancing
             hictk::bin_table
+            hictk::binary_buffer
             hictk::chromosome
             hictk::common
             hictk::cooler

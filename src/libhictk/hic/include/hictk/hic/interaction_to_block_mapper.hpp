@@ -25,10 +25,10 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/binary_buffer.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/default_delete.hpp"
 #include "hictk/filestream.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/file_writer_data_structures.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"

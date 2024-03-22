@@ -26,11 +26,11 @@
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/binary_buffer.hpp"
 #include "hictk/default_delete.hpp"
 #include "hictk/expected_values_aggregator.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hash.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/file_writer_data_structures.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"

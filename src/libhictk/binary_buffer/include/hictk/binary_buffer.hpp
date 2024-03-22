@@ -7,8 +7,10 @@
 #include <cstddef>
 #include <string>
 #include <type_traits>
+#include <vector>
+#include <cstring>
 
-namespace hictk::hic::internal {
+namespace hictk {
 
 class BinaryBuffer {
   std::string _buffer{};
@@ -23,7 +25,7 @@ class BinaryBuffer {
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
   void read(T& buff);
   template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
-  void read(std::vector<T>& data);
+  void read(std::vector<T>& buff);
   void read(std::string& buff, std::size_t n);
   void read(char* buff, std::size_t n);
   std::string getline(char delim = '\n');
@@ -45,6 +47,6 @@ class BinaryBuffer {
   [[nodiscard]] const std::string& get() const noexcept;
 };
 
-}  // namespace hictk::hic::internal
+}  // namespace hictk
 
 #include "./impl/binary_buffer_impl.hpp"  // NOLINT

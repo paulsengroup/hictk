@@ -30,6 +30,7 @@ target_link_libraries(
   hic
   INTERFACE hictk::balancing
             hictk::common
+            hictk::binary_buffer
             hictk::chromosome
             hictk::expected_values_aggregator
             hictk::filestream

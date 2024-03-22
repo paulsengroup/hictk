@@ -6,6 +6,7 @@ include_directories(include)
 
 add_subdirectory(balancing)
 add_subdirectory(bin_table)
+add_subdirectory(binary_buffer)
 add_subdirectory(chromosome)
 add_subdirectory(cooler)
 add_subdirectory(expected_values_aggregator)

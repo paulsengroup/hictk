@@ -5,6 +5,7 @@
 #include "hictk/filestream.hpp"
 
 #include <array>
+#include <catch2/catch_test_macros.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -13,7 +14,6 @@
 #include <string>
 #include <vector>
 
-#include "catch2/catch_test_macros.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
 #include "tmpdir.hpp"

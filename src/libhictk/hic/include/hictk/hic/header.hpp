@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "hictk/binary_buffer.hpp"
 #include "hictk/filestream.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/reference.hpp"
 
 namespace hictk::hic::internal {

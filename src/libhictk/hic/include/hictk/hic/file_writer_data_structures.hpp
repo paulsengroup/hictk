@@ -14,8 +14,8 @@
 #include <string_view>
 #include <vector>
 
+#include "hictk/binary_buffer.hpp"
 #include "hictk/filestream.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
