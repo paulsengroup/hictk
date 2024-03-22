@@ -156,9 +156,10 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
   const auto weights = balancer.get_weights(c.rescale_marginals);
 
   if (c.stdout_) {
-    const auto weights_ = weights(balancing::Weights::Type::DIVISIVE);
-    std::for_each(weights_.begin(), weights_.end(),
-                  [&](const auto w) { fmt::print(FMT_COMPILE("{}\n"), w); });
+    for (const auto& w :
+         balancer.get_weights(c.rescale_marginals)(balancing::Weights::Type::DIVISIVE)) {
+      fmt::print(FMT_COMPILE("{}\n"), w);
+    }
     return 0;
   }
 
