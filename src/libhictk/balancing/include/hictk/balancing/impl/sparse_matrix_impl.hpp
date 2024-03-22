@@ -383,7 +383,7 @@ inline double SparseMatrix::compute_scaling_factor_for_scale(
 inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
                                                 std::size_t chunk_size, int compression_lvl)
     : _path(std::move(tmp_file)),
-      _fs(filestream::FileStream::create(_path)),
+      _fs(filestream::FileStream::create(_path.string())),
       _chunk_size(chunk_size),
       _compression_lvl(compression_lvl),
       _zstd_cctx(ZSTD_createCCtx()),
@@ -424,7 +424,7 @@ inline void SparseMatrixChunked::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs = filestream::FileStream(_path);
+  _fs = filestream::FileStream(_path.string());
 }
 
 inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
