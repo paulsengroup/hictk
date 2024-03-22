@@ -31,6 +31,8 @@ target_link_libraries(
   INTERFACE hictk::balancing
             hictk::common
             hictk::chromosome
+            hictk::expected_values_aggregator
+            hictk::pixel
             hictk::reference
             hictk::transformers)
 

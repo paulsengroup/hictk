@@ -18,6 +18,7 @@ install(
           chromosome
           common
           cooler
+          expected_values_aggregator
           file
           formatting
           genomic_interval

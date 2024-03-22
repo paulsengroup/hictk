@@ -4,8 +4,6 @@
 
 #pragma once
 
-// IWYU pragma: private, include "hictk/hic.hpp"
-
 #include <parallel_hashmap/btree.h>
 #include <parallel_hashmap/phmap.h>
 
@@ -19,7 +17,7 @@
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 
-namespace hictk::hic::internal {
+namespace hictk {
 
 class ExpectedValuesAggregator {
   std::shared_ptr<const BinTable> _bins{};
@@ -45,6 +43,7 @@ class ExpectedValuesAggregator {
   void compute_density();
 
   [[nodiscard]] const std::vector<double>& weights() const noexcept;
+  [[nodiscard]] std::vector<double> weights(const Chromosome& chrom, bool rescale = true) const;
 
   [[nodiscard]] double scaling_factor(const Chromosome& chrom) const;
   [[nodiscard]] const phmap::btree_map<Chromosome, double>& scaling_factors() const noexcept;
@@ -63,6 +62,6 @@ class ExpectedValuesAggregator {
   [[nodiscard]] double& at(const Chromosome& chrom1, const Chromosome& chrom2);
 };
 
-}  // namespace hictk::hic::internal
+}  // namespace hictk
 
 #include "./impl/expected_values_aggregator_impl.hpp"  // NOLINT

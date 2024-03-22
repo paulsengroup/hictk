@@ -18,7 +18,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk::hic::internal {
+namespace hictk {
 
 inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const BinTable> bins)
     : _bins(std::move(bins)) {
@@ -75,6 +75,20 @@ inline void ExpectedValuesAggregator::compute_density() {
 
 inline const std::vector<double> &ExpectedValuesAggregator::weights() const noexcept {
   return _weights;
+}
+
+inline std::vector<double> ExpectedValuesAggregator::weights(const Chromosome &chrom,
+                                                             bool rescale) const {
+  const auto num_bins = _bins->subset(chrom).size();
+  std::vector<double> w{_weights.begin(), _weights.begin() + static_cast<std::ptrdiff_t>(num_bins)};
+  if (!rescale) {
+    return w;
+  }
+
+  const auto sf = scaling_factor(chrom);
+  std::transform(w.begin(), w.end(), w.begin(), [&](const auto n) { return n / sf; });
+
+  return w;
 }
 
 inline double ExpectedValuesAggregator::scaling_factor(const Chromosome &chrom) const {
@@ -196,4 +210,4 @@ inline const Reference &ExpectedValuesAggregator::chromosomes() const noexcept {
   return _bins->chromosomes();
 }
 
-}  // namespace hictk::hic::internal
+}  // namespace hictk
