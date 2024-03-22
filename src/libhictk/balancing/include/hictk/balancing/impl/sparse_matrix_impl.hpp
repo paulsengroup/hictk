@@ -431,7 +431,7 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
                                              bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -466,7 +466,7 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
                                                  BS::thread_pool* tpool, bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -503,7 +503,7 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
                                                           bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -540,7 +540,7 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
                                           bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path);
+    filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -581,7 +581,7 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
   double norm_sum = 0.0;
 
   std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-  filestream::FileStream fs(_path);
+  filestream::FileStream fs(_path.string());
   std::string buff{};
 
   for (const auto& offset : _index) {
