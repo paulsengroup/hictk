@@ -392,6 +392,7 @@ inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
 inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
   try {
     if (!_path.empty() && std::filesystem::exists(_path)) {
+      _fs = filestream::FileStream{};
       std::filesystem::remove(_path);
     }
     // NOLINTNEXTLINE
