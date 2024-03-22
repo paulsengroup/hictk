@@ -37,9 +37,9 @@
 #include <vector>
 
 #include "hictk/chromosome.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/coarsen.hpp"

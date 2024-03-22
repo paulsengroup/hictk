@@ -9,6 +9,7 @@ add_subdirectory(common)
 add_subdirectory(cooler)
 add_subdirectory(expected_values_aggregator)
 add_subdirectory(file)
+add_subdirectory(filestream)
 add_subdirectory(formatting)
 add_subdirectory(genomic_interval)
 add_subdirectory(hic)
@@ -28,7 +29,9 @@ target_link_libraries(
             hictk::chromosome
             hictk::common
             hictk::cooler
+            hictk::expected_values_aggregator
             hictk::file
+            hictk::filestream
             hictk::format
             hictk::genomic_interval
             hictk::hic

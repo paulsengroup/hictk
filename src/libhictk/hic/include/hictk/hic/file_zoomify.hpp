@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "hictk/filestream.hpp"
 #include "hictk/hic/file_writer.hpp"
-#include "hictk/hic/filestream.hpp"
 
 namespace hictk::hic::internal {
 

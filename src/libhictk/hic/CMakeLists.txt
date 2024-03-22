@@ -32,6 +32,7 @@ target_link_libraries(
             hictk::common
             hictk::chromosome
             hictk::expected_values_aggregator
+            hictk::filestream
             hictk::pixel
             hictk::reference
             hictk::transformers)

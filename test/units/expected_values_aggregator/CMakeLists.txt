@@ -10,7 +10,8 @@ include(Catch)
 
 add_executable(hictk_expected_values_aggregator_tests)
 
-target_sources(hictk_expected_values_aggregator_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/expected_values_aggregator_test.cpp)
+target_sources(hictk_expected_values_aggregator_tests
+               PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/expected_values_aggregator_test.cpp)
 
 target_link_libraries(
   hictk_expected_values_aggregator_tests

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/hic/filestream.hpp"
+#include "hictk/filestream.hpp"
 
 #include <array>
 #include <cstddef>
@@ -18,9 +18,9 @@
 #include "hictk/type_traits.hpp"
 #include "tmpdir.hpp"
 
-namespace hictk::hic::test::filestream {
+namespace hictk::filestream::test {
 
-using namespace hictk::hic::internal::filestream;
+using namespace hictk::filestream;
 
 const auto path_plaintext = (datadir / "data.txt").string();  // NOLINT(cert-err58-cpp)
 const auto path_binary = (datadir / "data.zip").string();     // NOLINT(cert-err58-cpp)
@@ -409,4 +409,4 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   }
 }
 
-}  // namespace hictk::hic::test::filestream
+}  // namespace hictk::filestream::test

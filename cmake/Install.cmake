@@ -20,6 +20,7 @@ install(
           cooler
           expected_values_aggregator
           file
+          filestream
           formatting
           genomic_interval
           hic

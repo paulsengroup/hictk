@@ -6,18 +6,19 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <iterator>
 #include <string>
 
 #include "hictk/hic.hpp"
 
 using namespace hictk;
 
-namespace hictk::test::file {
+namespace hictk::test::expected_values_aggregator {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -49,4 +50,4 @@ TEST_CASE("ExpectedValuesAggregator", "[file][short]") {
   SECTION("invalid chromosome") { CHECK_THROWS(aggr.weights(Chromosome{99, "A", 10})); }
 }
 
-}  // namespace hictk::test::file
+}  // namespace hictk::test::expected_values_aggregator

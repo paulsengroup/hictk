@@ -25,8 +25,8 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
 

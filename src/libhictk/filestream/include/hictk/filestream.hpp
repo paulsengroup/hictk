@@ -4,8 +4,6 @@
 
 #pragma once
 
-// IWYU pragma: private, include "hictk/hic.hpp"
-
 #include <cstddef>
 #include <fstream>
 #include <ios>
@@ -15,7 +13,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace hictk::hic::internal::filestream {
+namespace hictk::filestream {
 
 class FileStream {
   std::string _path{};
@@ -95,6 +93,6 @@ class FileStream {
   [[nodiscard]] static std::ofstream open_file_write(const std::string &path,
                                                      std::ofstream::openmode mode);
 };
-}  // namespace hictk::hic::internal::filestream
+}  // namespace hictk::filestream
 
 #include "./impl/filestream_impl.hpp"  // NOLINT
