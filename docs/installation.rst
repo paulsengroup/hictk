@@ -20,7 +20,7 @@ hictk package for Linux and MacOS is available on bioconda and can be installed 
   hictk: /home/user/.miniconda3/envs/hictk/bin/hictk
 
   (hictk) user@dev:/tmp$ hictk --version
-  hictk-v0.0.10-bioconda
+  hictk-v0.0.11-bioconda
 
 If you are trying to install hictk on a Mac with an M chip, the above command may fail due to conda not being able to find a package for hictk.
 You can workaround the above issue by prefixing conda commands with :code:`CONDA_SUBDIR=osx-64`.
@@ -70,10 +70,10 @@ Downloading and running the latest stable release can be done as follows:
 .. code-block:: console
 
   # Using Docker, may require sudo
-  user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:0.0.10 --help
+  user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:0.0.11 --help
 
   # Using Singularity/Apptainer
-  user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:0.0.10 --help
+  user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:0.0.11 --help
 
   Blazing fast tools to work with .hic and .cool files.
   Usage: /usr/local/bin/hictk [OPTIONS] SUBCOMMAND
