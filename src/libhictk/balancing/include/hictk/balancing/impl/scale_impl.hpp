@@ -70,115 +70,116 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
   const auto matrix = mask_bins_and_init_buffers(first, last, offset, params.max_percentile,
                                                  params.tmpfile, params.chunk_size);
 
-  std::visit(
-      [&](const auto& m) {
-        VectorOfAtomicDecimals column(size(), 9);
-        VectorOfAtomicDecimals row(size(), 9);
+  std::visit([&](const auto& m) { balance(m, bins, params); }, matrix);
+}
 
-        m.multiply(row, _one, _tpool.get());
-        row.multiply(_biases);
+template <typename Matrix>
+inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
+  VectorOfAtomicDecimals column(size(), 9);
+  VectorOfAtomicDecimals row(size(), 9);
 
-        auto dr = _biases;
-        auto dc = _biases;
-        auto current = _biases;
+  m.multiply(row, _one, _tpool.get());
+  row.multiply(_biases);
 
-        std::vector<double> b_conv(size(), 0);
-        std::vector<double> b0(size(), 0);
-        std::vector<bool> bad_conv(size(), false);
-        _ber_conv = 10.0;
+  auto dr = _biases;
+  auto dc = _biases;
+  auto current = _biases;
 
-        for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
-                                       _iter < params.max_iters && _tot_iter < _max_tot_iters;
-             ++_iter, ++_tot_iter) {
-          update_weights(column, _bad, row, _z_target_vector, dr, m, _tpool.get());
-          column.multiply(dc);
+  std::vector<double> b_conv(size(), 0);
+  std::vector<double> b0(size(), 0);
+  std::vector<bool> bad_conv(size(), false);
+  _ber_conv = 10.0;
 
-          update_weights(row, _bad, column, _z_target_vector, dc, m, _tpool.get());
-          row.multiply(dr);
+  for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
+                                 _iter < params.max_iters && _tot_iter < _max_tot_iters;
+       ++_iter, ++_tot_iter) {
+    update_weights(column, _bad, row, _z_target_vector, dr, m, _tpool.get());
+    column.multiply(dc);
 
-          geometric_mean(dr, dc, _biases1);
-          const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
-          _convergence_stats.error = res.first;
-          const auto num_bad = res.second;
+    update_weights(row, _bad, column, _z_target_vector, dc, m, _tpool.get());
+    row.multiply(dr);
 
-          b0 = current;
-          current = _biases1;
+    geometric_mean(dr, dc, _biases1);
+    const auto res = compute_convergence_error(_biases1, current, _bad, params.tol);
+    _convergence_stats.error = res.first;
+    const auto num_bad = res.second;
 
-          _error_queue_iter.push(_convergence_stats.error);
-          if (_error_queue_iter.size() == 7) {
-            _error_queue_iter.pop();
-          }
+    b0 = current;
+    current = _biases1;
 
-          const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
+    _error_queue_iter.push(_convergence_stats.error);
+    if (_error_queue_iter.size() == 7) {
+      _error_queue_iter.pop();
+    }
 
-          SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
+    const auto frac_bad = static_cast<double>(num_bad) / static_cast<double>(_nnz_rows);
 
-          if (_convergence_stats.error < params.tol) {
-            SPDLOG_DEBUG(FMT_STRING("handle_convergence"));
-            const auto status = handle_convergenece(m, dr, dc, row);
-            if (status == ControlFlow::break_loop) {
-              break;
-            }
-            assert(status == ControlFlow::continue_loop);
-            reset_iter();
-            continue;
-          }
+    SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
-          if (_iter <= 4) {
-            continue;
-          }
+    if (_convergence_stats.error < params.tol) {
+      SPDLOG_DEBUG(FMT_STRING("handle_convergence"));
+      const auto status = handle_convergenece(m, dr, dc, row);
+      if (status == ControlFlow::break_loop) {
+        break;
+      }
+      assert(status == ControlFlow::continue_loop);
+      reset_iter();
+      continue;
+    }
 
-          // check whether convergence rate is satisfactory
-          const auto err1 = _error_queue_iter.front();
-          const auto err2 = _error_queue_iter.back();
-          if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
-            continue;
-          }
+    if (_iter <= 4) {
+      continue;
+    }
 
-          // handle divergence
-          SPDLOG_DEBUG(FMT_STRING("handle_divergence"));
-          _convergence_stats.diverged = true;
-          _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
-          const auto status =
-              handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
-          if (status == ControlFlow::break_loop) {
-            break;
-          }
-          if (status == ControlFlow::continue_loop) {
-            continue;
-          }
-        }
+    // check whether convergence rate is satisfactory
+    const auto err1 = _error_queue_iter.front();
+    const auto err2 = _error_queue_iter.back();
+    if (err2 * (1.0 + params.delta) < err1 && (_iter < params.max_iters)) {
+      continue;
+    }
 
-        m.multiply(column, _biases1, _tpool.get());
-        const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
+    // handle divergence
+    SPDLOG_DEBUG(FMT_STRING("handle_divergence"));
+    _convergence_stats.diverged = true;
+    _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
+    const auto status =
+        handle_diverged(m, b0, dr, dc, row, frac_bad, params.frac_bad_cutoff, params.tol);
+    if (status == ControlFlow::break_loop) {
+      break;
+    }
+    if (status == ControlFlow::continue_loop) {
+      continue;
+    }
+  }
 
-        if (_convergence_stats.error > params.tol) {
-          SPDLOG_DEBUG(FMT_STRING("error > tol: {} > {}"), _convergence_stats.error, params.tol);
-        }
-        if (row_sum_error > params.max_row_sum_error) {
-          SPDLOG_DEBUG(FMT_STRING("row_sum_error > params.max_row_sum_error: {} > {}"),
-                       row_sum_error, params.max_row_sum_error);
-        }
-        if (_low_cutoff > _upper_bound) {
-          SPDLOG_DEBUG(FMT_STRING("low_cutoff > upper_bound: {} > {}"), _low_cutoff, _upper_bound);
-        }
-        // convergence not achieved, return vector of nans
-        if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
-            _low_cutoff > _upper_bound) {
-          std::fill(_biases.begin(), _biases.end(), std::numeric_limits<double>::quiet_NaN());
-          _scale.push_back(std::numeric_limits<double>::quiet_NaN());
-          _chrom_offsets = bins.num_bin_prefix_sum();
-          return;
-        }
+  m.multiply(column, _biases1, _tpool.get());
+  const auto row_sum_error = compute_final_error(column, _biases1, _z_target_vector, _bad);
 
-        // convergence achieved
-        for (std::size_t i = 0; i < size(); ++i) {
-          _biases[i] = _bad[i] ? std::numeric_limits<double>::quiet_NaN() : 1.0 / _biases1[i];
-        }
-        _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
-        _chrom_offsets = bins.num_bin_prefix_sum();
-      },
-      matrix);
+  if (_convergence_stats.error > params.tol) {
+    SPDLOG_DEBUG(FMT_STRING("error > tol: {} > {}"), _convergence_stats.error, params.tol);
+  }
+  if (row_sum_error > params.max_row_sum_error) {
+    SPDLOG_DEBUG(FMT_STRING("row_sum_error > params.max_row_sum_error: {} > {}"), row_sum_error,
+                 params.max_row_sum_error);
+  }
+  if (_low_cutoff > _upper_bound) {
+    SPDLOG_DEBUG(FMT_STRING("low_cutoff > upper_bound: {} > {}"), _low_cutoff, _upper_bound);
+  }
+  // convergence not achieved, return vector of nans
+  if (_convergence_stats.error > params.tol || row_sum_error > params.max_row_sum_error ||
+      _low_cutoff > _upper_bound) {
+    std::fill(_biases.begin(), _biases.end(), std::numeric_limits<double>::quiet_NaN());
+    _scale.push_back(std::numeric_limits<double>::quiet_NaN());
+    _chrom_offsets = bins.num_bin_prefix_sum();
+    return;
+  }
+
+  // convergence achieved
+  for (std::size_t i = 0; i < size(); ++i) {
+    _biases[i] = _bad[i] ? std::numeric_limits<double>::quiet_NaN() : 1.0 / _biases1[i];
+  }
+  _scale.push_back(m.compute_scaling_factor_for_scale(_biases));
+  _chrom_offsets = bins.num_bin_prefix_sum();
 }
 
 inline std::size_t SCALE::size() const noexcept { return _biases.size(); }
