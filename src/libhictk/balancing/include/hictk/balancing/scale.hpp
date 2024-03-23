@@ -102,7 +102,7 @@ class SCALE {
   [[nodiscard]] static auto compute_gw(const File& f, const Params& params) -> Result;
 
   template <typename Matrix>
-  void balance(const Matrix& m, const Params& params);
+  void balance(const Matrix& m, const BinTable& bins, const Params& params);
 
   [[nodiscard]] static VC::Type map_type_to_vc(Type type) noexcept;
 
