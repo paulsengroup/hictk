@@ -71,7 +71,7 @@ Using git.
   git clone https://github.com/paulsengroup/hictk.git /tmp/hictk
 
   cd /tmp/hictk
-  git checkout v0.0.10  # Skip this step if you want to build the latest commit from main
+  git checkout v0.0.11  # Skip this step if you want to build the latest commit from main
 
 Compiling hictk
 ---------------
