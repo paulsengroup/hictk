@@ -98,6 +98,14 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
   _groups = open_groups(_root_group);
   _datasets = open_datasets(_root_group, cache_size_bytes, w0);
 
+    if (std::is_floating_point_v<PixelT>) {
+        _attrs.sum = 0.0;
+        _attrs.cis = 0.0;
+    } else {
+        _attrs.sum = std::int64_t(0);
+        _attrs.cis = std::int64_t(0);
+    }
+
   _bins = std::make_shared<BinTable>(init_bin_table(_datasets, *_attrs.bin_type, _attrs.bin_size));
   _index = std::make_shared<Index>(_bins);
 
