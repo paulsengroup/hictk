@@ -39,6 +39,7 @@ inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const 
   const auto max_n_bins = max_length / bin_size;
   _possible_distances.resize(max_n_bins, 0.0);
   _actual_distances.resize(max_n_bins, 0.0);
+  _weights.resize(max_n_bins, 0.0);
 }
 
 template <typename N>
@@ -123,6 +124,10 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
   // Re-implementation of the algorithm used by HiCTools:
   // https://github.com/aidenlab/HiCTools/blob/6b2fab8e78685deae199c33bbb167dcab1dbfbb3/src/hic/tools/utils/original/ExpectedValueCalculation.java#L184
 
+  if (_actual_distances.empty()) {
+    return;
+  }
+
   auto num_sum = _actual_distances.front();
   auto den_sum = _possible_distances.front();
   std::size_t bound1 = 0;
@@ -131,9 +136,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
   const auto shot_noise_minimum = 400.0;
   const auto max_num_bins = _actual_distances.size();
 
-  _weights.resize(max_num_bins);
-  std::fill(_weights.begin(), _weights.end(), 0.0);
-
+  assert(_weights.size() == max_num_bins);
   for (std::size_t ii = 0; ii < max_num_bins; ii++) {
     if (num_sum < shot_noise_minimum) {
       while (num_sum < shot_noise_minimum && ++bound2 < max_num_bins) {
