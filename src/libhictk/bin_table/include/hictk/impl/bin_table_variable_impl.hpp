@@ -119,6 +119,10 @@ inline BinTableVariable<I> BinTableVariable<I>::subset(const Chromosome &chrom) 
     throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom.name()));
   }
 #endif
+  if (_chroms.size() == 1 && _chroms.contains(chrom)) {
+    return *this;
+  }
+
   std::vector<I> start_pos{};
   std::vector<I> end_pos{};
 

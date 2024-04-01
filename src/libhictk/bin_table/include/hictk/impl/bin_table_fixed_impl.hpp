@@ -83,6 +83,9 @@ inline BinTableFixed BinTableFixed::subset(const Chromosome &chrom) const {
     throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom.name()));
   }
 #endif
+  if (_chroms.size() == 1 && _chroms.contains(chrom)) {
+    return *this;
+  }
   const auto offset = at(chrom, 0).id();
   return {Reference{chrom}, _bin_size, offset};
 }
