@@ -48,6 +48,14 @@ TEST_CASE("ExpectedValuesAggregator", "[file][short]") {
   }
 
   SECTION("invalid chromosome") { CHECK_THROWS(aggr.weights(Chromosome{99, "A", 10})); }
+
+  SECTION("small chromosome") {
+    const BinTable bins{{Chromosome{0, "chr1", 5}}, 10};
+
+    ExpectedValuesAggregator aggr1(std::make_shared<const BinTable>(bins));
+    CHECK_NOTHROW(aggr1.compute_density());
+    CHECK(aggr1.weights().empty());
+  }
 }
 
 }  // namespace hictk::test::expected_values_aggregator
