@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Boost REQUIRED COMPONENTS headers filesystem)
 find_package(CLI11 REQUIRED)
 find_package(FMT REQUIRED)
 find_package(readerwriterqueue REQUIRED)
@@ -44,12 +43,10 @@ target_link_libraries(hictk PRIVATE hictk_project_options hictk_project_warnings
 target_link_system_libraries(
   hictk
   PRIVATE
-  Boost::headers
   CLI11::CLI11
   readerwriterqueue::readerwriterqueue
   std::filesystem
   PUBLIC
-  Boost::filesystem
   fmt::fmt-header-only
   spdlog::spdlog_header_only
   Threads::Threads)
