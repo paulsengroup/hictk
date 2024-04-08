@@ -8,7 +8,10 @@ set(targets
 
 include(GNUInstallDirs)
 foreach(tgt ${targets})
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/src/libhictk/${tgt}/include/hictk" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/src/libhictk/${tgt}/include/hictk"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT Libraries)
 endforeach()
 
 install(
@@ -31,6 +34,7 @@ install(
           transformers
           variant
   EXPORT libhictk-targets
+  COMPONENT Libraries
   FILE_SET HEADERS
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -43,6 +47,7 @@ install(
 
 install(
   EXPORT libhictk-targets
+  COMPONENT Libraries
   FILE hictkTargets.cmake
   NAMESPACE hictk::
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/")
@@ -52,4 +57,12 @@ configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/hictkConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/")
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk")
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/hictkConfig.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk"
+  COMPONENT Libraries)
+
+install(
+  FILES "${PROJECT_SOURCE_DIR}/LICENSE"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/hictk/"
+  COMPONENT Libraries)
