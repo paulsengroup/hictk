@@ -110,6 +110,10 @@ inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std:
     throw std::runtime_error("query is empty");
   }
 
+  if (buffer.back() == '\r') {
+    buffer.resize(buffer.size() - 1);
+  }
+
   if (const auto match = chroms.find(buffer); match != chroms.end()) {
     return GenomicInterval{*match};
   }
@@ -141,6 +145,10 @@ inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::
                                                   char sep) {
   if (buffer.empty()) {
     throw std::runtime_error("interval is empty");
+  }
+
+  if (buffer.back() == '\r') {
+    buffer = buffer.substr(0, buffer.size() - 1);
   }
 
   const auto p1 = buffer.find(sep);

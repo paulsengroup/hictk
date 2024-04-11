@@ -143,6 +143,7 @@ TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
     SECTION("valid") {
       CHECK(ThinPixel<N>::from_coo(bins, "0\t1\t1") == expected);
       CHECK(ThinPixel<N>::from_coo("0\t1\t1") == expected);
+      CHECK(ThinPixel<N>::from_coo("0\t1\t1\r") == expected);
     }
 
     SECTION("invalid") {
@@ -191,13 +192,14 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
       CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1") == expected1);
       CHECK(Pixel<N>::from_bg2(bins, "chr1\t248956421\t248956422\tchr1\t248956421\t248956422\t1") ==
             expected2);
+      CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1\r") == expected1);
       CHECK(Pixel<N>::from_bg2(bins, "chr1\t0\t10\tchr1\t10\t20\t1\ta\tb\tc") == expected1);
     }
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr999\t0\t10\tchr1\t0\t10\t1"),
                         Catch::Matchers::ContainsSubstring("chromosome \"chr999\" not found"));
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, ""),
-                        Catch::Matchers::ContainsSubstring("expected 7 or more fields, found 0"));
+                        Catch::Matchers::ContainsSubstring("found an empty line"));
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr1\t"),
                         Catch::Matchers::ContainsSubstring("expected 7 or more fields, found 1"));
       CHECK_THROWS_WITH(Pixel<N>::from_bg2(bins, "chr1\ta\t10\tchr1\t10\t20\t1"),
@@ -212,11 +214,12 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
       CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-"));
       CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t248956421\t+\tchr1\t248956421\t-") ==
             expected2);
+      CHECK(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1\t15\t-\r"));
     }
 
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, ""),
-                        Catch::Matchers::ContainsSubstring("expected 6 or more fields, found 0"));
+                        Catch::Matchers::ContainsSubstring("found an empty line"));
       CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr999\t5\t+\tchr1\t15\t-"),
                         Catch::Matchers::ContainsSubstring("chromosome \"chr999\" not found"));
       CHECK_THROWS_WITH(Pixel<N>::from_validpair(bins, "read_id\tchr1\t5\t+\tchr1"),
