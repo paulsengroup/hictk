@@ -200,7 +200,7 @@ std::pair<std::string, std::string> parse_bedpe(std::string_view line) {
   }
 
   if (line.back() == '\r') {
-   line.resize(line.size() - 1);
+   line = line.substr(0, line.size() - 1);
   }
 
   auto next_token = [&]() {
