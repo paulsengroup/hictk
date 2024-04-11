@@ -111,7 +111,7 @@ inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std:
   }
 
   if (buffer.back() == '\r') {
-    buffer = buffer.substr(0, buffer.size() - 1);
+    buffer.resize(buffer.size() - 1);
   }
 
   if (const auto match = chroms.find(buffer); match != chroms.end()) {
