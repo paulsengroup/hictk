@@ -195,6 +195,14 @@ void dump_resolutions(std::string_view uri, std::string_view format, std::uint32
 }
 
 std::pair<std::string, std::string> parse_bedpe(std::string_view line) {
+  if (line.empty()) {
+    throw std::runtime_error("found an empty line");
+  }
+
+  if (line.back() == '\r') {
+    line = line.substr(0, line.size() - 1);
+  }
+
   auto next_token = [&]() {
     assert(!line.empty());
     const auto pos1 = line.find('\t');

@@ -53,6 +53,9 @@ generate_mappings_remove_chr_prefix_prefix(std::string_view uri) {
     if (buff.empty()) {
       continue;
     }
+    if (buff.back() == '\r') {
+      buff = buff.substr(0, buff.size() - 1);
+    }
     const auto sep_pos = buff.find('\t');
     if (sep_pos == std::string::npos) {
       throw std::runtime_error(fmt::format(
