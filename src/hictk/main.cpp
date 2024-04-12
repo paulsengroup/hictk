@@ -60,7 +60,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
         },
         config);
 
-    return std::make_tuple(0, subcmd, config);
+    return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
     return std::make_tuple(cli.exit(e), Cli::subcommand::help, Config());

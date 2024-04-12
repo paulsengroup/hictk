@@ -77,6 +77,7 @@ auto Cli::parse_arguments() -> Config {
 }
 
 int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
+int Cli::exit() const noexcept { return _exit_code; }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
   switch (s) {
