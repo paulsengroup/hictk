@@ -191,8 +191,6 @@ void Cli::transform_args_merge_subcommand() {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 
-  c.tmp_dir /= c.output_file.filename().string() + ".tmp";
-
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;

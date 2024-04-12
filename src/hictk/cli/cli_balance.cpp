@@ -409,8 +409,6 @@ void Cli::transform_args_ice_balance_subcommand() {
     input_path = cooler::File(c.path_to_input.string()).path();
   }
 
-  c.tmp_dir /= input_path.filename().string() + ".tmp";
-
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
@@ -435,8 +433,6 @@ void Cli::transform_args_scale_balance_subcommand() {
   if (input_format == "cool") {
     input_path = cooler::File(c.path_to_input.string()).path();
   }
-
-  c.tmp_dir /= input_path.filename().string() + ".tmp";
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

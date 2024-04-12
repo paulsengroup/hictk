@@ -116,7 +116,7 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto chromosomes = cooler::File(base_uri).chromosomes();
   const auto& resolutions = c.resolutions;
 
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
                                         c.genome, c.threads, c.chunk_size, c.tmp_dir,
                                         c.compression_lvl, c.skip_all_vs_all_matrix);

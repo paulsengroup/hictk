@@ -143,8 +143,6 @@ void Cli::validate_fix_mcool_subcommand() const {
 void Cli::transform_args_fix_mcool_subcommand() {
   auto& c = std::get<FixMcoolConfig>(_config);
 
-  c.tmp_dir /= (c.path_to_input.filename().string() + ".tmp");
-
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
