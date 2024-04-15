@@ -265,13 +265,13 @@ int balance_subcmd(const BalanceSCALEConfig& c) {
 int balance_subcmd(const BalanceVCConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using VC ({})"), c.name);
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::VC>(c);
+    return balance_hic<balancing::VC>(c, "");
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::VC>(c);
+    return balance_multires_cooler<balancing::VC>(c, "");
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::VC>(clr, c);
+  return balance_cooler<balancing::VC>(clr, c, "");
 }
 
 }  // namespace hictk::tools
