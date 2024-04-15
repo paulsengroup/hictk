@@ -74,7 +74,7 @@ static Stats ingest_pixels_hic(const LoadConfig& c) {
   const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
 
   [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir, true};
-  return ingest_pixels_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
+  return ingest_pixels_hic(c.output_path, tmpdir(), chroms, c.bin_size, c.assembly, c.offset,
                            c.skip_all_vs_all_matrix, format, c.threads, c.batch_size,
                            c.compression_lvl, c.force);
 }
@@ -86,7 +86,7 @@ static Stats ingest_pixels_cooler(const LoadConfig& c) {
 
   const internal::TmpDir tmpdir{c.tmp_dir, true};
   const auto tmp_cooler_path =
-      (c.tmp_dir / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
+      (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
 
   return c.assume_sorted
              ? ingest_pixels_sorted_cooler(c.output_path, chroms, c.bin_size, c.assembly, c.offset,
