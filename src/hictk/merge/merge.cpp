@@ -25,7 +25,7 @@ static void merge_coolers(const MergeConfig& c) {
 
 static void merge_hics(const MergeConfig& c) {
   SPDLOG_INFO(FMT_STRING("begin merging {} .hic files..."), c.input_files.size());
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hic::utils::merge(c.input_files.begin(), c.input_files.end(), c.output_file.string(),
                     c.resolution, tmpdir(), c.force, c.chunk_size, c.threads, c.compression_lvl,
                     c.skip_all_vs_all_matrix);

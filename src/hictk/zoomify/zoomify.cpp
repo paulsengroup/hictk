@@ -102,7 +102,7 @@ void zoomify_hic(const ZoomifyConfig& c) {
 
   print_zooming_plan_hic(c.path_to_input.string(), c.resolutions);
 
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hic::internal::HiCFileZoomify{c.path_to_input.string(),
                                 c.path_to_output.string(),
                                 c.resolutions,
