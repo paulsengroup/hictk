@@ -235,7 +235,7 @@ static int balance_multires_cooler(const BalanceConfig& c) {
 
 int balance_subcmd(const BalanceICEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using ICE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir, true};
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
     return balance_hic<balancing::ICE>(c);
@@ -249,7 +249,7 @@ int balance_subcmd(const BalanceICEConfig& c) {
 
 int balance_subcmd(const BalanceSCALEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using SCALE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir, true};
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
     return balance_hic<balancing::SCALE>(c);
