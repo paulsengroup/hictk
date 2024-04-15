@@ -236,30 +236,34 @@ static int balance_multires_cooler(const BalanceConfig& c, const std::filesystem
 
 int balance_subcmd(const BalanceICEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using ICE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir, true};
+  const auto tmp_dir =
+      !c.in_memory ? std::make_unique<const internal::TmpDir>(c.tmp_dir, true) : nullptr;
+  const std::filesystem::path& tmp_dir_path = tmp_dir ? (*tmp_dir)() : "";
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::ICE>(c, tmp_dir());
+    return balance_hic<balancing::ICE>(c, tmp_dir_path);
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::ICE>(c, tmp_dir());
+    return balance_multires_cooler<balancing::ICE>(c, tmp_dir_path);
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::ICE>(clr, c, tmp_dir());
+  return balance_cooler<balancing::ICE>(clr, c, tmp_dir_path);
 }
 
 int balance_subcmd(const BalanceSCALEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using SCALE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir, true};
+  const auto tmp_dir =
+      !c.in_memory ? std::make_unique<const internal::TmpDir>(c.tmp_dir, true) : nullptr;
+  const std::filesystem::path& tmp_dir_path = tmp_dir ? (*tmp_dir)() : "";
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::SCALE>(c, tmp_dir());
+    return balance_hic<balancing::SCALE>(c, tmp_dir_path);
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::SCALE>(c, tmp_dir());
+    return balance_multires_cooler<balancing::SCALE>(c, tmp_dir_path);
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::SCALE>(clr, c, tmp_dir());
+  return balance_cooler<balancing::SCALE>(clr, c, tmp_dir_path);
 }
 
 int balance_subcmd(const BalanceVCConfig& c) {
