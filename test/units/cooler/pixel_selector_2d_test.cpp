@@ -48,10 +48,19 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
     SECTION("query as dense matrix") {
       auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto matrix = selector.read_dense<T>();
+      auto matrix = selector.read_dense<T>();
       CHECK(matrix.rows() == 5);
       CHECK(matrix.cols() == 15);
       CHECK(matrix.sum() == 72);
+
+      SECTION("regression PR #154") {
+        selector = f.fetch("1:0-5,000,000", "1:2,500,000-7,500,000");
+        matrix = selector.read_dense<T>();
+
+        CHECK(matrix.rows() == 50);
+        CHECK(matrix.cols() == 50);
+        CHECK(matrix.sum() == 442);
+      }
     }
 #endif
 

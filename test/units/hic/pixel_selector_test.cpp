@@ -166,10 +166,19 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
         SECTION("as dense matrix") {
           auto sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
-          const auto matrix = sel.read_dense<std::int32_t>();
+          auto matrix = sel.read_dense<std::int32_t>();
           CHECK(matrix.rows() == 236);
           CHECK(matrix.cols() == 236);
           CHECK(matrix.sum() == 28'650'555);
+
+          SECTION("regression PR #154") {
+            sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP)
+                      .fetch("chr2L:0-5,000,000", "chr2L:2,500,000-7,500,000");
+            matrix = sel.read_dense<std::int32_t>();
+            CHECK(matrix.rows() == 50);
+            CHECK(matrix.cols() == 50);
+            CHECK(matrix.sum() == 2'612'272);
+          }
         }
 #endif
         SECTION("overloads return identical results") {
