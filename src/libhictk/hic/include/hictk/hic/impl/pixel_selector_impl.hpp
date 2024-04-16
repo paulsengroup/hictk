@@ -195,9 +195,10 @@ template <typename N>
     matrix(i1, i2) = p.count;
 
     if (mirror_matrix) {
-      if (i2 - i1 < num_rows && i1 < num_cols && i2 < num_rows) {
+      const auto delta = i2 - i1;
+      if (delta >= 0 && delta < num_rows && i1 < num_cols && i2 < num_rows) {
         matrix(i2, i1) = p.count;
-      } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
+      } else if ((delta < 0 || delta > num_cols) && i1 < num_cols && i2 < num_rows) {
         const auto i3 = static_cast<std::int64_t>(p.bin2_id - offset1);
         const auto i4 = static_cast<std::int64_t>(p.bin1_id - offset2);
 
