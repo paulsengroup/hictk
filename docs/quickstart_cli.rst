@@ -12,7 +12,7 @@ Next, verify that hictk was installed correctly with:
 .. code-block:: console
 
   user@dev:/tmp$ hictk --version
-  hictk-v0.0.11
+  hictk-v0.0.12
 
 Command line interface
 ======================
