@@ -200,7 +200,10 @@ template <typename N>
       } else if (i2 - i1 > num_cols && i1 < num_cols && i2 < num_rows) {
         const auto i3 = static_cast<std::int64_t>(p.bin2_id - offset1);
         const auto i4 = static_cast<std::int64_t>(p.bin1_id - offset2);
-        matrix(i3, i4) = p.count;
+
+        if (i3 >= 0 && i3 < num_rows && i4 >= 0 && i4 < num_cols) {
+          matrix(i3, i4) = p.count;
+        }
       }
     }
   });
