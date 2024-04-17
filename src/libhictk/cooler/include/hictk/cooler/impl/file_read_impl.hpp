@@ -163,20 +163,7 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   PixelCoordinates coord2{bins().at(chrom2, start2),
                           bins().at(chrom2, end2 - (std::min)(end2, 1U))};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord2.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
-  // clang-format off
-  return PixelSelector(_index,
-                       dataset("pixels/bin1_id"),
-                       dataset("pixels/bin2_id"),
-                       dataset("pixels/count"),
-                       coord1,
-                       coord2,
-                       std::move(weights)
-  );
-  // clang-format on
+  return fetch(coord1, coord2, std::move(weights));
 }
 inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
   return fetch(normalization(normalization_));
@@ -213,10 +200,6 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
   return fetch(coord1, coord2, std::move(weights));
 }
 

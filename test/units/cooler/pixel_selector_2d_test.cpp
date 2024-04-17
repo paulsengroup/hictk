@@ -18,8 +18,14 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
   SECTION("cis") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:5000000-5500000", "1:5000000-6500000") ==
-            f.fetch("1", 5000000, 5500000, "1", 5000000, 6500000));
+      const auto sel1 = f.fetch("1", "1");
+      const auto sel2 = f.fetch("1", 0, 197195432, "1", 0, 197195432);
+      CHECK(sel1 == sel2);
+
+      const auto& pixels1 = sel1.read_all<T>();
+      const auto& pixels2 = sel2.read_all<T>();
+
+      REQUIRE(pixels1.size() == pixels2.size());
     }
 
     SECTION("valid") {
@@ -72,8 +78,15 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
   SECTION("trans") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:48000000-50000000", "4:30000000-35000000") ==
-            f.fetch("1", 48000000, 50000000, "4", 30000000, 35000000));
+      const auto sel1 = f.fetch("1", "4");
+      const auto sel2 = f.fetch("1", 0, 197195432, "4", 0, 155630120, nullptr);
+
+      CHECK(sel1 == sel2);
+
+      const auto& pixels1 = sel1.read_all<T>();
+      const auto& pixels2 = sel2.read_all<T>();
+
+      REQUIRE(pixels1.size() == pixels2.size());
     }
     SECTION("valid") {
       auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
