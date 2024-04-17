@@ -165,7 +165,7 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
 
   const auto &current_chrom = coord1.bin1.chrom();
   const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord2.bin1.chrom().id() + 1));
+      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
   read_index_chunk({current_chrom, next_chrom});
   // clang-format off
   return PixelSelector(_index,
