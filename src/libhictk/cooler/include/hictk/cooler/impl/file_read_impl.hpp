@@ -137,7 +137,7 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return fetch(range1, std::move(weights));
+    return fetch(range1, std::move(weights), query_type);
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
