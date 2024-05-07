@@ -5,3 +5,4 @@
 add_subdirectory(bin_table)
 add_subdirectory(fetch_and_sum)
 add_subdirectory(hic)
+add_subdirectory(pixel_merger)
