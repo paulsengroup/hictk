@@ -74,8 +74,7 @@ struct Config {
   return buff;
 }
 
-[[nodiscard]] std::uint64_t run_benchmark(const BinTable &bins,
-                                          const std::vector<Bin> &queries) {
+[[nodiscard]] std::uint64_t run_benchmark(const BinTable &bins, const std::vector<Bin> &queries) {
   const auto t0 = std::chrono::system_clock::now();
   for (const auto &b : queries) {
     std::ignore = bins.at(b.chrom().name(), b.start());
