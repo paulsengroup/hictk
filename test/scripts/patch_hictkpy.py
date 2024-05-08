@@ -40,7 +40,7 @@ if __name__ == "__main__":
     git_tag = args["git_tag"]
 
     pattern = re.compile(
-        r"(FetchContent_Declare\(\s+hictk\s+)URL.*(\s+)URL_HASH.*(\s+EXCLUDE_FROM_ALL\))"
+        r"(FetchContent_Declare\(\s+hictk\s+)URL.*(\s+)URL_HASH.*(\s+EXCLUDE_FROM_ALL\s+SYSTEM\))"
     )
 
     with open(args["cmakelists"]) as f:
