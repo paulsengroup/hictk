@@ -48,12 +48,12 @@ const std::vector<Chromosome> hg38{
 
 struct Config {
   std::uint32_t resolution{1'000};
-  std::size_t batch_size{100'000};
+  std::size_t batch_size{10'000'000};
   std::size_t iterations{1};
   std::uint64_t seed{123456789};
 };
 
-[[nodiscard]] static std::vector<std::uint64_t> init_bin_ids(const BinTableFixed &bins,
+[[nodiscard]] static std::vector<std::uint64_t> init_bin_ids(const BinTable &bins,
                                                              std::size_t batch_size,
                                                              std::uint64_t seed) {
   std::vector<std::uint64_t> buff(batch_size);
@@ -65,7 +65,7 @@ struct Config {
   return buff;
 }
 
-[[nodiscard]] static std::vector<Bin> init_bins(const BinTableFixed &bins,
+[[nodiscard]] static std::vector<Bin> init_bins(const BinTable &bins,
                                                 const std::vector<std::uint64_t> &bin_ids) {
   std::vector<Bin> buff(bin_ids.size());
   for (std::size_t i = 0; i < bin_ids.size(); ++i) {
@@ -74,19 +74,7 @@ struct Config {
   return buff;
 }
 
-[[nodiscard]] std::uint64_t run_benchmark(const BinTableFixed &bins,
-                                          const std::vector<std::uint64_t> &queries) {
-  const auto t0 = std::chrono::system_clock::now();
-  for (const auto &q : queries) {
-    std::ignore = bins.at(q);
-  }
-  const auto t1 = std::chrono::system_clock::now();
-
-  return static_cast<std ::uint64_t>(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
-}
-
-[[nodiscard]] std::uint64_t run_benchmark(const BinTableFixed &bins,
+[[nodiscard]] std::uint64_t run_benchmark(const BinTable &bins,
                                           const std::vector<Bin> &queries) {
   const auto t0 = std::chrono::system_clock::now();
   for (const auto &b : queries) {
@@ -112,28 +100,20 @@ int main(int argc, char **argv) noexcept {
   try {
     cli.parse(argc, argv);
 
-    const BinTableFixed bin_table{hg38.begin(), hg38.end(), config.resolution};
+    const BinTable bin_table{hg38.begin(), hg38.end(), config.resolution};
     const auto bin_ids = init_bin_ids(bin_table, config.batch_size, config.seed);
     const auto bins = init_bins(bin_table, bin_ids);
 
-    std::uint64_t elapsed_time1 = 0;
-    std::uint64_t elapsed_time2 = 0;
+    std::uint64_t elapsed_time = 0;
     for (std::size_t i = 0; i < config.iterations; ++i) {
-      elapsed_time1 += run_benchmark(bin_table, bin_ids);
-      elapsed_time2 += run_benchmark(bin_table, bins);
+      elapsed_time += run_benchmark(bin_table, bins);
     }
 
-    const auto avg_time1 =
-        (static_cast<double>(elapsed_time1) / static_cast<double>(config.iterations)) / 1.0e9;
-    const auto avg_time2 =
-        (static_cast<double>(elapsed_time2) / static_cast<double>(config.iterations)) / 1.0e9;
+    const auto elapsed_seconds = static_cast<double>(elapsed_time) / 1.0e9;
+    const auto throughput =
+        static_cast<double>(config.batch_size * config.iterations) / elapsed_seconds;
 
-    fmt::print(
-        FMT_STRING("hictk::BinTableFixed query by bin ID: {:.4g}s ({} iters of {} queries)\n"),
-        avg_time1, config.iterations, config.batch_size);
-    fmt::print(FMT_STRING("hictk::BinTableFixed query by genomic coordinates: {:.4g}s ({} iters of "
-                          "{} queries)\n"),
-               avg_time2, config.iterations, config.batch_size);
+    fmt::print(FMT_STRING("hictk::BinTable::at(chrom, pos) throughput: {:.4} num/s\n"), throughput);
 
   } catch (const CLI::ParseError &e) {
     return cli.exit(e);
