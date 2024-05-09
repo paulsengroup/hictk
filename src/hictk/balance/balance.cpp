@@ -141,7 +141,7 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c,
                     c.name, f.path()));
   }
 
-  const auto tmpfile = tmp_dir / std::filesystem::path{f.path()}.filename();
+  const auto tmpfile = tmp_dir.empty() ? "" : tmp_dir / std::filesystem::path{f.path()}.filename();
   const auto params = init_params<Balancer>(c, tmpfile);
 
   typename Balancer::Type mode{};
