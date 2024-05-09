@@ -52,8 +52,8 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                                  const std::vector<double>& variance,
                                  const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
-  const auto path = fmt::format(FMT_STRING("{}/bins/{}"), grp, c.name);
-  const auto link_path = fmt::format(FMT_STRING("{}/bins/weight"), grp);
+  const auto path = fmt::format(FMT_STRING("{}bins/{}"), grp, c.name);
+  const auto link_path = fmt::format(FMT_STRING("{}bins/weight"), grp);
 
   SPDLOG_INFO(FMT_STRING("Writing weights to {}::{}..."), file, path);
   const HighFive::File clr(file, HighFive::File::ReadWrite);
