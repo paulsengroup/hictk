@@ -113,7 +113,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "Defaults to ICE, INTER_ICE and GW_ICE when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
