@@ -971,10 +971,19 @@ inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
   _buff->clear();
   _i = 0;
 
-  const auto bin1_id = first->bin1_id;
-  while (first != last && first->bin1_id == bin1_id) {
-    _buff->push_back(*first++);
+  if (!_sorted) {
+    while (first != last && _buff->size() != 100'000) {
+      _buff->push_back(*first);
+      ++first;
+    }
+  } else {
+    const auto bin1_id = first->bin1_id;
+    while (first != last && first->bin1_id == bin1_id) {
+      _buff->push_back(*first);
+      ++first;
+    }
   }
+
   _its->emplace(Pair{first, last});
 }
 

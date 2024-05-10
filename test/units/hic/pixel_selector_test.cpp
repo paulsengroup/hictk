@@ -423,11 +423,18 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
     SECTION(version) {
       SECTION("iterable") {
         auto sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
-        const auto buffer = sel.read_all<double>();
-        REQUIRE(buffer.size() == 890384);
+        SECTION("sorted") {
+          const auto buffer = sel.read_all<double>();
+          REQUIRE(buffer.size() == 890384);
 
-        CHECK_THAT(sumCounts(buffer), Catch::Matchers::WithinRel(119208613, 1.0e-6));
-        CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+          CHECK_THAT(sumCounts(buffer), Catch::Matchers::WithinRel(119208613, 1.0e-6));
+          CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+        }
+        SECTION("unsorted") {
+          const auto buffer = sel.read_all<double>();
+          REQUIRE(std::distance(sel.begin<std::uint32_t>(false), sel.end<std::uint32_t>()) ==
+                  890384);
+        }
       }
 
 #ifdef HICTK_WITH_EIGEN

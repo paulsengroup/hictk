@@ -119,7 +119,7 @@ int main(int argc, char **argv) noexcept {
     return cli.exit(e);
   } catch (const std::exception &e) {
     assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}."), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
                e.what());
     return 1;
   } catch (...) {
