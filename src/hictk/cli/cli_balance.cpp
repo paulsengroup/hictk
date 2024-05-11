@@ -63,6 +63,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
   sc.add_option(
       "--ignore-diags",

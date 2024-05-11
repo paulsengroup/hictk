@@ -86,6 +86,7 @@ void Cli::make_merge_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
 
   sc.add_flag(
