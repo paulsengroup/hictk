@@ -85,7 +85,7 @@ class TmpDir {
       const std::filesystem::path& tmpdir) {
     if (!std::filesystem::exists(tmpdir)) {
       throw std::runtime_error(fmt::format(
-          FMT_STRING("unable to use path \"{}\" as TmpDir: path does not exists"), tmpdir));
+          FMT_STRING("unable to use path {} as TmpDir: path does not exists"), tmpdir));
     }
 #ifdef _WIN32
     std::random_device rd;
@@ -109,7 +109,7 @@ class TmpDir {
     auto dir = (tmpdir / "hictk-tmp-XXXXXXXXXX").string();
     if (!mkdtemp(dir.data())) {
       throw std::runtime_error(fmt::format(
-          FMT_STRING("unable to use path \"{}\" as TmpDir: failed to create a temporary folder"),
+          FMT_STRING("unable to use path {} as TmpDir: failed to create a temporary folder"),
           tmpdir));
     }
     return {dir};
