@@ -87,7 +87,9 @@ void Cli::make_convert_subcommand() {
   sc.add_option(
       "--tmpdir",
       c.tmp_dir,
-      "Path where to store temporary files.");
+      "Path where to store temporary files.")
+      ->check(CLI::ExistingDirectory)
+      ->capture_default_str();
   sc.add_option(
       "--chunk-size",
       c.chunk_size,
