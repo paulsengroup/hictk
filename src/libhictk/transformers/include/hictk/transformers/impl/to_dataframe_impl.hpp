@@ -14,7 +14,13 @@ namespace hictk::transformers {
 template <typename PixelIt>
 inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last,
                                          std::shared_ptr<const BinTable> bins)
-    : _first(std::move(first)), _last(std::move(last)), _bins(std::move(bins)) {}
+    : _first(std::move(first)),
+      _last(std::move(last)),
+      _bins(std::move(bins)),
+      _chrom1(_bins ? arrow::StringDictionary32Builder{make_chrom_dict(_bins->chromosomes())}
+                    : arrow::StringDictionary32Builder{}),
+      _chrom2(_bins ? arrow::StringDictionary32Builder{make_chrom_dict(_bins->chromosomes())}
+                    : arrow::StringDictionary32Builder{}) {}
 
 template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::operator()() {
@@ -45,10 +51,10 @@ template <typename PixelIt>
 inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema() const {
   return arrow::schema({
       // clang-format off
-      arrow::field("chrom1", arrow::utf8()),
+      arrow::field("chrom1", arrow::dictionary(arrow::uint32(), arrow::utf8(), true)),
       arrow::field("start1", arrow::uint32()),
       arrow::field("end1",   arrow::uint32()),
-      arrow::field("chrom2", arrow::utf8()),
+      arrow::field("chrom2", arrow::dictionary(arrow::uint32(), arrow::utf8(), true)),
       arrow::field("start2", arrow::uint32()),
       arrow::field("end2",   arrow::uint32()),
       arrow::field("count",  _count.type())
@@ -107,6 +113,19 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
   return arrow::Table::Make(bg2_schema(),
                             {finish(_chrom1), finish(_start1), finish(_end1), finish(_chrom2),
                              finish(_start2), finish(_end2), finish(_count)});
+}
+
+template <typename PixelIt>
+std::shared_ptr<arrow::Array> ToDataFrame<PixelIt>::make_chrom_dict(
+    const hictk::Reference& chroms) {
+  arrow::StringBuilder builder{};
+  for (const auto& chrom : chroms) {
+    if (!chrom.is_all()) {
+      append(builder, std::string{chrom.name()});
+    }
+  }
+
+  return finish(builder);
 }
 
 }  // namespace hictk::transformers

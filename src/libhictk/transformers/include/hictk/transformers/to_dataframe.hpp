@@ -75,11 +75,11 @@ class ToDataFrame {
   arrow::UInt64Builder _bin1_id{};
   arrow::UInt64Builder _bin2_id{};
 
-  arrow::StringBuilder _chrom1{};
+  arrow::StringDictionary32Builder _chrom1{};
   arrow::UInt32Builder _start1{};
   arrow::UInt32Builder _end1{};
 
-  arrow::StringBuilder _chrom2{};
+  arrow::StringDictionary32Builder _chrom2{};
   arrow::UInt32Builder _start2{};
   arrow::UInt32Builder _end2{};
 
@@ -105,8 +105,11 @@ class ToDataFrame {
   template <typename ArrayBuilder>
   [[nodiscard]] static std::shared_ptr<arrow::Array> finish(ArrayBuilder& builder);
 
-  [[nodiscard]] std::shared_ptr<const arrow::Table> make_coo_table();
-  [[nodiscard]] std::shared_ptr<const arrow::Table> make_bg2_table();
+  [[nodiscard]] std::shared_ptr<arrow::Table> make_coo_table();
+  [[nodiscard]] std::shared_ptr<arrow::Table> make_bg2_table();
+
+  [[nodiscard]] static std::shared_ptr<arrow::Array> make_chrom_dict(
+      const hictk::Reference& chroms);
 };
 
 }  // namespace hictk::transformers
