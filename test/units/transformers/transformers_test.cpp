@@ -21,12 +21,19 @@
 #include "hictk/transformers/join_genomic_coords.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/transformers/stats.hpp"
+#include "hictk/transformers/to_dataframe.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
 namespace hictk::test::transformers {
+
+#ifdef HICTK_WITH_ARROW
+constexpr auto TEST_TODATAFRAME = true;
+#else
+constexpr auto TEST_TODATAFRAME = false;
+#endif
 
 using namespace hictk::transformers;
 
@@ -181,6 +188,18 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     CHECK(nnz(first, last) == 4'465);
     CHECK(max(first, last) == 1'357'124);
     CHECK(sum(first, last) == 112'660'799);
+  }
+
+  if constexpr (TEST_TODATAFRAME) {
+    SECTION("ToDataFrame") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      auto sel = clr.fetch("chr1");
+      auto first = sel.begin<std::int32_t>();
+      auto last = sel.end<std::int32_t>();
+
+      CHECK(ToDataFrame(first, last)()->num_rows() == 4'465);
+    }
   }
 }
 
