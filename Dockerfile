@@ -32,7 +32,7 @@ ENV CXX="$CXX_COMPILER"
 RUN printf '[requires]\nb2/4.10.1\n[options]\nb2*:toolset=%s' \
            "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.txt
 
-RUN conan install /tmp/conanfile.py                 \
+RUN conan install /tmp/conanfile.txt                 \
                  --build=missing                     \
                  -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
                  -pr:h="$CONAN_DEFAULT_PROFILE_PATH"
