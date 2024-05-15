@@ -13,7 +13,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -25,7 +25,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -187,9 +187,9 @@ jobs:
           build_type="${{ matrix.build_type }}"
           dev_mode="${{ matrix.developer_mode }}"
 
-          conanfile_hash="${{ hashFiles('conanfile.txt') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
           workflow_hash="${{ hashFiles('.github/workflows/ubuntu-ci.yml') }}"
-          combined_hash="${{ hashFiles('conanfile.txt', '.github/workflows/ubuntu-ci.yml') }}"
+          combined_hash="${{ hashFiles('conanfile.py', '.github/workflows/ubuntu-ci.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"

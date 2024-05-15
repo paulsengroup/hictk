@@ -30,9 +30,9 @@ ENV CXX="$CXX_COMPILER"
 
 # Install b2 using Conan
 RUN printf '[requires]\nb2/4.10.1\n[options]\nb2*:toolset=%s' \
-           "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.txt
+           "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.py
 
-RUN conan install /tmp/conanfile.txt                 \
+RUN conan install /tmp/conanfile.py                 \
                  --build=missing                     \
                  -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
                  -pr:h="$CONAN_DEFAULT_PROFILE_PATH"
@@ -40,8 +40,8 @@ RUN conan install /tmp/conanfile.txt                 \
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"
 
-COPY conanfile.txt "$src_dir"
-RUN conan install "$src_dir/conanfile.txt"       \
+COPY conanfile.py "$src_dir"
+RUN conan install "$src_dir/conanfile.py"       \
              --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
