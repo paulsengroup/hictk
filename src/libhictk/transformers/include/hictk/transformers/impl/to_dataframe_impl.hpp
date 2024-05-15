@@ -18,7 +18,11 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last,
 
 template <typename PixelIt>
 inline std::shared_ptr<const arrow::Table> ToDataFrame<PixelIt>::operator()() {
-  std::for_each(_first, _last, [&](const auto& p) { append(p); });
+  if (_bins) {
+    std::for_each(_first, _last, [&](const auto& p) { append(Pixel<N>(*_bins, p)); });
+  } else {
+    std::for_each(_first, _last, [&](const auto& p) { append(p); });
+  }
 
   if (_bin1_id.length() != 0) {
     return make_coo_table();
@@ -62,7 +66,7 @@ inline void ToDataFrame<PixelIt>::append(const Pixel<N>& p) {
   append(_start2, p.coords.bin2.start());
   append(_end2, p.coords.bin2.end());
 
-  append(_count, p.coords.count);
+  append(_count, p.count);
 }
 
 template <typename PixelIt>

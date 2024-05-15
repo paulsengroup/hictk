@@ -198,7 +198,28 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       auto first = sel.begin<std::int32_t>();
       auto last = sel.end<std::int32_t>();
 
-      CHECK(ToDataFrame(first, last)()->num_rows() == 4'465);
+      SECTION("COO<int>") {
+        const auto table = ToDataFrame(first, last)();
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+      }
+
+      SECTION("BG2<int>") {
+        const auto table = ToDataFrame(first, last, clr.bins_ptr())();
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+
+      SECTION("COO<float>") {
+        auto first_fp = sel.begin<double>();
+        auto last_fp = sel.end<double>();
+        const auto table = ToDataFrame(first_fp, last_fp)();
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(2)->type() == *arrow::float64());
+      }
     }
   }
 }
