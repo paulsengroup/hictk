@@ -90,7 +90,7 @@ class ToDataFrame {
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel,
               std::shared_ptr<const BinTable> bins = nullptr);
 
-  [[nodiscard]] std::shared_ptr<const arrow::Table> operator()();
+  [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
  private:
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
@@ -100,10 +100,10 @@ class ToDataFrame {
   void append(const ThinPixel<N>& p);
 
   template <typename ArrayBuilder, typename T>
-  void append(ArrayBuilder& builder, const T& data);
+  static void append(ArrayBuilder& builder, const T& data);
 
   template <typename ArrayBuilder>
-  [[nodiscard]] std::shared_ptr<arrow::Array> finish(ArrayBuilder& builder);
+  [[nodiscard]] static std::shared_ptr<arrow::Array> finish(ArrayBuilder& builder);
 
   [[nodiscard]] std::shared_ptr<const arrow::Table> make_coo_table();
   [[nodiscard]] std::shared_ptr<const arrow::Table> make_bg2_table();
