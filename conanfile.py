@@ -42,6 +42,8 @@ class NCHGConan(ConanFile):
         self.requires("catch2/3.5.4#d346ca291f8f62040fd9c1a891654711")
         self.requires("cli11/2.4.1#afacffd31f631bbb8b7c7d6425fe7a66")
         self.requires("concurrentqueue/1.0.4#1e48e1c712bcfd892087c9c622a51502")
+        self.requires("eigen/3.4.0#2e192482a8acff96fe34766adca2b24c")
+        self.requires("fast_float/6.1.1#e29acaa3d0543dee343abe3f6815346e")
         self.requires("fmt/10.2.1#9199a7a0611866dea5c8849a77467b25")
         self.requires("hdf5/1.14.3#31ccd8d4de83844f5db48471df1944a1")
         self.requires("highfive/2.9.0#c57477beed8b0110fadeb6da8f48bcc5")
