@@ -14,7 +14,7 @@ on:
       - "test/scripts/link_h5_dataset.py"
       - "test/scripts/patch_hictkpy.py"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -145,7 +145,7 @@ jobs:
         id: cache-key
         working-directory: hictkpy
         run: |
-          hash="${{ hashFiles('conanfile.txt') }}"
+          hash="${{ hashFiles('conanfile.py') }}"
 
           echo "key=fuzzy-testing-$hash" >> $GITHUB_OUTPUT
 

@@ -40,8 +40,8 @@ RUN conan install /tmp/conanfile.txt                 \
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"
 
-COPY conanfile.txt "$src_dir"
-RUN conan install "$src_dir/conanfile.txt"       \
+COPY conanfile.py "$src_dir"
+RUN conan install "$src_dir/conanfile.py"       \
              --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
