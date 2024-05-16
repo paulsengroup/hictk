@@ -6,6 +6,7 @@
 
 #ifdef HICTK_WITH_ARROW
 
+#include <arrow/array.h>
 #include <arrow/builder.h>
 #include <arrow/table.h>
 #include <arrow/type.h>
@@ -14,6 +15,7 @@
 #include <memory>
 #include <type_traits>
 
+#include "hictk/reference.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/pixel.hpp"
 

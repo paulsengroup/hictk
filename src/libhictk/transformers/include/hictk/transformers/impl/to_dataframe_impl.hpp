@@ -4,24 +4,41 @@
 
 #pragma once
 
+#include <arrow/array.h>
+#include <arrow/builder.h>
+#include <arrow/table.h>
+#include <arrow/type.h>
+
+#include <algorithm>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/pixel.hpp"
+#include "hictk/reference.hpp"
 
 namespace hictk::transformers {
 
 template <typename PixelIt>
 inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last,
                                          std::shared_ptr<const BinTable> bins)
-    : _first(std::move(first)),
-      _last(std::move(last)),
-      _bins(std::move(bins)),
-      _chrom1(_bins ? arrow::StringDictionary32Builder{make_chrom_dict(_bins->chromosomes())}
-                    : arrow::StringDictionary32Builder{}),
-      _chrom2(_bins ? arrow::StringDictionary32Builder{make_chrom_dict(_bins->chromosomes())}
-                    : arrow::StringDictionary32Builder{}) {}
+    : _first(std::move(first)), _last(std::move(last)), _bins(std::move(bins)) {
+  if (_bins) {
+    const auto dict = make_chrom_dict(_bins->chromosomes());
 
+    auto status = _chrom1.InsertMemoValues(*dict);
+    if (!status.ok()) {
+      throw std::runtime_error(status.ToString());
+    }
+
+    status = _chrom2.InsertMemoValues(*dict);
+    if (!status.ok()) {
+      throw std::runtime_error(status.ToString());
+    }
+  }
+}
 template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::operator()() {
   if (_bins) {
