@@ -9,7 +9,7 @@ from conan.tools.build import check_min_cppstd
 required_conan_version = ">=1.53.0"
 
 
-class NCHGConan(ConanFile):
+class HictkConan(ConanFile):
     name = "hictk"
     description = "Blazing fast toolkit to work with .hic and .cool files."
     license = "MIT"
