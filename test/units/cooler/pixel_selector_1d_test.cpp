@@ -166,15 +166,6 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
   }
 
 #ifdef HICTK_WITH_EIGEN
-  SECTION("query as sparse matrix") {
-    auto selector = f.fetch("chr1");
-    const auto matrix = selector.read_sparse<T>();
-    CHECK(matrix.nonZeros() == 5050);
-    CHECK(matrix.rows() == 100);
-    CHECK(matrix.cols() == 100);
-    CHECK(matrix.sum() == 14'420'275);
-  }
-
   SECTION("query as dense matrix") {
     auto selector = f.fetch("chr1");
     const auto matrix = selector.read_dense<T>();

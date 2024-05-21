@@ -155,15 +155,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         }
 
 #ifdef HICTK_WITH_EIGEN
-        SECTION("as sparse matrix") {
-          auto sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
-          const auto matrix = sel.read_sparse<std::int32_t>();
-          CHECK(matrix.nonZeros() == 27'733);
-          CHECK(matrix.rows() == 236);
-          CHECK(matrix.cols() == 236);
-          CHECK(matrix.sum() == expected_sum);
-        }
-
         SECTION("as dense matrix") {
           auto sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
           auto matrix = sel.read_dense<std::int32_t>();

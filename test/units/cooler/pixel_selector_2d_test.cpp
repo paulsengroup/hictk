@@ -43,15 +43,6 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
       CHECK(pixels[7].count == 2);
     }
 #ifdef HICTK_WITH_EIGEN
-    SECTION("query as sparse matrix") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto matrix = selector.read_sparse<T>();
-      CHECK(matrix.nonZeros() == 8);
-      CHECK(matrix.rows() == 5);
-      CHECK(matrix.cols() == 15);
-      CHECK(matrix.sum() == 65);
-    }
-
     SECTION("query as dense matrix") {
       auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
       auto matrix = selector.read_dense<T>();

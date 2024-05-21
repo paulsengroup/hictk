@@ -21,12 +21,21 @@
 #include "hictk/transformers/join_genomic_coords.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/transformers/stats.hpp"
+#include "hictk/transformers/to_sparse_matrix.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
 namespace hictk::test::transformers {
+
+#ifdef HICTK_WITH_EIGEN
+constexpr auto TEST_TO_SPARSE_MATRIX = true;
+[[maybe_unused]] constexpr auto TEST_TO_DENSE_MATRIX = true;
+#else
+constexpr auto TEST_TO_SPARSE_MATRIX = false;
+constexpr auto TEST_TO_DENSE_MATRIX = false;
+#endif
 
 using namespace hictk::transformers;
 
@@ -182,6 +191,28 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     CHECK(max(first, last) == 1'357'124);
     CHECK(sum(first, last) == 112'660'799);
   }
+
+  if constexpr (TEST_TO_SPARSE_MATRIX) {
+    SECTION("ToSparseMatrix (cis)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 4465);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
+    }
+
+    SECTION("ToSparseMatrix (trans)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 9118);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -243,6 +274,35 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
 
     for (std::size_t i = 0; i < v1.size(); ++i) {
       CHECK(v1[i] == v2[i].to_thin());
+    }
+  }
+
+  if constexpr (TEST_TO_SPARSE_MATRIX) {
+    SECTION("ToSparseMatrix (cis)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch("chr2L"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 55);
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 10);
+      CHECK(matrix.sum() == 19'968'156);
+    }
+
+    SECTION("ToSparseMatrix (trans)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 110);
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 11);
+      CHECK(matrix.sum() == 1'483'112);
+    }
+
+    SECTION("ToSparseMatrix (gw)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch(), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 1770);
+      CHECK(matrix.rows() == 60);
+      CHECK(matrix.cols() == 60);
+      CHECK(matrix.sum() == 119'208'613);
     }
   }
 }
