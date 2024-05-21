@@ -7,25 +7,16 @@
 #include <Eigen/SparseCore>
 #include <algorithm>
 #include <cstdint>
-#include <type_traits>
 #include <utility>
 
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/impl/common.hpp"
 
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
 inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector&& sel, [[maybe_unused]] N n)
     : _sel(std::move(sel)) {}
-
-namespace internal {
-template <typename T, typename = std::void_t<>>
-inline constexpr bool has_coord1_member_fx = false;
-
-template <typename T>
-inline constexpr bool has_coord1_member_fx<T, std::void_t<decltype(std::declval<T>().coord1())>> =
-    true;
-}  // namespace internal
 
 template <typename N, typename PixelSelector>
 inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> Eigen::SparseMatrix<N> {
