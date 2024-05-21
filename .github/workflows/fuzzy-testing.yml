@@ -152,7 +152,7 @@ jobs:
       - name: Install Python
         run: |
           apt-get update
-          apt-get install -y python3.11 python3.11-dev
+          apt-get install -y python3.12 python3.12-dev
 
       - name: Restore Conan cache
         id: cache-conan
