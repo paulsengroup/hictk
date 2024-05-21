@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "hictk/pixel.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::transformers {
