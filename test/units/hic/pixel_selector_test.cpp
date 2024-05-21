@@ -154,24 +154,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           }
         }
 
-#ifdef HICTK_WITH_EIGEN
-        SECTION("as dense matrix") {
-          auto sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
-          auto matrix = sel.read_dense<std::int32_t>();
-          CHECK(matrix.rows() == 236);
-          CHECK(matrix.cols() == 236);
-          CHECK(matrix.sum() == 28'650'555);
-
-          SECTION("regression PR #154") {
-            sel = File(path, 100'000, MatrixType::observed, MatrixUnit::BP)
-                      .fetch("chr2L:0-5,000,000", "chr2L:2,500,000-7,500,000");
-            matrix = sel.read_dense<std::int32_t>();
-            CHECK(matrix.rows() == 50);
-            CHECK(matrix.cols() == 50);
-            CHECK(matrix.sum() == 2'612'272);
-          }
-        }
-#endif
         SECTION("overloads return identical results") {
           const File f(path, 1'000, MatrixType::observed, MatrixUnit::BP);
           CHECK(f.fetch("chr2L:0-100,000") == f.fetch("chr2L", 0, 100'000));
@@ -216,27 +198,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           compareContactRecord(buffer[expected_value.first], expected_value.second);
           CHECK(std::is_sorted(buffer.begin(), buffer.end()));
         }
-
-#ifdef HICTK_WITH_EIGEN
-        SECTION("as sparse matrix") {
-          auto sel =
-              File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L", "chr4");
-          const auto matrix = sel.read_sparse<std::int32_t>();
-          CHECK(matrix.nonZeros() == 3278);
-          CHECK(matrix.rows() == 236);
-          CHECK(matrix.cols() == 14);
-          CHECK(matrix.sum() == expected_sum);
-        }
-
-        SECTION("as dense matrix") {
-          auto sel =
-              File(path, 100'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L", "chr4");
-          const auto matrix = sel.read_dense<std::int32_t>();
-          CHECK(matrix.rows() == 236);
-          CHECK(matrix.cols() == 14);
-          CHECK(matrix.sum() == 70'567);
-        }
-#endif
       }
 
       SECTION("cover type 2 interactions") {
@@ -310,7 +271,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         SECTION("invalid normalization") {
           const File hic(path, 10'000, MatrixType::observed, MatrixUnit::BP);
           CHECK_THROWS(hic.fetch("chr1", hictk::balancing::Method::GW_SCALE()));
-
         }
       }
     }
@@ -427,20 +387,6 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
                   890384);
         }
       }
-
-#ifdef HICTK_WITH_EIGEN
-      SECTION("as sparse matrix") {
-        auto sel = File(path, 1'000'000, MatrixType::observed, MatrixUnit::BP).fetch();
-        const auto matrix = sel.read_sparse<std::int32_t>();
-        CHECK(matrix.sum() == 119'208'613);
-      }
-
-      SECTION("as dense matrix") {
-        auto sel = File(path, 1'000'000, MatrixType::observed, MatrixUnit::BP).fetch();
-        const auto matrix = sel.read_dense<std::int32_t>();
-        CHECK(matrix.sum() == 155'486'075);
-      }
-#endif
     }
   }
 }

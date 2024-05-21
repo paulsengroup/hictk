@@ -21,8 +21,8 @@
 #include "hictk/transformers/join_genomic_coords.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/transformers/stats.hpp"
-#include "hictk/transformers/to_sparse_matrix.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
+#include "hictk/transformers/to_sparse_matrix.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
@@ -232,6 +232,17 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
+    }
+
+    SECTION("ToDenseMatrix regression PR #154") {
+      const auto path = datadir / "cooler/cooler_test_file.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("1:0-5,000,000", "1:2,500,000-7,500,000"), std::int32_t{})();
+
+      CHECK(matrix.rows() == 50);
+      CHECK(matrix.cols() == 50);
+      CHECK(matrix.sum() == 442);
     }
   }
 }
