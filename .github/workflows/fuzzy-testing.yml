@@ -98,7 +98,7 @@ jobs:
           }
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
 
     env:
