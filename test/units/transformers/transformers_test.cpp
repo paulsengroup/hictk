@@ -216,13 +216,22 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
-    SECTION("ToDenseMatrix (cis)") {
+    SECTION("ToDenseMatrix (cis) w/ mirroring") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{})();
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 140'900'545);
+    }
+
+    SECTION("ToDenseMatrix (cis) wo/ mirroring") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
     }
 
     SECTION("ToDenseMatrix (trans)") {
