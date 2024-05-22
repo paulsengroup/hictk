@@ -161,6 +161,7 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
+  const auto path4 = (testdir() / "hic_writer_003.hic").string();
 
   SECTION("create file (st)") {
     const std::vector<std::uint32_t> resolutions{250'000, 500'000, 2'500'000};
@@ -169,6 +170,17 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
   SECTION("create file (mt)") {
     const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
     hic_file_writer_create_file_test(path1, path2, resolutions, 3, true);
+  }
+
+  SECTION("regression PR 180") {
+    // Ensure we can create .hic files having bin tables with 1 bin per chromosome
+    // See https://github.com/paulsengroup/hictk/pull/180
+    const hictk::Reference chromosomes{{0, "chr1", 10}};
+    HiCFileWriter w(path4, chromosomes, {100});
+
+    const std::vector<Pixel<float>> pixels{Pixel<float>{w.bins(100), 0, 0, 1.0F}};
+    w.add_pixels(100, pixels.begin(), pixels.end());
+    w.serialize();  // Before PR 180, this used to throw
   }
 
   SECTION("add weights") {
