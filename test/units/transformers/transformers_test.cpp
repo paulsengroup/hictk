@@ -208,27 +208,100 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       auto first = sel.begin<std::int32_t>();
       auto last = sel.end<std::int32_t>();
 
-      SECTION("COO<int>") {
-        const auto table = ToDataFrame(first, last)();
+      auto get_int_scalar = [](const auto& column, const auto i) {
+        return std::static_pointer_cast<arrow::Int32Scalar>(column->GetScalar(i).MoveValueUnsafe())
+            ->value;
+      };
+
+      auto get_float_scalar = [](const auto& column, const auto i) {
+        return std::static_pointer_cast<arrow::DoubleScalar>(column->GetScalar(i).MoveValueUnsafe())
+            ->value;
+      };
+
+      SECTION("COO<int> wo/ transpose") {
+        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, false)();
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        CHECK(get_int_scalar(table->column(2), 0) == 266106);
+        CHECK(get_int_scalar(table->column(2), 1) == 32868);
+        CHECK(get_int_scalar(table->column(2), 2) == 13241);
+
+        // check tail
+        CHECK(get_int_scalar(table->column(2), 4462) == 1001844);
+        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
+        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
       }
 
-      SECTION("BG2<int>") {
-        const auto table = ToDataFrame(first, last, clr.bins_ptr())();
+      SECTION("COO<int> w/ transpose") {
+        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, true)();
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        CHECK(get_int_scalar(table->column(2), 0) == 266106);
+        CHECK(get_int_scalar(table->column(2), 1) == 32868);
+        CHECK(get_int_scalar(table->column(2), 2) == 375662);
+
+        // check tail
+        CHECK(get_int_scalar(table->column(2), 4462) == 24112);
+        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
+        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
+      }
+
+      SECTION("BG2<int> wo/ transpose") {
+        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), false)();
         CHECK(table->num_columns() == 7);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(6)->type() == *arrow::int32());
+
+        CHECK(get_int_scalar(table->column(6), 0) == 266106);
+        CHECK(get_int_scalar(table->column(6), 1) == 32868);
+        CHECK(get_int_scalar(table->column(6), 2) == 13241);
+
+        // check tail
+        CHECK(get_int_scalar(table->column(6), 4462) == 1001844);
+        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
+        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
       }
 
-      SECTION("COO<float>") {
+      SECTION("BG2<int> w/ transpose") {
+        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), true)();
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        CHECK(get_int_scalar(table->column(6), 0) == 266106);
+        CHECK(get_int_scalar(table->column(6), 1) == 32868);
+        CHECK(get_int_scalar(table->column(6), 2) == 375662);
+
+        // check tail
+        CHECK(get_int_scalar(table->column(6), 4462) == 24112);
+        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
+        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
+      }
+
+      SECTION("COO<float> wo/ transpose") {
         auto first_fp = sel.begin<double>();
         auto last_fp = sel.end<double>();
-        const auto table = ToDataFrame(first_fp, last_fp)();
+        const auto table = ToDataFrame(first_fp, last_fp, DataFrameFormat::COO, nullptr, false)();
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::float64());
+
+        // check head
+        CHECK(get_float_scalar(table->column(2), 0) == 266106.0);
+        CHECK(get_float_scalar(table->column(2), 1) == 32868.0);
+        CHECK(get_float_scalar(table->column(2), 2) == 13241.0);
+
+        // check tail
+        CHECK(get_float_scalar(table->column(2), 4462) == 1001844.0);
+        CHECK(get_float_scalar(table->column(2), 4463) == 68621.0);
+        CHECK(get_float_scalar(table->column(2), 4464) == 571144.0);
       }
     }
   }

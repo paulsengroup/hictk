@@ -63,8 +63,10 @@ class HictkConan(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.settings.compiler.libcxx = "libstdc++11"
 
-        self.options["arrow"].with_boost = True
+        self.options["arrow"].compute = True
         self.options["arrow"].parquet = False
+        self.options["arrow"].with_boost = True
+        self.options["arrow"].with_re2 = True
         self.options["arrow"].with_thrift = False
         self.options["boost"].system_no_deprecated = True
         self.options["boost"].asio_no_deprecated = True
