@@ -21,6 +21,7 @@
 #include "hictk/transformers/join_genomic_coords.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/transformers/stats.hpp"
+#include "hictk/transformers/to_dataframe.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
 #include "hictk/transformers/to_sparse_matrix.hpp"
 
@@ -29,6 +30,12 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 }  // namespace hictk::test
 
 namespace hictk::test::transformers {
+
+#ifdef HICTK_WITH_ARROW
+constexpr auto TEST_TO_DATAFRAME = true;
+#else
+constexpr auto TEST_TO_DATAFRAME = false;
+#endif
 
 #ifdef HICTK_WITH_EIGEN
 constexpr auto TEST_TO_SPARSE_MATRIX = true;
@@ -191,6 +198,39 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     CHECK(nnz(first, last) == 4'465);
     CHECK(max(first, last) == 1'357'124);
     CHECK(sum(first, last) == 112'660'799);
+  }
+
+  if constexpr (TEST_TO_DATAFRAME) {
+    SECTION("ToDataFrame") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      auto sel = clr.fetch("chr1");
+      auto first = sel.begin<std::int32_t>();
+      auto last = sel.end<std::int32_t>();
+
+      SECTION("COO<int>") {
+        const auto table = ToDataFrame(first, last)();
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+      }
+
+      SECTION("BG2<int>") {
+        const auto table = ToDataFrame(first, last, clr.bins_ptr())();
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+
+      SECTION("COO<float>") {
+        auto first_fp = sel.begin<double>();
+        auto last_fp = sel.end<double>();
+        const auto table = ToDataFrame(first_fp, last_fp)();
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(2)->type() == *arrow::float64());
+      }
+    }
   }
 
   if constexpr (TEST_TO_SPARSE_MATRIX) {
