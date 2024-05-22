@@ -42,12 +42,11 @@ class PixelSelector {
                 std::shared_ptr<const balancing::Weights> weights) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coords,
-                std::shared_ptr<const balancing::Weights> weights) noexcept;
+                std::shared_ptr<const balancing::Weights> weights);
 
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-                PixelCoordinates coord2,
-                std::shared_ptr<const balancing::Weights> weights) noexcept;
+                PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights);
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;

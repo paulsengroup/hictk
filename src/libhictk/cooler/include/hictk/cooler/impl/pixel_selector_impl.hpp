@@ -28,7 +28,7 @@ namespace hictk::cooler {
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count, PixelCoordinates coords,
-                                    std::shared_ptr<const balancing::Weights> weights) noexcept
+                                    std::shared_ptr<const balancing::Weights> weights)
     : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords, coords,
                     std::move(weights)) {}
 
@@ -36,7 +36,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count, PixelCoordinates coord1,
                                     PixelCoordinates coord2,
-                                    std::shared_ptr<const balancing::Weights> weights) noexcept
+                                    std::shared_ptr<const balancing::Weights> weights)
     : _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
       _index(std::move(index)),
@@ -46,6 +46,14 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
       _pixels_count(&pixels_count),
       _weights(std::move(weights)) {
   assert(_index);
+  const auto query_is_cis = _coord1.bin1.chrom() == _coord2.bin1.chrom();
+  if ((!query_is_cis && _coord1.bin1 > _coord2.bin1) ||
+      (query_is_cis && _coord1.bin1.start() > _coord2.bin1.start())) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
+        _coord1.bin1.chrom().name(), _coord1.bin1.start(), _coord1.bin2.end(),
+        _coord2.bin1.chrom().name(), _coord2.bin1.start(), _coord2.bin2.end()));
+  }
 }
 
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
