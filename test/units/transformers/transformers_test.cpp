@@ -32,9 +32,10 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 namespace hictk::test::transformers {
 
 #ifdef HICTK_WITH_ARROW
-constexpr auto TEST_TODATAFRAME = true;
+constexpr auto TEST_TO_DATAFRAME = true;
 #else
-constexpr auto TEST_TODATAFRAME = false;
+constexpr auto TEST_TO_DATAFRAME = false;
+#endif
 
 #ifdef HICTK_WITH_EIGEN
 constexpr auto TEST_TO_SPARSE_MATRIX = true;
@@ -199,7 +200,7 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     CHECK(sum(first, last) == 112'660'799);
   }
 
-  if constexpr (TEST_TODATAFRAME) {
+  if constexpr (TEST_TO_DATAFRAME) {
     SECTION("ToDataFrame") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
@@ -231,7 +232,7 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       }
     }
   }
-  
+
   if constexpr (TEST_TO_SPARSE_MATRIX) {
     SECTION("ToSparseMatrix (cis)") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
@@ -282,6 +283,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 50);
       CHECK(matrix.cols() == 50);
       CHECK(matrix.sum() == 442);
+    }
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
