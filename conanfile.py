@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
 
@@ -9,7 +9,7 @@ from conan.tools.build import check_min_cppstd
 required_conan_version = ">=1.53.0"
 
 
-class NCHGConan(ConanFile):
+class HictkConan(ConanFile):
     name = "hictk"
     description = "Blazing fast toolkit to work with .hic and .cool files."
     license = "MIT"
@@ -36,6 +36,8 @@ class NCHGConan(ConanFile):
         return 17
 
     def requirements(self):
+        self.requires("arrow/16.0.0#c0b940c80fddf319983165f7588c279d")
+        self.requires("boost/1.85.0#7926babdab0a9779cc164d0af6c28d5e", force=True)
         self.requires("bshoshany-thread-pool/4.1.0#be1802a8768416a6c9b1393cf0ce5e9c")
         self.requires("catch2/3.5.4#d346ca291f8f62040fd9c1a891654711")
         self.requires("cli11/2.4.1#afacffd31f631bbb8b7c7d6425fe7a66")
@@ -50,7 +52,8 @@ class NCHGConan(ConanFile):
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")
         self.requires("spdlog/1.13.0#8e88198fd5b9ee31d329431a6d0ccaa2")
-        self.requires("zstd/1.5.6#67383dae85d33f43823e7751a6745ea1")
+        self.requires("thrift/0.18.1#4e5674c24f99dde562c3926f9cb2ff9d", force=True)
+        self.requires("zstd/1.5.6#67383dae85d33f43823e7751a6745ea1", force=True)
 
     def validate(self):
         if self.settings.get_safe("compiler.cppstd"):
@@ -60,6 +63,50 @@ class NCHGConan(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.settings.compiler.libcxx = "libstdc++11"
 
+        self.options["arrow"].with_boost = True
+        self.options["arrow"].parquet = False
+        self.options["arrow"].with_thrift = False
+        self.options["boost"].system_no_deprecated = True
+        self.options["boost"].asio_no_deprecated = True
+        self.options["boost"].filesystem_no_deprecated = True
+        self.options["boost"].filesystem_version = 4
+        self.options["boost"].zlib = False
+        self.options["boost"].bzip2 = False
+        self.options["boost"].lzma = False
+        self.options["boost"].zstd = False
+        self.options["boost"].without_atomic = False
+        self.options["boost"].without_charconv = True
+        self.options["boost"].without_chrono = True
+        self.options["boost"].without_container = True
+        self.options["boost"].without_context = True
+        self.options["boost"].without_contract = True
+        self.options["boost"].without_coroutine = True
+        self.options["boost"].without_date_time = True
+        self.options["boost"].without_exception = True
+        self.options["boost"].without_fiber = True
+        self.options["boost"].without_filesystem = False
+        self.options["boost"].without_graph = True
+        self.options["boost"].without_graph_parallel = True
+        self.options["boost"].without_iostreams = True
+        self.options["boost"].without_json = True
+        self.options["boost"].without_locale = True
+        self.options["boost"].without_log = True
+        self.options["boost"].without_math = True
+        self.options["boost"].without_mpi = True
+        self.options["boost"].without_nowide = True
+        self.options["boost"].without_program_options = True
+        self.options["boost"].without_python = True
+        self.options["boost"].without_random = True
+        self.options["boost"].without_regex = True
+        self.options["boost"].without_serialization = True
+        self.options["boost"].without_stacktrace = True
+        self.options["boost"].without_system = False
+        self.options["boost"].without_test = True
+        self.options["boost"].without_thread = True
+        self.options["boost"].without_timer = True
+        self.options["boost"].without_type_erasure = True
+        self.options["boost"].without_url = True
+        self.options["boost"].without_wave = True
         self.options["fmt"].header_only = True
         self.options["hdf5"].enable_cxx = False
         self.options["hdf5"].hl = False
