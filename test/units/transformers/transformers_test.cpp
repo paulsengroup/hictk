@@ -22,6 +22,8 @@
 #include "hictk/transformers/pixel_merger.hpp"
 #include "hictk/transformers/stats.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
+#include "hictk/transformers/to_dense_matrix.hpp"
+#include "hictk/transformers/to_sparse_matrix.hpp"
 
 namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
@@ -33,6 +35,13 @@ namespace hictk::test::transformers {
 constexpr auto TEST_TODATAFRAME = true;
 #else
 constexpr auto TEST_TODATAFRAME = false;
+
+#ifdef HICTK_WITH_EIGEN
+constexpr auto TEST_TO_SPARSE_MATRIX = true;
+constexpr auto TEST_TO_DENSE_MATRIX = true;
+#else
+constexpr auto TEST_TO_SPARSE_MATRIX = false;
+constexpr auto TEST_TO_DENSE_MATRIX = false;
 #endif
 
 using namespace hictk::transformers;
@@ -222,6 +231,57 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       }
     }
   }
+  
+  if constexpr (TEST_TO_SPARSE_MATRIX) {
+    SECTION("ToSparseMatrix (cis)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 4465);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
+    }
+
+    SECTION("ToSparseMatrix (trans)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 9118);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+  }
+
+  if constexpr (TEST_TO_DENSE_MATRIX) {
+    SECTION("ToDenseMatrix (cis)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{})();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 140'900'545);
+    }
+
+    SECTION("ToDenseMatrix (trans)") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+
+    SECTION("ToDenseMatrix regression PR #154") {
+      const auto path = datadir / "cooler/cooler_test_file.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("1:0-5,000,000", "1:2,500,000-7,500,000"), std::int32_t{})();
+
+      CHECK(matrix.rows() == 50);
+      CHECK(matrix.cols() == 50);
+      CHECK(matrix.sum() == 442);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -283,6 +343,61 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
 
     for (std::size_t i = 0; i < v1.size(); ++i) {
       CHECK(v1[i] == v2[i].to_thin());
+    }
+  }
+
+  if constexpr (TEST_TO_SPARSE_MATRIX) {
+    SECTION("ToSparseMatrix (cis)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch("chr2L"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 55);
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 10);
+      CHECK(matrix.sum() == 19'968'156);
+    }
+
+    SECTION("ToSparseMatrix (trans)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 110);
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 11);
+      CHECK(matrix.sum() == 1'483'112);
+    }
+
+    SECTION("ToSparseMatrix (gw)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToSparseMatrix(hf.fetch(), std::int32_t{})();
+      CHECK(matrix.nonZeros() == 1770);
+      CHECK(matrix.rows() == 60);
+      CHECK(matrix.cols() == 60);
+      CHECK(matrix.sum() == 119'208'613);
+    }
+  }
+
+  if constexpr (TEST_TO_DENSE_MATRIX) {
+    SECTION("ToDenseMatrix (cis)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch("chr2L"), std::int32_t{})();
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 10);
+      CHECK(matrix.sum() == 22'929'541);
+    }
+
+    SECTION("ToDenseMatrix (trans)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 11);
+      CHECK(matrix.sum() == 1'483'112);
+    }
+
+    SECTION("ToDenseMatrix (gw)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch(), std::int32_t{})();
+      CHECK(matrix.rows() == 60);
+      CHECK(matrix.cols() == 60);
+      CHECK(matrix.sum() == 149'078'427);
     }
   }
 }

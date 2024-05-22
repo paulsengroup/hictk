@@ -42,33 +42,6 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
       CHECK(pixels[6].count == 6);
       CHECK(pixels[7].count == 2);
     }
-#ifdef HICTK_WITH_EIGEN
-    SECTION("query as sparse matrix") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto matrix = selector.read_sparse<T>();
-      CHECK(matrix.nonZeros() == 8);
-      CHECK(matrix.rows() == 5);
-      CHECK(matrix.cols() == 15);
-      CHECK(matrix.sum() == 65);
-    }
-
-    SECTION("query as dense matrix") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      auto matrix = selector.read_dense<T>();
-      CHECK(matrix.rows() == 5);
-      CHECK(matrix.cols() == 15);
-      CHECK(matrix.sum() == 72);
-
-      SECTION("regression PR #154") {
-        selector = f.fetch("1:0-5,000,000", "1:2,500,000-7,500,000");
-        matrix = selector.read_dense<T>();
-
-        CHECK(matrix.rows() == 50);
-        CHECK(matrix.cols() == 50);
-        CHECK(matrix.sum() == 442);
-      }
-    }
-#endif
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-100000");
@@ -100,25 +73,6 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
       CHECK(pixels[4].count == 7);
       CHECK(pixels[5].count == 1);
     }
-
-#ifdef HICTK_WITH_EIGEN
-    SECTION("query as sparse matrix") {
-      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
-      const auto matrix = selector.read_sparse<T>();
-      CHECK(matrix.nonZeros() == 6);
-      CHECK(matrix.rows() == 20);
-      CHECK(matrix.cols() == 50);
-      CHECK(matrix.sum() == 16);
-    }
-
-    SECTION("query as dense matrix") {
-      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
-      const auto matrix = selector.read_dense<T>();
-      CHECK(matrix.rows() == 20);
-      CHECK(matrix.cols() == 50);
-      CHECK(matrix.sum() == 16);
-    }
-#endif
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-50000", "2:0-50000");
