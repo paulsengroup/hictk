@@ -194,23 +194,45 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   }
 
   if constexpr (TEST_TO_SPARSE_MATRIX) {
-    SECTION("ToSparseMatrix (cis)") {
+    SECTION("ToSparseMatrix (cis) wo/ transpose") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{})();
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
       CHECK(matrix.nonZeros() == 4465);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (trans)") {
+    SECTION("ToSparseMatrix (cis) w/ transpose") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
+      CHECK(matrix.nonZeros() == 4465);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
+    }
+
+    SECTION("ToSparseMatrix (trans) wo/ transpose") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, false)();
       CHECK(matrix.nonZeros() == 9118);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+
+    SECTION("ToSparseMatrix (trans) w/ transpose") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, true)();
+      CHECK(matrix.nonZeros() == 9118);
+      CHECK(matrix.rows() == 97);
+      CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 6'413'076);
     }
   }

@@ -22,9 +22,10 @@ class ToSparseMatrix {
   static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
 
   PixelSelector _sel{};
+  bool _transpose{false};
 
  public:
-  ToSparseMatrix(PixelSelector&& selector, N n);
+  ToSparseMatrix(PixelSelector&& selector, N n, bool transpose = false);
   [[nodiscard]] auto operator()() -> Eigen::SparseMatrix<N>;
 
  private:
