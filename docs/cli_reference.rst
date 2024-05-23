@@ -114,7 +114,7 @@ hictk balance scale
                                 Percentile used to compute the maximum number of nnz values that cause a row to be masked.
     --max-row-sum-err FLOAT:NONNEGATIVE [0.05]
                                 Row sum threshold used to determine whether convergence has been achieved.
-    --tolerance FLOAT:NONNEGATIVE [1e-05]
+    --tolerance FLOAT:NONNEGATIVE [0.0001]
                                 Threshold of the variance of marginals used to determine whether
                                 the algorithm has converged.
     --max-iters UINT:POSITIVE [500]
