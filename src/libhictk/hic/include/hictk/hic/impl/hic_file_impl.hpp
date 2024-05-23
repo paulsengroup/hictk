@@ -214,8 +214,9 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
                                  const Chromosome& chrom2, std::uint32_t start2, std::uint32_t end2,
                                  balancing::Method norm) const {
   if (chrom1 > chrom2) {
-    throw std::runtime_error(
-        "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
+        chrom1.name(), start1, end1, chrom2.name(), start2, end2));
   }
 
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};

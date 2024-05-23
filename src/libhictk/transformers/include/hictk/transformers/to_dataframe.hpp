@@ -67,6 +67,8 @@ static arrow::DoubleBuilder map_cpp_type_to_arrow_builder() {
 }
 }  // namespace internal
 
+enum class DataFrameFormat { COO, BG2 };
+
 template <typename PixelIt>
 class ToDataFrame {
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
@@ -76,6 +78,9 @@ class ToDataFrame {
   PixelIt _first{};
   PixelIt _last{};
   std::shared_ptr<const BinTable> _bins{};
+
+  bool _transpose{false};
+  DataFrameFormat _format{};
 
   arrow::UInt64Builder _bin1_id_builder{};
   arrow::UInt64Builder _bin2_id_builder{};
@@ -121,13 +126,15 @@ class ToDataFrame {
 
  public:
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel,
-              std::shared_ptr<const BinTable> bins = nullptr, std::size_t chunk_size = 256'000);
+              DataFrameFormat format = DataFrameFormat::COO,
+              std::shared_ptr<const BinTable> bins = nullptr, bool transpose = false,
+              std::size_t chunk_size = 256'000);
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
  private:
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
-  [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema() const;
+  [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema(bool with_bin_ids = false) const;
 
   void append(const Pixel<N>& p);
   void append(const ThinPixel<N>& p);
@@ -149,6 +156,8 @@ class ToDataFrame {
 
   void write_thin_pixels();
   void write_pixels();
+
+  static std::shared_ptr<arrow::Table> sort_table(std::shared_ptr<arrow::Table> table);
 };
 
 }  // namespace hictk::transformers

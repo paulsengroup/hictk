@@ -8,6 +8,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -223,20 +224,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
         SECTION("upper-triangle") {
           auto sel = File(path, resolution, MatrixType::observed, MatrixUnit::BP)
-                         .fetch("chr2L:123,456-200,000", "chr2L:0-200,000",
-                                hictk::balancing::Method::NONE());
-          const auto buffer = sel.read_all<std::int32_t>();
-          REQUIRE(buffer.size() == 36);
-          CHECK(sumCounts<std::int32_t>(buffer) == 99946);
-          compareContactRecord(buffer[33], hictk::ThinPixel<float>{180000, 180000, 3888});
-
-          checkContactRecordsAreWithinBound(123456, 200000 + resolution, 0, 200000 + resolution,
-                                            buffer);
-          CHECK(std::is_sorted(buffer.begin(), buffer.end()));
-        }
-
-        SECTION("lower-triangle") {
-          auto sel = File(path, resolution, MatrixType::observed, MatrixUnit::BP)
                          .fetch("chr2L:0-200,000", "chr2L:123,456-200,000",
                                 hictk::balancing::Method::NONE());
           const auto buffer = sel.read_all<std::int32_t>();
@@ -246,6 +233,14 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           checkContactRecordsAreWithinBound(0, 200000 + resolution, 123456, 200000 + resolution,
                                             buffer);
           CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+        }
+
+        SECTION("lower-triangle") {
+          const File hf(path, resolution, MatrixType::observed, MatrixUnit::BP);
+
+          CHECK_THROWS_WITH(hf.fetch("chr2L:123,456-200,000", "chr2L:0-200,000",
+                                     hictk::balancing::Method::NONE()),
+                            Catch::Matchers::ContainsSubstring("overlaps with the lower-triangle"));
         }
 
         SECTION("inter-chromosomal") {

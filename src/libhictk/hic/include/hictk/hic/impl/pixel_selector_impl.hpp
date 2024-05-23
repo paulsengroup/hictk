@@ -33,21 +33,29 @@ namespace hictk::hic {
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_,
-                                    PixelCoordinates coords) noexcept
+                                    std::shared_ptr<const BinTable> bins_, PixelCoordinates coords)
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
-                    coords, std::move(coords)) {}
+                    coords, coords) {}
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                                    PixelCoordinates coord2_) noexcept
+                                    PixelCoordinates coord2_)
     : _reader(std::make_shared<internal::HiCBlockReader>(std::move(hfs_), footer_->index(),
                                                          std::move(bins_), std::move(cache_))),
       _footer(std::move(footer_)),
       _coord1(std::make_shared<const PixelCoordinates>(std::move(coord1_))),
-      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))) {}
+      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))) {
+  const auto query_is_cis = _coord1->bin1.chrom() == _coord2->bin1.chrom();
+  if ((!query_is_cis && _coord1->bin1 > _coord2->bin1) ||
+      (query_is_cis && _coord1->bin1.start() > _coord2->bin1.start())) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
+        _coord1->bin1.chrom().name(), _coord1->bin1.start(), _coord1->bin2.end(),
+        _coord2->bin1.chrom().name(), _coord2->bin1.start(), _coord2->bin2.end()));
+  }
+}
 
 inline PixelSelector::~PixelSelector() noexcept {
   try {

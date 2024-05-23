@@ -45,12 +45,12 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coords) noexcept;
+                PixelCoordinates coords);
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
+                PixelCoordinates coord1_, PixelCoordinates coord2_);
 
   PixelSelector(const PixelSelector &other) = delete;
   PixelSelector(PixelSelector &&other) = default;

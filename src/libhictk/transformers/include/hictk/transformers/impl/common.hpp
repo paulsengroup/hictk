@@ -13,4 +13,4 @@ inline constexpr bool has_coord1_member_fx = false;
 template <typename T>
 inline constexpr bool has_coord1_member_fx<T, std::void_t<decltype(std::declval<T>().coord1())>> =
     true;
-}
+}  // namespace hictk::transformers::internal

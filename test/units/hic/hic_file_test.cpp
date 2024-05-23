@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -100,14 +102,28 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
   const auto* chrom1 = "chr2L";
   const auto* chrom2 = "chr2R";
   SECTION("intra-chromosomal") {
-    auto sel = f.fetch(chrom1, norm);
-    CHECK(sel.chrom1() == chrom1);
+    SECTION("valid") {
+      auto sel = f.fetch(chrom1, norm);
+      CHECK(sel.chrom1() == chrom1);
+    }
+    SECTION("invalid") {
+      CHECK_THROWS_WITH(f.fetch("chr2L:2,500,000-5,000,000", "chr2L:0-2,500,000"),
+                        Catch::Matchers::ContainsSubstring("overlaps with the lower-triangle"));
+    }
   }
 
   SECTION("inter-chromosomal") {
-    auto sel = f.fetch(chrom1, chrom2, norm);
-    CHECK(sel.chrom1() == chrom1);
-    CHECK(sel.chrom2() == chrom2);
+    SECTION("valid") {
+      auto sel = f.fetch(chrom1, chrom2, norm);
+      CHECK(sel.chrom1() == chrom1);
+      CHECK(sel.chrom2() == chrom2);
+    }
+    SECTION("invalid") {
+      SECTION("invalid") {
+        CHECK_THROWS_WITH(f.fetch(chrom2, chrom1),
+                          Catch::Matchers::ContainsSubstring("overlaps with the lower-triangle"));
+      }
+    }
   }
 
   SECTION("valid, but empty matrix") {
