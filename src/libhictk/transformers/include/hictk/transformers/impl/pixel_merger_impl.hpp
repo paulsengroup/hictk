@@ -64,6 +64,9 @@ inline PixelMerger<PixelIt>::PixelMerger(ItOfPixelIt first_head, ItOfPixelIt las
 
 template <typename PixelIt>
 inline auto PixelMerger<PixelIt>::begin() const -> iterator {
+  if (_heads.empty()) {
+    return {};
+  }
   return iterator{_heads, _tails};
 }
 

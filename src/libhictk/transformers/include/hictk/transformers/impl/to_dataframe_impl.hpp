@@ -195,6 +195,14 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_coo_table() {
     write_thin_pixels();
   }
 
+  if (_bin1_id.empty()) {
+    auto result = arrow::Table::MakeEmpty(coo_schema());
+    if (!result.ok()) {
+      throw std::runtime_error(result.status().ToString());
+    }
+    return result.MoveValueUnsafe();
+  }
+
   if (_transpose) {
     std::swap(_bin1_id, _bin2_id);
   }
@@ -218,6 +226,14 @@ template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
   if (!_chrom1_id_buff.empty()) {
     write_pixels();
+  }
+
+  if (_chrom1.empty()) {
+    auto result = arrow::Table::MakeEmpty(bg2_schema());
+    if (!result.ok()) {
+      throw std::runtime_error(result.status().ToString());
+    }
+    return result.MoveValueUnsafe();
   }
 
   std::shared_ptr<arrow::Table> table{};
