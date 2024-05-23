@@ -87,14 +87,22 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
+
     auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
-    const auto jsel =
-        JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
-    constexpr std::array<std::uint32_t, 3> expected{5'000'000, 5'000'000, 7'500'000};
-    const auto pixels = jsel.read_all();
-    REQUIRE(pixels.size() == expected.size());
-    for (std::size_t i = 0; i < expected.size(); ++i) {
-      CHECK(pixels[i].coords.bin1.start() == expected[i]);
+    SECTION("range with data") {
+      const auto jsel =
+          JoinGenomicCoords(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
+      constexpr std::array<std::uint32_t, 3> expected{5'000'000, 5'000'000, 7'500'000};
+      const auto pixels = jsel.read_all();
+      REQUIRE(pixels.size() == expected.size());
+      for (std::size_t i = 0; i < expected.size(); ++i) {
+        CHECK(pixels[i].coords.bin1.start() == expected[i]);
+      }
+    }
+    SECTION("empty range") {
+      const auto jsel =
+          JoinGenomicCoords(sel.end<std::int32_t>(), sel.end<std::int32_t>(), clr.bins_ptr());
+      CHECK(jsel.begin() == jsel.end());
     }
   }
 
@@ -108,22 +116,65 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     const auto sel3 = clr.fetch("chr2:50,000,000-150,000,000");
 
     using It = decltype(sel1.template begin<std::int32_t>());
-    const std::vector<It> heads{sel1.template begin<std::int32_t>(),
-                                sel2.template begin<std::int32_t>(),
-                                sel3.template begin<std::int32_t>()};
-    const std::vector<It> tails{sel1.template end<std::int32_t>(),
-                                sel2.template end<std::int32_t>(),
-                                sel3.template end<std::int32_t>()};
 
-    const transformers::PixelMerger<It> merger(heads, tails);
-    const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
-    const auto expected_pixels = merge_pixels_hashmap(heads, tails);
+    SECTION("range with data") {
+      const std::vector<It> heads{sel1.template begin<std::int32_t>(),
+                                  sel2.template begin<std::int32_t>(),
+                                  sel3.template begin<std::int32_t>()};
+      const std::vector<It> tails{sel1.template end<std::int32_t>(),
+                                  sel2.template end<std::int32_t>(),
+                                  sel3.template end<std::int32_t>()};
 
-    REQUIRE(pixels.size() == expected_pixels.size());
+      const transformers::PixelMerger<It> merger(heads, tails);
+      const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
+      const auto expected_pixels = merge_pixels_hashmap(heads, tails);
 
-    for (const auto& p : pixels) {
-      REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
-      CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
+      REQUIRE(pixels.size() == expected_pixels.size());
+
+      for (const auto& p : pixels) {
+        REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
+        CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
+      }
+    }
+
+    SECTION("one iterator") {
+      const std::vector<It> heads{sel1.template begin<std::int32_t>()};
+      const std::vector<It> tails{sel1.template end<std::int32_t>()};
+      const transformers::PixelMerger<It> merger(heads, tails);
+      const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
+      const auto expected_pixels = merge_pixels_hashmap(heads, tails);
+
+      REQUIRE(pixels.size() == expected_pixels.size());
+      for (const auto& p : pixels) {
+        REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
+        CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
+      }
+    }
+
+    SECTION("empty range") {
+      const std::vector<It> heads{sel1.template begin<std::int32_t>(),
+                                  sel2.template end<std::int32_t>(),
+                                  sel3.template begin<std::int32_t>()};
+      const std::vector<It> tails{sel1.template end<std::int32_t>(),
+                                  sel2.template end<std::int32_t>(),
+                                  sel3.template end<std::int32_t>()};
+      const transformers::PixelMerger<It> merger(heads, tails);
+      const auto pixels = transformers::PixelMerger<It>(heads, tails).read_all();
+      const auto expected_pixels = merge_pixels_hashmap(heads, tails);
+
+      REQUIRE(pixels.size() == expected_pixels.size());
+      for (const auto& p : pixels) {
+        REQUIRE(expected_pixels.contains({p.bin1_id, p.bin2_id}));
+        CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
+      }
+    }
+
+    SECTION("no iterators") {
+      const std::vector<It> heads{};
+      const std::vector<It> tails{};
+      const transformers::PixelMerger<It> merger(heads, tails);
+
+      CHECK(merger.begin() == merger.end());
     }
   }
 
@@ -187,6 +238,16 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
   }
 
+  SECTION("coarsen empty range") {
+    const auto path = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
+    const cooler::File clr1(path.string());
+
+    auto sel = clr1.fetch();
+    auto sel1 = CoarsenPixels(sel.end<std::int32_t>(), sel.end<std::int32_t>(), clr1.bins_ptr(), 2);
+
+    CHECK(sel1.begin() == sel1.end());
+  }
+
   SECTION("stats") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
@@ -194,10 +255,19 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     auto first = sel.begin<std::int32_t>();
     auto last = sel.end<std::int32_t>();
 
-    CHECK_THAT(avg(first, last), Catch::Matchers::WithinRel(25231.981858902574));
-    CHECK(nnz(first, last) == 4'465);
-    CHECK(max(first, last) == 1'357'124);
-    CHECK(sum(first, last) == 112'660'799);
+    SECTION("range with data") {
+      CHECK_THAT(avg(first, last), Catch::Matchers::WithinRel(25231.981858902574));
+      CHECK(nnz(first, last) == 4'465);
+      CHECK(max(first, last) == 1'357'124);
+      CHECK(sum(first, last) == 112'660'799);
+    }
+
+    SECTION("empty range") {
+      CHECK(avg(last, last) == 0);
+      CHECK(nnz(last, last) == 0);
+      CHECK(max(last, last) == 0);
+      CHECK(sum(last, last) == 0);
+    }
   }
 
   if constexpr (TEST_TO_DATAFRAME) {
@@ -229,6 +299,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::float64());
+      }
+
+      SECTION("empty range") {
+        const auto table = ToDataFrame(last, last)();
+        CHECK(table->num_rows() == 0);
       }
     }
   }
