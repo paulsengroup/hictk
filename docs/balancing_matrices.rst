@@ -8,6 +8,7 @@ Balancing Hi-C matrices
 ``hictk`` supports balancing .hic, .cool and .mcool files using ICE (iterative correction and eigenvector decomposition), SCALE and VC:
 
 .. code-block:: console
+
   user@dev:/tmp$ hictk balance --help
   Balance Hi-C matrices using ICE, SCALE, or VC.
   Usage: hictk balance [OPTIONS] [SUBCOMMAND]
