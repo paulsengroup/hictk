@@ -14,3 +14,4 @@ hictk C++ API is structured as follows:
    cooler
    hic
    shared
+   transformers
