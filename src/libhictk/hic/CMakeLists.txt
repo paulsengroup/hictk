@@ -14,6 +14,20 @@ if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET REQUIRED)
 endif()
 
+set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
+
+if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+  message(FATAL_ERROR "hictk::hic cannot be built on big-endian architecture.")
+elseif(HICTK_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+else()
+  message(
+    FATAL_ERROR
+      "Unable to detect the CPU architecture endiannes: please specify the endianness of the target architecture with -DHICTK_CXX_BYTE_ORDER=*_ENDIAN.\nSee https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_BYTE_ORDER.html for more details."
+  )
+endif()
+
 add_library(hic INTERFACE)
 add_library(hictk::hic ALIAS hic)
 
