@@ -23,9 +23,10 @@ class ToDenseMatrix {
   static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
 
   PixelSelector _sel{};
+  bool _mirror{};
 
  public:
-  ToDenseMatrix(PixelSelector&& selector, N n);
+  ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
   [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
 
  private:

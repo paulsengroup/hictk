@@ -15,8 +15,9 @@
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
-inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[maybe_unused]] N n)
-    : _sel(std::move(sel)) {}
+inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[maybe_unused]] N n,
+                                                      bool mirror)
+    : _sel(std::move(sel)), _mirror(mirror) {}
 
 template <typename N, typename PixelSelector>
 inline auto ToDenseMatrix<N, PixelSelector>::operator()()
@@ -27,7 +28,7 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()()
   const auto num_rows_ = num_rows();
   const auto num_cols_ = num_cols();
 
-  const auto mirror_matrix = chrom1() == chrom2();
+  const auto mirror_matrix = _mirror && chrom1() == chrom2();
 
   using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   MatrixT matrix = MatrixT::Zero(num_rows_, num_cols_);

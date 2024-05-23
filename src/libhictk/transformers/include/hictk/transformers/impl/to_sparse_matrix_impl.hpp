@@ -15,18 +15,31 @@
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
-inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector&& sel, [[maybe_unused]] N n)
-    : _sel(std::move(sel)) {}
+inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector&& sel, [[maybe_unused]] N n,
+                                                        bool transpose)
+    : _sel(std::move(sel)), _transpose(transpose) {}
 
 template <typename N, typename PixelSelector>
 inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> Eigen::SparseMatrix<N> {
   const auto offset1 = row_offset();
   const auto offset2 = col_offset();
 
-  Eigen::SparseMatrix<N> matrix(num_rows(), num_cols());
+  auto num_rows_ = num_rows();
+  auto num_cols_ = num_cols();
+
+  if (_transpose) {
+    std::swap(num_rows_, num_cols_);
+  }
+
+  Eigen::SparseMatrix<N> matrix(num_rows_, num_cols_);
   std::for_each(_sel.template begin<N>(), _sel.template end<N>(), [&](const ThinPixel<N>& p) {
-    matrix.insert(static_cast<std::int64_t>(p.bin1_id - offset1),
-                  static_cast<std::int64_t>(p.bin2_id - offset2)) = p.count;
+    auto bin1 = static_cast<std::int64_t>(p.bin1_id - offset1);
+    auto bin2 = static_cast<std::int64_t>(p.bin2_id - offset2);
+    if (_transpose) {
+      std::swap(bin1, bin2);
+    }
+
+    matrix.insert(bin1, bin2) = p.count;
   });
   matrix.makeCompressed();
   return matrix;
