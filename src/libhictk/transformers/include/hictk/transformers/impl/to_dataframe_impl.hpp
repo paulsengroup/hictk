@@ -170,9 +170,19 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_coo_table() {
     write_thin_pixels();
   }
 
-  auto table = arrow::Table::Make(coo_schema(), {std::make_shared<arrow::ChunkedArray>(_bin1_id),
-                                                 std::make_shared<arrow::ChunkedArray>(_bin2_id),
-                                                 std::make_shared<arrow::ChunkedArray>(_count)});
+  std::shared_ptr<arrow::Table> table{};
+
+  if (_bin1_id.empty()) {
+    auto result = arrow::Table::MakeEmpty(coo_schema());
+    if (!result.ok()) {
+      throw std::runtime_error(result.status().ToString());
+    }
+    return result.MoveValueUnsafe();
+  }
+
+  table = arrow::Table::Make(coo_schema(), {std::make_shared<arrow::ChunkedArray>(_bin1_id),
+                                            std::make_shared<arrow::ChunkedArray>(_bin2_id),
+                                            std::make_shared<arrow::ChunkedArray>(_count)});
 
   _bin1_id.clear();
   _bin2_id.clear();
@@ -187,16 +197,23 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
     write_pixels();
   }
 
+  if (_chrom1.empty()) {
+    auto result = arrow::Table::MakeEmpty(bg2_schema());
+    if (!result.ok()) {
+      throw std::runtime_error(result.status().ToString());
+    }
+    return result.MoveValueUnsafe();
+  }
   // clang-format off
   auto table = arrow::Table::Make(
-      bg2_schema(),
-      {std::make_shared<arrow::ChunkedArray>(_chrom1),
-       std::make_shared<arrow::ChunkedArray>(_start1),
-       std::make_shared<arrow::ChunkedArray>(_end1),
-       std::make_shared<arrow::ChunkedArray>(_chrom2),
-       std::make_shared<arrow::ChunkedArray>(_start2),
-       std::make_shared<arrow::ChunkedArray>(_end2),
-       std::make_shared<arrow::ChunkedArray>(_count)});
+        bg2_schema(),
+        {std::make_shared<arrow::ChunkedArray>(_chrom1),
+         std::make_shared<arrow::ChunkedArray>(_start1),
+         std::make_shared<arrow::ChunkedArray>(_end1),
+         std::make_shared<arrow::ChunkedArray>(_chrom2),
+         std::make_shared<arrow::ChunkedArray>(_start2),
+         std::make_shared<arrow::ChunkedArray>(_end2),
+         std::make_shared<arrow::ChunkedArray>(_count)});
   // clang-format on
 
   _chrom1.clear();
