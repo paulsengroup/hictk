@@ -195,7 +195,7 @@ inline Reference Reference::add_ALL(std::uint32_t scaling_factor) const {
     all_size += chrom.size() / scaling_factor;
   }
 
-  std::vector<Chromosome> chroms{Chromosome{0, "All", all_size}};
+  std::vector<Chromosome> chroms{Chromosome{0, "All", std::max(std::uint32_t{1}, all_size)}};
   std::copy_if(begin(), end(), std::back_inserter(chroms),
                [](const Chromosome& chrom) { return !chrom.is_all(); });
 

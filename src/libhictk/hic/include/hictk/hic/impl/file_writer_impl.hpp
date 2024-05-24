@@ -353,7 +353,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
     const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
-    const auto target_resolution_scaled = target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR;
+    const auto target_resolution_scaled = std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
 
     SPDLOG_INFO(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
                 chromosomes().at(0).name());
@@ -366,6 +366,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
       const auto num_bins = (chrom.size() + target_resolution - 1) / target_resolution;
       genome_size_scaled += static_cast<std::uint32_t>(num_bins) * target_resolution_scaled;
     }
+
+    genome_size_scaled = std::max(std::uint32_t{1}, genome_size_scaled);
 
     const auto bin_table_ALL = std::make_shared<const BinTable>(
         Reference{Chromosome{0, "__ALL__", genome_size_scaled}}, target_resolution_scaled);

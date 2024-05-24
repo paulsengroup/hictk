@@ -217,18 +217,19 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
 
   // Try to guess how many blocks overlap a single row of pixels
   std::size_t max_blocks_per_row = 0;
+  const auto &chrom = coord1().bin1.chrom();
   const auto bin_size = bins().resolution();
 
   const std::size_t first_bin_id = 0;
-  const std::size_t last_bin_id =
-      bins().at(coord1().bin1.chrom(), coord1().bin1.chrom().size() - 1).rel_id() - 1;
-  const auto samples = (std::min)(num_samples, bins().subset(coord1().bin1.chrom()).size());
+  const std::size_t last_bin_id = bins().at(chrom, chrom.size() - 1).rel_id();
+
+  const auto samples = std::min(num_samples, bins().subset(chrom).size());
   for (std::size_t i = 0; i < samples; ++i) {
-    const auto bin_id =
-        std::uniform_int_distribution<std::size_t>{first_bin_id, last_bin_id}(rand_eng);
+    const auto bin_id = std::uniform_int_distribution<std::size_t>{
+        first_bin_id, std::min(last_bin_id, last_bin_id - 1)}(rand_eng);
 
     const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
-    const auto bin1 = bins().at(coord1().bin1.chrom(), pos1);
+    const auto bin1 = bins().at(chrom, pos1);
 
     auto overlap = idx.find_overlaps({bin1, bin1}, coord2());
     const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.begin(), overlap.end()));
