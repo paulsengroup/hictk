@@ -113,7 +113,6 @@ class HictkConan(ConanFile):
         self.options["hdf5"].hl = False
         self.options["hdf5"].threadsafe = False
         self.options["hdf5"].parallel = False
-        self.options["hictk"].with_eigen = False
         self.options["highfive"].with_boost = False
         self.options["highfive"].with_eigen = False
         self.options["highfive"].with_opencv = False
