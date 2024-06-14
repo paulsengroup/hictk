@@ -21,7 +21,7 @@ target_link_libraries(transformers INTERFACE hictk::cooler hictk::hic)
 
 
 if (BUILD_SHARED_LIBS)
-  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:arrow::arrow_shared>")
+  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")
 else()
-  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:arrow::arrow_static>")
+  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>")
 endif()
