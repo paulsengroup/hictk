@@ -175,7 +175,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends python3-pip xz-utils
 
-          python3 -m pip install 'cooler>=0.9.3'
+          python3 -m pip install 'cooler==0.10.0' 'numpy<2'
 
       - name: Run integration tests
         run: |

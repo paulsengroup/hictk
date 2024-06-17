@@ -8,6 +8,14 @@ set(HICTK_WITH_EIGEN @HICTK_WITH_EIGEN@)
 
 include(CMakeFindDependencyMacro)
 
+if(HICTK_WITH_ARROW)
+  find_dependency(
+    Arrow
+    CONFIG
+    QUIET
+    REQUIRED)
+endif()
+
 find_dependency(
   bshoshany-thread-pool
   CONFIG

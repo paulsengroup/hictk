@@ -54,8 +54,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Debug,   developer_mode: OFF }
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Release, developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Debug,   developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Release, developer_mode: OFF }
 
 
     steps:
@@ -136,6 +136,7 @@ jobs:
         run: |
           conan install .                                           \
              --build=missing                                        \
+             --build="b2/*"                                         \
              --build="catch2/*"                                     \
              -pr:h default                                          \
              -pr:b default                                          \

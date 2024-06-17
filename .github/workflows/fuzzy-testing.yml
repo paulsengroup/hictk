@@ -195,7 +195,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y curl zstd
-          pip install --no-cache-dir 'cooler>=0.9.3'
+          pip install --no-cache-dir 'cooler==0.10.0' 'numpy<2'
 
       - name: Detect CI type
         id: ci-type
