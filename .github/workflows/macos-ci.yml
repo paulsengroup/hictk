@@ -61,11 +61,11 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '14', os: 'macos-12', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.1.*', cmake: '3.28.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.1.*', cmake: '3.28.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '14', os: 'macos-12', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.4.*', cmake: '3.29.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.4.*', cmake: '3.29.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -318,7 +318,9 @@ jobs:
           chown -R $(id -u):$(id -g) $PWD
 
       - name: Generate requirements.txt for pip
-        run: echo 'cooler>=0.9.3' > requirements.txt
+        run: |
+          echo 'cooler==0.10.0' > requirements.txt
+          echo 'numpy<2' > requirements.txt
 
       - uses: actions/setup-python@v5
         with:

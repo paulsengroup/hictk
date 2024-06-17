@@ -29,7 +29,7 @@ ENV CC="$C_COMPILER"
 ENV CXX="$CXX_COMPILER"
 
 # Install b2 using Conan
-RUN printf '[requires]\nb2/4.10.1\n[options]\nb2*:toolset=%s' \
+RUN printf '[requires]\nb2/5.2.1\n[options]\nb2*:toolset=%s' \
            "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.txt
 
 RUN conan install /tmp/conanfile.txt                 \
