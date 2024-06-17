@@ -136,6 +136,7 @@ jobs:
         run: |
           conan install .                                           \
              --build=missing                                        \
+             --build="b2/*"                                         \
              --build="catch2/*"                                     \
              -pr:h default                                          \
              -pr:b default                                          \
