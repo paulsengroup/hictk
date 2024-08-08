@@ -48,19 +48,20 @@ discourse:
 
 .. code-block:: bibtex
 
-  @article {hictk,
-	  author = {Roberto Rossini and Jonas Paulsen},
-	  title = {hictk: blazing fast toolkit to work with .hic and .cool files},
-	  elocation-id = {2023.11.26.568707},
-	  year = {2023},
-	  doi = {10.1101/2023.11.26.568707},
-	  publisher = {Cold Spring Harbor Laboratory},
-	  URL = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707},
-	  eprint = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707.full.pdf},
-	  journal = {bioRxiv}
-  }
-
-If you use ``hictk convert`` to convert .[m]cool files to .hic format you should also cite JuicerTools or HiCTools.
+@article{hictk,
+    author = {Rossini, Roberto and Paulsen, Jonas},
+    title = "{hictk: blazing fast toolkit to work with .hic and .cool files}",
+    journal = {Bioinformatics},
+    volume = {40},
+    number = {7},
+    pages = {btae408},
+    year = {2024},
+    month = {06},
+    issn = {1367-4811},
+    doi = {10.1093/bioinformatics/btae408},
+    url = {https://doi.org/10.1093/bioinformatics/btae408},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/40/7/btae408/58385157/btae408.pdf},
+}
 
 
 .. only:: not latex

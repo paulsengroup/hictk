@@ -63,23 +63,26 @@ The public C++ API of hictk is documented in the [C++ API Reference](https://hic
 
 If you use hictk in you reaserch, please cite the following publication:
 
-Roberto Rossini, Jonas Paulsen hictk: blazing fast toolkit to work with .hic and .cool files.
-_bioRxiv_ __2023.11.26.568707__. [https://doi.org/10.1101/2023.11.26.568707](https://doi.org/10.1101/2023.11.26.568707)
+Roberto Rossini, Jonas Paulsen, hictk: blazing fast toolkit to work with .hic and .cool files
+_Bioinformatics_, Volume 40, Issue 7, July 2024, btae408, [https://doi.org/10.1093/bioinformatics/btae408](https://doi.org/10.1093/bioinformatics/btae408)
 
 <details>
 <summary>BibTex</summary>
 
 ```bibtex
-@article {hictk,
-	author = {Roberto Rossini and Jonas Paulsen},
-	title = {hictk: blazing fast toolkit to work with .hic and .cool files},
-	elocation-id = {2023.11.26.568707},
-	year = {2023},
-	doi = {10.1101/2023.11.26.568707},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707},
-	eprint = {https://www.biorxiv.org/content/early/2023/11/27/2023.11.26.568707.full.pdf},
-	journal = {bioRxiv}
+@article{hictk,
+    author = {Rossini, Roberto and Paulsen, Jonas},
+    title = "{hictk: blazing fast toolkit to work with .hic and .cool files}",
+    journal = {Bioinformatics},
+    volume = {40},
+    number = {7},
+    pages = {btae408},
+    year = {2024},
+    month = {06},
+    issn = {1367-4811},
+    doi = {10.1093/bioinformatics/btae408},
+    url = {https://doi.org/10.1093/bioinformatics/btae408},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/40/7/btae408/58385157/btae408.pdf},
 }
 ```
 
