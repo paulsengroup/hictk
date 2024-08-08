@@ -48,20 +48,20 @@ discourse:
 
 .. code-block:: bibtex
 
-@article{hictk,
-    author = {Rossini, Roberto and Paulsen, Jonas},
-    title = "{hictk: blazing fast toolkit to work with .hic and .cool files}",
-    journal = {Bioinformatics},
-    volume = {40},
-    number = {7},
-    pages = {btae408},
-    year = {2024},
-    month = {06},
-    issn = {1367-4811},
-    doi = {10.1093/bioinformatics/btae408},
-    url = {https://doi.org/10.1093/bioinformatics/btae408},
-    eprint = {https://academic.oup.com/bioinformatics/article-pdf/40/7/btae408/58385157/btae408.pdf},
-}
+  @article{hictk,
+      author = {Rossini, Roberto and Paulsen, Jonas},
+      title = "{hictk: blazing fast toolkit to work with .hic and .cool files}",
+      journal = {Bioinformatics},
+      volume = {40},
+      number = {7},
+      pages = {btae408},
+      year = {2024},
+      month = {06},
+      issn = {1367-4811},
+      doi = {10.1093/bioinformatics/btae408},
+      url = {https://doi.org/10.1093/bioinformatics/btae408},
+      eprint = {https://academic.oup.com/bioinformatics/article-pdf/40/7/btae408/58385157/btae408.pdf},
+  }
 
 
 .. only:: not latex
