@@ -26,6 +26,10 @@ repos:
     rev: 24.8.0
     hooks:
       - id: black
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
   - repo: local
     hooks:
       - id: clang-format
