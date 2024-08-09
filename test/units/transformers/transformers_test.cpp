@@ -433,6 +433,7 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 140'900'545);
+      CHECK(matrix == matrix.transpose());
     }
 
     SECTION("ToDenseMatrix (cis) wo/ mirroring") {
@@ -564,6 +565,7 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.rows() == 10);
       CHECK(matrix.cols() == 10);
       CHECK(matrix.sum() == 22'929'541);
+      CHECK(matrix == matrix.transpose());
     }
 
     SECTION("ToDenseMatrix (trans)") {
@@ -580,6 +582,7 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.rows() == 60);
       CHECK(matrix.cols() == 60);
       CHECK(matrix.sum() == 149'078'427);
+      CHECK(matrix == matrix.transpose());
     }
   }
 }
