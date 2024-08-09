@@ -457,7 +457,7 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     SECTION("ToDenseMatrix (gw) w/ mirroring") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, true)();
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, true)();
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 2'671'244'699);
