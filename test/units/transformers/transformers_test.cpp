@@ -454,6 +454,24 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.sum() == 6'413'076);
     }
 
+    SECTION("ToDenseMatrix (gw) w/ mirroring") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, true)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 2'671'244'699);
+    }
+
+    SECTION("ToDenseMatrix (gw) wo/ mirroring") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, false)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'868'866'491);
+    }
+
     SECTION("ToDenseMatrix regression PR #154") {
       const auto path = datadir / "cooler/cooler_test_file.cool";
       const cooler::File clr(path.string());
