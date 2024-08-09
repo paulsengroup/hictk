@@ -423,6 +423,28 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 6'413'076);
     }
+
+    SECTION("ToSparseMatrix (gw) wo/ transpose") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, false)();
+      CHECK(matrix.nonZeros() == 718'781);
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
+    }
+
+    SECTION("ToSparseMatrix (gw) w/ transpose") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, true)();
+      CHECK(matrix.nonZeros() == 718'781);
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
+    }
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
