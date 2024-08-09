@@ -2,11 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 
+default_language_version:
+  python: python3 # Defaults to python2, so override it.
+
 exclude: ^data
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
       - id: check-yaml
@@ -16,3 +21,17 @@ repos:
         args:
           - --fix=lf
       - id: trailing-whitespace
+  # Formatters should be run late so that they can re-format any prior changes.
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+  - repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        entry: clang-format
+        types_or: [ c++, proto, def ]
+        language: python
+        args: [ '-i' ]
+        additional_dependencies: [ 'clang-format==18.1.8' ]
