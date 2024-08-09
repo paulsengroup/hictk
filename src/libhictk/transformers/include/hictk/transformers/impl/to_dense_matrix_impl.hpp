@@ -57,8 +57,12 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()()
 template <typename N, typename PixelSelector>
 inline std::int64_t ToDenseMatrix<N, PixelSelector>::num_rows() const noexcept {
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    const auto bin_size = _sel.bins().resolution();
     const auto span = _sel.coord1().bin2.end() - _sel.coord1().bin1.start();
+    if (span == 0) {
+      return static_cast<std::int64_t>(_sel.bins().size());
+    }
+
+    const auto bin_size = _sel.bins().resolution();
     return static_cast<std::int64_t>((span + bin_size - 1) / bin_size);
   }
 
@@ -68,8 +72,12 @@ inline std::int64_t ToDenseMatrix<N, PixelSelector>::num_rows() const noexcept {
 template <typename N, typename PixelSelector>
 inline std::int64_t ToDenseMatrix<N, PixelSelector>::num_cols() const noexcept {
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    const auto bin_size = _sel.bins().resolution();
     const auto span = _sel.coord2().bin2.end() - _sel.coord2().bin1.start();
+    if (span == 0) {
+      return static_cast<std::int64_t>(_sel.bins().size());
+    }
+
+    const auto bin_size = _sel.bins().resolution();
     return static_cast<std::int64_t>((span + bin_size - 1) / bin_size);
   }
 
@@ -78,16 +86,18 @@ inline std::int64_t ToDenseMatrix<N, PixelSelector>::num_cols() const noexcept {
 
 template <typename N, typename PixelSelector>
 inline std::uint64_t ToDenseMatrix<N, PixelSelector>::row_offset() const noexcept {
+  constexpr auto bad_bin_id = std::numeric_limits<std::uint64_t>::max();
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    return _sel.coord1().bin1.id();
+    return _sel.coord1().bin1.id() == bad_bin_id ? 0 : _sel.coord1().bin1.id();
   }
   return 0;
 }
 
 template <typename N, typename PixelSelector>
 inline std::uint64_t ToDenseMatrix<N, PixelSelector>::col_offset() const noexcept {
+  constexpr auto bad_bin_id = std::numeric_limits<std::uint64_t>::max();
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    return _sel.coord2().bin1.id();
+    return _sel.coord2().bin1.id() == bad_bin_id ? 0 : _sel.coord2().bin1.id();
   }
   return 0;
 }
