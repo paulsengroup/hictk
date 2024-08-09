@@ -22,7 +22,7 @@ repos:
           - --fix=lf
       - id: trailing-whitespace
   # Formatters should be run late so that they can re-format any prior changes.
-  - repo: https://github.com/psf/black
+  - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 24.8.0
     hooks:
       - id: black
