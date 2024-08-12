@@ -353,7 +353,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
     const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
-    const auto target_resolution_scaled = std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
+    const auto target_resolution_scaled =
+        std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
 
     SPDLOG_INFO(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
                 chromosomes().at(0).name());
@@ -426,8 +427,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
   }
 }
 
-inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
-    -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1,
+                                        const Chromosome &chrom2) -> HiCSectionOffsets {
   try {
     write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
@@ -1047,9 +1048,8 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
   };
 }
 
-inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
-                                           const std::vector<std::uint32_t> &resolutions)
-    -> BinTables {
+inline auto HiCFileWriter::init_bin_tables(
+    const Reference &chromosomes, const std::vector<std::uint32_t> &resolutions) -> BinTables {
   BinTables bin_tables(resolutions.size());
   for (const auto &res : resolutions) {
     bin_tables.emplace(res, std::make_shared<const BinTable>(chromosomes, res));
@@ -1213,11 +1213,9 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
   }
 }
 
-inline auto HiCFileWriter::write_interaction_block(std::uint64_t block_id, const Chromosome &chrom1,
-                                                   const Chromosome &chrom2,
-                                                   std::uint32_t resolution,
-                                                   const MatrixInteractionBlock<float> &blk)
-    -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_interaction_block(
+    std::uint64_t block_id, const Chromosome &chrom1, const Chromosome &chrom2,
+    std::uint32_t resolution, const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
   const auto offset = _fs.tellp();
 
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);

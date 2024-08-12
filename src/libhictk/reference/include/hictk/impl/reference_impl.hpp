@@ -227,8 +227,8 @@ inline auto Reference::construct_chrom_buffer(ChromosomeNameIt first_chrom_name,
 }
 
 template <typename ChromosomeIt>
-inline auto Reference::construct_chrom_buffer(ChromosomeIt first_chrom, ChromosomeIt last_chrom)
-    -> ChromBuff {
+inline auto Reference::construct_chrom_buffer(ChromosomeIt first_chrom,
+                                              ChromosomeIt last_chrom) -> ChromBuff {
   std::vector<std::string> chrom_names{};
   std::vector<std::uint32_t> chrom_sizes{};
 

@@ -178,8 +178,8 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
 }
 
 inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
-                                                    std::size_t bin3, std::size_t bin4) const
-    -> Overlap {
+                                                    std::size_t bin3,
+                                                    std::size_t bin4) const -> Overlap {
   // When fetching large regions (especially regions where one dimension is much bigger than the
   // other) the approach outlined here is too conservative (as in, it computes a bound box that is
   // much larger than the actual query, thus returning many blocks not overlapping the query):

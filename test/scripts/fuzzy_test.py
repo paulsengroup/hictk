@@ -16,11 +16,10 @@ import sys
 import time
 from typing import Dict, Tuple
 
+import cooler
 import hictkpy
 import numpy as np
 import pandas as pd
-
-import cooler
 
 
 def make_cli():
@@ -63,8 +62,12 @@ def make_cli():
         help="Ratio of 1D to 2D queries. Use 0 or 1 to only test 1D or 2D queries.",
     )
 
-    cli.add_argument("--duration", type=positive_int, default=60, help="Duration in seconds.")
-    cli.add_argument("--query-length-avg", type=float, default=1_000_000, help="Average query size.")
+    cli.add_argument(
+        "--duration", type=positive_int, default=60, help="Duration in seconds."
+    )
+    cli.add_argument(
+        "--query-length-avg", type=float, default=1_000_000, help="Average query size."
+    )
     cli.add_argument(
         "--query-length-std",
         type=float,
@@ -96,20 +99,28 @@ def cooler_dump(selector, query1: str, query2: str) -> pd.DataFrame:
 
     df["chrom1"] = df["chrom1"].astype(str)
     df["chrom2"] = df["chrom2"].astype(str)
-    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
+    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[
+        ["count"]
+    ]
 
 
-def hictk_dump(file, query1: str, query2: str, normalization: str = "NONE") -> pd.DataFrame:
+def hictk_dump(
+    file, query1: str, query2: str, normalization: str = "NONE"
+) -> pd.DataFrame:
     logging.debug("[hictkpy] running query for %s, %s...", query1, query2)
     df = file.fetch(query1, query2, normalization, join=True).to_df()
-    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[["count"]]
+    return df.set_index(["chrom1", "start1", "end1", "chrom2", "start2", "end2"])[
+        ["count"]
+    ]
 
 
 def read_chrom_sizes_cooler(path_to_cooler_file: pathlib.Path) -> Dict[str, int]:
     return cooler.Cooler(str(path_to_cooler_file)).chromsizes.to_dict()
 
 
-def generate_query_1d(chroms, weights: np.ndarray, mean_length: float, stddev_length: float) -> str:
+def generate_query_1d(
+    chroms, weights: np.ndarray, mean_length: float, stddev_length: float
+) -> str:
     chrom_name, chrom_size = random.choices(chroms, weights=weights, k=1)[0]
 
     query_length = max(2.0, random.gauss(mu=mean_length, sigma=stddev_length))
@@ -155,7 +166,9 @@ def find_differences(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
         suffixes=("1", "2"),
     )
     # We're mapping False to None so that we can more easily drop identical rows with dropna()
-    df["count_close_enough"] = pd.Series(np.isclose(df["count1"], df["count2"])).map({False: None})
+    df["count_close_enough"] = pd.Series(np.isclose(df["count1"], df["count2"])).map(
+        {False: None}
+    )
 
     # We're dropping the counts to avoid incorrectly flagging rows with nan as counts
     return df.drop(columns=["count1", "count2"]).dropna()
@@ -221,7 +234,9 @@ def worker(
         weights = chrom_sizes / chrom_sizes.sum()
 
         clr = cooler.Cooler(str(path_to_reference_file))
-        sel = clr.matrix(balance=balance if balance != "NONE" else False, as_pixels=True, join=True)
+        sel = clr.matrix(
+            balance=balance if balance != "NONE" else False, as_pixels=True, join=True
+        )
 
         f = hictkpy.File(str(path_to_file), clr.binsize)
 

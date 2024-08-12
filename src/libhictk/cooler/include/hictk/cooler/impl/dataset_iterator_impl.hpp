@@ -269,8 +269,8 @@ inline void Dataset::iterator<T>::read_chunk_at_offset(std::size_t new_offset) c
 }
 
 template <typename T>
-inline auto Dataset::iterator<T>::make_end_iterator(Dataset dset, std::size_t chunk_size)
-    -> iterator {
+inline auto Dataset::iterator<T>::make_end_iterator(Dataset dset,
+                                                    std::size_t chunk_size) -> iterator {
   return iterator::make_end_iterator(std::make_shared<const Dataset>(std::move(dset)), chunk_size);
 }
 
