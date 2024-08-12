@@ -4,9 +4,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import random
 import argparse
 import pathlib
+import random
+
 import pandas as pd
 
 

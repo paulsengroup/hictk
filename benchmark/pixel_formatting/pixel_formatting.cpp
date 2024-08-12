@@ -29,7 +29,6 @@ template <typename PixelT>
   return pixels.size();
 }
 
-
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
   CLI::App cli{};

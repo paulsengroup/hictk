@@ -14,7 +14,9 @@ if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET REQUIRED)
 endif()
 
-set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
+set(HICTK_CXX_BYTE_ORDER
+    "${CMAKE_CXX_BYTE_ORDER}"
+    CACHE STRING "Specify the CPU architecture endianness")
 
 if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
   message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")

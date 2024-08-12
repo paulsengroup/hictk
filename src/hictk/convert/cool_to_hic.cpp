@@ -80,7 +80,8 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
 
   if (c.input_format == "cool") {
     for (const auto& norm : c.normalization_methods) {
-      copy_normalization_vector(w, base_clr, base_clr.resolution(), norm, c.fail_if_normalization_method_is_not_avaliable);
+      copy_normalization_vector(w, base_clr, base_clr.resolution(), norm,
+                                c.fail_if_normalization_method_is_not_avaliable);
     }
     w.write_norm_vectors_and_norm_expected_values();
     return;

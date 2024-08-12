@@ -351,8 +351,8 @@ inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
   return groups;
 }
 
-inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes, double w0)
-    -> DatasetMap {
+inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
+                                double w0) -> DatasetMap {
   DatasetMap datasets(MANDATORY_DATASET_NAMES.size());
 
   const std::size_t num_pixel_datasets = 3;
@@ -442,8 +442,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
-inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
-    -> Attributes {
+inline auto File::read_standard_attributes(const RootGroup &root_grp,
+                                           bool initialize_missing) -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
 
