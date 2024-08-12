@@ -39,3 +39,10 @@ repos:
         language: python
         args: [ '-i' ]
         additional_dependencies: [ 'clang-format==18.1.8' ]
+      - id: cmake-format
+        name: cmake-format
+        entry: cmake-format
+        types_or: [ cmake ]
+        language: python
+        args: [ '-i' ]
+        additional_dependencies: [ 'cmake-format==0.6.13', 'pyyaml' ]
