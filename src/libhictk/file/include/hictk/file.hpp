@@ -54,6 +54,7 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord2() const;
 
   [[nodiscard]] const BinTable &bins() const;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
 
   template <typename PixelSelectorT>
   [[nodiscard]] constexpr const PixelSelectorT &get() const noexcept;

@@ -42,6 +42,7 @@ class HiCBlockReader {
   [[nodiscard]] const Chromosome& chrom1() const noexcept;
   [[nodiscard]] const Chromosome& chrom2() const noexcept;
   [[nodiscard]] const BinTable& bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const Index& index() const noexcept;
 
   [[nodiscard]] double sum() const noexcept;
