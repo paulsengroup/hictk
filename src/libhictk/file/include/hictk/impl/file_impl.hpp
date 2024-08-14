@@ -100,6 +100,11 @@ inline const BinTable& PixelSelector::bins() const {
   return std::visit([&](const auto& sel) -> const BinTable& { return sel.bins(); }, _sel);
 }
 
+inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
+  return std::visit(
+      [&](const auto& sel) -> std::shared_ptr<const BinTable> { return sel.bins_ptr(); }, _sel);
+}
+
 template <typename PixelSelectorT>
 constexpr const PixelSelectorT& PixelSelector::get() const noexcept {
   return std::get<PixelSelectorT>(_sel);
