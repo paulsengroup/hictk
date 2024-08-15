@@ -69,7 +69,8 @@ class MultiResFile {
   [[nodiscard]] static std::uint32_t compute_base_resolution(
       const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res);
 
-  static void coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<std::int32_t>>& buffer);
+  template <typename N = std::int32_t>
+  static void coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<N>>& buffer);
 
  private:
   [[nodiscard]] static std::vector<std::uint32_t> read_resolutions(const HighFive::File& f);

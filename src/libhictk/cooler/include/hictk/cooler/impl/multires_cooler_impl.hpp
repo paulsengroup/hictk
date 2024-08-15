@@ -99,26 +99,29 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
   SPDLOG_INFO(FMT_STRING("Copying {} resolution from \"{}\""), base_res, base.path());
   mclr.copy_resolution(base);
 
-  std::vector<ThinPixel<std::int32_t>> buffer{500'000};
-  for (std::size_t i = 1; i < resolutions_.size(); ++i) {
-    const auto tgt_resolution = resolutions_[i];
-    const auto base_resolution = compute_base_resolution(mclr._resolutions, tgt_resolution);
+  std::visit(
+      [&]([[maybe_unused]] auto count_type) {
+        using PixelT = decltype(count_type);
 
-    auto attributes = base.has_float_pixels() ? Attributes::init<double>(tgt_resolution)
-                                              : Attributes::init<std::int32_t>(tgt_resolution);
-    attributes.assembly = base.attributes().assembly;
-    auto clr =
-        base.has_float_pixels()
-            ? File::create<double>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
-                                   tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE)
-            : File::create<std::int32_t>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
-                                         tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE);
-    SPDLOG_INFO(FMT_STRING("Generating {} resolution from {} ({}x)"), tgt_resolution,
-                base_resolution, tgt_resolution / base_resolution);
+        std::vector<ThinPixel<PixelT>> buffer{500'000};
+        for (std::size_t i = 1; i < resolutions_.size(); ++i) {
+          const auto tgt_resolution = resolutions_[i];
+          const auto base_resolution = compute_base_resolution(mclr._resolutions, tgt_resolution);
 
-    MultiResFile::coarsen(mclr.open(base_res), clr, buffer);
-    mclr._resolutions.push_back(tgt_resolution);
-  }
+          auto attributes = Attributes::init<PixelT>(tgt_resolution);
+          attributes.assembly = base.attributes().assembly;
+
+          auto clr = File::create<PixelT>(mclr.init_resolution(tgt_resolution), base.chromosomes(),
+                                          tgt_resolution, attributes, DEFAULT_HDF5_CACHE_SIZE);
+
+          SPDLOG_INFO(FMT_STRING("Generating {} resolution from {} ({}x)"), tgt_resolution,
+                      base_resolution, tgt_resolution / base_resolution);
+
+          MultiResFile::coarsen(mclr.open(base_res), clr, buffer);
+          mclr._resolutions.push_back(tgt_resolution);
+        }
+      },
+      base.pixel_variant());
 
   return mclr;
 }
@@ -155,7 +158,7 @@ template <typename N>
 inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes attributes) {
   const auto base_resolution = compute_base_resolution(resolutions(), resolution);
 
-  std::vector<ThinPixel<std::int32_t>> buffer{500'000};
+  std::vector<ThinPixel<N>> buffer{500'000};
   auto base_clr = open(base_resolution);
   attributes.assembly = base_clr.attributes().assembly;
   attributes.bin_size = resolution;
@@ -202,13 +205,14 @@ inline const HighFive::File& MultiResFile::file_handle() const {
   return _root_grp->group.getFile();
 }
 
-inline void MultiResFile::coarsen(const File& clr1, File& clr2,
-                                  std::vector<ThinPixel<std::int32_t>>& buffer) {
+template <typename N>
+inline void MultiResFile::coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<N>>& buffer) {
+  static_assert(std::is_arithmetic_v<N>);
   SPDLOG_INFO(FMT_STRING("generating {} resolution from {} ({}x)"), clr2.resolution(),
               clr1.resolution(), clr2.resolution() / clr1.resolution());
   auto sel1 = clr1.fetch();
-  auto sel2 = transformers::CoarsenPixels(sel1.begin<std::int32_t>(), sel1.end<std::int32_t>(),
-                                          clr1.bins_ptr(), clr2.resolution() / clr1.resolution());
+  auto sel2 = transformers::CoarsenPixels(sel1.begin<N>(), sel1.end<N>(), clr1.bins_ptr(),
+                                          clr2.resolution() / clr1.resolution());
 
   const auto update_frequency =
       std::max(std::size_t(1'000'000), (clr1.dataset("pixels/bin1_id").size() / 100));
