@@ -24,6 +24,7 @@ subcommands=(
   fix-mcool
   load
   merge
+  metadata
   rename-chromosomes
   validate
   zoomify
