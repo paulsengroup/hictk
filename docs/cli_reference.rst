@@ -60,7 +60,7 @@ hictk balance ice
                                  - genome-wide interactions (gw)
                                  - trans-only interactions (trans)
                                  - cis-only interactions (cis)
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
     --ignore-diags UINT [2]     Number of diagonals (including the main diagonal) to mask before balancing.
     --mad-max FLOAT:NONNEGATIVE [5]
                                 Mask bins using the MAD-max filter.
@@ -78,7 +78,8 @@ hictk balance ice
                                 Rescale weights such that rows sum approximately to 2.
     --name TEXT                 Name to use when writing weights to file.
                                 Defaults to ICE, INTER_ICE and GW_ICE when --mode is cis, trans and gw, respectively.
-    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+    --create-weight-link,--no-create-weight-link{false}
+                                Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --in-memory                 Store all interactions in memory (greatly improves performance).
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
@@ -86,7 +87,7 @@ hictk balance ice
                                 Number of interactions to process at once. Ignored when using --in-memory.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
     -l,--compression-lvl UINT:INT in [0 - 19] []
                                 Compression level used to compress temporary files using ZSTD.
@@ -132,7 +133,7 @@ hictk balance scale
                                 Number of interactions to process at once. Ignored when using --in-memory.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
     -l,--compression-lvl UINT:INT in [0 - 19] []
                                 Compression level used to compress temporary files using ZSTD.
@@ -194,12 +195,12 @@ hictk convert
                                 Pass NONE to avoid copying normalization vectors.
     --fail-if-norm-not-found    Fail if any of the requested normalization vectors are missing.
     -g,--genome TEXT            Genome assembly name. By default this is copied from the .hic file metadata.
-    --tmpdir TEXT               Path where to store temporary files.
+    --tmpdir TEXT:DIR [/tmp]    Path where to store temporary files.
     --chunk-size UINT:POSITIVE [10000000]
                                 Batch size to use when converting .[m]cool to .hic.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [2 - 16] [2]
+    -t,--threads UINT:UINT in [2 - 32] [2]
                                 Maximum number of parallel threads to spawn.
                                 When converting from hic to cool, only two threads will be used.
     -l,--compression-lvl UINT:INT in [1 - 12] [6]
@@ -208,6 +209,10 @@ hictk convert
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when creating .[m]cool files.
+    --count-type TEXT:{auto,int,float} [auto]
+                                Specify the strategy used to infer count types when converting .hic
+                                files to .[m]cool format.
+                                Can be one of: int, float, auto.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
@@ -257,7 +262,7 @@ hictk fix-mcool
     output TEXT REQUIRED        Path where to store the restored .mcool.
   Options:
     -h,--help                   Print this help message and exit
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
     --skip-balancing            Do not recompute or copy balancing weights.
     --check-base-resolution     Check whether the base resolution is corrupted.
     --in-memory                 Store all interactions in memory while balancing (greatly improves performance).
@@ -266,7 +271,7 @@ hictk fix-mcool
                                 Ignored when using --in-memory.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn (only applies to the balancing stage).
     -l,--compression-lvl UINT:INT in [0 - 19] []
                                 Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).
@@ -309,10 +314,10 @@ hictk load
     -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only a single thread will be used.
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -338,10 +343,10 @@ hictk merge
     -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When merging interactions in Cooler format, only a single thread will be used.
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when merging .cool files.
@@ -410,7 +415,7 @@ hictk zoomify
     -l,--compression-lvl UINT:INT bounded to [1 - 12] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .mcool and .hic files, respectively.
-    -t,--threads UINT:UINT in [1 - 16] [1]
+    -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When zoomifying interactions from a .cool file, only a single thread will be used.
     --chunk-size UINT [10000000]
@@ -419,6 +424,6 @@ hictk zoomify
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when zoomifying .cool files.
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
