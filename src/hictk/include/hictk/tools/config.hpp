@@ -82,6 +82,7 @@ struct ConvertConfig {
   std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
   std::string input_format{};
   std::string output_format{};
+  std::string count_type{"auto"};
 
   std::vector<std::uint32_t> resolutions{};
   std::string genome{};
