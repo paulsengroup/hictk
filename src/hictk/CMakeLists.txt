@@ -4,8 +4,10 @@
 
 find_package(CLI11 REQUIRED)
 find_package(FMT REQUIRED)
+find_package(nlohmann_json REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(tomlplusplus REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -46,11 +48,13 @@ target_link_system_libraries(
   hictk
   PRIVATE
   CLI11::CLI11
-  readerwriterqueue::readerwriterqueue
-  std::filesystem
-  PUBLIC
   fmt::fmt-header-only
+  nlohmann_json::nlohmann_json
+  readerwriterqueue::readerwriterqueue
   spdlog::spdlog_header_only
+  std::filesystem
+  tomlplusplus::tomlplusplus
+  PUBLIC
   Threads::Threads)
 
 include(GNUInstallDirs)

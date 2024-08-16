@@ -45,8 +45,13 @@ void Cli::make_metadata_subcommand() {
       "-f,--output-format",
       c.output_format,
       "Format used to return file metadata.\n"
-      "Should be one of: json, toml, tsv, or yaml.")
-      ->check(CLI::IsMember({"json", "tsv", "toml", "yaml"}))
+      "Should be one of: json, toml, or yaml.")
+      ->check(CLI::IsMember({"json", "toml", "yaml"}))
+      ->capture_default_str();
+  sc.add_flag(
+      "--include-file-path,!--exclude-file-path",
+      c.include_file_path,
+      "Output the given input path using attribute \"uri\"")
       ->capture_default_str();
   // clang-format on
 

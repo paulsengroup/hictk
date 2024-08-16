@@ -47,10 +47,12 @@ class HictkConan(ConanFile):
         self.requires("hdf5/1.14.3#31ccd8d4de83844f5db48471df1944a1")
         self.requires("highfive/2.9.0#c57477beed8b0110fadeb6da8f48bcc5")
         self.requires("libdeflate/1.20#3bd86e0160becf992346aa68b4938c40")
+        self.requires("nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d")
         self.requires("parallel-hashmap/1.3.12#dc7755096d8a1fac7792fdd85760b6ca")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")
         self.requires("spdlog/1.14.1#972bbf70be1da4bc57ea589af0efde03")
+        self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
         self.requires("zstd/1.5.6#afefe79a309bc2a7b9f56c2093504c8b")
 
     def validate(self):

@@ -5,12 +5,14 @@
 #include <fmt/format.h>
 #include <parallel_hashmap/phmap.h>
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
+#include <toml.hpp>
 #include <utility>
 #include <vector>
 
@@ -20,172 +22,54 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/numeric_utils.hpp"
-#include "hictk/string_utils.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/type_traits.hpp"
 #include "hictk/version.hpp"
 
 namespace hictk::tools {
 
-enum class MetadataOutputFormat : std::uint8_t { json, toml, tsv, yaml };
+enum class MetadataOutputFormat : std::uint8_t { json, toml, yaml };
 
-class Attribute {
-  std::string _key{};
-  std::optional<std::string> _value{};
-  bool _quote{};
+using AttributeValue = std::variant<std::int64_t, double, bool, std::string>;
 
- public:
-  Attribute() = default;
-  template <typename T>
-  Attribute(std::string_view key, const T& value) : _key(key) {
-    auto [str, needs_quoting] = to_str(value);
-    _value = std::move(str);  // NOLINT
-    _quote = needs_quoting;   // NOLINT
+[[nodiscard]] static AttributeValue try_parse_str(const std::string& value) {
+  try {
+    // NOLINTNEXTLINE
+    return {internal::parse_numeric_or_throw<std::int64_t>(value)};
+  } catch (...) {  // NOLINT
   }
 
-  explicit operator bool() const noexcept { return !_key.empty() && _value.has_value(); }
-
-  bool operator<(const Attribute& other) const noexcept {
-    if (_key == other._key) {
-      return _value < other._value;
-    }
-    return _key < other._key;
+  try {
+    // NOLINTNEXTLINE
+    return {internal::parse_numeric_or_throw<double>(value)};
+  } catch (...) {  // NOLINT
   }
 
-  template <typename T>
-  [[nodiscard]] static std::pair<std::optional<std::string>, bool> to_str(const T& value) {
-    return std::make_pair(std::make_optional(fmt::to_string(value)), false);
+  if (value == "true" || value == "True") {
+    return {true};
+  }
+  if (value == "false" || value == "False") {
+    return {false};
   }
 
-  [[nodiscard]] static std::pair<std::optional<std::string>, bool> to_str(
-      const std::string& value) {
-    try {
-      // NOLINTNEXTLINE
-      return to_str(internal::parse_numeric_or_throw<std::uint64_t>(value));
-    } catch (...) {  // NOLINT
-    }
-
-    try {
-      // NOLINTNEXTLINE
-      return to_str(internal::parse_numeric_or_throw<std::int64_t>(value));
-    } catch (...) {  // NOLINT
-    }
-
-    try {
-      // NOLINTNEXTLINE
-      return to_str(internal::parse_numeric_or_throw<double>(value));
-    } catch (...) {  // NOLINT
-    }
-
-    if (value == "true" || value == "True") {
-      return to_str(true);
-    }
-    if (value == "false" || value == "False") {
-      return to_str(false);
-    }
-
-    if (value == "NULL" || value == "Null" || value == "null" || value == "None") {
-      return std::make_pair(std::make_optional("null"), false);
-    }
-
-    return std::make_pair(std::make_optional(value), true);
+  if (value == "NULL" || value == "Null" || value == "null" || value == "None") {
+    return {"null"};
   }
 
-  template <typename... T>
-  [[nodiscard]] static std::pair<std::optional<std::string>, bool> to_str(
-      const std::variant<T...>& var) {
-    return std::visit([&](const auto& value) { return to_str(value); }, var);
+  return {value};
+}
+
+template <typename... T>
+[[nodiscard]] static AttributeValue try_parse_str(const std::variant<T...>& var) {
+  return std::visit([&](const auto& value) { return try_parse_str(value); }, var);
+}
+
+template <typename T>
+[[nodiscard]] static AttributeValue try_parse_str(const std::optional<T>& opt) {
+  if (opt.has_value()) {
+    return try_parse_str(opt.value());
   }
-
-  template <typename T>
-  [[nodiscard]] static std::pair<std::optional<std::string>, bool> to_str(
-      const std::optional<T>& opt) {
-    if (opt.has_value()) {
-      return to_str(opt.value());
-    }
-    return {};
-  }
-
-  template <MetadataOutputFormat out_fmt,
-            typename std::enable_if_t<out_fmt == MetadataOutputFormat::json>* = nullptr>
-  [[nodiscard]] std::string format() const {
-    if (!_value.has_value()) {
-      return "";
-    }
-
-    if (*_value == "{}") {
-      return fmt::format(FMT_STRING("\t{:?}: {{}}"), _key);
-    }
-
-    std::string str{};
-    if (_value->find('\n') != std::string_view::npos) {
-      // indent value
-      str = internal::str_replace(*_value, "\n", "\t\n");
-      str = std::string{internal::remove_suffix(str, "\t\n")};
-    } else {
-      str = *_value;
-    }
-
-    return _quote ? fmt::format(FMT_STRING("\t{:?}: \"{}\""), _key, internal::escape_str(str))
-                  : fmt::format(FMT_STRING("\t{:?}: {}"), _key, internal::escape_str(str));
-  }
-
-  template <MetadataOutputFormat out_fmt,
-            typename std::enable_if_t<out_fmt == MetadataOutputFormat::toml>* = nullptr>
-  [[nodiscard]] std::string format() const {
-    if (!_value.has_value() || (_key == "metadata" && *_value == "{}")) {
-      return "";
-    }
-
-    auto str = internal::escape_str(*_value);
-
-    if (_quote && str.find("\\n") != std::string::npos) {
-      // Format multi-line str
-      return fmt::format(FMT_STRING("{} = \"\"\"\n{}\"\"\""), _key, str);
-    }
-
-    return _quote ? fmt::format(FMT_STRING("{} = \"{}\""), _key, str)
-                  : fmt::format(FMT_STRING("{} = {}"), _key, str);
-  }
-
-  template <MetadataOutputFormat out_fmt,
-            typename std::enable_if_t<out_fmt == MetadataOutputFormat::tsv>* = nullptr>
-  [[nodiscard]] std::string format() const {
-    if (!_value.has_value()) {
-      return "";
-    }
-
-    if (_key == "metadata" && *_value == "{}") {
-      return fmt::format(FMT_STRING("{:?}\t"), _key);
-    }
-
-    if (_quote) {
-      return fmt::format(FMT_STRING("{:?}\t{:?}"), _key, *_value);
-    }
-    return fmt::format(FMT_STRING("{:?}\t{}"), _key, *_value);
-  }
-
-  template <MetadataOutputFormat out_fmt,
-            typename std::enable_if_t<out_fmt == MetadataOutputFormat::yaml>* = nullptr>
-  [[nodiscard]] std::string format() const {
-    if (!_value.has_value()) {
-      return "";
-    }
-
-    if (_key == "metadata" && *_value == "{}") {
-      return fmt::format(FMT_STRING("{}: null"), _key);
-    }
-
-    auto str = internal::escape_str(*_value);
-    str = internal::str_replace(str, "\\r\\n", "\t\n");
-    str = internal::str_replace(str, "\\n", "\t\n");
-
-    if (str.find('\n') == std::string::npos) {
-      return fmt::format(FMT_STRING("{}: {}"), _key, str);
-    }
-    return fmt::format(FMT_STRING("{}: |\n  {}"), _key, str);
-  }
-};
+  return {"null"};
+}
 
 [[nodiscard]] static MetadataOutputFormat parse_output_format(std::string_view format) {
   if (format == "json") {
@@ -194,187 +78,233 @@ class Attribute {
   if (format == "toml") {
     return MetadataOutputFormat::toml;
   }
-  if (format == "tsv") {
-    return MetadataOutputFormat::tsv;
-  }
   assert(format == "yaml");
   return MetadataOutputFormat::yaml;
 }
 
-[[nodiscard]] static std::vector<Attribute> normalize_attribute_map(
-    const phmap::flat_hash_map<std::string, std::string>& map) {
-  std::vector<Attribute> attributes(map.size());
-  attributes.clear();
+static void emplace_if_valid(std::string_view key, const std::string& value, toml::table& buff) {
+  if (!key.empty()) {
+    buff.insert(key, value);
+  }
+}
+
+template <typename T, typename std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+static void emplace_if_valid(std::string_view key, const T& value, toml::table& buff) {
+  if (key.empty()) {
+    return;
+  }
+
+  if (value <= std::numeric_limits<std::int64_t>::max()) {
+    buff.insert(key, static_cast<std::int64_t>(value));
+  } else {
+    emplace_if_valid(key, fmt::to_string(value), buff);
+  }
+}
+
+template <typename T, typename std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
+static void emplace_if_valid(std::string_view key, const T& value, toml::table& buff) {
+  if (!key.empty()) {
+    buff.insert(key, conditional_static_cast<double>(value));
+  }
+}
+
+template <typename... T>
+static void emplace_if_valid(std::string_view key, const std::variant<T...>& value,
+                             toml::table& buff) {
+  if (!key.empty()) {
+    std::visit([&](const auto& value_) { emplace_if_valid(key, value_, buff); }, value);
+  }
+}
+
+template <typename T>
+static void emplace_if_valid(std::string_view key, const std::optional<T>& value,
+                             toml::table& buff) {
+  if (!key.empty() && !!value) {
+    emplace_if_valid(key, *value, buff);
+  }
+}
+
+[[nodiscard]] static toml::table normalize_attribute_map(
+    const phmap::flat_hash_map<std::string, std::string>& map, const std::string& uri) {
+  toml::table attributes;
+
+  if (!uri.empty()) {
+    emplace_if_valid("uri", uri, attributes);
+  }
 
   for (const auto& [k, v] : map) {
-    attributes.emplace_back(k, v);
+    std::visit([&, key = k](const auto& value) { emplace_if_valid(key, value, attributes); },
+               try_parse_str(v));
   }
-
-  attributes.erase(
-      std::remove_if(attributes.begin(), attributes.end(), [](const auto& attr) { return !attr; }),
-      attributes.end());
-  std::sort(attributes.begin(), attributes.end());
 
   return attributes;
 }
 
-static void emplace_if_valid(Attribute&& attribute, std::vector<Attribute>& buff) {
-  if (!!attribute) {
-    buff.emplace_back(std::move(attribute));
+[[nodiscard]] static toml::table normalize_attribute_map(const cooler::MultiResAttributes& map,
+                                                         const std::string& uri) {
+  toml::table attributes;
+
+  if (!uri.empty()) {
+    emplace_if_valid("uri", uri, attributes);
   }
-}
 
-[[nodiscard]] static std::vector<Attribute> normalize_attribute_map(
-    const cooler::MultiResAttributes& map) {
-  std::vector<Attribute> attributes(3);
-  attributes.clear();
-
-  emplace_if_valid(Attribute("bin-type", map.bin_type), attributes);
-  emplace_if_valid(Attribute("format", map.format), attributes);
-  emplace_if_valid(Attribute("format-version", map.format_version), attributes);
-
-  std::sort(attributes.begin(), attributes.end());
+  emplace_if_valid("bin-type", map.bin_type, attributes);
+  emplace_if_valid("format", map.format, attributes);
+  emplace_if_valid("format-version", map.format_version, attributes);
 
   return attributes;
 }
 
-[[nodiscard]] static std::vector<Attribute> normalize_attribute_map(
-    const cooler::SingleCellAttributes& map) {
-  std::vector<Attribute> attributes(13);
-  attributes.clear();
+[[nodiscard]] static toml::table normalize_attribute_map(const cooler::SingleCellAttributes& map,
+                                                         const std::string& uri) {
+  toml::table attributes;
 
-  emplace_if_valid(Attribute("bin-size", map.bin_size), attributes);
-  emplace_if_valid(Attribute("bin-type", map.bin_type), attributes);
-  emplace_if_valid(Attribute("format", map.format), attributes);
-  emplace_if_valid(Attribute("format-version", map.format_version), attributes);
+  if (!uri.empty()) {
+    emplace_if_valid("uri", uri, attributes);
+  }
 
-  emplace_if_valid(Attribute("creation-date", map.creation_date), attributes);
-  emplace_if_valid(Attribute("generated-by", map.generated_by), attributes);
-  emplace_if_valid(Attribute("assembly", map.assembly), attributes);
-  emplace_if_valid(Attribute("metadata", map.metadata), attributes);
+  emplace_if_valid("bin-size", map.bin_size, attributes);
+  emplace_if_valid("bin-type", map.bin_type, attributes);
+  emplace_if_valid("format", map.format, attributes);
+  emplace_if_valid("format-version", map.format_version, attributes);
 
-  emplace_if_valid(Attribute("format-url", map.format_url), attributes);
-  emplace_if_valid(Attribute("nbins", map.nbins), attributes);
-  emplace_if_valid(Attribute("ncells", map.ncells), attributes);
-  emplace_if_valid(Attribute("nchroms", map.nchroms), attributes);
-  emplace_if_valid(Attribute("storage-mode", map.storage_mode), attributes);
+  emplace_if_valid("creation-date", map.creation_date, attributes);
+  emplace_if_valid("generated-by", map.generated_by, attributes);
+  emplace_if_valid("assembly", map.assembly, attributes);
+  emplace_if_valid("metadata", map.metadata, attributes);
 
-  std::sort(attributes.begin(), attributes.end());
+  emplace_if_valid("format-url", map.format_url, attributes);
+  emplace_if_valid("nbins", map.nbins, attributes);
+  emplace_if_valid("ncells", map.ncells, attributes);
+  emplace_if_valid("nchroms", map.nchroms, attributes);
+  emplace_if_valid("storage-mode", map.storage_mode, attributes);
 
   return attributes;
 }
 
-[[nodiscard]] static std::vector<Attribute> normalize_attribute_map(const cooler::Attributes& map) {
-  std::vector<Attribute> attributes(15);
-  attributes.clear();
+[[nodiscard]] static toml::table normalize_attribute_map(const cooler::Attributes& map,
+                                                         const std::string& uri) {
+  toml::table attributes;
 
-  emplace_if_valid(Attribute("bin-size", map.bin_size), attributes);
-  emplace_if_valid(Attribute("bin-type", map.bin_type), attributes);
-  emplace_if_valid(Attribute("format", map.format), attributes);
-  emplace_if_valid(Attribute("format-version", map.format_version), attributes);
-  emplace_if_valid(Attribute("storage-mode", map.storage_mode), attributes);
+  if (!uri.empty()) {
+    emplace_if_valid("uri", uri, attributes);
+  }
 
-  emplace_if_valid(Attribute("creation-date", map.creation_date), attributes);
-  emplace_if_valid(Attribute("generated-by", map.generated_by), attributes);
-  emplace_if_valid(Attribute("assembly", map.assembly), attributes);
-  emplace_if_valid(Attribute("metadata", map.metadata), attributes);
+  emplace_if_valid("bin-size", map.bin_size, attributes);
+  emplace_if_valid("bin-type", map.bin_type, attributes);
+  emplace_if_valid("format", map.format, attributes);
+  emplace_if_valid("format-version", map.format_version, attributes);
+  emplace_if_valid("storage-mode", map.storage_mode, attributes);
 
-  emplace_if_valid(Attribute("format-url", map.format_url), attributes);
-  emplace_if_valid(Attribute("nbins", map.nbins), attributes);
-  emplace_if_valid(Attribute("nchroms", map.nchroms), attributes);
-  emplace_if_valid(Attribute("nnz", map.nnz), attributes);
-  emplace_if_valid(Attribute("sum", map.sum), attributes);
-  emplace_if_valid(Attribute("cis", map.cis), attributes);
+  emplace_if_valid("creation-date", map.creation_date, attributes);
+  emplace_if_valid("generated-by", map.generated_by, attributes);
+  emplace_if_valid("assembly", map.assembly, attributes);
+  emplace_if_valid("metadata", map.metadata, attributes);
 
-  std::sort(attributes.begin(), attributes.end());
+  emplace_if_valid("format-url", map.format_url, attributes);
+  emplace_if_valid("nbins", map.nbins, attributes);
+  emplace_if_valid("nchroms", map.nchroms, attributes);
+  emplace_if_valid("nnz", map.nnz, attributes);
+  emplace_if_valid("sum", map.sum, attributes);
+  emplace_if_valid("cis", map.cis, attributes);
 
   return attributes;
 }
 
-static void format_to_json(const std::vector<Attribute>& attrs) {
-  fmt::print(FMT_STRING("{{\n"));
-
-  for (std::size_t i = 0; i < attrs.size() - 1; ++i) {
-    if (const auto s = attrs[i].format<MetadataOutputFormat::json>(); !s.empty()) {
-      fmt::print(FMT_STRING("{},\n"), s);
+[[nodiscard]] static nlohmann::json reformat_nulls(nlohmann::json attributes) {
+  std::vector<std::string> null_fields{};
+  for (const auto& field : attributes.items()) {
+    if (field.value() == "null") {
+      null_fields.emplace_back(field.key());
     }
   }
-  if (const auto s = attrs.back().format<MetadataOutputFormat::json>(); !s.empty()) {
-    fmt::print(FMT_STRING("{}\n}}"), s);
+
+  for (const auto& k : null_fields) {
+    attributes[k] = nullptr;
+  }
+
+  return attributes;
+}
+
+static void format_to_json(const toml::table& attributes) {
+  if (!attributes.contains("metadata") || !attributes["metadata"].is_string()) {
+    std::cout << toml::json_formatter(attributes) << '\n';
+    return;
+  }
+
+  try {
+    // Try to pretty-print metadata attribute
+    auto new_attributes = attributes;
+    new_attributes.erase(new_attributes.find("metadata"));
+    std::stringstream buff;
+    buff << toml::json_formatter(new_attributes);
+
+    auto attributes_json = nlohmann::json::parse(buff.str());
+    attributes_json["metadata"] =
+        reformat_nulls(nlohmann::json::parse(attributes["metadata"].ref<std::string>()));
+
+    fmt::print(FMT_STRING("{}\n"), attributes_json.dump(4));
+
+  } catch (...) {
+    std::cout << toml::json_formatter(attributes) << '\n';
   }
 }
 
-static void format_to_tsv(const std::vector<Attribute>& attrs) {
-  fmt::print(FMT_STRING("\"attribute\"\t\"value\"\n"));
-
-  for (const auto& a : attrs) {
-    if (const auto s = a.format<MetadataOutputFormat::tsv>(); !s.empty()) {
-      fmt::print(FMT_STRING("{}\n"), s);
-    }
-  }
+static void format_to_toml(const toml::table& attributes) {
+  std::cout << fmt::format(FMT_STRING("# Metadata generated by {}\n"),
+                           hictk::config::version::str_long())
+            << attributes << '\n';
 }
 
-static void format_to_toml(const std::vector<Attribute>& attrs) {
-  fmt::print(FMT_STRING("# Metadata generated by {}\n"), hictk::config::version::str_long());
-
-  for (const auto& a : attrs) {
-    if (const auto s = a.format<MetadataOutputFormat::toml>(); !s.empty()) {
-      fmt::print(FMT_STRING("{}\n"), s);
-    }
-  }
+static void format_to_yaml(const toml::table& attributes) {
+  std::cout << fmt::format(FMT_STRING("--- # Metadata generated by {}\n"),
+                           hictk::config::version::str_long())
+            << toml::yaml_formatter(attributes) << '\n';
 }
 
-static void format_to_yaml(const std::vector<Attribute>& attrs) {
-  fmt::print(FMT_STRING("--- # Metadata generated by {}\n"), hictk::config::version::str_long());
-
-  for (const auto& a : attrs) {
-    if (const auto s = a.format<MetadataOutputFormat::yaml>(); !s.empty()) {
-      fmt::print(FMT_STRING("{}\n"), s);
-    }
-  }
-}
-
-static void print_attributes(const std::vector<Attribute>& attrs, MetadataOutputFormat format) {
+static void print_attributes(const toml::table& attributes, MetadataOutputFormat format) {
   switch (format) {
     case MetadataOutputFormat::json:
-      return format_to_json(attrs);  // NOLINT
+      return format_to_json(attributes);  // NOLINT
     case MetadataOutputFormat::toml:
-      return format_to_toml(attrs);  // NOLINT
-    case MetadataOutputFormat::tsv:
-      return format_to_tsv(attrs);  // NOLINT
+      return format_to_toml(attributes);  // NOLINT
     case MetadataOutputFormat::yaml:
-      return format_to_yaml(attrs);  // NOLINT
+      return format_to_yaml(attributes);  // NOLINT
   }
 }
 
 [[nodiscard]] static int print_hic_metadata(const std::filesystem::path& p,
-                                            MetadataOutputFormat format) {
+                                            MetadataOutputFormat format, bool include_file_path) {
   const auto resolution = hic::utils::list_resolutions(p).front();
-  const auto attributes = normalize_attribute_map(hic::File(p, resolution).attributes());
+  const auto attributes = normalize_attribute_map(hic::File(p, resolution).attributes(),
+                                                  include_file_path ? p.string() : "");
   print_attributes(attributes, format);
 
   return 0;
 }
 
 [[nodiscard]] static int print_mcool_metadata(const std::filesystem::path& p,
-                                              MetadataOutputFormat format) {
-  const auto attributes = normalize_attribute_map(cooler::MultiResFile(p).attributes());
+                                              MetadataOutputFormat format, bool include_file_path) {
+  const auto attributes = normalize_attribute_map(cooler::MultiResFile(p).attributes(),
+                                                  include_file_path ? p.string() : "");
   print_attributes(attributes, format);
 
   return 0;
 }
 
 [[nodiscard]] static int print_scool_metadata(const std::filesystem::path& p,
-                                              MetadataOutputFormat format) {
-  const auto attributes = normalize_attribute_map(cooler::SingleCellFile(p).attributes());
+                                              MetadataOutputFormat format, bool include_file_path) {
+  const auto attributes = normalize_attribute_map(cooler::SingleCellFile(p).attributes(),
+                                                  include_file_path ? p.string() : "");
   print_attributes(attributes, format);
 
   return 0;
 }
 
 [[nodiscard]] static int print_cool_metadata(const std::filesystem::path& p,
-                                             MetadataOutputFormat format) {
-  const auto attributes = normalize_attribute_map(cooler::File(p.string()).attributes());
+                                             MetadataOutputFormat format, bool include_file_path) {
+  const auto attributes = normalize_attribute_map(cooler::File(p.string()).attributes(),
+                                                  include_file_path ? p.string() : "");
   print_attributes(attributes, format);
 
   return 0;
@@ -383,16 +313,16 @@ static void print_attributes(const std::vector<Attribute>& attrs, MetadataOutput
 int metadata_subcmd(const MetadataConfig& c) {
   const auto output_format = parse_output_format(c.output_format);
   if (c.input_format == "hic") {
-    return print_hic_metadata(c.uri, output_format);
+    return print_hic_metadata(c.uri, output_format, c.include_file_path);
   }
   if (c.input_format == "mcool") {
-    return print_mcool_metadata(c.uri, output_format);
+    return print_mcool_metadata(c.uri, output_format, c.include_file_path);
   }
   if (c.input_format == "scool") {
-    return print_scool_metadata(c.uri, output_format);
+    return print_scool_metadata(c.uri, output_format, c.include_file_path);
   }
   assert(c.input_format == "cool");
-  return print_cool_metadata(c.uri, output_format);
+  return print_cool_metadata(c.uri, output_format, c.include_file_path);
 }
 
 }  // namespace hictk::tools
