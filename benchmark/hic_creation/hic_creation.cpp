@@ -13,6 +13,7 @@
 #include <hictk/cooler/cooler.hpp>
 #include <hictk/hic/file_writer.hpp>
 #include <hictk/pixel.hpp>
+#include <hictk/tmpdir.hpp>
 #include <vector>
 
 using namespace hictk;
@@ -77,9 +78,9 @@ int main(int argc, char **argv) noexcept {
     for (std::size_t i = 0; i < config.iterations; ++i) {
       const auto t0 = std::chrono::system_clock::now();
       {
-        hic::internal::HiCFileWriter writer(config.out_path.string(), chroms, {f.resolution()},
-                                            "unknown", config.threads, config.chunk_size,
-                                            std::filesystem::temp_directory_path(), 11, true);
+        hic::internal::HiCFileWriter writer(
+            config.out_path.string(), chroms, {f.resolution()}, "unknown", config.threads,
+            config.chunk_size, internal::TmpDir::default_temp_directory_path(), 11, true);
         for (const auto &chunk : pixels) {
           writer.add_pixels(f.resolution(), chunk.begin(), chunk.end());
           num_pixels += chunk.size();

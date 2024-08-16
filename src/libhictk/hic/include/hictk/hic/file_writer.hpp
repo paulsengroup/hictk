@@ -144,12 +144,13 @@ class HiCFileWriter {
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(std::string_view path_, std::size_t n_threads = 1);
-  HiCFileWriter(std::string_view path_, Reference chromosomes_,
-                std::vector<std::uint32_t> resolutions_, std::string_view assembly_ = "unknown",
-                std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
-                const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-                std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
-                std::size_t buffer_size = 32'000'000);
+  HiCFileWriter(
+      std::string_view path_, Reference chromosomes_, std::vector<std::uint32_t> resolutions_,
+      std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
+      std::size_t chunk_size = 10'000'000,
+      const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
+      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
+      std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
