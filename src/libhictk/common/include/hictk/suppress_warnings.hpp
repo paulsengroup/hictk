@@ -15,6 +15,7 @@
     #define DISABLE_WARNING_POP                       __pragma(warning(pop))
     #define DISABLE_WARNING(warningNumber)            __pragma(warning(disable : warningNumber))
 
+    #define DISABLE_WARNING_BOOL_COMPARE
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_NULL_DEREF
