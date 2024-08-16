@@ -321,6 +321,7 @@ jobs:
         run: |
           echo 'cooler==0.10.0' > requirements.txt
           echo 'numpy<2' >> requirements.txt
+          echo 'pyyaml' >> requirements.txt
 
       - uses: actions/setup-python@v5
         with:
