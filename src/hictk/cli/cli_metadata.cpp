@@ -53,6 +53,12 @@ void Cli::make_metadata_subcommand() {
       c.include_file_path,
       "Output the given input path using attribute \"uri\"")
       ->capture_default_str();
+  sc.add_flag(
+      "--recursive",
+      c.recursive,
+      "Print metadata for each resolution or cell contained in a\n"
+      "multi-resolution or single-cell file.")
+      ->capture_default_str();
   // clang-format on
 
   _config = std::monostate{};

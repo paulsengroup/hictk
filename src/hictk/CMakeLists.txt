@@ -36,6 +36,10 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/cool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/hic.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/mcool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/scool.hpp
           ${CMAKE_CURRENT_SOURCE_DIR}/metadata/metadata.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/rename_chromosomes/rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp

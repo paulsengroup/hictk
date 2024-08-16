@@ -187,6 +187,7 @@ struct MetadataConfig {
   std::string input_format{};
   std::string output_format{"json"};
   bool include_file_path{false};
+  bool recursive{false};
 
   std::uint8_t verbosity{2};
 };
