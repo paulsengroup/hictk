@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "hictk/common.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/version.hpp"
 
 namespace hictk::tools {
@@ -55,12 +56,14 @@ inline void emplace_if_valid(std::string_view key, const T& value, toml::table& 
   if (key.empty()) {
     return;
   }
-
+  DISABLE_WARNING_PUSH
+  DISABLE_WARNING_BOOL_COMPARE
   if (value <= std::numeric_limits<std::int64_t>::max()) {
     buff.insert(key, static_cast<std::int64_t>(value));
   } else {
     emplace_if_valid(key, fmt::to_string(value), buff);
   }
+  DISABLE_WARNING_POP
 }
 
 template <typename T, typename std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>

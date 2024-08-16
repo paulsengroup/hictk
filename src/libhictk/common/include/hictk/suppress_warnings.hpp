@@ -38,12 +38,14 @@
 
 // Defines for GCC only
 #if defined(__GNUC__) && !defined(__clang__)
+    #define DISABLE_WARNING_BOOL_COMPARE              DISABLE_WARNING("-Wbool-compare")
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")       // NOLINT(cppcoreguidelines-macro-usage)
     #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")              // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 // Defines for Clang only
 #ifdef __clang__
+    #define DISABLE_WARNING_BOOL_COMPARE
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_USELESS_CAST
 #endif
@@ -54,6 +56,7 @@
   #define DISABLE_WARNING_PUSH
   #define DISABLE_WARNING_POP
 
+  #define DISABLE_WARNING_BOOL_COMPARE
   #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
   #define DISABLE_WARNING_MAYBE_UNINITIALIZED
   #define DISABLE_WARNING_NULL_DEREF
