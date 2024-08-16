@@ -207,6 +207,8 @@ jobs:
 
           test/scripts/hictk_merge.sh build/src/hictk/hictk
 
+          test/scripts/hictk_metadata.sh build/src/hictk/hictk
+
           test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
 
           test/scripts/hictk_validate.sh build/src/hictk/hictk
