@@ -4,8 +4,10 @@
 
 find_package(CLI11 REQUIRED)
 find_package(FMT REQUIRED)
+find_package(nlohmann_json REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(tomlplusplus REQUIRED)
 find_package(Filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -21,6 +23,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_merge.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_metadata.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_zoomify.cpp
@@ -33,6 +36,11 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/cool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/hic.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/mcool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/scool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/metadata.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/rename_chromosomes/rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
@@ -44,11 +52,13 @@ target_link_system_libraries(
   hictk
   PRIVATE
   CLI11::CLI11
-  readerwriterqueue::readerwriterqueue
-  std::filesystem
-  PUBLIC
   fmt::fmt-header-only
+  nlohmann_json::nlohmann_json
+  readerwriterqueue::readerwriterqueue
   spdlog::spdlog_header_only
+  std::filesystem
+  tomlplusplus::tomlplusplus
+  PUBLIC
   Threads::Threads)
 
 include(GNUInstallDirs)

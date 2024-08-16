@@ -175,7 +175,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends python3-pip xz-utils
 
-          python3 -m pip install 'cooler==0.10.0' 'numpy<2'
+          python3 -m pip install 'cooler==0.10.0' 'numpy<2' 'pyyaml'
 
       - name: Run integration tests
         run: |
@@ -206,6 +206,8 @@ jobs:
           test/scripts/hictk_load_4dn.sh build/src/hictk/hictk
 
           test/scripts/hictk_merge.sh build/src/hictk/hictk
+
+          test/scripts/hictk_metadata.sh build/src/hictk/hictk
 
           test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
 

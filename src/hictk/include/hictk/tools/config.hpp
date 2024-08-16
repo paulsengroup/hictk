@@ -182,6 +182,16 @@ struct MergeConfig {
   std::uint8_t verbosity{4};
 };
 
+struct MetadataConfig {
+  std::filesystem::path uri{};
+  std::string input_format{};
+  std::string output_format{"json"};
+  bool include_file_path{false};
+  bool recursive{false};
+
+  std::uint8_t verbosity{2};
+};
+
 struct RenameChromosomesConfig {
   std::string uri{};
   std::filesystem::path path_to_name_mappings{};
@@ -227,6 +237,7 @@ using Config = std::variant<std::monostate,
                             FixMcoolConfig,
                             LoadConfig,
                             MergeConfig,
+                            MetadataConfig,
                             RenameChromosomesConfig,
                             ValidateConfig,
                             ZoomifyConfig>;

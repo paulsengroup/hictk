@@ -42,6 +42,8 @@ auto Cli::parse_arguments() -> Config {
       _subcommand = subcommand::load;
     } else if (_cli.get_subcommand("merge")->parsed()) {
       _subcommand = subcommand::merge;
+    } else if (_cli.get_subcommand("metadata")->parsed()) {
+      _subcommand = subcommand::metadata;
     } else if (_cli.get_subcommand("rename-chromosomes")->parsed()) {
       _subcommand = subcommand::rename_chromosomes;
     } else if (_cli.get_subcommand("validate")->parsed()) {
@@ -92,6 +94,8 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
       return "load";
     case merge:
       return "merge";
+    case metadata:
+      return "metadata";
     case rename_chromosomes:
       return "rename-chromosomes";
     case validate:
@@ -116,6 +120,7 @@ void Cli::make_cli() {
   make_fix_mcool_subcommand();
   make_load_subcommand();
   make_merge_subcommand();
+  make_metadata_subcommand();
   make_rename_chromosomes_subcommand();
   make_validate_subcommand();
   make_zoomify_subcommand();
@@ -140,6 +145,8 @@ void Cli::validate_args() const {
       break;
     case merge:
       validate_merge_subcommand();
+      break;
+    case metadata:
       break;
     case rename_chromosomes:
       validate_rename_chromosomes_subcommand();
@@ -173,6 +180,9 @@ void Cli::transform_args() {
       break;
     case merge:
       transform_args_merge_subcommand();
+      break;
+    case metadata:
+      transform_args_metadata_subcommand();
       break;
     case rename_chromosomes:
       transform_args_rename_chromosomes_subcommand();
