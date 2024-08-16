@@ -100,9 +100,10 @@ class TmpDir {
             e.code());
       }
       throw std::filesystem::filesystem_error(
-          fmt::format(FMT_STRING("unable to safely determine the path where to store temporary "
-                                 "files: temporary folder is set to {} but folder does not exists"),
-                      e.path1()),
+          fmt::format(
+              FMT_STRING("unable to safely determine the path where to store temporary "
+                         "files: temporary folder is set to \"{}\" but folder does not exists"),
+              e.path1()),
           e.code());
     }
   }
