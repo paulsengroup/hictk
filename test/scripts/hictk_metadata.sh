@@ -55,7 +55,7 @@ fi
 for file in "${test_files[@]}"; do
   for fmt in json toml yaml; do
     test_script="is_valid_${fmt}.py"
-    echo "Testing $(basename "$file") [${fmt^^}]"
+    echo "Testing $(basename "$file") [$(echo "$fmt" | tr '[:lower:]' '[:upper:]')]"
     if ! "$hictk_bin" metadata "$file" -f "$fmt" | "$test_script" -q; then
       status=1
     fi
