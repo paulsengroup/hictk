@@ -29,11 +29,17 @@ void zoomify_once_cooler(const cooler::File& clr1, cooler::RootGroup entrypoint2
   auto attrs = cooler::Attributes::init(clr1.resolution());
   attrs.assembly = clr1.attributes().assembly;
 
-  auto clr2 = cooler::File::create(std::move(entrypoint2), clr1.chromosomes(), resolution, attrs,
-                                   cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
+  std::visit(
+      [&]([[maybe_unused]] auto count_type) {
+        using PixelT = decltype(count_type);
+        auto clr2 = cooler::File::create<PixelT>(
+            std::move(entrypoint2), clr1.chromosomes(), resolution, attrs,
+            cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 
-  std::vector<ThinPixel<std::int32_t>> buffer{500'000};
-  cooler::MultiResFile::coarsen(clr1, clr2, buffer);
+        std::vector<ThinPixel<PixelT>> buffer{500'000};
+        cooler::MultiResFile::coarsen(clr1, clr2, buffer);
+      },
+      clr1.pixel_variant());
 }
 
 void zoomify_once_cooler(std::string_view uri1, std::string_view uri2, std::uint32_t resolution,
@@ -46,7 +52,7 @@ void zoomify_once_cooler(std::string_view uri1, std::string_view uri2, std::uint
   auto mode = force ? HighFive::File::Overwrite : HighFive::File::Create;
   cooler::RootGroup entrypoint2{HighFive::File(std::string{uri2}, mode).getGroup("/")};
 
-  return zoomify_once_cooler(clr1, std::move(entrypoint2), resolution, compression_lvl);
+  zoomify_once_cooler(clr1, std::move(entrypoint2), resolution, compression_lvl);
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
@@ -67,9 +73,14 @@ void zoomify_many_cooler(std::string_view in_uri, std::string_view out_path,
                         compression_lvl);
   }
 
-  for (std::size_t i = 1; i < resolutions.size(); ++i) {
-    mclr.create_resolution(resolutions[i]);
-  }
+  std::visit(
+      [&]([[maybe_unused]] auto count_type) {
+        using PixelT = decltype(count_type);
+        for (std::size_t i = 1; i < resolutions.size(); ++i) {
+          mclr.create_resolution<PixelT>(resolutions[i]);
+        }
+      },
+      clr.pixel_variant());
 }
 
 void print_zooming_plan_hic(std::string_view path_to_input,
@@ -102,7 +113,7 @@ void zoomify_hic(const ZoomifyConfig& c) {
 
   print_zooming_plan_hic(c.path_to_input.string(), c.resolutions);
 
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hic::internal::HiCFileZoomify{c.path_to_input.string(),
                                 c.path_to_output.string(),
                                 c.resolutions,

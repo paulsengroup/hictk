@@ -16,6 +16,9 @@ hictk="$1"
 
 subcommands=(
   balance
+  'balance ice'
+  'balance scale'
+  'balance vc'
   convert
   dump
   fix-mcool
@@ -57,5 +60,6 @@ $(printf '\055%.0s' $(seq ${#header}))
 
 EOT
 
-  "$hictk" "$subcmd" --help |& sed "s|$hictk|hictk|g" | sed 's/^/  /' | sed '/^[[:space:]]*$/d'
+  # shellcheck disable=SC2086
+  "$hictk" $subcmd --help |& sed "s|$hictk|hictk|g" | sed 's/^/  /' | sed '/^[[:space:]]*$/d'
 done

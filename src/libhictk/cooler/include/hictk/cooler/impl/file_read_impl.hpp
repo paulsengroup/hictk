@@ -137,7 +137,7 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return fetch(range1, std::move(weights));
+    return fetch(range1, std::move(weights), query_type);
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
@@ -163,43 +163,30 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   PixelCoordinates coord2{bins().at(chrom2, start2),
                           bins().at(chrom2, end2 - (std::min)(end2, 1U))};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord2.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
-  // clang-format off
-  return PixelSelector(_index,
-                       dataset("pixels/bin1_id"),
-                       dataset("pixels/bin2_id"),
-                       dataset("pixels/count"),
-                       coord1,
-                       coord2,
-                       std::move(weights)
-  );
-  // clang-format on
+  return fetch(coord1, coord2, std::move(weights));
 }
-inline PixelSelector File::fetch(const balancing::Method &normalization) const {
-  return fetch(read_weights(normalization));
+inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
+  return fetch(normalization(normalization_));
 }
-inline PixelSelector File::fetch(std::string_view range, const balancing::Method &normalization,
+inline PixelSelector File::fetch(std::string_view range, const balancing::Method &normalization_,
                                  QUERY_TYPE query_type) const {
-  return fetch(range, read_weights(normalization), query_type);
+  return fetch(range, normalization(normalization_), query_type);
 }
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
-                                 std::uint32_t end, const balancing::Method &normalization) const {
-  return fetch(chrom_name, start, end, read_weights(normalization));
+                                 std::uint32_t end, const balancing::Method &normalization_) const {
+  return fetch(chrom_name, start, end, normalization(normalization_));
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
-                                 const balancing::Method &normalization,
+                                 const balancing::Method &normalization_,
                                  QUERY_TYPE query_type) const {
-  return fetch(range1, range2, read_weights(normalization), query_type);
+  return fetch(range1, range2, normalization(normalization_), query_type);
 }
 inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                  std::uint32_t end1, std::string_view chrom2_name,
                                  std::uint32_t start2, std::uint32_t end2,
-                                 const balancing::Method &normalization) const {
-  return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, read_weights(normalization));
+                                 const balancing::Method &normalization_) const {
+  return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, normalization(normalization_));
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
@@ -213,10 +200,6 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
   return fetch(coord1, coord2, std::move(weights));
 }
 
@@ -238,37 +221,35 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
   // clang-format on
 }
 
-inline bool File::has_normalization(std::string_view normalization) const {
-  return has_normalization(balancing::Method{normalization});
+inline bool File::has_normalization(std::string_view normalization_) const {
+  return has_normalization(balancing::Method{normalization_});
 }
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view normalization,
-                                                                    bool rescale) const {
-  return read_weights(balancing::Method{normalization}, rescale);
+inline std::shared_ptr<const balancing::Weights> File::normalization(
+    std::string_view normalization_, bool rescale) const {
+  return normalization(balancing::Method{normalization_}, rescale);
 }
-inline std::shared_ptr<const balancing::Weights> File::read_weights(std::string_view normalization,
-                                                                    balancing::Weights::Type type,
-                                                                    bool rescale) const {
-  return read_weights(balancing::Method{normalization}, type, rescale);
+inline std::shared_ptr<const balancing::Weights> File::normalization(
+    std::string_view normalization_, balancing::Weights::Type type, bool rescale) const {
+  return normalization(balancing::Method{normalization_}, type, rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(
-    const balancing::Method &normalization, bool rescale) const {
-  if (normalization == "NONE") {
+inline std::shared_ptr<const balancing::Weights> File::normalization(
+    const balancing::Method &normalization_, bool rescale) const {
+  if (normalization_ == "NONE") {
     return nullptr;
   }
 
-  return read_weights(normalization, balancing::Weights::infer_type(normalization.to_string()),
-                      rescale);
+  return normalization(normalization_, balancing::Weights::Type::INFER, rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::read_weights(
-    const balancing::Method &normalization, balancing::Weights::Type type, bool rescale) const {
-  if (normalization == "NONE") {
+inline std::shared_ptr<const balancing::Weights> File::normalization(
+    const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale) const {
+  if (normalization_ == "NONE") {
     return nullptr;
   }
 
   const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
-                                     normalization.to_string());
+                                     normalization_.to_string());
   if (const auto it = _weights.find(dset_path); it != _weights.end()) {
     return it->second;
   }
@@ -276,7 +257,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
   if (!_root_group().exist(dset_path)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("unable to read \"{}\" weights: dataset \"{}\" does not exist"),
-                    normalization.to_string(), dset_path));
+                    normalization_.to_string(), dset_path));
   }
 
   Dataset dset{
@@ -300,7 +281,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
   balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
   if (!rescale) {
     const auto node = _weights.emplace(
-        normalization.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
+        normalization_.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
     return node.first->second;
   }
 
@@ -331,7 +312,7 @@ inline std::shared_ptr<const balancing::Weights> File::read_weights(
   }
 
   const auto node = _weights_scaled.emplace(
-      normalization.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
+      normalization_.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
   return node.first->second;
 }
 
@@ -370,8 +351,8 @@ inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
   return groups;
 }
 
-inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes, double w0)
-    -> DatasetMap {
+inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
+                                double w0) -> DatasetMap {
   DatasetMap datasets(MANDATORY_DATASET_NAMES.size());
 
   const std::size_t num_pixel_datasets = 3;
@@ -461,8 +442,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
-inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
-    -> Attributes {
+inline auto File::read_standard_attributes(const RootGroup &root_grp,
+                                           bool initialize_missing) -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
 

@@ -18,14 +18,19 @@ namespace hictk::tools {
 
 static void merge_coolers(const MergeConfig& c) {
   SPDLOG_INFO(FMT_STRING("begin merging {} coolers..."), c.input_files.size());
-  cooler::utils::merge<std::int32_t>(c.input_files.begin(), c.input_files.end(),
+  std::visit(
+      [&]([[maybe_unused]] auto count_type) {
+        using PixelT = decltype(count_type);
+        cooler::utils::merge<PixelT>(c.input_files.begin(), c.input_files.end(),
                                      c.output_file.string(), c.force, c.chunk_size, 10'000'000,
                                      c.compression_lvl);
+      },
+      cooler::File(c.input_files.front()).pixel_variant());
 }
 
 static void merge_hics(const MergeConfig& c) {
   SPDLOG_INFO(FMT_STRING("begin merging {} .hic files..."), c.input_files.size());
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hic::utils::merge(c.input_files.begin(), c.input_files.end(), c.output_file.string(),
                     c.resolution, tmpdir(), c.force, c.chunk_size, c.threads, c.compression_lvl,
                     c.skip_all_vs_all_matrix);

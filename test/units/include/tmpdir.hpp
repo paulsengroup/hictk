@@ -51,10 +51,10 @@ inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
 }  // namespace cooler::test::pixel_selector
 
-namespace hic::test::filestream {
+namespace filestream::test {
 inline const auto& testdir = hictk::test::testdir;
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hic::test::filestream
+}  // namespace filestream::test
 
 namespace hic::test::file_reader {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)

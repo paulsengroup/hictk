@@ -13,7 +13,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -25,7 +25,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -61,12 +61,11 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '13', os: 'macos-11', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '14', os: 'macos-12', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.1.*', cmake: '3.28.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.1.*', cmake: '3.28.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.1.*', cmake: '3.28.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '14', os: 'macos-12', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', conan: '2.4.*', cmake: '3.29.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', conan: '2.4.*', cmake: '3.29.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -115,9 +114,9 @@ jobs:
           compiler_version="${{ matrix.compiler_version }}"
           build_type="${{ matrix.build_type }}"
 
-          conanfile_hash="${{ hashFiles('conanfile.txt') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
           workflow_hash="${{ hashFiles('.github/workflows/macos-ci.yml') }}"
-          combined_hash="${{ hashFiles('conanfile.txt', '.github/workflows/macos-ci.yml') }}"
+          combined_hash="${{ hashFiles('conanfile.py', '.github/workflows/macos-ci.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
@@ -299,7 +298,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 240 2>&1 |
+                --timeout 360 2>&1 |
           head -n 1000
 
   run-integration-tests:
@@ -319,7 +318,9 @@ jobs:
           chown -R $(id -u):$(id -g) $PWD
 
       - name: Generate requirements.txt for pip
-        run: echo 'cooler>=0.9.3' > requirements.txt
+        run: |
+          echo 'cooler==0.10.0' > requirements.txt
+          echo 'numpy<2' >> requirements.txt
 
       - uses: actions/setup-python@v5
         with:
@@ -353,7 +354,9 @@ jobs:
 
       - name: Test hictk balance
         run: |
-          test/scripts/hictk_balance.sh bin/hictk
+          test/scripts/hictk_balance_ice.sh bin/hictk
+          test/scripts/hictk_balance_scale.sh bin/hictk
+          test/scripts/hictk_balance_vc.sh bin/hictk
 
       - name: Test hictk convert (hic2cool)
         run: |

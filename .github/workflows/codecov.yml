@@ -14,7 +14,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -27,7 +27,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -54,7 +54,7 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-23.04-cxx-gcc-13
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
       options: '--user=root'
 
     steps:
@@ -67,7 +67,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.txt', '.github/workflows/codecov.yml') }}"
+          hash="${{ hashFiles('conanfile.py', '.github/workflows/codecov.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
@@ -92,6 +92,9 @@ jobs:
           conan cache clean "*" --download
           conan cache clean "*" --source
           conan remove --confirm "*"
+
+      - name: Copy Conan settings
+        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
 
       - name: Install build dependencies
         run: |
@@ -172,11 +175,13 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends python3-pip xz-utils
 
-          python3 -m pip install 'cooler>=0.9.3'
+          python3 -m pip install 'cooler==0.10.0' 'numpy<2'
 
       - name: Run integration tests
         run: |
-          test/scripts/hictk_balance.sh build/src/hictk/hictk
+          test/scripts/hictk_balance_ice.sh build/src/hictk/hictk
+          test/scripts/hictk_balance_scale.sh build/src/hictk/hictk
+          test/scripts/hictk_balance_vc.sh build/src/hictk/hictk
 
           test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
           test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
@@ -213,7 +218,7 @@ jobs:
         with:
           fail_ci_if_error: true
           gcov: true
-          gcov_executable: gcov-13
+          gcov_executable: gcov-14
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true

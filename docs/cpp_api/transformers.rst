@@ -1,0 +1,167 @@
+..
+   Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+   SPDX-License-Identifier: MIT
+
+.. cpp:namespace:: hictk
+
+Pixel transformers
+==================
+
+The transformer library provides a set of common algorithms used to manipulate streams of pixels.
+Classes in defined in this library take a pair of pixel iterators or :cpp:class:`PixelSelector`\s directly and transform and/or aggregate them in different ways.
+
+.. cpp:namespace:: hictk::transformers
+
+Coarsening pixels
+-----------------
+
+.. cpp:class:: template <typename PixelIt> CoarsenPixels
+
+  Class used to coarsen pixels read from a pair of pixel iterators.
+  Coarsening is performed in a streaming fashion, minimizing the number of pixels that are kept into memory at any given time.
+
+  .. cpp:function:: CoarsenPixels(PixelIt first_pixel, PixelIt last_pixel,  std::shared_ptr<const BinTable> source_bins, std::size_t factor);
+
+   Constructor for :cpp:class:`CoarsenPixels` class.
+   ``first_pixel`` and ``last_pixels`` should be a pair of iterators pointing to the stream of pixels to be coarsened.
+   ``source_bins`` is a shared pointer to the bin table to which ``first_pixel`` and ``last_pixel`` refer to.
+   ``factor`` should be an integer value greater than 1, and is used to determine the properties of the ``target_bins`` :cpp:class:`BinTable` used for coarsening.
+
+  **Accessors**
+
+  .. cpp:function:: [[nodiscard]] const BinTable &src_bins() const noexcept;
+  .. cpp:function:: [[nodiscard]] const BinTable &dest_bins() const noexcept;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> src_bins_ptr() const noexcept;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> dest_bins_ptr() const noexcept;
+
+  :cpp:class:`BinTable` accesors.
+
+  **Iteration**
+
+  .. cpp:function:: begin() const -> iterator;
+  .. cpp:function:: end() const -> iterator;
+  .. cpp:function:: cbegin() const -> iterator;
+  .. cpp:function:: cend() const -> iterator;
+
+  Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the coarsened pixels.
+
+  **Others**
+
+  .. cpp:function:: [[nodiscard]] auto read_all() const -> std::vector<ThinPixel<N>>;
+
+Transforming COO pixels to BG2 pixels
+-------------------------------------
+
+.. cpp:class:: template <typename PixelIt> JoinGenomicCoords
+
+  Class used to join genomic coordinates onto COO pixels, effectively transforming :cpp:class:`ThinPixel`\s into :cpp:class:`Pixel`\s.
+
+  .. cpp:function:: JoinGenomicCoords(PixelIt first_pixel, PixelIt last_pixel,  std::shared_ptr<const BinTable> bins);
+
+   Constructor for :cpp:class:`JoinGenomicCoords` class.
+   ``first_pixel`` and ``last_pixels`` should be a pair of iterators pointing to the stream of pixels to be processed.
+   ``bins`` is a shared pointer to the bin table to which ``first_pixel`` and ``last_pixel`` refer to.
+
+  **Iteration**
+
+  .. cpp:function:: begin() const -> iterator;
+  .. cpp:function:: end() const -> iterator;
+  .. cpp:function:: cbegin() const -> iterator;
+  .. cpp:function:: cend() const -> iterator;
+
+  Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the :cpp:class:`Pixel`\s.
+
+  **Others***
+
+  .. cpp:function:: [[nodiscard]] auto read_all() const -> std::vector<Pixel<N>>;
+
+
+Merging streams of pre-sorted pixels
+------------------------------------
+
+.. cpp:class:: template <typename PixelIt> PixelMerger
+
+  Class used to merge streams of pre-sorted pixels, yielding a sequence of unique pixels sorted by their genomic coordinates.
+  Merging is performed in a streaming fashion, minimizing the number of pixels that are kept into memory at any given time.
+
+  Duplicate pixels are aggregated by summing their corresponding interactions.
+  Pixel merging also affects duplicate pixels coming from the same stream.
+
+  .. cpp:function:: PixelMerger(std::vector<PixelIt> head, std::vector<PixelIt> tail);
+  .. cpp:function:: template <typename ItOfPixelIt> PixelMerger(ItOfPixelIt first_head, ItOfPixelIt last_head, ItOfPixelIt first_tail);
+
+  Constructors taking either two vectors of `InputIterators <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ or pairs of iterators to `InputIterators <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_.
+
+  The ``head`` and ``tail`` vectors should contain the iterators pointing to the beginning and end of :cpp:class:`ThinPixel` streams, respectively.
+
+  **Iteration**
+
+  .. cpp:function:: auto begin() const -> iterator;
+  .. cpp:function:: auto end() const noexcept -> iterator;
+
+  Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the stream :cpp:class:`ThinPixel`\s after merging.
+
+  **Others**
+
+  .. cpp:function:: [[nodiscard]] auto read_all() const -> std::vector<PixelT>;
+
+
+Computing common statistics
+---------------------------
+
+.. cpp:function:: template <typename PixelIt> [[nodiscard]] double avg(PixelIt first, PixelIt last);
+.. cpp:function:: template <typename PixelIt, typename N> [[nodiscard]] N max(PixelIt first, PixelIt last);
+.. cpp:function:: template <typename PixelIt> [[nodiscard]] std::size_t nnz(PixelIt first, PixelIt last);
+.. cpp:function:: template <typename PixelIt, typename N> [[nodiscard]] N sum(PixelIt first, PixelIt last);
+
+
+Converting streams of pixels to Arrow Tables
+--------------------------------------------
+
+.. cpp:enum-class:: DataFrameFormat
+
+  .. cpp:enumerator:: COO
+  .. cpp:enumerator:: BG2
+
+.. cpp:class:: template <typename PixelIt> ToDataFrame
+
+  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, bool transpose = false, std::size_t chunk_size = 256'000);
+
+  Construct an instance of a :cpp:class:`ToDataFrame` converter given a stream of pixels delimited by ``first_pixel`` and ``last_pixel``, a DataFrame ``format`` and a :cpp:class:`BinTable`.
+
+  When ``transpose`` is set to true, the converter will produce a table consisting of pixels overlapping the lower-triangle of the matrix.
+
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
+
+  Convert the stream of pixels into an :cpp:class:`arrow::Table`.
+
+
+Converting streams of pixels to Eigen Matrices
+----------------------------------------------
+
+.. cpp:class:: template <typename PixelSelector> ToDenseMatrix
+
+  .. cpp:function:: ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
+
+  Construct an instance of a :cpp:class:`ToDenseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
+
+  When ``mirror`` is set to true, the converter will take care of mirroring the upper-triangle matrix when appropriate.
+
+  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+
+  Convert the stream of pixels into an :cpp:class:`Eigen::Matrix`.
+
+Converting streams of pixels to Eigen Sparse Matrices
+-----------------------------------------------------
+
+.. cpp:class:: template <typename PixelSelector> ToSparseMatrix
+
+  .. cpp:function:: ToSparseMatrix(PixelSelector&& selector, N n, bool transpose = false);
+
+  Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
+
+  When ``transpose`` is set to true, the converter will produce a matrix consisting of pixels overlapping the lower-triangle of the matrix.
+
+  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::SparseMatrix<N>;
+
+  Convert the stream of pixels into an :cpp:class:`Eigen::SparseMatrix`.

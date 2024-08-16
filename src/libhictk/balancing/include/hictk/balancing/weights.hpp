@@ -40,8 +40,10 @@ class Weights {
   template <typename N>
   [[nodiscard]] hictk::Pixel<N> balance(hictk::Pixel<N> p) const;
 
-  [[nodiscard]] const std::vector<double>& operator()() const noexcept;
+  [[nodiscard]] const std::vector<double> operator()(Type type_) const;
+  // [[nodiscard]] const std::vector<double>& operator()() const noexcept;
   [[nodiscard]] constexpr auto type() const noexcept -> Type;
+  [[nodiscard]] std::size_t size() const noexcept;
 
   [[nodiscard]] static auto infer_type(std::string_view name) -> Type;
 

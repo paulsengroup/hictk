@@ -102,4 +102,4 @@ The conversion steps are similar to those carried out to convert .hic to .[m]coo
 **Tips:**
 
 * When converting large .[m]cool files to .hic, ``hictk`` may need to create large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
-* When converting .[m]cool files to .hic certain conversion steps can be performed in parallel. To improve performance, please make sure to increase the number of processing threads with option ``--thread``.
+* When converting .[m]cool files to .hic certain conversion steps can be performed in parallel. To improve performance, please make sure to increase the number of processing threads with option ``--threads``.

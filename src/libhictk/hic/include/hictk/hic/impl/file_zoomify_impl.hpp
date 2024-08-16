@@ -31,7 +31,8 @@ inline HiCFileZoomify::HiCFileZoomify(std::string_view input_hic, std::string_vi
 
 inline void HiCFileZoomify::init() {
   const auto avail_resolutions = hic::utils::list_resolutions(_path_to_input_hic);
-  const auto base_resolution = avail_resolutions.front();
+  const auto base_resolution = compute_base_resolution(_hfw.resolutions().front());
+
   if (base_resolution != _hfw.resolutions().front()) {
     const auto tgt_resolution = _hfw.resolutions().front();
     coarsen_interactions(tgt_resolution, base_resolution);
@@ -44,6 +45,25 @@ inline void HiCFileZoomify::init() {
       ingest_interactions(res);
     }
   }
+}
+
+inline std::uint32_t HiCFileZoomify::compute_base_resolution(std::uint32_t tgt_resolution) const {
+  const auto avail_resolutions = hic::utils::list_resolutions(_path_to_input_hic, true);
+  auto base_resolution = avail_resolutions.front();
+
+  if (tgt_resolution % base_resolution != 0) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("unable to generate pixels at resolution {} by coarsening resolution {}"),
+        tgt_resolution, base_resolution));
+  }
+
+  for (std::size_t i = 1; i < avail_resolutions.size(); ++i) {
+    const auto& res = avail_resolutions[i];
+    if (tgt_resolution >= res && tgt_resolution % res == 0) {
+      base_resolution = res;
+    }
+  }
+  return base_resolution;
 }
 
 inline void HiCFileZoomify::ingest_interactions(std::uint32_t resolution) {

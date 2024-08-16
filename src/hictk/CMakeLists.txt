@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Boost REQUIRED COMPONENTS headers filesystem)
 find_package(CLI11 REQUIRED)
 find_package(FMT REQUIRED)
 find_package(readerwriterqueue REQUIRED)
@@ -44,12 +43,10 @@ target_link_libraries(hictk PRIVATE hictk_project_options hictk_project_warnings
 target_link_system_libraries(
   hictk
   PRIVATE
-  Boost::headers
   CLI11::CLI11
   readerwriterqueue::readerwriterqueue
   std::filesystem
   PUBLIC
-  Boost::filesystem
   fmt::fmt-header-only
   spdlog::spdlog_header_only
   Threads::Threads)
@@ -57,10 +54,14 @@ target_link_system_libraries(
 include(GNUInstallDirs)
 install(
   TARGETS hictk
+  COMPONENT Runtime
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   PUBLIC_HEADER DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/scratch/
   PRIVATE_HEADER DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/scratch/)
 
-install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/hictk/)
+install(
+  FILES ${PROJECT_SOURCE_DIR}/LICENSE
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/hictk/
+  COMPONENT Runtime)

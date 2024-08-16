@@ -129,8 +129,8 @@ inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
 }
 
 template <typename N>
-inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line, std::int64_t offset)
-    -> ThinPixel<N> {
+inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line,
+                                   std::int64_t offset) -> ThinPixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 
@@ -157,6 +157,12 @@ inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line, 
 template <typename N>
 inline auto ThinPixel<N>::from_coo(std::string_view line, std::int64_t offset) -> ThinPixel<N> {
   try {
+    if (line.empty()) {
+      throw std::runtime_error("found an empty line");
+    }
+    if (line.back() == '\r') {
+      line = line.substr(0, line.size() - 1);
+    }
     const auto toks = internal::tokenize_n<3>(line);
 
     const auto bin1_id =
@@ -323,6 +329,12 @@ template <typename N>
 inline auto Pixel<N>::from_bg2(const hictk::BinTable &bins, std::string_view line,
                                std::int64_t offset) -> Pixel<N> {
   try {
+    if (line.empty()) {
+      throw std::runtime_error("found an empty line");
+    }
+    if (line.back() == '\r') {
+      line = line.substr(0, line.size() - 1);
+    }
     const auto toks = internal::tokenize_n_or_more<7>(line);
 
     const auto &chrom1 = toks[0];
@@ -345,6 +357,12 @@ template <typename N>
 inline auto Pixel<N>::from_validpair(const hictk::BinTable &bins, std::string_view line,
                                      std::int64_t offset) -> Pixel<N> {
   try {
+    if (line.empty()) {
+      throw std::runtime_error("found an empty line");
+    }
+    if (line.back() == '\r') {
+      line = line.substr(0, line.size() - 1);
+    }
     const auto toks = internal::tokenize_n_or_more<6>(line);
 
     const auto &chrom1 = toks[1];
@@ -366,6 +384,12 @@ template <typename N>
 inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_view line,
                                      std::int64_t offset) -> Pixel<N> {
   try {
+    if (line.empty()) {
+      throw std::runtime_error("found an empty line");
+    }
+    if (line.back() == '\r') {
+      line = line.substr(0, line.size() - 1);
+    }
     const auto toks = internal::tokenize_n_or_more<6>(line);
 
     const auto &chrom1 = toks[1];

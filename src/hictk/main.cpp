@@ -21,7 +21,6 @@
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
-#include "hictk/type_traits.hpp"
 #include "hictk/version.hpp"
 
 using namespace hictk::tools;
@@ -79,15 +78,6 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
   }
 }
 
-template <typename... Args>
-static void try_log_fatal_error(fmt::format_string<Args...> fmt, Args&&... args) {
-  if (spdlog::default_logger()) {
-    SPDLOG_ERROR(fmt, std::forward<Args>(args)...);
-  } else {
-    fmt::print(stderr, fmt, std::forward<Args>(args)...);
-  }
-}
-
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
@@ -104,7 +94,14 @@ int main(int argc, char** argv) noexcept {
     using sc = Cli::subcommand;
     switch (subcmd) {
       case sc::balance:
-        return balance_subcmd(std::get<BalanceConfig>(config));
+        if (std::holds_alternative<BalanceICEConfig>(config)) {
+          return balance_subcmd(std::get<BalanceICEConfig>(config));
+        }
+        if (std::holds_alternative<BalanceSCALEConfig>(config)) {
+          return balance_subcmd(std::get<BalanceSCALEConfig>(config));
+        }
+        assert(std::holds_alternative<BalanceVCConfig>(config));
+        return balance_subcmd(std::get<BalanceVCConfig>(config));
       case sc::convert:
         return convert_subcmd(std::get<ConvertConfig>(config));
       case sc::dump:

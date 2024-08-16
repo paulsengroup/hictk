@@ -25,8 +25,8 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
 
@@ -385,6 +385,7 @@ inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32
 
   // Index of normalization vectors
   const auto nEntries = _fs->read<std::int32_t>();
+  bool norm_found = false;
   for (std::int32_t i = 0; i < nEntries; i++) {
     const auto foundNorm = readNormalizationMethod();
     const auto foundChrom = _fs->read_as_unsigned<std::int32_t>();
@@ -394,6 +395,9 @@ inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32
     const auto filePosition = _fs->read<std::int64_t>();
     const auto sizeInBytes = version() > 8 ? _fs->read<std::int64_t>()
                                            : static_cast<std::int64_t>(_fs->read<std::int32_t>());
+
+    norm_found |= foundNorm == wanted_norm && foundUnit == wanted_unit &&
+                  foundResolution == wanted_resolution;
 
     const auto store1 = !*weights1 && foundChrom == chrom1_id && foundNorm == wanted_norm &&
                         foundUnit == wanted_unit && foundResolution == wanted_resolution;
@@ -418,6 +422,10 @@ inline void HiCFileReader::read_footer_norm(std::uint32_t chrom1_id, std::uint32
           balancing::Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
+  }
+
+  if (!norm_found) {
+    throw std::runtime_error(fmt::format(FMT_STRING("unable to read \"{}\" weights"), wanted_norm));
   }
 
   if (!*weights1) {

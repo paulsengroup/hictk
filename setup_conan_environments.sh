@@ -12,7 +12,7 @@ trap "cd '$PWD'" EXIT
 git_root="$(readlink -f "$(git rev-parse --show-toplevel)")"
 
 wd="$git_root/conan-envs"
-conanfile="$git_root/conanfile.txt"
+conanfile="$git_root/conanfile.py"
 
 for compiler in gcc clang; do
   for build_type in Debug Release RelWithDebInfo; do

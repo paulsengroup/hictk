@@ -22,8 +22,8 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
-#include "hictk/hic/binary_buffer.hpp"
-#include "hictk/hic/filestream.hpp"
+#include "hictk/binary_buffer.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {
@@ -300,11 +300,9 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
   return merge_blocks(bid, _bbuffer, *_zstd_dctx, _compression_buffer, dummy_mtx);
 }
 
-inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid, BinaryBuffer &bbuffer,
-                                                      ZSTD_DCtx_s &zstd_dctx,
-                                                      std::string &compression_buffer,
-                                                      std::mutex &mtx)
-    -> MatrixInteractionBlock<float> {
+inline auto HiCInteractionToBlockMapper::merge_blocks(
+    const BlockID &bid, BinaryBuffer &bbuffer, ZSTD_DCtx_s &zstd_dctx,
+    std::string &compression_buffer, std::mutex &mtx) -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
   for (auto &&pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
     blk.emplace_back(std::move(pixel));

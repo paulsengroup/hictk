@@ -274,20 +274,20 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
-                                                         bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> read_weights(std::string_view normalization,
-                                                         balancing::Weights::Type type,
-                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
+                                                          bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
+                                                          balancing::Weights::Type type,
+                                                          bool rescale = false) const;
 
-  [[nodiscard]] bool has_normalization(std::string_view normalization) const;
-  [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
+  [[nodiscard]] bool has_normalization(std::string_view normalization_) const;
+  [[nodiscard]] bool has_normalization(const balancing::Method &normalization_) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
-                                                         bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> read_weights(const balancing::Method &normalization,
-                                                         balancing::Weights::Type type,
-                                                         bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
+                                                          bool rescale = false) const;
+  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
+                                                          balancing::Weights::Type type,
+                                                          bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 
@@ -310,12 +310,12 @@ class File {
   [[nodiscard]] static HighFive::File open_file(std::string_view uri, unsigned int mode,
                                                 bool validate);
 
-  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f, std::string_view uri)
-      -> RootGroup;
+  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f,
+                                                      std::string_view uri) -> RootGroup;
 
   // Open/read groups, datasets and attributes
-  [[nodiscard]] static auto open_root_group(const HighFive::File &f, std::string_view uri)
-      -> RootGroup;
+  [[nodiscard]] static auto open_root_group(const HighFive::File &f,
+                                            std::string_view uri) -> RootGroup;
   [[nodiscard]] static auto open_groups(const RootGroup &root_grp) -> GroupMap;
   [[nodiscard]] static auto open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
                                           double w0) -> DatasetMap;
@@ -326,8 +326,8 @@ class File {
   [[nodiscard]] static auto create_root_group(HighFive::File &f, std::string_view uri,
                                               bool write_sentinel_attr = true) -> RootGroup;
   [[nodiscard]] static auto create_groups(RootGroup &root_grp) -> GroupMap;
-  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp)
-      -> GroupMap;
+  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp,
+                                          Group bins_grp) -> GroupMap;
   template <typename PixelT>
   [[nodiscard]] static auto create_datasets(RootGroup &root_grp, const Reference &chroms,
                                             std::size_t cache_size_bytes,

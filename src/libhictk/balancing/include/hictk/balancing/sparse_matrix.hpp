@@ -19,12 +19,14 @@
 #include <type_traits>
 #include <vector>
 
+#include "hictk/binary_buffer.hpp"
 #include "hictk/common.hpp"
 #include "hictk/default_delete.hpp"
+#include "hictk/filestream.hpp"
 
 namespace hictk::balancing {
 
-class MargsVector {
+class VectorOfAtomicDecimals {
   using I = std::uint64_t;
   using N = std::atomic<I>;
   std::vector<N> _margsi{};
@@ -33,19 +35,23 @@ class MargsVector {
   const static auto DEFAULT_DECIMAL_DIGITS = 9ULL;
 
  public:
-  MargsVector() = delete;
-  explicit MargsVector(std::size_t size_ = 0, std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
+  VectorOfAtomicDecimals() = delete;
+  explicit VectorOfAtomicDecimals(std::size_t size_ = 0,
+                                  std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
 
-  MargsVector(const MargsVector& other);
-  MargsVector(MargsVector&& other) noexcept = default;
+  VectorOfAtomicDecimals(const VectorOfAtomicDecimals& other);
+  VectorOfAtomicDecimals(VectorOfAtomicDecimals&& other) noexcept = default;
 
-  ~MargsVector() = default;
+  ~VectorOfAtomicDecimals() = default;
 
-  MargsVector& operator=(const MargsVector& other);
-  MargsVector& operator=(MargsVector&& other) noexcept = default;
+  VectorOfAtomicDecimals& operator=(const VectorOfAtomicDecimals& other);
+  VectorOfAtomicDecimals& operator=(VectorOfAtomicDecimals&& other) noexcept = default;
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
   void add(std::size_t i, double n) noexcept;
+  void set(std::size_t i, double n) noexcept;
+  // multiply is not atomic
+  void multiply(const std::vector<double>& v) noexcept;
 
   [[nodiscard]] const std::vector<double>& operator()() const noexcept;
   [[nodiscard]] std::vector<double>& operator()() noexcept;
@@ -82,25 +88,31 @@ class SparseMatrix {
   void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
                  std::size_t bin_offset = 0);
 
-  void serialize(std::fstream& fs, ZSTD_CCtx& ctx, int compression_lvl = 3) const;
-  void deserialize(std::fstream& fs, ZSTD_DCtx& ctx);
+  void serialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
+                 int compression_lvl = 3) const;
+  void deserialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
 
-  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
-  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+  void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
+                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 };
 
 class SparseMatrixChunked {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
   std::filesystem::path _path{};
-  mutable std::fstream _fs{};
+  mutable filestream::FileStream _fs{};
 
-  std::vector<std::streamoff> _index{};
+  std::vector<std::size_t> _index{};
   std::size_t _size{};
   std::size_t _chunk_size{};
   int _compression_lvl{};
@@ -141,13 +153,18 @@ class SparseMatrixChunked {
                  std::size_t bin_offset = 0);
   void finalize();
 
-  void marginalize(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(MargsVector& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
-  void times_outer_product_marg(MargsVector& marg, nonstd::span<const double> biases,
+  void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
                                 BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
+                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+
+  [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 
  private:
   void write_chunk();

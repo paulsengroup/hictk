@@ -12,6 +12,9 @@
 #include <string>
 #endif
 
+#include <fmt/format.h>
+#include <fmt/std.h>
+
 #include <atomic>
 #include <filesystem>
 #include <utility>
@@ -83,6 +86,10 @@ class TmpDir {
 
   [[nodiscard]] static std::filesystem::path create_uniq_temp_dir(
       const std::filesystem::path& tmpdir) {
+    if (!std::filesystem::exists(tmpdir)) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("unable to use path {} as TmpDir: path does not exists"), tmpdir));
+    }
 #ifdef _WIN32
     std::random_device rd;
     std::mt19937_64 rand_eng(rd());
@@ -102,7 +109,13 @@ class TmpDir {
 
     return dir;
 #else
-    return {mkdtemp((tmpdir / "hictk-tmp-XXXXXXXXXX").string().data())};
+    auto dir = (tmpdir / "hictk-tmp-XXXXXXXXXX").string();
+    if (!mkdtemp(dir.data())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("unable to use path {} as TmpDir: failed to create a temporary folder"),
+          tmpdir));
+    }
+    return {dir};
 #endif
   }
 };

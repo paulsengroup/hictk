@@ -73,9 +73,25 @@ inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 coun
   return conditional_static_cast<N1>(count_);
 }
 
-inline const std::vector<double> &Weights::operator()() const noexcept { return _weights; }
+inline const std::vector<double> Weights::operator()(Type type_) const {
+  if (type_ != Type::MULTIPLICATIVE && type_ != Type::DIVISIVE) {
+    throw std::logic_error("Type should be Type::MULTIPLICATIVE or Type::DIVISIVE");
+  }
+
+  if (type_ == type()) {
+    return _weights;
+  }
+
+  auto weights = _weights;
+  std::transform(weights.begin(), weights.end(), weights.begin(),
+                 [](const auto n) { return 1.0 / n; });
+
+  return weights;
+}
 
 constexpr auto Weights::type() const noexcept -> Type { return _type; }
+
+inline std::size_t Weights::size() const noexcept { return _weights.size(); }
 
 inline auto Weights::infer_type(std::string_view name) -> Type {
   const static phmap::flat_hash_map<std::string_view, Type> mappings{

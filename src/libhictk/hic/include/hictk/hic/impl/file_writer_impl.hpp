@@ -37,9 +37,9 @@
 #include <vector>
 
 #include "hictk/chromosome.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/coarsen.hpp"
@@ -353,7 +353,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
     const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
-    const auto target_resolution_scaled = target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR;
+    const auto target_resolution_scaled =
+        std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
 
     SPDLOG_INFO(FMT_STRING("writing pixels for {}:{} matrix..."), chromosomes().at(0).name(),
                 chromosomes().at(0).name());
@@ -366,6 +367,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
       const auto num_bins = (chrom.size() + target_resolution - 1) / target_resolution;
       genome_size_scaled += static_cast<std::uint32_t>(num_bins) * target_resolution_scaled;
     }
+
+    genome_size_scaled = std::max(std::uint32_t{1}, genome_size_scaled);
 
     const auto bin_table_ALL = std::make_shared<const BinTable>(
         Reference{Chromosome{0, "__ALL__", genome_size_scaled}}, target_resolution_scaled);
@@ -424,8 +427,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
   }
 }
 
-inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
-    -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1,
+                                        const Chromosome &chrom2) -> HiCSectionOffsets {
   try {
     write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
@@ -863,7 +866,7 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
 
 inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
                                            std::string_view unit, std::uint32_t bin_size,
-                                           const std::vector<float> &weights, bool force_overwrite,
+                                           const balancing::Weights &weights, bool force_overwrite,
                                            std::size_t position, std::size_t n_bytes) {
   add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
                                                 bin_size, position, n_bytes},
@@ -873,29 +876,16 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromoso
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
                                            const balancing::Weights &weights,
                                            bool force_overwrite) {
-  std::vector<float> weights_f(weights().size());
-  if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {
-    std::transform(weights().begin(), weights().end(), weights_f.begin(),
-                   [](const double w) { return static_cast<float>(1.0 / w); });
-  } else {
-    std::transform(weights().begin(), weights().end(), weights_f.begin(),
-                   [](const double w) { return static_cast<float>(w); });
-  }
+  std::vector<float> weights_f(weights.size());
+  const auto weights_d = weights(balancing::Weights::Type::DIVISIVE);
+  std::transform(weights_d.begin(), weights_d.end(), weights_f.begin(),
+                 [](const auto n) { return static_cast<float>(n); });
   add_norm_vector(blk, weights_f, force_overwrite);
-}
-
-inline void HiCFileWriter::add_norm_vector(std::string_view type, const Chromosome &chrom,
-                                           std::string_view unit, std::uint32_t bin_size,
-                                           const balancing::Weights &weights, bool force_overwrite,
-                                           std::size_t position, std::size_t n_bytes) {
-  add_norm_vector(NormalizationVectorIndexBlock{std::string{type}, chrom.id(), std::string{unit},
-                                                bin_size, position, n_bytes},
-                  weights, force_overwrite);
 }
 
 inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_view unit,
                                            std::uint32_t bin_size,
-                                           const std::vector<float> &weights,
+                                           const balancing::Weights &weights,
                                            bool force_overwrite) {
   try {
     const auto expected_shape = bins(bin_size).size();
@@ -907,13 +897,16 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_vi
 
     std::ptrdiff_t i0 = 0;
     std::ptrdiff_t i1 = 0;
+    const auto weights_ = weights(balancing::Weights::Type::DIVISIVE);
     for (const auto &chrom : chromosomes()) {
       if (chrom.is_all()) {
         continue;
       }
       i1 += static_cast<std::ptrdiff_t>((chrom.size() + bin_size - 1) / bin_size);
-      const std::vector<float> chrom_weights(weights.begin() + i0, weights.begin() + i1);
-      add_norm_vector(type, chrom, unit, bin_size, chrom_weights, force_overwrite);
+      std::vector<double> chrom_weights(weights_.begin() + i0, weights_.begin() + i1);
+      add_norm_vector(type, chrom, unit, bin_size,
+                      {std::move(chrom_weights), balancing::Weights::Type::DIVISIVE},
+                      force_overwrite);
       i0 = i1;
     }
   } catch (const std::exception &e) {
@@ -1055,9 +1048,8 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
   };
 }
 
-inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
-                                           const std::vector<std::uint32_t> &resolutions)
-    -> BinTables {
+inline auto HiCFileWriter::init_bin_tables(
+    const Reference &chromosomes, const std::vector<std::uint32_t> &resolutions) -> BinTables {
   BinTables bin_tables(resolutions.size());
   for (const auto &res : resolutions) {
     bin_tables.emplace(res, std::make_shared<const BinTable>(chromosomes, res));
@@ -1221,11 +1213,9 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
   }
 }
 
-inline auto HiCFileWriter::write_interaction_block(std::uint64_t block_id, const Chromosome &chrom1,
-                                                   const Chromosome &chrom2,
-                                                   std::uint32_t resolution,
-                                                   const MatrixInteractionBlock<float> &blk)
-    -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_interaction_block(
+    std::uint64_t block_id, const Chromosome &chrom1, const Chromosome &chrom2,
+    std::uint32_t resolution, const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
   const auto offset = _fs.tellp();
 
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);

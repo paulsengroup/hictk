@@ -77,6 +77,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     CHECK(table.subset("chr2") == expected);
     CHECK(table.subset(1) == expected);
     CHECK(table.subset("chr1") != expected);
+    CHECK(table.subset("chr2").subset("chr2") == expected);
 
     if constexpr (ndebug_not_defined()) {
       CHECK_THROWS_AS(table.subset(Chromosome{4, "chr5", 1}), std::out_of_range);
@@ -267,6 +268,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     CHECK(table.subset("chr2") == expected);
     CHECK(table.subset(1) == expected);
     CHECK(table.subset("chr1") != expected);
+    CHECK(table.subset("chr2").subset("chr2") == expected);
 
     if constexpr (ndebug_not_defined()) {
       CHECK_THROWS_AS(table.subset(Chromosome{4, "chr5", 1}), std::out_of_range);

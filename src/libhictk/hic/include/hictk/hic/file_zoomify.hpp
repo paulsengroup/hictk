@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "hictk/filestream.hpp"
 #include "hictk/hic/file_writer.hpp"
-#include "hictk/hic/filestream.hpp"
 
 namespace hictk::hic::internal {
 
@@ -34,6 +34,8 @@ class HiCFileZoomify {
                                                  std::uint32_t compression_lvl,
                                                  bool skip_all_vs_all_matrix);
   void init();
+
+  [[nodiscard]] std::uint32_t compute_base_resolution(std::uint32_t tgt_resolution) const;
 
   void ingest_interactions(std::uint32_t resolution);
   void coarsen_interactions(std::uint32_t resolution, std::uint32_t base_resolution);

@@ -13,7 +13,6 @@
 #endif
 #include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
-#include <zstd.h>
 
 #include <BS_thread_pool.hpp>
 #include <atomic>
@@ -26,12 +25,12 @@
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/binary_buffer.hpp"
 #include "hictk/default_delete.hpp"
+#include "hictk/expected_values_aggregator.hpp"
+#include "hictk/filestream.hpp"
 #include "hictk/hash.hpp"
-#include "hictk/hic/binary_buffer.hpp"
-#include "hictk/hic/expected_values_aggregator.hpp"
 #include "hictk/hic/file_writer_data_structures.hpp"
-#include "hictk/hic/filestream.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
@@ -80,8 +79,8 @@ class MatrixBodyMetadataTank {
   MatrixBodyMetadataTank() = default;
 
   [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
-  [[nodiscard]] auto at(const Chromosome& chrom1, const Chromosome& chrom2) const
-      -> const MatrixBodyMetadata&;
+  [[nodiscard]] auto at(const Chromosome& chrom1,
+                        const Chromosome& chrom2) const -> const MatrixBodyMetadata&;
   [[nodiscard]] HiCSectionOffsets offset(const Chromosome& chrom1, const Chromosome& chrom2) const;
 
   void insert(const Chromosome& chrom1, const Chromosome& chrom2, MatrixMetadata matrix_metadata,
@@ -162,22 +161,13 @@ class HiCFileWriter {
   void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
 
   // Write normalization vectors
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
-                       bool force_overwrite = false);
-  void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
-                       std::uint32_t bin_size, const std::vector<float>& weights,
-                       bool force_overwrite = false,
-                       std::size_t position = std::numeric_limits<std::size_t>::max(),
-                       std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
-                       bool force_overwrite = false);
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
                        std::uint32_t bin_size, const balancing::Weights& weights,
                        bool force_overwrite = false,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
-                       const std::vector<float>& weights, bool force_overwrite = false);
+                       const balancing::Weights& weights, bool force_overwrite = false);
 
   void write_norm_vectors_and_norm_expected_values();
 
@@ -189,9 +179,8 @@ class HiCFileWriter {
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
                                              bool skip_all_vs_all_matrix);
-  [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
-                                            const std::vector<std::uint32_t>& resolutions)
-      -> BinTables;
+  [[nodiscard]] static auto init_bin_tables(
+      const Reference& chromosomes, const std::vector<std::uint32_t>& resolutions) -> BinTables;
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,
@@ -206,8 +195,8 @@ class HiCFileWriter {
   // Write pixels
   void write_pixels(bool skip_all_vs_all_matrix);
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
-      -> HiCSectionOffsets;
+  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
+                    std::uint32_t resolution) -> HiCSectionOffsets;
   void write_all_matrix(std::uint32_t target_num_bins = 500);
 
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
@@ -215,6 +204,12 @@ class HiCFileWriter {
                                const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
   auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
                                 std::uint32_t resolution) -> Stats;
+
+  // Normalization
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
+                       bool force_overwrite = false);
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
+                       bool force_overwrite = false);
 
   // Write body
   void write_body_metadata();

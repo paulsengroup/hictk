@@ -4,10 +4,13 @@
 
 add_subdirectory(balancing)
 add_subdirectory(bin_table)
+add_subdirectory(binary_buffer)
 add_subdirectory(chromosome)
 add_subdirectory(common)
 add_subdirectory(cooler)
+add_subdirectory(expected_values_aggregator)
 add_subdirectory(file)
+add_subdirectory(filestream)
 add_subdirectory(formatting)
 add_subdirectory(genomic_interval)
 add_subdirectory(hic)
@@ -24,10 +27,13 @@ target_link_libraries(
   libhictk
   INTERFACE hictk::balancing
             hictk::bin_table
+            hictk::binary_buffer
             hictk::chromosome
             hictk::common
             hictk::cooler
+            hictk::expected_values_aggregator
             hictk::file
+            hictk::filestream
             hictk::format
             hictk::genomic_interval
             hictk::hic

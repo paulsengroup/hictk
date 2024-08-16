@@ -17,8 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/binary_buffer.hpp"
 #include "hictk/fmt/pixel.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic::internal {

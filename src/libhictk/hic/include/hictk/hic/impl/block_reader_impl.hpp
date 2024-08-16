@@ -37,7 +37,12 @@ inline HiCBlockReader::operator bool() const noexcept { return !!_hfs; }
 inline const Chromosome &HiCBlockReader::chrom1() const noexcept { return _index.chrom1(); }
 inline const Chromosome &HiCBlockReader::chrom2() const noexcept { return _index.chrom2(); }
 
-inline const BinTable &HiCBlockReader::bins() const noexcept { return *_bins; }
+inline const BinTable &HiCBlockReader::bins() const noexcept {
+  assert(_bins);
+  return *_bins;
+}
+
+inline std::shared_ptr<const BinTable> HiCBlockReader::bins_ptr() const noexcept { return _bins; }
 
 inline const Index &HiCBlockReader::index() const noexcept { return _index; }
 

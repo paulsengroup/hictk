@@ -214,8 +214,9 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
                                  const Chromosome& chrom2, std::uint32_t start2, std::uint32_t end2,
                                  balancing::Method norm) const {
   if (chrom1 > chrom2) {
-    throw std::runtime_error(
-        "Query overlaps the lower-triangle of the matrix. This is currently not supported.");
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
+        chrom1.name(), start1, end1, chrom2.name(), start2, end2));
   }
 
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
@@ -248,13 +249,13 @@ inline balancing::Weights File::normalization(balancing::Method norm,
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
   try {
     auto weights = fetch(chrom.name(), norm).weights1();
-    if (!!weights && weights().size() != expected_length) {
+    if (!!weights && weights.size() != expected_length) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
                                  "expected {} values, found {}"),
-                      norm, chrom.name(), expected_length, weights().size()));
+                      norm, chrom.name(), expected_length, weights.size()));
     }
-    weights_ = weights();
+    weights_ = weights(balancing::Weights::Type::DIVISIVE);
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
 
@@ -290,8 +291,8 @@ inline balancing::Weights File::normalization(balancing::Method norm) const {
       continue;
     }
 
-    const auto chrom_weights = normalization(norm, chrom);
-    weights.insert(weights.end(), chrom_weights().begin(), chrom_weights().end());
+    const auto chrom_weights = normalization(norm, chrom)(balancing::Weights::Type::DIVISIVE);
+    weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
 
   assert(weights.size() == bins().size());
@@ -300,6 +301,21 @@ inline balancing::Weights File::normalization(balancing::Method norm) const {
 
 inline balancing::Weights File::normalization(std::string_view norm) const {
   return normalization(balancing::Method{norm});
+}
+
+inline std::vector<double> File::expected_values(const Chromosome& chrom,
+                                                 const balancing::Method& normalization_) const {
+  const File f(path(), resolution(), MatrixType::expected);
+  const auto sel = f.fetch(chrom.name(), normalization_);
+  const auto footer =
+      f._footers.find(internal::HiCFooterMetadata{f.path(), MatrixType::expected, normalization_,
+                                                  MatrixUnit::BP, resolution(), chrom, chrom, -1});
+  if (footer == f._footers.end()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to fetch expected values for \"{}\" ({})"), chrom.name(),
+                    normalization_.to_string()));
+  }
+  return (*footer)->expectedValues();
 }
 
 inline std::size_t File::num_cached_footers() const noexcept { return _footers.size(); }

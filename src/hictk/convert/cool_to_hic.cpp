@@ -45,24 +45,18 @@ static void copy_pixels(hic::internal::HiCFileWriter& w, const cooler::File& bas
 }
 
 static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const cooler::File& clr,
-                                      const balancing::Method& norm, bool throw_if_missing) {
+                                      std::uint32_t resolution, const balancing::Method& norm,
+                                      bool throw_if_missing) {
   if (norm == balancing::Method::NONE()) {
     return;
   }
 
   try {
-    const auto& weights = *clr.read_weights(norm);
-    std::vector<float> weights_f(weights().size());
-    std::transform(weights().begin(), weights().end(), weights_f.begin(), [&](const double n) {
-      if (weights.type() == balancing::Weights::Type::MULTIPLICATIVE) {
-        return static_cast<float>(1.0 / n);
-      }
-      return static_cast<float>(n);
-    });
+    const auto& weights = *clr.normalization(norm);
 
     const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
-    SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), clr.resolution(), norm_name);
-    w.add_norm_vector(norm_name, "BP", clr.resolution(), weights_f, true);
+    SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), resolution, norm_name);
+    w.add_norm_vector(norm_name, "BP", resolution, weights, true);
 
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
@@ -86,7 +80,8 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
 
   if (c.input_format == "cool") {
     for (const auto& norm : c.normalization_methods) {
-      copy_normalization_vector(w, base_clr, norm, c.fail_if_normalization_method_is_not_avaliable);
+      copy_normalization_vector(w, base_clr, base_clr.resolution(), norm,
+                                c.fail_if_normalization_method_is_not_avaliable);
     }
     w.write_norm_vectors_and_norm_expected_values();
     return;
@@ -98,7 +93,7 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
   for (const auto& res : c.resolutions) {
     const auto clr = mclr.open(res);
     for (const auto& norm : c.normalization_methods) {
-      copy_normalization_vector(w, clr, norm, c.fail_if_normalization_method_is_not_avaliable);
+      copy_normalization_vector(w, clr, res, norm, c.fail_if_normalization_method_is_not_avaliable);
     }
   }
   w.write_norm_vectors_and_norm_expected_values();
@@ -123,7 +118,7 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto chromosomes = cooler::File(base_uri).chromosomes();
   const auto& resolutions = c.resolutions;
 
-  const internal::TmpDir tmpdir{c.tmp_dir};
+  const internal::TmpDir tmpdir{c.tmp_dir, true};
   hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
                                         c.genome, c.threads, c.chunk_size, c.tmp_dir,
                                         c.compression_lvl, c.skip_all_vs_all_matrix);

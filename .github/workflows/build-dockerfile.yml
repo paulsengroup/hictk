@@ -14,7 +14,7 @@ on:
       - "test/**"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -27,7 +27,7 @@ on:
       - "test/**"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -69,8 +69,8 @@ jobs:
 
           OS_NAME='ubuntu'
           OS_VERSION='22.04'
-          C_COMPILER='clang-17'
-          CXX_COMPILER='clang++-17'
+          C_COMPILER='clang-18'
+          CXX_COMPILER='clang++-18'
 
           BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
           TEST_BASE_IMAGE="$BUILD_BASE_IMAGE"
@@ -143,7 +143,7 @@ jobs:
           platforms: arm64
 
       - name: Build Docker image (x86)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
           load: true
@@ -172,7 +172,7 @@ jobs:
           utils/devel/test_docker_image.sh hictk:test
 
       - name: Build Docker image (arm64)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
         with:
           context: ${{ github.workspace }}
@@ -199,7 +199,7 @@ jobs:
 
       - name: Push image to registries
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
           push: true

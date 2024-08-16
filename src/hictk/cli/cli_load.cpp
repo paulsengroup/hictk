@@ -131,7 +131,9 @@ void Cli::make_load_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
+
 
   sc.add_option(
       "-v,--verbosity",
@@ -204,8 +206,6 @@ void Cli::transform_args_load_subcommand() {
   } else {
     c.offset = c.one_based ? -1 : 0;
   }
-
-  c.tmp_dir /= (std::filesystem::path(c.output_path).filename().string() + ".tmp");
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;

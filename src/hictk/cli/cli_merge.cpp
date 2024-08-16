@@ -86,6 +86,7 @@ void Cli::make_merge_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
 
   sc.add_flag(
@@ -190,8 +191,6 @@ void Cli::transform_args_merge_subcommand() {
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
-
-  c.tmp_dir /= c.output_file.filename().string() + ".tmp";
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

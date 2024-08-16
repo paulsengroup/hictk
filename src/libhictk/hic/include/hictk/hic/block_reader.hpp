@@ -13,8 +13,8 @@
 #include <vector>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/binary_buffer.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hic/binary_buffer.hpp"
 #include "hictk/hic/cache.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/index.hpp"
@@ -42,6 +42,7 @@ class HiCBlockReader {
   [[nodiscard]] const Chromosome& chrom1() const noexcept;
   [[nodiscard]] const Chromosome& chrom2() const noexcept;
   [[nodiscard]] const BinTable& bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const Index& index() const noexcept;
 
   [[nodiscard]] double sum() const noexcept;

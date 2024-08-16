@@ -110,6 +110,7 @@ void Cli::make_zoomify_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
 
   sc.add_option(
@@ -296,8 +297,6 @@ void Cli::transform_args_zoomify_subcommand() {
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
-
-  c.tmp_dir /= c.path_to_output.filename().string() + ".tmp";
 }
 
 }  // namespace hictk::tools

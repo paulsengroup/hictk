@@ -14,8 +14,8 @@
 #include <ios>
 #include <stdexcept>
 
+#include "hictk/filestream.hpp"
 #include "hictk/hash.hpp"
-#include "hictk/hic/filestream.hpp"
 
 namespace hictk::hic::internal {
 

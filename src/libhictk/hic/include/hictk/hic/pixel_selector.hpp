@@ -10,10 +10,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#ifdef HICTK_WITH_EIGEN
-#include <Eigen/Dense>
-#include <Eigen/SparseCore>
-#endif
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -49,12 +45,12 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coords) noexcept;
+                PixelCoordinates coords);
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coord1_, PixelCoordinates coord2_) noexcept;
+                PixelCoordinates coord1_, PixelCoordinates coord2_);
 
   PixelSelector(const PixelSelector &other) = delete;
   PixelSelector(PixelSelector &&other) = default;
@@ -79,13 +75,6 @@ class PixelSelector {
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
-#ifdef HICTK_WITH_EIGEN
-  template <typename N>
-  [[nodiscard]] Eigen::SparseMatrix<N> read_sparse() const;
-  template <typename N>
-  [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> read_dense() const;
-#endif
-
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
@@ -101,6 +90,7 @@ class PixelSelector {
   [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
 
   [[nodiscard]] bool is_inter() const noexcept;
@@ -189,6 +179,7 @@ class PixelSelectorAll {
 
  private:
   std::vector<PixelSelector> _selectors{};
+  std::shared_ptr<const BinTable> _bins{};
 
  public:
   PixelSelectorAll() = default;
@@ -209,18 +200,12 @@ class PixelSelectorAll {
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
-#ifdef HICTK_WITH_EIGEN
-  template <typename N>
-  [[nodiscard]] Eigen::SparseMatrix<N> read_sparse() const;
-  template <typename N>
-  [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> read_dense() const;
-#endif
-
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] balancing::Method normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] std::vector<double> weights() const;
 
   template <typename N>
@@ -255,6 +240,13 @@ class PixelSelectorAll {
 
     iterator() = default;
     explicit iterator(const PixelSelectorAll &selector, bool sorted);
+    iterator(const iterator &other);
+    iterator(iterator &&other) noexcept = default;
+
+    ~iterator() noexcept = default;
+
+    auto operator=(const iterator &other) -> iterator &;
+    auto operator=(iterator &&other) noexcept -> iterator & = default;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
