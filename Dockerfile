@@ -87,8 +87,7 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release            \
 
 # Build and install project
 RUN cmake --build "$build_dir" -t hictk -j "$(nproc)"  \
-&& cmake --install "$build_dir" \
-&& rm -rf "$build_dir/include" "$build_dir/lib"
+&& cmake --install "$build_dir" --component Runtime
 
 ARG FINAL_BASE_IMAGE
 ARG FINAL_BASE_IMAGE_DIGEST
@@ -129,7 +128,7 @@ LABEL org.opencontainers.image.documentation='https://github.com/paulsengroup/hi
 LABEL org.opencontainers.image.source='https://github.com/paulsengroup/hictk'
 LABEL org.opencontainers.image.licenses='MIT'
 LABEL org.opencontainers.image.title='hictk'
-LABEL org.opencontainers.image.description='CLI utility to convert .hic files to .cool and .mcool'
+LABEL org.opencontainers.image.description='Blazing fast toolkit to work with .hic and .cool files'
 LABEL org.opencontainers.image.base.digest="$FINAL_BASE_IMAGE_DIGEST"
 LABEL org.opencontainers.image.base.name="$FINAL_BASE_IMAGE"
 LABEL paulsengroup.hictk.image.build-base="$BUILD_BASE_IMAGE"
