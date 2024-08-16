@@ -9,30 +9,32 @@
 
 // clang-format off
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+
 // Defines for MSVC
 #ifdef _MSC_VER
     #define DISABLE_WARNING_PUSH                      __pragma(warning(push))
     #define DISABLE_WARNING_POP                       __pragma(warning(pop))
     #define DISABLE_WARNING(warningNumber)            __pragma(warning(disable : warningNumber))
 
-    #define DISABLE_WARNING_BOOL_COMPARE
-    #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
+    #define DISABLE_WARNING_BOOL_COMPARE              DISABLE_WARNING(4806)
+    #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING(4996)
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_NULL_DEREF
     #define DISABLE_WARNING_USELESS_CAST
     #define DISABLE_WARNING_SIGN_COMPARE
-    #define DISABLE_WARNING_UNREACHABLE_CODE          DISABLE_WARNING(4702)                          // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_UNREACHABLE_CODE          DISABLE_WARNING(4702)
 #endif
 
 // Defines for GCC and Clang
 #if defined(__GNUC__) || defined(__clang__)
-    #define DO_PRAGMA(X)                              _Pragma(#X)                                    // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING_PUSH                      DO_PRAGMA(GCC diagnostic push)                 // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING_POP                       DO_PRAGMA(GCC diagnostic pop)                  // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING(warningName)              DO_PRAGMA(GCC diagnostic ignored warningName)  // NOLINT(cppcoreguidelines-macro-usage)
+    #define DO_PRAGMA(X)                              _Pragma(#X)
+    #define DISABLE_WARNING_PUSH                      DO_PRAGMA(GCC diagnostic push)
+    #define DISABLE_WARNING_POP                       DO_PRAGMA(GCC diagnostic pop)
+    #define DISABLE_WARNING(warningName)              DO_PRAGMA(GCC diagnostic ignored warningName)
 
-    #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING("-Wdeprecated-declarations")   // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING_NULL_DEREF                DISABLE_WARNING("-Wnull-dereference")          // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING("-Wdeprecated-declarations")
+    #define DISABLE_WARNING_NULL_DEREF                DISABLE_WARNING("-Wnull-dereference")
     #define DISABLE_WARNING_SIGN_COMPARE              DISABLE_WARNING("-Wsign-compare")
     #define DISABLE_WARNING_UNREACHABLE_CODE
 #endif
@@ -40,13 +42,13 @@
 // Defines for GCC only
 #if defined(__GNUC__) && !defined(__clang__)
     #define DISABLE_WARNING_BOOL_COMPARE              DISABLE_WARNING("-Wbool-compare")
-    #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")       // NOLINT(cppcoreguidelines-macro-usage)
-    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")              // NOLINT(cppcoreguidelines-macro-usage)
+    #define DISABLE_WARNING_MAYBE_UNINITIALIZED       DISABLE_WARNING("-Wmaybe-uninitialized")
+    #define DISABLE_WARNING_USELESS_CAST              DISABLE_WARNING("-Wuseless-cast")
 #endif
 
 // Defines for Clang only
 #ifdef __clang__
-    #define DISABLE_WARNING_BOOL_COMPARE
+    #define DISABLE_WARNING_BOOL_COMPARE              DISABLE_WARNING("-Wtautological-constant-out-of-range-compare")
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_USELESS_CAST
 #endif
@@ -65,5 +67,7 @@
   #define DISABLE_WARNING_SIGN_COMPARE
   #define DISABLE_WARNING_UNREACHABLE_CODE
 #endif
+
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 // clang-format on
