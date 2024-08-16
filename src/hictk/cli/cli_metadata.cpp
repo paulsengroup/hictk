@@ -51,7 +51,7 @@ void Cli::make_metadata_subcommand() {
   sc.add_flag(
       "--include-file-path,!--exclude-file-path",
       c.include_file_path,
-      "Output the given input path using attribute \"uri\"")
+      "Output the given input path using attribute \"uri\".")
       ->capture_default_str();
   sc.add_flag(
       "--recursive",

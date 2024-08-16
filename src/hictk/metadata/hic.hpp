@@ -25,15 +25,15 @@ using AttributeValue = std::variant<std::int64_t, double, bool, std::string>;
 
 [[nodiscard]] inline AttributeValue try_parse_str(const std::string& value) {
   try {
-    // NOLINTNEXTLINE
     return {internal::parse_numeric_or_throw<std::int64_t>(value)};
-  } catch (...) {  // NOLINT
+    // NOLINTNEXTLINE
+  } catch (...) {
   }
 
   try {
-    // NOLINTNEXTLINE
     return {internal::parse_numeric_or_throw<double>(value)};
-  } catch (...) {  // NOLINT
+    // NOLINTNEXTLINE
+  } catch (...) {
   }
 
   if (value == "true" || value == "True") {
@@ -88,7 +88,8 @@ template <typename T>
 [[nodiscard]] inline toml::table extract_top_lvl_metadata_hic(const std::filesystem::path& p,
                                                               bool include_file_path) {
   const auto resolution = hic::utils::list_resolutions(p).back();
-  return normalize_attribute_map(hic::File(p, resolution), include_file_path ? p.string() : "");
+  return normalize_attribute_map(hic::File(p.string(), resolution),
+                                 include_file_path ? p.string() : "");
 }
 
 [[nodiscard]] inline toml::array read_hic_matrix_types(const std::filesystem::path& p,
@@ -96,7 +97,7 @@ template <typename T>
   toml::array buff;
   for (const auto& mt : {"observed", "expected", "oe"}) {
     try {
-      std::ignore = hic::File(p, resolution, hic::ParseMatrixTypeStr(mt));
+      std::ignore = hic::File(p.string(), resolution, hic::ParseMatrixTypeStr(mt));
       buff.push_back(mt);
       // NOLINTNEXTLINE
     } catch (...) {
@@ -132,7 +133,7 @@ template <typename T>
     const std::filesystem::path& p) {
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
   for (const auto& resolution : hic::utils::list_resolutions(p)) {
-    const hic::File hf(p, resolution);
+    const hic::File hf(p.string(), resolution);
 
     toml::table attributes;
 
