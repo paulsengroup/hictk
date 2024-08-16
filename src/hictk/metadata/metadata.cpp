@@ -124,15 +124,21 @@ static void emplace_if_valid(std::string_view key, const std::optional<T>& value
   }
 }
 
-[[nodiscard]] static toml::table normalize_attribute_map(
-    const phmap::flat_hash_map<std::string, std::string>& map, const std::string& uri) {
+[[nodiscard]] static toml::table normalize_attribute_map(const hic::File& hf,
+    const std::string& uri) {
   toml::table attributes;
 
   if (!uri.empty()) {
     emplace_if_valid("uri", uri, attributes);
   }
 
-  for (const auto& [k, v] : map) {
+  emplace_if_valid("format", "HIC", attributes);
+  emplace_if_valid("format-version", hf.version(), attributes);
+  emplace_if_valid("assembly", hf.assembly(), attributes);
+  emplace_if_valid("format-url", "https://github.com/aidenlab/hic-format", attributes);
+  emplace_if_valid("nchroms", hf.chromosomes().remove_ALL().size(), attributes);
+
+  for (const auto& [k, v] : hf.attributes()) {
     std::visit([&, key = k](const auto& value) { emplace_if_valid(key, value, attributes); },
                try_parse_str(v));
   }
@@ -275,8 +281,8 @@ static void print_attributes(const toml::table& attributes, MetadataOutputFormat
 
 [[nodiscard]] static int print_hic_metadata(const std::filesystem::path& p,
                                             MetadataOutputFormat format, bool include_file_path) {
-  const auto resolution = hic::utils::list_resolutions(p).front();
-  const auto attributes = normalize_attribute_map(hic::File(p, resolution).attributes(),
+  const auto resolution = hic::utils::list_resolutions(p).back();
+  const auto attributes = normalize_attribute_map(hic::File(p, resolution),
                                                   include_file_path ? p.string() : "");
   print_attributes(attributes, format);
 
