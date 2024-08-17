@@ -25,6 +25,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -242,6 +243,10 @@ void Cli::transform_args_convert_subcommand() {
       c.normalization_methods =
           File(c.path_to_input.string(), c.resolutions.back()).avail_normalizations();
     }
+  }
+
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
   // in spdlog, high numbers correspond to low log levels

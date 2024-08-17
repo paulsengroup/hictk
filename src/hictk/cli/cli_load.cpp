@@ -16,6 +16,7 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -209,6 +210,10 @@ void Cli::transform_args_load_subcommand() {
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+  }
+
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
   // in spdlog, high numbers correspond to low log levels

@@ -4,11 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <string_view>
 #include <vector>
 
 #include "hictk/filestream.hpp"
 #include "hictk/hic/file_writer.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk::hic::internal {
 
@@ -18,11 +22,12 @@ class HiCFileZoomify {
   HiCFileWriter _hfw{};
 
  public:
-  HiCFileZoomify(std::string_view input_hic, std::string_view output_hic,
-                 const std::vector<std::uint32_t>& resolutions, std::size_t n_threads = 1,
-                 std::size_t chunk_size = 10'000'000,
-                 const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-                 std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
+  HiCFileZoomify(
+      std::string_view input_hic, std::string_view output_hic,
+      const std::vector<std::uint32_t>& resolutions, std::size_t n_threads = 1,
+      std::size_t chunk_size = 10'000'000,
+      const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
+      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
   void zoomify();
 
  private:

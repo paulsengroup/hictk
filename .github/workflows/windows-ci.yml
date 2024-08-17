@@ -38,6 +38,7 @@ env:
   CCACHE_COMPRESSLEVEL: "1"
   CCACHE_MAXSIZE: "250M"
   CONAN_HOME: "${{ github.workspace }}/.conan2"
+  HICTK_CI: "1"
 
 defaults:
   run:
