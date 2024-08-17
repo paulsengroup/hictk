@@ -171,12 +171,14 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
-      - name: Install test dependencies
+      - name: Setup test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3-pip xz-utils
+          apt-get install -y --no-install-recommends gpg gpg-agent python3-pip xz-utils
 
           python3 -m pip install 'cooler==0.10.0' 'numpy<2' 'pyyaml'
+
+          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
 
       - name: Run integration tests
         run: |
@@ -217,11 +219,10 @@ jobs:
           test/scripts/hictk_zoomify.sh build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          gcov: true
-          gcov_executable: gcov-14
+          plugin: gcov
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
