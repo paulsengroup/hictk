@@ -173,7 +173,7 @@ jobs:
       - name: Setup test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends gpg python3-pip xz-utils
+          apt-get install -y --no-install-recommends gpg gpg-agent python3-pip xz-utils
 
           python3 -m pip install 'cooler==0.10.0' 'numpy<2'
 
