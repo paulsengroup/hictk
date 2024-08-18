@@ -55,7 +55,7 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: '--user=root'
 
     steps:
@@ -178,7 +178,12 @@ jobs:
 
           python3 -m pip install 'cooler==0.10.0' 'numpy<2' 'pyyaml'
 
-          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
+          printf '%s\n%s\n' \
+            '#!/usr/bin/env bash' \
+            'llvm-cov-18 gcov "$@"' \
+          > /usr/bin/gcov
+
+          chmod 750 /usr/bin/gcov
 
       - name: Run integration tests
         run: |
