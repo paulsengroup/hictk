@@ -216,6 +216,7 @@ class Cli {
   [[nodiscard]] std::string_view get_printable_subcommand() const noexcept;
   [[nodiscard]] auto parse_arguments() -> Config;
   [[nodiscard]] int exit(const CLI::ParseError& e) const;
+  [[nodiscard]] int exit() const noexcept;
   [[nodiscard]] static std::string_view subcommand_to_str(subcommand s) noexcept;
 
  private:
