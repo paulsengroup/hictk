@@ -79,8 +79,8 @@ class MatrixBodyMetadataTank {
   MatrixBodyMetadataTank() = default;
 
   [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
-  [[nodiscard]] auto at(const Chromosome& chrom1, const Chromosome& chrom2) const
-      -> const MatrixBodyMetadata&;
+  [[nodiscard]] auto at(const Chromosome& chrom1,
+                        const Chromosome& chrom2) const -> const MatrixBodyMetadata&;
   [[nodiscard]] HiCSectionOffsets offset(const Chromosome& chrom1, const Chromosome& chrom2) const;
 
   void insert(const Chromosome& chrom1, const Chromosome& chrom2, MatrixMetadata matrix_metadata,
@@ -144,12 +144,13 @@ class HiCFileWriter {
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(std::string_view path_, std::size_t n_threads = 1);
-  HiCFileWriter(std::string_view path_, Reference chromosomes_,
-                std::vector<std::uint32_t> resolutions_, std::string_view assembly_ = "unknown",
-                std::size_t n_threads = 1, std::size_t chunk_size = 10'000'000,
-                const std::filesystem::path& tmpdir = std::filesystem::temp_directory_path(),
-                std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
-                std::size_t buffer_size = 32'000'000);
+  HiCFileWriter(
+      std::string_view path_, Reference chromosomes_, std::vector<std::uint32_t> resolutions_,
+      std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
+      std::size_t chunk_size = 10'000'000,
+      const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
+      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
+      std::size_t buffer_size = 32'000'000);
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -179,9 +180,8 @@ class HiCFileWriter {
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
                                              bool skip_all_vs_all_matrix);
-  [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
-                                            const std::vector<std::uint32_t>& resolutions)
-      -> BinTables;
+  [[nodiscard]] static auto init_bin_tables(
+      const Reference& chromosomes, const std::vector<std::uint32_t>& resolutions) -> BinTables;
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,
@@ -196,8 +196,8 @@ class HiCFileWriter {
   // Write pixels
   void write_pixels(bool skip_all_vs_all_matrix);
   auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution)
-      -> HiCSectionOffsets;
+  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
+                    std::uint32_t resolution) -> HiCSectionOffsets;
   void write_all_matrix(std::uint32_t target_num_bins = 500);
 
   auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,

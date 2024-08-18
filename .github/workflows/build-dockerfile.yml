@@ -14,7 +14,7 @@ on:
       - "test/**"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -27,7 +27,7 @@ on:
       - "test/**"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -143,7 +143,7 @@ jobs:
           platforms: arm64
 
       - name: Build Docker image (x86)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
           load: true
@@ -172,7 +172,7 @@ jobs:
           utils/devel/test_docker_image.sh hictk:test
 
       - name: Build Docker image (arm64)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
         with:
           context: ${{ github.workspace }}
@@ -199,7 +199,7 @@ jobs:
 
       - name: Push image to registries
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
           push: true

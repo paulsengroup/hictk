@@ -14,7 +14,7 @@ on:
       - "test/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -27,7 +27,7 @@ on:
       - "test/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -43,12 +43,13 @@ env:
   CCACHE_COMPRESSLEVEL: "13"
   CCACHE_MAXSIZE: "200M"
   CONAN_HOME: "/opt/conan/"
+  HICTK_CI: "1"
 
 jobs:
   run-clang-tidy:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: '--user=root'
 
     steps:
@@ -64,7 +65,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.txt', '.github/workflows/run-clang-tidy.yml') }}"
+          hash="${{ hashFiles('conanfile.py', '.github/workflows/run-clang-tidy.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"

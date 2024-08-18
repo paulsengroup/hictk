@@ -17,6 +17,7 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -86,6 +87,7 @@ void Cli::make_merge_subcommand() {
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
+      ->check(CLI::ExistingDirectory)
       ->capture_default_str();
 
   sc.add_flag(
@@ -191,7 +193,9 @@ void Cli::transform_args_merge_subcommand() {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 
-  c.tmp_dir /= c.output_file.filename().string() + ".tmp";
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+  }
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

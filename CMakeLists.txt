@@ -132,11 +132,23 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
+option(HICTK_WITH_ARROW "Build with arrow support" ON)
+option(HICTK_WITH_ARROW_SHARED "Force dynamic linking to Arrow libs" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 
 if(HICTK_WITH_EIGEN)
   target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_EIGEN)
+endif()
+
+if(HICTK_WITH_ARROW)
+  target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_ARROW)
+endif()
+
+if(BUILD_SHARED_LIBS)
+  set(HICTK_WITH_ARROW_SHARED
+      ON
+      CACHE BOOL "Force dynamic linking to Arrow libs")
 endif()
 
 add_subdirectory(src)

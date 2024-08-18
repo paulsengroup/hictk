@@ -13,7 +13,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -25,7 +25,7 @@ on:
       - "src/**"
       - "test/**"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -38,6 +38,7 @@ env:
   CCACHE_COMPRESSLEVEL: "1"
   CCACHE_MAXSIZE: "250M"
   CONAN_HOME: "${{ github.workspace }}/.conan2"
+  HICTK_CI: "1"
 
 defaults:
   run:
@@ -54,8 +55,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Debug,   developer_mode: OFF }
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.1.*', cmake-ver: '3.28.*', build_type: Release, developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Debug,   developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Release, developer_mode: OFF }
 
 
     steps:
@@ -92,9 +93,9 @@ jobs:
           compiler="${{ matrix.compiler-name }}"
           build_type="${{ matrix.build_type }}"
 
-          conanfile_hash="${{ hashFiles('conanfile.txt') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
           workflow_hash="${{ hashFiles('.github/workflows/windows-ci.yml') }}"
-          combined_hash="${{ hashFiles('conanfile.txt', '.github/workflows/windows-ci.yml') }}"
+          combined_hash="${{ hashFiles('conanfile.py', '.github/workflows/windows-ci.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
@@ -136,6 +137,7 @@ jobs:
         run: |
           conan install .                                           \
              --build=missing                                        \
+             --build="b2/*"                                         \
              --build="catch2/*"                                     \
              -pr:h default                                          \
              -pr:b default                                          \

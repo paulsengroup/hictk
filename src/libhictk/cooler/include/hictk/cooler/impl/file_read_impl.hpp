@@ -137,7 +137,7 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                                  std::shared_ptr<const balancing::Weights> weights,
                                  QUERY_TYPE query_type) const {
   if (range1 == range2) {
-    return fetch(range1, std::move(weights));
+    return fetch(range1, std::move(weights), query_type);
   }
 
   const auto gi1 = query_type == QUERY_TYPE::BED
@@ -163,20 +163,7 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   PixelCoordinates coord2{bins().at(chrom2, start2),
                           bins().at(chrom2, end2 - (std::min)(end2, 1U))};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord2.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
-  // clang-format off
-  return PixelSelector(_index,
-                       dataset("pixels/bin1_id"),
-                       dataset("pixels/bin2_id"),
-                       dataset("pixels/count"),
-                       coord1,
-                       coord2,
-                       std::move(weights)
-  );
-  // clang-format on
+  return fetch(coord1, coord2, std::move(weights));
 }
 inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
   return fetch(normalization(normalization_));
@@ -213,10 +200,6 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
-  const auto &current_chrom = coord1.bin1.chrom();
-  const auto &next_chrom = chromosomes().at(
-      std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
-  read_index_chunk({current_chrom, next_chrom});
   return fetch(coord1, coord2, std::move(weights));
 }
 
@@ -368,8 +351,8 @@ inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
   return groups;
 }
 
-inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes, double w0)
-    -> DatasetMap {
+inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
+                                double w0) -> DatasetMap {
   DatasetMap datasets(MANDATORY_DATASET_NAMES.size());
 
   const std::size_t num_pixel_datasets = 3;
@@ -459,8 +442,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
 DISABLE_WARNING_PUSH
 DISABLE_WARNING_UNREACHABLE_CODE
-inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
-    -> Attributes {
+inline auto File::read_standard_attributes(const RootGroup &root_grp,
+                                           bool initialize_missing) -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
 

@@ -14,7 +14,7 @@ on:
       - "test/scripts/link_h5_dataset.py"
       - "test/scripts/patch_hictkpy.py"
       - "CMakeLists.txt"
-      - "conanfile.txt"
+      - "conanfile.py"
     tags:
       - 'v*.*.*'
 
@@ -98,11 +98,12 @@ jobs:
           }
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
 
     env:
       CONAN_HOME: '/root/.conan2'
+      HICTK_CI: '1'
 
     steps:
       - name: Clone hictk
@@ -145,14 +146,14 @@ jobs:
         id: cache-key
         working-directory: hictkpy
         run: |
-          hash="${{ hashFiles('conanfile.txt') }}"
+          hash="${{ hashFiles('conanfile.py') }}"
 
           echo "key=fuzzy-testing-$hash" >> $GITHUB_OUTPUT
 
       - name: Install Python
         run: |
           apt-get update
-          apt-get install -y python3.11 python3.11-dev
+          apt-get install -y python3.12 python3.12-dev
 
       - name: Restore Conan cache
         id: cache-conan
@@ -195,7 +196,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y curl zstd
-          pip install --no-cache-dir 'cooler>=0.9.3'
+          pip install --no-cache-dir 'cooler==0.10.0' 'numpy<2'
 
       - name: Detect CI type
         id: ci-type

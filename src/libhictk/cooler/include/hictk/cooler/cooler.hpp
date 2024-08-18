@@ -310,12 +310,12 @@ class File {
   [[nodiscard]] static HighFive::File open_file(std::string_view uri, unsigned int mode,
                                                 bool validate);
 
-  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f, std::string_view uri)
-      -> RootGroup;
+  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f,
+                                                      std::string_view uri) -> RootGroup;
 
   // Open/read groups, datasets and attributes
-  [[nodiscard]] static auto open_root_group(const HighFive::File &f, std::string_view uri)
-      -> RootGroup;
+  [[nodiscard]] static auto open_root_group(const HighFive::File &f,
+                                            std::string_view uri) -> RootGroup;
   [[nodiscard]] static auto open_groups(const RootGroup &root_grp) -> GroupMap;
   [[nodiscard]] static auto open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
                                           double w0) -> DatasetMap;
@@ -326,8 +326,8 @@ class File {
   [[nodiscard]] static auto create_root_group(HighFive::File &f, std::string_view uri,
                                               bool write_sentinel_attr = true) -> RootGroup;
   [[nodiscard]] static auto create_groups(RootGroup &root_grp) -> GroupMap;
-  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp)
-      -> GroupMap;
+  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp,
+                                          Group bins_grp) -> GroupMap;
   template <typename PixelT>
   [[nodiscard]] static auto create_datasets(RootGroup &root_grp, const Reference &chroms,
                                             std::size_t cache_size_bytes,

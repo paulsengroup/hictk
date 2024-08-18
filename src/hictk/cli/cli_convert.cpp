@@ -25,6 +25,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -87,7 +88,9 @@ void Cli::make_convert_subcommand() {
   sc.add_option(
       "--tmpdir",
       c.tmp_dir,
-      "Path where to store temporary files.");
+      "Path where to store temporary files.")
+      ->check(CLI::ExistingDirectory)
+      ->capture_default_str();
   sc.add_option(
       "--chunk-size",
       c.chunk_size,
@@ -242,11 +245,13 @@ void Cli::transform_args_convert_subcommand() {
     }
   }
 
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+  }
+
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
-
-  c.tmp_dir /= c.path_to_output.filename().string() + ".tmp";
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;

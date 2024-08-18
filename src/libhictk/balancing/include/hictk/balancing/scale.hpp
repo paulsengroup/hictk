@@ -131,14 +131,14 @@ class SCALE {
       const std::filesystem::path& tmpfile, std::size_t chunk_size);
   template <typename Matrix>
   [[nodiscard]] auto handle_convergenece(const Matrix& m, std::vector<double>& dr,
-                                         std::vector<double>& dc, VectorOfAtomicDecimals& row)
-      -> ControlFlow;
+                                         std::vector<double>& dc,
+                                         VectorOfAtomicDecimals& row) -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                              std::vector<double>& dr, std::vector<double>& dc,
-                                             VectorOfAtomicDecimals& row, double tolerance)
-      -> ControlFlow;
+                                             VectorOfAtomicDecimals& row,
+                                             double tolerance) -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_diverged(const Matrix& m, const std::vector<double>& b0,

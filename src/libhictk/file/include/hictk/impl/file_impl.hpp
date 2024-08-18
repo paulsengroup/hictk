@@ -68,18 +68,6 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return std::visit([&](const auto& sel) { return sel.template read_all<N>(); }, _sel);
 }
 
-#ifdef HICTK_WITH_EIGEN
-template <typename N>
-inline Eigen::SparseMatrix<N> PixelSelector::read_sparse() const {
-  return std::visit([&](const auto& sel) { return sel.template read_sparse<N>(); }, _sel);
-}
-
-template <typename N>
-inline Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> PixelSelector::read_dense() const {
-  return std::visit([&](const auto& sel) { return sel.template read_dense<N>(); }, _sel);
-}
-#endif
-
 inline const PixelCoordinates& PixelSelector::coord1() const {
   return std::visit(
       [&](const auto& sel) -> const PixelCoordinates& {
@@ -110,6 +98,11 @@ inline const PixelCoordinates& PixelSelector::coord2() const {
 
 inline const BinTable& PixelSelector::bins() const {
   return std::visit([&](const auto& sel) -> const BinTable& { return sel.bins(); }, _sel);
+}
+
+inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
+  return std::visit(
+      [&](const auto& sel) -> std::shared_ptr<const BinTable> { return sel.bins_ptr(); }, _sel);
 }
 
 template <typename PixelSelectorT>

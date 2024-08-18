@@ -242,8 +242,6 @@ Pixel selector
   **Fetch at once**
 
   .. cpp:function:: template <typename N> [[nodiscard]] std::vector<Pixel<N>> read_all() const;
-  .. cpp:function:: template <typename N> [[nodiscard]] Eigen::SparseMatrix<N> read_sparse() const;
-  .. cpp:function:: template <typename N> [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> read_dense() const;
 
   **Accessors**
 

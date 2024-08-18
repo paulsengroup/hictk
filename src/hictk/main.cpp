@@ -112,6 +112,8 @@ int main(int argc, char** argv) noexcept {
         return load_subcmd(std::get<LoadConfig>(config));
       case sc::merge:
         return merge_subcmd(std::get<MergeConfig>(config));
+      case sc::metadata:
+        return metadata_subcmd(std::get<MetadataConfig>(config));
       case sc::rename_chromosomes:
         return rename_chromosomes_subcmd(std::get<RenameChromosomesConfig>(config));
       case sc::validate:

@@ -132,7 +132,8 @@ static auto init_params(const BalanceConfig& c, const std::filesystem::path& tmp
 }
 
 template <typename Balancer, typename BalanceConfig>
-static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
+static int balance_cooler(cooler::File& f, const BalanceConfig& c,
+                          const std::filesystem::path& tmp_dir) {
   if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
@@ -140,7 +141,7 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
                     c.name, f.path()));
   }
 
-  const auto tmpfile = c.tmp_dir / std::filesystem::path{f.path()}.filename();
+  const auto tmpfile = tmp_dir.empty() ? "" : tmp_dir / std::filesystem::path{f.path()}.filename();
   const auto params = init_params<Balancer>(c, tmpfile);
 
   typename Balancer::Type mode{};
@@ -174,7 +175,7 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c) {
 }
 
 template <typename Balancer, typename BalanceConfig>
-static int balance_hic(const BalanceConfig& c) {
+static int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
     const hic::File f(c.path_to_input.string(), res);
@@ -186,7 +187,7 @@ static int balance_hic(const BalanceConfig& c) {
     }
   }
 
-  const auto tmpfile = c.tmp_dir / std::filesystem::path{c.path_to_input}.filename();
+  const auto tmpfile = tmp_dir / std::filesystem::path{c.path_to_input}.filename();
 
   const auto params = init_params<Balancer>(c, tmpfile);
   typename Balancer::Type mode{};
@@ -222,55 +223,59 @@ static int balance_hic(const BalanceConfig& c) {
 }
 
 template <typename Balancer, typename BalanceConfig>
-static int balance_multires_cooler(const BalanceConfig& c) {
+static int balance_multires_cooler(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   const auto resolutions = cooler::utils::list_resolutions(c.path_to_input.string());
 
   for (const auto& res : resolutions) {
     auto clr = cooler::MultiResFile(c.path_to_input.string()).open(res);
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
-    balance_cooler<Balancer>(clr, c);
+    balance_cooler<Balancer>(clr, c, tmp_dir);
   }
   return 0;
 }
 
 int balance_subcmd(const BalanceICEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using ICE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+  const auto tmp_dir =
+      !c.in_memory ? std::make_unique<const internal::TmpDir>(c.tmp_dir, true) : nullptr;
+  const std::filesystem::path& tmp_dir_path = tmp_dir ? (*tmp_dir)() : "";
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::ICE>(c);
+    return balance_hic<balancing::ICE>(c, tmp_dir_path);
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::ICE>(c);
+    return balance_multires_cooler<balancing::ICE>(c, tmp_dir_path);
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::ICE>(clr, c);
+  return balance_cooler<balancing::ICE>(clr, c, tmp_dir_path);
 }
 
 int balance_subcmd(const BalanceSCALEConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using SCALE ({})"), c.name);
-  [[maybe_unused]] const internal::TmpDir tmp_dir{c.tmp_dir};
+  const auto tmp_dir =
+      !c.in_memory ? std::make_unique<const internal::TmpDir>(c.tmp_dir, true) : nullptr;
+  const std::filesystem::path& tmp_dir_path = tmp_dir ? (*tmp_dir)() : "";
 
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::SCALE>(c);
+    return balance_hic<balancing::SCALE>(c, tmp_dir_path);
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::SCALE>(c);
+    return balance_multires_cooler<balancing::SCALE>(c, tmp_dir_path);
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::SCALE>(clr, c);
+  return balance_cooler<balancing::SCALE>(clr, c, tmp_dir_path);
 }
 
 int balance_subcmd(const BalanceVCConfig& c) {
   SPDLOG_INFO(FMT_STRING("balancing using VC ({})"), c.name);
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
-    return balance_hic<balancing::VC>(c);
+    return balance_hic<balancing::VC>(c, "");
   }
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
-    return balance_multires_cooler<balancing::VC>(c);
+    return balance_multires_cooler<balancing::VC>(c, "");
   }
   auto clr = cooler::File(c.path_to_input.string());
-  return balance_cooler<balancing::VC>(clr, c);
+  return balance_cooler<balancing::VC>(clr, c, "");
 }
 
 }  // namespace hictk::tools

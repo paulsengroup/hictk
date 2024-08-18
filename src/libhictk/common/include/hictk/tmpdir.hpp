@@ -12,7 +12,11 @@
 #include <string>
 #endif
 
+#include <fmt/format.h>
+#include <fmt/std.h>
+
 #include <atomic>
+#include <cstdlib>
 #include <filesystem>
 #include <utility>
 
@@ -34,8 +38,12 @@ class TmpDir {
  public:
   [[maybe_unused]] TmpDir() {
     try {
-      _path = create_uniq_temp_dir(std::filesystem::temp_directory_path());
+      _path = create_uniq_temp_dir(default_temp_directory_path());
     } catch (const std::filesystem::filesystem_error&) {
+      const auto called_from_ci = std::getenv("HICTK_CI") != nullptr;  // NOLINT(*-mt-unsafe)
+      if (!called_from_ci) {
+        throw;
+      }
       // Workaround spurious CI failures due to missing /tmp folder exception
       _path = create_uniq_temp_dir(std::filesystem::current_path());
     }
@@ -81,8 +89,31 @@ class TmpDir {
   TmpDir& operator=(const TmpDir& other) = delete;
   TmpDir& operator=(TmpDir&& other) = delete;
 
+  [[nodiscard]] static std::filesystem::path default_temp_directory_path() {
+    try {
+      return std::filesystem::temp_directory_path();
+    } catch (const std::filesystem::filesystem_error& e) {
+      if (e.path1().empty()) {
+        throw std::filesystem::filesystem_error(
+            "unable to safely determine the path where to store temporary files: please make sure "
+            "the environment variable TMPDIR is defined and pointing to an existing folder",
+            e.code());
+      }
+      throw std::filesystem::filesystem_error(
+          fmt::format(
+              FMT_STRING("unable to safely determine the path where to store temporary "
+                         "files: temporary folder is set to \"{}\" but folder does not exist"),
+              e.path1()),
+          e.code());
+    }
+  }
+
   [[nodiscard]] static std::filesystem::path create_uniq_temp_dir(
       const std::filesystem::path& tmpdir) {
+    if (!std::filesystem::exists(tmpdir)) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("unable to use path {} as TmpDir: path does not exists"), tmpdir));
+    }
 #ifdef _WIN32
     std::random_device rd;
     std::mt19937_64 rand_eng(rd());
@@ -102,7 +133,13 @@ class TmpDir {
 
     return dir;
 #else
-    return {mkdtemp((tmpdir / "hictk-tmp-XXXXXXXXXX").string().data())};
+    auto dir = (tmpdir / "hictk-tmp-XXXXXXXXXX").string();
+    if (!mkdtemp(dir.data())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("unable to use path {} as TmpDir: failed to create a temporary folder"),
+          tmpdir));
+    }
+    return {dir};
 #endif
   }
 };

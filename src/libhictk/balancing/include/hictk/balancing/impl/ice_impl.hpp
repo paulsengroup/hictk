@@ -171,8 +171,8 @@ inline void ICE::balance_cis(const MatrixT& matrix, const Chromosome& chrom, std
 }
 
 template <typename File>
-auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_masked_diags)
-    -> SparseMatrix {
+auto ICE::construct_sparse_matrix(const File& f, Type type,
+                                  std::size_t num_masked_diags) -> SparseMatrix {
   SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
   if (type == Type::cis) {
     return construct_sparse_matrix_cis(f, num_masked_diags);
@@ -181,8 +181,8 @@ auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_mask
 }
 
 template <typename File>
-inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags)
-    -> SparseMatrix {
+inline auto ICE::construct_sparse_matrix_gw(const File& f,
+                                            std::size_t num_masked_diags) -> SparseMatrix {
   SparseMatrix m{};
 
   const auto sel = f.fetch();
@@ -198,10 +198,9 @@ inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_maske
 }
 
 template <typename File>
-[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(const File& f, const Chromosome& chrom,
-                                                           std::size_t bin_offset,
-                                                           std::size_t num_masked_diags)
-    -> SparseMatrix {
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(
+    const File& f, const Chromosome& chrom, std::size_t bin_offset,
+    std::size_t num_masked_diags) -> SparseMatrix {
   SparseMatrix m{};
 
   const auto sel = f.fetch(chrom.name());
@@ -217,9 +216,8 @@ template <typename File>
 }
 
 template <typename File>
-[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(const File& f,
-                                                           std::size_t num_masked_diags)
-    -> SparseMatrix {
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(
+    const File& f, std::size_t num_masked_diags) -> SparseMatrix {
   SparseMatrix m{};
 
   for (const auto& chrom : f.chromosomes()) {
@@ -240,9 +238,8 @@ template <typename File>
 }
 
 template <typename File>
-[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(const File& f,
-                                                             std::size_t num_masked_diags)
-    -> SparseMatrix {
+[[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(
+    const File& f, std::size_t num_masked_diags) -> SparseMatrix {
   using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 
@@ -321,12 +318,9 @@ inline auto ICE::construct_sparse_matrix_chunked_gw(const File& f, std::size_t n
 }
 
 template <typename File>
-inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, const Chromosome& chrom,
-                                                     std::size_t bin_offset,
-                                                     std::size_t num_masked_diags,
-                                                     const std::filesystem::path& tmpfile,
-                                                     std::size_t chunk_size)
-    -> SparseMatrixChunked {
+inline auto ICE::construct_sparse_matrix_chunked_cis(
+    const File& f, const Chromosome& chrom, std::size_t bin_offset, std::size_t num_masked_diags,
+    const std::filesystem::path& tmpfile, std::size_t chunk_size) -> SparseMatrixChunked {
   SparseMatrixChunked m(tmpfile, chunk_size);
 
   const auto sel = f.fetch(chrom.name());
@@ -341,10 +335,9 @@ inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, const Chromo
 }
 
 template <typename File>
-inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, std::size_t num_masked_diags,
-                                                     const std::filesystem::path& tmpfile,
-                                                     std::size_t chunk_size)
-    -> SparseMatrixChunked {
+inline auto ICE::construct_sparse_matrix_chunked_cis(
+    const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
+    std::size_t chunk_size) -> SparseMatrixChunked {
   SparseMatrixChunked m(tmpfile, chunk_size);
 
   for (const Chromosome& chrom : f.chromosomes()) {
@@ -364,10 +357,9 @@ inline auto ICE::construct_sparse_matrix_chunked_cis(const File& f, std::size_t 
 }
 
 template <typename File>
-inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_t num_masked_diags,
-                                                       const std::filesystem::path& tmpfile,
-                                                       std::size_t chunk_size)
-    -> SparseMatrixChunked {
+inline auto ICE::construct_sparse_matrix_chunked_trans(
+    const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
+    std::size_t chunk_size) -> SparseMatrixChunked {
   using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 

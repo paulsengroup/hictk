@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 
 #include "hictk/cooler/cooler.hpp"
@@ -18,8 +20,14 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
   SECTION("cis") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:5000000-5500000", "1:5000000-6500000") ==
-            f.fetch("1", 5000000, 5500000, "1", 5000000, 6500000));
+      const auto sel1 = f.fetch("1", "1");
+      const auto sel2 = f.fetch("1", 0, 197195432, "1", 0, 197195432);
+      CHECK(sel1 == sel2);
+
+      const auto& pixels1 = sel1.read_all<T>();
+      const auto& pixels2 = sel2.read_all<T>();
+
+      REQUIRE(pixels1.size() == pixels2.size());
     }
 
     SECTION("valid") {
@@ -36,24 +44,13 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
       CHECK(pixels[6].count == 6);
       CHECK(pixels[7].count == 2);
     }
-#ifdef HICTK_WITH_EIGEN
-    SECTION("query as sparse matrix") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto matrix = selector.read_sparse<T>();
-      CHECK(matrix.nonZeros() == 8);
-      CHECK(matrix.rows() == 5);
-      CHECK(matrix.cols() == 15);
-      CHECK(matrix.sum() == 65);
-    }
 
-    SECTION("query as dense matrix") {
-      auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
-      const auto matrix = selector.read_dense<T>();
-      CHECK(matrix.rows() == 5);
-      CHECK(matrix.cols() == 15);
-      CHECK(matrix.sum() == 72);
+    SECTION("invalid") {
+      SECTION("query overlaps lower triangle") {
+        CHECK_THROWS_WITH(f.fetch("1:6000000-6500000", "1:5000000-5500000"),
+                          Catch::Matchers::ContainsSubstring("overlaps with the lower-triangle"));
+      }
     }
-#endif
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-100000");
@@ -63,8 +60,15 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
   SECTION("trans") {
     SECTION("overloads return identical results") {
-      CHECK(f.fetch("1:48000000-50000000", "4:30000000-35000000") ==
-            f.fetch("1", 48000000, 50000000, "4", 30000000, 35000000));
+      const auto sel1 = f.fetch("1", "4");
+      const auto sel2 = f.fetch("1", 0, 197195432, "4", 0, 155630120, nullptr);
+
+      CHECK(sel1 == sel2);
+
+      const auto& pixels1 = sel1.read_all<T>();
+      const auto& pixels2 = sel2.read_all<T>();
+
+      REQUIRE(pixels1.size() == pixels2.size());
     }
     SECTION("valid") {
       auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
@@ -79,24 +83,12 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
       CHECK(pixels[5].count == 1);
     }
 
-#ifdef HICTK_WITH_EIGEN
-    SECTION("query as sparse matrix") {
-      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
-      const auto matrix = selector.read_sparse<T>();
-      CHECK(matrix.nonZeros() == 6);
-      CHECK(matrix.rows() == 20);
-      CHECK(matrix.cols() == 50);
-      CHECK(matrix.sum() == 16);
+    SECTION("invalid") {
+      SECTION("query overlaps lower triangle") {
+        CHECK_THROWS_WITH(f.fetch("2", "1"),
+                          Catch::Matchers::ContainsSubstring("overlaps with the lower-triangle"));
+      }
     }
-
-    SECTION("query as dense matrix") {
-      auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
-      const auto matrix = selector.read_dense<T>();
-      CHECK(matrix.rows() == 20);
-      CHECK(matrix.cols() == 50);
-      CHECK(matrix.sum() == 16);
-    }
-#endif
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-50000", "2:0-50000");
