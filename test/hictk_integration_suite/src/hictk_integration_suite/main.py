@@ -12,6 +12,7 @@ import os
 import pathlib
 import platform
 import sys
+import time
 import tomllib
 from typing import Any, Dict, List
 
@@ -137,6 +138,13 @@ def init_results(hictk_bin: pathlib.Path) -> Dict:
     help="Path where to write the test results.",
 )
 @click.option(
+    "--print-plan-only",
+    help="Print test plan then exit immediately.",
+    default=False,
+    is_flag=True,
+    show_default=True,
+)
+@click.option(
     "--force",
     help="Force overwrite existing output file(s).",
     default=False,
@@ -150,6 +158,7 @@ def main(
     suites: str,
     verbosity: str,
     result_file: pathlib.Path,
+    print_plan_only: bool,
     force: bool,
 ):
     """
@@ -179,13 +188,28 @@ def main(
 
     num_pass = 0
     num_fail = 0
+    test_plans = []
     results = init_results(hictk_bin)
     for test in suites:
         mod = importlib.import_module(f"hictk_integration_suite.cli.{test}")
-        res = mod.run_tests(hictk_bin, config[test])
-        num_pass += res[0]
-        num_fail += res[1]
-        results["results"] |= res[2]
+        t0 = time.time()
+        plans = mod.plan_tests(hictk_bin, config[test])
+        delta = (time.time() - t0) * 1.0e6
+        logging.info(f"planning for {test} took {delta:.2f}µs")
+        if print_plan_only:
+            test_plans.extend(dict(p) for p in plans)
+        else:
+            t0 = time.time()
+            res = mod.run_tests(plans)
+            delta = time.time() - t0
+            logging.info(f"running tests for {test} took {delta:.2f}s")
+            num_pass += res[0]
+            num_fail += res[1]
+            results["results"] |= res[2]
+
+    if print_plan_only:
+        print(json.dumps(test_plans, indent=2))
+        sys.exit(0)
 
     results["results"]["pass"] = num_pass
     results["results"]["fail"] = num_fail
@@ -194,9 +218,9 @@ def main(
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
 
-    print("")
-    print(f"# PASS: {num_pass}")
-    print(f"# FAIL: {num_fail}")
+    print("", file=sys.stderr)
+    print(f"# PASS: {num_pass}", file=sys.stderr)
+    print(f"# FAIL: {num_fail}", file=sys.stderr)
     sys.exit(num_fail != 0)
 
 

@@ -245,16 +245,6 @@ class HictkDump(HictkTestHarness):
             found = self._normalize_dtypes(self.stdout_)
             if table == "bins":
                 self.failures_ |= validators.compare_bins(expected, found)
-                if len(self.failures_) != 0:
-                    print(expected.dtypes)
-                    print(found.dtypes)
-                    print(expected)
-                    print(found)
-                    print(self.failures_)
-                    print("range1: ", self._get_hictk_keyword_option("--range"))
-                    print("range2: ", self._get_hictk_keyword_option("--range2"))
-                    print("stderr:", self.stderr(1000))
-                    raise RuntimeError("STOP!")
             elif table == "chroms":
                 self.failures_ |= validators.compare_chroms(expected, found)
             elif table == "pixels":
@@ -275,7 +265,7 @@ class HictkDump(HictkTestHarness):
     def run(  # noqa
         self,
         args: List[str],
-        reference_clr: str,
+        reference_uri: str,
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
         title: str | None = None,
@@ -311,7 +301,7 @@ class HictkDump(HictkTestHarness):
 
         t0 = timer()
         self._run_hictk(args, timeout=timeout, env_variables=env_variables, colnames=colnames)
-        self._validate(reference_clr=reference_clr, expect_failure=False)
+        self._validate(reference_clr=reference_uri, expect_failure=False)
         self.duration_ = timer() - t0
 
         return self.status()
