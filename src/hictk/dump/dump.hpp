@@ -18,12 +18,13 @@ namespace hictk::tools {
 void print(const Pixel<double>& pixel);
 void print(const ThinPixel<double>& pixel);
 
-void dump_bins(const File& f, std::string_view range);
+void dump_bins(const File& f, std::string_view range1, std::string_view range2);
 void dump_cells(std::string_view uri, std::string_view format);
-void dump_chroms(std::string_view uri, std::string_view format, std::uint32_t resolution);
+void dump_chroms(std::string_view uri, std::string_view range1, std::string_view range2,
+                 std::string_view format, std::uint32_t resolution);
 void dump_normalizations(std::string_view uri, std::string_view format, std::uint32_t resolution);
 void dump_resolutions(std::string_view uri, std::string_view format, std::uint32_t resolution);
-void dump_weights(const File& f, std::string_view range);
+void dump_weights(const File& f, std::string_view range1, std::string_view range2);
 
 [[nodiscard]] std::pair<std::string, std::string> parse_bedpe(std::string_view line);
 
