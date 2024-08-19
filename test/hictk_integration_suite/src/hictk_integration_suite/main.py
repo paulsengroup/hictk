@@ -25,7 +25,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
         names = ["all"]
     else:
         names = []
-    names += ["metadata"]
+    names += ["dump", "metadata"]
     return names
 
 
@@ -41,8 +41,9 @@ def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
 
     new_config = config.copy()
     for i, mappings in enumerate(config.get("files", [])):
-        if "uri" in mappings:
-            new_config["files"][i]["uri"] = _update_uri(mappings["uri"])
+        for key in mappings:
+            if key.endswith("uri") or key.endswith("path"):
+                new_config["files"][i][key] = _update_uri(mappings[key])
 
     return new_config
 
@@ -72,7 +73,7 @@ def parse_log_lvl(lvl: str):
         return logging.ERROR
     if lvl == "critical":
         return logging.CRITICAL
-    raise NotImplemented()
+    raise NotImplementedError
 
 
 def init_results(hictk_bin: pathlib.Path) -> Dict:
@@ -135,6 +136,13 @@ def init_results(hictk_bin: pathlib.Path) -> Dict:
     "--result-file",
     help="Path where to write the test results.",
 )
+@click.option(
+    "--force",
+    help="Force overwrite existing output file(s).",
+    default=False,
+    is_flag=True,
+    show_default=True,
+)
 def main(
     hictk_bin: pathlib.Path,
     data_dir: pathlib.Path,
@@ -142,6 +150,7 @@ def main(
     suites: str,
     verbosity: str,
     result_file: pathlib.Path,
+    force: bool,
 ):
     """
     Run hictk integration test suite.
@@ -152,7 +161,10 @@ def main(
     logging.basicConfig(level=parse_log_lvl(verbosity))
 
     if result_file and os.path.exists(result_file):
-        raise RuntimeError(f'refusing to ovrewrite file "{result_file}"')
+        if force:
+            os.remove(result_file)
+        else:
+            raise RuntimeError(f'refusing to ovrewrite file "{result_file}"')
 
     suites = suites.split(",")
     if isinstance(suites, str):

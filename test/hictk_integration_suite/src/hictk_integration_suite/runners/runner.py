@@ -70,7 +70,7 @@ class Runner:
         return args + [str(v).strip() for v in self.args_]
 
     @staticmethod
-    def _read_table(f, names: List[str] | None = None) -> pd.DataFrame:
+    def _read_table(f, names: List[str] | None = None) -> pd.DataFrame | str:
         if f is None:
             raise ValueError("stream cannot be None")
 
@@ -78,8 +78,12 @@ class Runner:
             raise ValueError("names cannot be an empty list")
 
         logging.debug(f'reading table from file "{f}"...')
-        df = pd.read_table(f, names=names)
-        logging.debug(f'read {len(df)} records from "{f}"')
+        try:
+            df = pd.read_table(f, names=names)
+            logging.debug(f'read {len(df)} records from "{f}"')
+        except pd.errors.ParserError as e:
+            logging.warning(f'failed to read table from file "{f}: {e}')
+            return str(e)
 
         return df
 
@@ -125,7 +129,7 @@ class Runner:
         timeout: float,
         stdin=sp.DEVNULL,
         encoding: str = "utf-8",
-        colnames: List[str] | None = None,
+        colnames: List[str] | str | None = None,
         env_variables: Dict[str, str] | None = None,
     ) -> Tuple[int, str, str]:
 
@@ -147,6 +151,9 @@ class Runner:
             if colnames is None:
                 stdout_async = ppool.apply_async(self._read_file, args=(stdout_fifo.name,))
             else:
+                if isinstance(colnames, str):
+                    assert colnames == "infer"
+                    colnames = None
                 stdout_async = ppool.apply_async(self._read_table, args=(stdout_fifo.name, colnames))
             stderr_async = ppool.apply_async(self._read_file, args=(stderr_fifo.name,))
 

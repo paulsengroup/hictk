@@ -2,4 +2,5 @@
 #
 # SPDX-License-Identifier: MIT
 
+from .dump import run_tests
 from .metadata import run_tests

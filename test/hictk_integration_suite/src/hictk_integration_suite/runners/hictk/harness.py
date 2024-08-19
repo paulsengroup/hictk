@@ -7,6 +7,8 @@ from datetime import timedelta
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import pandas as pd
+
 from hictk_integration_suite.runners import Runner
 
 
@@ -26,13 +28,35 @@ class HictkTestHarness:
         self.title_ = None
         self.duration_ = None
 
-    def _run_hictk(self, args: List[str], timeout: int = 3600, env_variables: Dict[str, str] | None = None):
+    def _get_hictk_keyword_option(self, option_name: str, default=None) -> Any:
+        try:
+            i = self.args_.index(option_name)
+        except ValueError:
+            return default
+
+        if i + 1 == len(self.args_):
+            return default
+
+        return self.args_[i + 1]
+
+    def _get_hictk_flag_value(self, flag_name: str) -> bool:
+        return flag_name in self.args_
+
+    def _run_hictk(
+        self,
+        args: List[str],
+        timeout: int = 1,
+        env_variables: Dict[str, str] | None = None,
+        colnames: List[str] | str | None = None,
+    ):
         runner = Runner(self.exec, args)
         self.args_ = runner.args()
-        self.returncode_, self.stdout_, self.stderr_ = runner.run(timeout=timeout, env_variables=env_variables)
+        self.returncode_, self.stdout_, self.stderr_ = runner.run(
+            timeout=timeout, env_variables=env_variables, colnames=colnames
+        )
 
     def _validate(self, expect_failure: bool):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def run(
         self,
@@ -75,7 +99,11 @@ class HictkTestHarness:
         return payload
 
     def stdout(self, max_length: int | None = None) -> str:
-        payload = "".join(self.stdout_)
+        if isinstance(self.stdout_, pd.DataFrame):
+            payload = str(self.stdout_)
+        else:
+            payload = "".join(self.stdout_)
+
         if max_length is None:
             return payload
 
@@ -100,7 +128,7 @@ class HictkTestHarness:
     def status(self) -> Dict[str, Any]:
         s = {
             "title": str(self.title_),
-            "args": self.args(),
+            "args": self.args()[1:],
             "elapsed-time": str(timedelta(seconds=self.duration_)),
             "exit-code": self.returncode_,
             "notes": [],

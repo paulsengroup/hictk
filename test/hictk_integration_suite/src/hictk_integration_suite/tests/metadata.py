@@ -15,7 +15,7 @@ class HictkMetadataCli(HictkTestHarness):
             if len(self.stderr()) == 0:
                 self.failures_["missing help message"] = ""
             if len(self.stdout()) != 0:
-                self.failures_["unexpected output on stdout"] = self.stdout(100)
+                self.failures_["unexpected output on stdout"] = self.stdout(100).strip()
             if expect_failure and self.returncode() == 0:
                 self.failures_["unexpected return code"] = f"expected non-zero, found {self.returncode()}"
             return
@@ -23,7 +23,7 @@ class HictkMetadataCli(HictkTestHarness):
         if len(self.stdout()) == 0:
             self.failures_["missing help message"] = ""
         if len(self.stderr()) != 0:
-            self.failures_["unexpected output on stderr"] = self.stderr(100)
+            self.failures_["unexpected output on stderr"] = self.stderr(100).strip()
         elif not expect_failure and self.returncode() != 0:
             self.failures_["unexpected return code"] = f"expected zero, found {self.returncode()}"
 
@@ -34,16 +34,16 @@ class HictkMetadata(HictkTestHarness):
 
     def _validate(self, expect_failure: bool):
         if not expect_failure and len(self.stderr()) != 0:
-            self.failures_["unexpected output on stderr"] = self.stderr(100)
+            self.failures_["unexpected output on stderr"] = self.stderr(100).strip()
         if expect_failure:
-            raise NotImplemented()
+            raise NotImplementedError
         if not expect_failure and self.returncode() != 0:
             self.failures_["unexpected return code"] = f"expected zero, found {self.returncode()}"
 
         i = self.args().index("--output-format") + 1
         output_fmt = self.args()[i]
         if output_fmt not in {"json", "toml", "yaml"}:
-            raise NotImplemented()
+            raise NotImplementedError
 
         payload = "".join(self.stdout())
         try:
