@@ -56,10 +56,11 @@ def _test_cmd(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> Tuple[int, int
     num_fail = 0
     results = []
 
-    for file in config["files"]:
+    for c in config["files"]:
+        uri = c["uri"]
         for fmt in config["output-formats"]:
             for recursive in [True, False]:
-                args = ["metadata", file, "--output-format", fmt]
+                args = ["metadata", uri, "--output-format", fmt]
                 if recursive:
                     args.append("--recursive")
                 status = test.run(args, timeout=5)
@@ -72,7 +73,7 @@ def _test_cmd(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> Tuple[int, int
 
 
 def run_tests(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> Tuple[int, int, Dict]:
-    num_pass, num_fail, cli_results = _test_help(hictk_bin, config["files"][0])
+    num_pass, num_fail, cli_results = _test_help(hictk_bin, config["files"][0]["uri"])
     res = _test_cmd(hictk_bin, config)
 
     num_pass += res[0]

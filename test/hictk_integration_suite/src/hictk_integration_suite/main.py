@@ -29,14 +29,31 @@ def get_test_names(include_all: bool = True) -> List[str]:
     return names
 
 
+def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
+    def _update_uri(uri: pathlib.Path) -> str:
+        path = os.path.join(data_dir, uri)
+        if not os.path.exists(path):
+            raise RuntimeError(f'file "{path}" does not exists')
+        return path
+
+    if "files" not in config:
+        return config
+
+    new_config = config.copy()
+    for i, mappings in enumerate(config.get("files", [])):
+        if "uri" in mappings:
+            new_config["files"][i]["uri"] = _update_uri(mappings["uri"])
+
+    return new_config
+
+
 def import_config(path: pathlib.Path, data_dir: pathlib.Path | None, command: str | None = None) -> Dict[str, Any]:
     with open(path, "rb") as f:
         config = tomllib.load(f)
 
     if data_dir:
         for k, v in config.items():
-            if "files" in v:
-                config[k]["files"] = [os.path.join(data_dir, f) for f in config[k]["files"]]
+            config[k] = update_uris(v, data_dir)
 
     if command is None:
         return config
