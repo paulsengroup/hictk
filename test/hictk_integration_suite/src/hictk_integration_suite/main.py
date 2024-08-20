@@ -32,10 +32,11 @@ def get_test_names(include_all: bool = True) -> List[str]:
 
 def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
     def _update_uri(uri: pathlib.Path) -> str:
-        path = os.path.join(data_dir, uri)
+        uri = os.path.join(data_dir, uri)
+        path = uri.partition("::")[0]
         if not os.path.exists(path):
             raise RuntimeError(f'file "{path}" does not exists')
-        return path
+        return uri
 
     if "files" not in config:
         return config
@@ -188,6 +189,7 @@ def main(
 
     num_pass = 0
     num_fail = 0
+    num_skip = 0
     test_plans = []
     results = init_results(hictk_bin)
     for test in suites:
@@ -205,7 +207,8 @@ def main(
             logging.info(f"running tests for {test} took {delta:.2f}s")
             num_pass += res[0]
             num_fail += res[1]
-            results["results"] |= res[2]
+            num_skip += res[2]
+            results["results"] |= res[3]
 
     if print_plan_only:
         print(json.dumps(test_plans, indent=2))
@@ -213,6 +216,7 @@ def main(
 
     results["results"]["pass"] = num_pass
     results["results"]["fail"] = num_fail
+    results["results"]["fail"] = num_skip
     results["success"] = num_fail == 0
     if result_file is not None:
         with open(result_file, "w") as f:
@@ -220,6 +224,7 @@ def main(
 
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)
+    print(f"# SKIP: {num_skip}", file=sys.stderr)
     print(f"# FAIL: {num_fail}", file=sys.stderr)
     sys.exit(num_fail != 0)
 

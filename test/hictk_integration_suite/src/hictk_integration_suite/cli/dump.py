@@ -10,13 +10,7 @@ from immutabledict import ImmutableOrderedDict, immutabledict
 
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 
-
-def _add_default_reference_uris(config: Dict[str, Any]) -> Dict[str, Any]:
-    for mapping in config["files"]:
-        if "reference-uri" not in mapping:
-            mapping["reference-uri"] = mapping["uri"]
-
-    return config
+from .common import _add_default_reference_uris, _get_uri, _preprocess_plan
 
 
 def _extract_queries_for_uri(
@@ -88,16 +82,17 @@ def _make_hictk_dump_args(
     return args
 
 
-def _plan_test_help(
-    hictk_bin: pathlib.Path, uri: pathlib.Path, title: str = "hictk-dump-bins"
+def _plan_tests_cli(
+    hictk_bin: pathlib.Path, uri: pathlib.Path, title: str = "hictk-dump-cli"
 ) -> List[ImmutableOrderedDict]:
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
     plans = (
-        factory | {"args": tuple(("dump",)), "expect_failure": True},
+        factory | {"args": tuple(("dump",))},
         factory | {"args": tuple(("dump", "--help")), "expect_failure": False},
-        factory | {"args": tuple(("dump", "not-a-file")), "expect_failure": True},
-        factory | {"args": tuple(("dump", "--foobar")), "expect_failure": True},
-        factory | {"args": tuple(("dump", str(uri), "--foobar")), "expect_failure": True},
+        factory | {"args": tuple(("dump", "not-a-file"))},
+        factory | {"args": tuple(("dump", str(uri), "foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -105,11 +100,7 @@ def _plan_test_help(
     return plans
 
 
-def _test_invalid_args():
-    pass
-
-
-def _generate_test_args_for_hictk_dump_bins(
+def _plan_tests_hictk_dump_bins(
     hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-bins"
 ) -> List[ImmutableOrderedDict]:
     plans = []
@@ -140,7 +131,7 @@ def _generate_test_args_for_hictk_dump_bins(
     return plans
 
 
-def _generate_test_args_for_hictk_dump_chroms(
+def _plan_tests_hictk_dump_chroms(
     hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-chroms"
 ) -> List[ImmutableOrderedDict]:
     plans = []
@@ -170,7 +161,7 @@ def _generate_test_args_for_hictk_dump_chroms(
     return plans
 
 
-def _generate_test_args_for_hictk_dump_cis(
+def _plan_tests_hictk_dump_cis(
     hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-cis"
 ) -> List[ImmutableOrderedDict]:
     plans = []
@@ -216,7 +207,7 @@ def _generate_test_args_for_hictk_dump_cis(
     return plans
 
 
-def _generate_test_args_for_hictk_dump_trans(
+def _plan_tests_hictk_dump_trans(
     hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-trans"
 ) -> List[ImmutableOrderedDict]:
     plans = []
@@ -263,7 +254,7 @@ def _generate_test_args_for_hictk_dump_trans(
     return plans
 
 
-def _generate_test_args_for_hictk_dump_gw(
+def _plan_tests_hictk_dump_gw(
     hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-gw"
 ) -> List[ImmutableOrderedDict]:
     plans = []
@@ -297,21 +288,27 @@ def _generate_test_args_for_hictk_dump_gw(
 def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> List[ImmutableOrderedDict]:
     config = _add_default_reference_uris(config.copy())
     return (
-        _generate_test_args_for_hictk_dump_bins(hictk_bin, config)
-        + _generate_test_args_for_hictk_dump_chroms(hictk_bin, config)
-        + _generate_test_args_for_hictk_dump_cis(hictk_bin, config)
-        + _generate_test_args_for_hictk_dump_trans(hictk_bin, config)
-        + _generate_test_args_for_hictk_dump_gw(hictk_bin, config)
+        _plan_tests_cli(hictk_bin, _get_uri(config))
+        + _plan_tests_hictk_dump_bins(hictk_bin, config)
+        + _plan_tests_hictk_dump_chroms(hictk_bin, config)
+        + _plan_tests_hictk_dump_cis(hictk_bin, config)
+        + _plan_tests_hictk_dump_trans(hictk_bin, config)
+        + _plan_tests_hictk_dump_gw(hictk_bin, config)
     )
 
 
-def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, Dict]:
+def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
+    num_skip = 0
     results = {}
 
     for p in plans:
-        p = dict(p)
+        skip, p = _preprocess_plan(p)
+        if skip:
+            logging.info(f"SKIPPING {p}")
+            num_skip += 1
+            continue
         title = p["title"]
         assert title.startswith("hictk-dump")
         hictk = p.pop("hictk_bin")
@@ -326,4 +323,4 @@ def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, Dict]:
         results.setdefault(title, []).append(status)
         logging.info(status)
 
-    return num_pass, num_fail, results
+    return num_pass, num_fail, num_skip, results

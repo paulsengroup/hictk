@@ -13,10 +13,15 @@ from hictk_integration_suite.runners import Runner
 
 
 class HictkTestHarness:
-    def __init__(self, hictk_exec: pathlib.Path, cwd: str | None = None, tmpdir: pathlib.Path | None = None):
-        self.exec = hictk_exec
-        self.cwd = cwd
-        self.tmpdir = tmpdir
+    def __init__(
+        self,
+        hictk_exec: pathlib.Path | str,
+        cwd: pathlib.Path | str | None = None,
+        tmpdir: pathlib.Path | str | None = None,
+    ):
+        self.exec = pathlib.Path(hictk_exec) if hictk_exec else None
+        self.cwd = pathlib.Path(cwd) if cwd else None
+        self.tmpdir = pathlib.Path(tmpdir) if tmpdir else None
 
         self.args_ = []
 
