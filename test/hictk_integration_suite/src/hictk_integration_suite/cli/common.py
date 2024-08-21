@@ -1,18 +1,153 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
+import hashlib
+import json
+import logging
+import os.path
 import pathlib
 import platform
+import shutil
+import stat
+import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
+from immutabledict import immutabledict
 
-def _add_default_reference_uris(config: Mapping[str, Any]) -> Dict[str, Any]:
-    config = dict(config)
-    for mapping in config["files"]:
-        if "reference-uri" not in mapping:
-            mapping["reference-uri"] = mapping["uri"]
 
-    return config
+class WorkingDirectory:
+    def __init__(self, path: pathlib.Path | str | None = None, delete: bool = True):
+        if path is None:
+            path = tempfile.TemporaryDirectory(prefix="hictk-integration-test-", delete=False).name
+        else:
+            if pathlib.Path(path).exists():
+                raise RuntimeError(f'"{path}" already exists')
+            os.mkdir(path)
+
+        self._delete = delete
+        self._path = pathlib.Path(path)
+        self._mappings = {}
+
+    def __str__(self) -> str:
+        return str(self._path)
+
+    def __repr__(self) -> str:
+        return f'WorkingDirectory("{self}")'
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
+
+    @staticmethod
+    def _make_read_only(path: pathlib.Path | str):
+        mode = stat.S_IRUSR
+        if os.access(path, os.X_OK):
+            mode |= stat.S_IXUSR
+        pathlib.Path(path).chmod(mode)
+
+    @staticmethod
+    def _make_writeable(path: pathlib.Path | str):
+        mode = stat.S_IRUSR | stat.S_IWUSR
+        if os.access(path, os.X_OK):
+            mode |= stat.S_IXUSR
+        pathlib.Path(path).chmod(mode)
+
+    @staticmethod
+    def _parse_uri(s: pathlib.Path | str) -> Tuple[pathlib.Path, pathlib.Path | None]:
+        path, _, grp = str(s).partition("::")
+        if grp:
+            grp = pathlib.Path(grp)
+
+        return pathlib.Path(path), grp
+
+    def stage_file(self, src: pathlib.Path | str, make_read_only: bool = True, exists_ok: bool = False) -> pathlib.Path:
+        src = pathlib.Path(src)
+        if src in self._mappings:
+            return self._mappings[src]
+
+        path, grp = self._parse_uri(src)
+        if not path.exists():
+            raise RuntimeError(f'source file "{path}" does not exist')
+
+        dest = self._path / path.name
+        if os.path.exists(dest):
+            if not exists_ok:
+                raise RuntimeError(f'refusing to overwrite file "{dest}"')
+
+            logging.debug(f'file "{path}" was already staged')
+
+            if src != path:
+                if grp is None:
+                    self._mappings[src] = self._mappings[path]
+                else:
+                    self._mappings[src] = pathlib.Path(f"{self._mappings[path]}::{grp}")
+
+            return self._mappings[src]
+
+        logging.debug(f'staging file "{path}"...')
+        shutil.copy2(path, dest)
+        if make_read_only:
+            self._make_read_only(dest)
+
+        dest = (self._path / path.name).resolve()
+        self._mappings[path] = dest
+        if src != path:
+            if grp is None:
+                self._mappings[src] = dest
+            else:
+                self._mappings[src] = pathlib.Path(f"{dest}::{grp}")
+
+        return self._mappings[src]
+
+    def mkdtemp(self) -> pathlib.Path:
+        return pathlib.Path(tempfile.mkdtemp(dir=self._path))
+
+    def _path_belongs_to_wd(self, path: pathlib.Path) -> bool:
+        try:
+            path.relative_to(self._path)
+            return path.exists()
+        except ValueError:
+            return False
+
+    def __getitem__(self, item: pathlib.Path | str) -> pathlib.Path:
+        item = pathlib.Path(item)
+        if self._path_belongs_to_wd(item):
+            return item.resolve()
+
+        item, grp = self._parse_uri(item)
+        value = self._mappings[item]
+        if grp:
+            return pathlib.Path(f"{value}::{grp}")
+        return value
+
+    def get(self, item: pathlib.Path | str, default=None):
+        item = pathlib.Path(item)
+        if self._path_belongs_to_wd(item):
+            return item.resolve()
+
+        item, grp = self._parse_uri(item)
+        value = self._mappings.get(item, default)
+        if value and grp:
+            return pathlib.Path(f"{value}::{grp}")
+        return value
+
+    def get_staged_file_names(self) -> Dict[pathlib.Path, pathlib.Path]:
+        return dict(sorted(self._mappings.items()))
+
+    @property
+    def name(self):
+        return self._path
+
+    def cleanup(self):
+        if not self._delete or not self._path.exists():
+            return
+
+        def error_handler(_, path, excinfo):
+            logging.warning(f'failed to delete "{path}": {excinfo}')
+
+        shutil.rmtree(self._path, onexc=error_handler)
 
 
 def _check_if_test_should_run(config: Mapping[str, Any]) -> bool:
@@ -44,8 +179,16 @@ def _strip_fields_from_config(config: Mapping[str, Any], fields: List[str] | Non
     return config
 
 
-def _preprocess_plan(plan: Mapping[str, Any], fields_to_strip: List[str] | None = None) -> Tuple[bool, Dict[str, Any]]:
-    return not _check_if_test_should_run(plan), _strip_fields_from_config(plan, fields_to_strip)
+def _preprocess_plan(
+    plan: Mapping[str, Any], wd: WorkingDirectory, fields_to_strip: List[str] | None = None
+) -> Tuple[bool, Dict[str, Any]]:
+    skip = not _check_if_test_should_run(plan)
+    digest = _hash_plan(plan, wd.name)
+    plan = _strip_fields_from_config(plan, fields_to_strip)
+
+    assert "id" not in plan
+    plan["id"] = digest
+    return skip, plan
 
 
 def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
@@ -60,3 +203,35 @@ def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
             return pathlib.Path(c["uri"])
 
     raise ValueError(f'unable to fetch uri with format "{fmt}" from config')
+
+
+def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "sha256") -> str:
+    tmpdir = str(tmpdir)
+
+    def normalize_uri(uri: str) -> str:
+        path, _, grp = uri.partition("::")
+        path = pathlib.Path(path).name
+        if grp:
+            return f"{path}::{grp}"
+
+        return path
+
+    def strip_tmpdir(obj) -> Dict:
+        for key, value in obj.items():
+            if isinstance(value, dict) or isinstance(value, immutabledict):
+                obj[key] = strip_tmpdir(value)
+            elif isinstance(value, list):
+                for i, x in enumerate(value):
+                    if isinstance(x, str) and tmpdir in x:
+                        value[i] = normalize_uri(x)
+                obj[key] = value
+            elif isinstance(value, str) and tmpdir in value:
+                obj[key] = normalize_uri(value)
+
+        return dict(sorted(obj.items()))
+
+    serialized_plan = json.dumps(strip_tmpdir(dict(plan))).encode("utf-8")
+    h = hashlib.new(algorithm)
+    h.update(serialized_plan)
+
+    return h.hexdigest()

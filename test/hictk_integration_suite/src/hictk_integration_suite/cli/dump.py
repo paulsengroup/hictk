@@ -3,37 +3,31 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import os
 import pathlib
 from typing import Any, Dict, List, Set, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
+from hictk_integration_suite.validators.file_formats import is_multires, is_scool
 
-from .common import _add_default_reference_uris, _get_uri, _preprocess_plan
+from .common import WorkingDirectory, _get_uri, _hash_plan, _preprocess_plan
 
 
 def _extract_queries_for_uri(
-    uri: str, reference_uri: str, resolution: int | None, cell: str | None, config: Dict[str, Any]
+    uri: pathlib.Path, reference_uri: pathlib.Path, resolution: int | None, cell: str | None, config: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
+    file = str(uri).partition("::")[0]
     queries = []
     for c in config["queries"]:
-        if not uri.endswith(c["uri"]):
+        if not file.endswith(os.path.basename(c["uri"])):
             continue
-
-        if resolution:
-            assert cell is None
-            reference_uri = f"{reference_uri}::/resolutions/{resolution}"
-
-        if cell:
-            assert resolution is None
-            uri = f"{uri}::/cells/{cell}"
-            reference_uri = f"{reference_uri}::/cells/{cell}"
 
         queries.append(
             {
-                "uri": uri,
-                "reference-uri": reference_uri,
+                "uri": str(uri),
+                "reference-uri": str(reference_uri),
                 "resolution": resolution,
                 "range1": c.get("range1"),
                 "range2": c.get("range2"),
@@ -74,17 +68,19 @@ def _make_hictk_dump_args(
         args.append("--join")
 
     for k, v in add_args.items():
+        k = "--" + (str(k).removeprefix("--"))
         if not v:
-            args.append(str(k))
+            args.append(k)
         else:
-            args.extend((str(k), str(v)))
+            args.extend((k, str(v)))
 
     return args
 
 
 def _plan_tests_cli(
-    hictk_bin: pathlib.Path, uri: pathlib.Path, title: str = "hictk-dump-cli"
+    hictk_bin: pathlib.Path, uri: pathlib.Path, wd: WorkingDirectory, title: str = "hictk-dump-cli"
 ) -> List[ImmutableOrderedDict]:
+    uri = wd[uri]
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
     plans = (
         factory | {"args": tuple(("dump",))},
@@ -101,22 +97,30 @@ def _plan_tests_cli(
 
 
 def _plan_tests_hictk_dump_bins(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-bins"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-dump-bins"
 ) -> List[ImmutableOrderedDict]:
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 5.0}
 
     for c in config["files"]:
-        for query in _extract_queries_for_uri(c["uri"], c["reference-uri"], c.get("resolution"), c.get("cell"), config):
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        resolution = c.get("resolution")
+        cell = c.get("cell")
+        factory["expect_failure"] = is_multires(uri) and resolution is None
+        for query in _extract_queries_for_uri(uri, reference_uri, resolution, cell, config):
             assert query.get("range1") is not None
 
+            # hictk dump ... -t bins
             query_gw = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--table": "bins"}
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"table": "bins"}
             )
+            # hictk dump ... -t bins --range xxx
             query_subset1 = _make_hictk_dump_args(
-                query, drop_args={"range2", "normalization"}, add_args={"--table": "bins"}
+                query, drop_args={"range2", "normalization"}, add_args={"table": "bins"}
             )
-            query_subset2 = _make_hictk_dump_args(query, drop_args={"normalization"}, add_args={"--table": "bins"})
+            # hictk dump ... -t bins --range xxx --range2 xxx
+            query_subset2 = _make_hictk_dump_args(query, drop_args={"normalization"}, add_args={"table": "bins"})
 
             plans.extend(
                 (
@@ -132,21 +136,26 @@ def _plan_tests_hictk_dump_bins(
 
 
 def _plan_tests_hictk_dump_chroms(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-chroms"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-dump-chroms"
 ) -> List[ImmutableOrderedDict]:
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": False}
 
     for c in config["files"]:
-        for query in _extract_queries_for_uri(c["uri"], c["reference-uri"], c.get("resolution"), c.get("cell"), config):
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
             assert query.get("range2") is not None
 
+            # hictk dump ... -t chroms
             args1 = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--table": "chroms"}
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"table": "chroms"}
             )
-            args2 = _make_hictk_dump_args(query, drop_args={"range2", "normalization"}, add_args={"--table": "chroms"})
-            args3 = _make_hictk_dump_args(query, drop_args={"normalization"}, add_args={"--table": "chroms"})
+            # hictk dump ... -t chroms --range xxx
+            args2 = _make_hictk_dump_args(query, drop_args={"range2", "normalization"}, add_args={"table": "chroms"})
+            # hictk dump ... -t chroms --range xxx --range2 xxx
+            args3 = _make_hictk_dump_args(query, drop_args={"normalization"}, add_args={"table": "chroms"})
 
             plans.extend(
                 (
@@ -162,31 +171,45 @@ def _plan_tests_hictk_dump_chroms(
 
 
 def _plan_tests_hictk_dump_cis(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-cis"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-dump-cis"
 ) -> List[ImmutableOrderedDict]:
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 10.0}
 
     for c in config["files"]:
-        for query in _extract_queries_for_uri(c["uri"], c["reference-uri"], c.get("resolution"), c.get("cell"), config):
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        factory["expect_failure"] = (is_multires(uri) and c.get("resolution") is None) or is_scool(uri)
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
 
+            # hictk dump ... --range xxx
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"range2", "normalization"})
+            # hictk dump ... --range xxx --normalization xxx
             query_norm_coo = _make_hictk_dump_args(query, drop_args={"range2"})
+
+            # hictk dump ... --cis-only
             query_cis_only_raw_coo = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--cis-only": None}
-            )
-            query_cis_only_norm_coo = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2"}, add_args={"--cis-only": None}
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"cis-only": None}
             )
 
-            query_raw_bg2 = query_raw_coo + ["--join"]
-            query_norm_bg2 = query_norm_coo + ["--join"]
-            query_cis_only_raw_bg2 = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--cis-only": None, "--join": None}
+            # hictk dump ... --cis-only --normalization xxx
+            query_cis_only_norm_coo = _make_hictk_dump_args(
+                query, drop_args={"range1", "range2"}, add_args={"cis-only": None}
             )
+
+            # hictk dump ... --join
+            query_raw_bg2 = query_raw_coo + ["--join"]
+            # hictk dump ... --join --normalization xxx
+            query_norm_bg2 = query_norm_coo + ["--join"]
+
+            # hictk dump ... --cis-only --join
+            query_cis_only_raw_bg2 = _make_hictk_dump_args(
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"cis-only": None, "join": None}
+            )
+            # hictk dump ... --cis-only --join --normalization xxx
             query_cis_only_norm_bg2 = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2"}, add_args={"--cis-only": None, "--join": None}
+                query, drop_args={"range1", "range2"}, add_args={"cis-only": None, "join": None}
             )
 
             plans.extend(
@@ -208,40 +231,53 @@ def _plan_tests_hictk_dump_cis(
 
 
 def _plan_tests_hictk_dump_trans(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-trans"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-dump-trans"
 ) -> List[ImmutableOrderedDict]:
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 30.0}
 
     for c in config["files"]:
-        for query in _extract_queries_for_uri(c["uri"], c["reference-uri"], c.get("resolution"), c.get("cell"), config):
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        factory["expect_failure"] = (is_multires(uri) and c.get("resolution") is None) or is_scool(uri)
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
             assert query.get("range2") is not None
 
+            # hictk dump ... --range xxx --range2 xxx
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"normalization"})
+            # hictk dump ... --range xxx --range2 xxx --normalization xxx
             query_norm_coo = _make_hictk_dump_args(query)
-            query_cis_only_raw_coo = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--trans-only": None}
+
+            # hictk dump ... --trans-only
+            query_trans_only_raw_coo = _make_hictk_dump_args(
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"trans-only": None}
             )
-            query_cis_only_norm_coo = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2"}, add_args={"--trans-only": None}
+            # hictk dump ... --trans-only --normalization xxx
+            query_trans_only_norm_coo = _make_hictk_dump_args(
+                query, drop_args={"range1", "range2"}, add_args={"trans-only": None}
             )
 
+            # hictk dump ... --range xxx --range2 xxx --join
             query_raw_bg2 = query_raw_coo + ["--join"]
+            # hictk dump ... --range xxx --range2 xxx --join --normalization xxx
             query_norm_bg2 = query_norm_coo + ["--join"]
+
+            # hictk dump ... --trans-only --join
             query_trans_only_raw_bg2 = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2", "normalization"}, add_args={"--trans-only": None}
+                query, drop_args={"range1", "range2", "normalization"}, add_args={"trans-only": None}
             )
+            # hictk dump ... --trans-only --join --normalization xxx
             query_trans_only_norm_bg2 = _make_hictk_dump_args(
-                query, drop_args={"range1", "range2"}, add_args={"--trans-only": None, "--join": None}
+                query, drop_args={"range1", "range2"}, add_args={"trans-only": None, "join": None}
             )
 
             plans.extend(
                 (
                     factory | {"args": tuple(query_raw_coo), "reference_uri": query["reference-uri"]},
                     factory | {"args": tuple(query_norm_coo), "reference_uri": query["reference-uri"]},
-                    factory | {"args": tuple(query_cis_only_raw_coo), "reference_uri": query["reference-uri"]},
-                    factory | {"args": tuple(query_cis_only_norm_coo), "reference_uri": query["reference-uri"]},
+                    factory | {"args": tuple(query_trans_only_raw_coo), "reference_uri": query["reference-uri"]},
+                    factory | {"args": tuple(query_trans_only_norm_coo), "reference_uri": query["reference-uri"]},
                     factory | {"args": tuple(query_raw_bg2), "reference_uri": query["reference-uri"]},
                     factory | {"args": tuple(query_norm_bg2), "reference_uri": query["reference-uri"]},
                     factory | {"args": tuple(query_trans_only_raw_bg2), "reference_uri": query["reference-uri"]},
@@ -255,20 +291,27 @@ def _plan_tests_hictk_dump_trans(
 
 
 def _plan_tests_hictk_dump_gw(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-dump-gw"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-dump-gw"
 ) -> List[ImmutableOrderedDict]:
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 45.0}
 
     for c in config["files"]:
-        for query in _extract_queries_for_uri(c["uri"], c["reference-uri"], c.get("resolution"), c.get("cell"), config):
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        factory["expect_failure"] = (is_multires(uri) and c.get("resolution") is None) or is_scool(uri)
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
             assert query.get("range2") is not None
 
+            # hictk dump ...
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"range1", "range2", "normalization"})
+            # hictk dump ... --normalization xxx
             query_norm_coo = _make_hictk_dump_args(query, drop_args={"range1", "range2"})
 
+            # hictk dump ... --join
             query_raw_bg2 = query_raw_coo + ["--join"]
+            # hictk dump ... --join --normalization xxx
             query_norm_bg2 = query_norm_coo + ["--join"]
 
             plans.extend(
@@ -285,26 +328,28 @@ def _plan_tests_hictk_dump_gw(
     return plans
 
 
-def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> List[ImmutableOrderedDict]:
-    config = _add_default_reference_uris(config.copy())
+def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory) -> List[ImmutableOrderedDict]:
     return (
-        _plan_tests_cli(hictk_bin, _get_uri(config))
-        + _plan_tests_hictk_dump_bins(hictk_bin, config)
-        + _plan_tests_hictk_dump_chroms(hictk_bin, config)
-        + _plan_tests_hictk_dump_cis(hictk_bin, config)
-        + _plan_tests_hictk_dump_trans(hictk_bin, config)
-        + _plan_tests_hictk_dump_gw(hictk_bin, config)
+        _plan_tests_cli(hictk_bin, _get_uri(config), wd)
+        + _plan_tests_hictk_dump_bins(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_chroms(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_cis(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_trans(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_gw(hictk_bin, config, wd)
     )
 
 
-def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, int, Dict]:
+def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
     results = {}
 
+    cwd = wd.mkdtemp()
+    tmpdir = wd.mkdtemp()
+
     for p in plans:
-        skip, p = _preprocess_plan(p)
+        skip, p = _preprocess_plan(p, wd)
         if skip:
             logging.info(f"SKIPPING {p}")
             num_skip += 1
@@ -313,9 +358,9 @@ def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, int, Dict]:
         assert title.startswith("hictk-dump")
         hictk = p.pop("hictk_bin")
         if title.endswith("-cli"):
-            test = HictkDumpCli(hictk)
+            test = HictkDumpCli(hictk, cwd=cwd, tmpdir=tmpdir)
         else:
-            test = HictkDump(hictk)
+            test = HictkDump(hictk, cwd=cwd, tmpdir=tmpdir)
 
         status = test.run(**p)
         num_pass += status["status"] == "PASS"

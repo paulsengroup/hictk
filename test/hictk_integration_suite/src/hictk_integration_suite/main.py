@@ -18,6 +18,7 @@ from typing import Any, Dict, List
 
 import click
 
+from hictk_integration_suite.cli.common import WorkingDirectory
 from hictk_integration_suite.runners.hictk.common import version
 
 
@@ -50,18 +51,25 @@ def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
     return new_config
 
 
-def import_config(path: pathlib.Path, data_dir: pathlib.Path | None, command: str | None = None) -> Dict[str, Any]:
+def stage_input_files(config: Dict[str, Any], wd: WorkingDirectory):
+    for mappings in config.get("files", []):
+        for key, value in mappings.items():
+            if key.endswith("uri") or key.endswith("path"):
+                wd.stage_file(value, exists_ok=True)
+
+
+def import_config_and_stage_files(
+    path: pathlib.Path, data_dir: pathlib.Path | None, wd: WorkingDirectory, command: str
+) -> Dict[str, Any]:
     with open(path, "rb") as f:
         config = tomllib.load(f)
 
+    config = config[command]
     if data_dir:
-        for k, v in config.items():
-            config[k] = update_uris(v, data_dir)
+        config = update_uris(config, data_dir)
 
-    if command is None:
-        return config
-
-    return config[command]
+    stage_input_files(config, wd)
+    return config
 
 
 def parse_log_lvl(lvl: str):
@@ -91,6 +99,19 @@ def init_results(hictk_bin: pathlib.Path) -> Dict:
     }
 
     return res
+
+
+def parse_test_suites(s: str) -> List[str]:
+    suites = s.split(",")
+    if isinstance(suites, str):
+        suites = [suites]
+    else:
+        suites = set(suites)
+
+    if "all" in suites:
+        suites = get_test_names(include_all=False)
+
+    return list(suites)
 
 
 @click.command()
@@ -123,7 +144,7 @@ def init_results(hictk_bin: pathlib.Path) -> Dict:
 )
 @click.option(
     "--suites",
-    type=click.Choice(get_test_names(include_all=True)),
+    type=str,
     default="all",
     help="Comma-separated list of names of the tests to be executed.\n"
     "Should be one of:\n" + "\n - ".join(get_test_names(include_all=True)),
@@ -137,17 +158,18 @@ def init_results(hictk_bin: pathlib.Path) -> Dict:
 @click.option(
     "--result-file",
     help="Path where to write the test results.",
+    type=pathlib.Path,
 )
 @click.option(
-    "--print-plan-only",
-    help="Print test plan then exit immediately.",
+    "--force",
+    help="Force overwrite existing output file(s).",
     default=False,
     is_flag=True,
     show_default=True,
 )
 @click.option(
-    "--force",
-    help="Force overwrite existing output file(s).",
+    "--no-cleanup",
+    help="Don't clean temporary files upon exit.",
     default=False,
     is_flag=True,
     show_default=True,
@@ -159,8 +181,8 @@ def main(
     suites: str,
     verbosity: str,
     result_file: pathlib.Path,
-    print_plan_only: bool,
     force: bool,
+    no_cleanup: bool,
 ):
     """
     Run hictk integration test suite.
@@ -170,49 +192,42 @@ def main(
     """
     logging.basicConfig(level=parse_log_lvl(verbosity))
 
-    if result_file and os.path.exists(result_file):
+    if result_file and result_file.exists():
         if force:
-            os.remove(result_file)
+            result_file.unlink()
         else:
             raise RuntimeError(f'refusing to ovrewrite file "{result_file}"')
 
-    suites = suites.split(",")
-    if isinstance(suites, str):
-        suites = [suites]
-    else:
-        suites = set(suites)
-
-    if "all" in suites:
-        suites = get_test_names(include_all=False)
-
-    config = import_config(config_file, data_dir)
-
+    suites = parse_test_suites(suites)
     num_pass = 0
     num_fail = 0
     num_skip = 0
-    test_plans = []
     results = init_results(hictk_bin)
-    for test in suites:
-        mod = importlib.import_module(f"hictk_integration_suite.cli.{test}")
-        t0 = time.time()
-        plans = mod.plan_tests(hictk_bin, config[test])
-        delta = (time.time() - t0) * 1.0e6
-        logging.info(f"planning for {test} took {delta:.2f}µs")
-        if print_plan_only:
-            test_plans.extend(dict(p) for p in plans)
-        else:
+
+    with WorkingDirectory(delete=not no_cleanup) as wd:
+        hictk_bin = wd.stage_file(hictk_bin)
+        for test in suites:
+            mod = importlib.import_module(f"hictk_integration_suite.cli.{test}")
+
             t0 = time.time()
-            res = mod.run_tests(plans)
+            config = import_config_and_stage_files(config_file, data_dir, wd, command=test)
+            delta = (time.time() - t0) * 1000.0
+            logging.info(f"staging test files for {test} tests took {delta:.2f}ms")
+
+            t0 = time.time()
+            plans = mod.plan_tests(hictk_bin, config, wd)
+            delta = (time.time() - t0) * 1.0e6
+            logging.info(f"planning for {test} tests took {delta:.2f}µs")
+
+            t0 = time.time()
+            res = mod.run_tests(plans, wd)
             delta = time.time() - t0
             logging.info(f"running tests for {test} took {delta:.2f}s")
+
             num_pass += res[0]
             num_fail += res[1]
             num_skip += res[2]
             results["results"] |= res[3]
-
-    if print_plan_only:
-        print(json.dumps(test_plans, indent=2))
-        sys.exit(0)
 
     results["results"]["pass"] = num_pass
     results["results"]["fail"] = num_fail

@@ -22,7 +22,7 @@ class Fifo:
         if not stat.S_ISFIFO(os.stat(path).st_mode):
             raise ValueError("path does not point to an existing FIFO")
 
-        self.name = pathlib.Path(path)
+        self._name = pathlib.Path(path)
 
     def __enter__(self):
         return self
@@ -36,26 +36,27 @@ class Fifo:
     def read_handle(self):
         return open(self.name, "r")
 
+    @property
     def name(self) -> pathlib.Path:
-        return self.name
+        return self._name
 
 
 class Runner:
-    def __init__(self, exec_: pathlib.Path, args: List, cwd: str | None = None, tmpdir: pathlib.Path | None = None):
-        self.tmpdir = tempfile.mkdtemp(dir=tmpdir)
-        self.exec = shutil.which(exec_)
-        self.cwd = cwd
-        self.args_ = args
+    def __init__(self, exec: pathlib.Path, args_: List, cwd: str | None = None, tmpdir: pathlib.Path | None = None):
+        self._tmpdir = tempfile.mkdtemp(dir=tmpdir)
+        self._exec = shutil.which(exec)
+        self._cwd = cwd
+        self._args = args_
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logging.debug(f'removing temporary folder "{self.tmpdir}"...')
-        os.rmdir(self.tmpdir)
+        logging.debug(f'removing temporary folder "{self._tmpdir}"...')
+        os.rmdir(self._tmpdir)
 
     def _mkfifo(self) -> Fifo:
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir, delete_on_close=True) as tmpfile:
+        with tempfile.NamedTemporaryFile(dir=self._tmpdir, delete_on_close=True) as tmpfile:
             path = tmpfile.name
 
         logging.debug(f'creating FIFO "{path}"...')
@@ -64,10 +65,10 @@ class Runner:
 
     def _cmd_args(self, include_exec: bool = True) -> List[str]:
         if include_exec:
-            args = [str(self.exec)]
+            args_ = [str(self._exec)]
         else:
-            args = []
-        return args + [str(v).strip() for v in self.args_]
+            args_ = []
+        return args_ + [str(v).strip() for v in self._args]
 
     @staticmethod
     def _read_table(f, names: List[str] | None = None) -> pd.DataFrame | str:
@@ -116,11 +117,13 @@ class Runner:
             stderr=stderr,
             encoding=encoding,
             env=env_variables,
+            cwd=self._cwd,
         )
         if ctx:
             ctx.enter_context(proc)
         return proc
 
+    @property
     def args(self):
         return self._cmd_args()
 

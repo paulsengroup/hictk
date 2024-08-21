@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
-import pathlib
+import logging
 from timeit import default_timer as timer
 from typing import Any, Dict, List, Tuple
 
@@ -10,6 +10,7 @@ import pandas as pd
 
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.hictk import HictkTestHarness
+from hictk_integration_suite.validators.file_formats import is_cooler, is_hic
 
 
 class HictkDumpCli(HictkTestHarness):
@@ -19,19 +20,19 @@ class HictkDumpCli(HictkTestHarness):
     def _validate(self, expect_failure: bool):
         if expect_failure:
             if len(self.stderr()) == 0:
-                self.failures_["missing help message"] = ""
+                self._failures["missing help message"] = ""
             if len(self.stdout()) != 0:
-                self.failures_["unexpected output on stdout"] = self.stdout(100).strip()
-            if expect_failure and self.returncode() == 0:
-                self.failures_["unexpected return code"] = f"expected non-zero, found {self.returncode()}"
+                self._failures["unexpected output on stdout"] = self.stdout(500).strip()
+            if expect_failure and self.returncode == 0:
+                self._failures["unexpected return code"] = f"expected non-zero, found {self.returncode}"
             return
 
         if len(self.stdout()) == 0:
-            self.failures_["missing help message"] = ""
+            self._failures["missing help message"] = ""
         if len(self.stderr()) != 0:
-            self.failures_["unexpected output on stderr"] = self.stderr(100).strip()
-        elif not expect_failure and self.returncode() != 0:
-            self.failures_["unexpected return code"] = f"expected zero, found {self.returncode()}"
+            self._failures["unexpected output on stderr"] = self.stderr(500).strip()
+        elif not expect_failure and self.returncode != 0:
+            self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
 
 
 class HictkDump(HictkTestHarness):
@@ -54,6 +55,7 @@ class HictkDump(HictkTestHarness):
         return df
 
     def _cooler_dump(self, uri: str) -> Tuple[str, Any]:
+        assert not is_hic(uri)
         table = self._get_hictk_keyword_option("--table")
         if table is None:
             table = "pixels"
@@ -134,7 +136,13 @@ class HictkDump(HictkTestHarness):
 
         return pd.concat(dfs).sort_index().reset_index(drop=True)
 
-    def _run_query_cooler(self, uri: str) -> pd.DataFrame:
+    def _run_query_cooler(self, uri: str) -> pd.DataFrame | None:
+        if not is_cooler(uri):
+            resolution = self._get_hictk_keyword_option("--resolution")
+            uri = f"{uri}::/resolutions/{resolution}"
+            if not is_cooler(uri):
+                return None
+
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
         cis_only = self._get_hictk_flag_value("--cis-only")
@@ -168,7 +176,9 @@ class HictkDump(HictkTestHarness):
             df = df.drop(columns="balanced")
         return df
 
-    def _fetch_bins_cooler(self, uri: str) -> pd.DataFrame:
+    def _fetch_bins_cooler(self, uri: str) -> pd.DataFrame | None:
+        if cooler.fileops.is_multires_file(uri):
+            return None
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
 
@@ -189,6 +199,14 @@ class HictkDump(HictkTestHarness):
         return pd.concat([df1, df2])
 
     def _fetch_chroms_cooler(self, uri: str) -> Dict[str, int]:
+        if not cooler.fileops.is_cooler(uri):
+            # Try to open a .scool or .mcool
+            groups = cooler.fileops.list_coolers(uri)
+            if len(groups) == 0:
+                raise RuntimeError(f'unable to find any cooler files under "{uri}"')
+
+            uri = f"{uri}::{groups[0]}"
+
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
 
@@ -206,10 +224,12 @@ class HictkDump(HictkTestHarness):
         chrom2, _, _ = cooler.api.parse_region(range2, clr.chromsizes)
         return {chrom1: chroms[chrom1], chrom2: chroms[chrom2]}
 
-    def _fetch_normalizations_cooler(self, uri: str) -> List[str]:
+    @staticmethod
+    def _fetch_normalizations_cooler(uri: str) -> List[str]:
         return cooler.Cooler(uri).bins().columns.drop(["chrom", "start", "end"]).tolist()
 
-    def _fetch_resolutions_cooler(self, uri: str) -> List[int]:
+    @staticmethod
+    def _fetch_resolutions_cooler(uri: str) -> List[int]:
         path = cooler.Cooler(uri).filename
         if cooler.fileops.is_scool_file(path):
             groups = [cooler.fileops.list_coolers(path)[0]]
@@ -220,47 +240,57 @@ class HictkDump(HictkTestHarness):
 
         return [cooler.Cooler(f"{path}::{grp}").binsize for grp in groups]
 
-    def _fetch_cells_cooler(self, uri: str) -> List[str]:
+    @staticmethod
+    def _fetch_cells_cooler(uri: str) -> List[str]:
         path = cooler.Cooler(uri).filename
         if cooler.fileops.is_scool_file(path):
             return [grp.removeprefix("/cells/") for grp in cooler.fileops.list_coolers(path)]
 
         return []
 
-    def _fetch_weights_cooler(self, uri: str) -> pd.DataFrame:
+    @staticmethod
+    def _fetch_weights_cooler(uri: str) -> pd.DataFrame:
         clr = cooler.Cooler(uri)
         columns = clr.bins().columns.drop(["chrom", "start", "end"]).tolist()
         return clr.bins()[columns][:]
 
     def _validate(self, reference_clr: str, expect_failure: bool):  # noqa
-        if not expect_failure and len(self.stderr()) != 0:
-            self.failures_["unexpected output on stderr"] = self.stderr(100).strip()
         if expect_failure:
-            raise NotImplementedError
-        if not expect_failure and self.returncode() != 0:
-            self.failures_["unexpected return code"] = f"expected zero, found {self.returncode()}"
+            if len(self.stderr()) == 0:
+                self._failures["missing error message"] = ""
+            if len(self.stdout()) != 0:
+                self._failures["unexpected output on stdout"] = self.stdout(100).strip()
+            if self.returncode == 0:
+                self._failures["unexpected return code"] = f"expected non-zero, found {self.returncode}"
+            return
+
+        if len(self.stderr()) != 0:
+            self._failures["unexpected output on stderr"] = self.stderr(500).strip()
+        if self.returncode != 0:
+            self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
+            return
 
         table, expected = self._cooler_dump(reference_clr)
-        if isinstance(self.stdout_, pd.DataFrame):
-            found = self._normalize_dtypes(self.stdout_)
+        if isinstance(self._stdout, pd.DataFrame):
+            found = self._normalize_dtypes(self._stdout)
             if table == "bins":
-                self.failures_ |= validators.compare_bins(expected, found)
+                self._failures |= validators.compare_bins(expected, found)
             elif table == "chroms":
-                self.failures_ |= validators.compare_chroms(expected, found)
+                self._failures |= validators.compare_chroms(expected, found)
             elif table == "pixels":
-                self.failures_ |= validators.compare_pixels(expected, found)
+                self._failures |= validators.compare_pixels(expected, found)
             elif table == "normalizations":
-                self.failures_ |= validators.compare_normalizations(expected, found)
+                self._failures |= validators.compare_normalizations(expected, found)
             elif table == "resolutions":
-                self.failures_ |= validators.compare_resolutions(expected, found)
+                self._failures |= validators.compare_resolutions(expected, found)
             elif table == "cells":
-                self.failures_ |= validators.compare_cells(expected, found)
+                self._failures |= validators.compare_cells(expected, found)
             elif table == "weights":
-                self.failures_ |= validators.compare_weights(expected, found)
+                self._failures |= validators.compare_weights(expected, found)
             else:
                 raise NotImplementedError
         else:
-            self.failures_["failed to read stdout into a dataframe"] = self.stdout(500).strip()
+            self._failures["failed to read stdout into a dataframe"] = self.stdout(500).strip()
 
     def run(  # noqa
         self,
@@ -268,14 +298,18 @@ class HictkDump(HictkTestHarness):
         reference_uri: str,
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
+        expect_failure: bool = False,
         title: str | None = None,
+        id: str | None = None,  # noqa
     ) -> Dict[str, Any]:
         if title is None:
             title = str(self)
 
         self.clear()
-        self.title_ = title
-        self.args_ = args
+        self._id = id
+        self._title = title
+        self._args = args
+        self._expect_failure = expect_failure
 
         table = self._get_hictk_keyword_option("--table", "pixels")
 
@@ -300,8 +334,17 @@ class HictkDump(HictkTestHarness):
             colnames = None
 
         t0 = timer()
-        self._run_hictk(args, timeout=timeout, env_variables=env_variables, colnames=colnames)
-        self._validate(reference_clr=reference_uri, expect_failure=False)
-        self.duration_ = timer() - t0
+        try:
+            self._run_hictk(args, timeout=timeout, env_variables=env_variables, colnames=colnames)
+        except:  # noqa
+            logging.error(f"failed to execute {args}")
+            raise
+        try:
+            self._validate(reference_clr=reference_uri, expect_failure=expect_failure)
+        except:  # noqa
+            logging.error(f"failed to validate output produced by {args}")
+            raise
+
+        self._duration = timer() - t0
 
         return self.status()

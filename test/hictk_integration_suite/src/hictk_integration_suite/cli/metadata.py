@@ -10,12 +10,13 @@ from immutabledict import ImmutableOrderedDict, immutabledict
 
 from hictk_integration_suite.tests.metadata import HictkMetadata, HictkMetadataCli
 
-from .common import _get_uri, _preprocess_plan
+from .common import WorkingDirectory, _get_uri, _preprocess_plan
 
 
 def _plan_tests_cli(
-    hictk_bin: pathlib.Path, uri: pathlib.Path, title: str = "hictk-metadata-cli"
+    hictk_bin: pathlib.Path, uri: pathlib.Path, wd: WorkingDirectory, title: str = "hictk-metadata-cli"
 ) -> List[ImmutableOrderedDict]:
+    uri = wd[uri]
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0}
     plans = (
         factory | {"args": tuple(("metadata",)), "expect_failure": True},
@@ -33,15 +34,15 @@ def _plan_tests_cli(
 
 
 def _plan_tests_cmd(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], title: str = "hictk-metadata"
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-metadata"
 ) -> List[ImmutableOrderedDict]:
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": False}
     for c in config["files"]:
-        uri = c["uri"]
+        uri = wd[c["uri"]]
         for fmt in config["output-formats"]:
             for recursive in [True, False]:
-                args = ["metadata", uri, "--output-format", fmt]
+                args = ["metadata", str(uri), "--output-format", fmt]
                 if recursive:
                     args.append("--recursive")
 
@@ -52,18 +53,21 @@ def _plan_tests_cmd(
     return plans
 
 
-def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any]) -> List[ImmutableOrderedDict]:
-    return _plan_tests_cli(hictk_bin, _get_uri(config)) + _plan_tests_cmd(hictk_bin, config)
+def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory) -> List[ImmutableOrderedDict]:
+    return _plan_tests_cli(hictk_bin, _get_uri(config), wd) + _plan_tests_cmd(hictk_bin, config, wd)
 
 
-def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, int, Dict]:
+def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
     results = {}
 
+    cwd = wd.mkdtemp()
+    tmpdir = wd.mkdtemp()
+
     for p in plans:
-        skip, p = _preprocess_plan(p)
+        skip, p = _preprocess_plan(p, wd)
         if skip:
             logging.info(f"SKIPPING {p}")
             num_skip += 1
@@ -72,9 +76,9 @@ def run_tests(plans: List[ImmutableOrderedDict]) -> Tuple[int, int, int, Dict]:
         assert title.startswith("hictk-metadata")
         hictk = p.pop("hictk_bin")
         if title.endswith("-cli"):
-            test = HictkMetadataCli(hictk)
+            test = HictkMetadataCli(hictk, cwd=cwd, tmpdir=tmpdir)
         else:
-            test = HictkMetadata(hictk)
+            test = HictkMetadata(hictk, cwd=cwd, tmpdir=tmpdir)
 
         status = test.run(**p)
         num_pass += status["status"] == "PASS"

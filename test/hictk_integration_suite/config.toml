@@ -2,6 +2,32 @@
 #
 # SPDX-License-Identifier: MIT
 
+[dump]
+
+files = [
+  {uri = "cooler/cooler_test_file.cool", format = "cool"},
+  {uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool"},
+  {uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", format = "cool"},
+  {uri = "cooler/multires_cooler_test_file.mcool", format = "mcool"},
+  {uri = "cooler/single_cell_cooler_test_file.scool", format = "scool"},
+  {uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool"},
+  {uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000},
+  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000},
+  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000"}
+]
+
+queries = [
+  {uri = "cooler/cooler_test_file.cool", range1 = "1", range2 = "X"},
+  {uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", range1 = "1", range2 = "X"},
+  {uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", range1 = "1", range2 = "X"},
+  {uri = "cooler/multires_cooler_test_file.mcool", range1 = "1", range2 = "X"},
+  {uri = "cooler/single_cell_cooler_test_file.scool", range1 = "1", range2 = "X"},
+  {uri = "cooler/cooler_variable_bins_test_file.cool", range1 = "chr1", range2 = "chr2"},
+  {uri = "cooler/ENCFF993FGR.2500000.cool", range1 = "chr1", range2 = "chrX", normalization = "VC"},
+  {uri = "hic/4DNFIZ1ZVXC8.hic8", range1 = "chr2L", range2 = "chrX", normalization = "VC"},
+  {uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC"}
+]
+
 [metadata]
 
 files = [
@@ -14,24 +40,3 @@ files = [
 ]
 
 output-formats = ["json", "toml", "yaml"]
-
-[dump]
-
-files = [
-  {uri = "cooler/cooler_test_file.cool", format = "cool"},
-  {uri = "cooler/multires_cooler_test_file.mcool", format = "mcool", resolution = 100000},
-  {uri = "cooler/single_cell_cooler_test_file.scool", format = "scool", cell = "GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool"},
-  {uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", resolution = 100000},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", resolution = 100000}
-]
-
-queries = [
-  {uri = "cooler/cooler_test_file.cool", range1 = "1", range2 = "X"},
-  {uri = "cooler/multires_cooler_test_file.mcool", range1 = "1", range2 = "X"},
-  {uri = "cooler/single_cell_cooler_test_file.scool", range1 = "1", range2 = "X"},
-  {uri = "cooler/cooler_variable_bins_test_file.cool", range1 = "chr1", range2 = "chr2"},
-  {uri = "cooler/ENCFF993FGR.2500000.cool", range1 = "chr1", range2 = "chrX", normalization = "VC"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic8", range1 = "chr2L", range2 = "chrX", normalization = "VC"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC"}
-]
