@@ -145,7 +145,6 @@ class HictkTestHarness:
         self._title = None
 
     def status(self) -> Dict[str, Any]:
-        print(self.args)
         s = {
             "id": str(self._id),
             "title": str(self._title),
