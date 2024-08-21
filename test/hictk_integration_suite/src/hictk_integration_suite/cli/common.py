@@ -104,6 +104,24 @@ class WorkingDirectory:
     def mkdtemp(self) -> pathlib.Path:
         return pathlib.Path(tempfile.mkdtemp(dir=self._path))
 
+    def mkdir(self, path: pathlib.Path) -> pathlib.Path:
+        path = self._path / path
+        if path.exists():
+            raise RuntimeError(f'path already exists: "{path}"')
+
+        path.mkdir()
+        return path
+
+    def touch(self, path: pathlib.Path) -> pathlib.Path:
+        if path in self._mappings:
+            raise RuntimeError(f'file already exists: "{path}"')
+
+        new_file = self._path / path
+        new_file.touch()
+
+        self._mappings[path] = new_file
+        return new_file
+
     def _path_belongs_to_wd(self, path: pathlib.Path) -> bool:
         try:
             path.relative_to(self._path)
@@ -112,15 +130,19 @@ class WorkingDirectory:
             return False
 
     def __getitem__(self, item: pathlib.Path | str) -> pathlib.Path:
+        value = self.get(item)
+        if value:
+            return value
+
+        raise KeyError(f'no such file "{item}"')
+
+    def __contains__(self, item: pathlib.Path | str) -> bool:
         item = pathlib.Path(item)
         if self._path_belongs_to_wd(item):
-            return item.resolve()
+            return True
 
-        item, grp = self._parse_uri(item)
-        value = self._mappings[item]
-        if grp:
-            return pathlib.Path(f"{value}::{grp}")
-        return value
+        item, _ = self._parse_uri(item)
+        return item in self._mappings
 
     def get(self, item: pathlib.Path | str, default=None):
         item = pathlib.Path(item)
