@@ -39,6 +39,8 @@ def _plan_tests_cmd(
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": False}
     for c in config["files"]:
+        factory["file_format"] = c["format"]
+        factory["variable_bin_size"] = c.get("variable-bin-size", False)
         uri = wd[c["uri"]]
         for fmt in config["output-formats"]:
             for recursive in [True, False]:
