@@ -12,7 +12,7 @@ from immutabledict import ImmutableOrderedDict, immutabledict
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
 
-from .common import WorkingDirectory, _get_uri, _hash_plan, _preprocess_plan
+from .common import WorkingDirectory, _get_uri, _preprocess_plan
 
 
 def _extract_queries_for_uri(
