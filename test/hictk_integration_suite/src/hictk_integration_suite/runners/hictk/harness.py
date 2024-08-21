@@ -8,10 +8,15 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List, Tuple
 
 import cooler
+import hictkpy
 import pandas as pd
 
 from hictk_integration_suite.runners import Runner
-from hictk_integration_suite.validators.file_formats import is_cooler, is_hic
+from hictk_integration_suite.validators.file_formats import (
+    is_cooler,
+    is_hic,
+    is_multires,
+)
 
 
 class HictkTestHarness:
@@ -79,24 +84,75 @@ class HictkTestHarness:
         df[columns] = df[columns].astype(float)
         return df
 
+    @staticmethod
+    def _filter_bins(df: pd.DataFrame, chroms: Dict[str, int], range1: str | None, range2: str | None) -> pd.DataFrame:
+        if range1 is None:
+            # assert range2 is None
+            return df
+
+        chrom1, start1, end1 = cooler.api.parse_region(range1, chroms)
+        df1 = df[(df["chrom"] == chrom1) & (df["start"] >= start1) & (df["start"] < end1)]
+        if range2 is None or range1 == range2:
+            return df1
+
+        chrom2, start2, end2 = cooler.api.parse_region(range2, chroms)
+        df2 = df[(df["chrom"] == chrom2) & (df["start"] >= start2) & (df["start"] < end2)]
+
+        return pd.concat([df1, df2])
+
+    @staticmethod
+    def _filter_chroms(chroms: Dict[str, int], range1: str | None, range2: str | None) -> Dict[str, int]:
+        if range1 is None:
+            # assert range2 is None
+            return chroms
+
+        chrom1, _, _ = range1.partition(":")
+        if range2 is None:
+            return {chrom1: chroms[chrom1]}
+
+        chrom2, _, _ = range2.partition(":")
+        return {chrom1: chroms[chrom1], chrom2: chroms[chrom2]}
+
+    @staticmethod
+    def _filter_weights(
+        df: pd.DataFrame, chroms: Dict[str, int], range1: str | None, range2: str | None
+    ) -> pd.DataFrame:
+        columns = df.columns.drop(["chrom", "start", "end"]).tolist()
+        if range1 is None:
+            # assert range2 is None
+            return df[columns]
+
+        chrom1, start1, end1 = cooler.api.parse_region(range1, chroms)
+        df1 = df[(df["chrom"] == chrom1) & (df["start"] >= start1) & (df["start"] < end1)]
+        if range2 is None or range1 == range2:
+            return df1[columns]
+
+        chrom2, start2, end2 = cooler.api.parse_region(range2, chroms)
+        df2 = df[(df["chrom"] == chrom2) & (df["start"] >= start2) & (df["start"] < end2)]
+
+        return pd.concat([df1, df2])[columns]
+
     def _fetch_table(self, uri: str, table: str | None = None) -> Tuple[str, Any]:
         if table is None:
             table = self._get_hictk_keyword_option("--table", "pixels")
 
+        resolution = self._get_hictk_keyword_option("--resolution")
+        path, _, _ = uri.partition("::")
+
         if table == "bins":
-            data = self._fetch_bins(uri)
+            data = self._fetch_bins(path, resolution)
         elif table == "chroms":
-            data = self._fetch_chroms(uri)
+            data = self._fetch_chroms(path)
         elif table == "pixels":
-            data = self._fetch_pixels(uri)
+            data = self._fetch_pixels(path, resolution)
         elif table == "normalizations":
-            data = self._fetch_normalizations(uri)
+            data = self._fetch_normalizations(path, resolution)
         elif table == "resolutions":
-            data = self._fetch_resolutions(uri)
+            data = self._fetch_resolutions(path)
         elif table == "cells":
-            data = self._fetch_cells(uri)
+            data = self._fetch_cells(path)
         elif table == "weights":
-            data = self._fetch_weights(uri)
+            data = self._fetch_weights(path, resolution)
         else:
             raise NotImplementedError
 
@@ -105,44 +161,59 @@ class HictkTestHarness:
 
         return table, data
 
-    def _fetch_bins(self, uri: str) -> pd.DataFrame:
-        if is_hic(uri):
-            return self._hictkpy_fetch_bins(uri)
-        return self._cooler_fetch_bins(uri)
+    def _fetch_bins(self, path: str, resolution: int | None) -> pd.DataFrame:
+        if is_hic(path):
+            return self._hictkpy_fetch_bins(path, resolution)
+        return self._cooler_fetch_bins(path, resolution)
 
-    def _fetch_chroms(self, uri: str) -> Dict[str, int]:
-        if is_hic(uri):
-            return self._hictkpy_fetch_chroms(uri)
-        return self._cooler_fetch_chroms(uri)
+    def _fetch_chroms(self, path: str) -> Dict[str, int]:
+        if is_hic(path):
+            return self._hictkpy_fetch_chroms(path)
+        return self._cooler_fetch_chroms(path)
 
-    def _fetch_pixels(self, uri: str) -> pd.DataFrame | None:
-        if is_hic(uri):
-            return self._hictkpy_fetch_pixels(uri)
-        return self._cooler_fetch_pixels(uri)
+    def _fetch_pixels(self, path: str, resolution: int | None) -> pd.DataFrame | None:
+        if is_hic(path):
+            return self._hictkpy_fetch_pixels(path, resolution)
+        return self._cooler_fetch_pixels(path, resolution)
 
-    def _fetch_normalizations(self, uri: str) -> List[str]:
-        if is_hic(uri):
-            return self._hictkpy_fetch_normalizations(uri)
-        return self._cooler_fetch_normalizations(uri)
+    def _fetch_normalizations(self, path: str, resolution: int | None) -> List[str]:
+        if is_hic(path):
+            return self._hictkpy_fetch_normalizations(path, resolution)
+        return self._cooler_fetch_normalizations(path, resolution)
 
-    def _fetch_resolutions(self, uri: str) -> List[int]:
-        if is_hic(uri):
-            return self._hictkpy_fetch_resolutions(uri)
-        return self._cooler_fetch_resolutions(uri)
+    def _fetch_resolutions(self, path: str) -> List[int]:
+        if is_hic(path):
+            return self._hictkpy_fetch_resolutions(path)
+        return self._cooler_fetch_resolutions(path)
 
-    def _fetch_cells(self, uri: str) -> List[str]:
-        return self._cooler_fetch_cells(uri)
+    def _fetch_cells(self, path: str) -> List[str]:
+        return self._cooler_fetch_cells(path)
 
-    def _fetch_weights(self, uri: str) -> pd.DataFrame:
-        if is_hic(uri):
-            return self._hictkpy_fetch_weights(uri)
-        return self._cooler_fetch_weights(uri)
+    def _fetch_weights(self, path: str, resolution: int | None) -> pd.DataFrame:
+        if is_hic(path):
+            return self._hictkpy_fetch_weights(path, resolution)
+        return self._cooler_fetch_weights(path, resolution)
 
-    def _cooler_fetch_gw_pixels(self, uri: str) -> pd.DataFrame:
+    @staticmethod
+    def _open_cooler(uri: str, resolution: int | None) -> cooler.Cooler | None:
+        try:
+            if resolution is None:
+                return cooler.Cooler(uri)
+            if is_cooler(uri):
+                clr = cooler.Cooler(uri)
+                assert clr.binsize == resolution
+                return clr
+            return cooler.Cooler(f"{uri}::/resolutions{resolution}")
+        except:  # noqa
+            return None
+
+    def _cooler_fetch_gw_pixels(self, path: str, resolution: int | None) -> pd.DataFrame | None:
         balance = self._get_hictk_keyword_option("--balance", False)
         join = self._get_hictk_flag_value("--join")
 
-        clr = cooler.Cooler(uri)
+        clr = self._open_cooler(path, resolution)
+        if not clr:
+            return None
         sel = clr.matrix(balance=balance, join=join, as_pixels=True, ignore_index=False)
 
         dfs = []
@@ -157,11 +228,13 @@ class HictkTestHarness:
         df = pd.concat(dfs)
         return df.sort_index().reset_index(drop=True)
 
-    def _cooler_fetch_cis_only_pixels(self, uri: str) -> pd.DataFrame:
+    def _cooler_fetch_cis_only_pixels(self, path: str, resolution: int | None) -> pd.DataFrame | None:
         balance = self._get_hictk_keyword_option("--balance", False)
         join = self._get_hictk_flag_value("--join")
 
-        clr = cooler.Cooler(uri)
+        clr = self._open_cooler(path, resolution)
+        if not clr:
+            return None
         sel = clr.matrix(balance=balance, join=join, as_pixels=True)
 
         dfs = []
@@ -174,11 +247,11 @@ class HictkTestHarness:
 
         return pd.concat(dfs)
 
-    def _cooler_fetch_trans_only_pixels(self, uri: str) -> pd.DataFrame:
+    def _cooler_fetch_trans_only_pixels(self, path: str, resolution: int | None) -> pd.DataFrame:
         balance = self._get_hictk_keyword_option("--balance", False)
         join = self._get_hictk_flag_value("--join")
 
-        clr = cooler.Cooler(uri)
+        clr = self._open_cooler(path, resolution)
         sel = clr.matrix(balance=balance, join=join, as_pixels=True, ignore_index=False)
 
         dfs = []
@@ -192,13 +265,7 @@ class HictkTestHarness:
 
         return pd.concat(dfs).sort_index().reset_index(drop=True)
 
-    def _cooler_fetch_pixels(self, uri: str) -> pd.DataFrame | None:
-        if not is_cooler(uri):
-            resolution = self._get_hictk_keyword_option("--resolution")
-            uri = f"{uri}::/resolutions/{resolution}"
-            if not is_cooler(uri):
-                return None
-
+    def _cooler_fetch_pixels(self, path: str, resolution: int | None = None) -> pd.DataFrame | None:
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
         cis_only = self._get_hictk_flag_value("--cis-only")
@@ -208,22 +275,24 @@ class HictkTestHarness:
             # assert not trans_only
             # assert range1 is None
             # assert range2 is None
-            return self._cooler_fetch_cis_only_pixels(uri)
+            return self._cooler_fetch_cis_only_pixels(path, resolution)
 
         if trans_only:
             # assert not cis_only
             # assert range1 is None
             # assert range2 is None
-            return self._cooler_fetch_trans_only_pixels(uri)
+            return self._cooler_fetch_trans_only_pixels(path, resolution)
 
         if range1 is None:
             # assert range2 is None
-            return self._cooler_fetch_gw_pixels(uri)
+            return self._cooler_fetch_gw_pixels(path, resolution)
 
         balance = self._get_hictk_keyword_option("--balance", False)
         join = self._get_hictk_flag_value("--join")
 
-        clr = cooler.Cooler(uri)
+        clr = self._open_cooler(path, resolution)
+        if not clr:
+            return None
 
         fetch_args = [arg for arg in (range1, range2) if arg is not None]
         df = clr.matrix(balance=balance, join=join, as_pixels=True).fetch(*fetch_args)
@@ -232,114 +301,153 @@ class HictkTestHarness:
             df = df.drop(columns="balanced")
         return df
 
-    def _cooler_fetch_bins(self, uri: str) -> pd.DataFrame | None:
-        assert not is_hic(uri)
-        if cooler.fileops.is_multires_file(uri):
-            return None
+    def _cooler_fetch_bins(self, path: str, resolution: int | None = None) -> pd.DataFrame | None:
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
 
-        clr = cooler.Cooler(uri)
-        df = clr.bins()[:][["chrom", "start", "end"]]
-        if range1 is None:
-            # assert range2 is None
-            return df
+        clr = self._open_cooler(path, resolution)
+        return self._filter_bins(clr.bins()[["chrom", "start", "end"]][:], clr.chromsizes.to_dict(), range1, range2)
 
-        chrom1, start1, end1 = cooler.api.parse_region(range1, clr.chromsizes)
-        df1 = df[(df["chrom"] == chrom1) & (df["start"] >= start1) & (df["start"] < end1)]
-        if range2 is None or range1 == range2:
-            return df1
-
-        chrom2, start2, end2 = cooler.api.parse_region(range2, clr.chromsizes)
-        df2 = df[(df["chrom"] == chrom2) & (df["start"] >= start2) & (df["start"] < end2)]
-
-        return pd.concat([df1, df2])
-
-    def _cooler_fetch_chroms(self, uri: str) -> Dict[str, int]:
-        assert not is_hic(uri)
-        if not cooler.fileops.is_cooler(uri):
+    def _cooler_fetch_chroms(self, path: str) -> Dict[str, int]:
+        uri = path
+        if not cooler.fileops.is_cooler(path):
             # Try to open a .scool or .mcool
-            groups = cooler.fileops.list_coolers(uri)
+            groups = cooler.fileops.list_coolers(path)
             if len(groups) == 0:
-                raise RuntimeError(f'unable to find any cooler files under "{uri}"')
+                raise RuntimeError(f'unable to find any cooler files under "{path}"')
 
-            uri = f"{uri}::{groups[0]}"
+            uri = f"{path}::{groups[0]}"
 
         range1 = self._get_hictk_keyword_option("--range")
         range2 = self._get_hictk_keyword_option("--range2")
 
-        clr = cooler.Cooler(uri)
-        chroms = clr.chromsizes.to_dict()
+        clr = self._open_cooler(uri, None)
+        if not clr:
+            raise RuntimeError(f'unable to fetch chromosomes from "{path}"')
+        return self._filter_chroms(clr.chromsizes.to_dict(), range1, range2)
 
-        if range1 is None:
-            # assert range2 is None
-            return chroms
+    def _cooler_fetch_normalizations(self, path: str, resolution: int | None = None) -> List[str]:
+        clr = self._open_cooler(path, resolution)
+        if not clr:
+            raise RuntimeError(f'unable to fetch normalizations from "{path}"')
+        return clr.bins().columns.drop(["chrom", "start", "end"]).tolist()
 
-        chrom1, _, _ = cooler.api.parse_region(range1, clr.chromsizes)
-        if range2 is None:
-            return {chrom1: chroms[chrom1]}
+    def _cooler_fetch_resolutions(self, path: str, resolution: int | None) -> List[int]:
+        clr = self._open_cooler(path, resolution)
+        if clr:
+            return [clr.binsize]
 
-        chrom2, _, _ = cooler.api.parse_region(range2, clr.chromsizes)
-        return {chrom1: chroms[chrom1], chrom2: chroms[chrom2]}
-
-    @staticmethod
-    def _cooler_fetch_normalizations(uri: str) -> List[str]:
-        assert not is_hic(uri)
-        return cooler.Cooler(uri).bins().columns.drop(["chrom", "start", "end"]).tolist()
-
-    @staticmethod
-    def _cooler_fetch_resolutions(uri: str) -> List[int]:
-        assert not is_hic(uri)
-        path = cooler.Cooler(uri).filename
         if cooler.fileops.is_scool_file(path):
             groups = [cooler.fileops.list_coolers(path)[0]]
         elif cooler.fileops.is_multires_file(path):
             groups = cooler.fileops.list_coolers(path)
         else:
-            groups = ["/"]
+            raise RuntimeError(f'unable to fetch resolutions from "{path}"')
 
         return [cooler.Cooler(f"{path}::{grp}").binsize for grp in groups]
 
     @staticmethod
-    def _cooler_fetch_cells(uri: str) -> List[str]:
-        assert not is_hic(uri)
-        path = cooler.Cooler(uri).filename
+    def _cooler_fetch_cells(path: str) -> List[str]:
         if cooler.fileops.is_scool_file(path):
             return [grp.removeprefix("/cells/") for grp in cooler.fileops.list_coolers(path)]
-
         return []
 
-    @staticmethod
-    def _cooler_fetch_weights(uri: str) -> pd.DataFrame:
-        assert not is_hic(uri)
-        clr = cooler.Cooler(uri)
-        columns = clr.bins().columns.drop(["chrom", "start", "end"]).tolist()
-        return clr.bins()[columns][:]
+    def _cooler_fetch_weights(self, path: str, resolution: int | None) -> pd.DataFrame:
+        clr = self._open_cooler(path, resolution)
+        if not clr:
+            raise RuntimeError(f'unable to fetch weights from "{path}"')
 
-    def _hictkpy_fetch_pixels(self, uri: str) -> pd.DataFrame | None:
-        raise NotImplementedError
+        range1 = self._get_hictk_keyword_option("--range")
+        range2 = self._get_hictk_keyword_option("--range2")
 
-    def _hictkpy_fetch_bins(self, uri: str) -> pd.DataFrame | None:
-        raise NotImplementedError
-
-    def _hictkpy_fetch_chroms(self, uri: str) -> Dict[str, int]:
-        raise NotImplementedError
+        return self._filter_weights(clr.bins()[:], clr.chromsizes.to_dict(), range1, range2)
 
     @staticmethod
-    def _hictkpy_fetch_normalizations(uri: str) -> List[str]:
-        raise NotImplementedError
+    def _hictkpy_fetch_cis_only_pixels(
+        path: str, resolution: int | None, normalization: str, join: bool
+    ) -> pd.DataFrame:
+        f = hictkpy.File(path, resolution)
+
+        chromnames = list(f.chroms().keys())
+        dfs = []
+        for i1, chrom1 in enumerate(chromnames):
+            dfs.append(f.fetch(chrom1, normalization=normalization, join=join).to_df())
+
+        return pd.concat(dfs)
 
     @staticmethod
-    def _hictkpy_fetch_resolutions(uri: str) -> List[int]:
-        raise NotImplementedError
+    def _hictkpy_fetch_trans_only_pixels(
+        path: str, resolution: int | None, normalization: str, join: bool
+    ) -> pd.DataFrame:
+        f = hictkpy.File(path, resolution)
+
+        # TODO: optimize
+        df = f.fetch(normalization=normalization, join=join).to_df()
+        return df[df["chrom1"] != df["chrom2"]].reset_index(drop=True)
+
+    def _hictkpy_fetch_pixels(self, path, resolution: int | None = None) -> pd.DataFrame | None:
+        if resolution is None:
+            resolution = self._get_hictk_keyword_option("--resolution")
+
+        range1 = self._get_hictk_keyword_option("--range", "")
+        range2 = self._get_hictk_keyword_option("--range2", "")
+        cis_only = self._get_hictk_flag_value("--cis-only")
+        trans_only = self._get_hictk_flag_value("--trans-only")
+        normalization = self._get_hictk_keyword_option("--balance", "NONE")
+        join = self._get_hictk_flag_value("--join")
+
+        if cis_only:
+            # assert not trans_only
+            # assert range1 is None
+            # assert range2 is None
+            return self._hictkpy_fetch_cis_only_pixels(path, resolution, normalization, join)
+
+        if trans_only:
+            # assert not cis_only
+            # assert range1 is None
+            # assert range2 is None
+            return self._hictkpy_fetch_trans_only_pixels(path, resolution, normalization, join)
+
+        return hictkpy.File(path, resolution).fetch(range1, range2, normalization=normalization, join=join).to_df()
+
+    def _hictkpy_fetch_bins(self, path: str, resolution: int | None) -> pd.DataFrame | None:
+        range1 = self._get_hictk_keyword_option("--range")
+        range2 = self._get_hictk_keyword_option("--range2")
+
+        return self._filter_bins(hictkpy.File(path, resolution).bins(), range1, range2)
+
+    def _hictkpy_fetch_chroms(self, path: str) -> Dict[str, int]:
+        range1 = self._get_hictk_keyword_option("--range")
+        range2 = self._get_hictk_keyword_option("--range2")
+        if is_multires(path):
+            f = hictkpy.MultiResFile(path)
+        else:
+            f = hictkpy.File(path)
+        return self._filter_chroms(f.chroms(), range1, range2)
 
     @staticmethod
-    def _hictkpy_fetch_cells(uri: str) -> List[str]:
-        raise NotImplementedError
+    def _hictkpy_fetch_normalizations(path: str) -> List[str]:
+        resolution = None
+        if is_multires(path):
+            resolution = hictkpy.MultiResFile(path).resolutions()[-1]
+        return hictkpy.File(path, resolution).avail_normalizations()
 
     @staticmethod
-    def _hictkpy_fetch_weights(uri: str) -> pd.DataFrame:
-        raise NotImplementedError
+    def _hictkpy_fetch_resolutions(path) -> List[int]:
+        if is_multires(path):
+            return hictkpy.MultiResFile(path).resolutions()
+        return [hictkpy.File(path).resolution()]
+
+    def _hictkpy_fetch_weights(self, path: str, resolution: int | None) -> pd.DataFrame:
+        range1 = self._get_hictk_keyword_option("--range")
+        range2 = self._get_hictk_keyword_option("--range2")
+
+        f = hictkpy.File(path, resolution)
+        data = {}
+        for norm in f.avail_normalizations():
+            data[norm] = f.weights(norm)
+
+        return self._filter_weights(pd.DataFrame(data), f.chroms(), range1, range2)
 
     def _handle_expected_failure(self):
         if len(self.stderr()) == 0:
