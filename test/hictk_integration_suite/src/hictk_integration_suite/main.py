@@ -241,6 +241,7 @@ def main(
     print(f"# PASS: {num_pass}", file=sys.stderr)
     print(f"# SKIP: {num_skip}", file=sys.stderr)
     print(f"# FAIL: {num_fail}", file=sys.stderr)
+
     sys.exit(num_fail != 0)
 
 

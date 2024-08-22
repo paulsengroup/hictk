@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
+import pathlib
+from typing import Any, Dict
 
 import cooler
 
@@ -50,3 +52,13 @@ def check_format(uri) -> str:
         return "hic"
 
     return "unknown"
+
+
+def compare_files(
+    uri: pathlib.Path | str, reference_uri: pathlib.Path | str, resolutions: int | None
+) -> Dict[str, Any]:
+    file = pathlib.Path(uri.partition("::")[0])
+    reference = pathlib.Path(reference_uri.partition("::")[0])
+
+    if file.resolve() == reference.resolve():
+        return {}

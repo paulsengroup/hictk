@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Dict, List
+from typing import Dict, List, Sized
 
 import numpy as np
 import pandas as pd
@@ -22,14 +22,39 @@ def _compare_lists(expected: List, found: List, name: str, sort: bool = True) ->
     return {}
 
 
+def _empty_sized_to_none(data: Sized | None) -> Sized | None:
+    try:
+        len(data)
+        return data
+    except:  # noqa
+        return None
+
+
+def _handle_common_errors(expected: Sized | None, found: Sized | None, title: str) -> Dict[str, str]:
+    expected = _empty_sized_to_none(expected)
+    found = _empty_sized_to_none(found)
+
+    if expected is None and found is None:
+        return {}
+
+    if expected is not None and found is None:
+        return {f"no {title} were fetched": ""}
+
+    if expected is None and found is not None:
+        return {"unexpected output to stdout": f"expected no output, read {len(found)} {title}"}
+
+    return {}
+
+
 def compare_bins(
-    expected: pd.DataFrame,
-    found: pd.DataFrame,
+    expected: pd.DataFrame | None,
+    found: pd.DataFrame | None,
     ignore_index: bool = True,
     sort_before_compare: bool = False,
 ) -> Dict[str, str]:
-    if len(expected) != 0 and len(found) == 0:
-        return {"no bins were fetched": ""}
+    errors = _handle_common_errors(expected, found, "bins")
+    if len(errors) != 0:
+        return errors
 
     if expected.columns.tolist() != found.columns.tolist():
         return {"column name mismatch": f"expected {expected.columns.tolist()}, found {found.columns.tolist()}"}
@@ -49,9 +74,10 @@ def compare_bins(
     return {}
 
 
-def compare_chroms(expected: Dict[str, int], found: pd.DataFrame) -> Dict[str, str]:
-    if len(expected) != 0 and len(found) == 0:
-        return {"no chromosomes were fetched": ""}
+def compare_chroms(expected: Dict[str, int] | None, found: pd.DataFrame | None) -> Dict[str, str]:
+    errors = _handle_common_errors(expected, found, "chromosomes")
+    if len(errors) != 0:
+        return errors
 
     found = found.set_index("chrom")["size"].to_dict()
     if list(expected.keys()) != list(found.keys()):
@@ -71,9 +97,9 @@ def compare_pixels(
     sort_before_compare: bool = False,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
-
-    if len(expected) != 0 and len(found) == 0:
-        return {"no pixels were fetched": ""}
+    errors = _handle_common_errors(expected, found, "pixels")
+    if len(errors) != 0:
+        return errors
 
     if expected.columns.tolist() != found.columns.tolist():
         return {"column name mismatch": f"expected {expected.columns.tolist()}, found {found.columns.tolist()}"}
@@ -110,14 +136,23 @@ def compare_pixels(
 
 
 def compare_normalizations(expected: List[str], found: pd.DataFrame) -> Dict[str, str]:
+    errors = _handle_common_errors(expected, found, "normalizations")
+    if len(errors) != 0:
+        return errors
     return _compare_lists(expected, found["normalization"].tolist(), "normalizations")
 
 
 def compare_resolutions(expected: List[int], found: pd.DataFrame) -> Dict[str, str]:
+    errors = _handle_common_errors(expected, found, "resolutions")
+    if len(errors) != 0:
+        return errors
     return _compare_lists(expected, found["resolution"].tolist(), "resolutions")
 
 
 def compare_cells(expected: List[str], found: pd.DataFrame) -> Dict[str, str]:
+    errors = _handle_common_errors(expected, found, "cells")
+    if len(errors) != 0:
+        return errors
     return _compare_lists(expected, found["cell"].tolist(), "cells")
 
 
@@ -128,9 +163,9 @@ def compare_weights(
     sort_before_compare: bool = True,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
-
-    if len(expected) != 0 and len(found) == 0:
-        return {"no weights were fetched": ""}
+    errors = _handle_common_errors(expected, found, "weights")
+    if len(errors) != 0:
+        return errors
 
     if sort_before_compare:
         columns = list(sorted(expected.columns.tolist()))

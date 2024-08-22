@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from hictk_integration_suite import validators
+from hictk_integration_suite.runners.common import normalize_df_dtypes
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 
 
@@ -37,7 +38,21 @@ class HictkDump(HictkTestHarness):
     def __repr__(self) -> str:
         return "hictk-dump"
 
-    def _validate(self, reference_clr: str, expect_failure: bool):  # noqa
+    def _validate(
+        # noqa
+        self,
+        reference_clr: str,
+        expect_failure: bool,
+        table: str,
+        resolution: int | None,
+        range1: str | None,
+        range2: str | None,
+        balance: str | bool,
+        cis_only: bool,
+        trans_only: bool,
+        join: bool,
+    ):
+
         if expect_failure:
             self._handle_expected_failure()
             return
@@ -48,9 +63,19 @@ class HictkDump(HictkTestHarness):
             self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
             return
 
-        table, expected = self._fetch_table(reference_clr)
+        _, expected = self._fetch_table(
+            reference_clr,
+            resolution=resolution,
+            table=table,
+            range1=range1,
+            range2=range2,
+            balance=balance,
+            join=join,
+            cis_only=cis_only,
+            trans_only=trans_only,
+        )
         if isinstance(self._stdout, pd.DataFrame):
-            found = self._normalize_dtypes(self._stdout)
+            found = normalize_df_dtypes(self._stdout)
             if table == "bins":
                 self._failures |= validators.compare_bins(expected, found)
             elif table == "chroms":
@@ -90,13 +115,22 @@ class HictkDump(HictkTestHarness):
         self._expect_failure = expect_failure
 
         table = self._get_hictk_keyword_option("--table", "pixels")
+        resolution = self._get_hictk_keyword_option("--resolution")
+        if resolution is not None:
+            resolution = int(resolution)
+        balance = self._get_hictk_keyword_option("--balance", False)
+        join = self._get_hictk_flag_value("--join")
+        range1 = self._get_hictk_keyword_option("--range")
+        range2 = self._get_hictk_keyword_option("--range2")
+        cis_only = self._get_hictk_flag_value("--cis-only")
+        trans_only = self._get_hictk_flag_value("--trans-only")
 
         if table == "chroms":
             colnames = ["chrom", "size"]
         elif table == "bins":
             colnames = ["chrom", "start", "end"]
         elif table == "pixels":
-            if self._get_hictk_flag_value("--join"):
+            if join:
                 colnames = ["chrom1", "start1", "end1", "chrom2", "start2", "end2", "count"]
             else:
                 colnames = ["bin1_id", "bin2_id", "count"]
@@ -111,18 +145,33 @@ class HictkDump(HictkTestHarness):
         else:
             colnames = None
 
-        t0 = timer()
         try:
+            t0 = timer()
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, colnames=colnames)
+            t1 = timer()
         except:  # noqa
             logging.error(f"failed to execute {args}")
             raise
         try:
-            self._validate(reference_clr=reference_uri, expect_failure=expect_failure)
+            self._validate(
+                reference_clr=reference_uri,
+                expect_failure=expect_failure,
+                table=table,
+                resolution=resolution,
+                range1=range1,
+                range2=range2,
+                balance=balance,
+                join=join,
+                cis_only=cis_only,
+                trans_only=trans_only,
+            )
+            t2 = timer()
         except:  # noqa
             logging.error(f"failed to validate output produced by {args}")
             raise
 
-        self._duration = timer() - t0
+        self._hictk_duration = t1 - t0
+        self._validation_duration = t2 - t1
+        self._duration = t2 - t0
 
         return self.status()

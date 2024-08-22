@@ -2,5 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .runner import Runner  # isort: skip
-from . import cooler, hictk, hictkpy
+from .dump import HictkpyDump
