@@ -25,6 +25,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/string_utils.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -255,6 +256,36 @@ void Cli::transform_args_convert_subcommand() {
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+  }
+
+  // validate transformed args
+  std::vector<std::string> errors;
+  if (internal::ends_with(c.input_format, "cool") && internal::ends_with(c.output_format, "cool")) {
+    if (c.input_format == c.output_format) {
+      errors.emplace_back(fmt::format(FMT_STRING("input is already in {} format"), c.input_format));
+    } else {
+      errors.emplace_back(fmt::format(FMT_STRING("converting {} -> {} is not supported"),
+                                      c.input_format, c.output_format));
+    }
+  }
+
+  if (internal::starts_with(c.input_format, "hic") &&
+      internal::starts_with(c.output_format, "hic")) {
+    errors.emplace_back("input is already in hic format");
+  }
+
+  if (internal::starts_with(c.input_format, "hic") && c.output_format == "cool" &&
+      c.resolutions.size() != 1) {
+    errors.emplace_back(
+        "converting multi-resolution .hic files to .cool format requires specifying the resolution "
+        "to be converted through the --resolutions option");
+  }
+
+  if (!errors.empty()) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "The following error(s) where encountered while validating CLI arguments:\n - {}"),
+        fmt::join(errors, "\n - ")));
   }
 }
 
