@@ -69,14 +69,14 @@ class HictkTestHarness:
     @staticmethod
     def _fetch_table(
         uri: str | pathlib.Path,
-        resolution: int | None,
-        table: str,
-        range1: str | None,
-        range2: str | None,
-        balance: str | bool,
-        cis_only: bool,
-        trans_only: bool,
-        join: bool,
+        resolution: int | None = None,
+        table: str = "pixels",
+        range1: str | None = None,
+        range2: str | None = None,
+        balance: str | bool = False,
+        cis_only: bool = False,
+        trans_only: bool = False,
+        join: bool = False,
     ):
         if is_hic(uri):
             return hictkpy.HictkpyDump(uri, resolution).dump(
@@ -156,7 +156,7 @@ class HictkTestHarness:
             return payload
 
         if len(payload) > max_length:
-            return f"{payload[:max_length]}\n -- truncated"
+            return f"{payload[-max_length:]}\n -- truncated"
         return payload
 
     def stdout(self, max_length: int | None = None) -> str:
@@ -172,7 +172,7 @@ class HictkTestHarness:
             return payload
 
         if len(payload) > max_length:
-            return f"{payload[:max_length]}\n -- truncated"
+            return f"{payload[-max_length:]}\n -- truncated"
         return payload
 
     @property
@@ -206,7 +206,7 @@ class HictkTestHarness:
             "elapsed-time": str(timedelta(seconds=self._duration)),
             "exit-code": self._returncode,
             "expect-failure": self._expect_failure,
-            "notes": [],
+            "errors": [],
             "status": "PASS" if len(self._failures) == 0 else "FAIL",
         }
 
@@ -215,8 +215,8 @@ class HictkTestHarness:
 
         for k, v in self._failures.items():
             if len(v) == 0:
-                s["notes"].append(k)
+                s["errors"].append(k)
             else:
-                s["notes"].append(f"{k}: {v}")
+                s["errors"].append(f"{k}: {v}")
 
         return s

@@ -32,6 +32,9 @@ class CoolerDump:
         self._uri = str(uri)
         self._clr = self._open(str(uri), resolution)
 
+    def __bool__(self) -> bool:
+        return self._clr is not None
+
     @staticmethod
     def _open(uri: str, resolution: int | None) -> cooler.Cooler | None:
         if is_cooler(uri):
@@ -40,7 +43,7 @@ class CoolerDump:
                 assert clr.binsize == resolution
             return clr
         if is_multires(uri) and resolution is not None:
-            return cooler.Cooler(f"{uri}::/resolutions{resolution}")
+            return cooler.Cooler(f"{uri}::/resolutions/{resolution}")
         return None
 
     def _fetch_gw_pixels(self, balance: str | bool, join: bool) -> pd.DataFrame | None:
@@ -139,7 +142,12 @@ class CoolerDump:
             if clr is None:
                 return None
 
-        return filter_bins(clr.bins()[["chrom", "start", "end"]][:], clr.chromsizes.to_dict(), range1, range2)
+        return filter_bins(
+            clr.bins()[["chrom", "start", "end"]][:],
+            clr.chromsizes.to_dict(),
+            range1,
+            range2,
+        )
 
     def _fetch_chroms(self, range1: str | None, range2: str | None) -> Dict[str, int] | None:
         if not cooler.fileops.is_cooler(str(self._file)):
@@ -185,7 +193,18 @@ class CoolerDump:
     def _fetch_weights(self, range1: str | None, range2: str | None) -> pd.DataFrame | None:
         if not self._clr:
             return None
-        return filter_weights(self._clr.bins()[:], self._clr.chromsizes.to_dict(), range1, range2)
+
+        bin_cols = {"chrom", "start", "end"}
+        data = {}
+        with self._clr.open() as h5:
+            for path in h5["bins"]:
+                if path not in bin_cols:
+                    data[path] = h5[f"bins/{path}"][:]
+
+        if len(data) == 0:
+            return None
+
+        return filter_weights(pd.DataFrame(data), self._clr.chromsizes.to_dict(), range1, range2)
 
     def dump(
         self,
@@ -194,16 +213,16 @@ class CoolerDump:
         table = kwargs.get("table", "pixels")
         range1 = kwargs.get("range1")
         range2 = kwargs.get("range2")
-        balance = kwargs.get("balance", False)
-        join = kwargs.get("join", False)
-        cis_only = kwargs.get("cis_only", False)
-        trans_only = kwargs.get("trans_only", False)
 
         if table == "bins":
             data = self._fetch_bins(range1, range2)
         elif table == "chroms":
             data = self._fetch_chroms(range1, range2)
         elif table == "pixels":
+            balance = kwargs.get("balance", False)
+            join = kwargs.get("join", False)
+            cis_only = kwargs.get("cis_only", False)
+            trans_only = kwargs.get("trans_only", False)
             data = self._fetch_pixels(range1, range2, balance, join, cis_only, trans_only)
         elif table == "normalizations":
             data = self._fetch_normalizations()

@@ -53,18 +53,22 @@ def filter_chroms(chroms: Dict[str, int], range1: str | None, range2: str | None
 
 
 def filter_weights(df: pd.DataFrame, chroms: Dict[str, int], range1: str | None, range2: str | None) -> pd.DataFrame:
+    assert "chrom" not in df.columns
+    assert "start" not in df.columns
+    assert "end" not in df.columns
+
     df = normalize_df_dtypes(df)
-    columns = df.columns.drop(["chrom", "start", "end"]).tolist()
+
     if range1 is None:
         assert range2 is None
-        return df[columns]
+        return df
 
     chrom1, start1, end1 = cooler.api.parse_region(range1, chroms)
     df1 = df[(df["chrom"] == chrom1) & (df["start"] >= start1) & (df["start"] < end1)]
     if range2 is None or range1 == range2:
-        return df1[columns]
+        return df1
 
     chrom2, start2, end2 = cooler.api.parse_region(range2, chroms)
     df2 = df[(df["chrom"] == chrom2) & (df["start"] >= start2) & (df["start"] < end2)]
 
-    return pd.concat([df1, df2])[columns]
+    return pd.concat([df1, df2])

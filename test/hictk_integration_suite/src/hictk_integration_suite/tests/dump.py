@@ -131,7 +131,15 @@ class HictkDump(HictkTestHarness):
             colnames = ["chrom", "start", "end"]
         elif table == "pixels":
             if join:
-                colnames = ["chrom1", "start1", "end1", "chrom2", "start2", "end2", "count"]
+                colnames = [
+                    "chrom1",
+                    "start1",
+                    "end1",
+                    "chrom2",
+                    "start2",
+                    "end2",
+                    "count",
+                ]
             else:
                 colnames = ["bin1_id", "bin2_id", "count"]
         elif table == "normalizations":

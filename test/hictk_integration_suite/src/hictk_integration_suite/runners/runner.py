@@ -42,7 +42,13 @@ class Fifo:
 
 
 class Runner:
-    def __init__(self, exec: pathlib.Path, args_: List, cwd: str | None = None, tmpdir: pathlib.Path | None = None):
+    def __init__(
+        self,
+        exec: pathlib.Path,
+        args_: List,
+        cwd: str | None = None,
+        tmpdir: pathlib.Path | None = None,
+    ):
         self._tmpdir = tempfile.mkdtemp(dir=tmpdir)
         self._exec = shutil.which(exec)
         self._cwd = cwd

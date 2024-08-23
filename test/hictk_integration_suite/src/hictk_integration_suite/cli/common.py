@@ -9,6 +9,7 @@ import pathlib
 import platform
 import shutil
 import stat
+import sys
 import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
@@ -59,11 +60,18 @@ class WorkingDirectory:
         path, _, grp = str(s).partition("::")
         if grp:
             grp = pathlib.Path(grp)
+        else:
+            grp = None
 
         return pathlib.Path(path), grp
 
-    def stage_file(self, src: pathlib.Path | str, make_read_only: bool = True, exists_ok: bool = False) -> pathlib.Path:
-        src = pathlib.Path(src)
+    def stage_file(
+        self,
+        src: pathlib.Path | str,
+        make_read_only: bool = True,
+        exists_ok: bool = False,
+    ) -> pathlib.Path:
+        src = pathlib.Path(src).resolve()
         if src in self._mappings:
             return self._mappings[src]
 
@@ -71,18 +79,24 @@ class WorkingDirectory:
         if not path.exists():
             raise RuntimeError(f'source file "{path}" does not exist')
 
-        dest = self._path / path.name
-        if os.path.exists(dest):
+        dest_dir = self._path / "staged_files"
+        dest_dir.mkdir(exist_ok=True)
+
+        dest = dest_dir / path.name
+        if dest.exists():
             if not exists_ok:
                 raise RuntimeError(f'refusing to overwrite file "{dest}"')
 
             logging.debug(f'file "{path}" was already staged')
 
             if src != path:
-                if grp is None:
-                    self._mappings[src] = self._mappings[path]
+                if grp:
+                    uri = pathlib.Path(f"{self._mappings[path]}::{grp}")
+                    self._mappings[src] = uri
+                    self._mappings[uri] = uri
                 else:
-                    self._mappings[src] = pathlib.Path(f"{self._mappings[path]}::{grp}")
+                    self._mappings[src] = self._mappings[path]
+                    self._mappings[path] = self._mappings[path]
 
             return self._mappings[src]
 
@@ -91,18 +105,36 @@ class WorkingDirectory:
         if make_read_only:
             self._make_read_only(dest)
 
-        dest = (self._path / path.name).resolve()
+        dest = dest.resolve()
         self._mappings[path] = dest
+        self._mappings[dest] = dest
         if src != path:
-            if grp is None:
+            if not grp:
                 self._mappings[src] = dest
+                self._mappings[dest] = dest
             else:
-                self._mappings[src] = pathlib.Path(f"{dest}::{grp}")
+                uri = pathlib.Path(f"{dest}::{grp}")
+                self._mappings[src] = uri
+                self._mappings[uri] = uri
 
         return self._mappings[src]
 
-    def mkdtemp(self) -> pathlib.Path:
-        return pathlib.Path(tempfile.mkdtemp(dir=self._path))
+    def mkdtemp(self, prefix: pathlib.Path | None = None) -> pathlib.Path:
+        if prefix is None:
+            prefix = self._path
+        elif not self._path_belongs_to_wd(prefix, check_if_exists=False):
+            raise RuntimeError(f'prefix "{prefix}" does not live under {self._path}')
+
+        if not prefix.exists():
+            prefix.mkdir()
+
+        return pathlib.Path(tempfile.mkdtemp(dir=prefix))
+
+    def tmpdir(self) -> pathlib.Path:
+        path = self._path / "tmp"
+        if not path.exists():
+            path.mkdir()
+        return path
 
     def mkdir(self, path: pathlib.Path) -> pathlib.Path:
         path = self._path / path
@@ -111,6 +143,12 @@ class WorkingDirectory:
 
         path.mkdir()
         return path
+
+    @staticmethod
+    def rmtree(path: pathlib.Path | str):
+        path = pathlib.Path(path)
+        if path.exists():
+            shutil.rmtree(path)
 
     def touch(self, path: pathlib.Path) -> pathlib.Path:
         if path in self._mappings:
@@ -122,15 +160,15 @@ class WorkingDirectory:
         self._mappings[path] = new_file
         return new_file
 
-    def _path_belongs_to_wd(self, path: pathlib.Path) -> bool:
+    def _path_belongs_to_wd(self, path: pathlib.Path, check_if_exists: bool = True) -> bool:
         try:
             path.relative_to(self._path)
-            return path.exists()
+            return not check_if_exists or path.exists()
         except ValueError:
             return False
 
     def __getitem__(self, item: pathlib.Path | str) -> pathlib.Path:
-        value = self.get(item)
+        value = self.get(pathlib.Path(item))
         if value:
             return value
 
@@ -202,7 +240,9 @@ def _strip_fields_from_config(config: Mapping[str, Any], fields: List[str] | Non
 
 
 def _preprocess_plan(
-    plan: Mapping[str, Any], wd: WorkingDirectory, fields_to_strip: List[str] | None = None
+    plan: Mapping[str, Any],
+    wd: WorkingDirectory,
+    fields_to_strip: List[str] | None = None,
 ) -> Tuple[bool, Dict[str, Any]]:
     skip = not _check_if_test_should_run(plan)
     digest = _hash_plan(plan, wd.name)

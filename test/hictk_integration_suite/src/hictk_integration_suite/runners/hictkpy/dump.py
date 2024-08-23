@@ -30,6 +30,9 @@ class HictkpyDump:
     ):
         self._f = self._open(str(uri), resolution)
 
+    def __bool__(self) -> bool:
+        return self._f is not None
+
     @staticmethod
     def _open(
         uri: str, resolution: int | None
@@ -43,13 +46,13 @@ class HictkpyDump:
                 assert f.resolution() == resolution
             return f
 
-        if is_cooler(uri):
+        try:
             f = hictkpy.File(uri, resolution)
             if resolution is not None:
                 assert f.resolution() == resolution
             return f
-
-        return None
+        except RuntimeError:
+            return None
 
     def _is_single_res_file(self) -> bool:
         return isinstance(self._f, hictkpy.File)
@@ -65,7 +68,7 @@ class HictkpyDump:
             return None
 
         dfs = []
-        for chrom in self._f.chroms().keys():
+        for chrom in self._f.chromosomes().keys():
             dfs.append(self._f.fetch(chrom, normalization=normalization, join=join).to_df())
 
         return pd.concat(dfs)
@@ -107,19 +110,24 @@ class HictkpyDump:
         if self._f is None:
             return None
 
+        if range1 is None:
+            range1 = ""
+        if range2 is None:
+            range2 = ""
+
         return self._f.fetch(range1, range2, normalization=normalization, join=join).to_df()
 
     def _fetch_bins(self, range1: str | None, range2: str | None) -> pd.DataFrame | None:
         if self._is_multi_res_file() or self._f is None:
             return None
 
-        return filter_bins(self._f.bins(), self._f.chroms(), range1, range2)
+        return filter_bins(self._f.bins(), self._f.chromosomes(), range1, range2)
 
     def _fetch_chroms(self, range1: str | None = None, range2: str | None = None) -> Dict[str, int] | None:
         if self._f is None:
             return None
 
-        return filter_chroms(self._f.chroms(), range1, range2)
+        return filter_chroms(self._f.chromosomes(), range1, range2)
 
     def _fetch_normalizations(self) -> List[str] | None:
         if self._is_multi_res_file():
@@ -147,11 +155,15 @@ class HictkpyDump:
         if not self._is_single_res_file():
             return None
 
+        # TODO remove once hictkpy.File().weights() is available
+        # https://github.com/paulsengroup/hictkpy/pull/49
+        raise NotImplementedError
+
         data = {}
         for norm in self._f.avail_normalizations():
             data[norm] = self._f.weights(norm)
 
-        return filter_weights(pd.DataFrame(data), self._f.chroms(), range1, range2)
+        return filter_weights(pd.DataFrame(data), self._f.chromosomes(), range1, range2)
 
     def dump(
         self,
@@ -160,16 +172,16 @@ class HictkpyDump:
         table = kwargs.get("table", "pixels")
         range1 = kwargs.get("range1")
         range2 = kwargs.get("range2")
-        balance = kwargs.get("balance", False)
-        join = kwargs.get("join", False)
-        cis_only = kwargs.get("cis_only", False)
-        trans_only = kwargs.get("trans_only", False)
 
         if table == "bins":
             data = self._fetch_bins(range1, range2)
         elif table == "chroms":
             data = self._fetch_chroms(range1, range2)
         elif table == "pixels":
+            balance = kwargs.get("balance", False)
+            join = kwargs.get("join", False)
+            cis_only = kwargs.get("cis_only", False)
+            trans_only = kwargs.get("trans_only", False)
             data = self._fetch_pixels(range1, range2, balance, join, cis_only, trans_only)
         elif table == "normalizations":
             data = self._fetch_normalizations()

@@ -2,41 +2,75 @@
 #
 # SPDX-License-Identifier: MIT
 
+[convert]
+
+files = [
+  { uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool" },
+  { uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool" }
+]
+
+test-cases = [
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool", output = "test.cool", expect-failure = true },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool", output = "test.mcool", expect-failure = true },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool", output = "test.hic", expect-failure = false },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool", output = "test.hic", expect-failure = false, args = { resolutions = [100000] } },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool", output = "test.hic", expect-failure = true, args = { resolutions = [9999999] } },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool", output = "test.cool", expect-failure = true },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool", output = "test.mcool", expect-failure = true },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool", output = "test.hic", expect-failure = false, args = { resolutions = [1000000, 2500000] } },
+  { input-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool", output = "test.hic", expect-failure = true, args = { resolutions = [999999, 1000000, 2500000] } },
+  { input-uri = "cooler/single_cell_cooler_test_file.scool", format = "scool", output = "test.cool", expect-failure = true },
+  { input-uri = "cooler/single_cell_cooler_test_file.scool", format = "scool", output = "test.mcool", expect-failure = true },
+  { input-uri = "cooler/single_cell_cooler_test_file.scool", format = "scool", output = "test.hic", expect-failure = true },
+  { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.cool", expect-failure = true },
+  { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.mcool", expect-failure = true },
+  { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.hic", expect-failure = true },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.cool", expect-failure = true },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.cool", expect-failure = false, args = { resolutions = [2500000] } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.mcool", expect-failure = false, args = { resolutions = [1000000, 2500000] } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [999999, 1000000, 2500000] } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [1000000, 2500000], normalization-methods = "INVALID", fail-if-norm-not-found = true } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.hic", expect-failure = true, args = { resolutions = [1000000, 2500000] } },
+]
+
 [dump]
 
 files = [
-  {uri = "cooler/cooler_test_file.cool", format = "cool"},
-  {uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool"},
-  {uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", format = "cool"},
-  {uri = "cooler/multires_cooler_test_file.mcool", format = "mcool"},
-  {uri = "cooler/single_cell_cooler_test_file.scool", format = "scool"},
-  {uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true},
-  {uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000"}
+  { uri = "cooler/cooler_test_file.cool", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000" }
 ]
 
 queries = [
-  {uri = "cooler/cooler_test_file.cool", range1 = "1", range2 = "X"},
-  {uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", range1 = "1", range2 = "X"},
-  {uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", range1 = "1", range2 = "X"},
-  {uri = "cooler/multires_cooler_test_file.mcool", range1 = "1", range2 = "X"},
-  {uri = "cooler/single_cell_cooler_test_file.scool", range1 = "1", range2 = "X"},
-  {uri = "cooler/cooler_variable_bins_test_file.cool", range1 = "chr1", range2 = "chr2"},
-  {uri = "cooler/ENCFF993FGR.2500000.cool", range1 = "chr1", range2 = "chrX", normalization = "VC"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic8", range1 = "chr2L", range2 = "chrX", normalization = "VC"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC"}
+  { uri = "cooler/cooler_test_file.cool", range1 = "1", range2 = "X" },
+  { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", range1 = "1", range2 = "X" },
+  { uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", range1 = "1", range2 = "X" },
+  { uri = "cooler/multires_cooler_test_file.mcool", range1 = "1", range2 = "X" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", range1 = "1", range2 = "X" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", range1 = "chr1", range2 = "chr2" },
+  { uri = "cooler/ENCFF993FGR.2500000.cool", range1 = "chr1", range2 = "chrX", normalization = "VC" },
+  { uri = "hic/4DNFIZ1ZVXC8.hic8", range1 = "chr2L", range2 = "chrX", normalization = "VC" },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC" }
 ]
 
 [metadata]
 
 files = [
-  {uri = "cooler/cooler_test_file.cool", format = "cool"},
-  {uri = "cooler/multires_cooler_test_file.mcool", format = "mcool"},
-  {uri = "cooler/single_cell_cooler_test_file.scool", format = "scool"},
-  {uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true},
-  {uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic"},
-  {uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic"}
+  { uri = "cooler/cooler_test_file.cool", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic" },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" }
 ]
 
 output-formats = ["json", "toml", "yaml"]

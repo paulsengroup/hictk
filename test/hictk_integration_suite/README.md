@@ -14,6 +14,7 @@ venv/bin/pip install . -v
 ```
 
 Running the tests:
+
 ```console
 venv/bin/hictk_integration_suite /tmp/hictk/build/src/hictk/hictk config.toml --data-dir=../data
 

@@ -14,7 +14,10 @@ from .common import WorkingDirectory, _get_uri, _preprocess_plan
 
 
 def _plan_tests_cli(
-    hictk_bin: pathlib.Path, uri: pathlib.Path, wd: WorkingDirectory, title: str = "hictk-metadata-cli"
+    hictk_bin: pathlib.Path,
+    uri: pathlib.Path,
+    wd: WorkingDirectory,
+    title: str = "hictk-metadata-cli",
 ) -> List[ImmutableOrderedDict]:
     uri = wd[uri]
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0}
@@ -25,7 +28,11 @@ def _plan_tests_cli(
         factory | {"args": tuple(("metadata", "--foobar")), "expect_failure": True},
         factory | {"args": tuple(("metadata", str(uri), "foobar")), "expect_failure": True},
         factory | {"args": tuple(("metadata", str(uri), "--foobar")), "expect_failure": True},
-        factory | {"args": tuple(("metadata", str(uri), "--format", "foobar")), "expect_failure": True},
+        factory
+        | {
+            "args": tuple(("metadata", str(uri), "--format", "foobar")),
+            "expect_failure": True,
+        },
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -34,10 +41,18 @@ def _plan_tests_cli(
 
 
 def _plan_tests_cmd(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, title: str = "hictk-metadata"
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-metadata",
 ) -> List[ImmutableOrderedDict]:
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": False}
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 1.0,
+        "expect_failure": False,
+    }
     for c in config["files"]:
         factory["file_format"] = c["format"]
         factory["variable_bin_size"] = c.get("variable-bin-size", False)
@@ -59,7 +74,7 @@ def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirec
     return _plan_tests_cli(hictk_bin, _get_uri(config), wd) + _plan_tests_cmd(hictk_bin, config, wd)
 
 
-def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory) -> Tuple[int, int, int, Dict]:
+def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
@@ -87,5 +102,9 @@ def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory) -> Tuple[
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)
         logging.info(status)
+
+    if not no_cleanup:
+        wd.rmtree(cwd)
+        wd.rmtree(tmpdir)
 
     return num_pass, num_fail, num_skip, results

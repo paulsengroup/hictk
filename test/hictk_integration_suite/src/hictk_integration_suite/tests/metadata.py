@@ -140,7 +140,11 @@ class HictkMetadata(HictkTestHarness):
         t0 = timer()
         self._run_hictk(args, timeout=timeout, env_variables=env_variables)
         t1 = timer()
-        self._validate(file_format=file_format, variable_bin_size=variable_bin_size, expect_failure=expect_failure)
+        self._validate(
+            file_format=file_format,
+            variable_bin_size=variable_bin_size,
+            expect_failure=expect_failure,
+        )
         t2 = timer()
 
         self._hictk_duration = t1 - t0

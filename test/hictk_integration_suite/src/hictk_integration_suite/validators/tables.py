@@ -41,7 +41,7 @@ def _handle_common_errors(expected: Sized | None, found: Sized | None, title: st
         return {f"no {title} were fetched": ""}
 
     if expected is None and found is not None:
-        return {"unexpected output to stdout": f"expected no output, read {len(found)} {title}"}
+        return {"unexpected output": f"expected no output, read {len(found)} {title}"}
 
     return {}
 
@@ -52,6 +52,9 @@ def compare_bins(
     ignore_index: bool = True,
     sort_before_compare: bool = False,
 ) -> Dict[str, str]:
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "bins")
     if len(errors) != 0:
         return errors
@@ -74,12 +77,17 @@ def compare_bins(
     return {}
 
 
-def compare_chroms(expected: Dict[str, int] | None, found: pd.DataFrame | None) -> Dict[str, str]:
+def compare_chroms(expected: Dict[str, int] | None, found: pd.DataFrame | Dict[str, int] | None) -> Dict[str, str]:
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "chromosomes")
     if len(errors) != 0:
         return errors
 
-    found = found.set_index("chrom")["size"].to_dict()
+    if isinstance(found, pd.DataFrame):
+        found = found.set_index("chrom")["size"].to_dict()
+
     if list(expected.keys()) != list(found.keys()):
         return {"chromosome names mismatch": f"expected {list(expected.keys())}, found {list(found.keys())}"}
 
@@ -90,13 +98,17 @@ def compare_chroms(expected: Dict[str, int] | None, found: pd.DataFrame | None) 
 
 
 def compare_pixels(
-    expected: pd.DataFrame,
-    found: pd.DataFrame,
+    expected: pd.DataFrame | None,
+    found: pd.DataFrame | None,
     rtol: float = 1.0e-5,
     ignore_index: bool = True,
     sort_before_compare: bool = False,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
+
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "pixels")
     if len(errors) != 0:
         return errors
@@ -135,34 +147,62 @@ def compare_pixels(
     return {}
 
 
-def compare_normalizations(expected: List[str], found: pd.DataFrame) -> Dict[str, str]:
+def compare_normalizations(expected: List[str] | None, found: pd.DataFrame | List[str] | None) -> Dict[str, str]:
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "normalizations")
     if len(errors) != 0:
         return errors
-    return _compare_lists(expected, found["normalization"].tolist(), "normalizations")
+    if isinstance(found, pd.DataFrame):
+        found = found["normalization"].tolist()
+
+    for i, n in enumerate(expected):
+        if n == "weight":
+            expected[i] = "ICE"
+
+    for i, n in enumerate(found):
+        if n == "weight":
+            found[i] = "ICE"
+
+    return _compare_lists(expected, found, "normalizations")
 
 
-def compare_resolutions(expected: List[int], found: pd.DataFrame) -> Dict[str, str]:
+def compare_resolutions(expected: List[int] | None, found: pd.DataFrame | List[int] | None) -> Dict[str, str]:
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "resolutions")
     if len(errors) != 0:
         return errors
-    return _compare_lists(expected, found["resolution"].tolist(), "resolutions")
+    if isinstance(found, pd.DataFrame):
+        found = found["resolution"].tolist()
+    return _compare_lists(expected, found, "resolutions")
 
 
-def compare_cells(expected: List[str], found: pd.DataFrame) -> Dict[str, str]:
+def compare_cells(expected: List[str] | None, found: pd.DataFrame | List[str] | None) -> Dict[str, str]:
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "cells")
     if len(errors) != 0:
         return errors
+    if isinstance(found, pd.DataFrame):
+        found = found["cell"].tolist()
     return _compare_lists(expected, found["cell"].tolist(), "cells")
 
 
 def compare_weights(
-    expected: pd.DataFrame,
-    found: pd.DataFrame,
+    expected: pd.DataFrame | None,
+    found: pd.DataFrame | None,
     rtol: float = 1.0e-5,
     sort_before_compare: bool = True,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
+
+    if expected is None and found is None:
+        return {}
+
     errors = _handle_common_errors(expected, found, "weights")
     if len(errors) != 0:
         return errors

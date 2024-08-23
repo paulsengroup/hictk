@@ -27,19 +27,24 @@ def get_test_names(include_all: bool = True) -> List[str]:
         names = ["all"]
     else:
         names = []
-    names += ["dump", "metadata"]
+    names += ["convert", "dump", "metadata"]
     return names
 
 
 def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
     def _update_uri(uri: pathlib.Path) -> str:
-        uri = os.path.join(data_dir, uri)
-        path = uri.partition("::")[0]
-        if not os.path.exists(path):
+        uri = str(data_dir / uri)
+        path, _, grp = uri.partition("::")
+        path = pathlib.Path(path)
+        if not path.exists():
             raise RuntimeError(f'file "{path}" does not exists')
-        return uri
 
-    if "files" not in config:
+        path = path.resolve()
+        if not grp:
+            return str(path)
+        return f"{path}::{grp}"
+
+    if "files" not in config and "test-cases" not in config:
         return config
 
     new_config = config.copy()
@@ -47,6 +52,11 @@ def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
         for key in mappings:
             if key.endswith("uri") or key.endswith("path"):
                 new_config["files"][i][key] = _update_uri(mappings[key])
+
+    for i, mappings in enumerate(config.get("test-cases", [])):
+        for key in mappings:
+            if key.endswith("uri") or key.endswith("path"):
+                new_config["test-cases"][i][key] = _update_uri(mappings[key])
 
     return new_config
 
@@ -59,7 +69,10 @@ def stage_input_files(config: Dict[str, Any], wd: WorkingDirectory):
 
 
 def import_config_and_stage_files(
-    path: pathlib.Path, data_dir: pathlib.Path | None, wd: WorkingDirectory, command: str
+    path: pathlib.Path,
+    data_dir: pathlib.Path | None,
+    wd: WorkingDirectory,
+    command: str,
 ) -> Dict[str, Any]:
     with open(path, "rb") as f:
         config = tomllib.load(f)
@@ -69,6 +82,9 @@ def import_config_and_stage_files(
         config = update_uris(config, data_dir)
 
     stage_input_files(config, wd)
+
+    for k, v in wd.get_staged_file_names().items():
+        print(k, v)
     return config
 
 
@@ -216,11 +232,11 @@ def main(
 
             t0 = time.time()
             plans = mod.plan_tests(hictk_bin, config, wd)
-            delta = (time.time() - t0) * 1.0e6
-            logging.info(f"planning for {test} tests took {delta:.2f}µs")
+            delta = (time.time() - t0) * 1000.0
+            logging.info(f"planning for {test} tests took {delta:.2f}ms")
 
             t0 = time.time()
-            res = mod.run_tests(plans, wd)
+            res = mod.run_tests(plans, wd, no_cleanup)
             delta = time.time() - t0
             logging.info(f"running tests for {test} took {delta:.2f}s")
 

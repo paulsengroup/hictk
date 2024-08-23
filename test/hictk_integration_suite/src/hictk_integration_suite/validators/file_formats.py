@@ -31,14 +31,22 @@ def is_scool(uri) -> bool:
 def is_hic(uri) -> bool:
     try:
         with open(uri, "rb") as f:
-            magic_string = f.read(3).decode("utf-8")
-        return magic_string == "HIC"
+            magic_string = f.read(4).decode("utf-8")
+        return magic_string == "HIC\0"
     except:  # noqa
         return False
 
 
 def is_multires(uri) -> bool:
     return is_hic(uri) or is_mcool(uri)
+
+
+def is_variable_bin_size(uri) -> bool:
+    if not is_cooler(uri):
+        return False
+
+    bin_type = cooler.Cooler(uri).info.get("bin-type", "fixed")
+    return bin_type == "variable"
 
 
 def check_format(uri) -> str:

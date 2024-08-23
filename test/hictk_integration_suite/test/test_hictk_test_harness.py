@@ -42,7 +42,10 @@ class TestClass:
             sys.exit(1)
 
         if "HICTK_FAIL" in os.environ:
-            print("failing because HICTK_FAIL was found in the env variables", file=sys.stderr)
+            print(
+                "failing because HICTK_FAIL was found in the env variables",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         exit_code = int(sys.argv[1])
@@ -61,15 +64,30 @@ class TestClass:
 
         f.chmod(stat.S_IRUSR | stat.S_IXUSR)
 
-        proc = sp.run([sys.executable, str(f), "0"], stdin=sp.DEVNULL, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        proc = sp.run(
+            [sys.executable, str(f), "0"],
+            stdin=sp.DEVNULL,
+            stdout=sp.DEVNULL,
+            stderr=sp.DEVNULL,
+        )
         if proc.returncode != 0:
             raise RuntimeError("test script is broken")
 
-        proc = sp.run([sys.executable, str(f)], stdin=sp.DEVNULL, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        proc = sp.run(
+            [sys.executable, str(f)],
+            stdin=sp.DEVNULL,
+            stdout=sp.DEVNULL,
+            stderr=sp.DEVNULL,
+        )
         if proc.returncode != 1:
             raise RuntimeError("test script is broken")
 
-        proc = sp.run([sys.executable, str(f), "2"], stdin=sp.DEVNULL, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        proc = sp.run(
+            [sys.executable, str(f), "2"],
+            stdin=sp.DEVNULL,
+            stdout=sp.DEVNULL,
+            stderr=sp.DEVNULL,
+        )
         if proc.returncode != 2:
             raise RuntimeError("test script is broken")
 
@@ -89,7 +107,7 @@ class TestClass:
         assert test.returncode == 0
         assert test.stderr() == ""
         assert test.stdout() == "All good!\n"
-        assert test.stdout(3) == "All\n -- truncated"
+        assert test.stdout(1).endswith("-- truncated")
         assert test.args == [sys.executable, str(exe), "0"]
         assert len(test.failures) == 0
         assert status["status"] == "PASS"
@@ -102,7 +120,7 @@ class TestClass:
         assert not test.ok()
         assert test.returncode == 10
         assert test.stderr() == "Something is wrong!\n"
-        assert test.stderr(3) == "Som\n -- truncated"
+        assert test.stderr(1).endswith("-- truncated")
         assert test.stdout() == ""
 
         assert test.args == [sys.executable, str(exe), "10"]

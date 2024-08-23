@@ -126,6 +126,17 @@ class TestClass:
                     assert self._is_executable(f)
                     assert self._attempt_write(f)
 
+    def test_file_staging_uri(self):
+        with self._mkdtemp() as tmpdir:
+            plain_file, _ = self._create_test_files(tmpdir)
+            uri = f"{plain_file}::/group/foobar"
+            with WorkingDirectory() as wd:
+                assert plain_file not in wd
+                assert uri not in wd
+                wd.stage_file(uri)
+                assert wd.get(plain_file) is not None
+                assert wd.get(uri) is not None
+
     def test_mkdtemp(self):
         with WorkingDirectory() as wd:
             assert wd.mkdtemp().is_dir()
