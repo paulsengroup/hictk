@@ -470,6 +470,11 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp,
     read_or_throw("bin-size", attrs.bin_size);
   }
   internal::read_optional(root_grp, "storage-mode", attrs.storage_mode, missing_ok);
+  if (attrs.storage_mode.has_value() && attrs.storage_mode != "symmetric-upper") {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("opening Cooler files with storage-mode=\"{}\" is not supported"),
+                    *attrs.storage_mode));
+  }
 
   // Try to read reserved attributes
   missing_ok = true;
