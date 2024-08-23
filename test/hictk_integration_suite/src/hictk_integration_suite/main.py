@@ -82,9 +82,6 @@ def import_config_and_stage_files(
         config = update_uris(config, data_dir)
 
     stage_input_files(config, wd)
-
-    for k, v in wd.get_staged_file_names().items():
-        print(k, v)
     return config
 
 
