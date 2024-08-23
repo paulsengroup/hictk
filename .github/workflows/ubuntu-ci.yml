@@ -5,7 +5,7 @@ name: Ubuntu CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
@@ -15,7 +15,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -312,10 +312,9 @@ jobs:
       - name: Print Ccache statistics
         run: ccache -s
 
-
   run-unit-tests:
     name: Run unit tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -368,10 +367,9 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
-
   run-integration-tests:
     name: Run integration tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
