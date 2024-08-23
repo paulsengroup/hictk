@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 
+[balance]
+
+files = [
+  { uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", format = "cool" },
+  { uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool" }
+]
+
 [convert]
 
 files = [

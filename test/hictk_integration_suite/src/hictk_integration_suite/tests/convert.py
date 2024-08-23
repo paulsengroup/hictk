@@ -84,7 +84,7 @@ class HictkConvert(HictkTestHarness):
 
             self._failures |= validators.compare_normalizations(expected, found)
 
-            # TODO remove once hictkpy.File().weights() is available
+            # TODO remove check once hictkpy.File().weights() is available
             # https://github.com/paulsengroup/hictkpy/pull/49
             if not is_hic(reference_file) and not is_hic(test_file):
                 _, expected = self._fetch_table(reference_file, resolution=res, table="weights")
