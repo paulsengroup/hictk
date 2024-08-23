@@ -19,7 +19,7 @@ Subcommands
     -V,--version                Display program version information and exit
   Subcommands:
     balance                     Balance Hi-C matrices using ICE, SCALE, or VC.
-    convert                     Convert HiC matrices to a different format.
+    convert                     Convert Hi-C matrices to a different format.
     dump                        Dump data from .hic and Cooler files to stdout.
     fix-mcool                   Fix corrupted .mcool files.
     load                        Build .cool and .hic files from interactions in various text formats.
@@ -174,7 +174,7 @@ hictk convert
 
 .. code-block:: text
 
-  Convert HiC matrices to a different format.
+  Convert Hi-C matrices to a different format.
   Usage: hictk convert [OPTIONS] input output
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
