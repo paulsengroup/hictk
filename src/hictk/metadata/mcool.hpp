@@ -40,18 +40,18 @@ namespace hictk::tools {
   auto attributes = normalize_attribute_map(mclr.attributes(), include_file_path ? p.string() : "");
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
 
+  toml::array resolutions;
+    for (const auto& resolution : mclr.resolutions()) {
+        resolutions.push_back(static_cast<std::int64_t>(resolution));
+    }
+    emplace_if_valid("resolutions", resolutions, attributes);
+
   if (recursive) {
     for (const auto& resolution : mclr.resolutions()) {
       nested_attributes.emplace_back(
           fmt::to_string(resolution),
           normalize_attribute_map(mclr.open(resolution).attributes(), ""));
     }
-  } else {
-    toml::array resolutions;
-    for (const auto& resolution : mclr.resolutions()) {
-      resolutions.push_back(static_cast<std::int64_t>(resolution));
-    }
-    emplace_if_valid("resolutions", resolutions, attributes);
   }
 
   print_attributes(attributes, nested_attributes, format);

@@ -48,17 +48,17 @@ namespace hictk::tools {
   auto attributes = normalize_attribute_map(sclr.attributes(), include_file_path ? p.string() : "");
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
 
+  toml::array cells;
+  for (const auto& cell : sclr.cells()) {
+    cells.push_back(cell);
+  }
+  emplace_if_valid("cells", cells, attributes);
+
   if (recursive) {
     for (const auto& cell_id : sclr.cells()) {
       nested_attributes.emplace_back(cell_id,
                                      normalize_attribute_map(sclr.open(cell_id).attributes(), ""));
     }
-  } else {
-    toml::array cells;
-    for (const auto& cell : sclr.cells()) {
-      cells.push_back(cell);
-    }
-    emplace_if_valid("cells", cells, attributes);
   }
 
   print_attributes(attributes, nested_attributes, format);
