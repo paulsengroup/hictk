@@ -51,7 +51,7 @@ struct Attributes {
 
   // Mandatory attributes
   std::uint32_t bin_size{0};
-  std::optional<std::string> bin_type{"fixed"};  // Mandatory in v3
+  BinTable::Type bin_type{BinTable::Type::fixed};
   std::string format{COOL_MAGIC};
   std::uint8_t format_version{3};
   std::optional<std::string> storage_mode{"symmetric-upper"};  // Mandatory in v3
@@ -338,7 +338,7 @@ class File {
   [[nodiscard]] static auto import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                           bool missing_ok) -> Reference;
 
-  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, std::string_view bin_type,
+  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, BinTable::Type bin_type,
                                                std::uint32_t bin_size);
 
   [[nodiscard]] static Index init_index(const Dataset &chrom_offset_dset,

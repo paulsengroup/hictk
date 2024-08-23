@@ -41,11 +41,7 @@ namespace hictk::cooler {
 inline SingleCellAttributes SingleCellAttributes::init(std::uint32_t bin_size_) {
   SingleCellAttributes attrs{};
   attrs.bin_size = bin_size_;
-  if (bin_size_ == 0) {
-    attrs.bin_type = "variable";
-  } else {
-    attrs.bin_type = "fixed";
-  }
+  attrs.bin_type = bin_size_ == 0 ? BinTable::Type::variable : BinTable::Type::fixed;
   return attrs;
 }
 
@@ -117,7 +113,7 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   RootGroup root_grp{fp.getGroup("/")};
 
   attributes.bin_size = bins.resolution();
-  attributes.bin_type = bins.resolution() == 0 ? "variable" : "fixed";
+  attributes.bin_type = bins.resolution() == 0 ? BinTable::Type::variable : BinTable::Type::fixed;
   create_groups(root_grp);
   create_datasets(root_grp, bins);
 
@@ -252,7 +248,9 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 
   // Read mandatory attributes
   read_or_throw("bin-size", attrs.bin_size);
-  read_or_throw("bin-type", attrs.bin_type);
+  std::string bin_type{"fixed"};
+  read_or_throw("bin-type", bin_type);
+  attrs.bin_type = bin_type == "fixed" ? BinTable::Type::fixed : BinTable::Type::variable;
   read_or_throw("format", attrs.format);
   read_or_throw("format-version", attrs.format_version);
 
@@ -283,7 +281,7 @@ inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
   const RootGroup root_grp{f.getGroup("/")};
   auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
                                     Dataset(root_grp, f.getDataSet("/chroms/length")), false);
-  const auto bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
+  const std::string bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
   if (bin_type == "fixed") {
     const auto bin_size = Attribute::read<std::uint32_t>(root_grp(), "bin-size");
 
@@ -317,7 +315,8 @@ inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
   Attribute::write(root_grp(), "assembly",
                    attrs.assembly.has_value() ? *attrs.assembly : "unknown");
   Attribute::write(root_grp(), "bin-size", attrs.bin_size);
-  Attribute::write(root_grp(), "bin-type", attrs.bin_type);
+  const std::string bin_type = attrs.bin_type == BinTable::Type::fixed ? "fixed" : "variable";
+  Attribute::write(root_grp(), "bin-type", bin_type);
   if (attrs.creation_date.has_value()) {
     Attribute::write(root_grp(), "creation-date", *attrs.creation_date);
   }

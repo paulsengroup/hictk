@@ -32,7 +32,7 @@ TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
   CHECK(mclr.resolutions().size() == 7);
   CHECK(mclr.attributes().format == MCOOL_MAGIC);
   CHECK(mclr.attributes().format_version == 2);
-  CHECK(!mclr.attributes().bin_type);
+  CHECK(mclr.attributes().bin_type == BinTable::Type::fixed);
 
   CHECK(utils::is_cooler(mclr.open(1600000).uri()));
 }

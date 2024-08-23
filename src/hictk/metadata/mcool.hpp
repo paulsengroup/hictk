@@ -14,6 +14,7 @@
 
 #include "./common.hpp"
 #include "./cool.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 
 namespace hictk::tools {
@@ -26,7 +27,8 @@ namespace hictk::tools {
     emplace_if_valid("uri", uri, attributes);
   }
 
-  emplace_if_valid("bin-type", map.bin_type, attributes);
+  emplace_if_valid("bin-type", map.bin_type == BinTable::Type::fixed ? "fixed" : "variable",
+                   attributes);
   emplace_if_valid("format", map.format, attributes);
   emplace_if_valid("format-version", map.format_version, attributes);
 
@@ -41,10 +43,14 @@ namespace hictk::tools {
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
 
   toml::array resolutions;
-    for (const auto& resolution : mclr.resolutions()) {
-        resolutions.push_back(static_cast<std::int64_t>(resolution));
+  for (const auto& resolution : mclr.resolutions()) {
+    if (resolution == 0) {
+      resolutions.push_back("variable");
+    } else {
+      resolutions.push_back(static_cast<std::int64_t>(resolution));
     }
-    emplace_if_valid("resolutions", resolutions, attributes);
+  }
+  emplace_if_valid("resolutions", resolutions, attributes);
 
   if (recursive) {
     for (const auto& resolution : mclr.resolutions()) {

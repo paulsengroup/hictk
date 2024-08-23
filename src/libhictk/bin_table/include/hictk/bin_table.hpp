@@ -22,6 +22,7 @@ class BinTable {
   std::variant<BinTableFixed, BinTableVariable<>> _table{BinTableFixed{}};
 
  public:
+  enum class Type : std::uint_fast8_t { fixed, variable };
   using BinTableVar = decltype(_table);
   class iterator;
   friend iterator;
@@ -46,6 +47,7 @@ class BinTable {
   [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
   [[nodiscard]] constexpr bool has_fixed_resolution() const noexcept;
+  [[nodiscard]] constexpr auto type() const noexcept -> Type;
 
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 
