@@ -5,7 +5,7 @@ name: Windows CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/windows-ci.yml"
       - "cmake/**"
@@ -15,7 +15,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -55,9 +55,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # prettier-ignore
           - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Debug,   developer_mode: OFF }
+          # prettier-ignore
           - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Release, developer_mode: OFF }
-
 
     steps:
       - uses: actions/checkout@v4
@@ -69,8 +70,8 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Detect number available CPUs
         run: |

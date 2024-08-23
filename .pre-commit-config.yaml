@@ -41,14 +41,14 @@ repos:
       - id: clang-format
         name: clang-format
         entry: clang-format
-        types_or: [ c, c++ ]
+        types_or: [c, c++]
         language: python
-        args: [ '-i' ]
-        additional_dependencies: [ 'clang-format==18.1.8' ]
+        args: ["-i"]
+        additional_dependencies: ["clang-format==18.1.8"]
       - id: cmake-format
         name: cmake-format
         entry: cmake-format
-        types_or: [ cmake ]
+        types_or: [cmake]
         language: python
-        args: [ '-i' ]
-        additional_dependencies: [ 'cmake-format==0.6.13', 'pyyaml' ]
+        args: ["-i"]
+        additional_dependencies: ["cmake-format==0.6.13", "pyyaml"]

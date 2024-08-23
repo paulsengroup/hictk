@@ -5,7 +5,7 @@ name: Run Codecov
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/codecov.yml"
       - ".github/workflows/codecov.yml"
@@ -16,7 +16,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
-      options: '--user=root'
+      options: "--user=root"
 
     steps:
       - uses: actions/checkout@v4
@@ -226,7 +226,6 @@ jobs:
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-
 
   codecov-status-check:
     name: Status Check (Codecov)
