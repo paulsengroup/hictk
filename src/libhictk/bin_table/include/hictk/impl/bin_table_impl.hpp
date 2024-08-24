@@ -62,10 +62,7 @@ constexpr const Reference &BinTable::chromosomes() const noexcept {
   return std::visit([&](const auto &t) -> const Reference & { return t.chromosomes(); }, _table);
 }
 
-[[deprecated("superseded by BinTable::type() == BinTable::Type::variable")]]
-constexpr bool BinTable::has_fixed_resolution() const noexcept {
-  return type() == Type::fixed;
-}
+constexpr bool BinTable::has_fixed_resolution() const noexcept { return type() == Type::fixed; }
 
 constexpr auto BinTable::type() const noexcept -> Type {
   return std::holds_alternative<BinTableFixed>(_table) ? Type::fixed : Type::variable;

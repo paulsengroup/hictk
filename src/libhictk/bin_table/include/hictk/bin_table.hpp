@@ -46,7 +46,10 @@ class BinTable {
   [[nodiscard]] std::size_t num_chromosomes() const;
   [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
+  // clang-format off
+  [[deprecated("superseded by BinTable::type() == BinTable::Type::fixed")]]
   [[nodiscard]] constexpr bool has_fixed_resolution() const noexcept;
+  // clang-format on
   [[nodiscard]] constexpr auto type() const noexcept -> Type;
 
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
