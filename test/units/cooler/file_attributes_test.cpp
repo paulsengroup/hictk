@@ -22,7 +22,7 @@ TEST_CASE("Cooler: read attributes", "[cooler][short]") {
   SECTION("common attributes") {
     const auto& attrs = f.attributes();
     CHECK(attrs.bin_size == 100'000);
-    CHECK(attrs.bin_type == "fixed");
+    CHECK(attrs.bin_type == BinTable::Type::fixed);
     CHECK(attrs.creation_date == "2020-07-08T13:41:20.376258");
     CHECK(attrs.format == COOL_MAGIC);
     CHECK(attrs.format_url == "https://github.com/mirnylab/cooler");

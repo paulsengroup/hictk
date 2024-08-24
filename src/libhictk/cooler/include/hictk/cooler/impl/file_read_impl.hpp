@@ -465,8 +465,11 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp,
 
   // Read mandatory attributes for Cooler v3
   auto missing_ok = attrs.format_version < 3;
-  internal::read_optional(root_grp, "bin-type", attrs.bin_type, missing_ok);
-  if (attrs.bin_type.value() == "fixed") {
+
+  std::optional<std::string> bin_type{"fixed"};
+  internal::read_optional(root_grp, "bin-type", bin_type, missing_ok);
+  attrs.bin_type = bin_type.value() == "fixed" ? BinTable::Type::fixed : BinTable::Type::variable;
+  if (attrs.bin_type == BinTable::Type::fixed) {
     read_or_throw("bin-size", attrs.bin_size);
   }
   internal::read_optional(root_grp, "storage-mode", attrs.storage_mode, missing_ok);
@@ -522,13 +525,13 @@ inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom
   }
 }
 
-inline BinTable File::init_bin_table(const DatasetMap &dsets, std::string_view bin_type,
+inline BinTable File::init_bin_table(const DatasetMap &dsets, BinTable::Type bin_type,
                                      std::uint32_t bin_size) {
   auto chroms = import_chroms(dsets.at("chroms/name"), dsets.at("chroms/length"), false);
-  if (bin_type == "fixed") {
+  if (bin_type == BinTable::Type::fixed) {
     return {std::move(chroms), bin_size};
   }
-  assert(bin_type == "variable");
+  assert(bin_type == BinTable::Type::variable);
   assert(bin_size == 0);
 
   return {std::move(chroms), dsets.at("bins/start").read_all<std::vector<std::uint32_t>>(),

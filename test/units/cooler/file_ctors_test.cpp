@@ -31,7 +31,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     std::ignore = File::create(path.string(), chroms, bin_size, true);
     CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
     CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
-    CHECK(File(path.string()).attributes().bin_type.value() == "fixed");  // NOLINT
+    CHECK(File(path.string()).attributes().bin_type == BinTable::Type::fixed);
   }
 
   SECTION("variable bins") {
@@ -48,7 +48,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     std::ignore = File::create(path.string(), table, true);
     CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
     CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
-    CHECK(File(path.string()).attributes().bin_type.value() == "variable");  // NOLINT
+    CHECK(File(path.string()).attributes().bin_type == BinTable::Type::variable);
   }
 }
 

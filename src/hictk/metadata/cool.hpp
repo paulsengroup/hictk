@@ -8,6 +8,7 @@
 #include <toml++/toml.hpp>
 
 #include "./common.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 
 namespace hictk::tools {
@@ -20,8 +21,15 @@ namespace hictk::tools {
     emplace_if_valid("uri", uri, attributes);
   }
 
-  emplace_if_valid("bin-size", map.bin_size, attributes);
-  emplace_if_valid("bin-type", map.bin_type, attributes);
+  if (map.bin_size == 0) {
+    assert(map.bin_type == BinTable::Type::variable);
+    emplace_if_valid("bin-size", "variable", attributes);
+  } else {
+    assert(map.bin_type == BinTable::Type::fixed);
+    emplace_if_valid("bin-size", map.bin_size, attributes);
+  }
+  emplace_if_valid("bin-type", map.bin_type == BinTable::Type::fixed ? "fixed" : "variable",
+                   attributes);
   emplace_if_valid("format", map.format, attributes);
   emplace_if_valid("format-version", map.format_version, attributes);
   emplace_if_valid("storage-mode", map.storage_mode, attributes);

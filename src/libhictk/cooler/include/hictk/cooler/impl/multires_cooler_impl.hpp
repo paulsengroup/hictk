@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/cooler/cooler.hpp"
@@ -70,9 +71,8 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
 
   Attribute::write(fp, "format", attrs.format);
   Attribute::write(fp, "format-version", std::int64_t(attrs.format_version));
-  if (attrs.bin_type) {
-    Attribute::write(fp, "bin-type", *attrs.bin_type);
-  }
+  const std::string bin_type = attrs.bin_type == BinTable::Type::fixed ? "fixed" : "variable";
+  Attribute::write(fp, "bin-type", bin_type);
 
   auto res_group = fp.createGroup("/resolutions");
 
@@ -284,10 +284,11 @@ inline MultiResAttributes MultiResFile::read_attributes(const HighFive::File& f)
   read_or_throw("format-version", attrs.format_version);
   read_or_throw("format", attrs.format);
 
+  attrs.bin_type = BinTable::Type::fixed;
   if (f.hasAttribute("bin-type")) {
-    attrs.bin_type = Attribute::read<std::string>(f, "bin-type");
-  } else {
-    attrs.bin_type.reset();
+    attrs.bin_type = Attribute::read<std::string>(f, "bin-type") == "fixed"
+                         ? BinTable::Type::fixed
+                         : BinTable::Type::variable;
   }
 
   return attrs;
