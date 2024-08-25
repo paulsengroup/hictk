@@ -6,7 +6,7 @@ add_subdirectory(units)
 add_subdirectory(utils)
 
 if(HICTK_ENABLE_FUZZY_TESTING)
-  add_subdirectory(hictk_fuzzer)
+  add_subdirectory(fuzzer)
 endif()
 
 option(HICTK_DOWNLOAD_TEST_DATASET "Download datasets required by unit and integration tests" ON)
