@@ -100,7 +100,13 @@ class PixelSelector {
   [[nodiscard]] std::size_t estimate_optimal_cache_size(std::size_t num_samples = 500) const;
   void clear_cache() const;
 
+  [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1_, PixelCoordinates coord2_) const;
+
  private:
+  PixelSelector(std::shared_ptr<internal::HiCBlockReader> reader_,
+                std::shared_ptr<const internal::HiCFooter> footer_,
+                std::shared_ptr<const PixelCoordinates> coord1_,
+                std::shared_ptr<const PixelCoordinates> coord2_);
   template <typename N>
   [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
 

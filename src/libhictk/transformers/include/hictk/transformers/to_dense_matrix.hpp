@@ -26,17 +26,25 @@ class ToDenseMatrix {
   bool _mirror{};
 
  public:
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
-  [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  [[nodiscard]] auto operator()() -> MatrixT;
 
  private:
   [[nodiscard]] std::string_view chrom1() const noexcept;
   [[nodiscard]] std::string_view chrom2() const noexcept;
+
+  [[nodiscard]] static std::int64_t num_bins(const PixelCoordinates& coords,
+                                             const BinTable& bins) noexcept;
   [[nodiscard]] std::int64_t num_rows() const noexcept;
   [[nodiscard]] std::int64_t num_cols() const noexcept;
 
-  [[nodiscard]] std::uint64_t row_offset() const noexcept;
-  [[nodiscard]] std::uint64_t col_offset() const noexcept;
+  [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
+  [[nodiscard]] std::int64_t row_offset() const noexcept;
+  [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  static void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t offset1,
+                          std::int64_t offset2, bool mirror_matrix);
 };
 
 }  // namespace hictk::transformers
