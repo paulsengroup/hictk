@@ -12,7 +12,8 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/scripts/**"
+      - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
@@ -25,7 +26,8 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/scripts/**"
+      - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
 

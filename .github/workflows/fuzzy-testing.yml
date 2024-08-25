@@ -10,9 +10,7 @@ on:
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
       - "src/**"
-      - "test/scripts/fuzzy_test.py"
-      - "test/scripts/link_h5_dataset.py"
-      - "test/scripts/patch_hictkpy.py"
+      - "test/fuzzer/**"
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
@@ -21,9 +19,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/fuzzy-testing.yml"
-      - "test/scripts/fuzzy_test.py"
-      - "test/scripts/link_h5_dataset.py"
-      - "test/scripts/patch_hictkpy.py"
+      - "test/fuzzer/**"
 
   schedule:
     # Run weekly
