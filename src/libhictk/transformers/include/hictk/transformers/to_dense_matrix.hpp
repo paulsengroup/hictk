@@ -27,7 +27,8 @@ class ToDenseMatrix {
 
  public:
   ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
-  [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  [[nodiscard]] auto operator()()
+      -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
  private:
   [[nodiscard]] std::string_view chrom1() const noexcept;

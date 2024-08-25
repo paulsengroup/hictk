@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "hictk/file.hpp"
+#include "hictk/fuzzer/common.hpp"
 #include "hictk/fuzzer/config.hpp"
 #include "hictk/fuzzer/cooler.hpp"
 #include "hictk/fuzzer/tools.hpp"
@@ -21,17 +22,9 @@
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
+#include "hictk/transformers/to_dense_matrix.hpp"
 
 namespace hictk::fuzzer {
-
-// clang-format off
-using PixelBuffer =
-  std::variant<
-      std::vector<ThinPixel<std::int32_t>>,
-      std::vector<ThinPixel<double>>,
-      std::vector<Pixel<std::int32_t>>,
-      std::vector<Pixel<double>>>;
-// clang-format on
 
 template <typename N>
 static void to_vector(std::vector<ThinPixel<N>>& buff, const std::shared_ptr<arrow::Table>& data) {
@@ -186,9 +179,9 @@ struct Query {
 }
 
 template <typename PixelT>
-static void fetch(const Reference& chroms, cooler::Cooler& clr, std::string_view range1,
-                  std::string_view range2, std::string_view normalization,
-                  std::vector<PixelT>& buffer) {
+static void fetch_pixels(const Reference& chroms, cooler::Cooler& clr, std::string_view range1,
+                         std::string_view range2, std::string_view normalization,
+                         std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
   if constexpr (std::is_same_v<remove_cvref_t<PixelT>, Pixel<N>>) {
@@ -203,9 +196,29 @@ static void fetch(const Reference& chroms, cooler::Cooler& clr, std::string_view
   assert(std::is_sorted(buffer.begin(), buffer.end()));
 }
 
+[[nodiscard]] static std::variant<Eigen2DDense<std::int32_t>, Eigen2DDense<double>>
+fetch_pixels_dense(const hictk::File& f, std::string_view range1, std::string_view range2,
+                   std::string_view normalization) {
+  if (normalization == "NONE") {
+    return {transformers::ToDenseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
+                                        std::int32_t{})()};
+  }
+  return {transformers::ToDenseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
+                                      double{})()};
+}
+
+[[nodiscard]] static std::variant<Eigen2DDense<std::int32_t>, Eigen2DDense<double>>
+fetch_pixels_dense(cooler::Cooler& clr, std::string_view range1, std::string_view range2,
+                   std::string_view normalization) {
+  if (normalization == "NONE") {
+    return {clr.fetch_dense<std::int32_t>(range1, range2, normalization)};
+  }
+  return {clr.fetch_dense<double>(range1, range2, normalization)};
+}
+
 template <typename PixelT>
-static void fetch(const hictk::File& f, std::string_view range1, std::string_view range2,
-                  std::string_view normalization, std::vector<PixelT>& buffer) {
+static void fetch_pixels(const hictk::File& f, std::string_view range1, std::string_view range2,
+                         std::string_view normalization, std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
   const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
@@ -237,12 +250,90 @@ static void fetch(const hictk::File& f, std::string_view range1, std::string_vie
   return std::vector<Pixel<double>>{};
 }
 
-int launch_worker_subcommand(const Config& c) {
-  [[maybe_unused]] const pybind11::scoped_interpreter guard{};
+static void print_report(std::size_t num_tests, std::size_t num_failures) {
+  const auto num_successes = num_tests - num_failures;
+  const auto failure_ratio =
+      100.0 * static_cast<double>(num_successes) / static_cast<double>(num_tests);
+
+  if (num_failures == 0) {
+    spdlog::info(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."), failure_ratio,
+                 num_successes, num_failures);
+  } else {
+    spdlog::warn(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."), failure_ratio,
+                 num_successes, num_failures);
+  }
+}
+
+[[nodiscard]] static int fuzzy_pixels_dfs(const hictk::File& tgt, cooler::Cooler& ref,
+                                          const Reference& chroms, std::mt19937_64& rand_eng,
+                                          std::discrete_distribution<std::uint32_t>& chrom_sampler,
+                                          const Config& c) {
+  const auto t0 = std::chrono::system_clock::now();
+  const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
+
+  auto expected_buffer = init_pixel_buffer(c);
+  auto found_buffer = init_pixel_buffer(c);
 
   std::size_t num_tests{};
   std::size_t num_failures{};
+
+  return std::visit(
+      [&](auto& expected) {
+        using BufferT = remove_cvref_t<decltype(expected)>;
+        auto& found = std::get<BufferT>(found_buffer);
+
+        while (compute_elapsed_time(t0) < duration) {
+          const auto [q1, q2] = generate_query_2d(chroms, rand_eng, chrom_sampler,
+                                                  c.query_length_avg, c.query_length_std);
+          const auto range1 = q1.to_string();
+          const auto range2 = q2.to_string();
+
+          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, expected);
+          fetch_pixels(tgt, range1, range2, c.normalization, found);
+
+          ++num_tests;
+          num_failures += !compare_pixels(range1, range2, expected, found);  // NOLINT
+        }
+
+        print_report(num_tests, num_failures);
+        return num_failures != 0;
+      },
+      expected_buffer);
+}
+[[nodiscard]] static int fuzzy_pixels_dense(
+    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
+  const auto t0 = std::chrono::system_clock::now();
   const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
+
+  std::size_t num_tests{};
+  std::size_t num_failures{};
+
+  while (compute_elapsed_time(t0) < duration) {
+    const auto [q1, q2] =
+        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto range1 = q1.to_string();
+    const auto range2 = q2.to_string();
+
+    const auto expected_var = fetch_pixels_dense(ref, range1, range2, c.normalization);
+    const auto found_var = fetch_pixels_dense(tgt, range1, range2, c.normalization);
+
+    ++num_tests;
+    num_failures += std::visit(
+        [&](const auto& expected) {
+          using T = remove_cvref_t<decltype(expected)>;
+          const auto& found = std::get<T>(found_var);
+          return !compare_pixels(range1, range2, expected, found);  // NOLINT
+        },
+        expected_var);
+  }
+
+  print_report(num_tests, num_failures);
+  return num_failures != 0;
+}
+
+int launch_worker_subcommand(const Config& c) {
+  [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
     spdlog::info(FMT_STRING("[task_id] seed: {}"), c.seed);
@@ -256,43 +347,16 @@ int launch_worker_subcommand(const Config& c) {
     const auto chroms = tgt.chromosomes().remove_ALL();
     auto chrom_sampler = init_chrom_sampler(chroms);
 
-    auto expected_buffer = init_pixel_buffer(c);
-    auto found_buffer = init_pixel_buffer(c);
+    if (c.query_format == "df") {
+      return fuzzy_pixels_dfs(tgt, ref, chroms, rand_eng, chrom_sampler, c);
+    }
+    if (c.query_format == "dense") {
+      return fuzzy_pixels_dense(tgt, ref, chroms, rand_eng, chrom_sampler, c);
+    }
 
-    const auto t0 = std::chrono::system_clock::now();
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unknown query-format=\"{}\""), c.query_format));
 
-    return std::visit(
-        [&](auto& expected) {
-          using BufferT = remove_cvref_t<decltype(expected)>;
-          auto& found = std::get<BufferT>(found_buffer);
-
-          while (compute_elapsed_time(t0) < duration) {
-            const auto [q1, q2] = generate_query_2d(chroms, rand_eng, chrom_sampler,
-                                                    c.query_length_avg, c.query_length_std);
-            const auto range1 = q1.to_string();
-            const auto range2 = q2.to_string();
-
-            fetch(tgt.chromosomes(), ref, range1, range2, c.normalization, expected);
-            fetch(tgt, range1, range2, c.normalization, found);
-
-            ++num_tests;
-            num_failures += !compare_pixels(range1, range2, expected, found);  // NOLINT
-          }
-
-          const auto num_successes = num_tests - num_failures;
-          const auto failure_ratio =
-              100.0 * static_cast<double>(num_successes) / static_cast<double>(num_tests);
-
-          if (num_failures == 0) {
-            spdlog::info(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."),
-                         failure_ratio, num_successes, num_failures);
-            return 0;
-          }
-          spdlog::warn(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."),
-                       failure_ratio, num_successes, num_failures);
-          return 1;
-        },
-        expected_buffer);
   } catch (const std::exception& e) {
     // wrap python exceptions while we still hold the scoped_interpreter guard
     throw std::runtime_error(e.what());

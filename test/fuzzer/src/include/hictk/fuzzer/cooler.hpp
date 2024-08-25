@@ -7,21 +7,17 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
 #include <cstdint>
 #include <memory>
 #include <string_view>
 #include <type_traits>
 #include <vector>
 
+#include "hictk/fuzzer/common.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 
 namespace hictk::fuzzer::cooler {
-
-template <typename N>
-using NumpyArray = pybind11::array_t<N, pybind11::array::c_style | pybind11::array::forcecast>;
 
 template <typename N>
 struct COODataFrame {
@@ -76,15 +72,12 @@ class Cooler {
   void fetch_df(BG2DataFrame<N>& buff, std::string_view range1, std::string_view range2 = "",
                 std::string_view normalization = "NONE");
   template <typename N>
-  [[nodiscard]] Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> fetch_dense(
-      std::string_view range1, std::string_view range2 = "",
-      std::string_view normalization = "NONE", bool join_ = false);
+  [[nodiscard]] Eigen2DDense<N> fetch_dense(std::string_view range1, std::string_view range2 = "",
+                                            std::string_view normalization = "NONE");
 
   template <typename N>
-  [[nodiscard]] Eigen::SparseMatrix<N> fetch_sparse(std::string_view range1,
-                                                    std::string_view range2 = "",
-                                                    std::string_view normalization = "NONE",
-                                                    bool join_ = false);
+  [[nodiscard]] EigenSparse<N> fetch_sparse(std::string_view range1, std::string_view range2 = "",
+                                            std::string_view normalization = "NONE");
 };
 
 }  // namespace hictk::fuzzer::cooler

@@ -95,4 +95,27 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
   return true;
 }
 
+template <typename N>
+inline bool compare_pixels(std::string_view range1, std::string_view range2,
+                           const Eigen2DDense<N>& expected, const Eigen2DDense<N>& found) {
+  if (expected.rows() != found.rows() || expected.cols() != found.cols()) {
+    SPDLOG_WARN(
+        FMT_STRING("[task_id]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
+        range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
+    return false;
+  }
+
+  std::size_t num_mismatches{};
+  for (std::int64_t i = 0; i < expected.size(); ++i) {
+    num_mismatches += !internal::is_close(*(expected.data() + i), *(found.data() + i));
+  }
+
+  if (num_mismatches != 0) {
+    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Found {} differences!"), range1, range2,
+                num_mismatches);
+    return false;
+  }
+  return true;
+}
+
 }  // namespace hictk::fuzzer

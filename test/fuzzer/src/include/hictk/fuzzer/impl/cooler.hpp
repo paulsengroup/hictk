@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
 #include <pybind11/pybind11.h>
 
 #include <cassert>
@@ -12,6 +11,7 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "hictk/fuzzer/common.hpp"
 #include "hictk/reference.hpp"
 
 namespace hictk::fuzzer::cooler {
@@ -44,7 +44,7 @@ inline COODataFrame<N>& COODataFrame<N>::operator=(pybind11::object df) {
 template <typename N>
 inline std::vector<ThinPixel<N>> COODataFrame<N>::to_vector() const {
   std::vector<ThinPixel<N>> buffer(size());
-  to_set(buffer);
+  to_vector(buffer);
   return buffer;
 }
 
@@ -95,7 +95,7 @@ inline BG2DataFrame<N>& BG2DataFrame<N>::operator=(pybind11::object df) {
 template <typename N>
 inline std::vector<Pixel<N>> BG2DataFrame<N>::to_vector(const Reference& chroms) const {
   std::vector<Pixel<N>> buffer(size());
-  to_set(chroms, buffer);
+  to_vector(chroms, buffer);
   return buffer;
 }
 
@@ -153,5 +153,48 @@ inline void Cooler::fetch_df(BG2DataFrame<N>& buff, std::string_view range1,
 
   buff = selector.attr("fetch")(range1, range2);
 }
+
+template <typename N>
+inline Eigen2DDense<N> Cooler::fetch_dense(std::string_view range1, std::string_view range2,
+                                           std::string_view normalization) {
+  if (!_clr) {
+    throw std::runtime_error("Cooler::fetch_dense() was called on an un-initialized object");
+  }
+
+  if (normalization != "NONE" && std::is_integral_v<N>) {
+    throw std::runtime_error(
+        "fetching balanced interactions requires Eigen2DDense<N> to be of floating-point type");
+  }
+
+  auto selector = normalization == "NONE" ? _clr.attr("matrix")("count", false)
+                                          : _clr.attr("matrix")("count", normalization);
+
+  if (range2.empty()) {
+    range2 = range1;
+  }
+
+  using NumpyArray = pybind11::array_t<N, pybind11::array::c_style | pybind11::array::forcecast>;
+  const auto m_py = pybind11::cast<NumpyArray>(selector.attr("fetch")(range1, range2));
+
+  const auto src = m_py.template unchecked<2>();
+  Eigen2DDense<N> dest(m_py.shape(0), m_py.shape(1));
+  for (std::int64_t i = 0; i < dest.rows(); ++i) {
+    for (std::int64_t j = 0; j < dest.cols(); ++j) {
+      dest(i, j) = src(i, j);
+    }
+  }
+  // const N* src = m_py.unchecked().template data<N>(0, 0);
+  // N* dest = m.data();
+  // std::memcpy(dest, src, static_cast<std::size_t>(m.size()));
+
+  return dest;
+}
+
+/*
+template <typename N>
+inline Eigen::SparseMatrix<N> Cooler::fetch_sparse(std::string_view range1,
+                                                  std::string_view range2,
+                                                  std::string_view normalization);
+*/
 
 }  // namespace hictk::fuzzer::cooler

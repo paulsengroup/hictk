@@ -21,7 +21,7 @@ inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[may
 
 template <typename N, typename PixelSelector>
 inline auto ToDenseMatrix<N, PixelSelector>::operator()()
-    -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic> {
+    -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> {
   const auto offset1 = row_offset();
   const auto offset2 = col_offset();
 

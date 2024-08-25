@@ -147,7 +147,7 @@ Converting streams of pixels to Eigen Matrices
 
   When ``mirror`` is set to true, the converter will take care of mirroring the upper-triangle matrix when appropriate.
 
-  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
   Convert the stream of pixels into an :cpp:class:`Eigen::Matrix`.
 
