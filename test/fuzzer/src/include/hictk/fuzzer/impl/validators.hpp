@@ -118,4 +118,26 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
   return true;
 }
 
+template <typename N>
+inline bool compare_pixels(std::string_view range1, std::string_view range2,
+                           const EigenSparse<N>& expected, const EigenSparse<N>& found) {
+  if (expected.rows() != found.rows() || expected.cols() != found.cols()) {
+    SPDLOG_WARN(
+        FMT_STRING("[task_id]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
+        range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
+    return false;
+  }
+
+  if (expected.nonZeros() != found.nonZeros()) {
+    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Expected {} nnz, found {}!"), range1, range2,
+                expected.nonZeros(), found.nonZeros());
+    return false;
+  }
+
+  // FIXME this doesn't work because cooler mirrors interactions even when returning them as sparse
+  // matrices
+  return compare_pixels(range1, range2, Eigen2DDense<N>{expected.toDense()},
+                        Eigen2DDense<N>{found.toDense()});
+}
+
 }  // namespace hictk::fuzzer

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <string_view>
 #include <vector>
 
+#include "hictk/fuzzer/common.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::fuzzer {
@@ -30,10 +30,12 @@ template <typename N>
                                   const std::vector<Pixel<N>>& found);
 
 template <typename N>
-[[nodiscard]] bool compare_pixels(
-    std::string_view range1, std::string_view range2,
-    const Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& expected,
-    const Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& found);
+[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
+                                  const Eigen2DDense<N>& expected, const Eigen2DDense<N>& found);
+
+template <typename N>
+[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
+                                  const EigenSparse<N>& expected, const EigenSparse<N>& found);
 }  // namespace hictk::fuzzer
 
 #include "./impl/validators.hpp"

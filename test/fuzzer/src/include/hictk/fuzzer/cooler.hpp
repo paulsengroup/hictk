@@ -74,10 +74,10 @@ class Cooler {
   template <typename N>
   [[nodiscard]] Eigen2DDense<N> fetch_dense(std::string_view range1, std::string_view range2 = "",
                                             std::string_view normalization = "NONE");
-
   template <typename N>
-  [[nodiscard]] EigenSparse<N> fetch_sparse(std::string_view range1, std::string_view range2 = "",
-                                            std::string_view normalization = "NONE");
+  [[nodiscard]] EigenSparse<N> fetch_sparse(const Reference& chroms, std::string_view range1,
+                                            std::string_view range2,
+                                            std::string_view normalization);
 };
 
 }  // namespace hictk::fuzzer::cooler

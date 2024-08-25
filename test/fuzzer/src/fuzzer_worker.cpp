@@ -23,6 +23,7 @@
 #include "hictk/reference.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
+#include "hictk/transformers/to_sparse_matrix.hpp"
 
 namespace hictk::fuzzer {
 
@@ -196,6 +197,23 @@ static void fetch_pixels(const Reference& chroms, cooler::Cooler& clr, std::stri
   assert(std::is_sorted(buffer.begin(), buffer.end()));
 }
 
+template <typename PixelT>
+static void fetch_pixels(const hictk::File& f, std::string_view range1, std::string_view range2,
+                         std::string_view normalization, std::vector<PixelT>& buffer) {
+  using N = decltype(std::declval<PixelT>().count);
+
+  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
+
+  if constexpr (std::is_same_v<remove_cvref_t<PixelT>, ThinPixel<N>>) {
+    to_vector(buffer, transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
+                                                transformers::DataFrameFormat::COO)());
+  } else {
+    to_vector(f.chromosomes(), buffer,
+              transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
+                                        transformers::DataFrameFormat::BG2, f.bins_ptr())());
+  }
+}
+
 [[nodiscard]] static std::variant<Eigen2DDense<std::int32_t>, Eigen2DDense<double>>
 fetch_pixels_dense(const hictk::File& f, std::string_view range1, std::string_view range2,
                    std::string_view normalization) {
@@ -216,21 +234,24 @@ fetch_pixels_dense(cooler::Cooler& clr, std::string_view range1, std::string_vie
   return {clr.fetch_dense<double>(range1, range2, normalization)};
 }
 
-template <typename PixelT>
-static void fetch_pixels(const hictk::File& f, std::string_view range1, std::string_view range2,
-                         std::string_view normalization, std::vector<PixelT>& buffer) {
-  using N = decltype(std::declval<PixelT>().count);
-
-  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
-
-  if constexpr (std::is_same_v<remove_cvref_t<PixelT>, ThinPixel<N>>) {
-    to_vector(buffer, transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
-                                                transformers::DataFrameFormat::COO)());
-  } else {
-    to_vector(f.chromosomes(), buffer,
-              transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
-                                        transformers::DataFrameFormat::BG2, f.bins_ptr())());
+[[nodiscard]] static std::variant<EigenSparse<std::int32_t>, EigenSparse<double>>
+fetch_pixels_sparse(const hictk::File& f, std::string_view range1, std::string_view range2,
+                    std::string_view normalization) {
+  if (normalization == "NONE") {
+    return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
+                                         std::int32_t{})()};
   }
+  return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
+                                       double{})()};
+}
+
+[[nodiscard]] static std::variant<EigenSparse<std::int32_t>, EigenSparse<double>>
+fetch_pixels_sparse(cooler::Cooler& clr, const Reference& chroms, std::string_view range1,
+                    std::string_view range2, std::string_view normalization) {
+  if (normalization == "NONE") {
+    return {clr.fetch_sparse<std::int32_t>(chroms, range1, range2, normalization)};
+  }
+  return {clr.fetch_sparse<double>(chroms, range1, range2, normalization)};
 }
 
 [[nodiscard]] PixelBuffer init_pixel_buffer(const Config& c) {
@@ -240,7 +261,7 @@ static void fetch_pixels(const hictk::File& f, std::string_view range1, std::str
   if (thin_pixel && int_count) {
     return std::vector<ThinPixel<std::int32_t>>{};
   }
-  if (thin_pixel && !int_count) {
+  if (thin_pixel) {
     return std::vector<ThinPixel<double>>{};
   }
 
@@ -256,11 +277,11 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
       100.0 * static_cast<double>(num_successes) / static_cast<double>(num_tests);
 
   if (num_failures == 0) {
-    spdlog::info(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."), failure_ratio,
-                 num_successes, num_failures);
+    spdlog::info(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+                 failure_ratio, num_successes, num_failures);
   } else {
-    spdlog::warn(FMT_STRING("[task_id] Score: {:.4g} ({} success and {} failures)."), failure_ratio,
-                 num_successes, num_failures);
+    spdlog::warn(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+                 failure_ratio, num_successes, num_failures);
   }
 }
 
@@ -278,7 +299,7 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
   std::size_t num_failures{};
 
   return std::visit(
-      [&](auto& expected) {
+      [&](auto& expected) -> int {
         using BufferT = remove_cvref_t<decltype(expected)>;
         auto& found = std::get<BufferT>(found_buffer);
 
@@ -296,10 +317,11 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
         }
 
         print_report(num_tests, num_failures);
-        return num_failures != 0;
+        return num_failures != 0;  // NOLINT
       },
       expected_buffer);
 }
+
 [[nodiscard]] static int fuzzy_pixels_dense(
     const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
     std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
@@ -320,7 +342,7 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
 
     ++num_tests;
     num_failures += std::visit(
-        [&](const auto& expected) {
+        [&](const auto& expected) -> std::size_t {
           using T = remove_cvref_t<decltype(expected)>;
           const auto& found = std::get<T>(found_var);
           return !compare_pixels(range1, range2, expected, found);  // NOLINT
@@ -329,7 +351,39 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
   }
 
   print_report(num_tests, num_failures);
-  return num_failures != 0;
+  return num_failures != 0;  // NOLINT
+}
+
+[[nodiscard]] static int fuzzy_pixels_sparse(
+    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
+  const auto t0 = std::chrono::system_clock::now();
+  const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
+
+  std::size_t num_tests{};
+  std::size_t num_failures{};
+
+  while (compute_elapsed_time(t0) < duration) {
+    const auto [q1, q2] =
+        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto range1 = q1.to_string();
+    const auto range2 = q2.to_string();
+
+    const auto expected_var = fetch_pixels_sparse(ref, chroms, range1, range2, c.normalization);
+    const auto found_var = fetch_pixels_sparse(tgt, range1, range2, c.normalization);
+
+    ++num_tests;
+    num_failures += std::visit(
+        [&](const auto& expected) -> std::size_t {
+          using T = remove_cvref_t<decltype(expected)>;
+          const auto& found = std::get<T>(found_var);
+          return !compare_pixels(range1, range2, expected, found);  // NOLINT
+        },
+        expected_var);
+  }
+
+  print_report(num_tests, num_failures);
+  return num_failures != 0;  // NOLINT
 }
 
 int launch_worker_subcommand(const Config& c) {
@@ -352,6 +406,9 @@ int launch_worker_subcommand(const Config& c) {
     }
     if (c.query_format == "dense") {
       return fuzzy_pixels_dense(tgt, ref, chroms, rand_eng, chrom_sampler, c);
+    }
+    if (c.query_format == "sparse") {
+      return fuzzy_pixels_sparse(tgt, ref, chroms, rand_eng, chrom_sampler, c);
     }
 
     throw std::runtime_error(

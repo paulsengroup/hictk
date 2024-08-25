@@ -103,7 +103,7 @@ static void add_common_args(CLI::App& sc, Config& c) {
       ->check(CLI::PositiveNumber)
       ->capture_default_str();
   sc.add_option("--format", c.query_format, "Format used to fetch pixels.")
-      ->check(CLI::IsMember{{"coo", "dense", "df"}})
+      ->check(CLI::IsMember{{"dense", "df", "iter", "sparse"}})
       ->capture_default_str();
   sc.add_option("--query-length-avg", c.query_length_avg, "Average query size.")
       ->check(CLI::NonNegativeNumber)
@@ -115,7 +115,7 @@ static void add_common_args(CLI::App& sc, Config& c) {
       ->capture_default_str();
   sc.add_flag("--join", c.join,
               "Fetch pixels in BG2 format.\n"
-              "Ignored when --format=df.")
+              "Ignored when --format is not df.")
       ->capture_default_str();
   sc.add_option("--seed", c.seed, "Seed used for PRNG.")->capture_default_str();
 }
