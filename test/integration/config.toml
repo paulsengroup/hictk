@@ -96,3 +96,24 @@ files = [
 ]
 
 output-formats = ["json", "toml", "yaml"]
+
+
+[zoomify]
+
+files = [
+  { uri = "cooler/ENCFF993FGR.2500000.cool", format="cool"},
+  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool"},
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool"},
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic"}
+]
+
+test-cases = [
+  { input-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.mcool", resolutions = [2500000, 5000000, 10000000]},
+  { input-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.cool", resolutions = [5000000], single-resolution = true, args = {no-copy-base-resolution = ""}},
+  { input-uri = "cooler/multires_cooler_test_file.mcool", output = "test.mcool", resolutions = [5000000], expect-failure = true},
+  { input-uri = "cooler/single_cell_cooler_test_file.scool", output = "test.mcool", resolutions = [5000000], expect-failure = true},
+  { input-uri = "cooler/cooler_variable_bins_test_file.cool", output = "test.mcool", resolutions = [5000000], expect-failure = true},
+  { input-uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.hic", resolutions = [2500000, 5000000, 10000000]},
+  { input-uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.hic", resolutions = [5000000], single-resolution = true, args = {no-copy-base-resolution = ""}},
+]

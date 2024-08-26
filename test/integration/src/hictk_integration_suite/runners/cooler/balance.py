@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import logging
 import pathlib
 import warnings
 from typing import List, Tuple
@@ -58,6 +59,7 @@ class CoolerBalance:
         if name in self._clr.bins():
             return name, self._clr.bins()[name][:].tonumpy()
 
+        logging.debug(f"balancing cooler at URI {self._clr.uri} with {name}...")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             bias, _ = cooler.balance_cooler(self._clr, **kwargs)
