@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
@@ -25,7 +26,7 @@ struct MultiResAttributes {
   std::string format{MCOOL_MAGIC};
   std::uint8_t format_version{2};
 
-  std::optional<std::string> bin_type{"fixed"};
+  BinTable::Type bin_type{BinTable::Type::fixed};
 
   MultiResAttributes() = default;
   [[nodiscard]] bool operator==(const MultiResAttributes& other) const noexcept;

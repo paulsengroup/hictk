@@ -5,7 +5,7 @@ name: Run fuzzy tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
@@ -16,7 +16,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -27,22 +27,21 @@ on:
 
   schedule:
     # Run weekly
-    - cron: '15 3 * * 0'
+    - cron: "15 3 * * 0"
 
   workflow_dispatch:
     inputs:
       duration:
-        description: 'Test duration in seconds'
+        description: "Test duration in seconds"
         required: true
-        default: '600'
+        default: "600"
         type: string
 
       resolution:
-        description: 'Matrix resolution to use for testing'
+        description: "Matrix resolution to use for testing"
         required: true
-        default: '10000'
+        default: "10000"
         type: string
-
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -64,46 +63,45 @@ jobs:
           # We can't use the version shared by 4DNucleome because the .hic and .mcool files they publish
           # differ slightly
           - {
-            title: '.cool',
-            balance: 'NONE',
-            url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de',
-            ref-url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            ref-sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de'
-          }
+              title: ".cool",
+              balance: "NONE",
+              url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+              ref-url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              ref-sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+            }
           - {
-            title: '.cool',
-            balance: 'weight',
-            url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de',
-            ref-url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            ref-sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de'
-          }
+              title: ".cool",
+              balance: "weight",
+              url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+              ref-url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              ref-sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+            }
           - {
-            title: '.hic',
-            balance: 'NONE',
-            url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
-            sha256: 'b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42',
-            ref-url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            ref-sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de',
-
-          }
+              title: ".hic",
+              balance: "NONE",
+              url: "https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1",
+              sha256: "b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42",
+              ref-url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              ref-sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+            }
           - {
-            title: '.hic',
-            balance: 'KR',
-            url: 'https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1',
-            sha256: 'b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42',
-            ref-url: 'https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1',
-            ref-sha256: '7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de'
-          }
+              title: ".hic",
+              balance: "KR",
+              url: "https://www.dropbox.com/s/gkzxt5ae82dvlrg/4DNFIPC7P27B.hic?dl=1",
+              sha256: "b1ba1c942693a5b6e494de7f8da097a1435598a9bb951219929b5a84cb2a6b42",
+              ref-url: "https://www.dropbox.com/s/wq3k09rrpc8smmm/4DNFIPC7P27B.mcool?dl=1",
+              ref-sha256: "7ead807936afbd02c4a0da93d86dd54de489cc07e87400a691c8e917111749de",
+            }
 
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
 
     env:
-      CONAN_HOME: '/root/.conan2'
-      HICTK_CI: '1'
+      CONAN_HOME: "/root/.conan2"
+      HICTK_CI: "1"
 
     steps:
       - name: Clone hictk

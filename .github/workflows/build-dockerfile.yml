@@ -5,7 +5,7 @@ name: Build Dockerfile
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/build-dockerfile.yml"
       - "cmake/**"
@@ -16,7 +16,7 @@ on:
       - "Dockerfile"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -47,8 +47,8 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      packages: 'write'
+      contents: "read"
+      packages: "write"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -221,8 +221,6 @@ jobs:
             GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
             GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
-
-
 
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)

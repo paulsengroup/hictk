@@ -156,14 +156,14 @@ template <typename T>
   auto attributes = extract_top_lvl_metadata_hic(p, include_file_path);
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
 
+  toml::array resolutions;
+  for (const auto& resolution : hic::utils::list_resolutions(p)) {
+    resolutions.push_back(static_cast<std::int64_t>(resolution));
+  }
+  emplace_if_valid("resolutions", resolutions, attributes);
+
   if (recursive) {
     nested_attributes = extract_nested_metadata_hic(p);
-  } else {
-    toml::array resolutions;
-    for (const auto& resolution : hic::utils::list_resolutions(p)) {
-      resolutions.push_back(static_cast<std::int64_t>(resolution));
-    }
-    emplace_if_valid("resolutions", resolutions, attributes);
   }
 
   print_attributes(attributes, nested_attributes, format);
