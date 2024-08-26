@@ -154,6 +154,7 @@ static void dump_pixels_trans_only_sorted(File& f, std::string_view normalizatio
 
         if (!join) {
           print_pixels(merger.begin(), merger.end());
+          return;
         }
 
         auto jsel = transformers::JoinGenomicCoords(merger.begin(), merger.end(), f.bins_ptr());
