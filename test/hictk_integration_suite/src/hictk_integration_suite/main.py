@@ -127,6 +127,12 @@ def parse_test_suites(s: str) -> List[str]:
 
     if "all" in suites:
         suites = get_test_names(include_all=False)
+    else:
+        avail_suites = set(get_test_names(include_all=True))
+        for s in suites:
+            if s not in avail_suites:
+                valid_suites = ", ".join(sorted(avail_suites))
+                raise RuntimeError(f'unrecognized suite "{s}". Valid suites are: {valid_suites}')
 
     return list(suites)
 
