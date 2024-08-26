@@ -21,7 +21,12 @@ def _plan_tests_cli(
     title: str = "hictk-zoomify-cli",
 ) -> List[ImmutableOrderedDict]:
     uri = wd[uri]
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 1.0,
+        "expect_failure": True,
+    }
     plans = (
         factory | {"args": tuple(("zoomify",))},
         factory | {"args": tuple(("zoomify", "--help")), "expect_failure": False},

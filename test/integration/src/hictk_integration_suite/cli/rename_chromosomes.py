@@ -26,7 +26,12 @@ def _plan_tests_cli(
 ) -> List[ImmutableOrderedDict]:
     cool_uri = wd[cool_uri]
     hic_uri = wd[hic_uri]
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 1.0,
+        "expect_failure": True,
+    }
     plans = (
         factory | {"args": tuple(("rename-chromosomes",))},
         factory | {"args": tuple(("rename-chromosomes", "--help")), "expect_failure": False},
@@ -105,7 +110,14 @@ def _plan_tests_cmd(
         for flag in ("--add-chr-prefix", "--remove-chr-prefix"):
             new_uri = _stage_uri(uri, wd)
             args = ["rename-chromosomes", str(new_uri), flag]
-            plans.append(factory | {"args": tuple(args), "test_file": str(new_uri), "expect_failure": expect_failure})
+            plans.append(
+                factory
+                | {
+                    "args": tuple(args),
+                    "test_file": str(new_uri),
+                    "expect_failure": expect_failure,
+                }
+            )
 
         new_uri = _stage_uri(uri, wd)
         plans.append(
@@ -127,7 +139,12 @@ def _plan_tests_cmd(
             plans.append(
                 factory
                 | {
-                    "args": ("rename-chromosomes", str(uri), "--name-mappings", str(path)),
+                    "args": (
+                        "rename-chromosomes",
+                        str(uri),
+                        "--name-mappings",
+                        str(path),
+                    ),
                     "name_mappings": str(path),
                     "test_file": str(uri),
                     "expect_failure": True,
@@ -140,7 +157,10 @@ def _plan_tests_cmd(
 
 
 def plan_tests(
-    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, threads: int = -1
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    threads: int = -1,
 ) -> List[ImmutableOrderedDict]:
     return _plan_tests_cli(hictk_bin, _get_uri(config, "cool"), _get_uri(config, "hic"), wd) + _plan_tests_cmd(
         hictk_bin, config, wd

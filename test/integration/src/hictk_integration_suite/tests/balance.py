@@ -111,7 +111,9 @@ class _HictkBalance(HictkTestHarness):
 
                 _, found = self._fetch_table(test_file, resolution=res, table="weights")
                 self._failures |= validators.compare_weights(
-                    expected[[normalization_name]], found[[normalization_name]], atol=1.0
+                    expected[[normalization_name]],
+                    found[[normalization_name]],
+                    atol=1.0,
                 )
 
     def run(  # noqa
