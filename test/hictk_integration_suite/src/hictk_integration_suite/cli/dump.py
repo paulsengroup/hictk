@@ -474,7 +474,9 @@ def _plan_tests_hictk_dump_gw(
     return plans
 
 
-def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory) -> List[ImmutableOrderedDict]:
+def plan_tests(
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, threads: int = -1
+) -> List[ImmutableOrderedDict]:
     return (
         _plan_tests_cli(hictk_bin, _get_uri(config), wd)
         + _plan_tests_hictk_dump_bins(hictk_bin, config, wd)

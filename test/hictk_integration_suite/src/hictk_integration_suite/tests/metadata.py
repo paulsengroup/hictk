@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+import logging
 import tomllib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
@@ -138,13 +139,21 @@ class HictkMetadata(HictkTestHarness):
         self._expect_failure = expect_failure
 
         t0 = timer()
-        self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+        try:
+            self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+        except:  # noqa
+            logging.error(f"failed to execute {args}")
+            raise
         t1 = timer()
-        self._validate(
-            file_format=file_format,
-            variable_bin_size=variable_bin_size,
-            expect_failure=expect_failure,
-        )
+        try:
+            self._validate(
+                file_format=file_format,
+                variable_bin_size=variable_bin_size,
+                expect_failure=expect_failure,
+            )
+        except:  # noqa
+            logging.error(f"failed to validate output produced by {args}")
+            raise
         t2 = timer()
 
         self._hictk_duration = t1 - t0

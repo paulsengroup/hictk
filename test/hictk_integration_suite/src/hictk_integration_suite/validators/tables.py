@@ -196,6 +196,7 @@ def compare_weights(
     expected: pd.DataFrame | None,
     found: pd.DataFrame | None,
     rtol: float = 1.0e-5,
+    atol: float = 1.0e-8,
     sort_before_compare: bool = True,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
@@ -224,7 +225,7 @@ def compare_weights(
 
     errors = {}
     for col in expected:
-        differences = (~np.isclose(expected[col], found[col], rtol=rtol, equal_nan=True)).sum()
+        differences = (~np.isclose(expected[col], found[col], rtol=rtol, atol=atol, equal_nan=True)).sum()
         if differences != 0:
             errors |= {f'found differences in "{col}" weights': f"found {differences} differences"}
 

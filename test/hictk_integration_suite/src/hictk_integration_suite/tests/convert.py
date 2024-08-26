@@ -112,13 +112,13 @@ class HictkConvert(HictkTestHarness):
         self._args = args
         self._expect_failure = expect_failure
 
+        t0 = timer()
         try:
-            t0 = timer()
             self._run_hictk(args, timeout=timeout, env_variables=env_variables)
-            t1 = timer()
         except:  # noqa
             logging.error(f"failed to execute {args}")
             raise
+        t1 = timer()
         try:
             self._validate(
                 reference_file=reference_file,
@@ -126,10 +126,11 @@ class HictkConvert(HictkTestHarness):
                 resolutions=resolutions,
                 expect_failure=expect_failure,
             )
-            t2 = timer()
         except:  # noqa
             logging.error(f"failed to validate output produced by {args}")
             raise
+
+        t2 = timer()
 
         self._hictk_duration = t1 - t0
         self._validation_duration = t2 - t1

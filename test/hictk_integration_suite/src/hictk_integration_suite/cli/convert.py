@@ -61,8 +61,10 @@ def _plan_tests_cmd(
     hictk_bin: pathlib.Path,
     config: Dict[str, Any],
     wd: WorkingDirectory,
+    threads: int,
     title: str = "hictk-convert",
 ) -> List[ImmutableOrderedDict]:
+    assert threads > 0
     plans = []
     factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 60.0}
     for c in config["test-cases"]:
@@ -81,6 +83,8 @@ def _plan_tests_cmd(
             str(tmpdir),
             "--compression-lvl",
             "1",
+            "--threads",
+            str(threads),
         ]
         for k, v in c.get("args", {}).items():
             k = "--" + (str(k).removeprefix("--"))
@@ -110,9 +114,11 @@ def _plan_tests_cmd(
     return plans
 
 
-def plan_tests(hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory) -> List[ImmutableOrderedDict]:
+def plan_tests(
+    hictk_bin: pathlib.Path, config: Dict[str, Any], wd: WorkingDirectory, threads: int
+) -> List[ImmutableOrderedDict]:
     return _plan_tests_cli(hictk_bin, _get_uri(config, "cool"), _get_uri(config, "hic"), wd) + _plan_tests_cmd(
-        hictk_bin, config, wd
+        hictk_bin, config, wd, threads
     )
 
 

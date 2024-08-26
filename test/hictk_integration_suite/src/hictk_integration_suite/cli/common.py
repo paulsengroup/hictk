@@ -9,11 +9,24 @@ import pathlib
 import platform
 import shutil
 import stat
-import sys
 import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
 from immutabledict import immutabledict
+
+
+def _make_file_read_only(path: pathlib.Path | str):
+    mode = stat.S_IRUSR
+    if os.access(path, os.X_OK):
+        mode |= stat.S_IXUSR
+    pathlib.Path(path).chmod(mode)
+
+
+def _make_file_writeable(path: pathlib.Path | str):
+    mode = stat.S_IRUSR | stat.S_IWUSR
+    if os.access(path, os.X_OK):
+        mode |= stat.S_IXUSR
+    pathlib.Path(path).chmod(mode)
 
 
 class WorkingDirectory:
@@ -43,17 +56,11 @@ class WorkingDirectory:
 
     @staticmethod
     def _make_read_only(path: pathlib.Path | str):
-        mode = stat.S_IRUSR
-        if os.access(path, os.X_OK):
-            mode |= stat.S_IXUSR
-        pathlib.Path(path).chmod(mode)
+        _make_file_read_only(path)
 
     @staticmethod
     def _make_writeable(path: pathlib.Path | str):
-        mode = stat.S_IRUSR | stat.S_IWUSR
-        if os.access(path, os.X_OK):
-            mode |= stat.S_IXUSR
-        pathlib.Path(path).chmod(mode)
+        _make_file_writeable(path)
 
     @staticmethod
     def _parse_uri(s: pathlib.Path | str) -> Tuple[pathlib.Path, pathlib.Path | None]:

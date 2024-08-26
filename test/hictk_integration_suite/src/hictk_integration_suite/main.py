@@ -22,6 +22,10 @@ from hictk_integration_suite.cli.common import WorkingDirectory
 from hictk_integration_suite.runners.hictk.common import version
 
 
+def nproc() -> int:
+    return len(os.sched_getaffinity(0))
+
+
 def get_test_names(include_all: bool = True) -> List[str]:
     if include_all:
         names = ["all"]
@@ -163,6 +167,13 @@ def parse_test_suites(s: str) -> List[str]:
     "Should be one of:\n" + "\n - ".join(get_test_names(include_all=True)),
 )
 @click.option(
+    "--threads",
+    help="Specify the maximum number of CPU threads to be used.",
+    type=click.IntRange(1, nproc()),
+    default=1,
+    show_default=True,
+)
+@click.option(
     "--verbosity",
     type=click.Choice(["debug", "info", "warning", "error", "critical"]),
     default="info",
@@ -192,6 +203,7 @@ def main(
     data_dir: pathlib.Path,
     config_file: pathlib.Path,
     suites: str,
+    threads: int,
     verbosity: str,
     result_file: pathlib.Path,
     force: bool,
@@ -228,7 +240,7 @@ def main(
             logging.info(f"staging test files for {test} tests took {delta:.2f}ms")
 
             t0 = time.time()
-            plans = mod.plan_tests(hictk_bin, config, wd)
+            plans = mod.plan_tests(hictk_bin, config, wd, threads)
             delta = (time.time() - t0) * 1000.0
             logging.info(f"planning for {test} tests took {delta:.2f}ms")
 

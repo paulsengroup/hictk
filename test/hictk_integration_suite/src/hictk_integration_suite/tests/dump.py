@@ -153,13 +153,13 @@ class HictkDump(HictkTestHarness):
         else:
             colnames = None
 
+        t0 = timer()
         try:
-            t0 = timer()
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, colnames=colnames)
-            t1 = timer()
         except:  # noqa
             logging.error(f"failed to execute {args}")
             raise
+        t1 = timer()
         try:
             self._validate(
                 reference_clr=reference_uri,
@@ -173,10 +173,10 @@ class HictkDump(HictkTestHarness):
                 cis_only=cis_only,
                 trans_only=trans_only,
             )
-            t2 = timer()
         except:  # noqa
             logging.error(f"failed to validate output produced by {args}")
             raise
+        t2 = timer()
 
         self._hictk_duration = t1 - t0
         self._validation_duration = t2 - t1
