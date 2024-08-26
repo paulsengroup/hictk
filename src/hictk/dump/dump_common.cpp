@@ -70,21 +70,14 @@ void dump_bins(const File& f, std::string_view range1, std::string_view range2) 
   return {i0, i1};
 }
 
-void dump_weights(const File& f, std::string_view range) {
-  const auto norms = f.avail_normalizations();
+static void dump_weights(const BinTable& bins, std::string_view range,
+                         const std::vector<balancing::Method>& norms,
+                         const std::vector<balancing::Weights>& weights, bool print_header) {
+  const auto [i0, i1] = compute_bin_ids(bins, range);
 
-  if (norms.empty()) {
-    return;
+  if (print_header) {
+    fmt::print(FMT_STRING("{}\n"), fmt::join(norms, "\t"));
   }
-
-  std::vector<balancing::Weights> weights{};
-  for (const auto& norm : norms) {
-    weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
-  }
-
-  const auto [i0, i1] = compute_bin_ids(f.bins(), range);
-
-  fmt::print(FMT_STRING("{}\n"), fmt::join(norms, "\t"));
   std::vector<double> record(norms.size());
   for (std::size_t i = i0; i < i1; ++i) {
     for (std::size_t j = 0; j < norms.size(); ++j) {
@@ -99,6 +92,38 @@ void dump_weights(const File& f, std::string_view range) {
   }
 }
 
+void dump_weights(const File& f, std::string_view range1, std::string_view range2) {
+  const auto norms = f.avail_normalizations();
+
+  if (norms.empty()) {
+    return;
+  }
+
+  std::vector<balancing::Weights> weights{};
+  for (const auto& norm : norms) {
+    weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
+  }
+
+  if (range1 == "all") {
+    assert(range2 == "all");
+    dump_weights(f.bins(), range1, norms, weights, true);
+    return;
+  }
+
+  auto coords1 = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range1});
+  auto coords2 = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range2});
+  if (coords1 > coords2) {
+    std::swap(range1, range2);
+    std::swap(coords1, coords2);
+  }
+
+  dump_weights(f.bins(), range1, norms, weights, true);
+
+  if (range1 != range2) {
+    dump_weights(f.bins(), range2, norms, weights, false);
+  }
+}
+
 void dump_cells(std::string_view uri, std::string_view format) {
   if (format != "scool") {
     throw std::runtime_error(fmt::format(FMT_STRING("\"{}\" is not a .scool file"), uri));
@@ -108,7 +133,8 @@ void dump_cells(std::string_view uri, std::string_view format) {
                 [&](const auto& cell) { fmt::print(FMT_COMPILE("{}\n"), cell); });
 }
 
-void dump_chroms(std::string_view uri, std::string_view format, std::uint32_t resolution) {
+void dump_chroms(std::string_view uri, std::string_view range1, std::string_view range2,
+                 std::string_view format, std::uint32_t resolution) {
   Reference ref{};
 
   if (format == "mcool") {
@@ -119,11 +145,29 @@ void dump_chroms(std::string_view uri, std::string_view format, std::uint32_t re
     ref = File{std::string{uri}, resolution}.chromosomes();
   }
 
-  for (const Chromosome& chrom : ref) {
-    if (!chrom.is_all()) {
-      fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+  if (range1 == "all") {
+    assert(range2 == "all");
+
+    for (const Chromosome& chrom : ref) {
+      if (!chrom.is_all()) {
+        fmt::print(FMT_COMPILE("{:s}\t{:d}\n"), chrom.name(), chrom.size());
+      }
     }
+    return;
   }
+
+  auto coords1 = GenomicInterval::parse_ucsc(ref, std::string{range1});
+  auto coords2 = GenomicInterval::parse_ucsc(ref, std::string{range2});
+
+  if (coords1 > coords2) {
+    std::swap(coords1, coords2);
+  }
+
+  fmt::print(FMT_STRING("{:s}\t{:d}\n"), coords1.chrom().name(), coords1.chrom().size());
+  if (coords1 == coords2) {
+    return;
+  }
+  fmt::print(FMT_STRING("{:s}\t{:d}\n"), coords2.chrom().name(), coords2.chrom().size());
 }
 
 static phmap::btree_set<std::string> get_normalizations(std::string_view uri,
