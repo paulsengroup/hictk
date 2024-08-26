@@ -31,7 +31,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
         names = ["all"]
     else:
         names = []
-    names += ["balance", "convert", "dump", "metadata", "zoomify"]
+    names += ["balance", "convert", "dump", "metadata", "rename-chromosomes", "zoomify"]
     return names
 
 
@@ -52,15 +52,11 @@ def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
         return config
 
     new_config = config.copy()
-    for i, mappings in enumerate(config.get("files", [])):
-        for key in mappings:
-            if key.endswith("uri") or key.endswith("path"):
-                new_config["files"][i][key] = _update_uri(mappings[key])
-
-    for i, mappings in enumerate(config.get("test-cases", [])):
-        for key in mappings:
-            if key.endswith("uri") or key.endswith("path"):
-                new_config["test-cases"][i][key] = _update_uri(mappings[key])
+    for group in ("files", "test-cases", "name-mappings"):
+        for i, mappings in enumerate(config.get(group, [])):
+            for key in mappings:
+                if key.endswith("uri") or key.endswith("path"):
+                    new_config[group][i][key] = _update_uri(mappings[key])
 
     return new_config
 
@@ -238,7 +234,8 @@ def main(
     with WorkingDirectory(delete=not no_cleanup) as wd:
         hictk_bin = wd.stage_file(hictk_bin)
         for test in suites:
-            mod = importlib.import_module(f"hictk_integration_suite.cli.{test}")
+            module_name = test.replace("-", "_")
+            mod = importlib.import_module(f"hictk_integration_suite.cli.{module_name}")
 
             t0 = time.time()
             config = import_config_and_stage_files(config_file, data_dir, wd, command=test)

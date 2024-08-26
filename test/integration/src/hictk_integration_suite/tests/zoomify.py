@@ -38,6 +38,8 @@ class HictkZoomify(HictkTestHarness):
             self._handle_expected_failure()
             return
 
+        if len(self.stdout()) != 0:
+            self._failures["unexpected output on stdout"] = self.stdout(500).strip()
         if self.returncode != 0:
             self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
             self._failures["stderr"] = self.stderr(500)
