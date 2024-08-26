@@ -27,17 +27,31 @@ void print(const ThinPixel<double>& pixel) {
   fmt::print(FMT_COMPILE("{:d}\t{:d}\t{:.16g}\n"), pixel.bin1_id, pixel.bin2_id, pixel.count);
 }
 
-void dump_bins(const File& f, std::string_view range) {
-  if (range == "all") {
+void dump_bins(const File& f, std::string_view range1, std::string_view range2) {
+  if (range1 == "all") {
+    assert(range2 == "all");
     for (const auto& bin : f.bins()) {
       fmt::print(FMT_COMPILE("{:s}\t{:d}\t{:d}\n"), bin.chrom().name(), bin.start(), bin.end());
     }
     return;
   }
 
-  const auto coords = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range});
-  auto [first_bin, last_bin] = f.bins().find_overlap(coords);
-  std::for_each(first_bin, last_bin, [](const Bin& bin) {
+  auto coords1 = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range1});
+  auto coords2 = GenomicInterval::parse_ucsc(f.chromosomes(), std::string{range2});
+  if (coords1 > coords2) {
+    std::swap(coords1, coords2);
+  }
+  auto [first_bin1, last_bin1] = f.bins().find_overlap(coords1);
+  std::for_each(first_bin1, last_bin1, [](const Bin& bin) {
+    fmt::print(FMT_COMPILE("{:s}\t{:d}\t{:d}\n"), bin.chrom().name(), bin.start(), bin.end());
+  });
+
+  if (coords1 == coords2) {
+    return;
+  }
+
+  auto [first_bin2, last_bin2] = f.bins().find_overlap(coords2);
+  std::for_each(first_bin2, last_bin2, [](const Bin& bin) {
     fmt::print(FMT_COMPILE("{:s}\t{:d}\t{:d}\n"), bin.chrom().name(), bin.start(), bin.end());
   });
 }
@@ -58,6 +72,11 @@ void dump_bins(const File& f, std::string_view range) {
 
 void dump_weights(const File& f, std::string_view range) {
   const auto norms = f.avail_normalizations();
+
+  if (norms.empty()) {
+    return;
+  }
+
   std::vector<balancing::Weights> weights{};
   for (const auto& norm : norms) {
     weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
