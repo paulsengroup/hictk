@@ -29,6 +29,21 @@ def _make_file_writeable(path: pathlib.Path | str):
     pathlib.Path(path).chmod(mode)
 
 
+def _argument_map_to_list(args_map: Dict[str, Any]) -> List[str]:
+    args = []
+    for k, v in args_map.items():
+        k = "--" + (str(k).removeprefix("--"))
+        if not v:
+            args.append(k)
+        elif isinstance(v, list):
+            args.append(k)
+            args.extend((str(x) for x in v))
+        else:
+            args.extend((k, str(v)))
+
+    return args
+
+
 class WorkingDirectory:
     def __init__(self, path: pathlib.Path | str | None = None, delete: bool = True):
         if path is None:

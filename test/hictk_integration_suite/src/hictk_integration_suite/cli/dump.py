@@ -12,7 +12,7 @@ from immutabledict import ImmutableOrderedDict, immutabledict
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
 
-from .common import WorkingDirectory, _get_uri, _preprocess_plan
+from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
 
 
 def _extract_queries_for_uri(
@@ -73,12 +73,7 @@ def _make_hictk_dump_args(
     if join:
         args.append("--join")
 
-    for k, v in add_args.items():
-        k = "--" + (str(k).removeprefix("--"))
-        if not v:
-            args.append(k)
-        else:
-            args.extend((k, str(v)))
+    args.extend(_argument_map_to_list(add_args))
 
     return args
 

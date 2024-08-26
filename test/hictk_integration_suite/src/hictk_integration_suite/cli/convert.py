@@ -11,7 +11,7 @@ from immutabledict import ImmutableOrderedDict, immutabledict
 
 from hictk_integration_suite.tests.convert import HictkConvert, HictkConvertCli
 
-from .common import WorkingDirectory, _get_uri, _preprocess_plan
+from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
 
 
 def _plan_tests_cli(
@@ -86,15 +86,8 @@ def _plan_tests_cmd(
             "--threads",
             str(threads),
         ]
-        for k, v in c.get("args", {}).items():
-            k = "--" + (str(k).removeprefix("--"))
-            if not v:
-                args.append(k)
-            elif isinstance(v, list):
-                args.append(k)
-                args.extend((str(x) for x in v))
-            else:
-                args.extend((k, str(v)))
+
+        args.extend(_argument_map_to_list(c.get("args", {})))
 
         resolutions = c.get("args", {}).get("resolutions", [])
         plans.append(

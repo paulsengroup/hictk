@@ -2,4 +2,5 @@
 #
 # SPDX-License-Identifier: MIT
 
+from .balance import CoolerBalance
 from .dump import CoolerDump
