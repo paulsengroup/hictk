@@ -52,7 +52,7 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
               [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
 
-  if (!bins.type() == BinTable::Type::variable) {
+  if (bins.type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions referring to a table with variable bin size is not supported");
   }
