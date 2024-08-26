@@ -199,28 +199,28 @@ void Cli::validate_zoomify_subcommand() const {
     errors.clear();
     warnings.clear();
     errors.emplace_back("zoomifying files with variable bin size is currently not supported.");
-  }
+  } else {
+    if (const auto dupl = detect_duplicate_resolutions(c.resolutions); !dupl.empty()) {
+      errors.emplace_back(fmt::format(FMT_STRING("Found duplicate resolution(s):\n - {}"),
+                                      fmt::join(dupl, "\n - ")));
+    }
 
-  if (const auto dupl = detect_duplicate_resolutions(c.resolutions); !dupl.empty()) {
-    errors.emplace_back(
-        fmt::format(FMT_STRING("Found duplicate resolution(s):\n - {}"), fmt::join(dupl, "\n - ")));
-  }
+    if (const auto invalid = detect_invalid_resolutions(base_resolution, c.resolutions);
+        !invalid.empty()) {
+      errors.emplace_back(
+          fmt::format(FMT_STRING("Found the following invalid resolution(s):\n   - {}\n"
+                                 "Resolutions should be a multiple of the base resolution ({})."),
+                      fmt::join(invalid, "\n    - "), base_resolution));
+    }
 
-  if (const auto invalid = detect_invalid_resolutions(base_resolution, c.resolutions);
-      !invalid.empty()) {
-    errors.emplace_back(
-        fmt::format(FMT_STRING("Found the following invalid resolution(s):\n   - {}\n"
-                               "Resolutions should be a multiple of the base resolution ({})."),
-                    fmt::join(invalid, "\n    - "), base_resolution));
-  }
-
-  const auto* sc = _cli.get_subcommand("zoomify");
-  const auto nice_or_pow2_steps_parsed =
-      !sc->get_option("--nice-steps")->empty() || !sc->get_option("--pow2-steps")->empty();
-  if (!c.resolutions.empty() && nice_or_pow2_steps_parsed) {
-    warnings.emplace_back(
-        "--nice-steps and --pow2-steps are ignored when resolutions are explicitly set with "
-        "--resolutions.");
+    const auto* sc = _cli.get_subcommand("zoomify");
+    const auto nice_or_pow2_steps_parsed =
+        !sc->get_option("--nice-steps")->empty() || !sc->get_option("--pow2-steps")->empty();
+    if (!c.resolutions.empty() && nice_or_pow2_steps_parsed) {
+      warnings.emplace_back(
+          "--nice-steps and --pow2-steps are ignored when resolutions are explicitly set with "
+          "--resolutions.");
+    }
   }
 
   for (const auto& w : warnings) {
