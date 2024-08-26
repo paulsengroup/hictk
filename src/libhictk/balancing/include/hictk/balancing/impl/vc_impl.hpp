@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -18,6 +19,10 @@ namespace hictk::balancing {
 
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
+  if (!f.bins().has_fixed_resolution()) {
+    throw std::runtime_error(
+        "balancing interactions from files with variable bin sizes is not supported");
+  }
   switch (type) {
     case Type::cis: {
       auto res = compute_cis(f);
@@ -46,6 +51,11 @@ template <typename PixelIt>
 inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
               [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
+
+  if (!bins.has_fixed_resolution()) {
+    throw std::runtime_error(
+        "balancing interactions referring to a table with variable bin size is not supported");
+  }
 
   const auto offset = bins.num_bin_prefix_sum().front();
   const auto size = bins.num_bin_prefix_sum().back() - offset;

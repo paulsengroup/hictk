@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include <nonstd/span.hpp>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -35,6 +36,11 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
       _biases(f.bins().size(), 1.0),
       _variance(f.chromosomes().size(), 0),
       _scale(f.chromosomes().size(), std::numeric_limits<double>::quiet_NaN()) {
+  if (!f.bins().has_fixed_resolution()) {
+    throw std::runtime_error(
+        "balancing interactions from files with variable bin sizes is not supported");
+  }
+
   std::unique_ptr<BS::thread_pool> tpool{};
   if (params.threads != 1) {
     tpool = std::make_unique<BS::thread_pool>(params.threads);
