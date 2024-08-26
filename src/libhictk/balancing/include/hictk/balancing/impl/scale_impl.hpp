@@ -26,7 +26,7 @@ namespace hictk::balancing {
 
 template <typename File>
 inline SCALE::SCALE(const File& f, Type type, const Params& params) {
-  if (!f.bins().has_fixed_resolution()) {
+  if (f.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");
   }
@@ -60,7 +60,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     : _biases(VC{first, last, bins}.get_weights()(balancing::Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
-  if (!bins.has_fixed_resolution()) {
+  if (bins.type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions referring to a table with variable bin size is not supported");
   }

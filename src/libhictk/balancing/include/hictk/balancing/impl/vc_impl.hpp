@@ -19,7 +19,7 @@ namespace hictk::balancing {
 
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
-  if (!f.bins().has_fixed_resolution()) {
+  if (f.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");
   }
@@ -52,7 +52,7 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
               [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
 
-  if (!bins.has_fixed_resolution()) {
+  if (!bins.type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions referring to a table with variable bin size is not supported");
   }
