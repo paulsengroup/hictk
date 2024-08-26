@@ -46,9 +46,12 @@ void Cli::make_zoomify_subcommand() {
       ->required();
 
   sc.add_option(
-      "mcool/hic",
+      "[m]cool/hic",
       c.path_to_output,
-      "Output path.")
+      "Output path.\n"
+      "When zoomifying Cooler files, providing a single resolution through\n"
+      "--resolutions and specifying --no-copy-base-resolution, the output file\n"
+      "will be in .cool format.")
       ->required();
 
   sc.add_flag(
