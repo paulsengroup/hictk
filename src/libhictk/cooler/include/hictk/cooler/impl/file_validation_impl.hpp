@@ -25,7 +25,6 @@ namespace hictk::cooler {
 
 inline void File::validate_bins(bool full) const {
   try {
-    assert(_attrs.bin_type == "fixed" || _attrs.bin_type == "variable");
     auto nchroms = dataset("bins/chrom").size();
     auto nstarts = dataset("bins/start").size();
     auto nends = dataset("bins/end").size();

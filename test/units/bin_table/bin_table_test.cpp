@@ -104,7 +104,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK(table.has_fixed_resolution());
+    CHECK(table.type() == BinTable::Type::fixed);
     CHECK_NOTHROW(table.get<BinTableFixed>());
     CHECK_THROWS(table.get<BinTableVariable<>>());
   }
@@ -294,7 +294,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK_FALSE(table.has_fixed_resolution());
+    CHECK(table.type() == BinTable::Type::variable);
     CHECK_NOTHROW(table.get<BinTableVariable<>>());
     CHECK_THROWS(table.get<BinTableFixed>());
   }

@@ -233,7 +233,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
@@ -322,7 +322,7 @@ void Cli::make_vc_balance_subcommand(CLI::App& app) {
       "Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")

@@ -52,7 +52,7 @@ inline std::size_t BinTable::num_chromosomes() const {
 }
 
 constexpr std::uint32_t BinTable::resolution() const noexcept {
-  if (std::holds_alternative<BinTableFixed>(_table)) {
+  if (type() == BinTable::Type::fixed) {
     return std::get<BinTableFixed>(_table).resolution();
   }
   return 0;
@@ -62,8 +62,10 @@ constexpr const Reference &BinTable::chromosomes() const noexcept {
   return std::visit([&](const auto &t) -> const Reference & { return t.chromosomes(); }, _table);
 }
 
-constexpr bool BinTable::has_fixed_resolution() const noexcept {
-  return std::holds_alternative<BinTableFixed>(_table);
+constexpr bool BinTable::has_fixed_resolution() const noexcept { return type() == Type::fixed; }
+
+constexpr auto BinTable::type() const noexcept -> Type {
+  return std::holds_alternative<BinTableFixed>(_table) ? Type::fixed : Type::variable;
 }
 
 constexpr const std::vector<std::uint64_t> &BinTable::num_bin_prefix_sum() const noexcept {

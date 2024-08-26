@@ -61,7 +61,7 @@ Download from the `Release <https://github.com/paulsengroup/hictk/releases>`_ pa
 .. code-block:: bash
 
   mkdir /tmp/hictk
-  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v0.0.6.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
+  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v1.0.0.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
 
 
 Using git.
@@ -217,13 +217,7 @@ cooler can be installed using pip:
 
 .. code-block:: bash
 
-  /tmp/venv/bin/pip3 install 'cooler>=0.9'
-
-juicer_tools and hic_tools do not need to be installed, downloading the JAR file is enough:
-
-.. code-block:: bash
-
-  curl -L 'https://github.com/aidenlab/HiCTools/releases/download/v3.30.00/hic_tools.3.30.00.jar' -o /tmp/hictk/hic_tools.jar
+  /tmp/venv/bin/pip3 install 'cooler>=0.10.0' 'pyyaml'
 
 If not already installed, :code:`xz` can usually be installed with your system package manager (on some Linux distributions the relevant package is called :code:`xz-utils`).
 
@@ -234,17 +228,32 @@ If not already installed, :code:`xz` can usually be installed with your system p
 
   cd /tmp/hictk
 
+  # hictk balance
+  test/scripts/hictk_balance_ice.sh build/src/hictk/hictk
+  test/scripts/hictk_balance_scale.sh build/src/hictk/hictk
+  test/scripts/hictk_balance_vc.sh build/src/hictk/hictk
+
   # hictk convert
-  test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk juicer_tools.jar
+  test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
   test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
 
-  # hictk dump
+  # hictk dump tables
+  test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
+  test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
+  test/scripts/hictk_dump_resolutions.sh build/src/hictk/hictk
+  test/scripts/hictk_dump_normalizations.sh build/src/hictk/hictk
+  test/scripts/hictk_dump_cells.sh build/src/hictk/hictk
+
+  # hictk dump pixels
   test/scripts/hictk_dump_balanced.sh build/src/hictk/hictk
   test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
   test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
   test/scripts/hictk_dump_cis.sh build/src/hictk/hictk
   test/scripts/hictk_dump_gw.sh build/src/hictk/hictk
   test/scripts/hictk_dump_trans.sh build/src/hictk/hictk
+
+  # hictk fix-mcool
+  test/scripts/hictk_fix_mcool.sh build/src/hictk/hictk
 
   # hictk load (sorted)
   test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
@@ -258,6 +267,12 @@ If not already installed, :code:`xz` can usually be installed with your system p
 
   # hictk merge
   test/scripts/hictk_merge.sh build/src/hictk/hictk
+
+  # hictk metadata
+  test/scripts/hictk_metadata.sh build/src/hictk/hictk
+
+  # hictk rename-chromosomes
+  test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
 
   # hictk validate
   test/scripts/hictk_validate.sh build/src/hictk/hictk

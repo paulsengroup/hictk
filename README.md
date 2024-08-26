@@ -38,16 +38,16 @@ hictk can be installed using containers, bioconda or directly from source. Refer
 hictk provides the following subcommands:
 
 | subcommand             | description                                                                        |
-|------------------------|------------------------------------------------------------------------------------|
-| __balance__            | Balance HiC matrices using ICE, SCALE or VC.                                       |
-| __convert__            | Convert matrices to a different format.                                            |
-| __dump__               | Dump data from .hic and Cooler files to stdout.                                    |
-| __fix-mcool__          | Fix corrupted .mcool files.                                                        |
-| __load__               | Build .cool and .hic files from interactions in various text formats.              |
-| __merge__              | Merge multiple Cooler or .hic files into a single file.                            |
-| __rename-chromosomes__ | Rename chromosomes found in a Cooler file.                                         |
-| __validate__           | Validate .hic and Cooler files.                                                    |
-| __zoomify__            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening. |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| **balance**            | Balance HiC matrices using ICE, SCALE or VC.                                       |
+| **convert**            | Convert matrices to a different format.                                            |
+| **dump**               | Dump data from .hic and Cooler files to stdout.                                    |
+| **fix-mcool**          | Fix corrupted .mcool files.                                                        |
+| **load**               | Build .cool and .hic files from interactions in various text formats.              |
+| **merge**              | Merge multiple Cooler or .hic files into a single file.                            |
+| **rename-chromosomes** | Rename chromosomes found in a Cooler file.                                         |
+| **validate**           | Validate .hic and Cooler files.                                                    |
+| **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening. |
 
 Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/latest/cli_reference.html) for more details.
 

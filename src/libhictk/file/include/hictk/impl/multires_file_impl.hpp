@@ -27,7 +27,7 @@ inline MultiResFile::MultiResFile(std::string uri, hic::MatrixType type_, hic::M
     _chroms = hf.chromosomes();
     _format = "HIC";
     _format_version = static_cast<std::uint8_t>(hf.version());
-    _bin_type = "fixed";
+    _bin_type = BinTable::Type::fixed;
     return;
   }
   if (!cooler::utils::is_multires_file(_path)) {
@@ -49,7 +49,7 @@ inline MultiResFile::MultiResFile(std::string uri, hic::MatrixType type_, hic::M
   _resolutions = mclr.resolutions();
   _format = cooler::MCOOL_MAGIC;
   _format_version = mclr.attributes().format_version;
-  _bin_type = mclr.attributes().bin_type.has_value() ? *mclr.attributes().bin_type : "fixed";
+  _bin_type = mclr.attributes().bin_type;
 }
 
 inline std::string MultiResFile::path() const { return _path; }
@@ -61,7 +61,7 @@ constexpr hic::MatrixType MultiResFile::matrix_type() const noexcept { return _t
 constexpr hic::MatrixUnit MultiResFile::matrix_unit() const noexcept { return _unit; }
 inline std::string_view MultiResFile::format() const noexcept { return _format; }
 constexpr std::uint8_t MultiResFile::version() const noexcept { return _format_version; }
-inline std::string_view MultiResFile::bin_type() const noexcept { return _bin_type; }
+constexpr BinTable::Type MultiResFile::bin_type() const noexcept { return _bin_type; }
 
 constexpr const std::vector<std::uint32_t>& MultiResFile::resolutions() const noexcept {
   return _resolutions;

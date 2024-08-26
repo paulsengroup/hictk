@@ -23,15 +23,15 @@ Checks: >
   -readability-identifier-length,
   -readability-magic-numbers,
   -readability-static-definition-in-anonymous-namespace
-WarningsAsErrors: ''
-HeaderFilterRegex: ''
+WarningsAsErrors: ""
+HeaderFilterRegex: ""
 FormatStyle: none
 CheckOptions:
   - key: cppcoreguidelines-macro-usage.AllowedRegexp
-    value: 'DISABLE_WARNING_.*'
+    value: "DISABLE_WARNING_.*"
   - key: misc-include-cleaner.IgnoreHeaders
-    value: 'fmt/.*'
+    value: "fmt/.*"
   - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
-    value: '1'
+    value: "1"
   - key: readability-implicit-bool-conversion.AllowPointerConditions
-    value: '1'
+    value: "1"
