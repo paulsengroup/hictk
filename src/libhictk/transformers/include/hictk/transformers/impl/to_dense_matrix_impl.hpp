@@ -10,20 +10,33 @@
 #include <utility>
 
 #include "hictk/pixel.hpp"
-#include "hictk/transformers/impl/common.hpp"
+#include "hictk/transformers/common.hpp"
 
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
 inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[maybe_unused]] N n,
-                                                      bool mirror)
-    : _sel(std::move(sel)), _mirror(mirror) {}
+                                                      QuerySpan span)
+    : _sel(std::move(sel)), _span(span) {
+  if (chrom1() != chrom2() && span == QuerySpan::lower_triangle) {
+    throw std::runtime_error(
+        "hictk::transformers::ToDenseMatrix(): invalid parameters. Trans queries do not support "
+        "QuerySpan::lower_triangle queries.");
+  }
+}
 
 template <typename N, typename PixelSelector>
 inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
-  MatrixT matrix = MatrixT::Zero(num_rows(), num_cols());
-  const auto mirror_matrix = _mirror && chrom1() == chrom2();
+  const auto populate_lower_triangle =
+      _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
+  const auto populate_upper_triangle =
+      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
+  auto matrix_setter = [](MatrixT& matrix, std::int64_t i1, std::int64_t i2, N count) {
+    matrix(i1, i2) = count;
+  };
+
+  MatrixT matrix = MatrixT::Zero(num_rows(), num_cols());
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (chrom1() == chrom2() && _sel.coord1() != _sel.coord2()) {
       auto coord3 = _sel.coord1();
@@ -32,13 +45,31 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       coord3.bin2 = std::max(coord3.bin2, coord4.bin2);
       coord4 = coord3;
 
-      fill_matrix(_sel.fetch(coord3, coord4), matrix, row_offset(), col_offset(), mirror_matrix);
+      internal::fill_matrix<N>(_sel.fetch(coord3, coord4), matrix, row_offset(), col_offset(),
+                               populate_lower_triangle, populate_upper_triangle, matrix_setter);
       return matrix;
     }
   }
 
-  fill_matrix(_sel, matrix, row_offset(), col_offset(), mirror_matrix);
+  internal::fill_matrix<N>(_sel, matrix, row_offset(), col_offset(), populate_lower_triangle,
+                           populate_upper_triangle, matrix_setter);
   return matrix;
+}
+
+template <typename N, typename PixelSelector>
+inline std::string_view ToDenseMatrix<N, PixelSelector>::chrom1() const noexcept {
+  if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
+    return _sel.coord1().bin1.chrom().name();
+  }
+  return "all";
+}
+
+template <typename N, typename PixelSelector>
+inline std::string_view ToDenseMatrix<N, PixelSelector>::chrom2() const noexcept {
+  if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
+    return _sel.coord2().bin1.chrom().name();
+  }
+  return "all";
 }
 
 template <typename N, typename PixelSelector>
@@ -93,45 +124,6 @@ inline std::int64_t ToDenseMatrix<N, PixelSelector>::offset(
     const PixelCoordinates& coords) noexcept {
   constexpr auto bad_bin_id = std::numeric_limits<std::uint64_t>::max();
   return static_cast<std::int64_t>(coords.bin1.id() == bad_bin_id ? 0 : coords.bin1.id());
-}
-
-template <typename N, typename PixelSelector>
-inline std::string_view ToDenseMatrix<N, PixelSelector>::chrom1() const noexcept {
-  if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    return _sel.coord1().bin1.chrom().name();
-  }
-  return "all";
-}
-
-template <typename N, typename PixelSelector>
-inline std::string_view ToDenseMatrix<N, PixelSelector>::chrom2() const noexcept {
-  if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    return _sel.coord2().bin1.chrom().name();
-  }
-  return "all";
-}
-
-template <typename N, typename PixelSelector>
-inline void ToDenseMatrix<N, PixelSelector>::fill_matrix(const PixelSelector& sel, MatrixT& buffer,
-                                                         std::int64_t offset1, std::int64_t offset2,
-                                                         bool mirror_matrix) {
-  std::for_each(sel.template begin<N>(), sel.template end<N>(), [&](const ThinPixel<N>& p) {
-    const auto i1 = static_cast<std::int64_t>(p.bin1_id) - offset1;
-    const auto i2 = static_cast<std::int64_t>(p.bin2_id) - offset2;
-
-    if (i1 >= 0 && i1 < buffer.rows() && i2 >= 0 && i2 < buffer.cols()) {
-      buffer(i1, i2) = p.count;
-    }
-
-    if (mirror_matrix) {
-      const auto i3 = static_cast<std::int64_t>(p.bin2_id) - offset1;
-      const auto i4 = static_cast<std::int64_t>(p.bin1_id) - offset2;
-
-      if (i3 >= 0 && i3 < buffer.rows() && i4 >= 0 && i4 < buffer.cols()) {
-        buffer(i3, i4) = p.count;
-      }
-    }
-  });
 }
 
 }  // namespace hictk::transformers

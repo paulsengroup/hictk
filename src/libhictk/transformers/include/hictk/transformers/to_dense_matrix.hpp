@@ -12,22 +12,24 @@
 #include <type_traits>
 
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
 class ToDenseMatrix {
+ private:
   using PixelIt = decltype(std::declval<PixelSelector>().template begin<N>());
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
   static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
 
   PixelSelector _sel{};
-  bool _mirror{};
+  QuerySpan _span{QuerySpan::full};
 
  public:
   using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
+  ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
   [[nodiscard]] auto operator()() -> MatrixT;
 
  private:
@@ -42,9 +44,6 @@ class ToDenseMatrix {
   [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
   [[nodiscard]] std::int64_t row_offset() const noexcept;
   [[nodiscard]] std::int64_t col_offset() const noexcept;
-
-  static void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t offset1,
-                          std::int64_t offset2, bool mirror_matrix);
 };
 
 }  // namespace hictk::transformers
