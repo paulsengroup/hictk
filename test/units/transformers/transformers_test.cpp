@@ -467,6 +467,17 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.sum() == 112'660'799);
     }
 
+    SECTION("ToDenseMatrix (cis, asymmetric) w/ mirroring") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1:192,565,354-202,647,735", "chr1:197,313,124-210,385,543"),
+                        std::int32_t{}, true)();
+      CHECK(matrix.rows() == 5);
+      CHECK(matrix.cols() == 7);
+      CHECK(matrix.sum() == 5'426'501);
+    }
+
     SECTION("ToDenseMatrix (trans)") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
