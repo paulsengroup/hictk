@@ -25,7 +25,7 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   const auto mirror_matrix = _mirror && chrom1() == chrom2();
 
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
-    if (chrom1() == chrom2() && _sel.coord1().bin2 > _sel.coord2().bin2) {
+    if (chrom1() == chrom2() && _sel.coord2().bin2 > _sel.coord1().bin2) {
       auto coord3 = _sel.coord1();
       auto coord4 = _sel.coord2();
       coord3.bin1 = std::min(coord3.bin1, coord4.bin1);  // probably unnecessary
