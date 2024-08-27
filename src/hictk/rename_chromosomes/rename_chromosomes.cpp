@@ -124,7 +124,7 @@ static void create_hardlinks_scool(HighFive::File& h5f,
   if (parent_file != c.uri && cooler::utils::is_scool_file(parent_file)) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("Cooler at URI \"{}\" belongs to an .scool file.\n"
-                   "Renaming chromosomes under the provided URI would result in renaming of "
+                   "Renaming chromosomes under the provided URI would result in renaming of the"
                    "chromosomes for all cells belonging to \"{}\".\n"
                    "If this is intended, please re-run hictk rename-chromosomes on \"{}\" itself."),
         c.uri, parent_file, parent_file));
