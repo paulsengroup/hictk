@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "hictk/pixel.hpp"
-#include "hictk/transformers/impl/common.hpp"
+#include "hictk/transformers/common.hpp"
 
 namespace hictk::transformers {
 
