@@ -8,7 +8,7 @@ File validation
 Why is this needed?
 -------------------
 
-`hictk validate` can detect several types of data corruption in .hic and .cool files, from simple file truncation due to e.g. failed downloads to subtle index corruption in .cool files.
+``hictk validate`` can detect several types of data corruption in .hic and .cool files, from simple file truncation due to e.g. failed downloads to subtle index corruption in .cool files.
 
 .. _cooler-index-corruption-label:
 
