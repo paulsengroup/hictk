@@ -84,6 +84,7 @@ discourse:
    quickstart_api
    downloading_test_datasets
    file_validation
+   file_metadata
    format_conversion
    reading_interactions
    creating_cool_and_hic_files
