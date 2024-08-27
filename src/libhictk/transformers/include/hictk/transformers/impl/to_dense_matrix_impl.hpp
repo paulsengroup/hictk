@@ -21,7 +21,7 @@ inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[may
   if (chrom1() != chrom2() && span == QuerySpan::lower_triangle) {
     throw std::runtime_error(
         "hictk::transformers::ToDenseMatrix(): invalid parameters. Trans queries do not support "
-        "QuerySpan::lower_triangle queries.");
+        "span=QuerySpan::lower_triangle.");
   }
 }
 

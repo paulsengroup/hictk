@@ -21,7 +21,7 @@ inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector&& sel, [[m
   if (chrom1() != chrom2() && span == QuerySpan::lower_triangle) {
     throw std::runtime_error(
         "hictk::transformers::ToSparseMatrix(): invalid parameters. Trans queries do not support "
-        "QuerySpan::lower_triangle queries.");
+        "span=QuerySpan::lower_triangle.");
   }
 }
 
