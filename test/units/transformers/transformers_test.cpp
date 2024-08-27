@@ -82,6 +82,161 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
   return map;
 }
 
+#ifdef HICTK_WITH_ARROW
+
+namespace internal {
+
+template <typename N>
+[[nodiscard]] N get_scalar(const std::shared_ptr<arrow::ChunkedArray>& col, std::int64_t i) {
+  assert(!!col);
+  auto res = col->GetScalar(i);
+  if (!res.ok()) {
+    throw std::runtime_error(res.status().message());
+  }
+
+  if constexpr (std::is_same_v<N, std::string>) {
+    res = std::static_pointer_cast<arrow::DictionaryScalar>(*res)->GetEncodedValue();
+    if (!res.ok()) {
+      throw std::runtime_error(res.status().message());
+    }
+    return (*res)->ToString();
+  }
+
+  if constexpr (std::is_same_v<N, std::uint32_t>) {
+    return std::static_pointer_cast<arrow::UInt32Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::uint64_t>) {
+    return std::static_pointer_cast<arrow::UInt64Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::int32_t>) {
+    return std::static_pointer_cast<arrow::Int32Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::int64_t>) {
+    return std::static_pointer_cast<arrow::Int64Scalar>(*res)->value;
+  }
+
+  if constexpr (std::is_floating_point_v<N>) {
+    return std::static_pointer_cast<arrow::DoubleScalar>(*res)->value;
+  }
+
+  throw std::logic_error("not implemented");
+}
+}  // namespace internal
+
+template <std::int64_t i, typename N>
+static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const ThinPixel<N>& p) {
+  assert(!!table);
+
+  REQUIRE(i < table->num_rows());
+
+  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin1_id"), i) == p.bin1_id);
+  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin2_id"), i) == p.bin2_id);
+  CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
+}
+
+template <std::int64_t i, typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Pixel<N>& p) {
+  assert(!!table);
+
+  REQUIRE(i < table->num_rows());
+
+  CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom1"), i) ==
+        p.coords.bin1.chrom().name());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start1"), i) ==
+        p.coords.bin1.start());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end1"), i) ==
+        p.coords.bin1.end());
+  CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom2"), i) ==
+        p.coords.bin2.chrom().name());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start2"), i) ==
+        p.coords.bin2.start());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end2"), i) ==
+        p.coords.bin2.end());
+  CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
+}
+
+namespace internal {
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+[[nodiscard]] static std::vector<ThinPixel<std::uint8_t>> arrow_table_to_coo_vector(
+    const std::shared_ptr<arrow::Table>& data) {
+  assert(!!data);
+
+  std::vector<ThinPixel<std::uint8_t>> buff(static_cast<std::size_t>(data->num_rows()));
+
+  const auto bin1_ids = data->GetColumnByName("bin1_id");
+  const auto bin2_ids = data->GetColumnByName("bin2_id");
+
+  for (std::int64_t i = 0; i < data->num_rows(); ++i) {
+    buff[static_cast<std::size_t>(i)].bin1_id = get_scalar<std::uint64_t>(bin1_ids, i);
+    buff[static_cast<std::size_t>(i)].bin2_id = get_scalar<std::uint64_t>(bin2_ids, i);
+  }
+  return buff;
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+[[nodiscard]] static std::vector<Pixel<std::uint8_t>> arrow_table_to_bg2_vector(
+    const Reference& chroms, const std::shared_ptr<arrow::Table>& data) {
+  assert(!!data);
+
+  std::vector<Pixel<std::uint8_t>> buff(static_cast<std::size_t>(data->num_rows()));
+
+  const auto chrom1_ids = data->GetColumnByName("chrom1");
+  const auto start1 = data->GetColumnByName("start1");
+  const auto end1 = data->GetColumnByName("end1");
+
+  const auto chrom2_ids = data->GetColumnByName("chrom2");
+  const auto start2 = data->GetColumnByName("start2");
+  const auto end2 = data->GetColumnByName("end2");
+
+  for (std::int64_t i = 0; i < data->num_rows(); ++i) {
+    buff[static_cast<std::size_t>(i)] = Pixel{chroms.at(get_scalar<std::string>(chrom1_ids, i)),
+                                              get_scalar<std::uint32_t>(start1, i),
+                                              get_scalar<std::uint32_t>(end1, i),
+                                              chroms.at(get_scalar<std::string>(chrom2_ids, i)),
+                                              get_scalar<std::uint32_t>(start2, i),
+                                              get_scalar<std::uint32_t>(end2, i),
+                                              std::uint8_t{}};
+  }
+  return buff;
+}
+}  // namespace internal
+
+template <DataFrameFormat format, QuerySpan span>
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void validate_format(const Reference& chroms, const std::shared_ptr<arrow::Table>& table) {
+  if constexpr (format == DataFrameFormat::COO) {
+    const auto pixels = internal::arrow_table_to_coo_vector(table);
+    if constexpr (span == QuerySpan::upper_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin1_id <= pixel.bin2_id);
+      }
+    } else if constexpr (span == QuerySpan::lower_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin1_id >= pixel.bin2_id);
+      }
+    } else {
+      throw std::logic_error("not implemented");
+    }
+    return;
+  }
+
+  assert(format == DataFrameFormat::BG2);
+  const auto pixels = internal::arrow_table_to_bg2_vector(chroms, table);
+  if constexpr (span == QuerySpan::upper_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin1 <= pixel.coords.bin2);
+    }
+  } else if constexpr (span == QuerySpan::lower_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin1 >= pixel.coords.bin2);
+    }
+  } else {
+    throw std::logic_error("not implemented");
+  }
+}
+
+#endif
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   SECTION("join genomic coords") {
@@ -272,106 +427,180 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
 
   if constexpr (TEST_TO_DATAFRAME) {
     SECTION("ToDataFrame") {
+      using N = std::int32_t;
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
+      const auto& bins = clr.bins();
       auto sel = clr.fetch("chr1");
-      auto first = sel.begin<std::int32_t>();
-      auto last = sel.end<std::int32_t>();
+      auto first = sel.begin<N>();
+      auto last = sel.end<N>();
 
-      auto get_int_scalar = [](const auto& column, const auto i) {
-        return std::static_pointer_cast<arrow::Int32Scalar>(column->GetScalar(i).MoveValueUnsafe())
-            ->value;
-      };
+      SECTION("COO<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+        const auto table = ToDataFrame(first, last, format, nullptr, span)();
 
-      auto get_float_scalar = [](const auto& column, const auto i) {
-        return std::static_pointer_cast<arrow::DoubleScalar>(column->GetScalar(i).MoveValueUnsafe())
-            ->value;
-      };
-
-      SECTION("COO<int> wo/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, false)();
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(2), 0) == 266106);
-        CHECK(get_int_scalar(table->column(2), 1) == 32868);
-        CHECK(get_int_scalar(table->column(2), 2) == 13241);
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(2), 4462) == 1001844);
-        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
+        compare_pixel<4462>(table, ThinPixel<N>{98, 98, 1001844});
+        compare_pixel<4463>(table, ThinPixel<N>{98, 99, 68621});
+        compare_pixel<4464>(table, ThinPixel<N>{99, 99, 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("COO<int> w/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, true)();
+      SECTION("COO<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(2), 0) == 266106);
-        CHECK(get_int_scalar(table->column(2), 1) == 32868);
-        CHECK(get_int_scalar(table->column(2), 2) == 375662);
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{1, 0, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{1, 1, 375662});
 
         // check tail
-        CHECK(get_int_scalar(table->column(2), 4462) == 24112);
-        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
+        compare_pixel<4462>(table, ThinPixel<N>{99, 97, 24112});
+        compare_pixel<4463>(table, ThinPixel<N>{99, 98, 68621});
+        compare_pixel<4464>(table, ThinPixel<N>{99, 99, 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("BG2<int> wo/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), false)();
-        CHECK(table->num_columns() == 7);
-        CHECK(table->num_rows() == 4'465);
-        CHECK(*table->column(6)->type() == *arrow::int32());
+      SECTION("COO<int> full") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
 
-        CHECK(get_int_scalar(table->column(6), 0) == 266106);
-        CHECK(get_int_scalar(table->column(6), 1) == 32868);
-        CHECK(get_int_scalar(table->column(6), 2) == 13241);
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 8'836);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(6), 4462) == 1001844);
-        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
+        compare_pixel<8833>(table, ThinPixel<N>{99, 97, 24112});
+        compare_pixel<8834>(table, ThinPixel<N>{99, 98, 68621});
+        compare_pixel<8835>(table, ThinPixel<N>{99, 99, 571144});
       }
 
-      SECTION("BG2<int> w/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), true)();
+      SECTION("BG2<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
         CHECK(table->num_columns() == 7);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(6)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(6), 0) == 266106);
-        CHECK(get_int_scalar(table->column(6), 1) == 32868);
-        CHECK(get_int_scalar(table->column(6), 2) == 375662);
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 2'500'000), 32868});
+        compare_pixel<2>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 5'000'000), 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(6), 4462) == 24112);
-        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
+        compare_pixel<4462>(
+            table, Pixel<N>{bins.at("chr1", 245'000'000), bins.at("chr1", 245'000'000), 1001844});
+        compare_pixel<4463>(
+            table, Pixel<N>{bins.at("chr1", 245'000'000), bins.at("chr1", 247'500'000), 68621});
+        compare_pixel<4464>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("COO<float> wo/ transpose") {
+      SECTION("BG2<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 2'500'000), bins.at("chr1", 0), 32868});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins.at("chr1", 2'500'000), bins.at("chr1", 2'500'000), 375662});
+
+        // check tail
+        compare_pixel<4462>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 242'500'000), 24112});
+        compare_pixel<4463>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 245'000'000), 68621});
+        compare_pixel<4464>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 8'836);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 2'500'000), 32868});
+        compare_pixel<2>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 5'000'000), 13241});
+
+        // check tail
+        compare_pixel<8833>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 242'500'000), 24112});
+        compare_pixel<8834>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 245'000'000), 68621});
+        compare_pixel<8835>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+      }
+
+      SECTION("COO<float> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+
         auto first_fp = sel.begin<double>();
         auto last_fp = sel.end<double>();
-        const auto table = ToDataFrame(first_fp, last_fp, DataFrameFormat::COO, nullptr, false)();
+        const auto table = ToDataFrame(first_fp, last_fp, format, nullptr, span)();
+
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::float64());
 
         // check head
-        CHECK(get_float_scalar(table->column(2), 0) == 266106.0);
-        CHECK(get_float_scalar(table->column(2), 1) == 32868.0);
-        CHECK(get_float_scalar(table->column(2), 2) == 13241.0);
+        compare_pixel<0>(table, ThinPixel<double>{0, 0, 266106.0});
+        compare_pixel<1>(table, ThinPixel<double>{0, 1, 32868.0});
+        compare_pixel<2>(table, ThinPixel<double>{0, 2, 13241.0});
 
         // check tail
-        CHECK(get_float_scalar(table->column(2), 4462) == 1001844.0);
-        CHECK(get_float_scalar(table->column(2), 4463) == 68621.0);
-        CHECK(get_float_scalar(table->column(2), 4464) == 571144.0);
+        compare_pixel<4462>(table, ThinPixel<double>{98, 98, 1001844.0});
+        compare_pixel<4463>(table, ThinPixel<double>{98, 99, 68621.0});
+        compare_pixel<4464>(table, ThinPixel<double>{99, 99, 571144.0});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
       SECTION("empty range") {
@@ -566,6 +795,93 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
 
     for (std::size_t i = 0; i < v1.size(); ++i) {
       CHECK(v1[i] == v2[i].to_thin());
+    }
+  }
+
+  if constexpr (TEST_TO_DATAFRAME) {
+    SECTION("ToDataFrame") {
+      using N = std::int32_t;
+      const hic::File hf(path.string(), 2'500'000);
+      auto sel = hf.fetch("chr2L");
+      auto first = sel.begin<N>();
+      auto last = sel.end<N>();
+
+      SECTION("COO<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+        const auto table = ToDataFrame(first, last, format, nullptr, span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("COO<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("COO<int> full") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 100);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+      }
+
+      SECTION("BG2<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 100);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+      SECTION("empty range") {
+        const auto table = ToDataFrame(last, last)();
+        CHECK(table->num_rows() == 0);
+      }
     }
   }
 
