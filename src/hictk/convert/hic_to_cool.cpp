@@ -318,7 +318,7 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
 [[nodiscard]] static std::variant<std::int32_t, float> infer_count_type(
     const std::filesystem::path& p, std::size_t max_sample_size = 1'000'000) {
   const auto base_resolution = hic::utils::list_resolutions(p, true).front();
-  const hic::File f(p, base_resolution);
+  const hic::File f(p.string(), base_resolution);
   const auto sel = f.fetch();
 
   auto first_pixel = sel.begin<float>();
