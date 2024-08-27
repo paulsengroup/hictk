@@ -277,11 +277,11 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
       100.0 * static_cast<double>(num_successes) / static_cast<double>(num_tests);
 
   if (num_failures == 0) {
-    spdlog::info(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
-                 failure_ratio, num_successes, num_failures);
+    SPDLOG_INFO(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+                failure_ratio, num_successes, num_failures);
   } else {
-    spdlog::warn(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
-                 failure_ratio, num_successes, num_failures);
+    SPDLOG_WARN(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+                failure_ratio, num_successes, num_failures);
   }
 }
 
@@ -390,7 +390,7 @@ int launch_worker_subcommand(const Config& c) {
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
-    spdlog::info(FMT_STRING("[task_id] seed: {}"), c.seed);
+    SPDLOG_INFO(FMT_STRING("[task_id] seed: {}"), c.seed);
     std::mt19937_64 rand_eng{c.seed};
 
     const hictk::File tgt(c.reference_uri, c.resolution);
