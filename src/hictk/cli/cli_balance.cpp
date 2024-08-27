@@ -25,8 +25,8 @@
 namespace hictk::tools {
 
 void Cli::make_balance_subcommand() {
-  auto& sc = *_cli.add_subcommand("balance", "Balance Hi-C matrices using ICE, SCALE, or VC.")
-                  ->fallthrough();
+  auto& sc =
+      *_cli.add_subcommand("balance", "Balance Hi-C files using ICE, SCALE, or VC.")->fallthrough();
 
   make_ice_balance_subcommand(sc);
   make_scale_balance_subcommand(sc);
@@ -34,7 +34,7 @@ void Cli::make_balance_subcommand() {
 }
 
 void Cli::make_ice_balance_subcommand(CLI::App& app) {
-  auto& sc = *app.add_subcommand("ice", "Balance Hi-C matrices using ICE.")
+  auto& sc = *app.add_subcommand("ice", "Balance Hi-C files using ICE.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -165,7 +165,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
 }
 
 void Cli::make_scale_balance_subcommand(CLI::App& app) {
-  auto& sc = *app.add_subcommand("scale", "Balance Hi-C matrices using SCALE.")
+  auto& sc = *app.add_subcommand("scale", "Balance Hi-C files using SCALE.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);

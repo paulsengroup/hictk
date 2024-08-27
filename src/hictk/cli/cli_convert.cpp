@@ -32,7 +32,7 @@
 namespace hictk::tools {
 
 void Cli::make_convert_subcommand() {
-  auto& sc = *_cli.add_subcommand("convert", "Convert HiC matrices to a different format.")
+  auto& sc = *_cli.add_subcommand("convert", "Convert Hi-C files between different formats.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
