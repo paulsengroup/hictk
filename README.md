@@ -23,7 +23,7 @@ hictk is a blazing fast toolkit to work with .hic and .cool files.
 
 This repository hosts `hictk`: a set of CLI tools to work with Cooler, as well as `libhictk`: the C++ library underlying `hictk`.
 
-Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy).
+Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy), while R bindings are published at [paulsengroup/hictkR](https://github.com/paulsengroup/hictkR).
 
 hictk is capable of reading files in `.cool`, `.mcool`, `.scool` and `.hic` format (including hic v9) as well as writing `.hic`, `.cool` and `.mcool` files.
 
@@ -37,17 +37,18 @@ hictk can be installed using containers, bioconda or directly from source. Refer
 
 hictk provides the following subcommands:
 
-| subcommand             | description                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| **balance**            | Balance HiC matrices using ICE, SCALE or VC.                                       |
-| **convert**            | Convert matrices to a different format.                                            |
-| **dump**               | Dump data from .hic and Cooler files to stdout.                                    |
-| **fix-mcool**          | Fix corrupted .mcool files.                                                        |
-| **load**               | Build .cool and .hic files from interactions in various text formats.              |
-| **merge**              | Merge multiple Cooler or .hic files into a single file.                            |
-| **rename-chromosomes** | Rename chromosomes found in a Cooler file.                                         |
-| **validate**           | Validate .hic and Cooler files.                                                    |
-| **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening. |
+| subcommand             | description                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| **balance**            | Balance Hi-C files using ICE, SCALE, or VC.                                                    |
+| **convert**            | Convert Hi-C files between different formats.                                                  |
+| **dump**               | Read interactions and other kinds of data from .hic and Cooler files and write them to stdout. |
+| **fix-mcool**          | Fix corrupted .mcool files.                                                                    |
+| **load**               | Build .cool and .hic files from interactions in various text formats.                          |
+| **merge**              | Merge multiple Cooler or .hic files into a single file.                                        |
+| **metadata**           | Print file metadata to stdout.                                                                 |
+| **rename-chromosomes** | Rename chromosomes found in a Cooler file.                                                     |
+| **validate**           | Validate .hic and Cooler files.                                                                |
+| **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.             |
 
 Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/latest/cli_reference.html) for more details.
 
