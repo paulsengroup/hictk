@@ -24,6 +24,7 @@ Subcommands
     fix-mcool                   Fix corrupted .mcool files.
     load                        Build .cool and .hic files from interactions in various text formats.
     merge                       Merge multiple Cooler or .hic files into a single file.
+    metadata                    Print file metadata to stdout.
     rename-chromosomes, rename-chroms
                                 Rename chromosomes found in a Cooler file.
     validate                    Validate .hic and Cooler files.
@@ -60,7 +61,7 @@ hictk balance ice
                                  - genome-wide interactions (gw)
                                  - trans-only interactions (trans)
                                  - cis-only interactions (cis)
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --ignore-diags UINT [2]     Number of diagonals (including the main diagonal) to mask before balancing.
     --mad-max FLOAT:NONNEGATIVE [5]
                                 Mask bins using the MAD-max filter.
@@ -110,7 +111,7 @@ hictk balance scale
                                  - genome-wide interactions (gw)
                                  - trans-only interactions (trans)
                                  - cis-only interactions (cis)
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT               Path to a folder where to store temporary data.
     --max-percentile FLOAT [10]
                                 Percentile used to compute the maximum number of nnz values that cause a row to be masked.
     --max-row-sum-err FLOAT:NONNEGATIVE [0.05]
@@ -125,7 +126,8 @@ hictk balance scale
                                 to that of the input matrix.
     --name TEXT                 Name to use when writing weights to file.
                                 Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.
-    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+    --create-weight-link,--no-create-weight-link{false}
+                                Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --in-memory                 Store all interactions in memory (greatly improves performance).
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
@@ -161,7 +163,8 @@ hictk balance vc
                                 to that of the input matrix.
     --name TEXT                 Name to use when writing weights to file.
                                 Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.
-    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+    --create-weight-link,--no-create-weight-link{false}
+                                Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     -v,--verbosity UINT:INT in [1 - 4] []
@@ -195,7 +198,7 @@ hictk convert
                                 Pass NONE to avoid copying normalization vectors.
     --fail-if-norm-not-found    Fail if any of the requested normalization vectors are missing.
     -g,--genome TEXT            Genome assembly name. By default this is copied from the .hic file metadata.
-    --tmpdir TEXT:DIR [/tmp]    Path where to store temporary files.
+    --tmpdir TEXT:DIR           Path where to store temporary files.
     --chunk-size UINT:POSITIVE [10000000]
                                 Batch size to use when converting .[m]cool to .hic.
     -v,--verbosity UINT:INT in [1 - 4] []
@@ -262,7 +265,7 @@ hictk fix-mcool
     output TEXT REQUIRED        Path where to store the restored .mcool.
   Options:
     -h,--help                   Print this help message and exit
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --skip-balancing            Do not recompute or copy balancing weights.
     --check-base-resolution     Check whether the base resolution is corrupted.
     --in-memory                 Store all interactions in memory while balancing (greatly improves performance).
@@ -317,7 +320,7 @@ hictk load
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only a single thread will be used.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -346,12 +349,32 @@ hictk merge
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When merging interactions in Cooler format, only a single thread will be used.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when merging .cool files.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
+
+hictk metadata
+--------------
+
+.. code-block:: text
+
+  Print file metadata to stdout.
+  Usage: hictk metadata [OPTIONS] uri
+  Positionals:
+    uri TEXT:(((Cooler) OR (Multires-cooler)) OR (Single-cell-cooler)) OR (HiC) REQUIRED
+                                Path to a .hic or .[ms]cool file (Cooler URI syntax supported).
+  Options:
+    -h,--help                   Print this help message and exit
+    -f,--output-format TEXT:{json,toml,yaml} [json]
+                                Format used to return file metadata.
+                                Should be one of: json, toml, or yaml.
+    --include-file-path,--exclude-file-path{false}
+                                Output the given input path using attribute "uri".
+    --recursive                 Print metadata for each resolution or cell contained in a
+                                multi-resolution or single-cell file.
 
 hictk rename-chromosomes
 ------------------------
@@ -395,11 +418,14 @@ hictk zoomify
 .. code-block:: text
 
   Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
-  Usage: hictk zoomify [OPTIONS] cooler/hic mcool/hic
+  Usage: hictk zoomify [OPTIONS] cooler/hic [m]cool/hic
   Positionals:
     cooler/hic TEXT:(Cooler) OR (HiC) REQUIRED
                                 Path to a .cool or .hic file (Cooler URI syntax supported).
-    mcool/hic TEXT REQUIRED     Output path.
+    [m]cool/hic TEXT REQUIRED   Output path.
+                                When zoomifying Cooler files, providing a single resolution through
+                                --resolutions and specifying --no-copy-base-resolution, the output file
+                                will be in .cool format.
   Options:
     -h,--help                   Print this help message and exit
     --force                     Force overwrite existing output file(s).
@@ -424,6 +450,6 @@ hictk zoomify
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when zoomifying .cool files.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.

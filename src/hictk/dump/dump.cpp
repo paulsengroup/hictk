@@ -154,6 +154,7 @@ static void dump_pixels_trans_only_sorted(File& f, std::string_view normalizatio
 
         if (!join) {
           print_pixels(merger.begin(), merger.end());
+          return;
         }
 
         auto jsel = transformers::JoinGenomicCoords(merger.begin(), merger.end(), f.bins_ptr());
@@ -184,12 +185,12 @@ static void process_query(File& f, std::string_view table, std::string_view rang
                           std::string_view range2, std::string_view normalization, bool join,
                           bool sorted) {
   if (table == "bins") {
-    dump_bins(f, range1);
+    dump_bins(f, range1, range2);
     return;
   }
 
   if (table == "weights") {
-    dump_weights(f, range1);
+    dump_weights(f, range1, range2);
     return;
   }
 
@@ -249,7 +250,7 @@ int dump_subcmd(const DumpConfig& c) {
   }
 
   if (c.table == "chroms") {
-    dump_chroms(c.uri, c.format, c.resolution);
+    dump_chroms(c.uri, c.range1, c.range2, c.format, c.resolution);
     return 0;
   }
 

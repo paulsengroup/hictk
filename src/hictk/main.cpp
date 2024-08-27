@@ -60,7 +60,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
         },
         config);
 
-    return std::make_tuple(0, subcmd, config);
+    return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
     return std::make_tuple(cli.exit(e), Cli::subcommand::help, Config());
@@ -112,6 +112,8 @@ int main(int argc, char** argv) noexcept {
         return load_subcmd(std::get<LoadConfig>(config));
       case sc::merge:
         return merge_subcmd(std::get<MergeConfig>(config));
+      case sc::metadata:
+        return metadata_subcmd(std::get<MetadataConfig>(config));
       case sc::rename_chromosomes:
         return rename_chromosomes_subcmd(std::get<RenameChromosomesConfig>(config));
       case sc::validate:

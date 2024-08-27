@@ -205,6 +205,7 @@ class Cli {
     fix_mcool,
     load,
     merge,
+    metadata,
     rename_chromosomes,
     validate,
     zoomify,
@@ -215,6 +216,7 @@ class Cli {
   [[nodiscard]] std::string_view get_printable_subcommand() const noexcept;
   [[nodiscard]] auto parse_arguments() -> Config;
   [[nodiscard]] int exit(const CLI::ParseError& e) const;
+  [[nodiscard]] int exit() const noexcept;
   [[nodiscard]] static std::string_view subcommand_to_str(subcommand s) noexcept;
 
  private:
@@ -235,6 +237,7 @@ class Cli {
   void make_fix_mcool_subcommand();
   void make_load_subcommand();
   void make_merge_subcommand();
+  void make_metadata_subcommand();
   void make_rename_chromosomes_subcommand();
   void make_validate_subcommand();
   void make_zoomify_subcommand();
@@ -259,6 +262,7 @@ class Cli {
   void transform_args_fix_mcool_subcommand();
   void transform_args_load_subcommand();
   void transform_args_merge_subcommand();
+  void transform_args_metadata_subcommand();
   void transform_args_rename_chromosomes_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();

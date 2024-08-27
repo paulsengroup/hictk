@@ -183,6 +183,9 @@ inline const balancing::Weights &PixelSelector::weights2() const noexcept {
 }
 
 inline const BinTable &PixelSelector::bins() const noexcept { return _reader->bins(); }
+inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
+  return _reader->bins_ptr();
+}
 
 inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexcept {
   assert(!!_footer);
@@ -665,7 +668,8 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
 }
 
 inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
-    : _selectors(std::move(selectors_)) {}
+    : _selectors(std::move(selectors_)),
+      _bins(_selectors.empty() ? nullptr : _selectors.front().bins_ptr()) {}
 
 inline bool PixelSelectorAll::empty() const noexcept { return begin<float>() == end<float>(); }
 
@@ -710,7 +714,11 @@ inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
   return _selectors.front().resolution();
 }
 
-inline const BinTable &PixelSelectorAll::bins() const noexcept { return _selectors.front().bins(); }
+inline const BinTable &PixelSelectorAll::bins() const noexcept {
+  assert(_bins);
+  return *_bins;
+}
+inline std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
 
 inline std::vector<double> PixelSelectorAll::weights() const {
   std::vector<double> weights_{};

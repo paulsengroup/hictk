@@ -18,7 +18,7 @@ namespace hictk::tools {
 
 struct BalanceICEConfig {
   std::filesystem::path path_to_input{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
 
   std::string mode{"gw"};
   std::size_t masked_diags{2};
@@ -42,7 +42,7 @@ struct BalanceICEConfig {
 
 struct BalanceSCALEConfig {
   std::filesystem::path path_to_input{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
 
   std::string mode{"gw"};
   double max_percentile{10};
@@ -64,7 +64,7 @@ struct BalanceSCALEConfig {
 
 struct BalanceVCConfig {
   std::filesystem::path path_to_input{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};  // unused
+  std::filesystem::path tmp_dir{};  // unused
 
   std::string mode{"gw"};
   bool rescale_marginals{true};
@@ -79,7 +79,7 @@ struct BalanceVCConfig {
 struct ConvertConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path path_to_output{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
   std::string input_format{};
   std::string output_format{};
   std::string count_type{"auto"};
@@ -125,7 +125,7 @@ struct DumpConfig {
 struct FixMcoolConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path path_to_output{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
 
   bool skip_balancing{false};
   bool check_base_resolution{false};
@@ -144,7 +144,7 @@ struct LoadConfig {
 
   std::filesystem::path path_to_chrom_sizes{};
   std::filesystem::path path_to_bin_table{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
   std::uint32_t bin_size{};
 
   std::string format{};
@@ -172,7 +172,7 @@ struct MergeConfig {
   std::string output_format{};
   std::uint32_t resolution{};
 
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
 
   std::size_t chunk_size{10'000'000};
   std::uint32_t compression_lvl{9};
@@ -181,6 +181,16 @@ struct MergeConfig {
 
   bool force{false};
   std::uint8_t verbosity{4};
+};
+
+struct MetadataConfig {
+  std::filesystem::path uri{};
+  std::string input_format{};
+  std::string output_format{"json"};
+  bool include_file_path{false};
+  bool recursive{false};
+
+  std::uint8_t verbosity{2};
 };
 
 struct RenameChromosomesConfig {
@@ -203,7 +213,7 @@ struct ZoomifyConfig {
   std::filesystem::path path_to_output{};
   std::string input_format{};
   std::string output_format{};
-  std::filesystem::path tmp_dir{std::filesystem::temp_directory_path()};
+  std::filesystem::path tmp_dir{};
 
   std::vector<std::uint32_t> resolutions{};
   bool copy_base_resolution{true};
@@ -228,6 +238,7 @@ using Config = std::variant<std::monostate,
                             FixMcoolConfig,
                             LoadConfig,
                             MergeConfig,
+                            MetadataConfig,
                             RenameChromosomesConfig,
                             ValidateConfig,
                             ZoomifyConfig>;

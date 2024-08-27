@@ -90,6 +90,7 @@ class PixelSelector {
   [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
 
   [[nodiscard]] bool is_inter() const noexcept;
@@ -178,6 +179,7 @@ class PixelSelectorAll {
 
  private:
   std::vector<PixelSelector> _selectors{};
+  std::shared_ptr<const BinTable> _bins{};
 
  public:
   PixelSelectorAll() = default;
@@ -203,6 +205,7 @@ class PixelSelectorAll {
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
+  [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] std::vector<double> weights() const;
 
   template <typename N>

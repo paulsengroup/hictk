@@ -305,7 +305,7 @@ inline balancing::Weights File::normalization(std::string_view norm) const {
 
 inline std::vector<double> File::expected_values(const Chromosome& chrom,
                                                  const balancing::Method& normalization_) const {
-  const File f(path(), resolution(), MatrixType::expected);
+  const File f(path(), resolution(), MatrixType::expected, _unit, 1);
   const auto sel = f.fetch(chrom.name(), normalization_);
   const auto footer =
       f._footers.find(internal::HiCFooterMetadata{f.path(), MatrixType::expected, normalization_,

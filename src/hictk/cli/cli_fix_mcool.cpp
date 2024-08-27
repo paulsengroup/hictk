@@ -17,6 +17,7 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -143,6 +144,11 @@ void Cli::validate_fix_mcool_subcommand() const {
 
 void Cli::transform_args_fix_mcool_subcommand() {
   auto& c = std::get<FixMcoolConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("fix-mcool");
+
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+  }
 
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);

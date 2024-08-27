@@ -18,6 +18,7 @@
 
 #include "hictk/file.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
@@ -232,7 +233,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
@@ -321,7 +322,7 @@ void Cli::make_vc_balance_subcommand(CLI::App& app) {
       "Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
@@ -392,6 +393,7 @@ void Cli::transform_args_balance_subcommand() {
 
 void Cli::transform_args_ice_balance_subcommand() {
   auto& c = std::get<BalanceICEConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("balance")->get_subcommand("ice");
 
   if (c.name.empty()) {
     if (c.mode == "cis") {
@@ -410,6 +412,10 @@ void Cli::transform_args_ice_balance_subcommand() {
     input_path = cooler::File(c.path_to_input.string()).path();
   }
 
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+  }
+
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
@@ -417,6 +423,7 @@ void Cli::transform_args_ice_balance_subcommand() {
 
 void Cli::transform_args_scale_balance_subcommand() {
   auto& c = std::get<BalanceSCALEConfig>(_config);
+  const auto& sc = *_cli.get_subcommand("balance")->get_subcommand("scale");
 
   if (c.name.empty()) {
     if (c.mode == "cis") {
@@ -433,6 +440,10 @@ void Cli::transform_args_scale_balance_subcommand() {
   auto input_path = c.path_to_input;
   if (input_format == "cool") {
     input_path = cooler::File(c.path_to_input.string()).path();
+  }
+
+  if (sc.get_option("--tmpdir")->empty()) {
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
   // in spdlog, high numbers correspond to low log levels

@@ -1,7 +1,7 @@
 # Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
-bullet_char: '*'
+bullet_char: "*"
 dangle_parens: false
 enum_char: .
 line_ending: unix

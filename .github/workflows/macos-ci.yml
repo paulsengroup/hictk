@@ -5,7 +5,7 @@ name: MacOS CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/macos-ci.yml"
       - "cmake/**"
@@ -15,7 +15,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -38,6 +38,7 @@ env:
   CCACHE_COMPRESSLEVEL: "1"
   CCACHE_MAXSIZE: "250M"
   CONAN_HOME: "${{ github.workspace }}/.conan2"
+  HICTK_CI: "1"
   HOMEBREW_NO_AUTO_UPDATE: "1"
 
 defaults:
@@ -89,8 +90,8 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Detect number available CPUs
         run: |
@@ -241,10 +242,9 @@ jobs:
       - name: Print Ccache statistics
         run: ccache -s
 
-
   run-unit-tests:
     name: Run unit tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -286,8 +286,8 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install test dependencies
         run: pip install -r requirements.txt
@@ -303,7 +303,7 @@ jobs:
 
   run-integration-tests:
     name: Run integration tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -321,11 +321,12 @@ jobs:
         run: |
           echo 'cooler==0.10.0' > requirements.txt
           echo 'numpy<2' >> requirements.txt
+          echo 'pyyaml' >> requirements.txt
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install test dependencies
         run: pip install -r requirements.txt
@@ -429,6 +430,10 @@ jobs:
       - name: Test hictk merge
         run: |
           test/scripts/hictk_merge.sh bin/hictk
+
+      - name: Test hictk metadata
+        run: |
+          test/scripts/hictk_metadata.sh bin/hictk
 
       - name: Test hictk rename-chroms
         run: |

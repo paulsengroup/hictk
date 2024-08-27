@@ -5,7 +5,7 @@ name: Ubuntu CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
@@ -15,7 +15,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -145,6 +145,7 @@ jobs:
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "350M"
       CONAN_HOME: "/opt/conan/"
+      HICTK_CI: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -311,10 +312,9 @@ jobs:
       - name: Print Ccache statistics
         run: ccache -s
 
-
   run-unit-tests:
     name: Run unit tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -323,6 +323,9 @@ jobs:
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/${{ matrix.os }}-cxx-${{ matrix.compiler }}:latest
       options: "--user=root"
+
+    env:
+      HICTK_CI: "1"
 
     steps:
       - name: Checkout repo
@@ -364,10 +367,9 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
-
   run-integration-tests:
     name: Run integration tests
-    needs: [ matrix-factory, cache-test-dataset, build-project ]
+    needs: [matrix-factory, cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -376,6 +378,9 @@ jobs:
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/hictk/ubuntu-24.04:latest
       options: "--user=root"
+
+    env:
+      HICTK_CI: "1"
 
     steps:
       - name: Checkout repo
@@ -484,6 +489,10 @@ jobs:
       - name: Test hictk merge
         run: |
           test/scripts/hictk_merge.sh bin/hictk
+
+      - name: Test hictk metadata
+        run: |
+          test/scripts/hictk_metadata.sh bin/hictk
 
       - name: Test hictk rename-chroms
         run: |

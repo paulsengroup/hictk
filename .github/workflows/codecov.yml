@@ -5,7 +5,7 @@ name: Run Codecov
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - ".github/codecov.yml"
       - ".github/workflows/codecov.yml"
@@ -16,7 +16,7 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
   pull_request:
     paths:
@@ -44,6 +44,7 @@ env:
   CCACHE_COMPRESSLEVEL: "13"
   CCACHE_MAXSIZE: "200M"
   CONAN_HOME: "/opt/conan/"
+  HICTK_CI: "1"
 
 jobs:
   cache-test-dataset:
@@ -55,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
-      options: '--user=root'
+      options: "--user=root"
 
     steps:
       - uses: actions/checkout@v4
@@ -170,12 +171,14 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
-      - name: Install test dependencies
+      - name: Setup test dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3-pip xz-utils
+          apt-get install -y --no-install-recommends gpg gpg-agent python3-pip xz-utils
 
-          python3 -m pip install 'cooler==0.10.0' 'numpy<2'
+          python3 -m pip install 'cooler==0.10.0' 'numpy<2' 'pyyaml'
+
+          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
 
       - name: Run integration tests
         run: |
@@ -207,6 +210,8 @@ jobs:
 
           test/scripts/hictk_merge.sh build/src/hictk/hictk
 
+          test/scripts/hictk_metadata.sh build/src/hictk/hictk
+
           test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
 
           test/scripts/hictk_validate.sh build/src/hictk/hictk
@@ -214,15 +219,13 @@ jobs:
           test/scripts/hictk_zoomify.sh build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          gcov: true
-          gcov_executable: gcov-14
+          plugin: gcov
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-
 
   codecov-status-check:
     name: Status Check (Codecov)
