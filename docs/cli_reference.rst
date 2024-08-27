@@ -18,15 +18,15 @@ Subcommands
     -h,--help                   Print this help message and exit
     -V,--version                Display program version information and exit
   Subcommands:
-    balance                     Balance Hi-C matrices using ICE, SCALE, or VC.
-    convert                     Convert HiC matrices to a different format.
-    dump                        Dump data from .hic and Cooler files to stdout.
+    balance                     Balance Hi-C files using ICE, SCALE, or VC.
+    convert                     Convert Hi-C files between different formats.
+    dump                        Read interactions and other kinds of data from .hic and Cooler files and write them to stdout.
     fix-mcool                   Fix corrupted .mcool files.
     load                        Build .cool and .hic files from interactions in various text formats.
     merge                       Merge multiple Cooler or .hic files into a single file.
     metadata                    Print file metadata to stdout.
     rename-chromosomes, rename-chroms
-                                Rename chromosomes found in a Cooler file.
+                                Rename chromosomes found in Cooler files.
     validate                    Validate .hic and Cooler files.
     zoomify                     Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
 
@@ -35,13 +35,13 @@ hictk balance
 
 .. code-block:: text
 
-  Balance Hi-C matrices using ICE, SCALE, or VC.
+  Balance Hi-C files using ICE, SCALE, or VC.
   Usage: hictk balance [OPTIONS] [SUBCOMMAND]
   Options:
     -h,--help                   Print this help message and exit
   Subcommands:
-    ice                         Balance Hi-C matrices using ICE.
-    scale                       Balance Hi-C matrices using SCALE.
+    ice                         Balance Hi-C files using ICE.
+    scale                       Balance Hi-C files using SCALE.
     vc                          Balance Hi-C matrices using VC.
 
 hictk balance ice
@@ -49,7 +49,7 @@ hictk balance ice
 
 .. code-block:: text
 
-  Balance Hi-C matrices using ICE.
+  Balance Hi-C files using ICE.
   Usage: hictk balance ice [OPTIONS] input
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
@@ -99,7 +99,7 @@ hictk balance scale
 
 .. code-block:: text
 
-  Balance Hi-C matrices using SCALE.
+  Balance Hi-C files using SCALE.
   Usage: hictk balance scale [OPTIONS] input
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
@@ -176,7 +176,7 @@ hictk convert
 
 .. code-block:: text
 
-  Convert HiC matrices to a different format.
+  Convert Hi-C files between different formats.
   Usage: hictk convert [OPTIONS] input output
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
@@ -223,7 +223,7 @@ hictk dump
 
 .. code-block:: text
 
-  Dump data from .hic and Cooler files to stdout.
+  Read interactions and other kinds of data from .hic and Cooler files and write them to stdout.
   Usage: hictk dump [OPTIONS] uri
   Positionals:
     uri TEXT:(((HiC) OR (Cooler)) OR (Multires-cooler)) OR (Single-cell-cooler) REQUIRED
@@ -381,7 +381,7 @@ hictk rename-chromosomes
 
 .. code-block:: text
 
-  Rename chromosomes found in a Cooler file.
+  Rename chromosomes found in Cooler files.
   Usage: hictk rename-chromosomes [OPTIONS] uri
   Positionals:
     uri TEXT REQUIRED           Path to a or .[ms]cool file (Cooler URI syntax supported).
