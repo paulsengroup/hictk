@@ -34,6 +34,11 @@ static py::module_ import_cooler() {
   }
 }
 
+std::string_view version() {
+  auto importlib_metadata = py::module_::import("importlib.metadata");
+  return py::cast<std::string_view>(importlib_metadata.attr("version")("cooler"));
+}
+
 Cooler::Cooler(std::string_view uri) : _clr(open_cooler(uri)) {}
 
 std::string Cooler::uri() const noexcept {

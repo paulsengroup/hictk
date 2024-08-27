@@ -391,6 +391,7 @@ int launch_worker_subcommand(const Config& c) {
 
   try {
     SPDLOG_INFO(FMT_STRING("[task_id] seed: {}"), c.seed);
+    SPDLOG_INFO(FMT_STRING("[task_id] cooler version: {}"), cooler::version());
     std::mt19937_64 rand_eng{c.seed};
 
     const hictk::File tgt(c.reference_uri, c.resolution);

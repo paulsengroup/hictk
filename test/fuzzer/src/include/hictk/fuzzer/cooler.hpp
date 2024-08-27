@@ -19,6 +19,8 @@
 
 namespace hictk::fuzzer::cooler {
 
+[[nodiscard]] std::string_view version();
+
 template <typename N>
 struct COODataFrame {
   static_assert(std::is_arithmetic_v<N>);
