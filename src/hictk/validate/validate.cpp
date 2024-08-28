@@ -263,7 +263,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
       clr = cooler::File(path);
     } catch (...) {
       is_cooler = false;
-      status.insert_or_assign("is_cooler", is_cooler);
+      status.insert_or_assign("is_valid_cooler", is_cooler);
       return_code = 1;
     }
   }
@@ -318,7 +318,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
       return;
     }
     const auto [_, status] = validate_cooler(mclr->open(res).uri(), validate_index);
-    const auto is_cooler = status.get("is_cooler")->as_boolean();
+    const auto is_cooler = status.get("is_valid_cooler")->as_boolean();
     global_status.insert(fmt::to_string(res), status);
     if (!is_cooler && !exhaustive) {
       return_code = 1;
@@ -344,7 +344,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
 
   for (const auto& cell : sclr->cells()) {
     const auto [_, status] = validate_cooler(sclr->open(cell).uri(), validate_index);
-    const auto is_cooler = status.get("is_cooler")->as_boolean();
+    const auto is_cooler = status.get("is_valid_cooler")->as_boolean();
     global_status.insert(cell, status);
 
     if (!is_cooler) {
