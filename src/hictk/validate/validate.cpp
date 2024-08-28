@@ -73,14 +73,121 @@ static int validate_hic(const std::string& path, bool quiet) {
   return 0;
 }
 
+[[nodiscard]] static bool validate_bin_table_size(const cooler::File& clr, bool quiet) {
+  const auto& chroms = clr.dataset("bins/chrom");
+  const auto& starts = clr.dataset("bins/start");
+  const auto& ends = clr.dataset("bins/end");
+
+  const auto expected_num_bins = clr.bins().size();
+  if (chroms.size() != expected_num_bins || starts.size() != expected_num_bins ||
+      ends.size() != expected_num_bins) {
+    if (!quiet) {
+      fmt::print(FMT_STRING("bin_table_has_correct_length=false\n"));
+      return false;
+    }
+  }
+  if (!quiet) {
+    fmt::print(FMT_STRING("bin_table_has_correct_length=true\n"));
+  }
+
+  return true;
+}
+
+[[nodiscard]] static bool validate_bins_dtypes(const cooler::File& clr, bool quiet) {
+  try {
+    std::ignore = *clr.dataset("bins/chrom").begin<std::string>();
+    std::ignore = *clr.dataset("bins/start").begin<std::int32_t>();
+    std::ignore = *clr.dataset("bins/end").begin<std::int32_t>();
+    if (!quiet) {
+      fmt::print(FMT_STRING("bin_table_has_correct_dtypes=true\n"));
+    }
+    return true;
+  } catch (...) {
+    if (!quiet) {
+      fmt::print(FMT_STRING("bin_table_has_correct_dtypes=false\n"));
+    }
+    return false;
+  }
+}
+
+[[nodiscard]] static bool validate_bins(const cooler::File& clr, bool quiet) {
+  const auto& chroms = clr.dataset("bins/chrom");
+  const auto& starts = clr.dataset("bins/start");
+  const auto& ends = clr.dataset("bins/end");
+
+  auto first_chrom_id = chroms.begin<std::int32_t>();
+  const auto last_chrom = chroms.end<std::int32_t>();
+  auto first_start = starts.begin<std::int32_t>();
+  const auto last_start = starts.end<std::int32_t>();
+  auto first_end = ends.begin<std::int32_t>();
+  const auto last_end = ends.end<std::int32_t>();
+
+  auto first_bin = clr.bins().begin();
+  const auto last_bin = clr.bins().end();
+
+  std::size_t num_invalid_bins{};
+  const auto num_bins = clr.bins().size();
+  for (std::size_t i = 0; i < num_bins; ++i) {
+    const auto bin = *first_bin++;
+
+    const auto chrom_it = clr.chromosomes().find(static_cast<std::uint32_t>(*first_chrom_id++));
+    if (chrom_it == clr.chromosomes().end()) {
+      ++first_start;
+      ++first_end;
+      ++num_invalid_bins;
+      continue;
+    }
+
+    const auto& chrom = *chrom_it;
+    const auto start = static_cast<std::uint32_t>(*first_start++);
+    const auto end = static_cast<std::uint32_t>(*first_end++);
+
+    if (bin.chrom() != chrom || bin.start() != start || bin.end() != end) {
+      ++num_invalid_bins;
+    }
+  }
+
+  if (!quiet) {
+    fmt::print(FMT_STRING("num_invalid_bins={}"), num_invalid_bins);
+  }
+
+  return num_invalid_bins == 0;
+}
+
+[[nodiscard]] static bool check_bin_table(const cooler::File& clr, bool quiet) {
+  if (!validate_bin_table_size(clr, quiet)) {
+    return false;
+  }
+  if (!validate_bins_dtypes(clr, quiet)) {
+    return false;
+  }
+
+  return validate_bins(clr, quiet);
+}
+
 static int validate_cooler(std::string_view path, bool validate_index, bool quiet) {
   auto status = cooler::utils::is_cooler(path);
+  std::optional<cooler::File> clr{};
+  if (status.is_cooler) {
+    try {
+      clr = cooler::File(path);
+    } catch (...) {
+      status.is_cooler = false;
+    }
+  }
+
+  std::optional<bool> bins_ok{};
+  if (status.is_cooler) {
+    assert(clr.has_value());
+    bins_ok = check_bin_table(*clr, quiet);
+  }
+
   auto index_ok = true;
-  if (validate_index) {
+  if (status.is_cooler && validate_index) {
     index_ok = cooler::utils::index_is_valid(path, quiet);
   }
 
-  const auto cooler_is_valid = !!status && index_ok;
+  const auto cooler_is_valid = !!status && (bins_ok.has_value() && *bins_ok) && index_ok;
 
   if (!quiet) {
     fmt::print(FMT_STRING("{}\n"), status);
@@ -88,6 +195,11 @@ static int validate_cooler(std::string_view path, bool validate_index, bool quie
       fmt::print(FMT_STRING("index_is_valid={}\n"), index_ok);
     } else {
       fmt::print(FMT_STRING("index_is_valid=not_checked\n"));
+    }
+    if (bins_ok.has_value()) {
+      fmt::print(FMT_STRING("bin_table_is_valid={}\n"), *bins_ok);
+    } else {
+      fmt::print(FMT_STRING("bin_table_is_valid=not_checked\n"));
     }
 
     fmt::print(FMT_STRING("### {}: \"{}\" {} a valid Cooler.\n"),
@@ -121,31 +233,38 @@ static int validate_scool(std::string_view path, bool validate_index, bool quiet
 }
 
 int validate_subcmd(const ValidateConfig& c) {
-  const auto is_cooler = cooler::utils::is_cooler(c.uri);
-  const auto is_hic = hic::utils::is_hic_file(c.uri);
-  const auto is_mcool = cooler::utils::is_multires_file(c.uri);
-  const auto is_scool = cooler::utils::is_scool_file(c.uri);
+  try {
+    const auto is_cooler = cooler::utils::is_cooler(c.uri);
+    const auto is_hic = hic::utils::is_hic_file(c.uri);
+    const auto is_mcool = cooler::utils::is_multires_file(c.uri);
+    const auto is_scool = cooler::utils::is_scool_file(c.uri);
 
-  if (!is_hic && !is_cooler && !is_mcool && !is_scool) {
-    if (!c.quiet) {
-      fmt::print(FMT_STRING("### FAILURE: \"{}\" is not in .hic or .[ms]cool format!\n"), c.uri);
+    if (!is_hic && !is_cooler && !is_mcool && !is_scool) {
+      if (!c.quiet) {
+        fmt::print(FMT_STRING("### FAILURE: \"{}\" is not in .hic or .[ms]cool format!\n"), c.uri);
+      }
+      return 1;
     }
-    return 1;
-  }
 
-  if (is_hic) {
-    return validate_hic(c.uri, c.quiet);
-  }
+    if (is_hic) {
+      return validate_hic(c.uri, c.quiet);
+    }
 
-  if (is_mcool) {
-    return validate_mcool(c.uri, c.validate_index, c.quiet);
-  }
+    if (is_mcool) {
+      return validate_mcool(c.uri, c.validate_index, c.quiet);
+    }
 
-  if (is_scool) {
-    return validate_scool(c.uri, c.validate_index, c.quiet);
-  }
+    if (is_scool) {
+      return validate_scool(c.uri, c.validate_index, c.quiet);
+    }
 
-  return validate_cooler(c.uri, c.validate_index, c.quiet);
+    return validate_cooler(c.uri, c.validate_index, c.quiet);
+  } catch (...) {
+    if (c.quiet) {
+      return 1;
+    }
+    throw;
+  }
 }
 
 }  // namespace hictk::tools
