@@ -212,6 +212,10 @@ hictk convert
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when creating .[m]cool files.
+    --count-type TEXT:{auto,int,float} [auto]
+                                Specify the strategy used to infer count types when converting .hic
+                                files to .[m]cool format.
+                                Can be one of: int, float, auto.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
@@ -414,11 +418,14 @@ hictk zoomify
 .. code-block:: text
 
   Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
-  Usage: hictk zoomify [OPTIONS] cooler/hic mcool/hic
+  Usage: hictk zoomify [OPTIONS] cooler/hic [m]cool/hic
   Positionals:
     cooler/hic TEXT:(Cooler) OR (HiC) REQUIRED
                                 Path to a .cool or .hic file (Cooler URI syntax supported).
-    mcool/hic TEXT REQUIRED     Output path.
+    [m]cool/hic TEXT REQUIRED   Output path.
+                                When zoomifying Cooler files, providing a single resolution through
+                                --resolutions and specifying --no-copy-base-resolution, the output file
+                                will be in .cool format.
   Options:
     -h,--help                   Print this help message and exit
     --force                     Force overwrite existing output file(s).
