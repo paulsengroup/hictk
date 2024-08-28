@@ -171,8 +171,8 @@ def parse_test_suites(s: str) -> List[str]:
 @click.option(
     "--threads",
     help="Specify the maximum number of CPU threads to be used.",
-    type=click.IntRange(1, nproc()),
-    default=1,
+    type=click.IntRange(2, nproc()),
+    default=2,
     show_default=True,
 )
 @click.option(
