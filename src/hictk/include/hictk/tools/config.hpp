@@ -204,6 +204,9 @@ struct RenameChromosomesConfig {
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
+  std::string output_format{"json"};
+  bool include_file_path{true};
+  bool exhaustive{true};
   bool quiet{false};
   std::uint8_t verbosity{4};
 };
