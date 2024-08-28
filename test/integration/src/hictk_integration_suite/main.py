@@ -31,7 +31,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
         names = ["all"]
     else:
         names = []
-    names += ["balance", "convert", "dump", "metadata", "rename-chromosomes", "zoomify"]
+    names += ["balance", "convert", "dump", "metadata", "rename-chromosomes", "validate", "zoomify"]
     return names
 
 

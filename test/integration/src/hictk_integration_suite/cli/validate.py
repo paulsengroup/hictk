@@ -1,0 +1,106 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+import logging
+import pathlib
+from typing import Any, Dict, List, Tuple
+
+from immutabledict import ImmutableOrderedDict, immutabledict
+
+from hictk_integration_suite.tests.validate import HictkValidate, HictkValidateCli
+
+from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
+
+
+def _plan_tests_cli(
+    hictk_bin: pathlib.Path,
+    uri: pathlib.Path,
+    wd: WorkingDirectory,
+    title: str = "hictk-validate-cli",
+) -> List[ImmutableOrderedDict]:
+    uri = wd[uri]
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
+    plans = (
+        factory | {"args": tuple(("validate",))},
+        factory | {"args": tuple(("validate", "--help")), "expect_failure": False},
+        factory | {"args": tuple(("validate", "--foobar"))},
+        factory | {"args": tuple(("validate", str(uri), "foobar"))},
+        factory | {"args": tuple(("validate", str(uri), "--foobar"))},
+        factory | {"args": tuple(("validate", str(uri), "--format", "foobar"))},
+    )
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
+def _plan_tests_cmd(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-validate",
+) -> List[ImmutableOrderedDict]:
+    plans = []
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "expect_failure": False,
+    }
+    for c in config["test-cases"]:
+        uri = wd[c["uri"]]
+        expect_failure = c.get("expect-failure", False)
+        timeout = c.get("timeout", 1.0)
+
+        args = ["validate", str(uri)]
+        args.extend(_argument_map_to_list(c.get("args", {})))
+        plans.append(factory | {"args": tuple(args), "expect_failure": expect_failure, "timeout": timeout})
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
+def plan_tests(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    threads: int = -1,
+) -> List[ImmutableOrderedDict]:
+    return _plan_tests_cli(hictk_bin, _get_uri(config), wd) + _plan_tests_cmd(hictk_bin, config, wd)
+
+
+def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool) -> Tuple[int, int, int, Dict]:
+    num_pass = 0
+    num_fail = 0
+    num_skip = 0
+    results = {}
+
+    cwd = wd.mkdtemp()
+    tmpdir = wd.mkdtemp()
+
+    for p in plans:
+        skip, p = _preprocess_plan(p, wd)
+        if skip:
+            logging.info(f"SKIPPING {p}")
+            num_skip += 1
+            continue
+        title = p["title"]
+        assert title.startswith("hictk-validate")
+        hictk = p.pop("hictk_bin")
+        if title.endswith("-cli"):
+            test = HictkValidateCli(hictk, cwd=cwd, tmpdir=tmpdir)
+        else:
+            test = HictkValidate(hictk, cwd=cwd, tmpdir=tmpdir)
+
+        status = test.run(**p)
+        num_pass += status["status"] == "PASS"
+        num_fail += status["status"] == "FAIL"
+        results.setdefault(title, []).append(status)
+        logging.info(status)
+
+    if not no_cleanup:
+        wd.rmtree(cwd)
+        wd.rmtree(tmpdir)
+
+    return num_pass, num_fail, num_skip, results
