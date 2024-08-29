@@ -140,6 +140,12 @@ inline const BinTable &PixelSelector::bins() const noexcept { return *bins_ptr()
 
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept { return _bins; }
 
+inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordinates coord2) const {
+  return {_index,         *_pixels_bin1_id,  *_pixels_bin2_id,
+          *_pixels_count, std::move(coord1), std::move(coord2),
+          _weights};
+}
+
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,

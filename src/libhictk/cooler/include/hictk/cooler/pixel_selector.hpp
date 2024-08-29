@@ -72,6 +72,9 @@ class PixelSelector {
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
 
+  [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2) const;
+
+ public:
   template <typename N>
   class iterator {
     using BinIDT = std::uint64_t;

@@ -105,6 +105,20 @@ inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept 
       [&](const auto& sel) -> std::shared_ptr<const BinTable> { return sel.bins_ptr(); }, _sel);
 }
 
+inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
+                                          PixelCoordinates coord2_) const {
+  return std::visit(
+      [&](const auto& sel) -> PixelSelector {
+        using T = remove_cvref_t<decltype(sel)>;
+        if constexpr (std::is_same_v<hic::PixelSelectorAll, T>) {
+          throw std::runtime_error("TODO");  // TODO fixme
+        } else {
+          return PixelSelector{sel.fetch(coord1_, coord2_)};
+        }
+      },
+      _sel);
+}
+
 template <typename PixelSelectorT>
 constexpr const PixelSelectorT& PixelSelector::get() const noexcept {
   return std::get<PixelSelectorT>(_sel);
