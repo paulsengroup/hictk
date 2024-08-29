@@ -52,9 +52,10 @@ def _plan_tests_cmd(
         expect_failure = c.get("expect-failure", False)
         timeout = c.get("timeout", 1.0)
 
-        args = ["validate", str(uri)]
-        args.extend(_argument_map_to_list(c.get("args", {})))
-        plans.append(factory | {"args": tuple(args), "expect_failure": expect_failure, "timeout": timeout})
+        for fmt in config["output-formats"]:
+            args = ["validate", str(uri), "--output-format", fmt]
+            args.extend(_argument_map_to_list(c.get("args", {})))
+            plans.append(factory | {"args": tuple(args), "expect_failure": expect_failure, "timeout": timeout})
 
     plans = list(set(immutabledict(p) for p in plans))
     logging.debug(f"{title}: generated {len(plans)} test cases")

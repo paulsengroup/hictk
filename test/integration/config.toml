@@ -173,6 +173,8 @@ test-cases = [
   { uri = "cooler/invalid_coolers/missing_pixels_group.mcool", expect-failure = true},
 ]
 
+output-formats = ["json", "toml", "yaml"]
+
 [zoomify]
 
 files = [
