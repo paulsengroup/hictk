@@ -53,7 +53,7 @@ void Cli::make_merge_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (ignored when input files are in .cool format).")
+      "Hi-C matrix resolution (ignored when input files are in .cool format).")
       ->check(CLI::NonNegativeNumber);
 
   sc.add_flag(
