@@ -70,7 +70,7 @@ class HictkMetadata(HictkTestHarness):
         if self.returncode != 0:
             self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
 
-        output_fmt = self._get_hictk_keyword_option("--output-format")
+        output_fmt = self._get_hictk_keyword_option("--output-format", "json")
         if output_fmt not in {"json", "toml", "yaml"}:
             raise NotImplementedError
 

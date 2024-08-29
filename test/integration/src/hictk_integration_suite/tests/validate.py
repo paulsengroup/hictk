@@ -6,6 +6,7 @@ import logging
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+from hictk_integration_suite import validators
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 
 from .cli import HictkCli
@@ -36,6 +37,22 @@ class HictkValidate(HictkTestHarness):
             self._failures["unexpected return code"] = f"expected zero, found {self.returncode}"
             self._failures["stdout"] = self.stdout(500)
             self._failures["stderr"] = self.stderr(500)
+            return
+
+        output_fmt = self._get_hictk_keyword_option("--output-format", "json")
+        if output_fmt not in {"json", "toml", "yaml"}:
+            raise NotImplementedError
+
+        payload = "".join(self.stdout())
+        try:
+            if output_fmt == "json":
+                validators.metadata.json(payload)
+            elif output_fmt == "toml":
+                validators.metadata.toml(payload)
+            elif output_fmt == "yaml":
+                validators.metadata.yaml(payload)
+        except (RuntimeError, ValueError) as e:
+            self._failures[f"output is not valid {output_fmt}"] = str(e)
 
     def run(  # noqa
         self,
