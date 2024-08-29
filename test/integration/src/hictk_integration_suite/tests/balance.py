@@ -153,7 +153,7 @@ class _HictkBalance(HictkTestHarness):
                 no_validate_weights=no_validate_weights,
             )
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            logging.error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

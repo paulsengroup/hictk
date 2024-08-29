@@ -131,7 +131,7 @@ class HictkZoomify(HictkTestHarness):
                 tmpdir=pathlib.Path(tmpdir),
             )
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            logging.error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 
