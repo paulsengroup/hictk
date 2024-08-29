@@ -45,7 +45,7 @@ void Cli::make_validate_subcommand() {
       "Output the given input path using attribute \"uri\".")
       ->capture_default_str();
   sc.add_flag(
-      "--exhaustive,!--no-exhaustive",
+      "--exhaustive,!--fail-fast",
       c.exhaustive,
       "When processing multi-resolution or single-cell files,\n"
       "do not fail as soon as the first error is detected.")
