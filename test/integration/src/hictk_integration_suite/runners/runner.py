@@ -52,7 +52,7 @@ class Runner:
         self._tmpdir = tempfile.mkdtemp(dir=tmpdir)
         self._exec = shutil.which(exec)
         self._cwd = cwd
-        self._args = args_
+        self._args = [str(x) for x in args_]
 
     def __enter__(self):
         return self
