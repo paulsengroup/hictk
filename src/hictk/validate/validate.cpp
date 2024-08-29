@@ -134,8 +134,9 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
     const auto hf = open_hic_noexcept(path, res);
     if (!hf) {
       status.insert(fmt::to_string(res), "unable to open resolution");
+      status.insert_or_assign("is_valid_hic", false);
       return_code = 1;
-      assert(false);  // This should never happen
+      // assert(false);  // This should never happen
       if (!exhaustive) {
         return std::make_pair(return_code, status);
       }
@@ -155,6 +156,7 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
                        chrom2.name(), e.what());
           status.insert(fmt::format(FMT_STRING("{}:{}_{}"), chrom1.name(), chrom2.name(), res),
                         "unable to fetch interactions");
+          status.insert_or_assign("is_valid_hic", false);
           return_code = 1;
           if (!exhaustive) {
             return std::make_pair(return_code, status);
@@ -163,6 +165,8 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
       }
     }
   }
+
+  status.insert_or_assign("is_valid_hic", return_code == 0);
 
   return std::make_pair(return_code, status);
 }
@@ -255,7 +259,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
   toml::table status;
 
   update_status_table(cooler::utils::is_cooler(path), status);
-  auto is_cooler = *status.get("is_valid_cooler")->as_boolean();
+  auto is_cooler = **status.get_as<bool>("is_valid_cooler");
 
   std::optional<cooler::File> clr{};
   if (is_cooler) {
@@ -291,7 +295,27 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
     status.insert("index_is_valid", "not_checked");
   }
 
+  if (return_code != 0) {
+    status.insert_or_assign("is_valid_cooler", false);
+  }
+
   return std::make_pair(return_code, status);
+}
+
+[[nodiscard]] static std::string get_cooler_uri_noexcept(const cooler::MultiResFile& mclr,
+                                                         std::uint32_t resolution) noexcept {
+  try {
+    return std::string{mclr.open(resolution).uri()};
+  } catch ([[maybe_unused]] const std::exception& e) {
+    SPDLOG_DEBUG(FMT_STRING("failed to open Cooler at resolution {} from file \"{}\": {}"),
+                 resolution, mclr.path(), e.what());
+  } catch (...) {
+    SPDLOG_DEBUG(
+        FMT_STRING("failed to open Cooler at resolution {} from file \"{}\": unknown error"),
+        resolution, mclr.path());
+  }
+
+  return fmt::format(FMT_STRING("{}::/resolutions/{}"), mclr.path(), resolution);
 }
 
 [[nodiscard]] static std::pair<int, toml::table> validate_mcool(std::string_view path,
@@ -308,7 +332,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
 
   const auto mclr = open_mcool_noexcept(path);
   if (!mclr) {
-    global_status.insert_or_assign("is_mcool", false);
+    global_status.insert_or_assign("is_valid_mcool", false);
     return std::make_pair(1, global_status);
   }
 
@@ -317,14 +341,20 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
     if (early_return) {
       return;
     }
-    const auto [_, status] = validate_cooler(mclr->open(res).uri(), validate_index);
-    const auto is_cooler = status.get("is_valid_cooler")->as_boolean();
+    const auto [_, status] = validate_cooler(get_cooler_uri_noexcept(*mclr, res), validate_index);
+    const auto is_cooler = **status.template get_as<bool>("is_valid_cooler");
     global_status.insert(fmt::to_string(res), status);
-    if (!is_cooler && !exhaustive) {
+    if (!is_cooler) {
       return_code = 1;
-      early_return = true;
+      if (!exhaustive) {
+        early_return = true;
+      }
     }
   });
+
+  if (return_code != 0) {
+    global_status.insert_or_assign("is_valid_mcool", false);
+  }
 
   return std::make_pair(return_code, global_status);
 }
@@ -344,15 +374,20 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
 
   for (const auto& cell : sclr->cells()) {
     const auto [_, status] = validate_cooler(sclr->open(cell).uri(), validate_index);
-    const auto is_cooler = status.get("is_valid_cooler")->as_boolean();
+    const auto is_cooler = **status.get_as<bool>("is_valid_cooler");
     global_status.insert(cell, status);
 
     if (!is_cooler) {
       return_code = 1;
       if (!exhaustive) {
+        global_status.insert_or_assign("is_valid_scool", false);
         std::make_pair(1, global_status);
       }
     }
+  }
+
+  if (return_code != 0) {
+    global_status.insert_or_assign("is_valid_scool", false);
   }
 
   return std::make_pair(return_code, global_status);
@@ -447,15 +482,21 @@ int validate_subcmd(const ValidateConfig& c) {
     if (!c.quiet) {
       print_report(status, c.output_format);
       if (is_hic) {
-        fmt::print(stderr, FMT_STRING("### SUCCESS: \"{}\" is a valid .hic file."), c.uri);
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .hic file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (is_mcool) {
-        fmt::print(stderr, FMT_STRING("### SUCCESS: \"{}\" is a valid .mcool file."), c.uri);
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .mcool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (is_scool) {
-        fmt::print(stderr, FMT_STRING("### SUCCESS: \"{}\" is a valid .scool file."), c.uri);
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .scool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (std::filesystem::exists(c.uri)) {
-        fmt::print(stderr, FMT_STRING("### SUCCESS: \"{}\" is a valid .cool file."), c.uri);
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .cool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else {
-        fmt::print(stderr, FMT_STRING("### SUCCESS: \"{}\" points to valid Cooler."), c.uri);
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" {} to valid Cooler."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri,
+                   return_code == 0 ? "points" : "does not point");
       }
     }
 

@@ -374,7 +374,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     if (!std::is_sorted(first, last)) {
       error_buffer = fmt::format(
           FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
-                     "contain duplicate entries)\n"),
+                     "contain duplicate entries)"),
           bin1_offset[i0], bin1_offset[i1]);
       return false;
     }
