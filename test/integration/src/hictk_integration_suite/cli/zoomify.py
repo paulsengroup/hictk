@@ -37,7 +37,7 @@ def _plan_tests_cli(
         factory | {"args": tuple(("zoomify", str(uri), "test.mcool", "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(("convert", str(uri), "test.mcool")),
+            "args": tuple(("zoomify", str(uri), "test.mcool")),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
