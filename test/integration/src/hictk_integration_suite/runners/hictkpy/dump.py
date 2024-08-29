@@ -43,13 +43,13 @@ class HictkpyDump:
         if is_scool(uri):
             f = hictkpy.cooler.SingleCellFile(uri)
             if resolution is not None:
-                assert f.resolution() == resolution
+                assert f.resolution() == resolution, f"{f.resolution()} == {resolution}"
             return f
 
         try:
             f = hictkpy.File(uri, resolution)
             if resolution is not None:
-                assert f.resolution() == resolution
+                assert f.resolution() == resolution, f"{f.resolution()} == {resolution}"
             return f
         except RuntimeError:
             return None

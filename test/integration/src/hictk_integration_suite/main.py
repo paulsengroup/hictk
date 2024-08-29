@@ -31,7 +31,17 @@ def get_test_names(include_all: bool = True) -> List[str]:
         names = ["all"]
     else:
         names = []
-    names += ["balance", "convert", "dump", "fix-mcool", "metadata", "rename-chromosomes", "validate", "zoomify"]
+    names += [
+        "balance",
+        "convert",
+        "dump",
+        "fix-mcool",
+        "merge",
+        "metadata",
+        "rename-chromosomes",
+        "validate",
+        "zoomify",
+    ]
     return names
 
 
@@ -57,6 +67,8 @@ def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
             for key in mappings:
                 if key.endswith("uri") or key.endswith("path"):
                     new_config[group][i][key] = _update_uri(mappings[key])
+                elif key.endswith("uris") or key.endswith("paths"):
+                    new_config[group][i][key] = tuple(_update_uri(uri) for uri in mappings[key])
 
     return new_config
 

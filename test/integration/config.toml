@@ -115,6 +115,32 @@ files = [
 
 output-formats = ["json", "toml", "yaml"]
 
+[merge]
+
+files = [
+  { uri = "cooler/cooler_test_file.cool", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" }
+]
+
+test-cases = [
+  {input-uris = ["cooler/cooler_test_file.cool", "cooler/cooler_test_file.cool"], output = "test.cool"},
+  {input-uris = ["cooler/multires_cooler_test_file.mcool::/resolutions/100000", "cooler/multires_cooler_test_file.mcool::/resolutions/100000"], output = "test.cool"},
+  {input-uris = ["cooler/cooler_variable_bins_test_file.cool", "cooler/cooler_variable_bins_test_file.cool"], output = "test.cool"},
+  {input-uris = ["hic/4DNFIZ1ZVXC8.hic9", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.hic", args= {"resolution" = 100000}},
+  {input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool::/resolutions/1000000"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/cooler_test_file.cool", "cooler/cooler_variable_bins_test_file.cool"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/multires_cooler_test_file.mcool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/single_cell_cooler_test_file.scool", "cooler/single_cell_cooler_test_file.scool"], output = "test.scool", expect-failure = true},
+  {input-uris = ["cooler/cooler_test_file.cool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/multires_cooler_test_file.mcool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true},
+  {input-uris = ["cooler/single_cell_cooler_test_file.scool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true}
+]
+
 [rename-chromosomes]
 
 files = [
