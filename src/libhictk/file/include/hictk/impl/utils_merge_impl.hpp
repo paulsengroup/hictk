@@ -61,10 +61,11 @@ inline void validate_bin_size(const std::vector<File>& files, bool variable_bin_
 inline void validate_chromosomes(const std::vector<File>& files) {
   assert(files.size() > 1);
   const auto& f1 = files.front();
+  const auto& chroms1 = f1.chromosomes().remove_ALL();
 
   for (std::size_t i = 1; i < files.size(); ++i) {
     const auto& f2 = files[i];
-    if (f1.chromosomes() != f2.chromosomes()) {
+    if (chroms1 != f2.chromosomes().remove_ALL()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("files \"{}\" and \"{}\" use different reference genomes"),
                       f1.uri(), f2.uri()));
