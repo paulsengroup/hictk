@@ -801,7 +801,7 @@ inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) 
 
   assert(_i < _buff->size());
   assert(other._i < other._buff->size());
-  return (*_buff)[_i] == (*other._buff)[_i];
+  return (*_buff)[_i] == (*other._buff)[other._i];
 }
 
 template <typename N>
