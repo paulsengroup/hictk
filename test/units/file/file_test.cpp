@@ -16,6 +16,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/string_utils.hpp"
 
 using namespace hictk;
 
@@ -150,6 +151,85 @@ TEST_CASE("PixelSelector", "[file][short]") {
       CHECK(sel1.bins().resolution() == resolution);
 
       CHECK(sel1.read_all<std::int32_t>().size() == 624);
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("PixelSelector::iterator", "[file][short]") {
+  const std::uint32_t resolution = 1'000'000;
+  const auto hf =
+      std::make_shared<const File>((datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string(), resolution);
+  const auto clr = std::make_shared<const File>(
+      (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string(), resolution);
+
+  const std::array<
+      std::tuple<std::string, std::shared_ptr<const File>, std::shared_ptr<const File>>, 3>
+      files{
+          // clang-format off
+          std::make_tuple("hic", hf, hf),
+          std::make_tuple("hic gw", hf, hf),
+          std::make_tuple("cooler", clr, clr),
+          // clang-format on
+      };
+
+  using T = std::int32_t;
+
+  for (const auto& [label, f1, f2] : files) {
+    SECTION(label) {
+      const auto is_gw = internal::ends_with(label, "gw");
+      const auto sel1 = is_gw ? f1->fetch() : f1->fetch("chr2L", "chr2R");
+      const auto sel2 = is_gw ? f2->fetch() : f2->fetch("chr2L", "chr2R");
+
+      SECTION("operator==") {
+        auto it1 = sel1.begin<T>();
+        auto it2 = sel2.begin<T>();
+        CHECK(it1 == it2);
+
+        it1 = ++sel1.begin<T>();
+        it2 = ++sel2.begin<T>();
+        CHECK(it1 == it2);
+
+        it1 = sel1.end<T>();
+        it2 = sel2.end<T>();
+        CHECK(it1 == it2);
+      }
+
+      SECTION("operator!=") {
+        auto it1 = sel1.begin<T>();
+        auto it2 = ++sel2.begin<T>();
+        CHECK(it1 != it2);
+
+        it2 = sel2.end<T>();
+        CHECK(it1 != it2);
+      }
+    }
+  }
+  SECTION("cooler-hic") {
+    const auto sel1 = clr->fetch("chr2L", "chr2R");
+    const auto sel2 = hf->fetch("chr2L", "chr2R");
+
+    SECTION("operator==") {
+      auto it1 = sel1.begin<T>();
+      auto it2 = sel2.begin<T>();
+      CHECK_FALSE(it1 == it2);
+
+      it1 = ++sel1.begin<T>();
+      it2 = ++sel2.begin<T>();
+      CHECK_FALSE(it1 == it2);
+
+      it1 = sel1.end<T>();
+      it2 = sel2.end<T>();
+      CHECK_FALSE(it1 == it2);
+    }
+
+    SECTION("operator!=") {
+      auto it1 = sel1.begin<T>();
+      auto it2 = ++sel2.begin<T>();
+      CHECK(it1 != it2);
+
+      it2 = sel2.end<T>();
+      CHECK(it1 != it2);
     }
   }
 }
