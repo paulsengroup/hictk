@@ -140,6 +140,7 @@ struct FixMcoolConfig {
 };
 
 struct LoadConfig {
+  std::filesystem::path input_path{"-"};
   std::string output_path{};
 
   std::filesystem::path path_to_chrom_sizes{};
@@ -159,7 +160,7 @@ struct LoadConfig {
 
   std::string output_format{};
 
-  std::size_t threads{1};
+  std::size_t threads{2};
   std::uint32_t compression_lvl{9};
 
   std::uint8_t verbosity{4};

@@ -8,10 +8,10 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <exception>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -25,33 +25,33 @@
 namespace hictk::tools {
 
 template <typename N>
-inline Stats read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer, Format format,
-                        std::int64_t offset) {
+inline Stats read_batch(PixelQueue<N>& queue, const std::atomic<bool>& early_return,
+                        std::vector<ThinPixel<N>>& buffer) {
   buffer.clear();
   Stats stats{N{}, 0};
-  std::string line{};
-  try {
-    while (std::getline(std::cin, line)) {
-      if (line_is_header(line)) {
-        continue;
-      }
-      const auto& p = buffer.emplace_back(parse_pixel<N>(bins, line, format, offset));
-      stats.nnz++;
-      if constexpr (std::is_floating_point_v<N>) {
-        std::get<double>(stats.sum) += conditional_static_cast<double>(p.count);
-      } else {
-        std::get<std::uint64_t>(stats.sum) += conditional_static_cast<std::uint64_t>(p.count);
-      }
-      if (buffer.size() == buffer.capacity()) {
-        return stats;
-      }
+  ThinPixel<N> pixel{};
+
+  while (!early_return) {
+    if (!queue.wait_dequeue_timed(pixel, std::chrono::milliseconds(10))) {
+      continue;
     }
-  } catch (const std::exception& e) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("encountered error while processing the following line:\n"
-                               "\"{}\"\n"
-                               "Cause: {}"),
-                    line, e.what()));
+
+    if (pixel.bin1_id == ThinPixel<N>::null_id && pixel.bin2_id == ThinPixel<N>::null_id &&
+        pixel.count == 0) {
+      // EOQ signal received
+      return stats;
+    }
+
+    buffer.emplace_back(pixel);
+    stats.nnz++;
+    if constexpr (std::is_floating_point_v<N>) {
+      std::get<double>(stats.sum) += conditional_static_cast<double>(pixel.count);
+    } else {
+      std::get<std::uint64_t>(stats.sum) += conditional_static_cast<std::uint64_t>(pixel.count);
+    }
+    if (buffer.size() == buffer.capacity()) {
+      return stats;
+    }
   }
 
   return stats;
@@ -60,15 +60,19 @@ inline Stats read_batch(const BinTable& bins, std::vector<ThinPixel<N>>& buffer,
 template <typename N>
 [[nodiscard]] inline Stats ingest_pixels_sorted(
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    Format format, std::int64_t offset, std::size_t batch_size, bool validate_pixels) {
+    PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::size_t batch_size,
+    bool validate_pixels) {
   std::vector<ThinPixel<N>> buffer(batch_size);
 
   std::size_t i = 0;
   Stats stats{N{}, 0};
   try {
-    for (; !std::cin.eof(); ++i) {
+    for (; true; ++i) {
       SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
-      stats += read_batch(clr.bins(), buffer, format, offset);
+      stats += read_batch(queue, early_return, buffer);
+      if (buffer.empty()) {
+        return stats;
+      }
       clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();
     }
@@ -79,20 +83,18 @@ template <typename N>
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while processing chunk {}-{}: {}"), i0, i1, e.what()));
   }
-
-  return stats;
 }
 
 template <typename N>
 [[nodiscard]] inline Stats ingest_pixels_unsorted(
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, Format format, std::int64_t offset, bool validate_pixels) {
+    PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::vector<ThinPixel<N>>& buffer,
+    bool validate_pixels) {
   assert(buffer.capacity() != 0);
 
-  auto stats = read_batch(clr.bins(), buffer, format, offset);
+  auto stats = read_batch(queue, early_return, buffer);
 
   if (buffer.empty()) {
-    assert(std::cin.eof());
     return {N{}, 0};
   }
 
@@ -106,7 +108,8 @@ template <typename N>
 
 [[nodiscard]] inline Stats ingest_pixels(
     hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<float>>& buffer, Format format, std::int64_t offset) {
+    PixelQueue<float>& queue, const std::atomic<bool>& early_return,
+    std::vector<ThinPixel<float>>& buffer) {
   assert(buffer.capacity() != 0);
 
   std::size_t i = 0;
@@ -114,11 +117,10 @@ template <typename N>
   try {
     auto t0 = std::chrono::steady_clock::now();
     const auto& bins = hf.bins(hf.resolutions().front());
-    for (; !std::cin.eof(); ++i) {
-      stats += read_batch(bins, buffer, format, offset);
+    while (!early_return) {
+      stats += read_batch(queue, early_return, buffer);
 
       if (buffer.empty()) {
-        assert(std::cin.eof());
         break;
       }
 

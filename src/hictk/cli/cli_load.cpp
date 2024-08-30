@@ -124,8 +124,8 @@ void Cli::make_load_subcommand() {
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn.\n"
-      "When loading interactions in a .cool file, only a single thread will be used.")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      "When loading interactions in a .cool file, only up to two threads will be used.")
+      ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
 
   sc.add_option(
