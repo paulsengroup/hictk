@@ -19,6 +19,7 @@
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/cooler/uri.hpp"
@@ -127,102 +128,12 @@ inline PixelSelector::iterator<N>::iterator(It it, It end)
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator==(const iterator& other) const noexcept {
-  return std::visit(
-      [&](const auto& it1) {
-        using T = std::decay_t<decltype(it1)>;
-        const auto* it2 = std::get_if<T>(&other._it);
-        return !!it2 && it1 == *it2;
-      },
-      _it);
+  return operator_eq(_it, other._it);
 }
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator!=(const iterator& other) const noexcept {
   return !(*this == other);
-}
-
-template <typename N>
-inline bool PixelSelector::iterator<N>::operator<(const iterator& other) const {
-  const auto this_at_end = _it == _sentinel;
-  const auto other_at_end = other == other._sentinel;
-
-  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
-    return false;
-  }
-  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
-    return false;
-  }
-  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
-    return true;
-  }
-
-  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
-  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
-
-  return p1 < p2;
-}
-
-template <typename N>
-inline bool PixelSelector::iterator<N>::operator<=(const iterator& other) const {
-  const auto this_at_end = _it == _sentinel;
-  const auto other_at_end = other == other._sentinel;
-
-  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
-    return true;
-  }
-  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
-    return false;
-  }
-  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
-    return true;
-  }
-
-  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
-  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
-
-  return p1 <= p2;
-}
-
-template <typename N>
-inline bool PixelSelector::iterator<N>::operator>(const iterator& other) const {
-  const auto this_at_end = _it == _sentinel;
-  const auto other_at_end = other == other._sentinel;
-
-  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
-    return false;
-  }
-  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
-    return true;
-  }
-  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
-    return false;
-  }
-
-  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
-  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
-
-  return p1 > p2;
-}
-
-template <typename N>
-inline bool PixelSelector::iterator<N>::operator>=(const iterator& other) const {
-  const auto this_at_end = _it == _sentinel;
-  const auto other_at_end = other == other._sentinel;
-
-  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
-    return true;
-  }
-  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
-    return true;
-  }
-  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
-    return false;
-  }
-
-  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
-  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
-
-  return p1 >= p2;
 }
 
 template <typename N>
@@ -267,6 +178,23 @@ constexpr auto PixelSelector::iterator<N>::get() const noexcept -> const Iterato
 template <typename N>
 constexpr auto PixelSelector::iterator<N>::get() noexcept -> IteratorVar& {
   return _it;
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator_eq(const IteratorVar& itv1,
+                                                    const IteratorVar& itv2) noexcept {
+  return std::visit(
+      [&](const auto& it1) {
+        using T = std::decay_t<decltype(it1)>;
+        const auto* it2 = std::get_if<T>(&itv2);
+        return !!it2 && it1 == *it2;
+      },
+      itv1);
+}
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator_neq(const IteratorVar& itv1,
+                                                     const IteratorVar& itv2) noexcept {
+  return !(itv1 == itv2);
 }
 
 inline File::File(cooler::File clr) : _fp(std::move(clr)) {}

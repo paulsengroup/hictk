@@ -88,12 +88,6 @@ class PixelSelector {
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
 
-    [[nodiscard]] bool operator<(const iterator &other) const;
-    [[nodiscard]] bool operator<=(const iterator &other) const;
-
-    [[nodiscard]] bool operator>(const iterator &other) const;
-    [[nodiscard]] bool operator>=(const iterator &other) const;
-
     [[nodiscard]] auto operator*() const -> const_reference;
     [[nodiscard]] auto operator->() const -> const_pointer;
 
@@ -106,6 +100,12 @@ class PixelSelector {
     [[nodiscard]] constexpr IteratorT &get() noexcept;
     [[nodiscard]] constexpr auto get() const noexcept -> const IteratorVar &;
     [[nodiscard]] constexpr auto get() noexcept -> IteratorVar &;
+
+   private:
+    [[nodiscard]] static bool operator_eq(const IteratorVar &itv1,
+                                          const IteratorVar &itv2) noexcept;
+    [[nodiscard]] static bool operator_neq(const IteratorVar &itv1,
+                                           const IteratorVar &itv2) noexcept;
   };
 };
 
