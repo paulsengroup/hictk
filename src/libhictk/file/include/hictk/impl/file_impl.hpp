@@ -40,9 +40,9 @@ inline auto PixelSelector::begin([[maybe_unused]] bool sorted) const -> iterator
       [&](const auto& sel) {
         using T = std::decay_t<decltype(sel)>;
         if constexpr (std::is_same_v<cooler::PixelSelector, T>) {
-          return iterator<N>{sel.template begin<N>()};
+          return iterator<N>{sel.template begin<N>(), sel.template end<N>()};
         } else {
-          return iterator<N>{sel.template begin<N>(sorted)};
+          return iterator<N>{sel.template begin<N>(sorted), sel.template end<N>()};
         }
       },
       _sel);
@@ -50,7 +50,9 @@ inline auto PixelSelector::begin([[maybe_unused]] bool sorted) const -> iterator
 
 template <typename N>
 inline auto PixelSelector::end() const -> iterator<N> {
-  return std::visit([&](const auto& sel) { return iterator<N>{sel.template end<N>()}; }, _sel);
+  return std::visit(
+      [&](const auto& sel) { return iterator<N>{sel.template end<N>(), sel.template end<N>()}; },
+      _sel);
 }
 
 template <typename N>
@@ -120,7 +122,8 @@ constexpr auto PixelSelector::get() noexcept -> PixelSelectorVar& { return _sel;
 
 template <typename N>
 template <typename It>
-inline PixelSelector::iterator<N>::iterator(It it) : _it(std::move(it)) {}
+inline PixelSelector::iterator<N>::iterator(It it, It end)
+    : _it(std::move(it)), _sentinel(std::move(end)) {}
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator==(const iterator& other) const noexcept {
@@ -136,6 +139,90 @@ inline bool PixelSelector::iterator<N>::operator==(const iterator& other) const 
 template <typename N>
 inline bool PixelSelector::iterator<N>::operator!=(const iterator& other) const noexcept {
   return !(*this == other);
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator<(const iterator& other) const {
+  const auto this_at_end = _it == _sentinel;
+  const auto other_at_end = other == other._sentinel;
+
+  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
+    return false;
+  }
+  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
+    return false;
+  }
+  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
+    return true;
+  }
+
+  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
+  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
+
+  return p1 < p2;
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator<=(const iterator& other) const {
+  const auto this_at_end = _it == _sentinel;
+  const auto other_at_end = other == other._sentinel;
+
+  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
+    return true;
+  }
+  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
+    return false;
+  }
+  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
+    return true;
+  }
+
+  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
+  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
+
+  return p1 <= p2;
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator>(const iterator& other) const {
+  const auto this_at_end = _it == _sentinel;
+  const auto other_at_end = other == other._sentinel;
+
+  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
+    return false;
+  }
+  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
+    return true;
+  }
+  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
+    return false;
+  }
+
+  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
+  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
+
+  return p1 > p2;
+}
+
+template <typename N>
+inline bool PixelSelector::iterator<N>::operator>=(const iterator& other) const {
+  const auto this_at_end = _it == _sentinel;
+  const auto other_at_end = other == other._sentinel;
+
+  if (HICTK_UNLIKELY(this_at_end && other_at_end)) {
+    return true;
+  }
+  if (HICTK_UNLIKELY(this_at_end && !other_at_end)) {
+    return true;
+  }
+  if (HICTK_UNLIKELY(!this_at_end && other_at_end)) {
+    return false;
+  }
+
+  const auto p1 = std::visit([&](const auto& it) { return *it; }, _it);
+  const auto p2 = std::visit([&](const auto& it) { return *it; }, other._it);
+
+  return p1 >= p2;
 }
 
 template <typename N>
