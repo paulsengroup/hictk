@@ -200,6 +200,7 @@ class PixelParser {
 
   [[nodiscard]] Header parse_header() {
     if constexpr (format != Format::_4DN) {
+      std::ignore = getline();
       return {};
     }
 
@@ -397,26 +398,25 @@ struct ChromNameCmp {
     const Format format, const std::filesystem::path& path_to_interactions,
     const std::filesystem::path& path_to_chrom_sizes, const std::filesystem::path& path_to_bins,
     std::uint32_t resolution, std::string_view assembly) {
-  auto bins = path_to_bins.empty() ? BinTable{}
-                                   : init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
+  assert(format == Format::_4DN || !path_to_chrom_sizes.empty() || !path_to_bins.empty());
+  auto bins = path_to_bins.empty()
+                  ? BinTable{Reference::from_chrom_sizes(path_to_chrom_sizes), resolution}
+                  : init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
   switch (format) {
     case Format::_4DN: {
-      if (bins.empty()) {
+      if (bins.type() == BinTable::Type::variable) {
         assert(resolution != 0);
         return PixelParser<Format::_4DN>{path_to_interactions, resolution, assembly};
       }
       return PixelParser<Format::_4DN>{path_to_interactions, std::move(bins), assembly};
     }
     case Format::BG2: {
-      assert(!path_to_chrom_sizes.empty());
       return PixelParser<Format::BG2>{path_to_interactions, std::move(bins), assembly};
     }
     case Format::COO: {
-      assert(!path_to_chrom_sizes.empty());
       return PixelParser<Format::COO>{path_to_interactions, std::move(bins), assembly};
     }
     case Format::VP: {
-      assert(!path_to_chrom_sizes.empty());
       return PixelParser<Format::VP>{path_to_interactions, std::move(bins), assembly};
     }
   }

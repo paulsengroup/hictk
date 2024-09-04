@@ -27,6 +27,7 @@ namespace hictk::tools {
 template <typename N>
 inline Stats read_batch(PixelQueue<N>& queue, const std::atomic<bool>& early_return,
                         std::vector<ThinPixel<N>>& buffer) {
+  assert(buffer.capacity() != 0);
   buffer.clear();
   Stats stats{N{}, 0};
   ThinPixel<N> pixel{};
@@ -70,13 +71,13 @@ template <typename N>
     for (; true; ++i) {
       SPDLOG_INFO(FMT_STRING("processing chunk #{}..."), i + 1);
       stats += read_batch(queue, early_return, buffer);
-      if (buffer.empty()) {
+
+      clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
+      if (buffer.size() != batch_size) {
         return stats;
       }
-      clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
       buffer.clear();
     }
-    assert(buffer.empty());
   } catch (const std::exception& e) {
     const auto i0 = i * buffer.capacity();
     const auto i1 = i0 + buffer.size();
@@ -100,7 +101,6 @@ template <typename N>
 
   std::sort(buffer.begin(), buffer.end());
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
 
   clr.flush();
   return stats;
@@ -117,12 +117,8 @@ template <typename N>
   try {
     auto t0 = std::chrono::steady_clock::now();
     const auto& bins = hf.bins(hf.resolutions().front());
-    while (!early_return) {
+    for (; !early_return; ++i) {
       stats += read_batch(queue, early_return, buffer);
-
-      if (buffer.empty()) {
-        break;
-      }
 
       const auto t1 = std::chrono::steady_clock::now();
       const auto delta =
@@ -133,6 +129,9 @@ template <typename N>
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   double(buffer.size()) / delta);
       hf.add_pixels(bins.resolution(), buffer.begin(), buffer.end());
+      if (buffer.size() != buffer.capacity()) {
+        break;
+      }
       buffer.clear();
     }
     hf.serialize();

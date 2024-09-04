@@ -50,7 +50,7 @@ template <typename N>
           pixel_queue, early_return, write_buffer, validate_pixels);
       stats += partial_stats;
       SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1, tmp_cooler_path);
-      if (partial_stats.nnz == 0) {
+      if (write_buffer.size() != batch_size) {
         break;
       }
     }
