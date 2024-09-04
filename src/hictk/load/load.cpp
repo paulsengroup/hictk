@@ -442,10 +442,11 @@ template <std::size_t queue_capacity_bytes = 64'000'000>
 static Stats ingest_pixels_hic(const LoadConfig& c, const BinTable& bins,
                                const std::string& assembly, PixelQueue<float>& queue,
                                const std::atomic<bool>& early_return) {
+  assert(c.threads > 1);
   assert(c.output_format == "hic");
   const internal::TmpDir tmpdir{c.tmp_dir, true};
   return ingest_pixels_hic(queue, early_return, c.output_path, tmpdir(), bins.chromosomes(),
-                           bins.resolution(), assembly, c.skip_all_vs_all_matrix, c.threads,
+                           bins.resolution(), assembly, c.skip_all_vs_all_matrix, c.threads - 1,
                            c.batch_size, c.compression_lvl, c.force);
 }
 
@@ -481,9 +482,10 @@ static Stats ingest_pairs_cooler(const LoadConfig& c, const BinTable& bins,
 static Stats ingest_pairs_hic(const LoadConfig& c, const BinTable& bins,
                               const std::string& assembly, PixelQueue<float>& queue,
                               const std::atomic<bool>& early_return) {
+  assert(c.threads > 1);
   const internal::TmpDir tmpdir{c.tmp_dir, true};
   return ingest_pairs_hic(queue, early_return, c.output_path, tmpdir(), bins.chromosomes(),
-                          bins.resolution(), assembly, c.skip_all_vs_all_matrix, c.threads,
+                          bins.resolution(), assembly, c.skip_all_vs_all_matrix, c.threads - 1,
                           c.batch_size, c.compression_lvl, c.force);
 }
 

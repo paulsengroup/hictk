@@ -127,6 +127,7 @@ template <typename N>
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
     PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::vector<ThinPixel<N>>& buffer,
     std::size_t batch_size, bool validate_pixels) {
+  assert(batch_size != 0);
   buffer.clear();
   buffer.reserve(batch_size);
   PairsAggregator{queue, early_return}.read_next_chunk(buffer);
@@ -150,20 +151,19 @@ template <typename N>
 [[nodiscard]] inline Stats ingest_pairs(
     hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
     PixelQueue<float>& queue, const std::atomic<bool>& early_return,
-    std::vector<ThinPixel<float>>& buffer) {
+    std::vector<ThinPixel<float>>& buffer, std::size_t batch_size) {
   const auto resolution = hf.resolutions().front();
-  assert(buffer.capacity() != 0);
-  buffer.reserve(buffer.capacity());
+  assert(batch_size != 0);
+  buffer.clear();
+  buffer.reserve(batch_size);
   std::size_t i = 0;
 
   try {
     auto t0 = std::chrono::steady_clock::now();
     for (; !early_return; ++i) {
+      buffer.clear();
       PairsAggregator{queue, early_return}.read_next_chunk(buffer);
 
-      if (buffer.empty()) {
-        break;
-      }
       const auto t1 = std::chrono::steady_clock::now();
       const auto delta =
           static_cast<double>(
@@ -174,9 +174,11 @@ template <typename N>
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   double(buffer.size()) / delta);
       hf.add_pixels(resolution, buffer.begin(), buffer.end());
-      buffer.clear();
+
+      if (buffer.size() != buffer.capacity()) {
+        break;
+      }
     }
-    buffer.shrink_to_fit();
 
     hf.serialize();
     const auto stats = hf.stats(resolution);

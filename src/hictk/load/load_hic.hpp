@@ -44,7 +44,7 @@ inline Stats ingest_pairs_hic(PixelQueue<float>& pixel_queue, const std::atomic<
                                   tmp_dir, compression_lvl, skip_all_vs_all_matrix);
 
   std::vector<ThinPixel<float>> buffer(batch_size);
-  return ingest_pairs(std::move(hf), pixel_queue, early_return, buffer);
+  return ingest_pairs(std::move(hf), pixel_queue, early_return, buffer, batch_size);
 }
 
 }  // namespace hictk::tools
