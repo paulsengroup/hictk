@@ -40,12 +40,15 @@ class PixelParser {
   std::string _strbuff{};
   BinTable _bins{};
   std::string _assembly{};
+  bool _drop_unknown_chroms{false};
+  std::size_t _num_dropped_records{};
 
  public:
   PixelParser() = default;
   explicit PixelParser(const std::filesystem::path& path_, std::uint32_t resolution,
-                       std::string_view assembly = "unknown")
-      : _reader(path_ != "-" ? io::CompressedReader{path_} : io::CompressedReader{}) {
+                       std::string_view assembly = "unknown", bool drop_unknown_chroms = false)
+      : _reader(path_ != "-" ? io::CompressedReader{path_} : io::CompressedReader{}),
+        _drop_unknown_chroms(drop_unknown_chroms) {
     auto header = parse_header();
     if (!header.chromosomes) {
       throw std::runtime_error(
@@ -63,10 +66,11 @@ class PixelParser {
   }
 
   PixelParser(const std::filesystem::path& path_, BinTable bins_,
-              std::string_view assembly_ = "unknown")
+              std::string_view assembly_ = "unknown", bool drop_unknown_chroms = false)
       : _reader(path_ != "-" ? io::CompressedReader{path_} : io::CompressedReader{}),
         _bins(std::move(bins_)),
-        _assembly(std::string{assembly_}) {
+        _assembly(std::string{assembly_}),
+        _drop_unknown_chroms(drop_unknown_chroms) {
     try {
       std::ignore = parse_header();
     } catch (const std::exception& e) {
@@ -102,19 +106,29 @@ class PixelParser {
       return false;
     }
 
-    switch (format) {
-      case Format::COO:
-        buff = ThinPixel<N>::from_coo(bins(), _strbuff, offset);
-        break;
-      case Format::BG2:
-        buff = Pixel<N>::from_bg2(bins(), _strbuff, offset).to_thin();
-        break;
-      case Format::VP:
-        buff = Pixel<N>::from_validpair(bins(), _strbuff, offset).to_thin();
-        break;
-      case Format::_4DN:
-        buff = Pixel<N>::from_4dn_pairs(bins(), _strbuff, offset).to_thin();
-        break;
+    try {
+      switch (format) {
+        case Format::COO:
+          buff = ThinPixel<N>::from_coo(bins(), _strbuff, offset);
+          break;
+        case Format::BG2:
+          buff = Pixel<N>::from_bg2(bins(), _strbuff, offset).to_thin();
+          break;
+        case Format::VP:
+          buff = Pixel<N>::from_validpair(bins(), _strbuff, offset).to_thin();
+          break;
+        case Format::_4DN:
+          buff = Pixel<N>::from_4dn_pairs(bins(), _strbuff, offset).to_thin();
+          break;
+      }
+    } catch (const std::out_of_range& e) {
+      const auto chrom_not_found = internal::starts_with(e.what(), "chromosome \"") &&
+                                   internal::ends_with(e.what(), "\" not found");
+      if (_drop_unknown_chroms && chrom_not_found) {
+        ++_num_dropped_records;
+        return next_pixel(buff, offset);
+      }
+      throw;
     }
     std::ignore = getline();
 
@@ -149,6 +163,8 @@ class PixelParser {
     while (strip_whitespaces && !s.empty()) {
       if (std::isspace(s.front())) {
         s.remove_prefix(1);
+      } else {
+        break;
       }
     }
 
@@ -165,7 +181,7 @@ class PixelParser {
     }
     std::string chrom_name{line.begin(), it};
 
-    it = std::find_if(line.begin(), line.end(), [](const char c) { return !std::isspace(c); });
+    it = std::find_if(it, line.end(), [](const char c) { return !std::isspace(c); });
     const auto strlen = static_cast<std::size_t>(std::distance(it, line.end()));
 
     std::string_view chrom_size{it, strlen};
@@ -192,7 +208,7 @@ class PixelParser {
     std::vector<std::uint32_t> chrom_sizes{};
     for (std::size_t i = 0; getline(); ++i) {
       try {
-        if (i == 0 && _strbuff != "## pairs format v1.0") {
+        if (i == 0 && !internal::starts_with(_strbuff, "## pairs format v1.0")) {
           throw std::runtime_error(
               "invalid header: first line in input file does not start with \"## pairs format "
               "v1.0\"");
@@ -268,47 +284,111 @@ static void parse_pixels(PixelParser<format>& parser, std::int64_t offset, Pixel
   return {chroms, bin_size};
 }
 
-[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
-                                             const std::filesystem::path& path_to_bin_table) {
-  auto chroms = Reference::from_chrom_sizes(path_to_chrom_sizes);
+struct ChromName {
+  std::uint32_t id{};
+  std::string name{};
 
+  ChromName() = default;
+  ChromName(std::uint32_t id_, std::string name_) : id(id_), name(std::move(name_)) {}
+
+  [[nodiscard]] bool operator<(const ChromName& other) const { return id < other.id; }
+};
+
+struct ChromNameCmp {
+  using is_transparent = int;
+
+  [[nodiscard]] bool operator()(const std::shared_ptr<const ChromName>& chrom1,
+                                const std::string& chrom2_name) const noexcept {
+    return chrom1->name < chrom2_name;
+  }
+  [[nodiscard]] bool operator()(const std::string& chrom1_name,
+                                const std::shared_ptr<const ChromName>& chrom2) const noexcept {
+    return chrom1_name < chrom2->name;
+  }
+  [[nodiscard]] bool operator()(const std::string& chrom1_name,
+                                const std::string& chrom2_name) const noexcept {
+    return chrom1_name < chrom2_name;
+  }
+  [[nodiscard]] bool operator()(const std::shared_ptr<const ChromName>& chrom1,
+                                const std::shared_ptr<const ChromName>& chrom2) const noexcept {
+    return chrom1->name < chrom2->name;
+  }
+};
+
+[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_bin_table) {
   std::ifstream ifs{};
   ifs.exceptions(std::ios::badbit);
   ifs.open(path_to_bin_table);
 
+  phmap::btree_map<std::shared_ptr<const ChromName>, std::uint32_t, ChromNameCmp> chrom_sizes;
+  std::vector<std::shared_ptr<const ChromName>> chrom_names{};
   std::vector<std::uint32_t> start_pos{};
   std::vector<std::uint32_t> end_pos{};
 
   std::string line{};
-  GenomicInterval record{};
-  bool fixed_bin_size = true;
   std::uint32_t bin_size = 0;
   while (std::getline(ifs, line)) {
-    record = GenomicInterval::parse_bed(chroms, line);
-    if (bin_size == 0) {
-      bin_size = record.size();
+    auto [chrom, start, end] = GenomicInterval::parse_bed(line);
+    auto match = chrom_sizes.find(chrom);
+    if (match == chrom_sizes.end()) {
+      const auto chrom_id = static_cast<std::uint32_t>(chrom_sizes.size());
+      auto [it, _] =
+          chrom_sizes.emplace(std::make_shared<const ChromName>(chrom_id, std::move(chrom)), 0);
+      match = std::move(it);
     }
 
-    fixed_bin_size &= record.size() == bin_size || record.chrom().size() == record.end();
+    chrom_names.emplace_back(match->first);
+    start_pos.push_back(start);
+    end_pos.push_back(end);
 
-    start_pos.push_back(record.start());
-    end_pos.push_back(record.end());
+    bin_size = std::max(bin_size, end - start);
+
+    match->second = std::max(match->second, end);
   }
+
+  if (chrom_sizes.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("failed to import bins from \"{}\": file appears to be empty"),
+                    path_to_bin_table));
+  }
+
+  assert(bin_size != 0);
+
+  bool fixed_bin_size = true;
+  for (std::size_t i = 0; i < chrom_names.size(); ++i) {
+    const auto record_span = end_pos[i] - start_pos[i];
+    if (record_span != bin_size) {
+      const auto chrom_size = chrom_sizes.find(chrom_names[i])->second;
+      if (record_span != chrom_size) {
+        fixed_bin_size = false;
+        break;
+      }
+    }
+  }
+
+  std::vector<Chromosome> chroms(chrom_sizes.size());
+  std::transform(chrom_sizes.begin(), chrom_sizes.end(), chroms.begin(),
+                 [](const auto& kv) -> Chromosome {
+                   const auto& [chrom_id, chrom_name] = *kv.first;
+                   const auto chrom_size = kv.second;
+                   return {chrom_id, chrom_name, chrom_size};
+                 });
+  std::sort(chroms.begin(), chroms.end());
 
   if (fixed_bin_size) {
     SPDLOG_INFO(FMT_STRING("detected bin table with uniform bin size."));
-    return {chroms, bin_size};
+    return {chroms.begin(), chroms.end(), bin_size};
   }
 
   SPDLOG_INFO(FMT_STRING("detected bin table with variable bin size."));
-  return {chroms, start_pos, end_pos};
+  return {Reference{chroms.begin(), chroms.end()}, start_pos, end_pos};
 }
 
 [[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
                                              const std::filesystem::path& path_to_bin_table,
                                              std::uint32_t bin_size) {
   if (!path_to_bin_table.empty()) {
-    return init_bin_table(path_to_chrom_sizes, path_to_bin_table);
+    return init_bin_table(path_to_bin_table);
   }
   return init_bin_table(path_to_chrom_sizes, bin_size);
 }
@@ -317,12 +397,11 @@ static void parse_pixels(PixelParser<format>& parser, std::int64_t offset, Pixel
     const Format format, const std::filesystem::path& path_to_interactions,
     const std::filesystem::path& path_to_chrom_sizes, const std::filesystem::path& path_to_bins,
     std::uint32_t resolution, std::string_view assembly) {
-  auto bins = path_to_chrom_sizes.empty()
-                  ? BinTable{}
-                  : init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
+  auto bins = path_to_bins.empty() ? BinTable{}
+                                   : init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
   switch (format) {
     case Format::_4DN: {
-      if (path_to_chrom_sizes.empty()) {
+      if (bins.empty()) {
         assert(resolution != 0);
         return PixelParser<Format::_4DN>{path_to_interactions, resolution, assembly};
       }
@@ -459,7 +538,7 @@ template <typename N, Format format>
                                                       PixelParser<format>& parser,
                                                       PixelQueue<N>& queue, std::int64_t offset,
                                                       std::atomic<bool>& early_return) {
-  return tpool.submit_task([&]() {
+  return tpool.submit_task([&parser, &queue, offset, &early_return]() {
     try {
       return parse_pixels(parser, offset, queue, early_return);
     } catch (...) {
@@ -479,18 +558,19 @@ template <typename N>
                                                        std::atomic<bool>& early_return) {
   const auto pixel_has_count = format == Format::COO || format == Format::BG2;
 
-  return tpool.submit_task([&]() -> Stats {
-    try {
-      return pixel_has_count ? ingest_pixels(c, bins, assembly, queue, early_return)
-                             : ingest_pairs(c, bins, assembly, queue, early_return);
-    } catch (...) {
-      SPDLOG_WARN(FMT_STRING("exception caught in thread writing interactions to file "
-                             "\"{}\": returning immediately!"),
-                  c.output_path);
-      early_return = true;
-      throw;
-    }
-  });
+  return tpool.submit_task(
+      [&c, &bins, assembly, &queue, &early_return, pixel_has_count]() -> Stats {
+        try {
+          return pixel_has_count ? ingest_pixels(c, bins, assembly, queue, early_return)
+                                 : ingest_pairs(c, bins, assembly, queue, early_return);
+        } catch (...) {
+          SPDLOG_WARN(FMT_STRING("exception caught in thread writing interactions to file "
+                                 "\"{}\": returning immediately!"),
+                      c.output_path);
+          early_return = true;
+          throw;
+        }
+      });
 }
 
 int load_subcmd(const LoadConfig& c) {
@@ -513,16 +593,21 @@ int load_subcmd(const LoadConfig& c) {
           throw std::runtime_error("creating a .hic file with variable bin size is not supported");
         }
 
-        return std::visit(
-            [&](auto& queue) -> Stats {
-              auto producer = spawn_producer(tpool, parser, queue, c.offset, early_return);
-              auto consumer =
-                  spawn_consumer(tpool, c, bins, parser.assembly(), format, queue, early_return);
-
-              producer.get();
-              return consumer.get();
+        auto [producer, consumer] = std::visit(
+            [&](auto& queue) {
+              return std::make_pair(
+                  spawn_producer(tpool, parser, queue, c.offset, early_return),
+                  spawn_consumer(tpool, c, bins, parser.assembly(), format, queue, early_return));
             },
             pixel_queue_var);
+
+        try {
+          producer.get();
+          return consumer.get();
+        } catch (...) {  // NOLINT
+          tpool.wait();
+          throw;
+        }
       },
       parser_var);
 

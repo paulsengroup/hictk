@@ -102,9 +102,8 @@ template <typename N>
           ingest_pairs(tmp_clr.create_cell<N>(fmt::to_string(i), attrs,
                                               cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl),
                        pixel_queue, early_return, write_buffer, batch_size, validate_pixels);
-
       SPDLOG_INFO(FMT_STRING("done writing chunk #{} to tmp file \"{}\"."), i + 1, tmp_cooler_path);
-      if (partial_stats.nnz == 0) {
+      if (write_buffer.size() != batch_size || partial_stats.nnz == 0) {
         break;
       }
     }

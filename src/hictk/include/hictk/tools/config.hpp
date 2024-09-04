@@ -150,6 +150,7 @@ struct LoadConfig {
 
   std::string format{};
   std::string assembly{"unknown"};
+  bool drop_unknown_chroms{false};
   bool one_based{true};
   std::int64_t offset{0};
   bool count_as_float{false};
@@ -158,7 +159,7 @@ struct LoadConfig {
   bool validate_pixels{true};
   bool skip_all_vs_all_matrix{true};
 
-  std::string output_format{};
+  std::string output_format{"auto"};
 
   std::size_t threads{2};
   std::uint32_t compression_lvl{9};

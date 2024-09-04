@@ -205,6 +205,9 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
                                       std::uint32_t compression_lvl, std::size_t chunk_size,
                                       std::size_t update_frequency) const {
   if (_cells.size() == 1) {
+    if (overwrite_if_exists && std::filesystem::exists(uri)) {
+      std::filesystem::remove(uri);
+    }
     utils::copy(open(*_cells.begin()).uri(), uri);
     return File(uri);
   }

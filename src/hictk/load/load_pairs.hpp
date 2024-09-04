@@ -49,11 +49,10 @@ class PairsAggregator {
  public:
   PairsAggregator() = delete;
   inline PairsAggregator(PixelQueue<N>& queue, const std::atomic<bool>& early_return)
-      : _queue(&queue), _early_return(&early_return) {
-    _last_pixel = dequeue_pixel();
-  }
+      : _queue(&queue), _early_return(&early_return) {}
 
   inline bool read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
+    assert(buffer.capacity() != 0);
     buffer.clear();
     read_next_batch(buffer.capacity());
     std::copy(_buffer.begin(), _buffer.end(), std::back_inserter(buffer));
@@ -73,8 +72,6 @@ class PairsAggregator {
   }
 
   inline ThinPixel<N> aggregate_pixel() {
-    assert(!!_last_pixel);
-
     while (!(*_early_return)) {
       auto p = dequeue_pixel();
       if (!p) {
@@ -102,20 +99,25 @@ class PairsAggregator {
   }
 
   inline void read_next_batch(std::size_t batch_size) {
+    assert(batch_size != 0);
     _buffer.clear();
 
-    while (!!_last_pixel) {
+    _last_pixel = dequeue_pixel();
+    while (!!_last_pixel && _buffer.size() != batch_size - 1) {
       const auto pixel = aggregate_pixel();
       if (!pixel) {
-        break;
+        return;
       }
 
       insert_or_update(pixel);
+    }
 
-      if (_buffer.size() == batch_size - 1) {
-        insert_or_update(_last_pixel);
-        break;
-      }
+    while (!!_last_pixel && _buffer.contains(_last_pixel)) {
+      insert_or_update(_last_pixel);
+      _last_pixel = dequeue_pixel();
+    }
+    if (!!_last_pixel) {
+      insert_or_update(_last_pixel);
     }
   }
 };
@@ -125,6 +127,7 @@ template <typename N>
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
     PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::vector<ThinPixel<N>>& buffer,
     std::size_t batch_size, bool validate_pixels) {
+  buffer.clear();
   buffer.reserve(batch_size);
   PairsAggregator{queue, early_return}.read_next_chunk(buffer);
 
@@ -133,7 +136,6 @@ template <typename N>
   }
 
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
 
   clr.flush();
   const auto nnz = clr.nnz();
