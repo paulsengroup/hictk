@@ -11,6 +11,7 @@
 #include <type_traits>
 
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::transformers {
@@ -22,18 +23,25 @@ class ToSparseMatrix {
   static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
 
   PixelSelector _sel{};
-  bool _transpose{false};
+  QuerySpan _span{QuerySpan::upper_triangle};
 
  public:
-  ToSparseMatrix(PixelSelector&& selector, N n, bool transpose = false);
-  [[nodiscard]] auto operator()() -> Eigen::SparseMatrix<N>;
+  using MatrixT = Eigen::SparseMatrix<N>;
+  ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
+  [[nodiscard]] auto operator()() -> MatrixT;
 
  private:
+  [[nodiscard]] std::string_view chrom1() const noexcept;
+  [[nodiscard]] std::string_view chrom2() const noexcept;
+
+  [[nodiscard]] static std::int64_t num_bins(const PixelCoordinates& coords,
+                                             const BinTable& bins) noexcept;
   [[nodiscard]] std::int64_t num_rows() const noexcept;
   [[nodiscard]] std::int64_t num_cols() const noexcept;
 
-  [[nodiscard]] std::uint64_t row_offset() const noexcept;
-  [[nodiscard]] std::uint64_t col_offset() const noexcept;
+  [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
+  [[nodiscard]] std::int64_t row_offset() const noexcept;
+  [[nodiscard]] std::int64_t col_offset() const noexcept;
 };
 
 }  // namespace hictk::transformers

@@ -12,6 +12,15 @@ Classes in defined in this library take a pair of pixel iterators or :cpp:class:
 
 .. cpp:namespace:: hictk::transformers
 
+Common types
+------------
+
+.. cpp:enum-class:: QuerySpan
+
+  .. cpp:enumerator:: lower_triangle
+  .. cpp:enumerator:: upper_triangle
+  .. cpp:enumerator:: full
+
 Coarsening pixels
 -----------------
 
@@ -136,16 +145,18 @@ Converting streams of pixels to Arrow Tables
   Convert the stream of pixels into an :cpp:class:`arrow::Table`.
 
 
-Converting streams of pixels to Eigen Matrices
-----------------------------------------------
+Converting streams of pixels to Eigen Dense Matrices
+----------------------------------------------------
 
 .. cpp:class:: template <typename PixelSelector> ToDenseMatrix
 
-  .. cpp:function:: ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
+  .. cpp:function:: ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
 
   Construct an instance of a :cpp:class:`ToDenseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
-  When ``mirror`` is set to true, the converter will take care of mirroring the upper-triangle matrix when appropriate.
+  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regarless of whether they are located above or below the genome-wide matrix diagonal).
+  Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
+  If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
@@ -156,11 +167,13 @@ Converting streams of pixels to Eigen Sparse Matrices
 
 .. cpp:class:: template <typename PixelSelector> ToSparseMatrix
 
-  .. cpp:function:: ToSparseMatrix(PixelSelector&& selector, N n, bool transpose = false);
+  .. cpp:function:: ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
 
   Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
-  When ``transpose`` is set to true, the converter will produce a matrix consisting of pixels overlapping the lower-triangle of the matrix.
+  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regarless of whether they are located above or below the genome-wide matrix diagonal).
+  Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
+  If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::SparseMatrix<N>;
 
