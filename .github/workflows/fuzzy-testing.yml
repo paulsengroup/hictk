@@ -243,7 +243,7 @@ jobs:
           build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --balance ${{ matrix.balance }} \
+            --normalization ${{ matrix.balance }} \
             --nproc $(nproc) \
             --format df \
             test.matrix \
@@ -254,7 +254,7 @@ jobs:
           build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --balance ${{ matrix.balance }} \
+            --normalization ${{ matrix.balance }} \
             --nproc $(nproc) \
             --format dense \
             test.matrix \
@@ -265,7 +265,7 @@ jobs:
           build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --balance ${{ matrix.balance }} \
+            --normalization ${{ matrix.balance }} \
             --nproc $(nproc) \
             --format sparse \
             test.matrix \
