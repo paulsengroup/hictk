@@ -399,12 +399,17 @@ struct ChromNameCmp {
     const std::filesystem::path& path_to_chrom_sizes, const std::filesystem::path& path_to_bins,
     std::uint32_t resolution, std::string_view assembly) {
   assert(format == Format::_4DN || !path_to_chrom_sizes.empty() || !path_to_bins.empty());
-  auto bins = path_to_bins.empty()
-                  ? BinTable{Reference::from_chrom_sizes(path_to_chrom_sizes), resolution}
-                  : init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
+  BinTable bins{};
+
+  if (!path_to_bins.empty()) {
+    bins = init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
+  } else if (!path_to_chrom_sizes.empty()) {
+    bins = BinTable{Reference::from_chrom_sizes(path_to_chrom_sizes), resolution};
+  }
+
   switch (format) {
     case Format::_4DN: {
-      if (bins.type() == BinTable::Type::variable) {
+      if (bins.empty()) {
         assert(resolution != 0);
         return PixelParser<Format::_4DN>{path_to_interactions, resolution, assembly};
       }
@@ -420,6 +425,7 @@ struct ChromNameCmp {
       return PixelParser<Format::VP>{path_to_interactions, std::move(bins), assembly};
     }
   }
+  unreachable_code();
 }
 
 template <std::size_t queue_capacity_bytes = 64'000'000>
