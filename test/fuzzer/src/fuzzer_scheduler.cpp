@@ -115,7 +115,7 @@ int fuzz_subcommand(const Config& c) {
       }
     });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
 
   int exit_code = 0;
@@ -124,6 +124,11 @@ int fuzz_subcommand(const Config& c) {
       SPDLOG_ERROR(FMT_STRING("[{}] worker process returned exit code {}"), i + 1, ec);
       exit_code = 1;
     }
+  }
+
+  if (exit_code != 0) {
+    SPDLOG_ERROR(
+        FMT_STRING("[executor] one or more worker process returned with non-zero exit code"));
   }
 
   return exit_code;
