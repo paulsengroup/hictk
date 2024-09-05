@@ -145,6 +145,7 @@ void Cli::make_fuzz_subcommand() {
 
 void Cli::make_launch_worker_subcommand() {
   auto& sc = *_cli.add_subcommand("launch-worker", "Lunch one instance of the fuzzer process.")
+                  ->group("")
                   ->fallthrough();
 
   sc.add_option("--task-id", _config.task_id, "Task ID.")->check(CLI::PositiveNumber)->required();
