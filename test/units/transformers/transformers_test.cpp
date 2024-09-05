@@ -611,10 +611,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   }
 
   if constexpr (TEST_TO_SPARSE_MATRIX) {
-    SECTION("ToSparseMatrix (cis) wo/ transpose") {
+    SECTION("ToSparseMatrix (cis) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 4465);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
@@ -622,10 +623,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (cis) w/ transpose") {
+    SECTION("ToSparseMatrix (cis) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.nonZeros() == 4465);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
@@ -633,30 +635,51 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (trans) wo/ transpose") {
+    SECTION("ToSparseMatrix (cis) full") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, false)();
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.nonZeros() == 8836);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 140'900'545);
+      CHECK(matrix.triangularView<Eigen::Upper>().sum() ==
+            matrix.triangularView<Eigen::Lower>().sum());
+    }
+
+    SECTION("ToSparseMatrix (trans) upper_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 9118);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToSparseMatrix (trans) w/ transpose") {
+    SECTION("ToSparseMatrix (trans) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, true)();
+      CHECK_THROWS(
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::lower_triangle));
+    }
+
+    SECTION("ToSparseMatrix (trans) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full)();
       CHECK(matrix.nonZeros() == 9118);
-      CHECK(matrix.rows() == 97);
-      CHECK(matrix.cols() == 100);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToSparseMatrix (gw) wo/ transpose") {
+    SECTION("ToSparseMatrix (gw) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, false)();
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 718'781);
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
@@ -664,10 +687,10 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (gw) w/ transpose") {
+    SECTION("ToSparseMatrix (gw) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, true)();
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.nonZeros() == 718'781);
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
@@ -677,50 +700,103 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
-    SECTION("ToDenseMatrix (cis) w/ mirroring") {
+    SECTION("ToDenseMatrix (cis) full") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 140'900'545);
       CHECK(matrix == matrix.transpose());
     }
 
-    SECTION("ToDenseMatrix (cis) wo/ mirroring") {
+    SECTION("ToDenseMatrix (cis) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.isUpperTriangular());
     }
 
-    SECTION("ToDenseMatrix (trans)") {
+    SECTION("ToDenseMatrix (cis) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.isLowerTriangular());
+    }
+
+    SECTION("ToDenseMatrix (cis, asymmetric) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1:192,565,354-202,647,735", "chr1:197,313,124-210,385,543"),
+                        std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 5);
+      CHECK(matrix.cols() == 7);
+      CHECK(matrix.sum() == 5'426'501);
+    }
+
+    SECTION("ToDenseMatrix (trans) upper_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToDenseMatrix (gw) w/ mirroring") {
+    SECTION("ToDenseMatrix (trans) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, true)();
+      CHECK_THROWS(
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::lower_triangle));
+    }
+
+    SECTION("ToDenseMatrix (trans) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+
+    SECTION("ToDenseMatrix (gw) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 2'671'244'699);
     }
 
-    SECTION("ToDenseMatrix (gw) wo/ mirroring") {
+    SECTION("ToDenseMatrix (gw) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, false)();
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.isUpperTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) lower_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.isLowerTriangular());
     }
 
     SECTION("ToDenseMatrix regression PR #154") {

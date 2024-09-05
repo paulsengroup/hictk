@@ -212,6 +212,10 @@ hictk convert
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when creating .[m]cool files.
+    --count-type TEXT:{auto,int,float} [auto]
+                                Specify the strategy used to infer count types when converting .hic
+                                files to .[m]cool format.
+                                Can be one of: int, float, auto.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
