@@ -163,6 +163,7 @@ jobs:
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DHICTK_ENABLE_TESTING=ON                            \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON                      \
                 -DOPT_ENABLE_CLANG_TIDY=ON                           \
                 -DHICTK_BUILD_EXAMPLES=OFF                           \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
