@@ -137,6 +137,10 @@ struct Query {
   const auto start_pos = std::max(0.0, center_pos - (query_length / 2));
   const auto end_pos = std::min(static_cast<double>(chrom.size()), start_pos + query_length);
 
+  if (static_cast<std::int64_t>(start_pos) == static_cast<std::int64_t>(end_pos)) {
+    return generate_query_1d(chroms, rand_eng, chrom_sampler, query_length, stddev_length);
+  }
+
   return {chrom, start_pos, end_pos};
 }
 
@@ -271,16 +275,16 @@ fetch_pixels_sparse(cooler::Cooler& clr, const Reference& chroms, std::string_vi
   return std::vector<Pixel<double>>{};
 }
 
-static void print_report(std::size_t num_tests, std::size_t num_failures) {
+static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size_t num_failures) {
   const auto num_successes = num_tests - num_failures;
   const auto failure_ratio =
       100.0 * static_cast<double>(num_successes) / static_cast<double>(num_tests);
 
   if (num_failures == 0) {
-    SPDLOG_INFO(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+    SPDLOG_INFO(FMT_STRING("[{}] Score: {:.4g}/100 ({} success and {} failures)."), task_id,
                 failure_ratio, num_successes, num_failures);
   } else {
-    SPDLOG_WARN(FMT_STRING("[task_id] Score: {:.4g}/100 ({} success and {} failures)."),
+    SPDLOG_WARN(FMT_STRING("[{}] Score: {:.4g}/100 ({} success and {} failures)."), task_id,
                 failure_ratio, num_successes, num_failures);
   }
 }
@@ -313,10 +317,10 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
           fetch_pixels(tgt, range1, range2, c.normalization, found);
 
           ++num_tests;
-          num_failures += !compare_pixels(range1, range2, expected, found);  // NOLINT
+          num_failures += !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
         }
 
-        print_report(num_tests, num_failures);
+        print_report(c.task_id, num_tests, num_failures);
         return num_failures != 0;  // NOLINT
       },
       expected_buffer);
@@ -345,12 +349,12 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
         [&](const auto& expected) -> std::size_t {
           using T = remove_cvref_t<decltype(expected)>;
           const auto& found = std::get<T>(found_var);
-          return !compare_pixels(range1, range2, expected, found);  // NOLINT
+          return !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
         },
         expected_var);
   }
 
-  print_report(num_tests, num_failures);
+  print_report(c.task_id, num_tests, num_failures);
   return num_failures != 0;  // NOLINT
 }
 
@@ -377,12 +381,12 @@ static void print_report(std::size_t num_tests, std::size_t num_failures) {
         [&](const auto& expected) -> std::size_t {
           using T = remove_cvref_t<decltype(expected)>;
           const auto& found = std::get<T>(found_var);
-          return !compare_pixels(range1, range2, expected, found);  // NOLINT
+          return !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
         },
         expected_var);
   }
 
-  print_report(num_tests, num_failures);
+  print_report(c.task_id, num_tests, num_failures);
   return num_failures != 0;  // NOLINT
 }
 
@@ -390,9 +394,8 @@ int launch_worker_subcommand(const Config& c) {
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
-    SPDLOG_INFO(FMT_STRING("[task_id] seed: {}"), c.seed);
-    SPDLOG_INFO(FMT_STRING("[task_id] cooler version: {}"), cooler::version());
-    std::mt19937_64 rand_eng{c.seed};
+    SPDLOG_INFO(FMT_STRING("[{}] seed: {}"), c.task_id, *c.seed);
+    std::mt19937_64 rand_eng{*c.seed};
 
     const hictk::File tgt(c.reference_uri, c.resolution);
     cooler::Cooler ref(c.resolution == 0 ? c.reference_uri.string()

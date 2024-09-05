@@ -44,12 +44,12 @@ constexpr bool is_close(N n1, N n2, double rtol, double atol) noexcept {
 }  // namespace internal
 
 template <typename N>
-inline bool compare_pixels(std::string_view range1, std::string_view range2,
-                           const std::vector<ThinPixel<N>>& expected,
+inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_view range1,
+                           std::string_view range2, const std::vector<ThinPixel<N>>& expected,
                            const std::vector<ThinPixel<N>>& found) {
   if (expected.size() != found.size()) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Expected {} nnz, found {}!"), range1, range2,
-                expected.size(), found.size());
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Expected {} nnz, found {}!"), task_id, range1,
+                range2, expected.size(), found.size());
     return false;
   }
 
@@ -62,7 +62,7 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
   }
 
   if (num_mismatches != 0) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Found {} differences!"), range1, range2,
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Found {} differences!"), task_id, range1, range2,
                 num_mismatches);
     return false;
   }
@@ -70,12 +70,12 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
 }
 
 template <typename N>
-inline bool compare_pixels(std::string_view range1, std::string_view range2,
-                           const std::vector<Pixel<N>>& expected,
+inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_view range1,
+                           std::string_view range2, const std::vector<Pixel<N>>& expected,
                            const std::vector<Pixel<N>>& found) {
   if (expected.size() != found.size()) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Expected {} nnz, found {}!"), range1, range2,
-                expected.size(), found.size());
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Expected {} nnz, found {}!"), task_id, range1,
+                range2, expected.size(), found.size());
     return false;
   }
 
@@ -88,7 +88,7 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
   }
 
   if (num_mismatches != 0) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Found {} differences!"), range1, range2,
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Found {} differences!"), task_id, range1, range2,
                 num_mismatches);
     return false;
   }
@@ -96,12 +96,13 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
 }
 
 template <typename N>
-inline bool compare_pixels(std::string_view range1, std::string_view range2,
-                           const Eigen2DDense<N>& expected, const Eigen2DDense<N>& found) {
+inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_view range1,
+                           std::string_view range2, const Eigen2DDense<N>& expected,
+                           const Eigen2DDense<N>& found) {
   if (expected.rows() != found.rows() || expected.cols() != found.cols()) {
     SPDLOG_WARN(
-        FMT_STRING("[task_id]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
-        range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
+        FMT_STRING("[{}]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
+        task_id, range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
     return false;
   }
 
@@ -111,7 +112,7 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
   }
 
   if (num_mismatches != 0) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Found {} differences!"), range1, range2,
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Found {} differences!"), task_id, range1, range2,
                 num_mismatches);
     return false;
   }
@@ -119,24 +120,25 @@ inline bool compare_pixels(std::string_view range1, std::string_view range2,
 }
 
 template <typename N>
-inline bool compare_pixels(std::string_view range1, std::string_view range2,
-                           const EigenSparse<N>& expected, const EigenSparse<N>& found) {
+inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_view range1,
+                           std::string_view range2, const EigenSparse<N>& expected,
+                           const EigenSparse<N>& found) {
   if (expected.rows() != found.rows() || expected.cols() != found.cols()) {
     SPDLOG_WARN(
-        FMT_STRING("[task_id]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
-        range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
+        FMT_STRING("[{}]: {}, {}: FAIL! Expected matrix of shape [{}, {}], found [{}, {}]!"),
+        task_id, range1, range2, expected.rows(), expected.cols(), found.rows(), found.cols());
     return false;
   }
 
   if (expected.nonZeros() != found.nonZeros()) {
-    SPDLOG_WARN(FMT_STRING("[task_id]: {}, {}: FAIL! Expected {} nnz, found {}!"), range1, range2,
-                expected.nonZeros(), found.nonZeros());
+    SPDLOG_WARN(FMT_STRING("[{}]: {}, {}: FAIL! Expected {} nnz, found {}!"), task_id, range1,
+                range2, expected.nonZeros(), found.nonZeros());
     return false;
   }
 
   // FIXME this doesn't work because cooler mirrors interactions even when returning them as sparse
   // matrices
-  return compare_pixels(range1, range2, Eigen2DDense<N>{expected.toDense()},
+  return compare_pixels(task_id, range1, range2, Eigen2DDense<N>{expected.toDense()},
                         Eigen2DDense<N>{found.toDense()});
 }
 

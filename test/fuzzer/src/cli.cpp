@@ -4,11 +4,24 @@
 
 #include "hictk/fuzzer/cli.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+
+#include <climits>
+
+#else
+#include <unistd.h>
+#endif
+
 #include <fmt/format.h>
 
 #include <CLI/CLI.hpp>
+#include <array>
 #include <cassert>
 #include <exception>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -133,6 +146,9 @@ void Cli::make_fuzz_subcommand() {
 void Cli::make_launch_worker_subcommand() {
   auto& sc = *_cli.add_subcommand("launch-worker", "Lunch one instance of the fuzzer process.")
                   ->fallthrough();
+
+  sc.add_option("--task-id", _config.task_id, "Task ID.")->check(CLI::PositiveNumber)->required();
+
   add_common_args(sc, _config);
 }
 
@@ -228,7 +244,39 @@ void Cli::validate_args() const {
   }
 }
 
-void Cli::transform_args_fuzz_subcommand() {}
+static std::string get_path_to_executable() {
+#ifdef _WIN32
+  std::string path(MAX_PATH, '\0');
+  if (GetModuleFileNameA(NULL, path.data(), path.size())) {
+    return std::string{path.c_str()};
+  }
+
+#elif defined(__APPLE__)
+  std::string path(PATH_MAX, '\0');
+  std::uint32_t count = PATH_MAX;
+  if (!_NSGetExecutablePath(path.data(), &count)) {
+    return path.substr(0, count);
+  }
+
+#else
+  std::string path(PATH_MAX, '\0');
+  const auto count = readlink("/proc/self/exe", path.data(), path.size());
+  if (count != -1) {
+    return path.substr(0, static_cast<std::size_t>(count));
+  }
+#endif
+  throw std::runtime_error("unable to generate the path to hictk_fuzzer.");
+}
+
+void Cli::transform_args_fuzz_subcommand() {
+  _config.exec = get_path_to_executable();
+
+  if (!_config.seed.has_value()) {
+    const std::array<std::uint32_t, 2> random_state{std::random_device{}(), std::random_device{}()};
+    // NOLINTNEXTLINE
+    _config.seed = *reinterpret_cast<const std::uint64_t*>(random_state.data());
+  }
+}
 
 void Cli::transform_args_launch_worker_subcommand() {}
 

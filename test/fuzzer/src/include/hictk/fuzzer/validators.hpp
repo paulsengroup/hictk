@@ -20,22 +20,25 @@ template <typename N>
 }  // namespace internal
 
 template <typename N>
-[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
+[[nodiscard]] bool compare_pixels(std::uint16_t task_id, std::string_view range1,
+                                  std::string_view range2,
                                   const std::vector<ThinPixel<N>>& expected,
                                   const std::vector<ThinPixel<N>>& found);
 
 template <typename N>
-[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
-                                  const std::vector<Pixel<N>>& expected,
+[[nodiscard]] bool compare_pixels(std::uint16_t task_id, std::string_view range1,
+                                  std::string_view range2, const std::vector<Pixel<N>>& expected,
                                   const std::vector<Pixel<N>>& found);
 
 template <typename N>
-[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
-                                  const Eigen2DDense<N>& expected, const Eigen2DDense<N>& found);
+[[nodiscard]] bool compare_pixels(std::uint16_t task_id, std::string_view range1,
+                                  std::string_view range2, const Eigen2DDense<N>& expected,
+                                  const Eigen2DDense<N>& found);
 
 template <typename N>
-[[nodiscard]] bool compare_pixels(std::string_view range1, std::string_view range2,
-                                  const EigenSparse<N>& expected, const EigenSparse<N>& found);
+[[nodiscard]] bool compare_pixels(std::uint16_t task_id, std::string_view range1,
+                                  std::string_view range2, const EigenSparse<N>& expected,
+                                  const EigenSparse<N>& found);
 }  // namespace hictk::fuzzer
 
 #include "./impl/validators.hpp"

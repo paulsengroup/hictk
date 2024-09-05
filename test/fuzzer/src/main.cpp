@@ -39,7 +39,7 @@ static void setup_logger_console(int verbosity_lvl, bool print_version) {
   }
 
   if (print_version) {
-    SPDLOG_INFO(FMT_STRING("Testing hictk v{}"), hictk::config::version::str());
+    SPDLOG_INFO(FMT_STRING("[executor] Testing hictk v{}"), hictk::config::version::str());
   }
 }
 

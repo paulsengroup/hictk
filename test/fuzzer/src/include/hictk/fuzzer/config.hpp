@@ -4,12 +4,17 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
+#include <string>
 
 namespace hictk::fuzzer {
 
 struct Config {
+  std::uint16_t task_id{};
+  std::filesystem::path exec{};
   std::filesystem::path test_uri{};
   std::filesystem::path reference_uri{};
 
@@ -21,7 +26,7 @@ struct Config {
   std::string query_format{"df"};
   bool join{false};
   std::string normalization{"NONE"};
-  std::uint64_t seed{11261741397133096960ULL};
+  std::optional<std::uint64_t> seed{};
   std::size_t nproc{1};
 };
 
