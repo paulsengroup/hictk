@@ -161,6 +161,7 @@ class PixelParser {
     }
 
     while (strip_whitespaces && !s.empty()) {
+      // NOLINTNEXTLINE(readability-implicit-bool-conversion)
       if (std::isspace(s.front())) {
         s.remove_prefix(1);
       } else {
@@ -181,10 +182,11 @@ class PixelParser {
     }
     std::string chrom_name{line.begin(), it};
 
+    // NOLINTNEXTLINE(readability-implicit-bool-conversion)
     it = std::find_if(it, line.end(), [](const char c) { return !std::isspace(c); });
     const auto strlen = static_cast<std::size_t>(std::distance(it, line.end()));
 
-    std::string_view chrom_size{it, strlen};
+    const std::string_view chrom_size{it, strlen};
     if (chrom_size.empty()) {
       throw std::runtime_error(fmt::format(FMT_STRING("malformed chromsize entry \"{}\"."), line));
     }
@@ -335,7 +337,7 @@ struct ChromNameCmp {
       const auto chrom_id = static_cast<std::uint32_t>(chrom_sizes.size());
       auto [it, _] =
           chrom_sizes.emplace(std::make_shared<const ChromName>(chrom_id, std::move(chrom)), 0);
-      match = std::move(it);
+      match = it;
     }
 
     chrom_names.emplace_back(match->first);
