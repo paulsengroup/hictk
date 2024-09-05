@@ -38,7 +38,7 @@ script_dir="$(readlink_py "$(dirname "$0")")"
 
 ref_cooler="$data_dir/4DNFIKNWM36K.subset.fixed-bins.cool"
 resolution=10000
-batch_size=999999
+batch_size=250000
 
 export PATH="$PATH:$script_dir"
 
@@ -68,7 +68,8 @@ if [[ "$sorted" == true ]]; then
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       --compression-lvl 1 \
-      "$outdir/chrom.sizes" \
+      --chrom-sizes "$outdir/chrom.sizes" \
+      - \
       "$outdir/out.cool"
 else
   "$hictk_bin" dump -t pixels "$ref_cooler" |
@@ -80,7 +81,8 @@ else
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       --compression-lvl 1 \
-      "$outdir/chrom.sizes" \
+      --chrom-sizes "$outdir/chrom.sizes" \
+      - \
       "$outdir/out.cool"
 fi
 
@@ -99,7 +101,8 @@ if [[ "$sorted" == false ]]; then
       --bin-size "$resolution" \
       --tmpdir "$outdir" \
       --compression-lvl 1 \
-      "$outdir/chrom.sizes" \
+      --chrom-sizes "$outdir/chrom.sizes" \
+      - \
       "$outdir/out.hic"
 
   if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler" "$resolution"; then
