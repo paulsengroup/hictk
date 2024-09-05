@@ -115,7 +115,7 @@ int fuzz_subcommand(const Config& c) {
       }
     });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(25));
   }
 
   int exit_code = 0;

@@ -188,19 +188,10 @@ inline Eigen2DDense<N> Cooler::fetch_dense(std::string_view range1, std::string_
 }
 
 template <typename N>
-inline EigenSparse<N> Cooler::fetch_sparse(const Reference& chroms, std::string_view range1,
-                                           std::string_view range2,
+inline EigenSparse<N> Cooler::fetch_sparse(std::string_view range1, std::string_view range2,
                                            std::string_view normalization) {
   // TODO make efficient
-  auto m = fetch_dense<N>(range1, range2, normalization);
-
-  const auto q1 = GenomicInterval::parse_ucsc(chroms, std::string{range1});
-  const auto q2 = GenomicInterval::parse_ucsc(chroms, std::string{range2});
-
-  if (q1.chrom() == q2.chrom()) {
-    m.template triangularView<Eigen::StrictlyLower>().setZero();
-  }
-  return m.sparseView();
+  return fetch_dense<N>(range1, range2, normalization).sparseView();
 }
 
 }  // namespace hictk::fuzzer::cooler

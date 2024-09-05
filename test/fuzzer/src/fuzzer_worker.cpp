@@ -243,19 +243,19 @@ fetch_pixels_sparse(const hictk::File& f, std::string_view range1, std::string_v
                     std::string_view normalization) {
   if (normalization == "NONE") {
     return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
-                                         std::int32_t{})()};
+                                         std::int32_t{}, transformers::QuerySpan::full)()};
   }
   return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
-                                       double{})()};
+                                       double{}, transformers::QuerySpan::full)()};
 }
 
 [[nodiscard]] static std::variant<EigenSparse<std::int32_t>, EigenSparse<double>>
-fetch_pixels_sparse(cooler::Cooler& clr, const Reference& chroms, std::string_view range1,
-                    std::string_view range2, std::string_view normalization) {
+fetch_pixels_sparse(cooler::Cooler& clr, std::string_view range1, std::string_view range2,
+                    std::string_view normalization) {
   if (normalization == "NONE") {
-    return {clr.fetch_sparse<std::int32_t>(chroms, range1, range2, normalization)};
+    return {clr.fetch_sparse<std::int32_t>(range1, range2, normalization)};
   }
-  return {clr.fetch_sparse<double>(chroms, range1, range2, normalization)};
+  return {clr.fetch_sparse<double>(range1, range2, normalization)};
 }
 
 [[nodiscard]] PixelBuffer init_pixel_buffer(const Config& c) {
@@ -373,7 +373,7 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
-    const auto expected_var = fetch_pixels_sparse(ref, chroms, range1, range2, c.normalization);
+    const auto expected_var = fetch_pixels_sparse(ref, range1, range2, c.normalization);
     const auto found_var = fetch_pixels_sparse(tgt, range1, range2, c.normalization);
 
     ++num_tests;
