@@ -240,7 +240,7 @@ jobs:
 
       - name: Run test (df)
         run: |
-          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
+          build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --balance ${{ matrix.balance }} \
@@ -251,7 +251,7 @@ jobs:
 
       - name: Run test (dense)
         run: |
-          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
+          build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --balance ${{ matrix.balance }} \
@@ -262,7 +262,7 @@ jobs:
 
       - name: Run test (sparse)
         run: |
-          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
+          build/test/fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --balance ${{ matrix.balance }} \
