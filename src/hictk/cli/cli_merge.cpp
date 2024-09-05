@@ -144,7 +144,6 @@ void Cli::validate_merge_subcommand() const {
   assert(_cli.get_subcommand("merge")->parsed());
 
   std::vector<std::string> errors;
-  [[maybe_unused]] std::vector<std::string> warnings;
   const auto& c = std::get<MergeConfig>(_config);
 
   if (!c.force && std::filesystem::exists(c.output_file)) {
@@ -153,12 +152,6 @@ void Cli::validate_merge_subcommand() const {
   }
 
   validate_files_format(c.input_files, c.resolution, errors);
-
-  const auto output_format = infer_output_format(c.output_file);
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
-  }
 
   if (!errors.empty()) {
     throw std::runtime_error(
