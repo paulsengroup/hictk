@@ -116,7 +116,7 @@ static void add_common_args(CLI::App& sc, Config& c) {
       ->check(CLI::PositiveNumber)
       ->capture_default_str();
   sc.add_option("--format", c.query_format, "Format used to fetch pixels.")
-      ->check(CLI::IsMember{{"dense", "df", "iter", "sparse"}})
+      ->check(CLI::IsMember{{"dense", "df", "sparse"}})
       ->capture_default_str();
   sc.add_option("--query-length-avg", c.query_length_avg, "Average query size.")
       ->check(CLI::NonNegativeNumber)
