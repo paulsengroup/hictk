@@ -6,11 +6,9 @@
 
 #ifdef HICTK_WITH_ARROW
 
-#include <arrow/array.h>
 #include <arrow/builder.h>
 #include <arrow/table.h>
 #include <arrow/type.h>
-#include <arrow/type_traits.h>
 
 #include <memory>
 #include <type_traits>
@@ -18,6 +16,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::transformers {
@@ -79,9 +78,11 @@ class ToDataFrame {
   PixelIt _last{};
   std::shared_ptr<const BinTable> _bins{};
 
-  bool _transpose{false};
-  DataFrameFormat _format{};
+  DataFrameFormat _format{DataFrameFormat::COO};
+  QuerySpan _span{QuerySpan::upper_triangle};
+  bool _drop_bin_ids{true};
 
+  std::size_t _chunk_size{};
   arrow::UInt64Builder _bin1_id_builder{};
   arrow::UInt64Builder _bin2_id_builder{};
 
@@ -127,7 +128,8 @@ class ToDataFrame {
  public:
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel,
               DataFrameFormat format = DataFrameFormat::COO,
-              std::shared_ptr<const BinTable> bins = nullptr, bool transpose = false,
+              std::shared_ptr<const BinTable> bins = nullptr,
+              QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               std::size_t chunk_size = 256'000);
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
@@ -136,8 +138,8 @@ class ToDataFrame {
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
   [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema(bool with_bin_ids = false) const;
 
-  void append(const Pixel<N>& p);
-  void append(const ThinPixel<N>& p);
+  void append(Pixel<N>&& p);
+  void append(ThinPixel<N>&& p);
 
   static void append(arrow::StringBuilder& builder, std::string_view data);
   template <typename ArrayBuilder, typename T>
