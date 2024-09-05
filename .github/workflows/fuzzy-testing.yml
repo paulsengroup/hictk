@@ -103,42 +103,8 @@ jobs:
       - name: Clone hictk
         uses: actions/checkout@v4
 
-      - name: Clone hictkpy
-        uses: actions/checkout@v4
-        with:
-          repository: paulsengroup/hictkpy
-          ref: main
-          path: hictkpy
-
-      - name: Patch hictkpy
-        working-directory: hictkpy
-        if: github.event_name != 'schedule'
-        run: |
-          ../test/scripts/patch_hictkpy.py \
-            --inplace \
-            --cmakelists CMakeLists.txt \
-            --git-tag="${{ github.event.after }}"
-
-          grep 'GIT' CMakeLists.txt
-
-      - name: Patch hictkpy (schedule)
-        working-directory: hictkpy
-        if: github.event_name == 'schedule'
-        run: |
-          ../test/scripts/patch_hictkpy.py \
-            --inplace \
-            --cmakelists CMakeLists.txt \
-            --git-tag=main
-
-          grep 'GIT' CMakeLists.txt
-
-      - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
-
       - name: Generate cache key
         id: cache-key
-        working-directory: hictkpy
         run: |
           hash="${{ hashFiles('conanfile.py') }}"
 
@@ -164,13 +130,16 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
-      - name: Install Python bindings
-        working-directory: hictkpy
+      - name: Install build dependencies
         run: |
-          pip install --upgrade pip setuptools wheel
-          env CC=clang-18    \
-              CXX=clang++-18 \
-          pip install . -v
+          conan install .                             \
+             --build=missing                          \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -s build_type=Release                    \
+             -s compiler.libcxx=libstdc++11           \
+             -s compiler.cppstd=17                    \
+             --output-folder=build
 
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -186,11 +155,29 @@ jobs:
           key: conan-${{ steps.cache-key.outputs.key }}
           path: ${{ env.CONAN_HOME }}
 
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release                           \
+                -DCMAKE_PREFIX_PATH="$PWD/build"                     \
+                -DENABLE_DEVELOPER_MODE=ON                           \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
+                -DOPT_ENABLE_CPPCHECK=OFF                            \
+                -DHICTK_ENABLE_TESTING=ON                            \
+                -DOPT_ENABLE_CLANG_TIDY=ON                           \
+                -DHICTK_BUILD_EXAMPLES=OFF                           \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
+                -S .                                                 \
+                -B build
+
+      - name: Build hictk_fuzzer
+        run: cmake --build build -j $(nproc) -t hictk_fuzzer
+
       - name: Install test dependencies
         run: |
           apt-get update
           apt-get install -y curl zstd
-          pip install --no-cache-dir 'cooler==0.10.0' 'numpy<2'
+          pip install --no-cache-dir 'cooler==0.10.*' 'numpy<2'
 
       - name: Detect CI type
         id: ci-type
@@ -228,17 +215,7 @@ jobs:
           echo "duration=$duration" >> $GITHUB_OUTPUT
           echo "resolution=$resolution" >> $GITHUB_OUTPUT
 
-      - name: Clone hictk
-        uses: actions/checkout@v4
-        with:
-          path: hictk
-
-      - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
-
       - name: Download test datasets
-        working-directory: hictk
         run: |
           resolution="${{ steps.test-params.outputs.resolution }}"
           echo "${{ matrix.ref-sha256 }} reference.mcool" | tee checksums.sha256
@@ -261,13 +238,36 @@ jobs:
             fi
           fi
 
-      - name: Run test
-        working-directory: hictk
+      - name: Run test (df)
         run: |
-          test/scripts/fuzzy_test.py \
+          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
             --seed '${{ steps.test-params.outputs.seed }}' \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --balance ${{ matrix.balance }} \
+            --nproc $(nproc) \
+            --format df \
+            test.matrix \
+            reference.cool
+
+      - name: Run test (dense)
+        run: |
+          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --duration '${{ steps.test-params.outputs.duration }}' \
+            --balance ${{ matrix.balance }} \
+            --nproc $(nproc) \
+            --format dense \
+            test.matrix \
+            reference.cool
+
+      - name: Run test (sparse)
+        run: |
+          build/test/hictk_fuzzer/src/hictk_fuzzer fuzz \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --duration '${{ steps.test-params.outputs.duration }}' \
+            --balance ${{ matrix.balance }} \
+            --nproc $(nproc) \
+            --format sparse \
             test.matrix \
             reference.cool
 
