@@ -107,11 +107,11 @@ int fuzz_subcommand(const Config& c) {
         auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
         return proc.wait();
       } catch (const std::exception& e) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what()));
+        SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
+        return 1;
       } catch (...) {
-        throw std::runtime_error(
-            fmt::format(FMT_STRING("[{}] an unknown error occurred in worker process"), id));
+        SPDLOG_ERROR(FMT_STRING("[{}] an unknown error occurred in worker process"), id);
+        return 1;
       }
     });
 
@@ -119,8 +119,9 @@ int fuzz_subcommand(const Config& c) {
   }
 
   int exit_code = 0;
-  for (auto& f : futures) {
-    if (f.get() != 0) {
+  for (std::size_t i = 0; i < futures.size(); ++i) {
+    if (const auto ec = futures[i].get(); ec != 0) {
+      SPDLOG_ERROR(FMT_STRING("[{}] worker process returned exit code {}"), i + 1, ec);
       exit_code = 1;
     }
   }
