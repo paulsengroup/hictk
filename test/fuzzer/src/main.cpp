@@ -23,6 +23,8 @@
 
 using namespace hictk::fuzzer;
 
+extern "C" const char* __asan_default_options() { return "detect_leaks=0"; }  // NOLINT
+
 static void setup_logger_console() {
   auto stderr_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
   //                        [2021-08-12 17:49:34.581] [info]: my log msg
