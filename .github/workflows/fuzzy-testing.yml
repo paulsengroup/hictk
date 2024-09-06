@@ -104,6 +104,23 @@ jobs:
       HICTK_CI: "1"
 
     steps:
+      - name: Remove unnecessary files
+        run: |
+          rm -rf \
+            "$AGENT_TOOLSDIRECTORY" \
+            /opt/google/chrome \
+            /opt/microsoft/msedge \
+            /opt/microsoft/powershell \
+            /opt/pipx \
+            /usr/lib/mono \
+            /usr/local/julia* \
+            /usr/local/lib/android \
+            /usr/local/lib/node_modules \
+            /usr/local/share/chromium \
+            /usr/local/share/powershell \
+            /usr/share/dotnet \
+            /usr/share/swift
+
       - name: Clone hictk
         uses: actions/checkout@v4
 
