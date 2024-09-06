@@ -127,11 +127,13 @@ struct Query {
     std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
     double stddev_length) {
   assert(!chroms.empty());
+  const auto query_length = std::normal_distribution<double>{mean_length, stddev_length}(rand_eng);
+
+  if (query_length <= 0) {
+    return generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+  }
 
   const auto& chrom = chroms[chrom_sampler(rand_eng)];
-  const auto query_length = static_cast<std::uint32_t>(
-      std::normal_distribution<double>{mean_length, stddev_length}(rand_eng));
-
   const auto center_pos =
       std::uniform_real_distribution<double>{0.0, static_cast<double>(chrom.size())}(rand_eng);
   const auto start_pos = std::max(0.0, center_pos - (query_length / 2));
