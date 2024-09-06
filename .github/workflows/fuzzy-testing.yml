@@ -222,20 +222,12 @@ jobs:
           curl -L "${{ matrix.ref-url }}" -o reference.mcool
           sha256sum -c checksums.sha256
 
-          cooler cp "reference.mcool::/resolutions/$resolution" reference.cool
-          rm reference.mcool
-
           if [[ ${{ matrix.ref-sha256 }} == ${{ matrix.sha256 }} ]]; then
-            ln -s reference.cool test.matrix
+            ln -s reference.mcool test.matrix
           else
             echo "${{ matrix.sha256 }}  test.matrix" | tee checksums.sha256
             curl -L "${{ matrix.url }}" -o test.matrix
             sha256sum -c checksums.sha256
-
-            if [[ ${{ matrix.title }} == .cool ]]; then
-              cooler cp "test.matrix::/resolutions/$resolution" test.matrix.tmp
-              mv test.matrix.tmp test.matrix
-            fi
           fi
 
       - name: Run test (df)
@@ -247,7 +239,7 @@ jobs:
             --nproc $(nproc) \
             --format df \
             test.matrix \
-            reference.cool
+            reference.mcool
 
       - name: Run test (dense)
         run: |
@@ -258,7 +250,7 @@ jobs:
             --nproc $(nproc) \
             --format dense \
             test.matrix \
-            reference.cool
+            reference.mcool
 
       - name: Run test (sparse)
         run: |
@@ -269,7 +261,7 @@ jobs:
             --nproc $(nproc) \
             --format sparse \
             test.matrix \
-            reference.cool
+            reference.mcool
 
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
