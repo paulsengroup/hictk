@@ -294,7 +294,7 @@ inline void File::write_standard_attributes(RootGroup &root_grp, const Attribute
   }
   if (attributes.bin_size == 0) {
     assert(attributes.bin_type == BinTable::Type::variable);
-    Attribute::write(root_grp(), "bin-size", "null");
+    Attribute::write(root_grp(), "bin-size", std::string{"null"});
   } else {
     assert(attributes.bin_type == BinTable::Type::fixed);
     Attribute::write(root_grp(), "bin-size", attributes.bin_size);

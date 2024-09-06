@@ -178,6 +178,7 @@ struct MergeConfig {
   std::uint32_t compression_lvl{9};
   std::size_t threads{1};
   bool skip_all_vs_all_matrix{true};
+  std::string count_type{"int"};
 
   bool force{false};
   std::uint8_t verbosity{4};

@@ -22,6 +22,7 @@
 #include "hictk/hic/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/tmpdir.hpp"
 
 namespace hictk {
 
@@ -71,6 +72,7 @@ class PixelSelector {
         std::variant<cooler::PixelSelector::iterator<N>, hic::PixelSelector::iterator<N>,
                      hic::PixelSelectorAll::iterator<N>>;
     IteratorVar _it{};
+    IteratorVar _sentinel{};
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -83,7 +85,7 @@ class PixelSelector {
 
     iterator() = default;
     template <typename It>
-    explicit iterator(It it);
+    iterator(It it, It end);
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
@@ -100,6 +102,12 @@ class PixelSelector {
     [[nodiscard]] constexpr IteratorT &get() noexcept;
     [[nodiscard]] constexpr auto get() const noexcept -> const IteratorVar &;
     [[nodiscard]] constexpr auto get() noexcept -> IteratorVar &;
+
+   private:
+    [[nodiscard]] static bool operator_eq(const IteratorVar &itv1,
+                                          const IteratorVar &itv2) noexcept;
+    [[nodiscard]] static bool operator_neq(const IteratorVar &itv1,
+                                           const IteratorVar &itv2) noexcept;
   };
 };
 
@@ -160,6 +168,26 @@ class File {
   [[nodiscard]] constexpr auto get() noexcept -> FileVar &;
 };
 
+namespace utils {
+
+/// Iterable of strings
+template <typename N, typename Str>
+void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri, std::uint32_t resolution,
+                   bool overwrite_if_exists = false, std::size_t chunk_size = 500'000,
+                   std::size_t update_frequency = 10'000'000,
+                   std::uint32_t compression_lvl = cooler::DEFAULT_COMPRESSION_LEVEL);
+
+/// Iterable of strings
+template <typename Str>
+void merge_to_hic(
+    Str first_file, Str last_file, std::string_view dest_file, std::uint32_t resolution,
+    const std::filesystem::path &tmp_dir = hictk::internal::TmpDir::default_temp_directory_path(),
+    bool overwrite_if_exists = false, std::size_t chunk_size = 500'000, std::size_t n_threads = 1,
+    std::uint32_t compression_lvl = 11, bool skip_all_vs_all = false);
+
+}  // namespace utils
+
 }  // namespace hictk
 
-#include "./impl/file_impl.hpp"  // NOLINT
+#include "./impl/file_impl.hpp"         // NOLINT
+#include "./impl/utils_merge_impl.hpp"  // NOLINT
