@@ -25,27 +25,31 @@ namespace hictk::fuzzer {
 
 [[nodiscard]] static std::vector<std::string> config_to_cli_args(const Config& c, std::uint16_t id,
                                                                  std::uint64_t seed) {
-  return {"launch-worker",
-          c.test_uri.string(),
-          c.reference_uri.string(),
-          "--task-id",
-          fmt::to_string(id),
-          "--resolution",
-          fmt::to_string(c.resolution),
-          "--1d-to-2d-query-ratio",
-          fmt::to_string(c._1d_to_2d_query_ratio),
-          "--duration",
-          fmt::to_string(c.duration),
-          "--format",
-          c.query_format,
-          "--query-length-avg",
-          fmt::to_string(c.query_length_avg),
-          "--query-length-std",
-          fmt::to_string(c.query_length_std),
-          "--normalization",
-          c.normalization,
-          "--seed",
-          fmt::to_string(seed)};
+  std::vector<std::string> args{"launch-worker",
+                                c.test_uri.string(),
+                                c.reference_uri.string(),
+                                "--task-id",
+                                fmt::to_string(id),
+                                "--1d-to-2d-query-ratio",
+                                fmt::to_string(c._1d_to_2d_query_ratio),
+                                "--duration",
+                                fmt::to_string(c.duration),
+                                "--format",
+                                c.query_format,
+                                "--query-length-avg",
+                                fmt::to_string(c.query_length_avg),
+                                "--query-length-std",
+                                fmt::to_string(c.query_length_std),
+                                "--normalization",
+                                c.normalization,
+                                "--seed",
+                                fmt::to_string(seed)};
+  if (c.resolution != 0) {
+    args.emplace_back("--resolution");
+    args.emplace_back(fmt::to_string(c.resolution));
+  }
+
+  return args;
 }
 
 [[nodiscard]] static std::vector<std::uint64_t> generate_seeds(std::uint64_t seed,
