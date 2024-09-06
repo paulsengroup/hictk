@@ -150,7 +150,7 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
         const auto& chrom2 = chroms.at(j);
 
         try {
-          validate_hic(*hf, chrom1, chrom2);
+          validate_hic(*hf, chrom1, chrom2);  // NOLINT(bugprone-unchecked-optional-access)
         } catch ([[maybe_unused]] const std::exception& e) {
           SPDLOG_DEBUG(FMT_STRING("[{}]: validation failed for {}:{} {}"), res, chrom1.name(),
                        chrom2.name(), e.what());
@@ -177,11 +177,8 @@ static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Ch
   const auto& ends = clr.dataset("bins/end");
 
   const auto expected_num_bins = clr.bins().size();
-  if (chroms.size() != expected_num_bins || starts.size() != expected_num_bins ||
-      ends.size() != expected_num_bins) {
-    return false;
-  }
-  return true;
+  return chroms.size() == expected_num_bins && starts.size() == expected_num_bins &&
+         ends.size() == expected_num_bins;
 }
 
 [[nodiscard]] static bool validate_bins_dtypes(const cooler::File& clr) {
@@ -302,6 +299,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
   return std::make_pair(return_code, status);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 [[nodiscard]] static std::string get_cooler_uri_noexcept(const cooler::MultiResFile& mclr,
                                                          std::uint32_t resolution) noexcept {
   try {
@@ -381,7 +379,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
       return_code = 1;
       if (!exhaustive) {
         global_status.insert_or_assign("is_valid_scool", false);
-        std::make_pair(1, global_status);
+        return std::make_pair(1, global_status);
       }
     }
   }
@@ -416,6 +414,7 @@ static void print_report(const toml::table& status, std::string_view format) {
   return t;
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 int validate_subcmd(const ValidateConfig& c) {
   try {
     int return_code = 0;
@@ -424,9 +423,9 @@ int validate_subcmd(const ValidateConfig& c) {
     if (c.quiet) {
       // In theory nothing should write to stdout, but better to be safe than sorry
 #ifdef _WIN32
-      std::freopen("nul", "w", stdout);
+      std::ignore = std::freopen("nul", "w", stdout);  // NOLINT
 #else
-      std::freopen("/dev/null", "w", stdout);
+      std::ignore = std::freopen("/dev/null", "w", stdout);  // NOLINT
 #endif
     }
 
