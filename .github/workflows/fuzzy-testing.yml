@@ -19,7 +19,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/fuzzy-testing.yml"
+      - "cmake/**"
+      - "src/**"
       - "test/fuzzer/**"
+      - "CMakeLists.txt"
+      - "conanfile.py"
 
   schedule:
     # Run weekly
