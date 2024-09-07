@@ -418,6 +418,14 @@ hictk validate
   Options:
     -h,--help                   Print this help message and exit
     --validate-index            Validate Cooler index (may take a long time).
+    -f,--output-format TEXT:{json,toml,yaml} [json]
+                                Format used to report the outcome of file validation.
+                                Should be one of: json, toml, or yaml.
+    --include-file-path,--exclude-file-path{false}
+                                Output the given input path using attribute "uri".
+    --exhaustive,--fail-fast{false}
+                                When processing multi-resolution or single-cell files,
+                                do not fail as soon as the first error is detected.
     --quiet                     Don't print anything to stdout. Success/failure is reported through exit codes
 
 hictk zoomify

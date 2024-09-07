@@ -27,6 +27,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -59,12 +60,12 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
 }
 
 inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
-                                                       bool validate_resolutions,
+                                                       bool validate_resolutions, bool exhaustive,
                                                        std::int64_t min_version) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
-    return is_multires_file(fp, validate_resolutions, min_version);
+    return is_multires_file(fp, validate_resolutions, exhaustive, min_version);
   } catch (const std::exception &e) {
     const std::string_view msg{e.what()};
     ValidationStatusMultiresCooler s{};
@@ -79,11 +80,12 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
   }
 }
 
-inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells) {
+inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells,
+                                           bool exhaustive) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
-    return is_scool_file(fp, validate_cells);
+    return is_scool_file(fp, validate_cells, exhaustive);
   } catch (const std::exception &e) {
     const std::string_view msg{e.what()};
     ValidationStatusScool s{};
@@ -161,7 +163,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
 }
 
 inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
-                                                       bool validate_resolutions,
+                                                       bool validate_resolutions, bool exhaustive,
                                                        std::int64_t min_version) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   ValidationStatusMultiresCooler status{};
@@ -230,7 +232,13 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
 
       if (auto status_ = is_cooler(fp, suffix); !status_) {
         status.file_was_properly_closed &= status_.file_was_properly_closed;
-        status.invalid_resolutions.emplace_back(std::move(status_));
+        status.invalid_resolutions.emplace(resolution, std::move(status_));
+        if (!exhaustive) {
+          break;
+        }
+      } else if (exhaustive) {
+        status.valid_resolutions.emplace(
+            hictk::internal::parse_numeric_or_throw<std::uint32_t>(resolution), std::move(status_));
       }
     }
   }
@@ -247,7 +255,8 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
   return status;
 }
 
-inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool validate_cells) {
+inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool validate_cells,
+                                           bool exhaustive) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   ValidationStatusScool status{};
   status.uri = fp.getName();
@@ -313,7 +322,12 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
       const auto suffix = fmt::format(FMT_STRING("cells/{}"), cell);
       if (auto status_ = is_cooler(fp, suffix); !status_) {
         status.file_was_properly_closed &= status_.file_was_properly_closed;
-        status.invalid_cells.emplace_back(std::move(status_));
+        status.invalid_cells.emplace(cell, std::move(status_));
+        if (!exhaustive) {
+          break;
+        }
+      } else if (exhaustive) {
+        status.valid_cells.emplace(cell, std::move(status_));
       }
     }
   }
@@ -331,9 +345,16 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   return status;
 }
 
-[[nodiscard]] inline bool index_is_valid(std::string_view uri, bool verbose) {
+[[nodiscard]] inline bool index_is_valid(std::string_view uri) {
+  [[maybe_unused]] std::string buff{};
+  return index_is_valid(uri, buff);
+}
+
+[[nodiscard]] inline bool index_is_valid(std::string_view uri, std::string &error_buffer) {
   // See https://github.com/robomics/20221129_4dnucleome_bug_report
   // and https://github.com/open2c/cooler/issues/319
+
+  error_buffer.clear();
   if (!is_cooler(uri)) {
     return false;
   }
@@ -351,13 +372,10 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1], 64'000);
 
     if (!std::is_sorted(first, last)) {
-      if (verbose) {
-        fmt::print(
-            stderr,
-            FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
-                       "contain duplicate entries)\n"),
-            bin1_offset[i0], bin1_offset[i1]);
-      }
+      error_buffer = fmt::format(
+          FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
+                     "contain duplicate entries)"),
+          bin1_offset[i0], bin1_offset[i1]);
       return false;
     }
   }
