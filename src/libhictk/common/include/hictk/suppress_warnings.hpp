@@ -18,6 +18,7 @@
     #define DISABLE_WARNING(warningNumber)            __pragma(warning(disable : warningNumber))
 
     #define DISABLE_WARNING_BOOL_COMPARE              DISABLE_WARNING(4806)
+    #define DISABLE_WARNING_CONVERSION                DISABLE_WARNING(C4244)
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING(4996)
     #define DISABLE_WARNING_MAYBE_UNINITIALIZED
     #define DISABLE_WARNING_NULL_DEREF
@@ -33,6 +34,7 @@
     #define DISABLE_WARNING_POP                       DO_PRAGMA(GCC diagnostic pop)
     #define DISABLE_WARNING(warningName)              DO_PRAGMA(GCC diagnostic ignored warningName)
 
+    #define DISABLE_WARNING_CONVERSION                DISABLE_WARNING("-Wconversion")
     #define DISABLE_WARNING_DEPRECATED_DECLARATIONS   DISABLE_WARNING("-Wdeprecated-declarations")
     #define DISABLE_WARNING_NULL_DEREF                DISABLE_WARNING("-Wnull-dereference")
     #define DISABLE_WARNING_SIGN_COMPARE              DISABLE_WARNING("-Wsign-compare")
@@ -60,6 +62,7 @@
   #define DISABLE_WARNING_POP
 
   #define DISABLE_WARNING_BOOL_COMPARE
+  #define DISABLE_WARNING_CONVERSION
   #define DISABLE_WARNING_DEPRECATED_DECLARATIONS
   #define DISABLE_WARNING_MAYBE_UNINITIALIZED
   #define DISABLE_WARNING_NULL_DEREF
