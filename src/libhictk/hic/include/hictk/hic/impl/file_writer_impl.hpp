@@ -672,10 +672,10 @@ inline void HiCFileWriter::write_empty_normalized_expected_values() {
                offset);
   try {
     _fs.seekp(offset);
-    DISABLE_WARNING_PUSH
-    DISABLE_WARNING_USELESS_CAST
+    HICTK_DISABLE_WARNING_PUSH
+    HICTK_DISABLE_WARNING_USELESS_CAST
     _fs.write(std::int32_t(0));
-    DISABLE_WARNING_POP
+    HICTK_DISABLE_WARNING_POP
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while writing an empty normalized expected "

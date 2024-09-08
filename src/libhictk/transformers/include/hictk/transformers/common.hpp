@@ -37,10 +37,10 @@ inline void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t 
     bool inserted = false;
     if (populate_upper_triangle) {
       if (i1 >= 0 && i1 < num_rows && i2 >= 0 && i2 < num_cols) {
-        DISABLE_WARNING_PUSH
-        DISABLE_WARNING_CONVERSION
+        HICTK_DISABLE_WARNING_PUSH
+        HICTK_DISABLE_WARNING_CONVERSION
         matrix_setter(buffer, i1, i2, p.count);
-        DISABLE_WARNING_POP
+        HICTK_DISABLE_WARNING_POP
         inserted = true;
       }
     }
@@ -54,10 +54,10 @@ inline void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t 
       }
 
       if (i3 >= 0 && i3 < num_rows && i4 >= 0 && i4 < num_cols) {
-        DISABLE_WARNING_PUSH
-        DISABLE_WARNING_CONVERSION
+        HICTK_DISABLE_WARNING_PUSH
+        HICTK_DISABLE_WARNING_CONVERSION
         matrix_setter(buffer, i3, i4, p.count);
-        DISABLE_WARNING_POP
+        HICTK_DISABLE_WARNING_POP
       }
     }
   });

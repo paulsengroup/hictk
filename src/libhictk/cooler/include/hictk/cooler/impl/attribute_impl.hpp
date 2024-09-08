@@ -112,8 +112,8 @@ inline void Attribute::read_vector(const ParentObj& h5obj, std::string_view key,
   }
 }
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> AttributeVar {
   if constexpr (i < std::variant_size_v<AttributeVar>) {
@@ -135,10 +135,10 @@ inline auto Attribute::read_variant(const HighFive::Attribute& attr) -> Attribut
   }
   return std::monostate();
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 template <typename T1, typename Tout, typename Tin>
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline Tout Attribute::numeric_converter(T1& buff) {
@@ -221,6 +221,6 @@ inline Tout Attribute::numeric_converter(T1& buff) {
           "Expected type {}, found {}. Unable to safely convert value {} of type {} to type {}"),
       type_name<Tout>(), type_name<Tin>(), buff, type_name<Tin>(), type_name<Tout>()));
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 }  // namespace hictk::cooler

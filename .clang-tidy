@@ -28,7 +28,7 @@ HeaderFilterRegex: ""
 FormatStyle: none
 CheckOptions:
   - key: cppcoreguidelines-macro-usage.AllowedRegexp
-    value: "DISABLE_WARNING_.*"
+    value: "HICTK_DISABLE_WARNING_.*"
   - key: misc-include-cleaner.IgnoreHeaders
     value: "fmt/.*"
   - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
