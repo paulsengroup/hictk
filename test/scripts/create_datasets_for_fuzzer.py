@@ -332,7 +332,7 @@ def file_is_gzipped(path: pathlib.Path) -> bool:
 
 def try_open_gzipped_file(path: pathlib.Path):
     if file_is_gzipped(path):
-        return gzip.open(path, "rb")
+        return gzip.open(path, "rt")
 
     return open(path, "r")
 
@@ -585,6 +585,8 @@ def main():
         mclr = cooler_zoomify(base_clr, resolutions, pathlib.Path(tmpdir))
         base_clr.unlink()
 
+        out_prefix.parent.mkdir(parents=True, exist_ok=True)
+
         # mcool to cool(s)
         coolers = mcool_to_cool(mclr, out_prefix, force, pool)
         mclr.unlink()
@@ -666,7 +668,11 @@ def main():
 
         # Balance cool(s)
         for clr in coolers.values():
-            cooler.balance_cooler(cooler.Cooler(str(clr)), map=pool.map)
+            logging.info('balancing cooler at "%s"...', clr)
+            t0 = time.time()
+            cooler.balance_cooler(cooler.Cooler(str(clr), store=True), map=pool.map)
+            t1 = time.time()
+            logging.info('DONE! balancing cooler at "%s" took %ss', clr, t1 - t0)
 
 
 if __name__ == "__main__":
