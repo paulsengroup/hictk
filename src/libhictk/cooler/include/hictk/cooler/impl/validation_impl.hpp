@@ -359,7 +359,15 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     return false;
   }
 
-  File clr(uri, DEFAULT_HDF5_CACHE_SIZE * 4, false);
+  const File clr(uri, DEFAULT_HDF5_CACHE_SIZE * 4, false);
+
+  if (const auto &storage_mode = clr.attributes().storage_mode;
+      storage_mode.has_value() && storage_mode != "symmetric-upper") {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("validating the index of Coolers with storage-mode=\"{}\" is not supported"),
+        *storage_mode));
+  }
+
   const auto bin1_dset = clr.dataset("indexes/bin1_offset");
   const auto bin2_dset = clr.dataset("pixels/bin2_id");
 
