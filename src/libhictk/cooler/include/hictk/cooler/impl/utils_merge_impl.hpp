@@ -42,6 +42,11 @@ struct LightCooler {
 template <typename N>
 [[nodiscard]] inline LightCooler<N> preprocess_cooler(const std::string& uri) {
   auto clr = File::open_read_once(std::string{uri});
+  if (const auto& storage_mode = clr.attributes().storage_mode;
+      storage_mode.has_value() && storage_mode != "symmetri-cupper") {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("merging coolers with storage-mode=\"{}\" is not supported"), *storage_mode));
+  }
   auto sel = clr.fetch();
   return {uri, clr.chromosomes(), clr.resolution(), sel.begin<N>(), sel.end<N>()};
 }

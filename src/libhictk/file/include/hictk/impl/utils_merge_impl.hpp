@@ -95,6 +95,24 @@ init_iterators(const std::vector<File>& files) {
   return std::make_tuple(std::move(selectors), std::move(heads), std::move(tails));
 }
 
+template <typename Str>
+[[nodiscard]] std::vector<File> open_files(Str first_uri, Str last_uri, std::uint32_t resolution) {
+  std::vector<File> files{};
+  std::transform(first_uri, last_uri, std::back_inserter(files), [&](const auto& uri) {
+    File f(uri, resolution);
+    if (f.is_cooler()) {
+      const auto& storage_mode = std::get<cooler::File>(f.get()).attributes().storage_mode;
+      if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("merging coolers with storage-mode=\"{}\" is not supported"),
+                        *storage_mode));
+      }
+    }
+  });
+
+  return files;
+}
+
 }  // namespace merge::internal
 
 /// Iterable of strings
@@ -112,10 +130,8 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
                                    update_frequency, compression_lvl);
   }
 
-  std::vector<File> files{};
-  std::transform(first_uri, last_uri, std::back_inserter(files),
-                 [&](const auto& uri) { return File(uri, resolution); });
   try {
+    const auto files = merge::internal::open_files(first_uri, last_uri, resolution);
     merge::internal::validate_chromosomes(files);
     merge::internal::validate_bin_size(files);
   } catch (const std::exception& e) {
@@ -164,10 +180,8 @@ inline void merge_to_hic(Str first_file, Str last_file, std::string_view dest_fi
                              skip_all_vs_all);
   }
 
-  std::vector<File> files{};
-  std::transform(first_file, last_file, std::back_inserter(files),
-                 [&](const auto& uri) { return File(uri, resolution); });
   try {
+    const auto files = merge::internal::open_files(first_file, last_file, resolution);
     merge::internal::validate_chromosomes(files);
     merge::internal::validate_bin_size(files, false);
   } catch (const std::exception& e) {
