@@ -60,13 +60,13 @@ jobs:
         id: generate-cache-key
         run: |
           hash="${{ hashFiles('conanfile.py', '.github/workflows/packaging.yml') }}"
-          echo "conan-key=clang-tidy-$hash" >> $GITHUB_OUTPUT
+          echo "conan-key=packaging-$hash" >> $GITHUB_OUTPUT
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          key: ${{ steps.generate-cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}
 
       - name: Clean Conan cache (pre-build)
@@ -102,7 +102,7 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
+          key: ${{ steps.generate-cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}
 
   test-find-package:
@@ -124,9 +124,20 @@ jobs:
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ needs.build-deps.outputs.cache-key }}
+          key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ env.CONAN_HOME }}
           fail-on-cache-miss: true
+
+      - name: Install build dependencies
+        run: |
+          conan install .                        \
+             --build=missing                     \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
+             -s build_type=Release               \
+             -s compiler.libcxx=libstdc++11      \
+             -s compiler.cppstd=17               \
+             --output-folder=build
 
       - name: Configure project
         run: |
@@ -151,6 +162,10 @@ jobs:
             -S test/packaging/test_find_package \
             -B test_find_package_build
 
+      - name: Build test project
+        run: |
+          cmake --build test_find_package_build
+
       - name: Test binary
         run: |
           test_find_package_build/hictk_test_find_package
@@ -174,9 +189,20 @@ jobs:
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ needs.build-deps.outputs.cache-key }}
+          key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ env.CONAN_HOME }}
           fail-on-cache-miss: true
+
+      - name: Install build dependencies
+        run: |
+          conan install .                        \
+             --build=missing                     \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
+             -s build_type=Release               \
+             -s compiler.libcxx=libstdc++11      \
+             -s compiler.cppstd=17               \
+             --output-folder=build
 
       - name: Configure project
         run: |
@@ -185,7 +211,7 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$PWD/build" \
-            -S test/packaging/test_add_subdirectory
+            -S test/packaging/test_add_subdirectory \
             -B test_add_subdirectory_build
 
       - name: Build test project
@@ -208,7 +234,7 @@ jobs:
     steps:
       - name: Collect job results
         if: |
-          needs.build-deps != 'success'            ||
-          needs.test-find-package != 'success'     ||
-          needs.test-add-subdirectory != 'success'
+          needs.build-deps.result != 'success'            ||
+          needs.test-find-package.result != 'success'     ||
+          needs.test-add-subdirectory.result != 'success'
         run: exit 1
