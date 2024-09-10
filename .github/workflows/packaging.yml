@@ -78,7 +78,6 @@ jobs:
           conan remove --confirm "*"
 
       - name: Copy Conan settings
-        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
 
       - name: Install build dependencies
