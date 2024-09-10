@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+
+SPDX-License-Identifier: MIT
+-->
+
 # README.md
 
 Test to ensure hictk can be included in a project through `add_subdirectory()`.
