@@ -12,6 +12,8 @@
 #include <string>
 #include <type_traits>
 
+#include "hictk/bin_table.hpp"
+
 namespace hictk::cooler {
 
 template <typename PixelT, typename>
@@ -32,7 +34,7 @@ inline Attributes Attributes::init(std::uint32_t bin_size_) {
 inline Attributes Attributes::init_empty() noexcept {
   Attributes attrs{};
 
-  attrs.bin_type.reset();
+  attrs.bin_type = BinTable::Type::fixed;
   attrs.creation_date.reset();
   attrs.format_url.reset();
   attrs.generated_by.reset();

@@ -61,7 +61,7 @@ hictk balance ice
                                  - genome-wide interactions (gw)
                                  - trans-only interactions (trans)
                                  - cis-only interactions (cis)
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --ignore-diags UINT [2]     Number of diagonals (including the main diagonal) to mask before balancing.
     --mad-max FLOAT:NONNEGATIVE [5]
                                 Mask bins using the MAD-max filter.
@@ -111,7 +111,7 @@ hictk balance scale
                                  - genome-wide interactions (gw)
                                  - trans-only interactions (trans)
                                  - cis-only interactions (cis)
-    --tmpdir TEXT [/tmp]        Path to a folder where to store temporary data.
+    --tmpdir TEXT               Path to a folder where to store temporary data.
     --max-percentile FLOAT [10]
                                 Percentile used to compute the maximum number of nnz values that cause a row to be masked.
     --max-row-sum-err FLOAT:NONNEGATIVE [0.05]
@@ -126,7 +126,8 @@ hictk balance scale
                                 to that of the input matrix.
     --name TEXT                 Name to use when writing weights to file.
                                 Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.
-    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+    --create-weight-link,--no-create-weight-link{false}
+                                Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --in-memory                 Store all interactions in memory (greatly improves performance).
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
@@ -162,7 +163,8 @@ hictk balance vc
                                 to that of the input matrix.
     --name TEXT                 Name to use when writing weights to file.
                                 Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.
-    --create-weight-link        Create a symbolic link to the balancing weights at clr::/bins/weight.
+    --create-weight-link,--no-create-weight-link{false}
+                                Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     -v,--verbosity UINT:INT in [1 - 4] []
@@ -196,7 +198,7 @@ hictk convert
                                 Pass NONE to avoid copying normalization vectors.
     --fail-if-norm-not-found    Fail if any of the requested normalization vectors are missing.
     -g,--genome TEXT            Genome assembly name. By default this is copied from the .hic file metadata.
-    --tmpdir TEXT:DIR [/tmp]    Path where to store temporary files.
+    --tmpdir TEXT:DIR           Path where to store temporary files.
     --chunk-size UINT:POSITIVE [10000000]
                                 Batch size to use when converting .[m]cool to .hic.
     -v,--verbosity UINT:INT in [1 - 4] []
@@ -210,6 +212,10 @@ hictk convert
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when creating .[m]cool files.
+    --count-type TEXT:{auto,int,float} [auto]
+                                Specify the strategy used to infer count types when converting .hic
+                                files to .[m]cool format.
+                                Can be one of: int, float, auto.
     -f,--force                  Overwrite existing files (if any).
 
 hictk dump
@@ -225,7 +231,7 @@ hictk dump
   Options:
     -h,--help                   Print this help message and exit
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when file is in .cool format).
+                                Hi-C matrix resolution (ignored when file is in .cool format).
     --matrix-type ENUM:value in {expected->2,observed->0,oe->1} OR {2,0,1} [observed]
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:value in {BP->0,FRAG->1} OR {0,1} [BP]
@@ -259,7 +265,7 @@ hictk fix-mcool
     output TEXT REQUIRED        Path where to store the restored .mcool.
   Options:
     -h,--help                   Print this help message and exit
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --skip-balancing            Do not recompute or copy balancing weights.
     --check-base-resolution     Check whether the base resolution is corrupted.
     --in-memory                 Store all interactions in memory while balancing (greatly improves performance).
@@ -314,7 +320,7 @@ hictk load
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only a single thread will be used.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -332,8 +338,13 @@ hictk merge
     -h,--help                   Print this help message and exit
     -o,--output-file TEXT REQUIRED
                                 Output Cooler or .hic file (Cooler URI syntax supported).
+    --output-fmt TEXT:{cool,hic} [auto]
+                                Output format (by default this is inferred from the output file extension).
+                                Should be one of:
+                                - cool
+                                - hic
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when input files are in .cool format).
+                                Hi-C matrix resolution (ignored when input files are in .cool format).
     -f,--force                  Force overwrite output file.
     --chunk-size UINT [10000000]
                                 Number of pixels to store in memory before writing to disk.
@@ -343,10 +354,13 @@ hictk merge
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
                                 When merging interactions in Cooler format, only a single thread will be used.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when merging .cool files.
+    --count-type TEXT:{int,float} [int]
+                                Specify the count type to be used when merging files.
+                                Ignored when the output file is in .hic format.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -404,6 +418,14 @@ hictk validate
   Options:
     -h,--help                   Print this help message and exit
     --validate-index            Validate Cooler index (may take a long time).
+    -f,--output-format TEXT:{json,toml,yaml} [json]
+                                Format used to report the outcome of file validation.
+                                Should be one of: json, toml, or yaml.
+    --include-file-path,--exclude-file-path{false}
+                                Output the given input path using attribute "uri".
+    --exhaustive,--fail-fast{false}
+                                When processing multi-resolution or single-cell files,
+                                do not fail as soon as the first error is detected.
     --quiet                     Don't print anything to stdout. Success/failure is reported through exit codes
 
 hictk zoomify
@@ -412,11 +434,14 @@ hictk zoomify
 .. code-block:: text
 
   Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
-  Usage: hictk zoomify [OPTIONS] cooler/hic mcool/hic
+  Usage: hictk zoomify [OPTIONS] cooler/hic [m]cool/hic
   Positionals:
     cooler/hic TEXT:(Cooler) OR (HiC) REQUIRED
                                 Path to a .cool or .hic file (Cooler URI syntax supported).
-    mcool/hic TEXT REQUIRED     Output path.
+    [m]cool/hic TEXT REQUIRED   Output path.
+                                When zoomifying Cooler files, providing a single resolution through
+                                --resolutions and specifying --no-copy-base-resolution, the output file
+                                will be in .cool format.
   Options:
     -h,--help                   Print this help message and exit
     --force                     Force overwrite existing output file(s).
@@ -441,6 +466,6 @@ hictk zoomify
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when zoomifying .cool files.
-    --tmpdir TEXT:DIR [/tmp]    Path to a folder where to store temporary data.
+    --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.

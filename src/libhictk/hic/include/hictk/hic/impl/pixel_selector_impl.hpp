@@ -148,6 +148,21 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
   return return_pixel();
 }
 
+inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCBlockReader> reader_,
+                                    std::shared_ptr<const internal::HiCFooter> footer_,
+                                    std::shared_ptr<const PixelCoordinates> coord1_,
+                                    std::shared_ptr<const PixelCoordinates> coord2_)
+    : _reader(std::move(reader_)),
+      _footer(std::move(footer_)),
+      _coord1(std::move(coord1_)),
+      _coord2(std::move(coord2_)) {}
+
+inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
+                                          PixelCoordinates coord2_) const {
+  return {_reader, _footer, std::make_shared<const PixelCoordinates>(coord1_),
+          std::make_shared<const PixelCoordinates>(coord2_)};
+}
+
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
@@ -801,7 +816,7 @@ inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) 
 
   assert(_i < _buff->size());
   assert(other._i < other._buff->size());
-  return (*_buff)[_i] == (*other._buff)[_i];
+  return (*_buff)[_i] == (*other._buff)[other._i];
 }
 
 template <typename N>

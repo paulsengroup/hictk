@@ -123,6 +123,14 @@ void Cli::make_convert_subcommand() {
       "Do not generate All vs All matrix.\n"
       "Has no effect when creating .[m]cool files.")
       ->capture_default_str();
+  sc.add_option(
+      "--count-type",
+      c.count_type,
+      "Specify the strategy used to infer count types when converting .hic\n"
+      "files to .[m]cool format.\n"
+      "Can be one of: int, float, auto.")
+      ->check(CLI::IsMember{{"auto", "int", "float"}})
+      ->capture_default_str();
   sc.add_flag(
       "-f,--force",
       c.force,

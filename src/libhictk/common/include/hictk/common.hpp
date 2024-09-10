@@ -40,6 +40,14 @@ inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::
   HICTK_UNREACHABLE_CODE;
 }
 
+#if defined(__builtin_expect)
+#define HICTK_LIKELY(x) __builtin_expect(!!(x), 1))
+#define HICTK_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define HICTK_LIKELY(x)   x
+#define HICTK_UNLIKELY(x) x
+#endif
+
 struct identity {
   template <typename T>
   [[nodiscard]] constexpr T &&operator()(T &&a) const noexcept {

@@ -16,6 +16,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/numeric_utils.hpp"
 
 // NOLINTNEXTLINE(*-concat-nested-namespaces)
@@ -408,3 +409,14 @@ inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_vi
 }
 
 }  // namespace hictk
+
+template <typename N>
+inline std::size_t std::hash<hictk::ThinPixel<N>>::operator()(
+    const hictk::ThinPixel<N> &p) const noexcept {
+  return hictk::internal::hash_combine(0, p.bin1_id, p.bin2_id, p.count);
+}
+
+template <typename N>
+inline std::size_t std::hash<hictk::Pixel<N>>::operator()(const hictk::Pixel<N> &p) const noexcept {
+  return hictk::internal::hash_combine(0, p.coords.bin1.id(), p.coords.bin2.id(), p.count);
+}

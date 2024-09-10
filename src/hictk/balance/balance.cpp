@@ -141,7 +141,9 @@ static int balance_cooler(cooler::File& f, const BalanceConfig& c,
                     c.name, f.path()));
   }
 
-  const auto tmpfile = tmp_dir.empty() ? "" : tmp_dir / std::filesystem::path{f.path()}.filename();
+  const auto tmpfile =
+      tmp_dir.empty() ? ""
+                      : tmp_dir / (std::filesystem::path{f.path()}.filename().string() + ".tmp");
   const auto params = init_params<Balancer>(c, tmpfile);
 
   typename Balancer::Type mode{};
@@ -187,7 +189,8 @@ static int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_
     }
   }
 
-  const auto tmpfile = tmp_dir / std::filesystem::path{c.path_to_input}.filename();
+  const auto tmpfile =
+      tmp_dir / (std::filesystem::path{c.path_to_input}.filename().string() + ".tmp");
 
   const auto params = init_params<Balancer>(c, tmpfile);
   typename Balancer::Type mode{};

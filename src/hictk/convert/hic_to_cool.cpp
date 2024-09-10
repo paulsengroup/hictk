@@ -36,6 +36,7 @@
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/pixel_selector.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/tools/config.hpp"
@@ -105,25 +106,27 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
   }
 }
 
+template <typename PixelT>
 [[nodiscard]] static cooler::File init_cooler(cooler::RootGroup entrypoint,
                                               std::uint32_t resolution, std::string_view genome,
                                               const Reference& chroms,
                                               std::uint32_t compression_lvl) {
-  auto attrs = cooler::Attributes::init(resolution);
+  auto attrs = cooler::Attributes::init<PixelT>(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(std::move(entrypoint), chroms, resolution, attrs,
-                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
+  return cooler::File::create<PixelT>(std::move(entrypoint), chroms, resolution, attrs,
+                                      cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
+template <typename PixelT>
 [[nodiscard]] static cooler::File init_cooler(std::string_view uri, std::uint32_t resolution,
                                               std::string_view genome, const Reference& chroms,
                                               std::uint32_t compression_lvl) {
-  auto attrs = cooler::Attributes::init(resolution);
+  auto attrs = cooler::Attributes::init<PixelT>(resolution);
   attrs.assembly = genome.empty() ? "unknown" : std::string{genome};
 
-  return cooler::File::create(uri, chroms, resolution, true, attrs,
-                              cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
+  return cooler::File::create<PixelT>(uri, chroms, resolution, true, attrs,
+                                      cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 }
 
 static Reference generate_reference(const std::filesystem::path& p, std::uint32_t res) {
@@ -312,32 +315,70 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
               resolution, nnz, hf.chromosomes().size() - 1, delta);
 }
 
+[[nodiscard]] static std::variant<std::int32_t, float> infer_count_type(
+    const std::filesystem::path& p, std::size_t max_sample_size = 1'000'000) {
+  const auto base_resolution = hic::utils::list_resolutions(p, true).front();
+  const hic::File f(p.string(), base_resolution);
+  const auto sel = f.fetch();
+
+  auto first_pixel = sel.begin<float>();
+  const auto last_pixel = sel.end<float>();
+
+  for (std::size_t i = 0; i < max_sample_size && first_pixel != last_pixel; ++i, ++first_pixel) {
+    const auto pixel = *first_pixel;
+    if (pixel.count != std::floor(pixel.count)) {
+      return {float{}};
+    }
+  }
+
+  return {std::int32_t{}};
+}
+
 void hic_to_cool(const ConvertConfig& c) {
   assert(!c.resolutions.empty());
 
-  const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
-  hic::File hf(c.path_to_input.string(), c.resolutions.front());
-  assert(spdlog::default_logger());
+  std::variant<std::int32_t, float> count_type{std::int32_t{}};
 
-  if (c.resolutions.size() == 1) {
-    convert_resolution_multi_threaded<std::int32_t>(
-        hf,
-        init_cooler(c.path_to_output.string(), c.resolutions.front(), c.genome, chroms,
-                    c.compression_lvl),
-        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
-    return;
+  if (c.count_type == "auto") {
+    count_type = infer_count_type(c.path_to_input);
+  } else if (c.count_type == "int") {
+    count_type = std::int32_t{};
+  } else {
+    assert(c.count_type == "float");
+    count_type = float{};
   }
 
-  auto mclr = cooler::MultiResFile::create(c.path_to_output.string(), chroms, c.force);
+  std::visit(
+      [&]([[maybe_unused]] auto count_type_) {
+        using PixelT = decltype(count_type_);
 
-  std::for_each(c.resolutions.begin(), c.resolutions.end(), [&](const auto res) {
-    hf.open(res);
-    auto attrs = cooler::Attributes::init(res);
-    attrs.assembly = c.genome.empty() ? "unknown" : std::string{c.genome};
-    convert_resolution_multi_threaded<std::int32_t>(
-        hf, init_cooler(mclr.init_resolution(res), res, c.genome, chroms, c.compression_lvl),
-        c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
-    hf.clear_cache();
-  });
+        const auto chroms = generate_reference(c.path_to_input.string(), c.resolutions.front());
+        hic::File hf(c.path_to_input.string(), c.resolutions.front());
+        assert(spdlog::default_logger());
+
+        if (c.resolutions.size() == 1) {
+          convert_resolution_multi_threaded<PixelT>(
+              hf,
+              init_cooler<PixelT>(c.path_to_output.string(), c.resolutions.front(), c.genome,
+                                  chroms, c.compression_lvl),
+              c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
+          return;
+        }
+
+        auto mclr = cooler::MultiResFile::create(c.path_to_output.string(), chroms, c.force);
+
+        std::for_each(c.resolutions.begin(), c.resolutions.end(), [&](const auto res) {
+          hf.open(res);
+          auto attrs = cooler::Attributes::init<PixelT>(res);
+          attrs.assembly = c.genome.empty() ? "unknown" : std::string{c.genome};
+          convert_resolution_multi_threaded<PixelT>(
+              hf,
+              init_cooler<PixelT>(mclr.init_resolution(res), res, c.genome, chroms,
+                                  c.compression_lvl),
+              c.normalization_methods, c.fail_if_normalization_method_is_not_avaliable);
+          hf.clear_cache();
+        });
+      },
+      count_type);
 }
 }  // namespace hictk::tools

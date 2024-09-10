@@ -293,13 +293,14 @@ inline void File::write_standard_attributes(RootGroup &root_grp, const Attribute
     Attribute::write(root_grp(), "assembly", *attributes.assembly);
   }
   if (attributes.bin_size == 0) {
-    assert(attributes.bin_type.value() == "variable");
-    Attribute::write(root_grp(), "bin-size", "null");
+    assert(attributes.bin_type == BinTable::Type::variable);
+    Attribute::write(root_grp(), "bin-size", std::string{"null"});
   } else {
-    assert(attributes.bin_type.value() == "fixed");
+    assert(attributes.bin_type == BinTable::Type::fixed);
     Attribute::write(root_grp(), "bin-size", attributes.bin_size);
   }
-  Attribute::write(root_grp(), "bin-type", *attributes.bin_type);            // NOLINT
+  const std::string bin_type = attributes.bin_type == BinTable::Type::fixed ? "fixed" : "variable";
+  Attribute::write(root_grp(), "bin-type", bin_type);
   Attribute::write(root_grp(), "creation-date", *attributes.creation_date);  // NOLINT
   Attribute::write(root_grp(), "format", std::string{COOL_MAGIC});
   Attribute::write(root_grp(), "format-url", *attributes.format_url);  // NOLINT
