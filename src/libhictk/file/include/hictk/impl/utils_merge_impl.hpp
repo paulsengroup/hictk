@@ -108,6 +108,8 @@ template <typename Str>
                         *storage_mode));
       }
     }
+
+    return f;
   });
 
   return files;
@@ -134,34 +136,34 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
     const auto files = merge::internal::open_files(first_uri, last_uri, resolution);
     merge::internal::validate_chromosomes(files);
     merge::internal::validate_bin_size(files);
+
+    const auto& [_, heads, tails] = merge::internal::init_iterators<N>(files);
+
+    transformers::PixelMerger merger{heads, tails};
+    std::vector<ThinPixel<N>> buffer(chunk_size);
+    buffer.clear();
+
+    const auto& f0 = files.front();
+    auto attrs = cooler::Attributes::init(f0.resolution());
+    std::visit(
+        [&](const auto& f) {
+          using FileT = remove_cvref_t<decltype(f)>;
+          if constexpr (std::is_same_v<FileT, cooler::File>) {
+            attrs.assembly = f.attributes().assembly;
+          } else {
+            attrs.assembly = f.assembly();
+          }
+        },
+        f0.get());
+
+    auto dest = cooler::File::create<N>(dest_uri, f0.bins(), overwrite_if_exists, attrs,
+                                        cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
+
+    dest.append_pixels(merger.begin(), merger.end());
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("cannot merge files {}: {}"),
                                          fmt::join(first_uri, last_uri, ", "), e.what()));
   }
-
-  const auto& [_, heads, tails] = merge::internal::init_iterators<N>(files);
-
-  transformers::PixelMerger merger{heads, tails};
-  std::vector<ThinPixel<N>> buffer(chunk_size);
-  buffer.clear();
-
-  const auto& f0 = files.front();
-  auto attrs = cooler::Attributes::init(f0.resolution());
-  std::visit(
-      [&](const auto& f) {
-        using FileT = remove_cvref_t<decltype(f)>;
-        if constexpr (std::is_same_v<FileT, cooler::File>) {
-          attrs.assembly = f.attributes().assembly;
-        } else {
-          attrs.assembly = f.assembly();
-        }
-      },
-      f0.get());
-
-  auto dest = cooler::File::create<N>(dest_uri, f0.bins(), overwrite_if_exists, attrs,
-                                      cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
-
-  dest.append_pixels(merger.begin(), merger.end());
 }
 
 /// Iterable of strings
@@ -184,39 +186,40 @@ inline void merge_to_hic(Str first_file, Str last_file, std::string_view dest_fi
     const auto files = merge::internal::open_files(first_file, last_file, resolution);
     merge::internal::validate_chromosomes(files);
     merge::internal::validate_bin_size(files, false);
+
+    if (overwrite_if_exists) {
+      std::filesystem::remove(dest_file);
+    }
+
+    const auto& [_, heads, tails] = merge::internal::init_iterators<float>(files);
+
+    transformers::PixelMerger merger{heads, tails};
+    std::vector<ThinPixel<float>> buffer(chunk_size);
+    buffer.clear();
+
+    const auto& f0 = files.front();
+    const auto assembly = std::visit(
+        [&](const auto& f) -> std::string {
+          using FileT = remove_cvref_t<decltype(f)>;
+          if constexpr (std::is_same_v<FileT, cooler::File>) {
+            return std::string{f.attributes().assembly.has_value() ? *f.attributes().assembly
+                                                                   : "unknown"};
+          } else {
+            return std::string{f.assembly()};
+          }
+        },
+        f0.get());
+
+    hic::internal::HiCFileWriter w(dest_file, f0.chromosomes(), {f0.resolution()}, assembly,
+                                   n_threads, chunk_size, tmp_dir, compression_lvl,
+                                   skip_all_vs_all);
+
+    w.add_pixels(f0.resolution(), merger.begin(), merger.end());
+    w.serialize();
   } catch (const std::exception& e) {
     throw std::runtime_error(fmt::format(FMT_STRING("cannot merge files {}: {}"),
                                          fmt::join(first_file, last_file, ", "), e.what()));
   }
-
-  if (overwrite_if_exists) {
-    std::filesystem::remove(dest_file);
-  }
-
-  const auto& [_, heads, tails] = merge::internal::init_iterators<float>(files);
-
-  transformers::PixelMerger merger{heads, tails};
-  std::vector<ThinPixel<float>> buffer(chunk_size);
-  buffer.clear();
-
-  const auto& f0 = files.front();
-  const auto assembly = std::visit(
-      [&](const auto& f) -> std::string {
-        using FileT = remove_cvref_t<decltype(f)>;
-        if constexpr (std::is_same_v<FileT, cooler::File>) {
-          return std::string{f.attributes().assembly.has_value() ? *f.attributes().assembly
-                                                                 : "unknown"};
-        } else {
-          return std::string{f.assembly()};
-        }
-      },
-      f0.get());
-
-  hic::internal::HiCFileWriter w(dest_file, f0.chromosomes(), {f0.resolution()}, assembly,
-                                 n_threads, chunk_size, tmp_dir, compression_lvl, skip_all_vs_all);
-
-  w.add_pixels(f0.resolution(), merger.begin(), merger.end());
-  w.serialize();
 }
 
 }  // namespace hictk::utils
