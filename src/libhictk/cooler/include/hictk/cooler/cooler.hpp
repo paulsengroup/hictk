@@ -9,11 +9,11 @@
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 #include <initializer_list>
 #include <memory>

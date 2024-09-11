@@ -11,10 +11,10 @@
 #include <parallel_hashmap/btree.h>
 
 #include <cstdint>
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5File.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
 #include <string>
 #include <string_view>

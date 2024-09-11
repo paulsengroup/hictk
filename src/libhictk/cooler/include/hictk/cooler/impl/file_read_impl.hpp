@@ -440,8 +440,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
 }  // namespace internal
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp,
                                            bool initialize_missing) -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
@@ -496,7 +496,7 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp,
 
   return attrs;
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                 bool missing_ok) -> Reference {

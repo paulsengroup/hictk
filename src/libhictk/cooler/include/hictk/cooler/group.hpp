@@ -13,17 +13,17 @@
 #include <fmt/format.h>
 #include <parallel_hashmap/phmap.h>
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREF
 #include <highfive/H5File.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
 #include <string>
 
 namespace hictk::cooler {
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_DEPRECATED_DECLARATIONS
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 struct RootGroup {
   HighFive::Group group{};
 
@@ -44,7 +44,7 @@ struct Group {
   [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return group; };
   [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept { return group; };
 };
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 using GroupMap = phmap::flat_hash_map<std::string, Group>;
 
