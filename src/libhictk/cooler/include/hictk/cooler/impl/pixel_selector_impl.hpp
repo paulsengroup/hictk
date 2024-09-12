@@ -146,6 +146,10 @@ inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordina
           _weights};
 }
 
+inline std::shared_ptr<const balancing::Weights> PixelSelector::weights() const noexcept {
+  return _weights;
+}
+
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
