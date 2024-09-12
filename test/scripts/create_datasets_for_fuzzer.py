@@ -670,7 +670,7 @@ def main():
         for clr in coolers.values():
             logging.info('balancing cooler at "%s"...', clr)
             t0 = time.time()
-            cooler.balance_cooler(cooler.Cooler(str(clr), store=True), map=pool.map)
+            cooler.balance_cooler(cooler.Cooler(str(clr)), store=True, map=pool.map)
             t1 = time.time()
             logging.info('DONE! balancing cooler at "%s" took %ss', clr, t1 - t0)
 
