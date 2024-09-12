@@ -735,18 +735,18 @@ inline const BinTable &PixelSelectorAll::bins() const noexcept {
 }
 inline std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
 
-inline std::vector<double> PixelSelectorAll::weights() const {
-  std::vector<double> weights_{};
-  weights_.reserve(bins().size());
+inline balancing::Weights PixelSelectorAll::weights() const {
+  std::vector<double> weights_(bins().size(), std::numeric_limits<double>::quiet_NaN());
 
   std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
     if (sel.is_intra()) {
       const auto chrom_weights = sel.weights1()(balancing::Weights::Type::DIVISIVE);
-      weights_.insert(weights_.end(), chrom_weights.begin(), chrom_weights.end());
+      const auto offset = static_cast<std::ptrdiff_t>(bins().at(sel.chrom1()).id());
+      std::copy(chrom_weights.begin(), chrom_weights.end(), weights_.begin() + offset);
     }
   });
 
-  return weights_;
+  return {std::move(weights_), balancing::Weights::Type::DIVISIVE};
 }
 
 template <typename N>

@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <utility>
 #include <variant>
@@ -151,16 +152,16 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const cooler::PixelSe
   const auto offset1 = row_offset();
   const auto offset2 = col_offset();
 
-  const auto& weights = *sel.weights();
+  const auto weights = (*sel.weights())(balancing::Weights::Type::MULTIPLICATIVE);
 
   for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-    if (std::isnan(weights[static_cast<std::size_t>(offset1 + i)])) {
+    if (!std::isfinite(weights[static_cast<std::size_t>(offset1 + i)])) {
       buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
     }
   }
 
   for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-    if (std::isnan(weights[static_cast<std::size_t>(offset2 + j)])) {
+    if (!std::isfinite(weights[static_cast<std::size_t>(offset2 + j)])) {
       buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
     }
   }
@@ -178,9 +179,11 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelec
     const auto offset = row_offset() - static_cast<std::int64_t>(chrom_offset);
 
     const auto& weights = sel.weights1();
+    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
 
     for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-      if (std::isnan(weights[static_cast<std::size_t>(offset + i)])) {
+      const auto w = weights[static_cast<std::size_t>(offset + i)];
+      if (!std::isfinite(w) || w == 0) {
         buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
       }
     }
@@ -191,9 +194,11 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelec
     const auto offset = row_offset() - static_cast<std::int64_t>(chrom_offset);
 
     const auto& weights = sel.weights2();
+    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
 
     for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-      if (std::isnan(weights[static_cast<std::size_t>(offset + j)])) {
+      const auto w = weights[static_cast<std::size_t>(offset + j)];
+      if (!std::isfinite(w) || w == 0) {
         buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
       }
     }
@@ -208,15 +213,18 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelec
   }
 
   const auto weights = sel.weights();
+  assert(weights.type() == balancing::Weights::Type::DIVISIVE);
 
   for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-    if (std::isnan(weights[static_cast<std::size_t>(i)])) {
+    const auto w = weights[static_cast<std::size_t>(i)];
+    if (!std::isfinite(w) || w == 0) {
       buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
     }
   }
 
   for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-    if (std::isnan(weights[static_cast<std::size_t>(j)])) {
+    const auto w = weights[static_cast<std::size_t>(j)];
+    if (!std::isfinite(w) || w == 0) {
       buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
     }
   }

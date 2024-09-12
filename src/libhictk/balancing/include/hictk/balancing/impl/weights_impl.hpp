@@ -82,8 +82,8 @@ inline const std::vector<double> Weights::operator()(Type type_) const {
     return _weights;
   }
 
-  auto weights = _weights;
-  std::transform(weights.begin(), weights.end(), weights.begin(),
+  std::vector<double> weights(_weights.size());
+  std::transform(_weights.begin(), _weights.end(), weights.begin(),
                  [](const auto n) { return 1.0 / n; });
 
   return weights;
