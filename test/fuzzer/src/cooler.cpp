@@ -48,4 +48,11 @@ std::string Cooler::uri() const noexcept {
   return "";
 }
 
+std::uint32_t Cooler::resolution() const noexcept {
+  if (_clr) {
+    return _clr.attr("binsize").cast<std::uint32_t>();
+  }
+  return 0;
+}
+
 }  // namespace hictk::fuzzer::cooler

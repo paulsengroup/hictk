@@ -78,6 +78,10 @@ jobs:
       - name: Clone hictk
         uses: actions/checkout@v4
 
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
       - name: Generate cache key
         id: cache-key
         run: |
@@ -141,7 +145,6 @@ jobs:
                 -DHICTK_ENABLE_FUZZY_TESTING=ON                      \
                 -DHICTK_BUILD_EXAMPLES=OFF                           \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
                 -S .                                                 \
                 -B build
 
@@ -207,7 +210,7 @@ jobs:
             --normalization ${{ matrix.normalization }} \
             --nproc $(nproc) \
             --format df \
-            *".${{ matrix.format }}" \\
+            *".${{ matrix.format }}" \
             *.cool
 
       - name: Run test (dense)
@@ -218,7 +221,7 @@ jobs:
             --normalization ${{ matrix.normalization }} \
             --nproc $(nproc) \
             --format dense \
-            *".${{ matrix.format }}" \\
+            *".${{ matrix.format }}" \
             *.cool
 
       - name: Run test (sparse)
@@ -229,7 +232,7 @@ jobs:
             --normalization ${{ matrix.normalization }} \
             --nproc $(nproc) \
             --format sparse \
-            *".${{ matrix.format }}" \\
+            *".${{ matrix.format }}" \
             *.cool
 
   fuzzy-testing-status-check:

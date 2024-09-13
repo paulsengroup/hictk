@@ -13,6 +13,7 @@ import logging
 import multiprocessing as mp
 import pathlib
 import random
+import shutil
 import sys
 import tempfile
 import time
@@ -61,6 +62,7 @@ def make_cli() -> argparse.ArgumentParser:
     )
     cli.add_argument(
         "--dataset",
+        nargs="+",
         type=str,
         default=["4DNFIYECESRC"],
         help="Name of the dataset(s) to be downloaded.",
@@ -204,7 +206,8 @@ def download_file(
             logging.error(msg)
             raise RuntimeError(msg)
 
-        return tmpdest.rename(dest)
+        shutil.move(tmpdest, dest)
+        return dest
 
 
 def setup_logger(level):
