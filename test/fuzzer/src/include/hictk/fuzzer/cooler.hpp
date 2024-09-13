@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "hictk/balancing/weights.hpp"
 #include "hictk/fuzzer/common.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
@@ -80,6 +81,9 @@ class Cooler {
   template <typename N>
   [[nodiscard]] EigenSparse<N> fetch_sparse(std::string_view range1, std::string_view range2,
                                             std::string_view normalization);
+
+  [[nodiscard]] static balancing::Weights::Type infer_weight_type(std::string_view uri,
+                                                                  std::string_view normalization);
 };
 
 }  // namespace hictk::fuzzer::cooler

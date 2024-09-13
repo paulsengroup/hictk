@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/fuzzer/common.hpp"
 #include "hictk/reference.hpp"
 
@@ -125,9 +126,13 @@ inline void Cooler::fetch_df(COODataFrame<N>& buff, std::string_view range1,
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
 
-  auto selector = normalization == "NONE"
-                      ? _clr.attr("matrix")("count", false, false, true, false, true)
-                      : _clr.attr("matrix")("count", normalization, false, true, false, true);
+  const auto divisive_weights =
+      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+
+  auto selector =
+      normalization == "NONE"
+          ? _clr.attr("matrix")("count", false, false, true, false, true, divisive_weights)
+          : _clr.attr("matrix")("count", normalization, false, true, false, true, divisive_weights);
 
   if (range2.empty()) {
     range2 = range1;
@@ -143,9 +148,13 @@ inline void Cooler::fetch_df(BG2DataFrame<N>& buff, std::string_view range1,
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
 
-  auto selector = normalization == "NONE"
-                      ? _clr.attr("matrix")("count", false, false, true, true, true)
-                      : _clr.attr("matrix")("count", normalization, false, true, true, true);
+  const auto divisive_weights =
+      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+
+  auto selector =
+      normalization == "NONE"
+          ? _clr.attr("matrix")("count", false, false, true, true, true, divisive_weights)
+          : _clr.attr("matrix")("count", normalization, false, true, true, true, divisive_weights);
 
   if (range2.empty()) {
     range2 = range1;
@@ -166,8 +175,14 @@ inline Eigen2DDense<N> Cooler::fetch_dense(std::string_view range1, std::string_
         "fetching balanced interactions requires Eigen2DDense<N> to be of floating-point type");
   }
 
-  auto selector = normalization == "NONE" ? _clr.attr("matrix")("count", false)
-                                          : _clr.attr("matrix")("count", normalization);
+  const auto divisive_weights =
+      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+
+  auto selector =
+      normalization == "NONE"
+          ? _clr.attr("matrix")("count", false, false, false, false, true, divisive_weights)
+          : _clr.attr("matrix")("count", normalization, false, false, false, true,
+                                divisive_weights);
 
   if (range2.empty()) {
     range2 = range1;
@@ -192,6 +207,19 @@ inline EigenSparse<N> Cooler::fetch_sparse(std::string_view range1, std::string_
                                            std::string_view normalization) {
   // TODO make efficient
   return fetch_dense<N>(range1, range2, normalization).sparseView();
+}
+
+inline balancing::Weights::Type Cooler::infer_weight_type(std::string_view uri,
+                                                          std::string_view normalization) {
+  if (normalization == "NONE") {
+    return balancing::Weights::Type::MULTIPLICATIVE;
+  }
+  const auto weights = hictk::cooler::File{uri}.normalization(normalization);
+  if (!weights) {
+    return balancing::Weights::Type::UNKNOWN;
+  }
+
+  return weights->type();
 }
 
 }  // namespace hictk::fuzzer::cooler
