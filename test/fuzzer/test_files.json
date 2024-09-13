@@ -1,0 +1,257 @@
+{
+  "cool": {
+    "url": "https://zenodo.org/records/13754755",
+    "datasets": {
+      "4DNFIYECESRC": [
+        {
+          "name": "4DNFIYECESRC.1000.cool",
+          "resolution": 1000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.1000.cool?download=1",
+          "md5sum": "548f88d7b5a62e55726d3d549bea8b53"
+        },
+        {
+          "name": "4DNFIYECESRC.2000.cool",
+          "resolution": 2000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.2000.cool?download=1",
+          "md5sum": "ae0c73553a06c7d6fc61d81d32ed55a4"
+        },
+        {
+          "name": "4DNFIYECESRC.5000.cool",
+          "resolution": 5000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.5000.cool?download=1",
+          "md5sum": "0004e33276cec7b5e944d65286ca71a9"
+        },
+        {
+          "name": "4DNFIYECESRC.10000.cool",
+          "resolution": 10000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.10000.cool?download=1",
+          "md5sum": "8754fe826d68057cb10e76e927ef0e28"
+        },
+        {
+          "name": "4DNFIYECESRC.25000.cool",
+          "resolution": 25000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.25000.cool?download=1",
+          "md5sum": "605e38e732dc6ca14e7b5f1f51bee263"
+        },
+        {
+          "name": "4DNFIYECESRC.50000.cool",
+          "resolution": 50000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.50000.cool?download=1",
+          "md5sum": "e79aa022f04bb9cb753cce65a3e52a42"
+        },
+        {
+          "name": "4DNFIYECESRC.100000.cool",
+          "resolution": 100000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.100000.cool?download=1",
+          "md5sum": "aaec234d052df76a2b799cf93307557c"
+        },
+        {
+          "name": "4DNFIYECESRC.250000.cool",
+          "resolution": 250000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.250000.cool?download=1",
+          "md5sum": "605e38e732dc6ca14e7b5f1f51bee263"
+        },
+        {
+          "name": "4DNFIYECESRC.500000.cool",
+          "resolution": 500000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.500000.cool?download=1",
+          "md5sum": "65c66973b4563ddf86861e24caf5668b"
+        },
+        {
+          "name": "4DNFIYECESRC.1000000.cool",
+          "resolution": 1000000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.1000000.cool?download=1",
+          "md5sum": "45fdcf64b1cdd030ac3d84ccfe2e4e22"
+        },
+        {
+          "name": "4DNFIYECESRC.2500000.cool",
+          "resolution": 2500000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.2500000.cool?download=1",
+          "md5sum": "c3f62557fc0365e428500d798790ab1a"
+        },
+        {
+          "name": "4DNFIYECESRC.5000000.cool",
+          "resolution": 5000000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.5000000.cool?download=1",
+          "md5sum": "603749b8e9183d9cadda788a8a593e32"
+        },
+        {
+          "name": "4DNFIYECESRC.10000000.cool",
+          "resolution": 10000000,
+          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.10000000.cool?download=1",
+          "md5sum": "c54d91a16f5ad9d653c754917663d9b1"
+        }
+      ]
+    }
+  },
+  "hic8": {
+    "url": "https://zenodo.org/records/13754786",
+    "datasets": {
+      "4DNFIYECESRC": [
+        {
+          "name": "4DNFIYECESRC.1000.hic8",
+          "resolution": 1000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.1000.hic8?download=1",
+          "md5sum": "baa1aa2050210c54405f6ba5b0c8ad89"
+        },
+        {
+          "name": "4DNFIYECESRC.2000.hic8",
+          "resolution": 2000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.2000.hic8?download=1",
+          "md5sum": "723065380fb4a2309d4414a792fb1ed6"
+        },
+        {
+          "name": "4DNFIYECESRC.5000.hic8",
+          "resolution": 5000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.5000.hic8?download=1",
+          "md5sum": "f5e78ad02793fde32272bad01dbff75c"
+        },
+        {
+          "name": "4DNFIYECESRC.10000.hic8",
+          "resolution": 10000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.10000.hic8?download=1",
+          "md5sum": "e56520598e848d3df1602f48c6f6b5ec"
+        },
+        {
+          "name": "4DNFIYECESRC.25000.hic8",
+          "resolution": 25000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.25000.hic8?download=1",
+          "md5sum": "35c59ab005e8aace977d775c4cea782b"
+        },
+        {
+          "name": "4DNFIYECESRC.50000.hic8",
+          "resolution": 50000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.50000.hic8?download=1",
+          "md5sum": "f1818a9f143e427332db61c760b1236d"
+        },
+        {
+          "name": "4DNFIYECESRC.100000.hic8",
+          "resolution": 100000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.100000.hic8?download=1",
+          "md5sum": "8242ed3709631723b40b22e8cc6ba43e"
+        },
+        {
+          "name": "4DNFIYECESRC.250000.hic8",
+          "resolution": 250000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.250000.hic8?download=1",
+          "md5sum": "3ef1a968d2705b6b4e91a347ce307383"
+        },
+        {
+          "name": "4DNFIYECESRC.500000.hic8",
+          "resolution": 500000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.500000.hic8?download=1",
+          "md5sum": "8e8900deb18ad6687add193d59d1d334"
+        },
+        {
+          "name": "4DNFIYECESRC.1000000.hic8",
+          "resolution": 1000000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.1000000.hic8?download=1",
+          "md5sum": "e0f04ff12458a520809faeae096d7f08"
+        },
+        {
+          "name": "4DNFIYECESRC.2500000.hic8",
+          "resolution": 2500000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.2500000.hic8?download=1",
+          "md5sum": "66bc4c438c9a119f14d7bb9d3a5290c3"
+        },
+        {
+          "name": "4DNFIYECESRC.5000000.hic8",
+          "resolution": 5000000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.5000000.hic8?download=1",
+          "md5sum": "77f4f1948aeaaaf17ff7e4357579f30a"
+        },
+        {
+          "name": "4DNFIYECESRC.10000000.hic8",
+          "resolution": 10000000,
+          "url": "https://zenodo.org/records/13754786/files/4DNFIYECESRC.10000000.hic8?download=1",
+          "md5sum": "2b946bfd2627e38fae8985df9f4a711d"
+        }
+      ]
+    }
+  },
+  "hic9": {
+    "url": "https://zenodo.org/records/13754808",
+    "datasets": {
+      "4DNFIYECESRC": [
+        {
+          "name": "4DNFIYECESRC.1000.hic9",
+          "resolution": 1000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.1000.hic9?download=1",
+          "md5sum": "83fd817a8186283f48df594babdbda04"
+        },
+        {
+          "name": "4DNFIYECESRC.2000.hic9",
+          "resolution": 2000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.2000.hic9?download=1",
+          "md5sum": "3b4592c49b33389ef6bf9cbab4b91c56"
+        },
+        {
+          "name": "4DNFIYECESRC.5000.hic9",
+          "resolution": 5000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.5000.hic9?download=1",
+          "md5sum": "c8ef33699262b2ca617c7e3dea8e8db6"
+        },
+        {
+          "name": "4DNFIYECESRC.10000.hic9",
+          "resolution": 10000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.10000.hic9?download=1",
+          "md5sum": "a3f194baa5ec40118c9a5ed08ee3c7c3"
+        },
+        {
+          "name": "4DNFIYECESRC.25000.hic9",
+          "resolution": 25000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.25000.hic9?download=1",
+          "md5sum": "13692b2671bd6a59cf5d6cb1f61d2edc"
+        },
+        {
+          "name": "4DNFIYECESRC.50000.hic9",
+          "resolution": 50000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.50000.hic9?download=1",
+          "md5sum": "1545f1f32e31eb71f1c14a1eb23c28e4"
+        },
+        {
+          "name": "4DNFIYECESRC.100000.hic9",
+          "resolution": 100000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.100000.hic9?download=1",
+          "md5sum": "1d7820d4c144e68de24e767b60983571"
+        },
+        {
+          "name": "4DNFIYECESRC.250000.hic9",
+          "resolution": 250000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.250000.hic9?download=1",
+          "md5sum": "42b8c9bb0d9e45c37e9b7cc980d9cace"
+        },
+        {
+          "name": "4DNFIYECESRC.500000.hic9",
+          "resolution": 500000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.500000.hic9?download=1",
+          "md5sum": "7ed9390253e793497424b50342e16f18"
+        },
+        {
+          "name": "4DNFIYECESRC.1000000.hic9",
+          "resolution": 1000000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.1000000.hic9?download=1",
+          "md5sum": "49630317a2c435b517f6a33c71dda199"
+        },
+        {
+          "name": "4DNFIYECESRC.2500000.hic9",
+          "resolution": 2500000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.2500000.hic9?download=1",
+          "md5sum": "74bd43833215750044aaf8f747345c5b"
+        },
+        {
+          "name": "4DNFIYECESRC.5000000.hic9",
+          "resolution": 5000000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.5000000.hic9?download=1",
+          "md5sum": "ca66cd7d9e3273bd84a7200e6be9f4d5"
+        },
+        {
+          "name": "4DNFIYECESRC.10000000.hic9",
+          "resolution": 10000000,
+          "url": "https://zenodo.org/records/13754808/files/4DNFIYECESRC.10000000.hic9?download=1",
+          "md5sum": "1a5cc53b4f079e95d61c71f275fe513e"
+        }
+      ]
+    }
+  }
+}
