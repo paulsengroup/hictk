@@ -5,24 +5,28 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::balancing {
 
 inline Weights::Weights(std::vector<double> weights, Type type) noexcept
-    : _weights(std::move(weights)), _type(type) {
+    : _weights(std::make_shared<WeightVect>(std::move(weights))), _type(type) {
   assert(_type != Type::INFER && _type != Type::UNKNOWN);
 }
 
@@ -35,14 +39,56 @@ inline Weights::Weights(std::vector<double> weights, std::string_view name)
   }
 }
 
-inline Weights::operator bool() const noexcept { return !_weights.empty(); }
-
-inline double Weights::operator[](std::size_t i) const noexcept {
-  assert(i < _weights.size());
-  return _weights[i];
+inline Weights::Weights(double weight, std::size_t size, Type type) noexcept
+    : _weights(ConstWeight{weight, size}), _type(type) {
+  assert(_type != Type::INFER && _type != Type::UNKNOWN);
 }
 
-inline double Weights::at(std::size_t i) const { return _weights.at(i); }
+inline Weights::Weights(double weight, std::size_t size, std::string_view name)
+    : Weights(weight, size, Weights::infer_type(name)) {
+  assert(_type != Type::INFER);
+  if (_type == Type::UNKNOWN) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to infer type for \"{}\" weights"), name));
+  }
+}
+inline Weights::Weights(std::variant<ConstWeight, WeightVectPtr> weights, Type type_) noexcept
+    : _weights(std::move(weights)), _type(type_) {}
+
+inline Weights::operator bool() const noexcept {
+  if (is_constant()) {
+    return std::get<ConstWeight>(_weights).size != 0;
+  }
+
+  const auto &weights = std::get<WeightVectPtr>(_weights);
+  return !!weights && !weights->empty();
+}
+
+inline double Weights::at(std::size_t i) const {
+  if (is_constant()) {
+    const auto &[w, size] = std::get<ConstWeight>(_weights);
+
+    if (i >= size) {
+      throw std::out_of_range("Weights::at()");
+    }
+
+    return w;
+  }
+
+  return std::get<WeightVectPtr>(_weights)->at(i);
+}
+
+inline double Weights::at(std::size_t i, Type type_) const {
+  if (HICTK_UNLIKELY(type_ != Type::MULTIPLICATIVE && type_ != Type::DIVISIVE)) {
+    throw std::logic_error("Type should be Type::MULTIPLICATIVE or Type::DIVISIVE");
+  }
+
+  if (type_ == type()) {
+    return at(i);
+  }
+
+  return 1.0 / at(i);
+}
 
 template <typename N>
 inline ThinPixel<N> Weights::balance(ThinPixel<N> p) const {
@@ -59,8 +105,8 @@ inline Pixel<N> Weights::balance(Pixel<N> p) const {
 template <typename N1, typename N2>
 inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const {
   assert(std::is_floating_point_v<N1>);
-  const auto w1 = _weights[bin1_id];
-  const auto w2 = _weights[bin2_id];
+  const auto w1 = at(conditional_static_cast<std::size_t>(bin1_id));
+  const auto w2 = at(conditional_static_cast<std::size_t>(bin2_id));
 
   auto count_ = conditional_static_cast<double>(count);
 
@@ -73,28 +119,43 @@ inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 coun
   return conditional_static_cast<N1>(count_);
 }
 
-inline const std::vector<double> Weights::operator()(Type type_) const {
-  if (type_ != Type::MULTIPLICATIVE && type_ != Type::DIVISIVE) {
+inline Weights Weights::operator()(Type type_) const {
+  if (HICTK_UNLIKELY(type_ != Type::MULTIPLICATIVE && type_ != Type::DIVISIVE)) {
     throw std::logic_error("Type should be Type::MULTIPLICATIVE or Type::DIVISIVE");
   }
 
   if (type_ == type()) {
-    return _weights;
+    return *this;
   }
 
-  std::vector<double> weights(_weights.size());
-  std::transform(_weights.begin(), _weights.end(), weights.begin(),
+  if (is_constant()) {
+    const auto &[w, size] = std::get<ConstWeight>(_weights);
+    return {ConstWeight{1.0 / w, size}, type_};
+  }
+
+  const auto &buff = std::get<WeightVectPtr>(_weights);
+  assert(!!buff);
+
+  auto weights = std::make_shared<WeightVect>(buff->size());
+  std::transform(buff->begin(), buff->end(), weights->begin(),
                  [](const auto n) { return 1.0 / n; });
 
-  return weights;
+  return {std::move(weights), type_};
 }
 
 constexpr auto Weights::type() const noexcept -> Type { return _type; }
 
-inline std::size_t Weights::size() const noexcept { return _weights.size(); }
+inline std::size_t Weights::size() const noexcept {
+  if (is_constant()) {
+    return std::get<ConstWeight>(_weights).size;
+  }
+  const auto &weights = std::get<WeightVectPtr>(_weights);
+  assert(!!weights);
+  return weights->size();
+}
 
 inline auto Weights::infer_type(std::string_view name) -> Type {
-  const static phmap::flat_hash_map<std::string_view, Type> mappings{
+  constexpr std::array<std::pair<std::string_view, Type>, 14> mappings{
       {{"VC", Type::DIVISIVE},
        {"INTER_VC", Type::DIVISIVE},
        {"GW_VC", Type::DIVISIVE},
@@ -110,7 +171,8 @@ inline auto Weights::infer_type(std::string_view name) -> Type {
        {"GW_ICE", Type::MULTIPLICATIVE},
        {"weight", Type::MULTIPLICATIVE}}};
 
-  auto it = mappings.find(name);
+  auto it = std::find_if(mappings.begin(), mappings.end(),
+                         [&](const auto &p) { return p.first == name; });
   if (it == mappings.end()) {
     return Weights::Type::UNKNOWN;
   }
@@ -118,18 +180,47 @@ inline auto Weights::infer_type(std::string_view name) -> Type {
 }
 
 inline void Weights::rescale(double scaling_factor) noexcept {
-  std::transform(_weights.begin(), _weights.end(), _weights.begin(),
-                 [&](auto w) { return w * std::sqrt(scaling_factor); });
+  if (is_constant()) {
+    auto &w = std::get<ConstWeight>(_weights).w;
+    w *= std::sqrt(scaling_factor);
+  } else {
+    auto &weights = std::get<WeightVectPtr>(_weights);
+    assert(!!weights);
+    std::transform(weights->begin(), weights->end(), weights->begin(),
+                   [&](auto w) { return w * std::sqrt(scaling_factor); });
+  }
 }
 
 inline void Weights::rescale(const std::vector<double> &scaling_factors,
-                             const std::vector<std::uint64_t> &offsets) noexcept {
+                             const std::vector<std::uint64_t> &offsets) {
+  if (is_constant()) {
+    if (scaling_factors.size() == 1) {
+      rescale(scaling_factors.front());
+      return;
+    }
+    throw std::runtime_error(
+        "rescaling ConstWeight with multiple scaling factors is not supported");
+  }
+
+  const auto &weights = std::get<WeightVectPtr>(_weights);
+  assert(!!weights);
+
   for (std::size_t i = 0; i < scaling_factors.size(); ++i) {
-    auto first = _weights.begin() + std::ptrdiff_t(offsets[i]);
-    auto last = _weights.begin() + std::ptrdiff_t(offsets[i + 1]);
+    auto first = weights->begin() + std::ptrdiff_t(offsets[i]);
+    auto last = weights->begin() + std::ptrdiff_t(offsets[i + 1]);
     std::transform(first, last, first,
                    [s = scaling_factors[i]](const double w) { return w * std::sqrt(s); });
   }
 }
+
+inline bool Weights::is_constant() const noexcept {
+  return std::holds_alternative<ConstWeight>(_weights);
+}
+
+inline Weights::iterator::iterator(std::vector<double>::const_iterator it)
+    : _it(std::move(it)), _i(0) {}
+
+inline Weights::iterator::iterator(const hictk::balancing::Weights::ConstWeight &weight)
+    : _it(&weight), _i(0) {}
 
 }  // namespace hictk::balancing

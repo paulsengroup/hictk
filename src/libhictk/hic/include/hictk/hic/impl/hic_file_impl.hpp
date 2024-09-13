@@ -127,6 +127,18 @@ inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
   auto weights1 = _weight_cache->find_or_emplace(chrom1, norm);
   auto weights2 = _weight_cache->find_or_emplace(chrom2, norm);
 
+  if (!(*weights1) && norm == balancing::Method::NONE()) {
+    const auto num_bins = (chrom1.size() + resolution - 1) / resolution;
+    weights1 = std::make_shared<balancing::Weights>(std::vector<double>(num_bins, 1.0),
+                                                    balancing::Weights::Type::DIVISIVE);
+  }
+
+  if (!(*weights2) && norm == balancing::Method::NONE()) {
+    const auto num_bins = (chrom2.size() + resolution - 1) / resolution;
+    weights2 = std::make_shared<balancing::Weights>(std::vector<double>(num_bins, 1.0),
+                                                    balancing::Weights::Type::DIVISIVE);
+  }
+
   auto [node, _] = _footers.emplace(_fs->read_footer(chrom1.id(), chrom2.id(), matrix_type, norm,
                                                      unit, resolution, weights1, weights2));
 
