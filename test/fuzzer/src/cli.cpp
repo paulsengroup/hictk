@@ -273,9 +273,10 @@ void Cli::transform_args_fuzz_subcommand() {
   _config.exec = get_path_to_executable();
 
   if (!_config.seed.has_value()) {
-    const std::array<std::uint32_t, 2> random_state{std::random_device{}(), std::random_device{}()};
-    // NOLINTNEXTLINE
-    _config.seed = *reinterpret_cast<const std::uint64_t*>(random_state.data());
+    _config.seed = 0;
+    auto* ptr = reinterpret_cast<std::uint32_t*>(&_config.seed.value());
+    *ptr++ = std::random_device{}();
+    *ptr = std::random_device{}();
   }
 }
 
