@@ -136,8 +136,6 @@ inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_v
     return false;
   }
 
-  // FIXME this doesn't work because cooler mirrors interactions even when returning them as sparse
-  // matrices
   return compare_pixels(task_id, range1, range2, Eigen2DDense<N>{expected.toDense()},
                         Eigen2DDense<N>{found.toDense()});
 }

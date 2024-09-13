@@ -30,7 +30,7 @@ inline COODataFrame<N>& COODataFrame<N>::operator=(pybind11::object df) {
   bin1_id = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("bin1_id"));
   bin2_id = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("bin2_id"));
   if (pybind11::cast<bool>(df.attr("__contains__")("balanced"))) {
-    if (std::is_integral_v<N>) {
+    if constexpr (std::is_integral_v<N>) {
       throw std::runtime_error(
           "fetching balanced interactions requires COODataFrame to be of floating-point type");
     }
@@ -81,7 +81,7 @@ inline BG2DataFrame<N>& BG2DataFrame<N>::operator=(pybind11::object df) {
   end2 = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("end2"));
 
   if (pybind11::cast<bool>(df.attr("__contains__")("balanced"))) {
-    if (std::is_integral_v<N>) {
+    if constexpr (std::is_integral_v<N>) {
       throw std::runtime_error(
           "fetching balanced interactions requires BG2DataFrame to be of floating-point type");
     }
@@ -117,6 +117,29 @@ void BG2DataFrame<N>::to_vector(const Reference& chroms, std::vector<Pixel<N>>& 
     ++chrom1_id;
     ++chrom2_id;
   }
+}
+
+template <typename N>
+inline EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj) {
+  const auto rows = pybind11::cast<NumpyArray<std::int64_t>>(obj.attr("row"));
+  const auto cols = pybind11::cast<NumpyArray<std::int64_t>>(obj.attr("col"));
+  const auto count = pybind11::cast<NumpyArray<N>>(obj.attr("data"));
+
+  const auto num_rows = obj.attr("shape").attr("__getitem__")(0).cast<std::int64_t>();
+  const auto num_cols = obj.attr("shape").attr("__getitem__")(1).cast<std::int64_t>();
+
+  EigenSparse<N> m(num_rows, num_cols);
+  if (rows.size() != 0) {
+    const auto max_nnz_row = obj.attr("getnnz")(0).attr("max")().cast<std::int64_t>();
+    m.reserve(Eigen::Matrix<std::int64_t, Eigen::Dynamic, 1>::Constant(num_cols, max_nnz_row));
+
+    for (std::int64_t i = 0; i < rows.size(); ++i) {
+      m.insert(rows.at(i), cols.at(i)) = count.at(i);
+    }
+  }
+
+  m.makeCompressed();
+  return m;
 }
 
 template <typename N>
@@ -205,8 +228,28 @@ inline Eigen2DDense<N> Cooler::fetch_dense(std::string_view range1, std::string_
 template <typename N>
 inline EigenSparse<N> Cooler::fetch_sparse(std::string_view range1, std::string_view range2,
                                            std::string_view normalization) {
-  // TODO make efficient
-  return fetch_dense<N>(range1, range2, normalization).sparseView();
+  if (!_clr) {
+    throw std::runtime_error("Cooler::fetch_sparse() was called on an un-initialized object");
+  }
+
+  if (normalization != "NONE" && std::is_integral_v<N>) {
+    throw std::runtime_error(
+        "fetching balanced interactions requires EigenSparse<N> to be of floating-point type");
+  }
+
+  const auto divisive_weights =
+      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+
+  auto selector =
+      normalization == "NONE"
+          ? _clr.attr("matrix")("count", false, true, false, false, true, divisive_weights)
+          : _clr.attr("matrix")("count", normalization, true, false, false, true, divisive_weights);
+
+  if (range2.empty()) {
+    range2 = range1;
+  }
+
+  return scipy_coo_to_eigen<N>(selector.attr("fetch")(range1, range2));
 }
 
 inline balancing::Weights::Type Cooler::infer_weight_type(std::string_view uri,

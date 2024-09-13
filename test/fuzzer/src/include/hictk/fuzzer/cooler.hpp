@@ -59,6 +59,9 @@ struct BG2DataFrame {
   void to_vector(const Reference& chroms, std::vector<Pixel<N>>& buffer) const;
 };
 
+template <typename N>
+[[nodiscard]] EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj);
+
 class Cooler {
   pybind11::object _clr{};
 
