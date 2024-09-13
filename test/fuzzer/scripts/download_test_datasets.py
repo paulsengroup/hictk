@@ -183,7 +183,9 @@ def download_file(
                     f'failed to download file from URL "{url}" (attempt {attempt}/{max_attempts}): {e}'
                 )
                 if attempt == max_attempts:
-                    raise RuntimeError(f'Failed to download file from URL "{url}": {e}')
+                    msg = f'Failed to download file from URL "{url}": {e}'
+                    logging.error(msg)
+                    raise RuntimeError(msg)
                 sleep_time = random.uniform(5, 10)
                 logging.debug(
                     'sleeping for %fs before trying to download "%s" one more time...',
@@ -198,9 +200,9 @@ def download_file(
 
         digest = digest_file(tmpdest)
         if digest != md5sum:
-            raise RuntimeError(
-                f'File "{tmpdest}" appears to be corrupted: MD5 checksum failed: expected {md5sum}, found {digest}.'
-            )
+            msg = f'File "{tmpdest}" appears to be corrupted: MD5 checksum failed: expected {md5sum}, found {digest}.'
+            logging.error(msg)
+            raise RuntimeError(msg)
 
         return tmpdest.rename(dest)
 
