@@ -94,46 +94,51 @@ namespace hictk::fuzzer {
 
 int fuzz_subcommand(const Config& c) {
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
-  SPDLOG_INFO(FMT_STRING("[executor] cooler version: {}"), cooler::version());
+  try {
+    SPDLOG_INFO(FMT_STRING("[executor] cooler version: {}"), cooler::version());
 
-  BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(c.nproc));
+    BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(c.nproc));
 
-  assert(!c.exec.empty());
-  assert(c.seed.has_value());
-  std::vector<std::future<int>> futures(c.nproc);
-  boost::asio::io_context ctx;
-  std::mutex ctx_mtx;
-  const auto seeds = generate_seeds(*c.seed, c.nproc);
+    assert(!c.exec.empty());
+    assert(c.seed.has_value());
+    std::vector<std::future<int>> futures(c.nproc);
+    boost::asio::io_context ctx;
+    std::mutex ctx_mtx;
+    const auto seeds = generate_seeds(*c.seed, c.nproc);
 
-  for (std::size_t i = 0; i < seeds.size(); ++i) {
-    futures[i] = tpool.submit_task([&, id = i + 1, seed = seeds[i]]() {
-      try {
-        auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
-        return proc.wait();
-      } catch (const std::exception& e) {
-        SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
-        return 1;
-      } catch (...) {
-        SPDLOG_ERROR(FMT_STRING("[{}] an unknown error occurred in worker process"), id);
-        return 1;
-      }
-    });
-  }
-
-  int exit_code = 0;
-  for (std::size_t i = 0; i < futures.size(); ++i) {
-    if (const auto ec = futures[i].get(); ec != 0) {
-      SPDLOG_ERROR(FMT_STRING("[{}] worker process returned exit code {}"), i + 1, ec);
-      exit_code = 1;
+    for (std::size_t i = 0; i < seeds.size(); ++i) {
+      futures[i] = tpool.submit_task([&, id = i + 1, seed = seeds[i]]() {
+        try {
+          auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
+          return proc.wait();
+        } catch (const std::exception& e) {
+          SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
+          return 1;
+        } catch (...) {
+          SPDLOG_ERROR(FMT_STRING("[{}] an unknown error occurred in worker process"), id);
+          return 1;
+        }
+      });
     }
-  }
 
-  if (exit_code != 0) {
-    SPDLOG_ERROR(
-        FMT_STRING("[executor] one or more worker process returned with non-zero exit code"));
-  }
+    int exit_code = 0;
+    for (std::size_t i = 0; i < futures.size(); ++i) {
+      if (const auto ec = futures[i].get(); ec != 0) {
+        SPDLOG_ERROR(FMT_STRING("[{}] worker process returned exit code {}"), i + 1, ec);
+        exit_code = 1;
+      }
+    }
 
-  return exit_code;
+    if (exit_code != 0) {
+      SPDLOG_ERROR(
+          FMT_STRING("[executor] one or more worker process returned with non-zero exit code"));
+    }
+
+    return exit_code;
+  } catch (const std::exception& e) {
+    // wrap python exceptions while we still hold the scoped_interpreter guard
+    throw std::runtime_error(e.what());
+  }
 }
 
 }  // namespace hictk::fuzzer
