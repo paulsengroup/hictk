@@ -59,42 +59,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {
-              title: "4DNFIYECESRC (.cool; NONE)",
-              dataset: "4DNFIYECESRC",
-              format: "cool",
-              normalization: "NONE",
-            }
-          - {
-              title: "4DNFIYECESRC (.cool; weight)",
-              dataset: "4DNFIYECESRC",
-              format: "cool",
-              normalization: "weight",
-            }
-          - {
-              title: "4DNFIYECESRC (.hic8; NONE)",
-              dataset: "4DNFIYECESRC",
-              format: "hic8",
-              normalization: "NONE",
-            }
-          - {
-              title: "4DNFIYECESRC (.hic8; KR)",
-              dataset: "4DNFIYECESRC",
-              format: "hic8",
-              normalization: "KR",
-            }
-          - {
-              title: "4DNFIYECESRC (.hic9; NONE)",
-              dataset: "4DNFIYECESRC",
-              format: "hic9",
-              normalization: "NONE",
-            }
-          - {
-              title: "4DNFIYECESRC (.hic9; SCALE)",
-              dataset: "4DNFIYECESRC",
-              format: "hic9",
-              normalization: "SCALE",
-            }
+          - { dataset: "4DNFIYECESRC", format: "cool", normalization: "NONE" }
+          - { dataset: "4DNFIYECESRC", format: "cool", normalization: "weight" }
+          - { dataset: "4DNFIYECESRC", format: "hic8", normalization: "NONE" }
+          - { dataset: "4DNFIYECESRC", format: "hic8", normalization: "KR" }
+          - { dataset: "4DNFIYECESRC", format: "hic9", normalization: "NONE" }
+          - { dataset: "4DNFIYECESRC", format: "hic9", normalization: "SCALE" }
 
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
@@ -197,13 +167,13 @@ jobs:
           duration=600
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             duration='${{ inputs.duration }}'
-          elif [[ ${{ steps.ci-type.outputs.type }} == 'full' ]]; then
+          elif [[ '${{ steps.ci-type.outputs.type }}' == 'full' ]]; then
             duration=3600
           fi
 
           resolution=10000
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            if [[ ${{ inputs.resolution }} == 'random' ]]; then
+            if [[ '${{ inputs.resolution }}' == 'random' ]]; then
               resolution="$(
                 python3 -c 'import random; import sys; print(random.choice([int(x) for x in sys.argv[1:]]))' \
                 1000 5000 10000 50000 100000 500000 1000000 5000000 10000000
