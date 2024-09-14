@@ -75,7 +75,7 @@ jobs:
               dataset: "4DNFIYECESRC",
               format: "cool",
               normalization: "NONE",
-              bin-type: "true",
+              bin-type: "variable",
             }
           - {
               dataset: "4DNFIYECESRC",

@@ -106,7 +106,7 @@ static void add_common_args(CLI::App& sc, Config& c) {
   sc.add_option("--resolution", c.resolution,
                 "Matrix resolution.\n"
                 "Required when either test-uri or reference-uri are multi-resolution files.")
-      ->check(CLI::PositiveNumber)
+      ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
   sc.add_option("--1d-to-2d-query-ratio", c._1d_to_2d_query_ratio,
                 "Ratio of 1D to 2D queries. Use 0 or 1 to only test 1D or 2D queries.")
