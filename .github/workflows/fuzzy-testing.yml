@@ -59,12 +59,48 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { dataset: "4DNFIYECESRC", format: "cool", normalization: "NONE" }
-          - { dataset: "4DNFIYECESRC", format: "cool", normalization: "weight" }
-          - { dataset: "4DNFIYECESRC", format: "hic8", normalization: "NONE" }
-          - { dataset: "4DNFIYECESRC", format: "hic8", normalization: "KR" }
-          - { dataset: "4DNFIYECESRC", format: "hic9", normalization: "NONE" }
-          - { dataset: "4DNFIYECESRC", format: "hic9", normalization: "SCALE" }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "cool",
+              normalization: "NONE",
+              bin-type: "fixed",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "cool",
+              normalization: "weight",
+              bin-type: "fixed",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "cool",
+              normalization: "NONE",
+              bin-type: "true",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "hic8",
+              normalization: "NONE",
+              bin-type: "fixed",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "hic8",
+              normalization: "KR",
+              bin-type: "fixed",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "hic9",
+              normalization: "NONE",
+              bin-type: "fixed",
+            }
+          - {
+              dataset: "4DNFIYECESRC",
+              format: "hic9",
+              normalization: "SCALE",
+              bin-type: "fixed",
+            }
 
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
@@ -184,6 +220,10 @@ jobs:
             else
               resolution='${{ inputs.resolution }}'
             fi
+          fi
+
+          if [[ '${{ matrix.bin-type }}' == variable ]]; then
+            resolution=0
           fi
 
           2>&1 echo "Duration: ${duration}"
