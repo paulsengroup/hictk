@@ -21,6 +21,7 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/footer.hpp"
@@ -249,6 +250,8 @@ inline const balancing::Weights& File::normalization(balancing::Method norm,
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
 
   try {
+    HICTK_DISABLE_WARNING_PUSH
+    HICTK_DISABLE_WARNING_DANGLING_REFERENCE
     const auto& weights = fetch(chrom.name(), norm).weights1();
     if (weights.size() != expected_length) {
       throw std::runtime_error(
@@ -256,7 +259,10 @@ inline const balancing::Weights& File::normalization(balancing::Method norm,
                                  "expected {} values, found {}"),
                       norm, chrom.name(), expected_length, weights.size()));
     }
+    // Returning this reference is fine, as the reference points to memory held by a shared_ptr
+    // (which should stay alive at least as long as the current File object exists)
     return weights;
+    HICTK_DISABLE_WARNING_POP
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
 
