@@ -877,8 +877,8 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
                                            const balancing::Weights &weights,
                                            bool force_overwrite) {
   std::vector<float> weights_f(weights.size());
-  const auto weights_d = weights(balancing::Weights::Type::DIVISIVE);
-  std::transform(weights_d.begin(), weights_d.end(), weights_f.begin(),
+  std::transform(weights.begin(balancing::Weights::Type::DIVISIVE),
+                 weights.end(balancing::Weights::Type::DIVISIVE), weights_f.begin(),
                  [](const auto n) { return static_cast<float>(n); });
   add_norm_vector(blk, weights_f, force_overwrite);
 }

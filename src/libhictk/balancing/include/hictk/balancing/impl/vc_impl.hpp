@@ -157,7 +157,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -167,7 +167,7 @@ inline auto VC::compute_gw(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 }  // namespace hictk::balancing

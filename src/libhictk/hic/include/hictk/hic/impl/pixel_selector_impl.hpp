@@ -636,8 +636,11 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
     }
   };
 
-  const auto &weights1 = _footer->weights1()(balancing::Weights::Type::DIVISIVE);
-  const auto &weights2 = _footer->weights2()(balancing::Weights::Type::DIVISIVE);
+  assert(_footer->weights1().type() == balancing::Weights::Type::DIVISIVE);
+  assert(_footer->weights2().type() == balancing::Weights::Type::DIVISIVE);
+
+  const auto &weights1 = _footer->weights1();
+  const auto &weights2 = _footer->weights2();
   const auto &expected = _footer->expectedValues();
 
   const auto bin1 = pixel.bin1_id;
@@ -736,13 +739,17 @@ inline const BinTable &PixelSelectorAll::bins() const noexcept {
 inline std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
 
 inline balancing::Weights PixelSelectorAll::weights() const {
-  std::vector<double> weights_(bins().size(), std::numeric_limits<double>::quiet_NaN());
+  if (normalization() == balancing::Method::NONE()) {
+    return {1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+  }
 
+  std::vector<double> weights_(bins().size(), std::numeric_limits<double>::quiet_NaN());
   std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
     if (sel.is_intra()) {
-      const auto chrom_weights = sel.weights1()(balancing::Weights::Type::DIVISIVE);
+      const auto &chrom_weights = sel.weights1();
       const auto offset = static_cast<std::ptrdiff_t>(bins().at(sel.chrom1()).id());
-      std::copy(chrom_weights.begin(), chrom_weights.end(), weights_.begin() + offset);
+      std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
+                chrom_weights.end(balancing::Weights::Type::DIVISIVE), weights_.begin() + offset);
     }
   });
 
