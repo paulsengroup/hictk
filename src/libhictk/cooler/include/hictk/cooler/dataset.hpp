@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5DataSet.hpp>
 HICTK_DISABLE_WARNING_POP
 #include <highfive/H5DataSpace.hpp>

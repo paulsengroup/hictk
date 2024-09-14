@@ -10,7 +10,7 @@
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
 HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 HICTK_DISABLE_WARNING_POP

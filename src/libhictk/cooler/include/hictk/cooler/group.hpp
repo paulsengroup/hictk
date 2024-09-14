@@ -14,7 +14,7 @@
 #include <parallel_hashmap/phmap.h>
 
 HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
 HICTK_DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
