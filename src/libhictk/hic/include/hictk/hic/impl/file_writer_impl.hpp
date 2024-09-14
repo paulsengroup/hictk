@@ -830,6 +830,10 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
                                            const std::vector<float> &weights,
                                            bool force_overwrite) {
+  if (blk.type == "NONE") {
+    throw std::runtime_error("caught attempt to write NONE weights");
+  }
+
   const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
   SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector for {} ({}): {} values"), blk.binSize,
               blk.type, chrom.name(), blk.unit, weights.size());
@@ -1244,6 +1248,10 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
 
 inline void HiCFileWriter::add_norm_expected_values(const NormalizedExpectedValuesBlock &blk,
                                                     bool force_overwrite) {
+  if (blk.type == "NONE") {
+    throw std::runtime_error("caught attempt to write NONE weights");
+  }
+
   try {
     auto [it, inserted] = _normalized_expected_values.emplace(blk);
     if (!inserted) {
