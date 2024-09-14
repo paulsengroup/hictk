@@ -148,10 +148,11 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const cooler::PixelSe
   const auto offset1 = row_offset();
   const auto offset2 = col_offset();
 
-  const auto weights = (*sel.weights())(balancing::Weights::Type::MULTIPLICATIVE);
-
+  const auto& weights = sel.weights();
   for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-    if (!std::isfinite(weights[static_cast<std::size_t>(offset1 + i)])) {
+    const auto w =
+        weights.at(static_cast<std::size_t>(offset1 + i), balancing::Weights::Type::MULTIPLICATIVE);
+    if (!std::isfinite(w)) {
       if constexpr (std::is_integral_v<N>) {
         buffer.row(i).setConstant(N{0});
       } else {
@@ -161,7 +162,9 @@ inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const cooler::PixelSe
   }
 
   for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-    if (!std::isfinite(weights[static_cast<std::size_t>(offset2 + j)])) {
+    const auto w =
+        weights.at(static_cast<std::size_t>(offset2 + j), balancing::Weights::Type::MULTIPLICATIVE);
+    if (!std::isfinite(w)) {
       if constexpr (std::is_integral_v<N>) {
         buffer.col(j).setConstant(N{0});
       } else {

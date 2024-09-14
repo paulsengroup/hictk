@@ -330,6 +330,10 @@ inline bool Weights::is_constant() const noexcept {
   return std::holds_alternative<ConstWeight>(_weights);
 }
 
+inline bool Weights::is_vector_of_ones() const noexcept {
+  return is_constant() && std::get<ConstWeight>(_weights).w == 1.0;
+}
+
 constexpr bool Weights::iterator::ConstIt::operator==(const ConstIt& other) const noexcept {
   return value == other.value && i == other.i;
 }

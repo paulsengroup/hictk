@@ -44,6 +44,7 @@ class Weights {
 
   [[nodiscard]] explicit operator bool() const noexcept;
   [[nodiscard]] bool is_constant() const noexcept;
+  [[nodiscard]] bool is_vector_of_ones() const noexcept;
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
 
@@ -60,6 +61,8 @@ class Weights {
   [[nodiscard]] ThinPixel<N> balance(ThinPixel<N> p) const;
   template <typename N>
   [[nodiscard]] Pixel<N> balance(Pixel<N> p) const;
+  template <typename N1, typename N2>
+  [[nodiscard]] N1 balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const;
 
   [[nodiscard]] Weights operator()(Type type_) const;
   [[nodiscard]] constexpr auto type() const noexcept -> Type;
@@ -148,8 +151,6 @@ class Weights {
   };
 
   Weights(std::variant<ConstWeight, WeightVectPtr> weights, Type type_) noexcept;
-  template <typename N1, typename N2>
-  [[nodiscard]] N1 balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 count) const;
 };
 
 using WeightMap = phmap::flat_hash_map<std::string, std::shared_ptr<const Weights>>;

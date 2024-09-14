@@ -172,7 +172,7 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
                     norm.to_string(), resolution(), _unit));
   }
 
-  return PixelSelectorAll{std::move(selectors)};
+  return PixelSelectorAll{std::move(selectors), _weight_cache};
 }
 
 inline PixelSelector File::fetch(std::string_view range, balancing::Method norm,
@@ -243,18 +243,20 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
                std::move(norm));
 }
 
-inline balancing::Weights File::normalization(balancing::Method norm,
-                                              const Chromosome& chrom) const {
+inline const balancing::Weights& File::normalization(balancing::Method norm,
+                                                     const Chromosome& chrom) const {
+  assert(_weight_cache);
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
+
   try {
-    auto weights = fetch(chrom.name(), norm).weights1();
-    if (!!weights && weights.size() != expected_length) {
+    const auto& weights = fetch(chrom.name(), norm).weights1();
+    if (weights.size() != expected_length) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
                                  "expected {} values, found {}"),
                       norm, chrom.name(), expected_length, weights.size()));
     }
-    return weights(balancing::Weights::Type::DIVISIVE);
+    return weights;
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
 
@@ -270,21 +272,33 @@ inline balancing::Weights File::normalization(balancing::Method norm,
     }
   }
 
-  return {std::numeric_limits<double>::quiet_NaN(), expected_length,
-          balancing::Weights::Type::DIVISIVE};
+  auto weights = _weight_cache->find_or_emplace(chrom, norm);
+  assert(weights->empty());
+
+  *weights = balancing::Weights{std::numeric_limits<double>::quiet_NaN(), expected_length,
+                                balancing::Weights::Type::DIVISIVE};
+
+  return *weights;
 }
 
-inline balancing::Weights File::normalization(std::string_view norm,
-                                              const Chromosome& chrom) const {
+inline const balancing::Weights& File::normalization(std::string_view norm,
+                                                     const Chromosome& chrom) const {
   return normalization(balancing::Method{norm}, chrom);
 }
 
-inline balancing::Weights File::normalization(balancing::Method norm) const {
-  if (norm == balancing::Method::NONE()) {
-    return {1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+inline const balancing::Weights& File::normalization(balancing::Method norm) const {
+  assert(_weight_cache);
+  auto weights = _weight_cache->find_or_emplace(0, norm);
+  if (!weights->empty()) {
+    return *weights;
   }
 
-  std::vector<double> weights(bins().size(), std::numeric_limits<double>::quiet_NaN());
+  if (norm == balancing::Method::NONE()) {
+    *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+    return *weights;
+  }
+
+  std::vector<double> buff(bins().size(), std::numeric_limits<double>::quiet_NaN());
   for (const auto& chrom : chromosomes()) {
     if (chrom.is_all()) {
       continue;
@@ -293,13 +307,14 @@ inline balancing::Weights File::normalization(balancing::Method norm) const {
     const auto& chrom_weights = normalization(norm, chrom);
     const auto offset = static_cast<std::ptrdiff_t>(bins().at(chrom).id());
     std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-              chrom_weights.end(balancing::Weights::Type::DIVISIVE), weights.begin() + offset);
+              chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
   }
 
-  return {std::move(weights), balancing::Weights::Type::DIVISIVE};
+  *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
+  return *weights;
 }
 
-inline balancing::Weights File::normalization(std::string_view norm) const {
+inline const balancing::Weights& File::normalization(std::string_view norm) const {
   return normalization(balancing::Method{norm});
 }
 

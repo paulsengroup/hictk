@@ -52,7 +52,7 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
   }
 
   try {
-    const auto& weights = *clr.normalization(norm);
+    const auto& weights = clr.normalization(norm);
 
     const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
     SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), resolution, norm_name);

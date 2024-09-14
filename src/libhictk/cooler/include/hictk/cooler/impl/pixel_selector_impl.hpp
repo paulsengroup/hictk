@@ -46,6 +46,7 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
       _pixels_count(&pixels_count),
       _weights(std::move(weights)) {
   assert(_index);
+  assert(_weights);
   const auto query_is_cis = _coord1.bin1.chrom() == _coord2.bin1.chrom();
   if ((!query_is_cis && _coord1.bin1 > _coord2.bin1) ||
       (query_is_cis && _coord1.bin1.start() > _coord2.bin1.start())) {
@@ -64,7 +65,9 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
-      _weights(std::move(weights)) {}
+      _weights(std::move(weights)) {
+  assert(_weights);
+}
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   // clang-format off
@@ -91,7 +94,8 @@ inline auto PixelSelector::end() const -> iterator<N> {
 template <typename N>
 inline auto PixelSelector::cbegin() const -> iterator<N> {
   if constexpr (std::is_integral_v<N>) {
-    if (!!_weights) {
+    assert(_weights);
+    if (!_weights->is_vector_of_ones()) {
       throw std::logic_error(
           "iterator template parameter should be of floating point type when processing balanced "
           "matrices.");
@@ -110,7 +114,8 @@ inline auto PixelSelector::cbegin() const -> iterator<N> {
 template <typename N>
 inline auto PixelSelector::cend() const -> iterator<N> {
   if constexpr (std::is_integral_v<N>) {
-    if (!!_weights) {
+    assert(_weights);
+    if (!_weights->is_vector_of_ones()) {
       throw std::logic_error(
           "iterator template parameter should be of floating point type when processing balanced "
           "matrices.");
@@ -146,8 +151,9 @@ inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordina
           _weights};
 }
 
-inline std::shared_ptr<const balancing::Weights> PixelSelector::weights() const noexcept {
-  return _weights;
+inline const balancing::Weights &PixelSelector::weights() const noexcept {
+  assert(_weights);
+  return *_weights;
 }
 
 template <typename N>
@@ -158,7 +164,9 @@ inline PixelSelector::iterator<N>::iterator(
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
       _count_it(pixels_count.begin<N>()),
       _weights(std::move(weights)),
-      _h5_end_offset(pixels_bin2_id.size()) {}
+      _h5_end_offset(pixels_bin2_id.size()) {
+  assert(_weights);
+}
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
@@ -176,6 +184,7 @@ inline PixelSelector::iterator<N>::iterator(
   assert(_coord2);
   assert(_coord1.bin1.id() <= _coord1.bin2.id());
   assert(_coord2.bin1.id() <= _coord2.bin2.id());
+  assert(_weights);
 
   if (_index->empty(coord1.bin1.chrom().id())) {
     *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count,
@@ -259,9 +268,11 @@ inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
   _value = {*_bin1_id_it, *_bin2_id_it, conditional_static_cast<N>(*_count_it)};
 
   if constexpr (std::is_floating_point_v<N>) {
-    if (_weights) {
-      _value = _weights->balance(_value);
-    }
+    assert(_weights);
+    _value.count = _weights->balance<N>(_value.bin1_id, _value.bin2_id, _value.count);
+  } else {
+    assert(_weights);
+    assert(_weights->is_vector_of_ones());
   }
   return _value;
 }

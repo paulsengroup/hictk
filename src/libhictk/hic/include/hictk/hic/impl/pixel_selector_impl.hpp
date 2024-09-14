@@ -179,7 +179,7 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return *_coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return *_coord2; }
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
-inline balancing::Method PixelSelector::normalization() const noexcept {
+inline const balancing::Method &PixelSelector::normalization() const noexcept {
   return metadata().normalization;
 }
 inline MatrixUnit PixelSelector::unit() const noexcept { return _reader->index().unit(); }
@@ -685,9 +685,12 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
   return return_pixel();
 }
 
-inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept
+inline PixelSelectorAll::PixelSelectorAll(
+    std::vector<PixelSelector> selectors_,
+    std::shared_ptr<internal::WeightCache> weight_cache) noexcept
     : _selectors(std::move(selectors_)),
-      _bins(_selectors.empty() ? nullptr : _selectors.front().bins_ptr()) {}
+      _bins(_selectors.empty() ? nullptr : _selectors.front().bins_ptr()),
+      _weight_cache(std::move(weight_cache)) {}
 
 inline bool PixelSelectorAll::empty() const noexcept { return begin<float>() == end<float>(); }
 
@@ -724,7 +727,7 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
 inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
   return _selectors.front().matrix_type();
 }
-inline balancing::Method PixelSelectorAll::normalization() const noexcept {
+inline const balancing::Method &PixelSelectorAll::normalization() const noexcept {
   return _selectors.front().normalization();
 }
 inline MatrixUnit PixelSelectorAll::unit() const noexcept { return _selectors.front().unit(); }
@@ -738,22 +741,34 @@ inline const BinTable &PixelSelectorAll::bins() const noexcept {
 }
 inline std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
 
-inline balancing::Weights PixelSelectorAll::weights() const {
-  if (normalization() == balancing::Method::NONE()) {
-    return {1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+inline const balancing::Weights &PixelSelectorAll::weights() const {
+  if (!_weight_cache) {
+    throw std::runtime_error(
+        "PixelSelectorAll::weights() was called on an instance of PixelSelectorAll with null "
+        "_weight_cache");
+  }
+  auto weights = _weight_cache->find_or_emplace(0, normalization());
+  if (!weights->empty()) {
+    return *weights;
   }
 
-  std::vector<double> weights_(bins().size(), std::numeric_limits<double>::quiet_NaN());
+  if (normalization() == balancing::Method::NONE()) {
+    *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+    return *weights;
+  }
+
+  std::vector<double> buff(bins().size(), std::numeric_limits<double>::quiet_NaN());
   std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
     if (sel.is_intra()) {
       const auto &chrom_weights = sel.weights1();
       const auto offset = static_cast<std::ptrdiff_t>(bins().at(sel.chrom1()).id());
       std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-                chrom_weights.end(balancing::Weights::Type::DIVISIVE), weights_.begin() + offset);
+                chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
     }
   });
 
-  return {std::move(weights_), balancing::Weights::Type::DIVISIVE};
+  *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
+  return *weights;
 }
 
 template <typename N>

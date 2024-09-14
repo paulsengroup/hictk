@@ -158,7 +158,7 @@ class File {
 
   [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  [[nodiscard]] balancing::Weights normalization(std::string_view normalization_) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_) const;
 
   template <typename FileT>
   [[nodiscard]] constexpr const FileT &get() const noexcept;
