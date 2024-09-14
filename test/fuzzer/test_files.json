@@ -1,84 +1,90 @@
 {
   "cool": {
-    "url": "https://zenodo.org/records/13754755",
+    "url": "https://zenodo.org/records/13763675",
     "datasets": {
       "4DNFIYECESRC": [
         {
+          "name": "4DNFIYECESRC.variable.cool",
+          "resolution": 0,
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.variable.cool?download=1",
+          "md5sum": "5c4ba8663135f99b86b524e2db2f3e06"
+        },
+        {
           "name": "4DNFIYECESRC.1000.cool",
           "resolution": 1000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.1000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.1000.cool?download=1",
           "md5sum": "548f88d7b5a62e55726d3d549bea8b53"
         },
         {
           "name": "4DNFIYECESRC.2000.cool",
           "resolution": 2000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.2000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.2000.cool?download=1",
           "md5sum": "ae0c73553a06c7d6fc61d81d32ed55a4"
         },
         {
           "name": "4DNFIYECESRC.5000.cool",
           "resolution": 5000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.5000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.5000.cool?download=1",
           "md5sum": "0004e33276cec7b5e944d65286ca71a9"
         },
         {
           "name": "4DNFIYECESRC.10000.cool",
           "resolution": 10000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.10000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.10000.cool?download=1",
           "md5sum": "8754fe826d68057cb10e76e927ef0e28"
         },
         {
           "name": "4DNFIYECESRC.25000.cool",
           "resolution": 25000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.25000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.25000.cool?download=1",
           "md5sum": "92f2296b9be99fba0ae38629c2adfce7"
         },
         {
           "name": "4DNFIYECESRC.50000.cool",
           "resolution": 50000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.50000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.50000.cool?download=1",
           "md5sum": "e79aa022f04bb9cb753cce65a3e52a42"
         },
         {
           "name": "4DNFIYECESRC.100000.cool",
           "resolution": 100000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.100000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.100000.cool?download=1",
           "md5sum": "aaec234d052df76a2b799cf93307557c"
         },
         {
           "name": "4DNFIYECESRC.250000.cool",
           "resolution": 250000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.250000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.250000.cool?download=1",
           "md5sum": "605e38e732dc6ca14e7b5f1f51bee263"
         },
         {
           "name": "4DNFIYECESRC.500000.cool",
           "resolution": 500000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.500000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.500000.cool?download=1",
           "md5sum": "65c66973b4563ddf86861e24caf5668b"
         },
         {
           "name": "4DNFIYECESRC.1000000.cool",
           "resolution": 1000000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.1000000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.1000000.cool?download=1",
           "md5sum": "45fdcf64b1cdd030ac3d84ccfe2e4e22"
         },
         {
           "name": "4DNFIYECESRC.2500000.cool",
           "resolution": 2500000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.2500000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.2500000.cool?download=1",
           "md5sum": "c3f62557fc0365e428500d798790ab1a"
         },
         {
           "name": "4DNFIYECESRC.5000000.cool",
           "resolution": 5000000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.5000000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.5000000.cool?download=1",
           "md5sum": "603749b8e9183d9cadda788a8a593e32"
         },
         {
           "name": "4DNFIYECESRC.10000000.cool",
           "resolution": 10000000,
-          "url": "https://zenodo.org/records/13754755/files/4DNFIYECESRC.10000000.cool?download=1",
+          "url": "https://zenodo.org/records/13763675/files/4DNFIYECESRC.10000000.cool?download=1",
           "md5sum": "c54d91a16f5ad9d653c754917663d9b1"
         }
       ]
