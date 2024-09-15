@@ -23,7 +23,7 @@ template <typename N>
 using Eigen2DDense = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 template <typename N>
-using EigenSparse = Eigen::SparseMatrix<N>;
+using EigenSparse = Eigen::SparseMatrix<N, Eigen::RowMajor>;
 
 // clang-format off
 using PixelBuffer =
