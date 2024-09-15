@@ -69,7 +69,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   }
 
   cooler::Dataset dset(cooler::RootGroup{clr.getGroup(grp)}, path, 0.0);
-  dset.append(weights(weights.type()));
+  dset.append(weights.begin(), weights.end());
 
   dset.write_attribute("cis_only", c.mode == "cis");
   dset.write_attribute("divisive_weights", weights.type() == balancing::Weights::Type::DIVISIVE);

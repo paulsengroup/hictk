@@ -204,11 +204,11 @@ inline std::vector<std::uint64_t> BinTableFixed::compute_num_bins_prefix_sum(
     const Reference &chroms, std::uint32_t bin_size, std::size_t bin_offset) {
   assert(bin_size != 0);
 
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_NULL_DEREF
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_NULL_DEREFERENCE
   std::vector<std::uint64_t> prefix_sum(chroms.size() + 1);
   prefix_sum.front() = bin_offset;
-  DISABLE_WARNING_POP
+  HICTK_DISABLE_WARNING_POP
 
   // I am using transform instead of inclusive_scan because the latter is not always available
   std::transform(chroms.begin(), chroms.end(), prefix_sum.begin() + 1,

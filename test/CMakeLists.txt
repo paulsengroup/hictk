@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 add_subdirectory(units)
-add_subdirectory(utils)
 
 if(HICTK_ENABLE_FUZZY_TESTING)
   add_subdirectory(fuzzer)

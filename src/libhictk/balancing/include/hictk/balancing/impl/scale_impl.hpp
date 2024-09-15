@@ -57,7 +57,7 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 
 template <typename PixelIt>
 inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
-    : _biases(VC{first, last, bins}.get_weights()(balancing::Weights::Type::DIVISIVE)),
+    : _biases(VC{first, last, bins}.get_weights().to_vector(balancing::Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
   if (bins.type() == BinTable::Type::variable) {
@@ -268,7 +268,7 @@ inline auto SCALE::compute_trans(const File& f, const Params& params) -> Result 
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -278,7 +278,7 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename Matrix>
