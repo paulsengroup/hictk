@@ -714,6 +714,14 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.sum() == 1'868'866'491);
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
+
+    SECTION("ToSparseMatrix invalid queries") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+
+      CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", balancing::Method::VC()), 0));
+    }
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
@@ -799,6 +807,18 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.sum() == 6'413'076);
     }
 
+    SECTION("ToDenseMatrix (trans, normalized) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(6185975.980057132));
+      CHECK(count_nans(matrix) == 582);
+    }
+
     SECTION("ToDenseMatrix (gw) full") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
@@ -837,6 +857,14 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 50);
       CHECK(matrix.cols() == 50);
       CHECK(matrix.sum() == 442);
+    }
+
+    SECTION("ToDenseMatrix invalid queries") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+
+      CHECK_THROWS(ToDenseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToDenseMatrix(clr.fetch("chr1", balancing::Method{"weight"}), 0));
     }
   }
 }
@@ -1017,6 +1045,13 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.cols() == 60);
       CHECK(matrix.sum() == 119'208'613);
     }
+
+    SECTION("ToSparseMatrix invalid queries") {
+      const hic::File hf(path.string(), 2'500'000);
+
+      CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
+    }
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
@@ -1064,6 +1099,13 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
 
       CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(146874129.31714758, 1.0e-6));
       CHECK(count_nans(matrix) == 119);
+    }
+
+    SECTION("ToDenseMatrix invalid queries") {
+      const hic::File hf(path.string(), 2'500'000);
+
+      CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
     }
   }
 }
