@@ -180,6 +180,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     SECTION("operator+") {
       CHECK(table.begin() + 0 == table.begin());
       CHECK(*(table.begin() + 5) == expected[5]);
+      CHECK(*(table.end() + -1) == expected.back());
 
       auto it = table.begin() + 5;
       const auto size = static_cast<std::ptrdiff_t>(expected.size());
@@ -193,6 +194,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     SECTION("operator-") {
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
+      CHECK(*(table.begin() - -1) == expected[1]);
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
@@ -413,6 +415,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     SECTION("operator+") {
       CHECK(table.begin() + 0 == table.begin());
       CHECK(*(table.begin() + 5) == expected[5]);
+      CHECK(*(table.end() + -1) == expected.back());
 
       auto it = table.begin() + 5;
       const auto size = static_cast<std::ptrdiff_t>(expected.size());
@@ -426,6 +429,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     SECTION("operator-") {
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
+      CHECK(*(table.begin() - -1) == expected[1]);
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
