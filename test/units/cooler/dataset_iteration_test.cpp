@@ -60,22 +60,24 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   const auto path = testdir() / "dataset_iterator_random.h5";
 
   const RootGroup grp{HighFive::File(path.string(), HighFive::File::Truncate).getGroup("/")};
-  Dataset dset(grp, "int", std::uint64_t{});
+  Dataset dset(grp, "int", std::uint8_t{}, HighFive::DataSpace::UNLIMITED,
+               Dataset::default_access_props(), Dataset::init_create_props(1, 32'000));
 
   std::random_device rd;
   std::mt19937_64 rand_eng{rd()};
 
   constexpr std::size_t N = 5'000'000;
   constexpr auto M = static_cast<std::ptrdiff_t>(N) / 2;
-  std::vector<std::uint64_t> buff(N);
-  std::generate(buff.begin(), buff.end(), [&]() { return rand_eng(); });
+  std::vector<std::uint8_t> buff(N);
+  std::generate(buff.begin(), buff.end(),
+                [&]() { return std::uniform_int_distribution<std::uint8_t>{0, 255}(rand_eng); });
   dset.append(buff);
   REQUIRE(dset.size() == N);
 
   SECTION("operator -/+") {
-    const auto first = dset.begin<std::uint64_t>(32'000);
+    const auto first = dset.begin<std::uint8_t>(32'000);
     const auto mid = first + M;
-    const auto last = dset.end<std::uint64_t>(32'000);
+    const auto last = dset.end<std::uint8_t>(32'000);
     for (std::size_t i = 0; i < 10000; ++i) {
       auto js = std::uniform_int_distribution<std::ptrdiff_t>{0, N - 1}(rand_eng);
       auto ju = static_cast<std::size_t>(js);
@@ -93,8 +95,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
 
   SECTION("subsequent calls to operator+=") {
     for (std::size_t i = 0; i < 50; ++i) {
-      auto first = dset.begin<std::uint64_t>(32'000);
-      auto last = dset.end<std::uint64_t>(32'000);
+      auto first = dset.begin<std::uint8_t>(32'000);
+      auto last = dset.end<std::uint8_t>(32'000);
       std::ptrdiff_t j = 0;
 
       while (first < last) {
@@ -111,8 +113,8 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
 
   SECTION("subsequent calls to operator-=") {
     for (std::size_t i = 0; i < 50; ++i) {
-      auto first = dset.end<std::uint64_t>(32'000) - 1;
-      auto last = dset.begin<std::uint64_t>(32'000);
+      auto first = dset.end<std::uint8_t>(32'000) - 1;
+      auto last = dset.begin<std::uint8_t>(32'000);
       auto j = static_cast<std::ptrdiff_t>(buff.size() - 1);
 
       while (first > last) {
