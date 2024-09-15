@@ -141,6 +141,9 @@ void Cli::make_fuzz_subcommand() {
   sc.add_option("--nproc", c.nproc, "Number of test processes to run in parallel.")
       ->check(CLI::Bound(1U, std::thread::hardware_concurrency()))
       ->capture_default_str();
+  sc.add_flag("--suppress-py-warnings,!--show-py-warnings", c.suppress_python_warnings,
+              "Hide/show python warnings.")
+      ->capture_default_str();
 }
 
 void Cli::make_launch_worker_subcommand() {

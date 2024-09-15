@@ -71,6 +71,10 @@ namespace hictk::fuzzer {
                                                                       std::mutex& mtx) {
   std::mt19937_64 rand_eng(seed);
 
+  if (c.suppress_python_warnings) {
+    boost::process::v2::environment::set("PYTHONWARNINGS", "ignore");
+  }
+
   [[maybe_unused]] const auto lck = std::scoped_lock(mtx);
   for (std::size_t i = 0; i < 10; ++i) {
     boost::process::v2::process proc(ctx, c.exec.string(),

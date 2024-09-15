@@ -28,6 +28,7 @@ struct Config {
   std::string normalization{"NONE"};
   std::optional<std::uint64_t> seed{};
   std::size_t nproc{1};
+  bool suppress_python_warnings{true};
 };
 
 }  // namespace hictk::fuzzer
