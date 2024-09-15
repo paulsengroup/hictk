@@ -278,13 +278,13 @@ class Dataset {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
-    auto operator+=(std::size_t i) -> iterator &;
-    [[nodiscard]] auto operator+(std::size_t i) const -> iterator;
+    auto operator+=(difference_type i) -> iterator &;
+    [[nodiscard]] auto operator+(difference_type i) const -> iterator;
 
     auto operator--() -> iterator &;
     auto operator--(int) -> iterator;
-    auto operator-=(std::size_t i) -> iterator &;
-    [[nodiscard]] auto operator-(std::size_t i) const -> iterator;
+    auto operator-=(difference_type i) -> iterator &;
+    [[nodiscard]] auto operator-(difference_type i) const -> iterator;
     [[nodiscard]] auto operator-(const iterator &other) const -> difference_type;
 
     auto seek(std::size_t offset) -> iterator &;

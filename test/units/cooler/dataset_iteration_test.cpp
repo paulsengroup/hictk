@@ -66,33 +66,43 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   std::mt19937_64 rand_eng{rd()};
 
   constexpr std::size_t N = 5'000'000;
+  constexpr auto M = static_cast<std::ptrdiff_t>(N) / 2;
   std::vector<std::uint64_t> buff(N);
   std::generate(buff.begin(), buff.end(), [&]() { return rand_eng(); });
   dset.append(buff);
   REQUIRE(dset.size() == N);
 
   SECTION("operator -/+") {
-    auto first = dset.begin<std::uint64_t>(32'000);
-    auto last = dset.end<std::uint64_t>(32'000);
-    for (std::size_t i = 0; i < 100; ++i) {
-      const auto j = std::uniform_int_distribution<std::uint64_t>{0, N - 1}(rand_eng);
+    const auto first = dset.begin<std::uint64_t>(32'000);
+    const auto mid = first + M;
+    const auto last = dset.end<std::uint64_t>(32'000);
+    for (std::size_t i = 0; i < 10000; ++i) {
+      auto js = std::uniform_int_distribution<std::ptrdiff_t>{0, N - 1}(rand_eng);
+      auto ju = static_cast<std::size_t>(js);
 
-      CHECK(*(first + j) == buff[j]);
-      CHECK(*(last - j) == buff[N - j]);
+      CHECK(*(first + js) == buff[ju]);
+      CHECK(*(last - js) == buff[N - ju]);
+
+      js = std::uniform_int_distribution<std::ptrdiff_t>{-(M - 1), M - 1}(rand_eng);
+      const auto ju1 = static_cast<std::size_t>(M + js);
+      const auto ju2 = static_cast<std::size_t>(M - js);
+      CHECK(*(mid + js) == buff[ju1]);
+      CHECK(*(mid - js) == buff[ju2]);
     }
   }
 
   SECTION("subsequent calls to operator+=") {
-    for (std::size_t i = 0; i < 10; ++i) {
+    for (std::size_t i = 0; i < 50; ++i) {
       auto first = dset.begin<std::uint64_t>(32'000);
       auto last = dset.end<std::uint64_t>(32'000);
-      std::size_t j = 0;
+      std::ptrdiff_t j = 0;
 
       while (first < last) {
-        CHECK(*first == buff[j]);
+        CHECK(*first == buff[static_cast<std::size_t>(j)]);
 
-        const auto step = std::uniform_int_distribution<std::size_t>{
-            0, std::min(std::size_t(500), buff.size() - j)}(rand_eng);
+        const auto lb = std::max(std::ptrdiff_t{-100}, -j);
+        const auto ub = std::min(std::ptrdiff_t{500}, static_cast<std::ptrdiff_t>(buff.size()) - j);
+        const auto step = std::uniform_int_distribution<std::ptrdiff_t>{lb, ub}(rand_eng);
         first += step;
         j += step;
       }
@@ -100,16 +110,18 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   }
 
   SECTION("subsequent calls to operator-=") {
-    for (std::size_t i = 0; i < 10; ++i) {
+    for (std::size_t i = 0; i < 50; ++i) {
       auto first = dset.end<std::uint64_t>(32'000) - 1;
       auto last = dset.begin<std::uint64_t>(32'000);
-      std::size_t j = buff.size() - 1;
+      auto j = static_cast<std::ptrdiff_t>(buff.size() - 1);
 
       while (first > last) {
-        CHECK(*first == buff[j]);
+        CHECK(*first == buff[static_cast<std::size_t>(j)]);
 
-        const auto step =
-            std::uniform_int_distribution<std::size_t>{0, std::min(std::size_t(500), j)}(rand_eng);
+        const auto lb =
+            std::max(std::ptrdiff_t{-100}, -(static_cast<std::ptrdiff_t>(buff.size()) - j));
+        const auto ub = std::min(std::ptrdiff_t{500}, j);
+        const auto step = std::uniform_int_distribution<std::ptrdiff_t>{lb, ub}(rand_eng);
 
         first -= step;
         j -= step;

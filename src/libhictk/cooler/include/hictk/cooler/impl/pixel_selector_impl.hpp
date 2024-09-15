@@ -324,7 +324,7 @@ inline void PixelSelector::iterator<N>::jump_to_row(std::uint64_t bin_id) {
   const auto current_offset = h5_offset();
 
   assert(row_offset >= current_offset);
-  const auto offset = row_offset - current_offset;
+  const auto offset = static_cast<std::ptrdiff_t>(row_offset - current_offset);
 
   _bin1_id_it += offset;
   _bin2_id_it += offset;

@@ -113,21 +113,37 @@ inline auto Dataset::iterator<T>::operator++(int) -> iterator {
 }
 
 template <typename T>
-inline auto Dataset::iterator<T>::operator+=(std::size_t i) -> iterator & {
+inline auto Dataset::iterator<T>::operator+=(difference_type i) -> iterator & {
+  if (HICTK_UNLIKELY(i < 0)) {
+    return *this -= -i;
+  }
+
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset + i <= _h5_size);
   _h5_offset += i;
+  HICTK_DISABLE_WARNING_POP
   return *this;
 }
 
 template <typename T>
-inline auto Dataset::iterator<T>::operator+(std::size_t i) const -> iterator {
+inline auto Dataset::iterator<T>::operator+(difference_type i) const -> iterator {
+  if (HICTK_UNLIKELY(i < 0)) {
+    return *this - -i;
+  }
+
   assert(_buff);
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   const auto new_offset = _h5_offset + i;
   assert(new_offset <= _h5_size);
 
   if (!_buff || _h5_chunk_start + _buff->size() < new_offset) {
     return iterator(*_dset, _chunk_size, new_offset);
   }
+  HICTK_DISABLE_WARNING_POP
 
   auto it = *this;
   return it += i;
@@ -150,20 +166,36 @@ inline auto Dataset::iterator<T>::operator--(int) -> iterator {
 }
 
 template <typename T>
-inline auto Dataset::iterator<T>::operator-=(std::size_t i) -> iterator & {
+inline auto Dataset::iterator<T>::operator-=(difference_type i) -> iterator & {
+  if (HICTK_UNLIKELY(i < 0)) {
+    return *this += -i;
+  }
+
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset >= i);
   _h5_offset -= i;
+  HICTK_DISABLE_WARNING_POP
   return *this;
 }
 
 template <typename T>
-inline auto Dataset::iterator<T>::operator-(std::size_t i) const -> iterator {
+inline auto Dataset::iterator<T>::operator-(difference_type i) const -> iterator {
+  if (HICTK_UNLIKELY(i < 0)) {
+    return *this + -i;
+  }
+
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset >= i);
   const auto new_offset = _h5_offset - i;
   if (new_offset >= _h5_chunk_start) {
     auto it = *this;
     return it -= i;
   }
+  HICTK_DISABLE_WARNING_POP
 
   return iterator(*_dset, _chunk_size, new_offset);
 }
@@ -177,9 +209,9 @@ template <typename T>
 inline auto Dataset::iterator<T>::seek(std::size_t offset) -> iterator<T> & {
   assert(offset < _h5_size);
   if (offset >= h5_offset()) {
-    return *this += offset - h5_offset();
+    return *this += static_cast<std::ptrdiff_t>(offset - h5_offset());
   }
-  return *this -= h5_offset() - offset;
+  return *this -= static_cast<std::ptrdiff_t>(h5_offset() - offset);
 }
 
 template <typename T>
