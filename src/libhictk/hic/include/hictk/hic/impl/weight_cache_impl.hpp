@@ -29,6 +29,14 @@ inline auto WeightCache::find_or_emplace(const Chromosome &chrom, balancing::Met
   return find_or_emplace(chrom.id(), norm);
 }
 
+inline auto WeightCache::at(std::uint32_t chrom_id, balancing::Method norm) const -> Value {
+  return _weights.at(std::make_pair(chrom_id, norm));
+}
+
+inline auto WeightCache::at(const Chromosome &chrom, balancing::Method norm) const -> Value {
+  return at(chrom.id(), norm);
+}
+
 inline void WeightCache::clear() noexcept { _weights.clear(); }
 inline std::size_t WeightCache::size() const noexcept { return _weights.size(); }
 

@@ -246,12 +246,34 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
 
 inline const balancing::Weights& File::normalization(balancing::Method norm,
                                                      const Chromosome& chrom) const {
+  const auto w = normalization_ptr(norm, chrom);
+  assert(w);
+  return *w;
+}
+inline const balancing::Weights& File::normalization(std::string_view norm,
+                                                     const Chromosome& chrom) const {
+  const auto w = normalization_ptr(norm, chrom);
+  assert(w);
+  return *w;
+}
+inline const balancing::Weights& File::normalization(balancing::Method norm) const {
+  const auto w = normalization_ptr(norm);
+  assert(w);
+  return *w;
+}
+inline const balancing::Weights& File::normalization(std::string_view norm) const {
+  const auto w = normalization_ptr(norm);
+  assert(w);
+  return *w;
+}
+
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    balancing::Method norm, const Chromosome& chrom) const {
   assert(_weight_cache);
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
 
   try {
-    HICTK_DISABLE_WARNING_PUSH
-    HICTK_DISABLE_WARNING_DANGLING_REFERENCE
+    // This takes care of populating the weight cache when appropriate
     const auto& weights = fetch(chrom.name(), norm).weights1();
     if (weights.size() != expected_length) {
       throw std::runtime_error(
@@ -259,10 +281,7 @@ inline const balancing::Weights& File::normalization(balancing::Method norm,
                                  "expected {} values, found {}"),
                       norm, chrom.name(), expected_length, weights.size()));
     }
-    // Returning this reference is fine, as the reference points to memory held by a shared_ptr
-    // (which should stay alive at least as long as the current File object exists)
-    return weights;
-    HICTK_DISABLE_WARNING_POP
+    return _weight_cache->at(chrom, norm);
   } catch (const std::exception& e) {
     const std::string_view msg{e.what()};
 
@@ -284,24 +303,25 @@ inline const balancing::Weights& File::normalization(balancing::Method norm,
   *weights = balancing::Weights{std::numeric_limits<double>::quiet_NaN(), expected_length,
                                 balancing::Weights::Type::DIVISIVE};
 
-  return *weights;
+  return weights;
 }
 
-inline const balancing::Weights& File::normalization(std::string_view norm,
-                                                     const Chromosome& chrom) const {
-  return normalization(balancing::Method{norm}, chrom);
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    std::string_view norm, const Chromosome& chrom) const {
+  return normalization_ptr(balancing::Method{norm}, chrom);
 }
 
-inline const balancing::Weights& File::normalization(balancing::Method norm) const {
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    balancing::Method norm) const {
   assert(_weight_cache);
   auto weights = _weight_cache->find_or_emplace(0, norm);
   if (!weights->empty()) {
-    return *weights;
+    return weights;
   }
 
   if (norm == balancing::Method::NONE()) {
     *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
-    return *weights;
+    return weights;
   }
 
   std::vector<double> buff(bins().size(), std::numeric_limits<double>::quiet_NaN());
@@ -317,11 +337,12 @@ inline const balancing::Weights& File::normalization(balancing::Method norm) con
   }
 
   *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
-  return *weights;
+  return weights;
 }
 
-inline const balancing::Weights& File::normalization(std::string_view norm) const {
-  return normalization(balancing::Method{norm});
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    std::string_view norm) const {
+  return normalization_ptr(balancing::Method{norm});
 }
 
 inline std::vector<double> File::expected_values(const Chromosome& chrom,
