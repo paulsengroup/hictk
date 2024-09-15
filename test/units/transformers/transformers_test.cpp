@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <numeric>
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
@@ -80,6 +81,22 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
     });
   }
   return map;
+}
+
+template <typename Matrix>
+[[maybe_unused]] [[nodiscard]] double sum_finite(const Matrix& matrix) noexcept {
+  const double* first = matrix.data();
+  const double* last = first + matrix.size();  // NOLINT(*-pro-bounds-pointer-arithmetic)
+  return std::accumulate(first, last, 0.0, [](double accumulator, double n) {
+    return accumulator + (std::isfinite(n) ? n : 0.0);
+  });
+}
+
+template <typename Matrix>
+[[maybe_unused]] [[nodiscard]] std::size_t count_nans(const Matrix& matrix) noexcept {
+  // NOLINTNEXTLINE(*-pro-bounds-pointer-arithmetic)
+  return static_cast<std::size_t>(std::count_if(matrix.data(), matrix.data() + matrix.size(),
+                                                [&](auto n) { return std::isnan(n); }));
 }
 
 #ifdef HICTK_WITH_ARROW
@@ -743,6 +760,18 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.sum() == 5'426'501);
     }
 
+    SECTION("ToDenseMatrix (cis, normalized) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(140900543.1839076));
+      CHECK(count_nans(matrix) == 1164);
+    }
+
     SECTION("ToDenseMatrix (trans) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
@@ -1000,6 +1029,16 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix == matrix.transpose());
     }
 
+    SECTION("ToDenseMatrix (cis, normalized)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch("chr2L", balancing::Method{"VC"}), 0.0)();
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 10);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(22929540.99999999, 1.0e-6));
+      CHECK(count_nans(matrix) == 0);
+    }
+
     SECTION("ToDenseMatrix (trans)") {
       const hic::File hf(path.string(), 2'500'000);
       const auto matrix = ToDenseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
@@ -1015,6 +1054,16 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.cols() == 60);
       CHECK(matrix.sum() == 149'078'427);
       CHECK(matrix == matrix.transpose());
+    }
+
+    SECTION("ToDenseMatrix (gw, normalized)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch(balancing::Method{"VC"}), 0.0)();
+      CHECK(matrix.rows() == 60);
+      CHECK(matrix.cols() == 60);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(146874129.31714758, 1.0e-6));
+      CHECK(count_nans(matrix) == 119);
     }
   }
 }

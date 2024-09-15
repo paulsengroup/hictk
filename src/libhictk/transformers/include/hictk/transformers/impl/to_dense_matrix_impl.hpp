@@ -6,8 +6,10 @@
 
 #include <Eigen/Dense>
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <utility>
+#include <variant>
 
 #include "hictk/pixel.hpp"
 #include "hictk/transformers/common.hpp"
@@ -45,15 +47,18 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       coord3.bin2 = std::max(coord3.bin2, coord4.bin2);
       coord4 = coord3;
 
-      internal::fill_matrix<N>(_sel.fetch(coord3, coord4), matrix, matrix.rows(), matrix.cols(),
-                               row_offset(), col_offset(), populate_lower_triangle,
-                               populate_upper_triangle, matrix_setter);
+      const auto new_sel = _sel.fetch(coord3, coord4);
+      internal::fill_matrix<N>(new_sel, matrix, matrix.rows(), matrix.cols(), row_offset(),
+                               col_offset(), populate_lower_triangle, populate_upper_triangle,
+                               matrix_setter);
+      mask_bad_bins(new_sel, matrix);
       return matrix;
     }
   }
 
   internal::fill_matrix<N>(_sel, matrix, matrix.rows(), matrix.cols(), row_offset(), col_offset(),
                            populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  mask_bad_bins(_sel, matrix);
   return matrix;
 }
 
@@ -125,6 +130,119 @@ inline std::int64_t ToDenseMatrix<N, PixelSelector>::offset(
     const PixelCoordinates& coords) noexcept {
   constexpr auto bad_bin_id = std::numeric_limits<std::uint64_t>::max();
   return static_cast<std::int64_t>(coords.bin1.id() == bad_bin_id ? 0 : coords.bin1.id());
+}
+
+template <typename N, typename PixelSelector>
+inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hictk::PixelSelector& sel,
+                                                           MatrixT& buffer) {
+  std::visit([&](const auto& sel_) { mask_bad_bins(sel_, buffer); }, sel.get());
+}
+
+template <typename N, typename PixelSelector>
+inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const cooler::PixelSelector& sel,
+                                                           MatrixT& buffer) {
+  if (!sel.weights()) {
+    return;
+  }
+
+  const auto offset1 = row_offset();
+  const auto offset2 = col_offset();
+
+  const auto& weights = sel.weights();
+  for (std::int64_t i = 0; i < buffer.rows(); ++i) {
+    const auto w =
+        weights.at(static_cast<std::size_t>(offset1 + i), balancing::Weights::Type::MULTIPLICATIVE);
+    if (!std::isfinite(w)) {
+      if constexpr (std::is_integral_v<N>) {
+        buffer.row(i).setConstant(N{0});
+      } else {
+        buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
+      }
+    }
+  }
+
+  for (std::int64_t j = 0; j < buffer.cols(); ++j) {
+    const auto w =
+        weights.at(static_cast<std::size_t>(offset2 + j), balancing::Weights::Type::MULTIPLICATIVE);
+    if (!std::isfinite(w)) {
+      if constexpr (std::is_integral_v<N>) {
+        buffer.col(j).setConstant(N{0});
+      } else {
+        buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
+      }
+    }
+  }
+}
+
+template <typename N, typename PixelSelector>
+inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelector& sel,
+                                                           MatrixT& buffer) {
+  if (sel.weights1()) {
+    const auto chrom_offset = sel.bins().at(sel.coord1().bin1.chrom()).id();
+    const auto offset = row_offset() - static_cast<std::int64_t>(chrom_offset);
+
+    const auto& weights = sel.weights1();
+    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
+
+    for (std::int64_t i = 0; i < buffer.rows(); ++i) {
+      const auto w = weights[static_cast<std::size_t>(offset + i)];
+      if (!std::isfinite(w) || w == 0) {
+        if constexpr (std::is_integral_v<N>) {
+          buffer.row(i).setConstant(N{0});
+        } else {
+          buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
+        }
+      }
+    }
+  }
+
+  if (sel.weights2()) {
+    const auto chrom_offset = sel.bins().at(sel.coord2().bin1.chrom()).id();
+    const auto offset = col_offset() - static_cast<std::int64_t>(chrom_offset);
+
+    const auto& weights = sel.weights2();
+    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
+
+    for (std::int64_t j = 0; j < buffer.cols(); ++j) {
+      const auto w = weights[static_cast<std::size_t>(offset + j)];
+      if (!std::isfinite(w) || w == 0) {
+        if constexpr (std::is_integral_v<N>) {
+          buffer.col(j).setConstant(N{0});
+        } else {
+          buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
+        }
+      }
+    }
+  }
+}
+
+template <typename N, typename PixelSelector>
+inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelectorAll& sel,
+                                                           MatrixT& buffer) {
+  const auto weights = sel.weights();
+  assert(weights.type() == balancing::Weights::Type::DIVISIVE);
+
+  for (std::int64_t i = 0; i < buffer.rows(); ++i) {
+    const auto w = weights[static_cast<std::size_t>(i)];
+    if (!std::isfinite(w) || w == 0) {
+      if constexpr (std::is_integral_v<N>) {
+        buffer.row(i).setConstant(N{0});
+      } else {
+        buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
+      }
+    }
+  }
+
+  for (std::int64_t j = 0; j < buffer.cols(); ++j) {
+    const auto w = weights[static_cast<std::size_t>(j)];
+    if (!std::isfinite(w) || w == 0) {
+      if constexpr (std::is_integral_v<N>) {
+        buffer.col(j).setConstant(N{0});
+      } else {
+        buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
+      }
+    }
+  }
 }
 
 }  // namespace hictk::transformers

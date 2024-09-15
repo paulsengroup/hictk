@@ -74,6 +74,8 @@ class PixelSelector {
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2) const;
 
+  [[nodiscard]] const balancing::Weights &weights() const noexcept;
+
  public:
   template <typename N>
   class iterator {

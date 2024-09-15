@@ -11,6 +11,9 @@
 #include <string_view>
 #include <type_traits>
 
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/file.hpp"
+#include "hictk/hic/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
@@ -44,6 +47,11 @@ class ToDenseMatrix {
   [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
   [[nodiscard]] std::int64_t row_offset() const noexcept;
   [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  void mask_bad_bins(const hictk::PixelSelector& sel, MatrixT& buffer);
+  void mask_bad_bins(const cooler::PixelSelector& sel, MatrixT& buffer);
+  void mask_bad_bins(const hic::PixelSelector& sel, MatrixT& buffer);
+  void mask_bad_bins(const hic::PixelSelectorAll& sel, MatrixT& buffer);
 };
 
 }  // namespace hictk::transformers

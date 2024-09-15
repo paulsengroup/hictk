@@ -205,7 +205,7 @@ inline std::vector<std::uint64_t> BinTableFixed::compute_num_bins_prefix_sum(
   assert(bin_size != 0);
 
   HICTK_DISABLE_WARNING_PUSH
-  HICTK_DISABLE_WARNING_NULL_DEREF
+  HICTK_DISABLE_WARNING_NULL_DEREFERENCE
   std::vector<std::uint64_t> prefix_sum(chroms.size() + 1);
   prefix_sum.front() = bin_offset;
   HICTK_DISABLE_WARNING_POP
