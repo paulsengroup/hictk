@@ -25,6 +25,8 @@ inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector&& sel, [[may
         "hictk::transformers::ToDenseMatrix(): invalid parameters. Trans queries do not support "
         "span=QuerySpan::lower_triangle.");
   }
+
+  validate_dtype();
 }
 
 template <typename N, typename PixelSelector>
@@ -38,7 +40,7 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
     matrix(i1, i2) = count;
   };
 
-  MatrixT matrix = MatrixT::Zero(num_rows(), num_cols());
+  auto matrix = init_matrix();
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (chrom1() == chrom2() && _sel.coord1() != _sel.coord2()) {
       auto coord3 = _sel.coord1();
@@ -51,14 +53,12 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       internal::fill_matrix<N>(new_sel, matrix, matrix.rows(), matrix.cols(), row_offset(),
                                col_offset(), populate_lower_triangle, populate_upper_triangle,
                                matrix_setter);
-      mask_bad_bins(new_sel, matrix);
       return matrix;
     }
   }
 
   internal::fill_matrix<N>(_sel, matrix, matrix.rows(), matrix.cols(), row_offset(), col_offset(),
                            populate_lower_triangle, populate_upper_triangle, matrix_setter);
-  mask_bad_bins(_sel, matrix);
   return matrix;
 }
 
@@ -133,114 +133,101 @@ inline std::int64_t ToDenseMatrix<N, PixelSelector>::offset(
 }
 
 template <typename N, typename PixelSelector>
-inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hictk::PixelSelector& sel,
-                                                           MatrixT& buffer) {
-  std::visit([&](const auto& sel_) { mask_bad_bins(sel_, buffer); }, sel.get());
+inline auto ToDenseMatrix<N, PixelSelector>::init_matrix() const -> MatrixT {
+  const auto& [weights1, weights2] = slice_weights(_sel);
+
+  if (weights1.size() == 0) {
+    assert(weights2.size() == 0);
+    return MatrixT::Zero(num_rows(), num_cols());
+  }
+
+  assert(weights2.size() != 0);
+  return weights1 * weights2.transpose() * 0;
 }
 
 template <typename N, typename PixelSelector>
-inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const cooler::PixelSelector& sel,
-                                                           MatrixT& buffer) {
-  if (!sel.weights()) {
+inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+ToDenseMatrix<N, PixelSelector>::slice_weights(const cooler::PixelSelector& sel) const {
+  return slice_weights(sel.weights(), sel.weights(), row_offset(), col_offset(), num_rows(),
+                       num_cols());
+}
+
+template <typename N, typename PixelSelector>
+inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+ToDenseMatrix<N, PixelSelector>::slice_weights(const hic::PixelSelector& sel) const {
+  return slice_weights(
+      sel.weights1(), sel.weights2(), static_cast<std::int64_t>(_sel.coord1().bin1.rel_id()),
+      static_cast<std::int64_t>(_sel.coord2().bin1.rel_id()), num_rows(), num_cols());
+}
+
+template <typename N, typename PixelSelector>
+inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+ToDenseMatrix<N, PixelSelector>::slice_weights(const hic::PixelSelectorAll& sel) const {
+  return slice_weights(sel.weights(), sel.weights(), row_offset(), col_offset(), num_rows(),
+                       num_cols());
+}
+
+template <typename N, typename PixelSelector>
+inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+ToDenseMatrix<N, PixelSelector>::slice_weights(const hictk::PixelSelector& sel) const {
+  return std::visit([&](const auto& sel_) { return slice_weights(sel_); }, sel.get());
+}
+
+template <typename N, typename PixelSelector>
+inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights1,
+                                               const balancing::Weights& weights2,
+                                               std::int64_t offset1, std::int64_t offset2,
+                                               std::int64_t size1, std::int64_t size2) {
+  if constexpr (std::is_integral_v<N>) {
+    return {};
+  }
+
+  if (weights1.empty() || weights2.empty()) {
+    return {};
+  }
+
+  assert(offset1 + size1 <= static_cast<std::int64_t>(weights1.size()));
+  assert(offset2 + size2 <= static_cast<std::int64_t>(weights2.size()));
+
+  Eigen::Vector<N, Eigen::Dynamic> slice1(size1);
+
+  for (std::int64_t i = 0; i < size1; ++i) {
+    slice1(i) = weights1.at(static_cast<std::size_t>(offset1 + i),
+                            balancing::Weights::Type::MULTIPLICATIVE);
+  }
+
+  const auto symmetric_query = &weights1 == &weights2 && offset1 == offset2 && size1 == size2;
+  if (symmetric_query) {
+    return std::make_pair(slice1, slice1);
+  }
+
+  Eigen::Vector<N, Eigen::Dynamic> slice2(size2);
+  for (std::int64_t i = 0; i < size2; ++i) {
+    slice2(i) = weights2.at(static_cast<std::size_t>(offset2 + i),
+                            balancing::Weights::Type::MULTIPLICATIVE);
+  }
+
+  return std::make_pair(std::move(slice1), std::move(slice2));
+}
+
+template <typename N, typename PixelSelector>
+inline void ToDenseMatrix<N, PixelSelector>::validate_dtype() const {
+  if constexpr (std::is_floating_point_v<N>) {
     return;
   }
 
-  const auto offset1 = row_offset();
-  const auto offset2 = col_offset();
+  constexpr auto* msg =
+      "hictk::transformers::ToDenseMatrix(): invalid parameters. n should be of floating-point "
+      "type when fetching normalized interactions.";
 
-  const auto& weights = sel.weights();
-  for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-    const auto w =
-        weights.at(static_cast<std::size_t>(offset1 + i), balancing::Weights::Type::MULTIPLICATIVE);
-    if (!std::isfinite(w)) {
-      if constexpr (std::is_integral_v<N>) {
-        buffer.row(i).setConstant(N{0});
-      } else {
-        buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
-      }
+  if constexpr (internal::has_weights_member_fx<PixelSelector>) {
+    if (!_sel.weights().is_vector_of_ones()) {
+      throw std::runtime_error(msg);
     }
-  }
-
-  for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-    const auto w =
-        weights.at(static_cast<std::size_t>(offset2 + j), balancing::Weights::Type::MULTIPLICATIVE);
-    if (!std::isfinite(w)) {
-      if constexpr (std::is_integral_v<N>) {
-        buffer.col(j).setConstant(N{0});
-      } else {
-        buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
-      }
-    }
-  }
-}
-
-template <typename N, typename PixelSelector>
-inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelector& sel,
-                                                           MatrixT& buffer) {
-  if (sel.weights1()) {
-    const auto chrom_offset = sel.bins().at(sel.coord1().bin1.chrom()).id();
-    const auto offset = row_offset() - static_cast<std::int64_t>(chrom_offset);
-
-    const auto& weights = sel.weights1();
-    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
-
-    for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-      const auto w = weights[static_cast<std::size_t>(offset + i)];
-      if (!std::isfinite(w) || w == 0) {
-        if constexpr (std::is_integral_v<N>) {
-          buffer.row(i).setConstant(N{0});
-        } else {
-          buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
-        }
-      }
-    }
-  }
-
-  if (sel.weights2()) {
-    const auto chrom_offset = sel.bins().at(sel.coord2().bin1.chrom()).id();
-    const auto offset = col_offset() - static_cast<std::int64_t>(chrom_offset);
-
-    const auto& weights = sel.weights2();
-    assert(weights.type() == balancing::Weights::Type::DIVISIVE);
-
-    for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-      const auto w = weights[static_cast<std::size_t>(offset + j)];
-      if (!std::isfinite(w) || w == 0) {
-        if constexpr (std::is_integral_v<N>) {
-          buffer.col(j).setConstant(N{0});
-        } else {
-          buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
-        }
-      }
-    }
-  }
-}
-
-template <typename N, typename PixelSelector>
-inline void ToDenseMatrix<N, PixelSelector>::mask_bad_bins(const hic::PixelSelectorAll& sel,
-                                                           MatrixT& buffer) {
-  const auto weights = sel.weights();
-  assert(weights.type() == balancing::Weights::Type::DIVISIVE);
-
-  for (std::int64_t i = 0; i < buffer.rows(); ++i) {
-    const auto w = weights[static_cast<std::size_t>(i)];
-    if (!std::isfinite(w) || w == 0) {
-      if constexpr (std::is_integral_v<N>) {
-        buffer.row(i).setConstant(N{0});
-      } else {
-        buffer.row(i).setConstant(std::numeric_limits<N>::quiet_NaN());
-      }
-    }
-  }
-
-  for (std::int64_t j = 0; j < buffer.cols(); ++j) {
-    const auto w = weights[static_cast<std::size_t>(j)];
-    if (!std::isfinite(w) || w == 0) {
-      if constexpr (std::is_integral_v<N>) {
-        buffer.col(j).setConstant(N{0});
-      } else {
-        buffer.col(j).setConstant(std::numeric_limits<N>::quiet_NaN());
-      }
+  } else {
+    if (!_sel.weights1().is_vector_of_ones() || !_sel.weights2().is_vector_of_ones()) {
+      throw std::runtime_error(msg);
     }
   }
 }
