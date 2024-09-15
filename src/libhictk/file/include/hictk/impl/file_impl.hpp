@@ -33,7 +33,11 @@
 namespace hictk {
 
 template <typename PixelSelectorT>
-inline PixelSelector::PixelSelector(PixelSelectorT selector) : _sel(std::move(selector)) {}
+inline PixelSelector::PixelSelector(PixelSelectorT selector,
+                                    std::shared_ptr<const balancing::Weights> weights)
+    : _sel(std::move(selector)), _weights(std::move(weights)) {
+  assert(_weights);
+}
 
 template <typename N>
 inline auto PixelSelector::begin([[maybe_unused]] bool sorted) const -> iterator<N> {
@@ -114,12 +118,19 @@ inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
       [&](const auto& sel) -> PixelSelector {
         using T = remove_cvref_t<decltype(sel)>;
         if constexpr (std::is_same_v<hic::PixelSelectorAll, T>) {
-          throw std::runtime_error("TODO");  // TODO fixme
+          throw std::runtime_error(
+              "calling fetch() on a PixelSelector instance set up to fetch genome-wide matrices "
+              "from .hic files is not supported");
         } else {
-          return PixelSelector{sel.fetch(coord1_, coord2_)};
+          return PixelSelector{sel.fetch(coord1_, coord2_), _weights};
         }
       },
       _sel);
+}
+
+inline const balancing::Weights& PixelSelector::weights() const noexcept {
+  assert(_weights);
+  return *_weights;
 }
 
 template <typename PixelSelectorT>
@@ -217,6 +228,9 @@ inline File::File(std::string uri, std::uint32_t resolution, hic::MatrixType typ
                   hic::MatrixUnit unit) {
   const auto [path, grp] = cooler::parse_cooler_uri(uri);
   if (hic::utils::is_hic_file(path)) {
+    if (resolution == 0) {
+      throw std::runtime_error("resolution cannot be 0 when opening .hic files.");
+    }
     *this = File(hic::File(path, resolution, type, unit));
     return;
   }
@@ -294,7 +308,11 @@ inline std::uint64_t File::nchroms() const {
 }
 
 inline PixelSelector File::fetch(const balancing::Method& normalization) const {
-  return std::visit([&](const auto& fp) { return PixelSelector{fp.fetch(normalization)}; }, _fp);
+  return std::visit(
+      [&](const auto& fp) {
+        return PixelSelector{fp.fetch(normalization), fp.normalization_ptr(normalization)};
+      },
+      _fp);
 }
 
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method& normalization,
@@ -312,7 +330,8 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                                  hictk::File::QUERY_TYPE query_type) const {
   return std::visit(
       [&](const auto& fp) {
-        return PixelSelector{fp.fetch(range1, range2, normalization, query_type)};
+        return PixelSelector{fp.fetch(range1, range2, normalization, query_type),
+                             fp.normalization_ptr(normalization)};
       },
       _fp);
 }
@@ -324,7 +343,8 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
   return std::visit(
       [&](const auto& fp) {
         return PixelSelector{
-            fp.fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, normalization)};
+            fp.fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, normalization),
+            fp.normalization_ptr(normalization)};
       },
       _fp);
 }

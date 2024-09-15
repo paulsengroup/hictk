@@ -747,7 +747,7 @@ inline const balancing::Weights &PixelSelectorAll::weights() const {
         "PixelSelectorAll::weights() was called on an instance of PixelSelectorAll with null "
         "_weight_cache");
   }
-  auto weights = _weight_cache->find_or_emplace(0, normalization());
+  auto weights = _weight_cache->get_or_init(0, normalization());
   if (!weights->empty()) {
     return *weights;
   }
