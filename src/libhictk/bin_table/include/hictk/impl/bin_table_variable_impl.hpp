@@ -424,6 +424,7 @@ inline auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iter
   assert(_bin_table);
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   try {
     if (_bin_id > _bin_table->size() - i) {
@@ -480,6 +481,7 @@ inline auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iter
   assert(_bin_table);
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   try {
     if (_bin_id < _bin_table->size() - i) {

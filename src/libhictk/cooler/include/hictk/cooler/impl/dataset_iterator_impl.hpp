@@ -122,6 +122,7 @@ inline auto Dataset::iterator<T>::operator+=(difference_type i) -> iterator & {
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset + i <= _h5_size);
   _h5_offset += i;
@@ -138,6 +139,7 @@ inline auto Dataset::iterator<T>::operator+(difference_type i) const -> iterator
   assert(_buff);
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   const auto new_offset = _h5_offset + i;
   assert(new_offset <= _h5_size);
@@ -175,6 +177,7 @@ inline auto Dataset::iterator<T>::operator-=(difference_type i) -> iterator & {
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset >= i);
   _h5_offset -= i;
@@ -190,6 +193,7 @@ inline auto Dataset::iterator<T>::operator-(difference_type i) const -> iterator
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   assert(_h5_offset >= i);
   const auto new_offset = _h5_offset - i;

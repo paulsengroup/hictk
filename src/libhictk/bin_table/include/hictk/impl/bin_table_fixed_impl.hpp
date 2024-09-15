@@ -316,6 +316,7 @@ inline auto BinTableFixed::iterator::operator+=(difference_type i) -> iterator &
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_SIGN_CONVERSION
   HICTK_DISABLE_WARNING_CONVERSION
   if (bin_id() + i > _bin_table->size()) {
     throw std::out_of_range(
