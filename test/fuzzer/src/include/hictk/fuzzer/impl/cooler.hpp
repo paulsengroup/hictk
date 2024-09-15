@@ -257,7 +257,7 @@ inline balancing::Weights::Type Cooler::infer_weight_type(std::string_view uri,
   if (normalization == "NONE") {
     return balancing::Weights::Type::MULTIPLICATIVE;
   }
-  const auto weights = hictk::cooler::File{uri}.normalization(normalization);
+  const auto weights = hictk::cooler::File{uri}.normalization_ptr(normalization);
   if (!weights) {
     return balancing::Weights::Type::UNKNOWN;
   }
