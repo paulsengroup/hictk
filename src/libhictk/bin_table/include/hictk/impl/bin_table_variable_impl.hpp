@@ -415,10 +415,10 @@ inline auto BinTableVariable<I>::iterator::operator++(int) -> iterator {
 
 template <typename I>
 inline auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iterator & {
-  if (i == 0) {
+  if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this -= -i;
   }
   assert(_bin_table);
@@ -471,10 +471,10 @@ inline auto BinTableVariable<I>::iterator::operator--(int) -> iterator {
 
 template <typename I>
 inline auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iterator & {
-  if (i == 0) {
+  if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this += -i;
   }
   assert(_bin_table);

@@ -306,11 +306,11 @@ inline auto BinTableFixed::iterator::operator++(int) -> iterator {
 
 inline auto BinTableFixed::iterator::operator+=(difference_type i) -> iterator & {
   assert(_bin_table);
-  if (i == 0) {
+  if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
 
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this -= -i;
   }
 
@@ -342,7 +342,7 @@ inline auto BinTableFixed::iterator::operator+=(difference_type i) -> iterator &
 }
 
 inline auto BinTableFixed::iterator::operator+(difference_type i) const -> iterator {
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this - -i;
   }
   auto it = *this;
@@ -382,11 +382,11 @@ inline auto BinTableFixed::iterator::operator--(int) -> iterator {
 inline auto BinTableFixed::iterator::operator-=(difference_type i) -> iterator & {
   assert(_bin_table);
 
-  if (i == 0) {
+  if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
 
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this += -i;
   }
 
@@ -420,7 +420,7 @@ inline auto BinTableFixed::iterator::operator-=(difference_type i) -> iterator &
 }
 
 inline auto BinTableFixed::iterator::operator-(difference_type i) const -> iterator {
-  if (i < 0) {
+  if (HICTK_UNLIKELY(i < 0)) {
     return *this + -i;
   }
   auto it = *this;
