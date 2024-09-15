@@ -142,7 +142,7 @@ inline auto ToDenseMatrix<N, PixelSelector>::init_matrix() const -> MatrixT {
   }
 
   assert(weights2.size() != 0);
-  return weights1 * weights2.transpose() * 0;
+  return MatrixT::Zero(num_rows(), num_cols()) * weights1 * weights2.transpose();
 }
 
 template <typename N, typename PixelSelector>
