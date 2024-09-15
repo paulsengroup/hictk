@@ -121,7 +121,7 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
         CHECK(*first == buff[static_cast<std::size_t>(j)]);
 
         const auto lb =
-            std::max(std::ptrdiff_t{-100}, -(static_cast<std::ptrdiff_t>(buff.size()) - j));
+            std::max(std::ptrdiff_t{-100}, -(static_cast<std::ptrdiff_t>(buff.size() - 1) - j));
         const auto ub = std::min(std::ptrdiff_t{500}, j);
         const auto step = std::uniform_int_distribution<std::ptrdiff_t>{lb, ub}(rand_eng);
 
