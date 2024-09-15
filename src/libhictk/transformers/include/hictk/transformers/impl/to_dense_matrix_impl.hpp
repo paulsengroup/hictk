@@ -142,18 +142,20 @@ inline auto ToDenseMatrix<N, PixelSelector>::init_matrix() const -> MatrixT {
   }
 
   assert(weights2.size() != 0);
-  return MatrixT::Zero(num_rows(), num_cols()) * weights1 * weights2.transpose();
+  return (weights1 * 0) * weights2.transpose();
 }
 
 template <typename N, typename PixelSelector>
-inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
 ToDenseMatrix<N, PixelSelector>::slice_weights(const cooler::PixelSelector& sel) const {
   return slice_weights(sel.weights(), sel.weights(), row_offset(), col_offset(), num_rows(),
                        num_cols());
 }
 
 template <typename N, typename PixelSelector>
-inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
 ToDenseMatrix<N, PixelSelector>::slice_weights(const hic::PixelSelector& sel) const {
   return slice_weights(
       sel.weights1(), sel.weights2(), static_cast<std::int64_t>(_sel.coord1().bin1.rel_id()),
@@ -161,20 +163,23 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const hic::PixelSelector& sel) co
 }
 
 template <typename N, typename PixelSelector>
-inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
 ToDenseMatrix<N, PixelSelector>::slice_weights(const hic::PixelSelectorAll& sel) const {
   return slice_weights(sel.weights(), sel.weights(), row_offset(), col_offset(), num_rows(),
                        num_cols());
 }
 
 template <typename N, typename PixelSelector>
-inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
 ToDenseMatrix<N, PixelSelector>::slice_weights(const hictk::PixelSelector& sel) const {
   return std::visit([&](const auto& sel_) { return slice_weights(sel_); }, sel.get());
 }
 
 template <typename N, typename PixelSelector>
-inline std::pair<Eigen::Vector<N, Eigen::Dynamic>, Eigen::Vector<N, Eigen::Dynamic>>
+inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
 ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights1,
                                                const balancing::Weights& weights2,
                                                std::int64_t offset1, std::int64_t offset2,
@@ -190,7 +195,7 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
   assert(offset1 + size1 <= static_cast<std::int64_t>(weights1.size()));
   assert(offset2 + size2 <= static_cast<std::int64_t>(weights2.size()));
 
-  Eigen::Vector<N, Eigen::Dynamic> slice1(size1);
+  Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor> slice1(size1);
 
   for (std::int64_t i = 0; i < size1; ++i) {
     slice1(i) = conditional_static_cast<N>(weights1.at(static_cast<std::size_t>(offset1 + i),
@@ -202,7 +207,7 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
     return std::make_pair(slice1, slice1);
   }
 
-  Eigen::Vector<N, Eigen::Dynamic> slice2(size2);
+  Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor> slice2(size2);
   for (std::int64_t i = 0; i < size2; ++i) {
     slice2(i) = conditional_static_cast<N>(weights2.at(static_cast<std::size_t>(offset2 + i),
                                                        balancing::Weights::Type::MULTIPLICATIVE));
