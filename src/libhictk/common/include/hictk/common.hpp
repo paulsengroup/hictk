@@ -12,6 +12,8 @@
 
 namespace hictk {
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+
 inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
 inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::str_long()};
 
@@ -25,7 +27,7 @@ inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::
 
 [[nodiscard]] constexpr bool ndebug_not_defined() noexcept { return !ndebug_defined(); }
 
-#if defined(__GNUC__) || defined(__builtin_unreachable)
+#if defined(__GNUC__)
 #define HICTK_UNREACHABLE_CODE __builtin_unreachable()
 #elif defined(_MSC_VER)
 #define HICTK_UNREACHABLE_CODE __assume(0)
@@ -40,13 +42,15 @@ inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::
   HICTK_UNREACHABLE_CODE;
 }
 
-#if defined(__builtin_expect)
-#define HICTK_LIKELY(x) __builtin_expect(!!(x), 1))
+#if defined(__GNUC__)
+#define HICTK_LIKELY(x)   __builtin_expect(!!(x), 1)
 #define HICTK_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
 #define HICTK_LIKELY(x)   x
 #define HICTK_UNLIKELY(x) x
 #endif
+
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 struct identity {
   template <typename T>
