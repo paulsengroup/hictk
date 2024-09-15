@@ -42,6 +42,8 @@ class ToSparseMatrix {
   [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
   [[nodiscard]] std::int64_t row_offset() const noexcept;
   [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  void validate_dtype() const;
 };
 
 }  // namespace hictk::transformers

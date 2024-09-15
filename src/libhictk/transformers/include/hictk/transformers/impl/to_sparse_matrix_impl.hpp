@@ -23,6 +23,7 @@ inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector&& sel, [[m
         "hictk::transformers::ToSparseMatrix(): invalid parameters. Trans queries do not support "
         "span=QuerySpan::lower_triangle.");
   }
+  validate_dtype();
 }
 
 template <typename N, typename PixelSelector>
@@ -127,6 +128,27 @@ inline std::int64_t ToSparseMatrix<N, PixelSelector>::offset(
     const PixelCoordinates& coords) noexcept {
   constexpr auto bad_bin_id = std::numeric_limits<std::uint64_t>::max();
   return static_cast<std::int64_t>(coords.bin1.id() == bad_bin_id ? 0 : coords.bin1.id());
+}
+
+template <typename N, typename PixelSelector>
+inline void ToSparseMatrix<N, PixelSelector>::validate_dtype() const {
+  if constexpr (std::is_floating_point_v<N>) {
+    return;
+  }
+
+  constexpr auto* msg =
+      "hictk::transformers::ToSparseMatrix(): invalid parameters. n should be of floating-point "
+      "type when fetching normalized interactions.";
+
+  if constexpr (internal::has_weights_member_fx<PixelSelector>) {
+    if (!_sel.weights().is_vector_of_ones()) {
+      throw std::runtime_error(msg);
+    }
+  } else {
+    if (!_sel.weights1().is_vector_of_ones() || !_sel.weights2().is_vector_of_ones()) {
+      throw std::runtime_error(msg);
+    }
+  }
 }
 
 }  // namespace hictk::transformers

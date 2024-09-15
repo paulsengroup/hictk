@@ -20,13 +20,13 @@ struct Config {
 };
 
 template <typename PixelT>
-[[nodiscard]] static std::size_t print_pixels(const std::vector<PixelT> &pixels) {
+[[nodiscard]] static std::ptrdiff_t print_pixels(const std::vector<PixelT> &pixels) {
   auto *dev_null = std::fopen("/dev/null", "w");
   std::for_each(pixels.begin(), pixels.end(),
                 [&](const auto &p) { fmt::print(dev_null, FMT_COMPILE("{}\n"), p); });
   std::fclose(dev_null);
 
-  return pixels.size();
+  return static_cast<std::ptrdiff_t>(pixels.size());
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)

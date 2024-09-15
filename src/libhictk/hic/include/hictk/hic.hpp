@@ -94,6 +94,15 @@ class File {
   [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm) const;
   [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
 
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      balancing::Method norm, const Chromosome &chrom) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view norm, const Chromosome &chrom) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      balancing::Method norm) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view norm) const;
+
   [[nodiscard]] std::vector<double> expected_values(
       const Chromosome &chrom,
       const balancing::Method &normalization_ = balancing::Method::NONE()) const;
