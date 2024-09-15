@@ -5,16 +5,14 @@
 #pragma once
 
 #include <cstdint>
-#include <limits>
-#include <map>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "hictk/bin.hpp"
-#include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk {

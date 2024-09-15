@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/suppress_warnings.hpp"
+
 namespace hictk::cooler {
 template <typename T>
 inline Dataset::iterator<T>::iterator(Dataset dset, std::size_t chunk_size, std::size_t h5_offset,
