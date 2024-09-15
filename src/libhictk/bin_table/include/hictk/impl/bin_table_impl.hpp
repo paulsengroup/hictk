@@ -5,16 +5,14 @@
 #pragma once
 
 #include <cstdint>
-#include <limits>
-#include <map>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "hictk/bin.hpp"
-#include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk {
@@ -255,9 +253,8 @@ constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
 inline auto BinTable::iterator::operator*() const -> value_type {
   return std::visit([&](const auto &it) { return *it; }, _it);
 }
-inline auto BinTable::iterator::operator[](std::size_t i) const -> iterator {
-  std::visit([&](const auto &it) { std::ignore = it + i; }, _it);
-  return *this;
+inline auto BinTable::iterator::operator[](difference_type i) const -> value_type {
+  return std::visit([&](const auto &it) { return it[i]; }, _it);
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {
@@ -271,12 +268,12 @@ inline auto BinTable::iterator::operator++(int) -> iterator {
   return old_it;
 }
 
-inline auto BinTable::iterator::operator+=(std::size_t i) -> iterator & {
+inline auto BinTable::iterator::operator+=(difference_type i) -> iterator & {
   std::visit([&](auto &it) { std::ignore = it += i; }, _it);
   return *this;
 }
 
-inline auto BinTable::iterator::operator+(std::size_t i) const -> iterator {
+inline auto BinTable::iterator::operator+(difference_type i) const -> iterator {
   auto it = *this;
   it += i;
   return it;
@@ -293,12 +290,12 @@ inline auto BinTable::iterator::operator--(int) -> iterator {
   return old_it;
 }
 
-inline auto BinTable::iterator::operator-=(std::size_t i) -> iterator & {
+inline auto BinTable::iterator::operator-=(difference_type i) -> iterator & {
   std::visit([&](auto &it) { std::ignore = it -= i; }, _it);
   return *this;
 }
 
-inline auto BinTable::iterator::operator-(std::size_t i) const -> iterator {
+inline auto BinTable::iterator::operator-(difference_type i) const -> iterator {
   auto it = *this;
   it -= i;
   return it;

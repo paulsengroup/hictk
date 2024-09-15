@@ -22,9 +22,9 @@ namespace hictk::balancing {
 class Weights {
  public:
   enum class Type : std::uint_fast8_t { INFER, DIVISIVE, MULTIPLICATIVE, UNKNOWN };
+  class iterator;
 
  private:
-  class iterator;
   struct ConstWeight {
     double w{};
     std::size_t size{};
@@ -77,7 +77,6 @@ class Weights {
 
   [[nodiscard]] std::vector<double> to_vector(Type type_ = Type::INFER) const;
 
- private:
   class iterator {
     struct ConstIt {
       const ConstWeight *value{};
@@ -150,6 +149,7 @@ class Weights {
     [[nodiscard]] bool is_constant() const noexcept;
   };
 
+ private:
   Weights(std::variant<ConstWeight, WeightVectPtr> weights, Type type_) noexcept;
 };
 

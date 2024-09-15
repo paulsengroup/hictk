@@ -637,8 +637,8 @@ inline void File::read_index_chunk(std::initializer_list<Chromosome> chroms) con
       const auto chrom_offsets =
           internal::import_chrom_offsets(chrom_offset_dset, chromosomes().size() + 1);
 
-      auto offset1 = chrom_offsets[chrom.id()];
-      auto offset2 = chrom_offsets[chrom.id() + 1];
+      auto offset1 = static_cast<std::ptrdiff_t>(chrom_offsets[chrom.id()]);
+      auto offset2 = static_cast<std::ptrdiff_t>(chrom_offsets[chrom.id() + 1]);
       auto first = bin_offset_dset.begin<std::uint64_t>() + offset1;
       auto last = bin_offset_dset.begin<std::uint64_t>() + offset2;
       _index->set(chrom, {first, last});
