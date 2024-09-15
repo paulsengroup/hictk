@@ -76,7 +76,6 @@ class PixelSelector {
 
   [[nodiscard]] const balancing::Weights &weights() const noexcept;
 
- public:
   template <typename N>
   class iterator {
     using BinIDT = std::uint64_t;
