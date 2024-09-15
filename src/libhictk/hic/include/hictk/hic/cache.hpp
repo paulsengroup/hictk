@@ -89,8 +89,8 @@ class WeightCache {
  public:
   WeightCache() = default;
 
-  [[nodiscard]] auto find_or_emplace(std::uint32_t chrom_id, balancing::Method norm) -> Value;
-  [[nodiscard]] auto find_or_emplace(const Chromosome& chrom, balancing::Method norm) -> Value;
+  [[nodiscard]] auto get_or_init(std::uint32_t chrom_id, balancing::Method norm) -> Value;
+  [[nodiscard]] auto get_or_init(const Chromosome& chrom, balancing::Method norm) -> Value;
 
   [[nodiscard]] auto at(std::uint32_t chrom_id, balancing::Method norm) const -> Value;
   [[nodiscard]] auto at(const Chromosome& chrom, balancing::Method norm) const -> Value;

@@ -24,6 +24,13 @@ template <typename T>
 inline constexpr bool has_coord1_member_fx<T, std::void_t<decltype(std::declval<T>().coord1())>> =
     true;
 
+template <typename T, typename = std::void_t<>>
+inline constexpr bool has_weights_member_fx = false;
+
+template <typename T>
+inline constexpr bool has_weights_member_fx<T, std::void_t<decltype(std::declval<T>().weights())>> =
+    true;
+
 template <typename N, typename PixelSelector, typename MatrixT, typename SetterOp>
 inline void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t num_rows,
                         std::int64_t num_cols, std::int64_t offset1, std::int64_t offset2,

@@ -193,8 +193,8 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
   Eigen::Vector<N, Eigen::Dynamic> slice1(size1);
 
   for (std::int64_t i = 0; i < size1; ++i) {
-    slice1(i) = weights1.at(static_cast<std::size_t>(offset1 + i),
-                            balancing::Weights::Type::MULTIPLICATIVE);
+    slice1(i) = conditional_static_cast<N>(weights1.at(static_cast<std::size_t>(offset1 + i),
+                                                       balancing::Weights::Type::MULTIPLICATIVE));
   }
 
   const auto symmetric_query = &weights1 == &weights2 && offset1 == offset2 && size1 == size2;
@@ -204,8 +204,8 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
 
   Eigen::Vector<N, Eigen::Dynamic> slice2(size2);
   for (std::int64_t i = 0; i < size2; ++i) {
-    slice2(i) = weights2.at(static_cast<std::size_t>(offset2 + i),
-                            balancing::Weights::Type::MULTIPLICATIVE);
+    slice2(i) = conditional_static_cast<N>(weights2.at(static_cast<std::size_t>(offset2 + i),
+                                                       balancing::Weights::Type::MULTIPLICATIVE));
   }
 
   return std::make_pair(std::move(slice1), std::move(slice2));

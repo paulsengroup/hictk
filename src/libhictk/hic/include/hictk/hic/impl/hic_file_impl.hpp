@@ -125,8 +125,8 @@ inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
     return *it;
   }
 
-  auto weights1 = _weight_cache->find_or_emplace(chrom1, norm);
-  auto weights2 = _weight_cache->find_or_emplace(chrom2, norm);
+  auto weights1 = _weight_cache->get_or_init(chrom1, norm);
+  auto weights2 = _weight_cache->get_or_init(chrom2, norm);
 
   auto [node, _] = _footers.emplace(
       _fs->read_footer(chrom1, chrom2, matrix_type, norm, unit, resolution, weights1, weights2));
@@ -274,12 +274,12 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
 
   try {
     // This takes care of populating the weight cache when appropriate
-    const auto& weights = fetch(chrom.name(), norm).weights1();
-    if (weights.size() != expected_length) {
+    const auto weight_size = fetch(chrom.name(), norm).weights1().size();
+    if (weight_size != expected_length) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("{} normalization vector for {} appears to be corrupted: "
                                  "expected {} values, found {}"),
-                      norm, chrom.name(), expected_length, weights.size()));
+                      norm, chrom.name(), expected_length, weight_size));
     }
     return _weight_cache->at(chrom, norm);
   } catch (const std::exception& e) {
@@ -297,7 +297,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     }
   }
 
-  auto weights = _weight_cache->find_or_emplace(chrom, norm);
+  auto weights = _weight_cache->get_or_init(chrom, norm);
   assert(weights->empty());
 
   *weights = balancing::Weights{std::numeric_limits<double>::quiet_NaN(), expected_length,
@@ -314,7 +314,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
 inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     balancing::Method norm) const {
   assert(_weight_cache);
-  auto weights = _weight_cache->find_or_emplace(0, norm);
+  auto weights = _weight_cache->get_or_init(0, norm);
   if (!weights->empty()) {
     return weights;
   }
