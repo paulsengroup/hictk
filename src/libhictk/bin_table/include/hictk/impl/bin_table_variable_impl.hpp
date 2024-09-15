@@ -157,8 +157,8 @@ inline auto BinTableVariable<I>::find_overlap(const Chromosome &chrom, std::uint
     -> std::pair<BinTableVariable<I>::iterator, BinTableVariable<I>::iterator> {
   assert(start < end);
 
-  const auto bin1_id = at(chrom, start).id();
-  const auto bin2_id = at(chrom, end - (std::min)(end, 1U)).id();
+  const auto bin1_id = static_cast<std::ptrdiff_t>(at(chrom, start).id());
+  const auto bin2_id = static_cast<std::ptrdiff_t>(at(chrom, end - (std::min)(end, 1U)).id());
 
   return std::make_pair(begin() + bin1_id, begin() + bin2_id + 1);
 }
@@ -414,11 +414,17 @@ inline auto BinTableVariable<I>::iterator::operator++(int) -> iterator {
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator+=(std::size_t i) -> iterator & {
+inline auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iterator & {
   if (i == 0) {
     return *this;
   }
+  if (i < 0) {
+    return *this -= -i;
+  }
   assert(_bin_table);
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   try {
     if (_bin_id > _bin_table->size() - i) {
       throw std::out_of_range("");
@@ -431,11 +437,12 @@ inline auto BinTableVariable<I>::iterator::operator+=(std::size_t i) -> iterator
     throw std::out_of_range(
         "BinTableVariable<I>::iterator: caught attempt to increment iterator past end()");
   }
+  HICTK_DISABLE_WARNING_POP
   return *this;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator+(std::size_t i) const -> iterator {
+inline auto BinTableVariable<I>::iterator::operator+(difference_type i) const -> iterator {
   auto it = *this;
   return it += i;
 }
@@ -463,11 +470,17 @@ inline auto BinTableVariable<I>::iterator::operator--(int) -> iterator {
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator-=(std::size_t i) -> iterator & {
+inline auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iterator & {
   if (i == 0) {
     return *this;
   }
+  if (i < 0) {
+    return *this += -i;
+  }
   assert(_bin_table);
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   try {
     if (_bin_id < _bin_table->size() - i) {
       throw std::out_of_range("");
@@ -479,11 +492,12 @@ inline auto BinTableVariable<I>::iterator::operator-=(std::size_t i) -> iterator
     throw std::out_of_range(
         "BinTableVariable<I>::iterator: caught attempt to decrement iterator past begin()");
   }
+  HICTK_DISABLE_WARNING_POP
   return *this;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator-(std::size_t i) const -> iterator {
+inline auto BinTableVariable<I>::iterator::operator-(difference_type i) const -> iterator {
   auto it = *this;
   return it -= i;
 }

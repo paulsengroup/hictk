@@ -118,13 +118,13 @@ class BinTableFixed {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
-    auto operator+=(std::size_t i) -> iterator &;
-    auto operator+(std::size_t i) const -> iterator;
+    auto operator+=(difference_type i) -> iterator &;
+    auto operator+(difference_type i) const -> iterator;
 
     auto operator--() -> iterator &;
     auto operator--(int) -> iterator;
-    auto operator-=(std::size_t i) -> iterator &;
-    auto operator-(std::size_t i) const -> iterator;
+    auto operator-=(difference_type i) -> iterator &;
+    auto operator-(difference_type i) const -> iterator;
     auto operator-(const iterator &other) const -> difference_type;
 
    private:

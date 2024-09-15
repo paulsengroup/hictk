@@ -182,8 +182,9 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
       CHECK(*(table.begin() + 5) == expected[5]);
 
       auto it = table.begin() + 5;
-      for (std::size_t i = 0; i < expected.size() - 5; ++i) {
-        CHECK(*(it + i) == expected[i + 5]);  // NOLINT
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 0; i < size - 5; ++i) {
+        CHECK(*(it + i) == expected[static_cast<std::size_t>(i) + 5]);  // NOLINT
       }
 
       CHECK_THROWS_AS(it + 100, std::out_of_range);
@@ -195,7 +196,8 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
-      for (std::size_t i = 1; i < expected.size(); ++i) {
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 1; i < size; ++i) {
         CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
       }
 
@@ -413,8 +415,9 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
       CHECK(*(table.begin() + 5) == expected[5]);
 
       auto it = table.begin() + 5;
-      for (std::size_t i = 0; i < expected.size() - 5; ++i) {
-        CHECK(*(it + i) == expected[i + 5]);  // NOLINT
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 0; i < size - 5; ++i) {
+        CHECK(*(it + i) == expected[static_cast<std::size_t>(i) + 5]);  // NOLINT
       }
 
       CHECK_THROWS_AS(it + 100, std::out_of_range);
@@ -426,7 +429,8 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
-      for (std::size_t i = 1; i < expected.size(); ++i) {
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 1; i < size; ++i) {
         CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
       }
 

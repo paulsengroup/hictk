@@ -106,8 +106,8 @@ inline auto BinTableFixed::find_overlap(const Chromosome &chrom, std::uint32_t s
     -> std::pair<BinTableFixed::iterator, BinTableFixed::iterator> {
   assert(start < end);
 
-  const auto bin1_id = at(chrom, start).id();
-  const auto bin2_id = at(chrom, end - (std::min)(end, 1U)).id();
+  const auto bin1_id = static_cast<std::ptrdiff_t>(at(chrom, start).id());
+  const auto bin2_id = static_cast<std::ptrdiff_t>(at(chrom, end - (std::min)(end, 1U)).id());
 
   return std::make_pair(begin() + bin1_id, begin() + bin2_id + 1);
 }
@@ -304,12 +304,19 @@ inline auto BinTableFixed::iterator::operator++(int) -> iterator {
   return it;
 }
 
-inline auto BinTableFixed::iterator::operator+=(std::size_t i) -> iterator & {
+inline auto BinTableFixed::iterator::operator+=(difference_type i) -> iterator & {
   assert(_bin_table);
   if (i == 0) {
     return *this;
   }
 
+  if (i < 0) {
+    return *this -= -i;
+  }
+
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   if (bin_id() + i > _bin_table->size()) {
     throw std::out_of_range(
         "BinTableFixed::iterator: caught attempt to increment iterator past end()");
@@ -331,9 +338,13 @@ inline auto BinTableFixed::iterator::operator+=(std::size_t i) -> iterator & {
   i -= (num_bins - _rel_bin_id);
   _rel_bin_id = 0;
   return *this += i;
+  HICTK_DISABLE_WARNING_POP
 }
 
-inline auto BinTableFixed::iterator::operator+(std::size_t i) const -> iterator {
+inline auto BinTableFixed::iterator::operator+(difference_type i) const -> iterator {
+  if (i < 0) {
+    return *this - -i;
+  }
   auto it = *this;
   return it += i;
 }
@@ -368,13 +379,20 @@ inline auto BinTableFixed::iterator::operator--(int) -> iterator {
   return it;
 }
 
-inline auto BinTableFixed::iterator::operator-=(std::size_t i) -> iterator & {
+inline auto BinTableFixed::iterator::operator-=(difference_type i) -> iterator & {
   assert(_bin_table);
 
   if (i == 0) {
     return *this;
   }
 
+  if (i < 0) {
+    return *this += -i;
+  }
+
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_SIGN_COMPARE
+  HICTK_DISABLE_WARNING_CONVERSION
   if (bin_id() < i) {
     throw std::out_of_range(
         "BinTableFixed::iterator: caught attempt to decrement iterator past begin()");
@@ -398,9 +416,13 @@ inline auto BinTableFixed::iterator::operator-=(std::size_t i) -> iterator & {
   i -= _rel_bin_id;
   _rel_bin_id = compute_num_chrom_bins();
   return *this -= i;
+  HICTK_DISABLE_WARNING_POP
 }
 
-inline auto BinTableFixed::iterator::operator-(std::size_t i) const -> iterator {
+inline auto BinTableFixed::iterator::operator-(difference_type i) const -> iterator {
+  if (i < 0) {
+    return *this + -i;
+  }
   auto it = *this;
   return it -= i;
 }
