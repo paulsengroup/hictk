@@ -255,9 +255,8 @@ constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
 inline auto BinTable::iterator::operator*() const -> value_type {
   return std::visit([&](const auto &it) { return *it; }, _it);
 }
-inline auto BinTable::iterator::operator[](std::size_t i) const -> iterator {
-  std::visit([&](const auto &it) { std::ignore = it + i; }, _it);
-  return *this;
+inline auto BinTable::iterator::operator[](difference_type i) const -> value_type {
+  return std::visit([&](const auto &it) { return it[i]; }, _it);
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {

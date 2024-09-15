@@ -417,8 +417,8 @@ inline auto BinTableFixed::iterator::operator-(const iterator &other) const -> d
   return static_cast<difference_type>(offset1) - static_cast<difference_type>(offset2);
 }
 
-inline auto BinTableFixed::iterator::operator[](std::size_t i) const -> iterator {
-  return (*this + i);
+inline auto BinTableFixed::iterator::operator[](difference_type i) const -> value_type {
+  return *(*this + i);
 }
 
 inline const Chromosome &BinTableFixed::iterator::chromosome() const {

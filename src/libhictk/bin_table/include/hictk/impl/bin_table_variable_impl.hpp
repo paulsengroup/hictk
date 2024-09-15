@@ -384,6 +384,11 @@ inline auto BinTableVariable<I>::iterator::operator*() const noexcept -> value_t
 }
 
 template <typename I>
+inline auto BinTableVariable<I>::iterator::operator[](difference_type i) const -> value_type {
+  return *(*this + i);
+}
+
+template <typename I>
 inline auto BinTableVariable<I>::iterator::operator++() -> iterator & {
   assert(_bin_table);
   if (++_bin_id == _bin_table->size()) {
@@ -493,11 +498,6 @@ inline auto BinTableVariable<I>::iterator::operator-(const iterator &other) cons
   const auto offset2 = other._chrom_id == nchrom ? other._bin_table->size() : other._bin_id;
 
   return static_cast<difference_type>(offset1) - static_cast<difference_type>(offset2);
-}
-
-template <typename I>
-inline auto BinTableVariable<I>::iterator::operator[](std::size_t i) const -> iterator {
-  return (*this + i);
 }
 
 template <typename I>

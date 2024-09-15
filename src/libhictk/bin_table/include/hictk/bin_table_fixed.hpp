@@ -114,7 +114,7 @@ class BinTableFixed {
     constexpr bool operator>=(const iterator &other) const noexcept;
 
     auto operator*() const -> value_type;
-    auto operator[](std::size_t i) const -> iterator;
+    auto operator[](difference_type i) const -> value_type;
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
