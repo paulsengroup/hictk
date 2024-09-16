@@ -81,6 +81,7 @@ class ToDataFrame {
   DataFrameFormat _format{DataFrameFormat::COO};
   QuerySpan _span{QuerySpan::upper_triangle};
   bool _drop_bin_ids{true};
+  bool _mirror_pixels{true};
 
   std::size_t _chunk_size{};
   arrow::UInt64Builder _bin1_id_builder{};
@@ -130,6 +131,12 @@ class ToDataFrame {
               DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
+              bool mirror_pixels = true, std::size_t chunk_size = 256'000);
+
+  template <typename PixelSelector>
+  ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
+              std::shared_ptr<const BinTable> bins = nullptr,
+              QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               std::size_t chunk_size = 256'000);
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
@@ -138,8 +145,11 @@ class ToDataFrame {
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
   [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema(bool with_bin_ids = false) const;
 
-  void append(Pixel<N>&& p);
-  void append(ThinPixel<N>&& p);
+  void append_symmetric(Pixel<N>&& p);
+  void append_symmetric(ThinPixel<N>&& p);
+
+  void append_asymmetric(Pixel<N>&& p);
+  void append_asymmetric(ThinPixel<N>&& p);
 
   static void append(arrow::StringBuilder& builder, std::string_view data);
   template <typename ArrayBuilder, typename T>
@@ -158,6 +168,9 @@ class ToDataFrame {
 
   void write_thin_pixels();
   void write_pixels();
+
+  template <typename PixelSelector>
+  [[nodiscard]] static bool pixel_selector_is_symmetric_upper(const PixelSelector& sel) noexcept;
 
   static std::shared_ptr<arrow::Table> sort_table(std::shared_ptr<arrow::Table> table);
 };
