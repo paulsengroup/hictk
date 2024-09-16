@@ -131,6 +131,12 @@ inline PixelSelector File::fetch(PixelCoordinates coord,
     weights = normalization_ptr(balancing::Method::NONE());
   }
 
+  if (_attrs.storage_mode != "symmetric-upper" && !coord.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("querying files with storage-mode=\"{}\" is not supported."),
+                    _attrs.storage_mode.value_or("")));
+  }
+
   // clang-format off
   return PixelSelector(_index,
                        dataset("pixels/bin1_id"),
@@ -215,6 +221,13 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                  std::shared_ptr<const balancing::Weights> weights) const {
+  if (_attrs.storage_mode != "symmetric-upper" && !coord1.empty()) {
+    assert(!coord2.empty());
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("querying files with storage-mode=\"{}\" is not supported."),
+                    _attrs.storage_mode.value_or("")));
+  }
+
   const auto &current_chrom = coord1.bin1.chrom();
   const auto &next_chrom = chromosomes().at(
       std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
