@@ -130,7 +130,10 @@ template <typename N>
   assert(batch_size != 0);
   buffer.clear();
   buffer.reserve(batch_size);
-  PairsAggregator{queue, early_return}.read_next_chunk(buffer);
+  // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
+  // constructed
+  PairsAggregator aggr(queue, early_return);
+  aggr.read_next_chunk(buffer);
 
   if (buffer.empty()) {
     return {N{}, 0};
@@ -162,7 +165,10 @@ template <typename N>
     auto t0 = std::chrono::steady_clock::now();
     for (; !early_return; ++i) {
       buffer.clear();
-      PairsAggregator{queue, early_return}.read_next_chunk(buffer);
+      // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
+      // constructed
+      PairsAggregator aggr(queue, early_return);
+      aggr.read_next_chunk(buffer);
 
       const auto t1 = std::chrono::steady_clock::now();
       const auto delta =
