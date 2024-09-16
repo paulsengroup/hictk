@@ -90,14 +90,12 @@ inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weigh
     weights = normalization_ptr(balancing::Method::NONE());
   }
 
-  // clang-format off
-  return PixelSelector(
-      _index,
-      dataset("pixels/bin1_id"),
-      dataset("pixels/bin2_id"),
-      dataset("pixels/count"),
-      std::move(weights));
-  // clang-format on
+  return {_index,
+          dataset("pixels/bin1_id"),
+          dataset("pixels/bin2_id"),
+          dataset("pixels/count"),
+          std::move(weights),
+          _attrs.storage_mode == "symmetric-upper"};
 }
 
 inline PixelSelector File::fetch(std::string_view range,
@@ -137,15 +135,13 @@ inline PixelSelector File::fetch(PixelCoordinates coord,
                     _attrs.storage_mode.value_or("")));
   }
 
-  // clang-format off
-  return PixelSelector(_index,
-                       dataset("pixels/bin1_id"),
-                       dataset("pixels/bin2_id"),
-                       dataset("pixels/count"),
-                       std::move(coord),
-                       std::move(weights)
-  );
-  // clang-format on
+  return {_index,
+          dataset("pixels/bin1_id"),
+          dataset("pixels/bin2_id"),
+          dataset("pixels/count"),
+          std::move(coord),
+          std::move(weights),
+          _attrs.storage_mode == "symmetric-upper"};
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
@@ -237,16 +233,14 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
     weights = normalization_ptr(balancing::Method::NONE());
   }
 
-  // clang-format off
-  return PixelSelector(_index,
-                       dataset("pixels/bin1_id"),
-                       dataset("pixels/bin2_id"),
-                       dataset("pixels/count"),
-                       std::move(coord1),
-                       std::move(coord2),
-                       std::move(weights)
-  );
-  // clang-format on
+  return {_index,
+          dataset("pixels/bin1_id"),
+          dataset("pixels/bin2_id"),
+          dataset("pixels/count"),
+          std::move(coord1),
+          std::move(coord2),
+          std::move(weights),
+          _attrs.storage_mode == "symmetric-upper"};
 }
 
 inline bool File::has_normalization(std::string_view normalization_) const {

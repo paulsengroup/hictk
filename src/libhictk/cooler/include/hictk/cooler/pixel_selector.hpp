@@ -34,19 +34,21 @@ class PixelSelector {
   const Dataset *_pixels_bin2_id{};
   const Dataset *_pixels_count{};
   std::shared_ptr<const balancing::Weights> _weights{};
+  bool _symmetric_upper{true};
 
  public:
   PixelSelector() = default;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                std::shared_ptr<const balancing::Weights> weights) noexcept;
+                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coords,
-                std::shared_ptr<const balancing::Weights> weights);
+                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_);
 
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-                PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights);
+                PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights,
+                bool symmetric_upper_);
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelSelector &other) const noexcept;
@@ -75,6 +77,8 @@ class PixelSelector {
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2) const;
 
   [[nodiscard]] const balancing::Weights &weights() const noexcept;
+
+  [[nodiscard]] bool is_symmetric_upper() const noexcept;
 
   template <typename N>
   class iterator {
