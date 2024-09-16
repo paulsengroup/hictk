@@ -135,7 +135,6 @@ template <typename N>
       buffer.clear();
     }
     hf.serialize();
-    assert(buffer.empty());
     return stats;
   } catch (const std::exception& e) {
     const auto i0 = i * buffer.capacity();
