@@ -132,7 +132,7 @@ inline PixelSelector File::fetch(PixelCoordinates coord,
   if (_attrs.storage_mode != "symmetric-upper" && !coord.empty()) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("querying files with storage-mode=\"{}\" is not supported."),
-                    _attrs.storage_mode.value_or("")));
+                    _attrs.storage_mode.value_or("unknown")));
   }
 
   return {_index,
@@ -221,7 +221,7 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
     assert(!coord2.empty());
     throw std::runtime_error(
         fmt::format(FMT_STRING("querying files with storage-mode=\"{}\" is not supported."),
-                    _attrs.storage_mode.value_or("")));
+                    _attrs.storage_mode.value_or("unknown")));
   }
 
   const auto &current_chrom = coord1.bin1.chrom();

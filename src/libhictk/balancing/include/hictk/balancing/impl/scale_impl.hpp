@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
 #include "hictk/chromosome.hpp"
@@ -26,6 +27,8 @@ namespace hictk::balancing {
 
 template <typename File>
 inline SCALE::SCALE(const File& f, Type type, const Params& params) {
+  internal::check_storage_mode(f);
+
   if (f.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");

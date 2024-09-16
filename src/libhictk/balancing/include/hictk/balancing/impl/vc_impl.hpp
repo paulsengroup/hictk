@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
@@ -19,6 +20,8 @@ namespace hictk::balancing {
 
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
+  internal::check_storage_mode(f);
+
   if (f.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");

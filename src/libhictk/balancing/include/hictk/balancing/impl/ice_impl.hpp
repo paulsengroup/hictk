@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
@@ -36,6 +37,8 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
       _biases(f.bins().size(), 1.0),
       _variance(f.chromosomes().size(), 0),
       _scale(f.chromosomes().size(), std::numeric_limits<double>::quiet_NaN()) {
+  internal::check_storage_mode(f);
+
   if (f.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");
