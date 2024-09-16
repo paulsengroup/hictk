@@ -318,4 +318,28 @@ TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selec
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_selector][short]") {
+  const auto path = datadir / "square.cool";
+  using T = std::uint32_t;
+
+  const File f(path.string());
+
+  SECTION("valid queries") {
+    const auto sel = f.fetch();
+    const auto sum = std::accumulate(
+        sel.template begin<T>(), sel.template end<T>(), std::uint64_t(0),
+        [&](std::uint64_t accumulator, const auto& p) { return accumulator + p.count; });
+    const auto nnz =
+        static_cast<std::size_t>(std::distance(sel.template begin<T>(), sel.template end<T>()));
+    CHECK(sum == 594'006'205);
+    CHECK(nnz == 4'241'909);
+  }
+
+  SECTION("invalid queries") {
+    CHECK_THROWS(f.fetch("chr1"));
+    CHECK_THROWS(f.fetch("chr1", "chr2"));
+  }
+}
+
 }  // namespace hictk::cooler::test::pixel_selector
