@@ -11,6 +11,9 @@
 #include <string_view>
 #include <type_traits>
 
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/file.hpp"
+#include "hictk/hic/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
@@ -44,6 +47,28 @@ class ToDenseMatrix {
   [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
   [[nodiscard]] std::int64_t row_offset() const noexcept;
   [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  [[nodiscard]] auto init_matrix() const -> MatrixT;
+
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const cooler::PixelSelector& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hic::PixelSelector& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hic::PixelSelectorAll& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hictk::PixelSelector& sel) const;
+
+  [[nodiscard]] static std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const balancing::Weights& weights1, const balancing::Weights& weights2,
+                std::int64_t offset1, std::int64_t offset2, std::int64_t size1, std::int64_t size2);
+
+  void validate_dtype() const;
 };
 
 }  // namespace hictk::transformers

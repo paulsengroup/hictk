@@ -11,7 +11,8 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/scripts/**"
+      - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
@@ -23,7 +24,8 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/scripts/**"
+      - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
 
@@ -210,7 +212,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 240       \
+                --timeout 360       \
                 --exclude-regex '.*(dataset large read\/write|HiCFileWriter).*' |&
           tail -n 1000
 

@@ -21,9 +21,9 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
 
   SECTION("read weights") {
     SECTION("valid") {
-      CHECK(clr.normalization("weight")->type() == hictk::balancing::Weights::Type::MULTIPLICATIVE);
+      CHECK(clr.normalization("weight").type() == hictk::balancing::Weights::Type::MULTIPLICATIVE);
       for (const auto* name : {"GW_SCALE", "INTER_SCALE", "SCALE", "VC", "VC_SQRT"}) {
-        CHECK(clr.normalization(name)->type() == hictk::balancing::Weights::Type::DIVISIVE);
+        CHECK(clr.normalization(name).type() == hictk::balancing::Weights::Type::DIVISIVE);
       }
     }
 
@@ -36,18 +36,18 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
       CHECK(clr.purge_weights() == false);
       CHECK(clr.purge_weights("weight") == false);
 
-      const auto w = clr.normalization("weight");
+      const auto w = clr.normalization_ptr("weight");
       CHECK(w.use_count() == 2);
       CHECK(clr.purge_weights("weight") == true);
       CHECK(w.use_count() == 1);
 
-      clr.normalization("weight");
+      std::ignore = clr.normalization("weight");
       CHECK(clr.purge_weights() == true);
     }
   }
 
   SECTION("1D query") {
-    const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, clr.normalization("weight"));
+    const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, clr.normalization_ptr("weight"));
     constexpr std::array<double, 3> expected{3.345797, 0.328794, 4.456354};
     const auto pixels = selector.read_all<double>();
     REQUIRE(pixels.size() == expected.size());
@@ -58,7 +58,7 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
 
   SECTION("2D query") {
     const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, "chr2", 5'000'000, 10'000'000,
-                                    clr.normalization("weight"));
+                                    clr.normalization_ptr("weight"));
     constexpr std::array<double, 4> expected{0.001782, 0.002756, 0.002047, 0.004749};
     const auto pixels = selector.read_all<double>();
     REQUIRE(pixels.size() == expected.size());
@@ -69,7 +69,7 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
 
   SECTION("invalid iterator type") {
     const auto selector = clr.fetch("chr1", 5'000'000, 10'000'000, "chr2", 5'000'000, 10'000'000,
-                                    clr.normalization("weight"));
+                                    clr.normalization_ptr("weight"));
     CHECK_THROWS(selector.read_all<std::int32_t>());
   }
 }

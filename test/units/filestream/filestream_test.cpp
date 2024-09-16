@@ -287,8 +287,8 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
   // np.float32, np.float64]:
   //     print(t, np.frombuffer(open("data.zip", "rb").read()[10:18], dtype=t)[0])
 
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_USELESS_CAST
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_USELESS_CAST
   SECTION("uint8") { CHECK(s.read<std::uint8_t>() == std::uint8_t(162)); }
   SECTION("uint16") { CHECK(s.read<std::uint16_t>() == std::uint16_t(42658)); }
   SECTION("uint32") { CHECK(s.read<std::uint32_t>() == std::uint32_t(1433446050)); }
@@ -304,7 +304,7 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
 
   SECTION("char") { CHECK(s.read<char>() == static_cast<char>(162)); }
   SECTION("unsigned char") { CHECK(s.read<unsigned char>() == static_cast<unsigned char>(162)); }
-  DISABLE_WARNING_POP
+  HICTK_DISABLE_WARNING_POP
 
   SECTION("vector") {
     s.seekg(0);
@@ -370,8 +370,8 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   std::filesystem::remove(tmpfile);
   auto s = FileStream::create(tmpfile.string());
 
-  DISABLE_WARNING_PUSH
-  DISABLE_WARNING_USELESS_CAST
+  HICTK_DISABLE_WARNING_PUSH
+  HICTK_DISABLE_WARNING_USELESS_CAST
   SECTION("uint8") { write_and_compare(s, std::uint8_t(162)); }
   SECTION("uint16") { write_and_compare(s, std::uint16_t(42658)); }
   SECTION("uint32") { write_and_compare(s, std::uint32_t(1433446050)); }
@@ -388,7 +388,7 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
   SECTION("bool") { write_and_compare(s, false); }
   SECTION("char") { write_and_compare(s, static_cast<char>(162)); }
   SECTION("unsigned char") { write_and_compare(s, static_cast<unsigned char>(162)); }
-  DISABLE_WARNING_POP
+  HICTK_DISABLE_WARNING_POP
 
   SECTION("vector") {
     std::vector<std::int32_t> data{

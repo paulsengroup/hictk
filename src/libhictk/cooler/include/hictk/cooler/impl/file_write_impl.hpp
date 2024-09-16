@@ -162,6 +162,10 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     throw std::runtime_error("weight name is empty");
   }
 
+  if (name == "NONE") {
+    throw std::runtime_error("caught attempt to write NONE weights");
+  }
+
   if (_mode == HighFive::File::ReadOnly) {
     throw std::runtime_error("File::write_weights() was called on a file open in read-only mode");
   }

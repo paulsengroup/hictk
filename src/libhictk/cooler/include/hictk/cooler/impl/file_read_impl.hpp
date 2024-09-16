@@ -86,6 +86,10 @@ namespace internal {
 }  // namespace internal
 
 inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights) const {
+  if (!weights) {
+    weights = normalization_ptr(balancing::Method::NONE());
+  }
+
   // clang-format off
   return PixelSelector(
       _index,
@@ -122,6 +126,11 @@ inline PixelSelector File::fetch(PixelCoordinates coord,
   const auto &next_chrom = chromosomes().at(
       std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord.bin1.chrom().id() + 1));
   read_index_chunk({current_chrom, next_chrom});
+
+  if (!weights) {
+    weights = normalization_ptr(balancing::Method::NONE());
+  }
+
   // clang-format off
   return PixelSelector(_index,
                        dataset("pixels/bin1_id"),
@@ -166,27 +175,28 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   return fetch(coord1, coord2, std::move(weights));
 }
 inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
-  return fetch(normalization(normalization_));
+  return fetch(normalization_ptr(normalization_));
 }
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method &normalization_,
                                  QUERY_TYPE query_type) const {
-  return fetch(range, normalization(normalization_), query_type);
+  return fetch(range, normalization_ptr(normalization_), query_type);
 }
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
                                  std::uint32_t end, const balancing::Method &normalization_) const {
-  return fetch(chrom_name, start, end, normalization(normalization_));
+  return fetch(chrom_name, start, end, normalization_ptr(normalization_));
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
                                  const balancing::Method &normalization_,
                                  QUERY_TYPE query_type) const {
-  return fetch(range1, range2, normalization(normalization_), query_type);
+  return fetch(range1, range2, normalization_ptr(normalization_), query_type);
 }
 inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                  std::uint32_t end1, std::string_view chrom2_name,
                                  std::uint32_t start2, std::uint32_t end2,
                                  const balancing::Method &normalization_) const {
-  return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2, normalization(normalization_));
+  return fetch(chrom1_name, start1, end1, chrom2_name, start2, end2,
+               normalization_ptr(normalization_));
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
@@ -209,6 +219,11 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
   const auto &next_chrom = chromosomes().at(
       std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord1.bin1.chrom().id() + 1));
   read_index_chunk({current_chrom, next_chrom});
+
+  if (!weights) {
+    weights = normalization_ptr(balancing::Method::NONE());
+  }
+
   // clang-format off
   return PixelSelector(_index,
                        dataset("pixels/bin1_id"),
@@ -224,35 +239,61 @@ inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord
 inline bool File::has_normalization(std::string_view normalization_) const {
   return has_normalization(balancing::Method{normalization_});
 }
-inline std::shared_ptr<const balancing::Weights> File::normalization(
-    std::string_view normalization_, bool rescale) const {
-  return normalization(balancing::Method{normalization_}, rescale);
+inline const balancing::Weights &File::normalization(std::string_view normalization_,
+                                                     bool rescale) const {
+  return *normalization_ptr(balancing::Method{normalization_}, rescale);
 }
-inline std::shared_ptr<const balancing::Weights> File::normalization(
-    std::string_view normalization_, balancing::Weights::Type type, bool rescale) const {
-  return normalization(balancing::Method{normalization_}, type, rescale);
+inline const balancing::Weights &File::normalization(std::string_view normalization_,
+                                                     balancing::Weights::Type type,
+                                                     bool rescale) const {
+  return *normalization_ptr(balancing::Method{normalization_}, type, rescale);
 }
 
-inline std::shared_ptr<const balancing::Weights> File::normalization(
+inline const balancing::Weights &File::normalization(const balancing::Method &normalization_,
+                                                     bool rescale) const {
+  return *normalization_ptr(normalization_, rescale);
+}
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    std::string_view normalization_, bool rescale) const {
+  return normalization_ptr(balancing::Method{normalization_}, rescale);
+}
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    std::string_view normalization_, balancing::Weights::Type type, bool rescale) const {
+  return normalization_ptr(balancing::Method{normalization_}, type, rescale);
+}
+
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     const balancing::Method &normalization_, bool rescale) const {
-  if (normalization_ == "NONE") {
-    return nullptr;
+  return normalization_ptr(normalization_, balancing::Weights::Type::INFER, rescale);
+}
+
+inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
+    const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale) const {
+  if (!rescale) {
+    if (const auto it = _weights.find(normalization_.to_string()); it != _weights.end()) {
+      return it->second;
+    }
+  } else {
+    if (const auto it = _weights_scaled.find(normalization_.to_string());
+        it != _weights_scaled.end()) {
+      return it->second;
+    }
   }
 
-  return normalization(normalization_, balancing::Weights::Type::INFER, rescale);
-}
-
-inline std::shared_ptr<const balancing::Weights> File::normalization(
-    const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale) const {
   if (normalization_ == "NONE") {
-    return nullptr;
+    auto weights = std::make_shared<const balancing::Weights>(
+        1.0, bins().size(), balancing::Weights::Type::MULTIPLICATIVE);
+    if (rescale) {
+      _weights_scaled.emplace(normalization_.to_string(), weights);
+    } else {
+      _weights.emplace(normalization_.to_string(), weights);
+    }
+
+    return weights;
   }
 
   const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
                                      normalization_.to_string());
-  if (const auto it = _weights.find(dset_path); it != _weights.end()) {
-    return it->second;
-  }
 
   if (!_root_group().exist(dset_path)) {
     throw std::runtime_error(
@@ -278,11 +319,10 @@ inline std::shared_ptr<const balancing::Weights> File::normalization(
     }
   }
 
-  balancing::Weights weights(dset.read_all<std::vector<double>>(), type);
+  auto weights = std::make_shared<balancing::Weights>(dset.read_all<std::vector<double>>(), type);
   if (!rescale) {
-    const auto node = _weights.emplace(
-        normalization_.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
-    return node.first->second;
+    _weights.emplace(normalization_.to_string(), weights);
+    return weights;
   }
 
   if (!dset.has_attribute("scale")) {
@@ -306,14 +346,13 @@ inline std::shared_ptr<const balancing::Weights> File::normalization(
           dset.uri(), bin_offsets.size() - 1, scaling_factors.size()));
     }
 
-    weights.rescale(scaling_factors, bin_offsets);
+    weights->rescale(scaling_factors, bin_offsets);
   } else {
-    weights.rescale(dset.read_attribute<double>("scale"));
+    weights->rescale(dset.read_attribute<double>("scale"));
   }
 
-  const auto node = _weights_scaled.emplace(
-      normalization_.to_string(), std::make_shared<const balancing::Weights>(std::move(weights)));
-  return node.first->second;
+  _weights_scaled.emplace(normalization_.to_string(), weights);
+  return weights;
 }
 
 inline bool File::purge_weights(std::string_view name) {
@@ -440,8 +479,8 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
 }  // namespace internal
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp,
                                            bool initialize_missing) -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
@@ -496,7 +535,7 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp,
 
   return attrs;
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                 bool missing_ok) -> Reference {
@@ -598,8 +637,8 @@ inline void File::read_index_chunk(std::initializer_list<Chromosome> chroms) con
       const auto chrom_offsets =
           internal::import_chrom_offsets(chrom_offset_dset, chromosomes().size() + 1);
 
-      auto offset1 = chrom_offsets[chrom.id()];
-      auto offset2 = chrom_offsets[chrom.id() + 1];
+      auto offset1 = static_cast<std::ptrdiff_t>(chrom_offsets[chrom.id()]);
+      auto offset2 = static_cast<std::ptrdiff_t>(chrom_offsets[chrom.id() + 1]);
       auto first = bin_offset_dset.begin<std::uint64_t>() + offset1;
       auto last = bin_offset_dset.begin<std::uint64_t>() + offset2;
       _index->set(chrom, {first, last});

@@ -56,8 +56,8 @@ inline std::size_t Dataset::read(std::vector<std::string> &buff, std::size_t num
   return offset + buff.size();
 }
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline std::size_t Dataset::read(VariantBuffer &vbuff, std::size_t num, std::size_t offset) const {
   if constexpr (i == 0) {
@@ -93,7 +93,7 @@ inline std::size_t Dataset::read(VariantBuffer &vbuff, std::size_t num, std::siz
 
   unreachable_code();
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 template <typename BuffT, typename T, typename>
 inline BuffT Dataset::read_n(std::size_t num, std::size_t offset) const {
@@ -146,8 +146,8 @@ inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
   return offset + 1;
 }
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 template <std::size_t i>
 inline std::size_t Dataset::read(GenericVariant &vbuff, std::size_t offset) const {
   if constexpr (i == 0) {
@@ -182,7 +182,7 @@ inline std::size_t Dataset::read(GenericVariant &vbuff, std::size_t offset) cons
 
   unreachable_code();
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 template <typename BuffT, typename T, typename>
 inline BuffT Dataset::read(std::size_t offset) const {

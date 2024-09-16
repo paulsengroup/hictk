@@ -74,7 +74,8 @@ class PixelSelector {
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2) const;
 
- public:
+  [[nodiscard]] const balancing::Weights &weights() const noexcept;
+
   template <typename N>
   class iterator {
     using BinIDT = std::uint64_t;

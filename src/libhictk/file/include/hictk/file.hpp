@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
@@ -30,13 +31,15 @@ class PixelSelector {
   using PixelSelectorVar =
       std::variant<cooler::PixelSelector, hic::PixelSelector, hic::PixelSelectorAll>;
   PixelSelectorVar _sel{cooler::PixelSelector{}};
+  std::shared_ptr<const balancing::Weights> _weights{};
 
  public:
   template <typename N>
   class iterator;
 
   template <typename PixelSelectorT>
-  explicit PixelSelector(PixelSelectorT selector);
+  explicit PixelSelector(PixelSelectorT selector,
+                         std::shared_ptr<const balancing::Weights> weights);
 
   template <typename N>
   [[nodiscard]] auto begin(bool sorted = true) const -> iterator<N>;
@@ -58,6 +61,8 @@ class PixelSelector {
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1_, PixelCoordinates coord2_) const;
+
+  [[nodiscard]] const balancing::Weights &weights() const noexcept;
 
   template <typename PixelSelectorT>
   [[nodiscard]] constexpr const PixelSelectorT &get() const noexcept;
@@ -158,7 +163,9 @@ class File {
 
   [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  [[nodiscard]] balancing::Weights normalization(std::string_view normalization_) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view normalization_) const;
 
   template <typename FileT>
   [[nodiscard]] constexpr const FileT &get() const noexcept;
