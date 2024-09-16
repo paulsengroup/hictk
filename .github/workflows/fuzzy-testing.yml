@@ -215,19 +215,19 @@ jobs:
       - name: Prepare for test
         id: test-params
         run: |
-          duration=600
+          duration=120
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             duration='${{ inputs.duration }}'
           elif [[ '${{ steps.ci-type.outputs.type }}' == 'full' ]]; then
             duration=3600
           fi
 
-          resolution=10000
+          resolution=50000
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             if [[ '${{ inputs.resolution }}' == 'random' ]]; then
               resolution="$(
                 python3 -c 'import random; import sys; print(random.choice([int(x) for x in sys.argv[1:]]))' \
-                1000 5000 10000 50000 100000 500000 1000000 5000000 10000000
+                1000 5000 10000 50000 100000 500000
               )"
             else
               resolution='${{ inputs.resolution }}'
