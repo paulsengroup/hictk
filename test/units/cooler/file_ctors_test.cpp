@@ -117,7 +117,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const File f(path.string());
 
-    CHECK(f.uri() == path);
+    CHECK(f.uri() == path.string());
     CHECK(f.resolution() == 1000);
     CHECK(f.chromosomes().size() == 10);
     CHECK(f.bins().size() == 3000);
