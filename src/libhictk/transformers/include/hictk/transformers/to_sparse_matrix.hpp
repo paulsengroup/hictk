@@ -26,7 +26,7 @@ class ToSparseMatrix {
   QuerySpan _span{QuerySpan::upper_triangle};
 
  public:
-  using MatrixT = Eigen::SparseMatrix<N>;
+  using MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
   ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
   [[nodiscard]] auto operator()() -> MatrixT;
 
