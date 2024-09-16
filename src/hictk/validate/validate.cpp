@@ -297,6 +297,7 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
           storage_mode_ok) {
         throw;
       }
+      SPDLOG_WARN(FMT_STRING("{}"), e.what());
       status.insert("index_is_valid", "not_checked");
     }
   } else {
