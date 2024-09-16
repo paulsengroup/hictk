@@ -715,6 +715,38 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
 
+    SECTION("ToSparseMatrix (gw) full (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
+      CHECK(matrix.nonZeros() == 4'241'909);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 594'006'205);
+    }
+
+    SECTION("ToSparseMatrix (gw) upper_triangle (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
+      CHECK(matrix.nonZeros() == 2'423'572);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 336'795'259);
+      CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
+    }
+
+    SECTION("ToSparseMatrix (gw) lower_triangle (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.nonZeros() == 1'820'117);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 257'471'326);
+      CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
+    }
+
     SECTION("ToSparseMatrix invalid queries") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
@@ -845,6 +877,35 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.isLowerTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) full (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 594'006'205);
+    }
+
+    SECTION("ToDenseMatrix (gw) upper_triangle (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 336'795'259);
+      CHECK(matrix.isUpperTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) lower_triangle (storage-mode=square)") {
+      const auto path = datadir / "cooler/square.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 257'471'326);
       CHECK(matrix.isLowerTriangular());
     }
 
