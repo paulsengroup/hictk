@@ -280,13 +280,25 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
 
   if (!!clr && validate_index) {
     std::string buff{};
-    const auto index_ok = cooler::utils::index_is_valid(path, buff);
-    if (index_ok) {
-      status.insert("index_is_valid", true);
-    } else {
-      assert(!buff.empty());
-      return_code = 1;
-      status.insert("index_is_valid", buff);
+    try {
+      const auto index_ok = cooler::utils::index_is_valid(path, buff);
+      if (index_ok) {
+        status.insert("index_is_valid", true);
+      } else {
+        assert(!buff.empty());
+        return_code = 1;
+        status.insert("index_is_valid", buff);
+      }
+    } catch (const std::exception& e) {
+      if (const auto storage_mode_ok =
+              !internal::starts_with(e.what(),
+                                     "validating the index of Coolers with storage-mode") &&
+              !internal::ends_with(e.what(), "is not supported");
+          storage_mode_ok) {
+        throw;
+      }
+      SPDLOG_WARN(FMT_STRING("{}"), e.what());
+      status.insert("index_is_valid", "not_checked");
     }
   } else {
     status.insert("index_is_valid", "not_checked");

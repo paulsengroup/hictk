@@ -187,7 +187,9 @@ inline PixelCoordinates::PixelCoordinates(std::pair<Bin, Bin> bins) noexcept
 
 inline PixelCoordinates::PixelCoordinates(Bin bin) noexcept : bin1(bin), bin2(std::move(bin)) {}
 
-inline PixelCoordinates::operator bool() const noexcept { return !!bin1 && !!bin2; }
+inline PixelCoordinates::operator bool() const noexcept { return !empty(); }
+
+inline bool PixelCoordinates::empty() const noexcept { return !bin1 && !bin2; }
 
 inline bool PixelCoordinates::operator==(const PixelCoordinates &other) const noexcept {
   return bin1 == other.bin1 && bin2 == other.bin2;

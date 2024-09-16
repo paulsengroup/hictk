@@ -59,4 +59,18 @@ void Cli::make_validate_subcommand() {
 
   _config = std::monostate{};
 }
+
+void Cli::transform_args_validate_subcommand() {
+  assert(_cli.get_subcommand("validate")->parsed());
+  auto& c = std::get<ValidateConfig>(_config);
+
+  if (c.quiet) {
+    c.verbosity = static_cast<std::uint8_t>(spdlog::level::err);
+  } else {
+    // in spdlog, high numbers correspond to low log levels
+    assert(c.verbosity > 0 && c.verbosity < 5);
+    c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  }
+}
+
 }  // namespace hictk::tools

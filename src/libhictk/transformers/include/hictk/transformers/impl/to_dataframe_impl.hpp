@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/common.hpp"
@@ -28,13 +29,15 @@ namespace hictk::transformers {
 template <typename PixelIt>
 inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameFormat format,
                                          std::shared_ptr<const BinTable> bins, QuerySpan span,
-                                         bool include_bin_ids, std::size_t chunk_size)
+                                         bool include_bin_ids, bool mirror_pixels,
+                                         std::size_t chunk_size)
     : _first(std::move(first)),
       _last(std::move(last)),
       _bins(std::move(bins)),
       _format(format),
       _span(span),
       _drop_bin_ids(!include_bin_ids),
+      _mirror_pixels(mirror_pixels),
       _chunk_size(chunk_size) {
   assert(chunk_size != 0);
 
@@ -84,11 +87,30 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
 }
 
 template <typename PixelIt>
+template <typename PixelSelector>
+inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
+                                         DataFrameFormat format,
+                                         std::shared_ptr<const BinTable> bins, QuerySpan span,
+                                         bool include_bin_ids, std::size_t chunk_size)
+    : ToDataFrame(sel.template begin<N>(), sel.template end<N>(), format, std::move(bins), span,
+                  include_bin_ids, pixel_selector_is_symmetric_upper(sel), chunk_size) {}
+
+template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::operator()() {
-  if (_format == DataFrameFormat::BG2) {
-    std::for_each(_first, _last, [&](const auto& p) { append(Pixel<N>(*_bins, p)); });
+  if (HICTK_LIKELY(_mirror_pixels)) {
+    if (_format == DataFrameFormat::BG2) {
+      assert(_bins);
+      std::for_each(_first, _last, [&](const auto& p) { append_symmetric(Pixel<N>(*_bins, p)); });
+    } else {
+      std::for_each(_first, _last, [&](auto p) { append_symmetric(std::move(p)); });
+    }
   } else {
-    std::for_each(_first, _last, [&](auto p) { append(std::move(p)); });
+    if (_format == DataFrameFormat::BG2) {
+      assert(_bins);
+      std::for_each(_first, _last, [&](const auto& p) { append_asymmetric(Pixel<N>(*_bins, p)); });
+    } else {
+      std::for_each(_first, _last, [&](auto p) { append_asymmetric(std::move(p)); });
+    }
   }
 
   if (_format == DataFrameFormat::COO) {
@@ -130,7 +152,9 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append(Pixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N>&& p) {
+  assert(_mirror_pixels);
+
   if (_chrom1_id_buff.size() >= _chunk_size) {
     write_pixels();
   }
@@ -177,7 +201,9 @@ inline void ToDataFrame<PixelIt>::append(Pixel<N>&& p) {
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append(ThinPixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N>&& p) {
+  assert(_mirror_pixels);
+
   if (_bin1_id_buff.size() >= _chunk_size) {
     write_thin_pixels();
   }
@@ -193,6 +219,89 @@ inline void ToDataFrame<PixelIt>::append(ThinPixel<N>&& p) {
   if (_span == QuerySpan::full && p.bin1_id != p.bin2_id) {
     _bin1_id_buff.push_back(p.bin2_id);
     _bin2_id_buff.push_back(p.bin1_id);
+    _count_buff.push_back(p.count);
+  }
+}
+
+template <typename PixelIt>
+inline void ToDataFrame<PixelIt>::append_asymmetric(Pixel<N>&& p) {
+  assert(!_mirror_pixels);
+
+  if (_chrom1_id_buff.size() >= _chunk_size) {
+    write_pixels();
+  }
+
+  const auto populate_lower_triangle =
+      _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
+  const auto populate_upper_triangle =
+      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
+
+  const auto chrom1_id = static_cast<std::int32_t>(p.coords.bin1.chrom().id()) - _chrom_id_offset;
+  const auto chrom2_id = static_cast<std::int32_t>(p.coords.bin2.chrom().id()) - _chrom_id_offset;
+
+  assert(chrom1_id >= 0);
+  assert(chrom2_id >= 0);
+
+  if (populate_upper_triangle && p.coords.bin1 <= p.coords.bin2) {
+    if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
+      _bin1_id_buff.push_back(p.coords.bin1.id());
+      _bin2_id_buff.push_back(p.coords.bin2.id());
+    }
+
+    _chrom1_id_buff.push_back(chrom1_id);
+    _start1_buff.push_back(p.coords.bin1.start());
+    _end1_buff.push_back(p.coords.bin1.end());
+
+    _chrom2_id_buff.push_back(chrom2_id);
+    _start2_buff.push_back(p.coords.bin2.start());
+    _end2_buff.push_back(p.coords.bin2.end());
+
+    _count_buff.push_back(p.count);
+    return;
+  }
+
+  if (populate_lower_triangle && p.coords.bin1 >= p.coords.bin2) {
+    if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
+      _bin1_id_buff.push_back(p.coords.bin1.id());
+      _bin2_id_buff.push_back(p.coords.bin2.id());
+    }
+
+    _chrom1_id_buff.push_back(chrom1_id);
+    _start1_buff.push_back(p.coords.bin1.start());
+    _end1_buff.push_back(p.coords.bin1.end());
+
+    _chrom2_id_buff.push_back(chrom2_id);
+    _start2_buff.push_back(p.coords.bin2.start());
+    _end2_buff.push_back(p.coords.bin2.end());
+
+    _count_buff.push_back(p.count);
+  }
+}
+
+template <typename PixelIt>
+inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N>&& p) {
+  assert(!_mirror_pixels);
+
+  if (_bin1_id_buff.size() >= _chunk_size) {
+    write_thin_pixels();
+  }
+
+  const auto populate_lower_triangle =
+      _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
+  const auto populate_upper_triangle =
+      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
+
+  bool inserted = false;
+  if (populate_upper_triangle && p.bin1_id <= p.bin2_id) {
+    _bin1_id_buff.push_back(p.bin1_id);
+    _bin2_id_buff.push_back(p.bin2_id);
+    _count_buff.push_back(p.count);
+    inserted = true;
+  }
+
+  if (populate_lower_triangle && !inserted && p.bin1_id >= p.bin2_id) {
+    _bin1_id_buff.push_back(p.bin1_id);
+    _bin2_id_buff.push_back(p.bin2_id);
     _count_buff.push_back(p.count);
   }
 }
@@ -443,6 +552,16 @@ std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::sort_table(
     return arrow::compute::Take(vtable, *arg_sorter, arrow::compute::TakeOptions::NoBoundsCheck())
         ->table();
   }
+}
+
+template <typename PixelIt>
+template <typename PixelSelector>
+inline bool ToDataFrame<PixelIt>::pixel_selector_is_symmetric_upper(
+    const PixelSelector& sel) noexcept {
+  if constexpr (std::is_same_v<PixelSelector, cooler::PixelSelector>) {
+    return sel.is_symmetric_upper();
+  }
+  return true;
 }
 
 }  // namespace hictk::transformers

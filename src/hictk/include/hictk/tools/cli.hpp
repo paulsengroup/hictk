@@ -264,6 +264,7 @@ class Cli {
   void transform_args_merge_subcommand();
   void transform_args_metadata_subcommand();
   void transform_args_rename_chromosomes_subcommand();
+  void transform_args_validate_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
 };

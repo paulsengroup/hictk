@@ -108,7 +108,7 @@ static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
     }
     clr.getGroup(grp).createSoftLink(link_path, dset());
   }
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename BalanceConfig>
 static void write_weights_cooler(std::string_view uri, const BalanceConfig& c,

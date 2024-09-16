@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
@@ -36,10 +37,8 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
       _biases(f.bins().size(), 1.0),
       _variance(f.chromosomes().size(), 0),
       _scale(f.chromosomes().size(), std::numeric_limits<double>::quiet_NaN()) {
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
+  internal::check_storage_mode(f);
+  internal::check_bin_type(f.bins());
 
   std::unique_ptr<BS::thread_pool> tpool{};
   if (params.threads != 1) {
@@ -59,6 +58,7 @@ template <typename File>
 inline void ICE::balance_in_memory(const File& f, Type type, double tol, std::size_t max_iters,
                                    std::size_t num_masked_diags, std::size_t min_nnz,
                                    std::size_t min_count, double mad_max, BS::thread_pool* tpool) {
+  assert(f.bins().type() == BinTable::Type::fixed);
   auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
 
   initialize_biases(matrix, _biases, _chrom_offsets, min_nnz, min_count, mad_max, tpool);
@@ -91,6 +91,7 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
                                  std::size_t min_count, double mad_max,
                                  const std::filesystem::path& tmpfile, std::size_t chunk_size,
                                  BS::thread_pool* tpool) {
+  assert(f.bins().type() == BinTable::Type::fixed);
   auto matrix = construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
 
   initialize_biases(matrix, _biases, _chrom_offsets, min_nnz, min_count, mad_max, tpool);
@@ -140,6 +141,7 @@ inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double
 template <typename MatrixT>
 inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters,
                                double tol, BS::thread_pool* tpool) {
+  assert(bins.type() == BinTable::Type::fixed);
   _variance.resize(1, 0);
   _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
   const auto weights = compute_weights_from_chromosome_sizes(bins, _chrom_offsets);

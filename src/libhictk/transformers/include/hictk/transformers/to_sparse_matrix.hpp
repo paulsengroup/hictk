@@ -20,7 +20,7 @@ template <typename N, typename PixelSelector>
 class ToSparseMatrix {
   using PixelIt = decltype(std::declval<PixelSelector>().template begin<N>());
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
-  static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
+  static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
   PixelSelector _sel{};
   QuerySpan _span{QuerySpan::upper_triangle};
