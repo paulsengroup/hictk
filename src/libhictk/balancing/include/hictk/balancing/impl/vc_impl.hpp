@@ -21,11 +21,8 @@ namespace hictk::balancing {
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
   internal::check_storage_mode(f);
+  internal::check_bin_type(f);
 
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
   switch (type) {
     case Type::cis: {
       auto res = compute_cis(f);

@@ -28,11 +28,7 @@ namespace hictk::balancing {
 template <typename File>
 inline SCALE::SCALE(const File& f, Type type, const Params& params) {
   internal::check_storage_mode(f);
-
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
+  internal::check_bin_type(f);
 
   switch (type) {
     case Type::cis: {

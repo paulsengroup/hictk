@@ -38,11 +38,7 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
       _variance(f.chromosomes().size(), 0),
       _scale(f.chromosomes().size(), std::numeric_limits<double>::quiet_NaN()) {
   internal::check_storage_mode(f);
-
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
+  internal::check_bin_type(f);
 
   std::unique_ptr<BS::thread_pool> tpool{};
   if (params.threads != 1) {
