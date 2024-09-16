@@ -114,7 +114,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .cool (storage-mode=square)") {
-    const auto path = datadir / "square.cool";
+    const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const File f(path.string());
 
     CHECK(f.path() == path);

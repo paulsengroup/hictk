@@ -620,6 +620,190 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
         validate_format<format, span>(clr.chromosomes(), table);
       }
 
+      SECTION("COO<int> upper_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, nullptr, span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 53'154);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 14044});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 14496});
+
+        // check tail
+        compare_pixel<53151>(table, ThinPixel<N>{378, 378, 14432});
+        compare_pixel<53152>(table, ThinPixel<N>{378, 379, 7150});
+        compare_pixel<53153>(table, ThinPixel<N>{379, 379, 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("COO<int> lower_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 43'280);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{1, 0, 14081});
+        compare_pixel<2>(table, ThinPixel<N>{1, 1, 14476});
+
+        // check tail
+        compare_pixel<43277>(table, ThinPixel<N>{379, 377, 6152});
+        compare_pixel<43278>(table, ThinPixel<N>{379, 378, 7251});
+        compare_pixel<43279>(table, ThinPixel<N>{379, 379, 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("COO<int> full (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 96'133);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 14044});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 14496});
+
+        // check tail
+        compare_pixel<96130>(table, ThinPixel<N>{379, 377, 6152});
+        compare_pixel<96131>(table, ThinPixel<N>{379, 378, 7251});
+        compare_pixel<96132>(table, ThinPixel<N>{379, 379, 3534});
+      }
+
+      SECTION("BG2<int> upper_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 53'154);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head_square
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 8000), 14044});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 16000), 14496});
+
+        // check tail
+        compare_pixel<53151>(table, Pixel<N>{bins_square.at("chr10", 288'000),
+                                             bins_square.at("chr10", 288'000), 14432});
+        compare_pixel<53152>(table, Pixel<N>{bins_square.at("chr10", 288'000),
+                                             bins_square.at("chr10", 296'000), 7150});
+        compare_pixel<53153>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> lower_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 43'280);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 8000), bins_square.at("chr1", 0), 14081});
+        compare_pixel<2>(
+            table, Pixel<N>{bins_square.at("chr1", 8000), bins_square.at("chr1", 8000), 14476});
+
+        // check tail
+        compare_pixel<43277>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 280'000), 6152});
+        compare_pixel<43278>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 288'000), 7251});
+        compare_pixel<43279>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 96'133);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 8000), 14044});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 16000), 14496});
+
+        // check tail
+        compare_pixel<96130>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 280'000), 6152});
+        compare_pixel<96131>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 288'000), 7251});
+        compare_pixel<96132>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
+      }
+
       SECTION("empty range") {
         const auto table = ToDataFrame(last, last)();
         CHECK(table->num_rows() == 0);
@@ -716,7 +900,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToSparseMatrix (gw) full (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
       CHECK(matrix.nonZeros() == 4'241'909);
@@ -726,7 +911,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToSparseMatrix (gw) upper_triangle (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 2'423'572);
@@ -737,7 +923,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToSparseMatrix (gw) lower_triangle (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.nonZeros() == 1'820'117);
@@ -881,7 +1068,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToDenseMatrix (gw) full (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
       CHECK(matrix.rows() == 3000);
@@ -890,7 +1078,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToDenseMatrix (gw) upper_triangle (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 3000);
@@ -900,7 +1089,8 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
     }
 
     SECTION("ToDenseMatrix (gw) lower_triangle (storage-mode=square)") {
-      const auto path = datadir / "cooler/square.cool";
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.rows() == 3000);

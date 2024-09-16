@@ -320,7 +320,7 @@ TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selec
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_selector][short]") {
-  const auto path = datadir / "square.cool";
+  const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
   using T = std::uint32_t;
 
   const File f(path.string());
