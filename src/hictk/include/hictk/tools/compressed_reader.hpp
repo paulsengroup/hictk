@@ -40,7 +40,6 @@ class CompressedReader {
 
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
   [[nodiscard]] std::string path_string() const noexcept;
-  [[nodiscard]] const char* path_c_str() const noexcept;
 
  private:
   std::filesystem::path _path{};

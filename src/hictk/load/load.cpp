@@ -185,8 +185,9 @@ class PixelParser {
     // NOLINTNEXTLINE(readability-implicit-bool-conversion)
     it = std::find_if(it, line.end(), [](const char c) { return !std::isspace(c); });
     const auto strlen = static_cast<std::size_t>(std::distance(it, line.end()));
+    const auto offset = static_cast<std::size_t>(std::distance(line.begin(), it));
 
-    const std::string_view chrom_size{it, strlen};
+    const std::string_view chrom_size{line.data() + offset, strlen};
     if (chrom_size.empty()) {
       throw std::runtime_error(fmt::format(FMT_STRING("malformed chromsize entry \"{}\"."), line));
     }

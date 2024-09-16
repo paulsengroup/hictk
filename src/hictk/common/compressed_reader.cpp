@@ -56,7 +56,11 @@ void CompressedReader::open(const std::filesystem::path& path) {
   handle_open_errors(archive_read_support_filter_all(_arc.get()));
   handle_open_errors(archive_read_support_format_empty(_arc.get()));
   handle_open_errors(archive_read_support_format_raw(_arc.get()));
+#ifdef _MSC_VER
+  handle_open_errors(archive_read_open_filename_w(_arc.get(), _path.c_str(), _buff.capacity()));
+#else
   handle_open_errors(archive_read_open_filename(_arc.get(), _path.c_str(), _buff.capacity()));
+#endif
   handle_open_errors(archive_read_next_header(_arc.get(), _arc_entry.get()));
   _idx = 0;
 }
@@ -90,7 +94,6 @@ void CompressedReader::reset() {
 
 const std::filesystem::path& CompressedReader::path() const noexcept { return _path; }
 std::string CompressedReader::path_string() const noexcept { return _path.string(); }
-const char* CompressedReader::path_c_str() const noexcept { return _path.c_str(); }
 
 void CompressedReader::handle_libarchive_errors(la_ssize_t errcode) const {
   if (errcode < ARCHIVE_OK) {
