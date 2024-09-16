@@ -28,7 +28,7 @@ namespace hictk::balancing {
 template <typename File>
 inline SCALE::SCALE(const File& f, Type type, const Params& params) {
   internal::check_storage_mode(f);
-  internal::check_bin_type(f);
+  internal::check_bin_type(f.bins());
 
   switch (type) {
     case Type::cis: {
@@ -59,10 +59,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
     : _biases(VC{first, last, bins}.get_weights().to_vector(balancing::Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
-  if (bins.type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions referring to a table with variable bin size is not supported");
-  }
+  internal::check_bin_type(bins);
+
   if (first == last) {
     std::fill(_biases.begin(), _biases.end(), 1.0);
     _scale.push_back(1.0);
@@ -84,6 +82,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 
 template <typename Matrix>
 inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
+  assert(bins.type() == BinTable::Type::fixed);
   VectorOfAtomicDecimals column(size(), 9);
   VectorOfAtomicDecimals row(size(), 9);
 

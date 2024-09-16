@@ -36,9 +36,8 @@ inline void check_storage_mode([[maybe_unused]] const File& f) {
   }
 }
 
-template <typename File>
-inline void check_bin_type(const File& f) {
-  if (f.bins().type() == BinTable::Type::variable) {
+inline void check_bin_type(const BinTable& bins) {
+  if (bins.type() == BinTable::Type::variable) {
     throw std::runtime_error(
         "balancing interactions from files with variable bin sizes is not supported");
   }

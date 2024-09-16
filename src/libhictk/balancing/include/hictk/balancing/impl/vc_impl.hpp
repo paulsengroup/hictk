@@ -21,7 +21,7 @@ namespace hictk::balancing {
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
   internal::check_storage_mode(f);
-  internal::check_bin_type(f);
+  internal::check_bin_type(f.bins());
 
   switch (type) {
     case Type::cis: {
@@ -51,11 +51,7 @@ template <typename PixelIt>
 inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
               [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
-
-  if (bins.type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions referring to a table with variable bin size is not supported");
-  }
+  internal::check_bin_type(bins);
 
   const auto offset = bins.num_bin_prefix_sum().front();
   const auto size = bins.num_bin_prefix_sum().back() - offset;
