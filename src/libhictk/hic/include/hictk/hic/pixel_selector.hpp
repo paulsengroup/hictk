@@ -79,7 +79,7 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
   [[nodiscard]] MatrixType matrix_type() const noexcept;
-  [[nodiscard]] balancing::Method normalization() const noexcept;
+  [[nodiscard]] const balancing::Method &normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
@@ -186,10 +186,12 @@ class PixelSelectorAll {
  private:
   std::vector<PixelSelector> _selectors{};
   std::shared_ptr<const BinTable> _bins{};
+  mutable std::shared_ptr<internal::WeightCache> _weight_cache{};
 
  public:
   PixelSelectorAll() = default;
-  explicit PixelSelectorAll(std::vector<PixelSelector> selectors_) noexcept;
+  explicit PixelSelectorAll(std::vector<PixelSelector> selectors_,
+                            std::shared_ptr<internal::WeightCache> weight_cache = nullptr) noexcept;
 
   [[nodiscard]] bool empty() const noexcept;
 
@@ -207,12 +209,12 @@ class PixelSelectorAll {
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
   [[nodiscard]] MatrixType matrix_type() const noexcept;
-  [[nodiscard]] balancing::Method normalization() const noexcept;
+  [[nodiscard]] const balancing::Method &normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
-  [[nodiscard]] std::vector<double> weights() const;
+  [[nodiscard]] const balancing::Weights &weights() const;
 
   template <typename N>
   class iterator {

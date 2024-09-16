@@ -20,13 +20,13 @@ template <typename N, typename PixelSelector>
 class ToSparseMatrix {
   using PixelIt = decltype(std::declval<PixelSelector>().template begin<N>());
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
-  static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
+  static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
   PixelSelector _sel{};
   QuerySpan _span{QuerySpan::upper_triangle};
 
  public:
-  using MatrixT = Eigen::SparseMatrix<N>;
+  using MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
   ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
   [[nodiscard]] auto operator()() -> MatrixT;
 
@@ -42,6 +42,8 @@ class ToSparseMatrix {
   [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
   [[nodiscard]] std::int64_t row_offset() const noexcept;
   [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  void validate_dtype() const;
 };
 
 }  // namespace hictk::transformers

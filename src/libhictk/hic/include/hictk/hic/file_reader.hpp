@@ -43,23 +43,23 @@ class HiCFileReader {
 
   // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
   // resolution.
-  [[nodiscard]] HiCFooter read_footer(
-      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
-      balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
-      std::shared_ptr<balancing::Weights> weights1 = std::make_shared<balancing::Weights>(),
-      std::shared_ptr<balancing::Weights> weights2 = std::make_shared<balancing::Weights>());
+  [[nodiscard]] HiCFooter read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
+                                      MatrixType matrix_type, balancing::Method wanted_norm,
+                                      MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
+                                      std::shared_ptr<balancing::Weights> &weights1,
+                                      std::shared_ptr<balancing::Weights> &weights2);
 
   [[nodiscard]] std::int64_t read_footer_file_offset(std::string_view key);
   [[nodiscard]] std::vector<double> read_footer_expected_values(
-      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
       balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
   [[nodiscard]] std::vector<double> read_footer_expected_values_norm(
-      std::uint32_t chrom1_id, std::uint32_t chrom2_id, MatrixType matrix_type,
+      const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
       balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
-  void read_footer_norm(std::uint32_t chrom1_id, std::uint32_t chrom2_id,
+  void read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
                         balancing::Method wanted_norm, MatrixUnit wanted_unit,
-                        std::uint32_t wanted_resolution, const Chromosome &chrom1,
-                        const Chromosome &chrom2, std::shared_ptr<balancing::Weights> &weights1,
+                        std::uint32_t wanted_resolution,
+                        std::shared_ptr<balancing::Weights> &weights1,
                         std::shared_ptr<balancing::Weights> &weights2);
 
   [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations(

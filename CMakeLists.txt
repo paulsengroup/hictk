@@ -130,6 +130,7 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
+option(HICTK_ENABLE_FUZZY_TESTING "Build fuzzy tests" OFF)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(HICTK_WITH_ARROW "Build with arrow support" ON)

@@ -27,13 +27,29 @@ void Cli::make_validate_subcommand() {
       c.uri,
       "Path to a .hic or .[ms]cool file (Cooler URI syntax supported).")
       ->required();
-
   sc.add_flag(
       "--validate-index",
       c.validate_index,
       "Validate Cooler index (may take a long time).")
       ->capture_default_str();
-
+  sc.add_option(
+      "-f,--output-format",
+      c.output_format,
+      "Format used to report the outcome of file validation.\n"
+      "Should be one of: json, toml, or yaml.")
+      ->check(CLI::IsMember({"json", "toml", "yaml"}))
+      ->capture_default_str();
+  sc.add_flag(
+      "--include-file-path,!--exclude-file-path",
+      c.include_file_path,
+      "Output the given input path using attribute \"uri\".")
+      ->capture_default_str();
+  sc.add_flag(
+      "--exhaustive,!--fail-fast",
+      c.exhaustive,
+      "When processing multi-resolution or single-cell files,\n"
+      "do not fail as soon as the first error is detected.")
+      ->capture_default_str();
   sc.add_flag(
       "--quiet",
       c.quiet,
@@ -43,4 +59,18 @@ void Cli::make_validate_subcommand() {
 
   _config = std::monostate{};
 }
+
+void Cli::transform_args_validate_subcommand() {
+  assert(_cli.get_subcommand("validate")->parsed());
+  auto& c = std::get<ValidateConfig>(_config);
+
+  if (c.quiet) {
+    c.verbosity = static_cast<std::uint8_t>(spdlog::level::err);
+  } else {
+    // in spdlog, high numbers correspond to low log levels
+    assert(c.verbosity > 0 && c.verbosity < 5);
+    c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  }
+}
+
 }  // namespace hictk::tools

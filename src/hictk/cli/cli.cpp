@@ -189,6 +189,7 @@ void Cli::transform_args() {
       transform_args_rename_chromosomes_subcommand();
       break;
     case validate:
+      transform_args_validate_subcommand();
       break;
     case zoomify:
       transform_args_zoomify_subcommand();

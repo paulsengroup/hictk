@@ -17,7 +17,7 @@ target_sources(
             "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(transformers INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
-target_link_libraries(transformers INTERFACE hictk::cooler hictk::hic)
+target_link_libraries(transformers INTERFACE hictk::cooler hictk::file hictk::hic)
 
 if(HICTK_WITH_ARROW_SHARED)
   target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")

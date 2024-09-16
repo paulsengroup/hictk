@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
@@ -19,10 +20,9 @@ namespace hictk::balancing {
 
 template <typename File>
 inline VC::VC(const File& f, Type type, [[maybe_unused]] const Params& params) {
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
+  internal::check_storage_mode(f);
+  internal::check_bin_type(f.bins());
+
   switch (type) {
     case Type::cis: {
       auto res = compute_cis(f);
@@ -51,11 +51,7 @@ template <typename PixelIt>
 inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
               [[maybe_unused]] const Params& params) {
   using N = decltype(first->count);
-
-  if (bins.type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions referring to a table with variable bin size is not supported");
-  }
+  internal::check_bin_type(bins);
 
   const auto offset = bins.num_bin_prefix_sum().front();
   const auto size = bins.num_bin_prefix_sum().back() - offset;
@@ -157,7 +153,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -167,7 +163,7 @@ inline auto VC::compute_gw(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 }  // namespace hictk::balancing

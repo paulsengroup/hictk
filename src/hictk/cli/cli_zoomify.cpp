@@ -193,12 +193,21 @@ void Cli::validate_zoomify_subcommand() const {
                     input_format, output_format));
   }
 
+  if (input_format == "cool") {
+    if (const auto storage_mode = cooler::File(c.path_to_input.string()).attributes().storage_mode;
+        storage_mode.has_value() && storage_mode != "symmetric-upper") {
+      errors.emplace_back(fmt::format(
+          FMT_STRING("Zoomifying .cool files with storage-mode=\"{}\" is not supported."),
+          *storage_mode));
+    }
+  }
+
   const auto base_resolution = detect_base_resolution(c.path_to_input.string(), input_format);
 
   if (base_resolution == 0) {  // Variable bin size
     errors.clear();
     warnings.clear();
-    errors.emplace_back("zoomifying files with variable bin size is currently not supported.");
+    errors.emplace_back("Zoomifying files with variable bin size is currently not supported.");
   } else {
     if (const auto dupl = detect_duplicate_resolutions(c.resolutions); !dupl.empty()) {
       errors.emplace_back(fmt::format(FMT_STRING("Found duplicate resolution(s):\n - {}"),

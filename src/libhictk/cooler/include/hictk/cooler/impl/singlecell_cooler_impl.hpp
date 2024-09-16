@@ -231,7 +231,7 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
   return File(uri);
 }
 
-DISABLE_WARNING_PUSH DISABLE_WARNING_UNREACHABLE_CODE inline SingleCellAttributes
+HICTK_DISABLE_WARNING_PUSH HICTK_DISABLE_WARNING_UNREACHABLE_CODE inline SingleCellAttributes
 SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initialize_missing) {
   const RootGroup root_grp{f.getGroup("/")};
   auto attrs =
@@ -277,7 +277,7 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 
   return attrs;
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT

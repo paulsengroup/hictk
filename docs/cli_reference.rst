@@ -231,7 +231,7 @@ hictk dump
   Options:
     -h,--help                   Print this help message and exit
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when file is in .cool format).
+                                Hi-C matrix resolution (ignored when file is in .cool format).
     --matrix-type ENUM:value in {expected->2,observed->0,oe->1} OR {2,0,1} [observed]
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:value in {BP->0,FRAG->1} OR {0,1} [BP]
@@ -353,8 +353,13 @@ hictk merge
     -h,--help                   Print this help message and exit
     -o,--output-file TEXT REQUIRED
                                 Output Cooler or .hic file (Cooler URI syntax supported).
+    --output-fmt TEXT:{cool,hic} [auto]
+                                Output format (by default this is inferred from the output file extension).
+                                Should be one of:
+                                - cool
+                                - hic
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when input files are in .cool format).
+                                Hi-C matrix resolution (ignored when input files are in .cool format).
     -f,--force                  Force overwrite output file.
     --chunk-size UINT [10000000]
                                 Number of pixels to store in memory before writing to disk.
@@ -368,6 +373,9 @@ hictk merge
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when merging .cool files.
+    --count-type TEXT:{int,float} [int]
+                                Specify the count type to be used when merging files.
+                                Ignored when the output file is in .hic format.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -425,6 +433,14 @@ hictk validate
   Options:
     -h,--help                   Print this help message and exit
     --validate-index            Validate Cooler index (may take a long time).
+    -f,--output-format TEXT:{json,toml,yaml} [json]
+                                Format used to report the outcome of file validation.
+                                Should be one of: json, toml, or yaml.
+    --include-file-path,--exclude-file-path{false}
+                                Output the given input path using attribute "uri".
+    --exhaustive,--fail-fast{false}
+                                When processing multi-resolution or single-cell files,
+                                do not fail as soon as the first error is detected.
     --quiet                     Don't print anything to stdout. Success/failure is reported through exit codes
 
 hictk zoomify

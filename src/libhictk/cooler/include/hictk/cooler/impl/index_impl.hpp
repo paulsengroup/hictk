@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#pragma once
+
 #include <fmt/format.h>
 
 #include <algorithm>
@@ -13,10 +15,12 @@
 #include <stdexcept>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/fmt/chromosome.hpp"
 
 namespace hictk::cooler {
@@ -98,12 +102,18 @@ inline std::uint64_t Index::get_offset_by_bin_id(std::uint64_t bin_id) const {
 }
 
 inline std::uint64_t Index::get_offset_by_pos(const Chromosome &chrom, std::uint32_t pos) const {
-  const auto row_idx = pos / resolution();
-  return get_offset_by_row_idx(chrom.id(), row_idx);
+  return get_offset_by_pos(chrom.id(), pos);
 }
 
 inline std::uint64_t Index::get_offset_by_pos(std::uint32_t chrom_id, std::uint32_t pos) const {
-  const auto row_idx = pos / resolution();
+  if (HICTK_LIKELY(std::holds_alternative<BinTableFixed>(_bins->get()))) {
+    assert(resolution() != 0);
+    const auto row_idx = pos / resolution();
+    return get_offset_by_row_idx(chrom_id, row_idx);
+  }
+
+  assert(resolution() == 0);
+  const auto row_idx = bins().at(chrom_id, pos).rel_id();
   return get_offset_by_row_idx(chrom_id, row_idx);
 }
 

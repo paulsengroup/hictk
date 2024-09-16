@@ -17,6 +17,7 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/file.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -43,38 +44,41 @@ void Cli::make_merge_subcommand() {
       ->check(IsValidCoolerFile | IsValidHiCFile)
       ->expected(2, std::numeric_limits<int>::max())
       ->required();
-
   sc.add_option(
       "-o,--output-file",
       c.output_file,
       "Output Cooler or .hic file (Cooler URI syntax supported).")
       ->required();
-
+  sc.add_option(
+      "--output-fmt",
+      c.output_format,
+      "Output format (by default this is inferred from the output file extension).\n"
+      "Should be one of:\n"
+      "- cool\n"
+      "- hic\n")
+      ->check(CLI::IsMember({"cool", "hic"}))
+      ->default_str("auto");
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (ignored when input files are in .cool format).")
+      "Hi-C matrix resolution (ignored when input files are in .cool format).")
       ->check(CLI::NonNegativeNumber);
-
   sc.add_flag(
       "-f,--force",
       c.force,
       "Force overwrite output file.")
       ->capture_default_str();
-
   sc.add_option(
       "--chunk-size",
       c.chunk_size,
       "Number of pixels to store in memory before writing to disk.")
       ->capture_default_str();
-
   sc.add_option(
       "-l,--compression-lvl",
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
       ->check(CLI::Bound(1, 12));
-
   sc.add_option(
       "-t,--threads",
       c.threads,
@@ -82,21 +86,25 @@ void Cli::make_merge_subcommand() {
       "When merging interactions in Cooler format, only a single thread will be used.")
       ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
       ->capture_default_str();
-
   sc.add_option(
       "--tmpdir",
       c.tmp_dir,
       "Path to a folder where to store temporary data.")
       ->check(CLI::ExistingDirectory)
       ->capture_default_str();
-
   sc.add_flag(
       "--skip-all-vs-all,!--no-skip-all-vs-all",
       c.skip_all_vs_all_matrix,
       "Do not generate All vs All matrix.\n"
       "Has no effect when merging .cool files.")
       ->capture_default_str();
-
+  sc.add_option(
+      "--count-type",
+      c.count_type,
+      "Specify the count type to be used when merging files.\n"
+      "Ignored when the output file is in .hic format.")
+      ->check(CLI::IsMember{{"int", "float"}})
+      ->capture_default_str();
   sc.add_option(
       "-v,--verbosity",
       c.verbosity,
@@ -109,71 +117,41 @@ void Cli::make_merge_subcommand() {
   _config = std::monostate{};
 }
 
-static bool check_all_files_are_hic(const std::vector<std::string>& paths) {
-  return std::all_of(paths.begin(), paths.end(),
-                     [](const auto& path) { return hic::utils::is_hic_file(path); });
-}
+static void validate_files_format(const std::vector<std::string>& paths, std::uint32_t resolution,
+                                  std::vector<std::string>& errors) {
+  assert(!paths.empty());
+  const auto& p0 = paths.front();
+  if ((hic::utils::is_hic_file(p0) || cooler::utils::is_multires_file(p0)) && resolution == 0) {
+    errors.emplace_back("--resolution is mandatory when input files are in .hic or .mcool format.");
+    return;
+  }
 
-static bool check_all_files_are_cooler(const std::vector<std::string>& paths) {
-  return std::all_of(paths.begin(), paths.end(),
-                     [](const auto& path) { return cooler::utils::is_cooler(path); });
-}
-
-static bool check_all_files_are_multires_cooler(const std::vector<std::string>& paths) {
-  return std::all_of(paths.begin(), paths.end(),
-                     [](const auto& path) { return cooler::utils::is_multires_file(path); });
-}
-
-static bool check_all_files_are_singlecell_cooler(const std::vector<std::string>& paths) {
-  return std::all_of(paths.begin(), paths.end(),
-                     [](const auto& path) { return cooler::utils::is_scool_file(path); });
+  for (const auto& p : paths) {
+    const auto format = infer_input_format(p);
+    if (format == "scool") {
+      errors.emplace_back("merging file in .scool format is not supported.");
+      return;
+    }
+    if ((format == "hic" || format == "mcool") && resolution == 0) {
+      errors.emplace_back(
+          "--resolution is mandatory when one or more input files are in .hic or .mcool format.");
+      return;
+    }
+  }
 }
 
 void Cli::validate_merge_subcommand() const {
   assert(_cli.get_subcommand("merge")->parsed());
 
   std::vector<std::string> errors;
-  std::vector<std::string> warnings;
   const auto& c = std::get<MergeConfig>(_config);
-  const auto& sc = *_cli.get_subcommand("merge");
 
   if (!c.force && std::filesystem::exists(c.output_file)) {
     errors.emplace_back(fmt::format(
         FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_file));
   }
 
-  const auto is_hic = check_all_files_are_hic(c.input_files);
-  const auto is_cooler = check_all_files_are_cooler(c.input_files);
-  const auto is_mcooler = check_all_files_are_multires_cooler(c.input_files);
-  const auto is_scool = check_all_files_are_singlecell_cooler(c.input_files);
-
-  if (is_scool) {
-    errors.emplace_back("merging file in .scool format is not supported.");
-  }
-
-  const auto output_format = infer_output_format(c.output_file);
-
-  auto input_output_format_mismatch = is_hic && output_format != "hic";
-  input_output_format_mismatch |= ((is_cooler || is_mcooler) && output_format != "cool");
-
-  if (input_output_format_mismatch) {
-    errors.emplace_back(
-        "detected mismatch in input-output formats: merging files of different formats is not "
-        "supported.");
-  }
-
-  if (c.resolution == 0 && (is_hic || is_mcooler)) {
-    errors.emplace_back("--resolution is mandatory when input files are in .hic or .mcool format.");
-  }
-
-  const auto resolution_parsed = !sc.get_option("--resolution")->empty();
-  if (is_cooler && resolution_parsed) {
-    warnings.emplace_back("--resolution is ignored when file is in .[s]cool format.");
-  }
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
-  }
+  validate_files_format(c.input_files, c.resolution, errors);
 
   if (!errors.empty()) {
     throw std::runtime_error(
@@ -187,14 +165,18 @@ void Cli::transform_args_merge_subcommand() {
   auto& c = std::get<MergeConfig>(_config);
   const auto& sc = *_cli.get_subcommand("merge");
 
-  c.output_format = c.output_file.empty() ? "text" : infer_output_format(c.output_file);
+  c.output_format = infer_output_format(c.output_file);
+
+  if (c.resolution == 0) {
+    c.resolution = File(c.input_files.front()).resolution();
+  }
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
   }
 
   if (sc.get_option("--tmpdir")->empty()) {
-    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+    c.tmp_dir = internal::TmpDir::default_temp_directory_path();
   }
 
   // in spdlog, high numbers correspond to low log levels

@@ -49,6 +49,8 @@ struct PixelCoordinates {
   explicit PixelCoordinates(Bin bin) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+
   [[nodiscard]] bool operator==(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator<(const PixelCoordinates &other) const noexcept;

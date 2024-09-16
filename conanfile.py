@@ -53,6 +53,7 @@ class HictkConan(ConanFile):
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
         self.requires("nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d")
         self.requires("parallel-hashmap/1.3.12#dc7755096d8a1fac7792fdd85760b6ca")
+        self.requires("pybind11/2.13.4#632601fe4e53c3046d616961ccee2c7b")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")
         self.requires("spdlog/1.14.1#972bbf70be1da4bc57ea589af0efde03")

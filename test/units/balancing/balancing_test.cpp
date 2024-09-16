@@ -209,6 +209,17 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
       }
     }
   }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::cis));
+    CHECK_THROWS(hictk::balancing::ICE(storage_mode_square_file, hictk::balancing::ICE::Type::cis));
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -247,6 +258,18 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
         compare_weights(weights, expected_weights);
       }
     }
+  }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::trans));
+    CHECK_THROWS(
+        hictk::balancing::ICE(storage_mode_square_file, hictk::balancing::ICE::Type::trans));
   }
 }
 
@@ -287,6 +310,17 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
       }
     }
   }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::gw));
+    CHECK_THROWS(hictk::balancing::ICE(storage_mode_square_file, hictk::balancing::ICE::Type::gw));
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -308,6 +342,17 @@ TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
 
       compare_weights(weights, expected_weights);
     }
+  }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::cis));
+    CHECK_THROWS(hictk::balancing::VC(storage_mode_square_file, hictk::balancing::VC::Type::cis));
   }
 }
 
@@ -331,6 +376,17 @@ TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
       compare_weights(weights, expected_weights);
     }
   }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::trans));
+    CHECK_THROWS(hictk::balancing::VC(storage_mode_square_file, hictk::balancing::VC::Type::trans));
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -352,6 +408,17 @@ TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
 
       compare_weights(weights, expected_weights);
     }
+  }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::gw));
+    CHECK_THROWS(hictk::balancing::VC(storage_mode_square_file, hictk::balancing::VC::Type::gw));
   }
 }
 
@@ -390,6 +457,18 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
         compare_weights(weights, expected_weights);
       }
     }
+  }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::cis));
+    CHECK_THROWS(
+        hictk::balancing::SCALE(storage_mode_square_file, hictk::balancing::SCALE::Type::cis));
   }
 }
 
@@ -430,6 +509,18 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
       }
     }
   }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::trans));
+    CHECK_THROWS(
+        hictk::balancing::SCALE(storage_mode_square_file, hictk::balancing::SCALE::Type::trans));
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -468,6 +559,18 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
         compare_weights(weights, expected_weights);
       }
     }
+  }
+
+  SECTION("invalid files") {
+    const cooler::File var_bin_file(
+        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+    const cooler::File storage_mode_square_file(
+        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+            .string());
+
+    CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::gw));
+    CHECK_THROWS(
+        hictk::balancing::SCALE(storage_mode_square_file, hictk::balancing::SCALE::Type::gw));
   }
 }
 
