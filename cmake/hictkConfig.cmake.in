@@ -5,6 +5,7 @@
 @PACKAGE_INIT@
 
 set(HICTK_WITH_EIGEN @HICTK_WITH_EIGEN@)
+set(HICTK_WITH_ARROW @HICTK_WITH_ARROW@)
 
 include(CMakeFindDependencyMacro)
 

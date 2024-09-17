@@ -130,6 +130,13 @@ void Cli::validate_fix_mcool_subcommand() const {
     }
   }
 
+  const cooler::MultiResFile mclr(c.path_to_input.string());
+  const auto storage_mode = mclr.open(mclr.resolutions().front()).attributes().storage_mode;
+  if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+    errors.emplace_back(fmt::format(
+        FMT_STRING("fixing .mcool with storage-mode=\"{}\" is not supported"), *storage_mode));
+  }
+
   for (const auto& w : warnings) {
     SPDLOG_WARN(FMT_STRING("{}"), w);
   }

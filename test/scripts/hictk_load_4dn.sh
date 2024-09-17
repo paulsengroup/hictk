@@ -41,11 +41,6 @@ ref_cooler_variable_bins="$data_dir/4DNFIKNWM36K.subset.variable-bins.cool"
 
 export PATH="$PATH:$script_dir"
 
-if ! command -v xz &> /dev/null; then
-  2>&1 echo "Unable to find xz in your PATH"
-  status=1
-fi
-
 if [ $status -ne 0 ]; then
   exit $status
 fi
@@ -58,20 +53,19 @@ outdir="$(mktemp -d -t hictk-tmp-XXXXXXXXXX)"
 trap 'rm -rf -- "$outdir"' EXIT
 
 resolution=10000
-batch_size=999999
+batch_size=250000
 
 cooler dump -t chroms "$ref_cooler_fixed_bins" > "$outdir/chrom.sizes"
 
 # Test cooler with fixed bin size
-xzcat "$pairs" |
-  "$hictk_bin" load \
-    -f 4dn \
-    --chunk-size "$batch_size" \
-    --bin-size "$resolution" \
-    --tmpdir "$outdir" \
-    "$outdir/chrom.sizes" \
-    "$outdir/out.cool" \
-    --compression-lvl 1
+"$hictk_bin" load \
+  "$pairs" \
+  "$outdir/out.cool" \
+  -f 4dn \
+  --chunk-size "$batch_size" \
+  --bin-size "$resolution" \
+  --tmpdir "$outdir" \
+  --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1
@@ -80,16 +74,15 @@ fi
 # Test cooler with variable bin size
 cooler dump -t bins "$ref_cooler_variable_bins" > "$outdir/bins.bed"
 
-xzcat "$pairs" |
-  "$hictk_bin" load \
-    -f 4dn \
-    --chunk-size "$batch_size" \
-    --bin-table "$outdir/bins.bed" \
-    --force \
-    --tmpdir "$outdir" \
-    "$outdir/chrom.sizes" \
-    "$outdir/out.cool" \
-    --compression-lvl 1
+"$hictk_bin" load \
+  "$pairs" \
+  "$outdir/out.cool" \
+  -f 4dn \
+  --chunk-size "$batch_size" \
+  --bin-table "$outdir/bins.bed" \
+  --force \
+  --tmpdir "$outdir" \
+  --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.cool" "$ref_cooler_variable_bins"; then
   status=1
@@ -97,15 +90,14 @@ fi
 
 
 # Test hic with fixed bin size
-xzcat "$pairs" |
-  "$hictk_bin" load \
-    -f 4dn \
-    --chunk-size "$batch_size" \
-    --bin-size "$resolution" \
-    --tmpdir "$outdir" \
-    "$outdir/chrom.sizes" \
-    "$outdir/out.hic" \
-    --compression-lvl 1
+"$hictk_bin" load \
+  "$pairs" \
+  "$outdir/out.hic" \
+  -f 4dn \
+  --chunk-size "$batch_size" \
+  --bin-size "$resolution" \
+  --tmpdir "$outdir" \
+  --compression-lvl 1
 
 if ! compare_matrix_files.sh "$hictk_bin_opt" "$outdir/out.hic" "$ref_cooler_fixed_bins" "$resolution"; then
   status=1

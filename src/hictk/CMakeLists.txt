@@ -4,6 +4,7 @@
 
 find_package(CLI11 REQUIRED)
 find_package(FMT REQUIRED)
+find_package(LibArchive REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(spdlog REQUIRED)
@@ -28,6 +29,7 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_zoomify.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/common/compressed_reader.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/convert.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/cool_to_hic.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/hic_to_cool.cpp
@@ -59,6 +61,7 @@ target_link_system_libraries(
   std::filesystem
   tomlplusplus::tomlplusplus
   PUBLIC
+  LibArchive::LibArchive
   Threads::Threads)
 
 include(GNUInstallDirs)

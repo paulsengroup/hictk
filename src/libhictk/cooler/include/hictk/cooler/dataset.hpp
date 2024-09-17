@@ -14,10 +14,10 @@
 
 #include <cstddef>
 #include <cstdint>
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5DataSet.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 #include <highfive/H5DataSpace.hpp>
 #include <highfive/H5DataType.hpp>
 #include <highfive/H5PropertyList.hpp>
@@ -53,8 +53,8 @@ template <typename T>
 inline constexpr bool is_atomic_buffer_v = is_atomic_buffer<T>::value;
 }  // namespace internal
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_DEPRECATED_DECLARATIONS
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 class Dataset {
   using VariantBuffer = hictk::internal::VariantBuffer;
   using GenericVariant = hictk::internal::GenericVariant;
@@ -278,13 +278,13 @@ class Dataset {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
-    auto operator+=(std::size_t i) -> iterator &;
-    [[nodiscard]] auto operator+(std::size_t i) const -> iterator;
+    auto operator+=(difference_type i) -> iterator &;
+    [[nodiscard]] auto operator+(difference_type i) const -> iterator;
 
     auto operator--() -> iterator &;
     auto operator--(int) -> iterator;
-    auto operator-=(std::size_t i) -> iterator &;
-    [[nodiscard]] auto operator-(std::size_t i) const -> iterator;
+    auto operator-=(difference_type i) -> iterator &;
+    [[nodiscard]] auto operator-(difference_type i) const -> iterator;
     [[nodiscard]] auto operator-(const iterator &other) const -> difference_type;
 
     auto seek(std::size_t offset) -> iterator &;
@@ -308,7 +308,7 @@ class Dataset {
                                                 std::size_t chunk_size) -> iterator;
   };
 };
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 using DatasetMap = phmap::flat_hash_map<std::string, Dataset>;
 

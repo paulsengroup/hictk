@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "hictk/balancing/common.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
 #include "hictk/chromosome.hpp"
@@ -26,10 +27,8 @@ namespace hictk::balancing {
 
 template <typename File>
 inline SCALE::SCALE(const File& f, Type type, const Params& params) {
-  if (f.bins().type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions from files with variable bin sizes is not supported");
-  }
+  internal::check_storage_mode(f);
+  internal::check_bin_type(f.bins());
 
   switch (type) {
     case Type::cis: {
@@ -57,13 +56,11 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 
 template <typename PixelIt>
 inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
-    : _biases(VC{first, last, bins}.get_weights()(balancing::Weights::Type::DIVISIVE)),
+    : _biases(VC{first, last, bins}.get_weights().to_vector(balancing::Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
-  if (bins.type() == BinTable::Type::variable) {
-    throw std::runtime_error(
-        "balancing interactions referring to a table with variable bin size is not supported");
-  }
+  internal::check_bin_type(bins);
+
   if (first == last) {
     std::fill(_biases.begin(), _biases.end(), 1.0);
     _scale.push_back(1.0);
@@ -85,6 +82,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 
 template <typename Matrix>
 inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
+  assert(bins.type() == BinTable::Type::fixed);
   VectorOfAtomicDecimals column(size(), 9);
   VectorOfAtomicDecimals row(size(), 9);
 
@@ -268,7 +266,7 @@ inline auto SCALE::compute_trans(const File& f, const Params& params) -> Result 
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -278,7 +276,7 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false)(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
 }
 
 template <typename Matrix>

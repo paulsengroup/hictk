@@ -120,7 +120,8 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
       buff.clear();
     }
 
-    buff.emplace_back(op(*first_value++));
+    buff.emplace_back(op(*first_value));
+    std::ignore = ++first_value;
   }
 
   if (!buff.empty()) {

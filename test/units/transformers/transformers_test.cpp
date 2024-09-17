@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <numeric>
 #include <vector>
 
 #include "hictk/cooler/cooler.hpp"
@@ -81,6 +82,177 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
   }
   return map;
 }
+
+template <typename Matrix>
+[[maybe_unused]] [[nodiscard]] double sum_finite(const Matrix& matrix) noexcept {
+  const double* first = matrix.data();
+  const double* last = first + matrix.size();  // NOLINT(*-pro-bounds-pointer-arithmetic)
+  return std::accumulate(first, last, 0.0, [](double accumulator, double n) {
+    return accumulator + (std::isfinite(n) ? n : 0.0);
+  });
+}
+
+template <typename Matrix>
+[[maybe_unused]] [[nodiscard]] std::size_t count_nans(const Matrix& matrix) noexcept {
+  // NOLINTNEXTLINE(*-pro-bounds-pointer-arithmetic)
+  return static_cast<std::size_t>(std::count_if(matrix.data(), matrix.data() + matrix.size(),
+                                                [&](auto n) { return std::isnan(n); }));
+}
+
+#ifdef HICTK_WITH_ARROW
+
+namespace internal {
+
+template <typename N>
+[[nodiscard]] N get_scalar(const std::shared_ptr<arrow::ChunkedArray>& col, std::int64_t i) {
+  assert(!!col);
+  auto res = col->GetScalar(i);
+  if (!res.ok()) {
+    throw std::runtime_error(res.status().message());
+  }
+
+  if constexpr (std::is_same_v<N, std::string>) {
+    res = std::static_pointer_cast<arrow::DictionaryScalar>(*res)->GetEncodedValue();
+    if (!res.ok()) {
+      throw std::runtime_error(res.status().message());
+    }
+    return (*res)->ToString();
+  }
+
+  if constexpr (std::is_same_v<N, std::uint32_t>) {
+    return std::static_pointer_cast<arrow::UInt32Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::uint64_t>) {
+    return std::static_pointer_cast<arrow::UInt64Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::int32_t>) {
+    return std::static_pointer_cast<arrow::Int32Scalar>(*res)->value;
+  }
+  if constexpr (std::is_same_v<N, std::int64_t>) {
+    return std::static_pointer_cast<arrow::Int64Scalar>(*res)->value;
+  }
+
+  if constexpr (std::is_floating_point_v<N>) {
+    return std::static_pointer_cast<arrow::DoubleScalar>(*res)->value;
+  }
+
+  throw std::logic_error("not implemented");
+}
+}  // namespace internal
+
+template <std::int64_t i, typename N>
+static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const ThinPixel<N>& p) {
+  assert(!!table);
+
+  REQUIRE(i < table->num_rows());
+
+  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin1_id"), i) == p.bin1_id);
+  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin2_id"), i) == p.bin2_id);
+  CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
+}
+
+template <std::int64_t i, typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Pixel<N>& p) {
+  assert(!!table);
+
+  REQUIRE(i < table->num_rows());
+
+  CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom1"), i) ==
+        p.coords.bin1.chrom().name());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start1"), i) ==
+        p.coords.bin1.start());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end1"), i) ==
+        p.coords.bin1.end());
+  CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom2"), i) ==
+        p.coords.bin2.chrom().name());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start2"), i) ==
+        p.coords.bin2.start());
+  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end2"), i) ==
+        p.coords.bin2.end());
+  CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
+}
+
+namespace internal {
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+[[nodiscard]] static std::vector<ThinPixel<std::uint8_t>> arrow_table_to_coo_vector(
+    const std::shared_ptr<arrow::Table>& data) {
+  assert(!!data);
+
+  std::vector<ThinPixel<std::uint8_t>> buff(static_cast<std::size_t>(data->num_rows()));
+
+  const auto bin1_ids = data->GetColumnByName("bin1_id");
+  const auto bin2_ids = data->GetColumnByName("bin2_id");
+
+  for (std::int64_t i = 0; i < data->num_rows(); ++i) {
+    buff[static_cast<std::size_t>(i)].bin1_id = get_scalar<std::uint64_t>(bin1_ids, i);
+    buff[static_cast<std::size_t>(i)].bin2_id = get_scalar<std::uint64_t>(bin2_ids, i);
+  }
+  return buff;
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+[[nodiscard]] static std::vector<Pixel<std::uint8_t>> arrow_table_to_bg2_vector(
+    const Reference& chroms, const std::shared_ptr<arrow::Table>& data) {
+  assert(!!data);
+
+  std::vector<Pixel<std::uint8_t>> buff(static_cast<std::size_t>(data->num_rows()));
+
+  const auto chrom1_ids = data->GetColumnByName("chrom1");
+  const auto start1 = data->GetColumnByName("start1");
+  const auto end1 = data->GetColumnByName("end1");
+
+  const auto chrom2_ids = data->GetColumnByName("chrom2");
+  const auto start2 = data->GetColumnByName("start2");
+  const auto end2 = data->GetColumnByName("end2");
+
+  for (std::int64_t i = 0; i < data->num_rows(); ++i) {
+    buff[static_cast<std::size_t>(i)] = Pixel{chroms.at(get_scalar<std::string>(chrom1_ids, i)),
+                                              get_scalar<std::uint32_t>(start1, i),
+                                              get_scalar<std::uint32_t>(end1, i),
+                                              chroms.at(get_scalar<std::string>(chrom2_ids, i)),
+                                              get_scalar<std::uint32_t>(start2, i),
+                                              get_scalar<std::uint32_t>(end2, i),
+                                              std::uint8_t{}};
+  }
+  return buff;
+}
+}  // namespace internal
+
+template <DataFrameFormat format, QuerySpan span>
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void validate_format(const Reference& chroms, const std::shared_ptr<arrow::Table>& table) {
+  if constexpr (format == DataFrameFormat::COO) {
+    const auto pixels = internal::arrow_table_to_coo_vector(table);
+    if constexpr (span == QuerySpan::upper_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin1_id <= pixel.bin2_id);
+      }
+    } else if constexpr (span == QuerySpan::lower_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin1_id >= pixel.bin2_id);
+      }
+    } else {
+      throw std::logic_error("not implemented");
+    }
+    return;
+  }
+
+  assert(format == DataFrameFormat::BG2);
+  const auto pixels = internal::arrow_table_to_bg2_vector(chroms, table);
+  if constexpr (span == QuerySpan::upper_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin1 <= pixel.coords.bin2);
+    }
+  } else if constexpr (span == QuerySpan::lower_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin1 >= pixel.coords.bin2);
+    }
+  } else {
+    throw std::logic_error("not implemented");
+  }
+}
+
+#endif
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler)", "[transformers][short]") {
@@ -272,106 +444,364 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
 
   if constexpr (TEST_TO_DATAFRAME) {
     SECTION("ToDataFrame") {
+      using N = std::int32_t;
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
+      const auto& bins = clr.bins();
       auto sel = clr.fetch("chr1");
-      auto first = sel.begin<std::int32_t>();
-      auto last = sel.end<std::int32_t>();
+      auto first = sel.begin<N>();
+      auto last = sel.end<N>();
 
-      auto get_int_scalar = [](const auto& column, const auto i) {
-        return std::static_pointer_cast<arrow::Int32Scalar>(column->GetScalar(i).MoveValueUnsafe())
-            ->value;
-      };
+      SECTION("COO<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+        const auto table = ToDataFrame(first, last, format, nullptr, span)();
 
-      auto get_float_scalar = [](const auto& column, const auto i) {
-        return std::static_pointer_cast<arrow::DoubleScalar>(column->GetScalar(i).MoveValueUnsafe())
-            ->value;
-      };
-
-      SECTION("COO<int> wo/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, false)();
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(2), 0) == 266106);
-        CHECK(get_int_scalar(table->column(2), 1) == 32868);
-        CHECK(get_int_scalar(table->column(2), 2) == 13241);
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(2), 4462) == 1001844);
-        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
+        compare_pixel<4462>(table, ThinPixel<N>{98, 98, 1001844});
+        compare_pixel<4463>(table, ThinPixel<N>{98, 99, 68621});
+        compare_pixel<4464>(table, ThinPixel<N>{99, 99, 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("COO<int> w/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::COO, nullptr, true)();
+      SECTION("COO<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(2), 0) == 266106);
-        CHECK(get_int_scalar(table->column(2), 1) == 32868);
-        CHECK(get_int_scalar(table->column(2), 2) == 375662);
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{1, 0, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{1, 1, 375662});
 
         // check tail
-        CHECK(get_int_scalar(table->column(2), 4462) == 24112);
-        CHECK(get_int_scalar(table->column(2), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(2), 4464) == 571144);
+        compare_pixel<4462>(table, ThinPixel<N>{99, 97, 24112});
+        compare_pixel<4463>(table, ThinPixel<N>{99, 98, 68621});
+        compare_pixel<4464>(table, ThinPixel<N>{99, 99, 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("BG2<int> wo/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), false)();
-        CHECK(table->num_columns() == 7);
-        CHECK(table->num_rows() == 4'465);
-        CHECK(*table->column(6)->type() == *arrow::int32());
+      SECTION("COO<int> full") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
 
-        CHECK(get_int_scalar(table->column(6), 0) == 266106);
-        CHECK(get_int_scalar(table->column(6), 1) == 32868);
-        CHECK(get_int_scalar(table->column(6), 2) == 13241);
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 8'836);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 266106});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 32868});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(6), 4462) == 1001844);
-        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
+        compare_pixel<8833>(table, ThinPixel<N>{99, 97, 24112});
+        compare_pixel<8834>(table, ThinPixel<N>{99, 98, 68621});
+        compare_pixel<8835>(table, ThinPixel<N>{99, 99, 571144});
       }
 
-      SECTION("BG2<int> w/ transpose") {
-        const auto table = ToDataFrame(first, last, DataFrameFormat::BG2, clr.bins_ptr(), true)();
+      SECTION("BG2<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
         CHECK(table->num_columns() == 7);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(6)->type() == *arrow::int32());
 
         // check head
-        CHECK(get_int_scalar(table->column(6), 0) == 266106);
-        CHECK(get_int_scalar(table->column(6), 1) == 32868);
-        CHECK(get_int_scalar(table->column(6), 2) == 375662);
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 2'500'000), 32868});
+        compare_pixel<2>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 5'000'000), 13241});
 
         // check tail
-        CHECK(get_int_scalar(table->column(6), 4462) == 24112);
-        CHECK(get_int_scalar(table->column(6), 4463) == 68621);
-        CHECK(get_int_scalar(table->column(6), 4464) == 571144);
+        compare_pixel<4462>(
+            table, Pixel<N>{bins.at("chr1", 245'000'000), bins.at("chr1", 245'000'000), 1001844});
+        compare_pixel<4463>(
+            table, Pixel<N>{bins.at("chr1", 245'000'000), bins.at("chr1", 247'500'000), 68621});
+        compare_pixel<4464>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
       }
 
-      SECTION("COO<float> wo/ transpose") {
+      SECTION("BG2<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 4'465);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 2'500'000), bins.at("chr1", 0), 32868});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins.at("chr1", 2'500'000), bins.at("chr1", 2'500'000), 375662});
+
+        // check tail
+        compare_pixel<4462>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 242'500'000), 24112});
+        compare_pixel<4463>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 245'000'000), 68621});
+        compare_pixel<4464>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 8'836);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 0), 266106});
+        compare_pixel<1>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 2'500'000), 32868});
+        compare_pixel<2>(table, Pixel<N>{bins.at("chr1", 0), bins.at("chr1", 5'000'000), 13241});
+
+        // check tail
+        compare_pixel<8833>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 242'500'000), 24112});
+        compare_pixel<8834>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 245'000'000), 68621});
+        compare_pixel<8835>(
+            table, Pixel<N>{bins.at("chr1", 247'500'000), bins.at("chr1", 247'500'000), 571144});
+      }
+
+      SECTION("COO<float> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+
         auto first_fp = sel.begin<double>();
         auto last_fp = sel.end<double>();
-        const auto table = ToDataFrame(first_fp, last_fp, DataFrameFormat::COO, nullptr, false)();
+        const auto table = ToDataFrame(first_fp, last_fp, format, nullptr, span)();
+
         CHECK(table->num_columns() == 3);
         CHECK(table->num_rows() == 4'465);
         CHECK(*table->column(2)->type() == *arrow::float64());
 
         // check head
-        CHECK(get_float_scalar(table->column(2), 0) == 266106.0);
-        CHECK(get_float_scalar(table->column(2), 1) == 32868.0);
-        CHECK(get_float_scalar(table->column(2), 2) == 13241.0);
+        compare_pixel<0>(table, ThinPixel<double>{0, 0, 266106.0});
+        compare_pixel<1>(table, ThinPixel<double>{0, 1, 32868.0});
+        compare_pixel<2>(table, ThinPixel<double>{0, 2, 13241.0});
 
         // check tail
-        CHECK(get_float_scalar(table->column(2), 4462) == 1001844.0);
-        CHECK(get_float_scalar(table->column(2), 4463) == 68621.0);
-        CHECK(get_float_scalar(table->column(2), 4464) == 571144.0);
+        compare_pixel<4462>(table, ThinPixel<double>{98, 98, 1001844.0});
+        compare_pixel<4463>(table, ThinPixel<double>{98, 99, 68621.0});
+        compare_pixel<4464>(table, ThinPixel<double>{99, 99, 571144.0});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("COO<int> upper_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, nullptr, span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 53'154);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 14044});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 14496});
+
+        // check tail
+        compare_pixel<53151>(table, ThinPixel<N>{378, 378, 14432});
+        compare_pixel<53152>(table, ThinPixel<N>{378, 379, 7150});
+        compare_pixel<53153>(table, ThinPixel<N>{379, 379, 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("COO<int> lower_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 43'280);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{1, 0, 14081});
+        compare_pixel<2>(table, ThinPixel<N>{1, 1, 14476});
+
+        // check tail
+        compare_pixel<43277>(table, ThinPixel<N>{379, 377, 6152});
+        compare_pixel<43278>(table, ThinPixel<N>{379, 378, 7251});
+        compare_pixel<43279>(table, ThinPixel<N>{379, 379, 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("COO<int> full (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 96'133);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table, ThinPixel<N>{0, 0, 11768});
+        compare_pixel<1>(table, ThinPixel<N>{0, 1, 14044});
+        compare_pixel<2>(table, ThinPixel<N>{0, 2, 14496});
+
+        // check tail
+        compare_pixel<96130>(table, ThinPixel<N>{379, 377, 6152});
+        compare_pixel<96131>(table, ThinPixel<N>{379, 378, 7251});
+        compare_pixel<96132>(table, ThinPixel<N>{379, 379, 3534});
+      }
+
+      SECTION("BG2<int> upper_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 53'154);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head_square
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 8000), 14044});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 16000), 14496});
+
+        // check tail
+        compare_pixel<53151>(table, Pixel<N>{bins_square.at("chr10", 288'000),
+                                             bins_square.at("chr10", 288'000), 14432});
+        compare_pixel<53152>(table, Pixel<N>{bins_square.at("chr10", 288'000),
+                                             bins_square.at("chr10", 296'000), 7150});
+        compare_pixel<53153>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> lower_triangle (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 43'280);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 8000), bins_square.at("chr1", 0), 14081});
+        compare_pixel<2>(
+            table, Pixel<N>{bins_square.at("chr1", 8000), bins_square.at("chr1", 8000), 14476});
+
+        // check tail
+        compare_pixel<43277>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 280'000), 6152});
+        compare_pixel<43278>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 288'000), 7251});
+        compare_pixel<43279>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
+
+        validate_format<format, span>(clr.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full (storage-mode=square)") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+
+        const cooler::File clr_square(
+            (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+                .string());
+        const auto& bins_square = clr_square.bins();
+        const auto sel_ = clr_square.fetch();
+        const auto table =
+            ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, clr_square.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 96'133);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        // check head
+        compare_pixel<0>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 0), 11768});
+        compare_pixel<1>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 8000), 14044});
+        compare_pixel<2>(table,
+                         Pixel<N>{bins_square.at("chr1", 0), bins_square.at("chr1", 16000), 14496});
+
+        // check tail
+        compare_pixel<96130>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 280'000), 6152});
+        compare_pixel<96131>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 288'000), 7251});
+        compare_pixel<96132>(table, Pixel<N>{bins_square.at("chr10", 296'000),
+                                             bins_square.at("chr10", 296'000), 3534});
       }
 
       SECTION("empty range") {
@@ -382,10 +812,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
   }
 
   if constexpr (TEST_TO_SPARSE_MATRIX) {
-    SECTION("ToSparseMatrix (cis) wo/ transpose") {
+    SECTION("ToSparseMatrix (cis) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 4465);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
@@ -393,10 +824,11 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (cis) w/ transpose") {
+    SECTION("ToSparseMatrix (cis) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.nonZeros() == 4465);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
@@ -404,30 +836,51 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (trans) wo/ transpose") {
+    SECTION("ToSparseMatrix (cis) full") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, false)();
+      const auto matrix = ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.nonZeros() == 8836);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 140'900'545);
+      CHECK(matrix.triangularView<Eigen::Upper>().sum() ==
+            matrix.triangularView<Eigen::Lower>().sum());
+    }
+
+    SECTION("ToSparseMatrix (trans) upper_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 9118);
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToSparseMatrix (trans) w/ transpose") {
+    SECTION("ToSparseMatrix (trans) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, true)();
+      CHECK_THROWS(
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::lower_triangle));
+    }
+
+    SECTION("ToSparseMatrix (trans) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full)();
       CHECK(matrix.nonZeros() == 9118);
-      CHECK(matrix.rows() == 97);
-      CHECK(matrix.cols() == 100);
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToSparseMatrix (gw) wo/ transpose") {
+    SECTION("ToSparseMatrix (gw) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, false)();
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.nonZeros() == 718'781);
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
@@ -435,63 +888,215 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
     }
 
-    SECTION("ToSparseMatrix (gw) w/ transpose") {
+    SECTION("ToSparseMatrix (gw) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, true)();
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
       CHECK(matrix.nonZeros() == 718'781);
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 1'868'866'491);
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
+
+    SECTION("ToSparseMatrix (gw) full (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
+      CHECK(matrix.nonZeros() == 4'241'909);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 594'006'205);
+    }
+
+    SECTION("ToSparseMatrix (gw) upper_triangle (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
+      CHECK(matrix.nonZeros() == 2'423'572);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 336'795'259);
+      CHECK(matrix.triangularView<Eigen::StrictlyLower>().sum() == 0);
+    }
+
+    SECTION("ToSparseMatrix (gw) lower_triangle (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.nonZeros() == 1'820'117);
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 257'471'326);
+      CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
+    }
+
+    SECTION("ToSparseMatrix invalid queries") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+
+      CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", balancing::Method::VC()), 0));
+    }
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
-    SECTION("ToDenseMatrix (cis) w/ mirroring") {
+    SECTION("ToDenseMatrix (cis) full") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, true)();
+      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 140'900'545);
       CHECK(matrix == matrix.transpose());
     }
 
-    SECTION("ToDenseMatrix (cis) wo/ mirroring") {
+    SECTION("ToDenseMatrix (cis) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, false)();
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 100);
       CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.isUpperTriangular());
     }
 
-    SECTION("ToDenseMatrix (trans)") {
+    SECTION("ToDenseMatrix (cis) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{})();
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+      CHECK(matrix.sum() == 112'660'799);
+      CHECK(matrix.isLowerTriangular());
+    }
+
+    SECTION("ToDenseMatrix (cis, asymmetric) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1:192,565,354-202,647,735", "chr1:197,313,124-210,385,543"),
+                        std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 5);
+      CHECK(matrix.cols() == 7);
+      CHECK(matrix.sum() == 5'426'501);
+    }
+
+    SECTION("ToDenseMatrix (cis, normalized) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 100);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(140900543.1839076));
+      CHECK(count_nans(matrix) == 1164);
+    }
+
+    SECTION("ToDenseMatrix (trans) upper_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 100);
       CHECK(matrix.cols() == 97);
       CHECK(matrix.sum() == 6'413'076);
     }
 
-    SECTION("ToDenseMatrix (gw) w/ mirroring") {
+    SECTION("ToDenseMatrix (trans) lower_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, true)();
+      CHECK_THROWS(
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::lower_triangle));
+    }
+
+    SECTION("ToDenseMatrix (trans) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+      CHECK(matrix.sum() == 6'413'076);
+    }
+
+    SECTION("ToDenseMatrix (trans, normalized) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToDenseMatrix(clr.fetch("chr1", "chr2", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
+      CHECK(matrix.rows() == 100);
+      CHECK(matrix.cols() == 97);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(6185975.980057132));
+      CHECK(count_nans(matrix) == 582);
+    }
+
+    SECTION("ToDenseMatrix (gw) full") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 2'671'244'699);
     }
 
-    SECTION("ToDenseMatrix (gw) wo/ mirroring") {
+    SECTION("ToDenseMatrix (gw) upper_triangle") {
       const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
-      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, false)();
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
       CHECK(matrix.rows() == 1249);
       CHECK(matrix.cols() == 1249);
       CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.isUpperTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) lower_triangle") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'868'866'491);
+      CHECK(matrix.isLowerTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) full (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 594'006'205);
+    }
+
+    SECTION("ToDenseMatrix (gw) upper_triangle (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 336'795'259);
+      CHECK(matrix.isUpperTriangular());
+    }
+
+    SECTION("ToDenseMatrix (gw) lower_triangle (storage-mode=square)") {
+      const auto path =
+          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+      const cooler::File clr(path.string());
+      const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
+      CHECK(matrix.rows() == 3000);
+      CHECK(matrix.cols() == 3000);
+      CHECK(matrix.sum() == 257'471'326);
+      CHECK(matrix.isLowerTriangular());
     }
 
     SECTION("ToDenseMatrix regression PR #154") {
@@ -503,6 +1108,14 @@ TEST_CASE("Transformers (cooler)", "[transformers][short]") {
       CHECK(matrix.rows() == 50);
       CHECK(matrix.cols() == 50);
       CHECK(matrix.sum() == 442);
+    }
+
+    SECTION("ToDenseMatrix invalid queries") {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const cooler::File clr(path.string());
+
+      CHECK_THROWS(ToDenseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToDenseMatrix(clr.fetch("chr1", balancing::Method{"weight"}), 0));
     }
   }
 }
@@ -569,6 +1182,93 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
     }
   }
 
+  if constexpr (TEST_TO_DATAFRAME) {
+    SECTION("ToDataFrame") {
+      using N = std::int32_t;
+      const hic::File hf(path.string(), 2'500'000);
+      auto sel = hf.fetch("chr2L");
+      auto first = sel.begin<N>();
+      auto last = sel.end<N>();
+
+      SECTION("COO<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::upper_triangle;
+        const auto table = ToDataFrame(first, last, format, nullptr, span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("COO<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("COO<int> full") {
+        constexpr auto format = DataFrameFormat::COO;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 100);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+      }
+
+      SECTION("BG2<int> upper_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::upper_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> lower_triangle") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::lower_triangle;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 55);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+
+        validate_format<format, span>(hf.chromosomes(), table);
+      }
+
+      SECTION("BG2<int> full") {
+        constexpr auto format = DataFrameFormat::BG2;
+        constexpr auto span = QuerySpan::full;
+        CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
+        const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 100);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+      SECTION("empty range") {
+        const auto table = ToDataFrame(last, last)();
+        CHECK(table->num_rows() == 0);
+      }
+    }
+  }
+
   if constexpr (TEST_TO_SPARSE_MATRIX) {
     SECTION("ToSparseMatrix (cis)") {
       const hic::File hf(path.string(), 2'500'000);
@@ -596,6 +1296,13 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.cols() == 60);
       CHECK(matrix.sum() == 119'208'613);
     }
+
+    SECTION("ToSparseMatrix invalid queries") {
+      const hic::File hf(path.string(), 2'500'000);
+
+      CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
+    }
   }
 
   if constexpr (TEST_TO_DENSE_MATRIX) {
@@ -606,6 +1313,16 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.cols() == 10);
       CHECK(matrix.sum() == 22'929'541);
       CHECK(matrix == matrix.transpose());
+    }
+
+    SECTION("ToDenseMatrix (cis, normalized)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch("chr2L", balancing::Method{"VC"}), 0.0)();
+      CHECK(matrix.rows() == 10);
+      CHECK(matrix.cols() == 10);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(22929540.99999999, 1.0e-6));
+      CHECK(count_nans(matrix) == 0);
     }
 
     SECTION("ToDenseMatrix (trans)") {
@@ -623,6 +1340,23 @@ TEST_CASE("Transformers (hic)", "[transformers][short]") {
       CHECK(matrix.cols() == 60);
       CHECK(matrix.sum() == 149'078'427);
       CHECK(matrix == matrix.transpose());
+    }
+
+    SECTION("ToDenseMatrix (gw, normalized)") {
+      const hic::File hf(path.string(), 2'500'000);
+      const auto matrix = ToDenseMatrix(hf.fetch(balancing::Method{"VC"}), 0.0)();
+      CHECK(matrix.rows() == 60);
+      CHECK(matrix.cols() == 60);
+
+      CHECK_THAT(sum_finite(matrix), Catch::Matchers::WithinRel(146874129.31714758, 1.0e-6));
+      CHECK(count_nans(matrix) == 119);
+    }
+
+    SECTION("ToDenseMatrix invalid queries") {
+      const hic::File hf(path.string(), 2'500'000);
+
+      CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
+      CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
     }
   }
 }

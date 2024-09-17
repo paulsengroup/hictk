@@ -140,6 +140,7 @@ struct FixMcoolConfig {
 };
 
 struct LoadConfig {
+  std::filesystem::path input_path{"-"};
   std::string output_path{};
 
   std::filesystem::path path_to_chrom_sizes{};
@@ -149,6 +150,7 @@ struct LoadConfig {
 
   std::string format{};
   std::string assembly{"unknown"};
+  bool drop_unknown_chroms{false};
   bool one_based{true};
   std::int64_t offset{0};
   bool count_as_float{false};
@@ -157,9 +159,9 @@ struct LoadConfig {
   bool validate_pixels{true};
   bool skip_all_vs_all_matrix{true};
 
-  std::string output_format{};
+  std::string output_format{"auto"};
 
-  std::size_t threads{1};
+  std::size_t threads{2};
   std::uint32_t compression_lvl{9};
 
   std::uint8_t verbosity{4};
@@ -178,6 +180,7 @@ struct MergeConfig {
   std::uint32_t compression_lvl{9};
   std::size_t threads{1};
   bool skip_all_vs_all_matrix{true};
+  std::string count_type{"int"};
 
   bool force{false};
   std::uint8_t verbosity{4};
@@ -204,6 +207,9 @@ struct RenameChromosomesConfig {
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
+  std::string output_format{"json"};
+  bool include_file_path{true};
+  bool exhaustive{true};
   bool quiet{false};
   std::uint8_t verbosity{4};
 };

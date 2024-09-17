@@ -9,6 +9,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -41,27 +42,17 @@ template <typename N>
 class PairsAggregator {
   phmap::btree_set<ThinPixel<N>, PixelCmp<N>> _buffer{};
 
-  const BinTable& _bins{};  // NOLINT
-  Format _format{};
+  PixelQueue<N>* _queue{};
+  const std::atomic<bool>* _early_return{};
   ThinPixel<N> _last_pixel{};
-  std::string _line_buffer{};
-  std::int64_t _offset{};
 
  public:
   PairsAggregator() = delete;
-  inline PairsAggregator(const BinTable& bins, Format format, std::int64_t offset)
-      : _bins(bins), _format(format), _offset(offset) {
-    while (std::getline(std::cin, _line_buffer)) {
-      if (!line_is_header(_line_buffer)) {
-        break;
-      }
-    }
-    if (!_line_buffer.empty()) {
-      _last_pixel = parse_pixel<N>(_bins, _line_buffer, _format, _offset);
-    }
-  }
+  inline PairsAggregator(PixelQueue<N>& queue, const std::atomic<bool>& early_return)
+      : _queue(&queue), _early_return(&early_return) {}
 
   inline bool read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
+    assert(buffer.capacity() != 0);
     buffer.clear();
     read_next_batch(buffer.capacity());
     std::copy(_buffer.begin(), _buffer.end(), std::back_inserter(buffer));
@@ -71,15 +62,21 @@ class PairsAggregator {
   }
 
  private:
+  [[nodiscard]] inline ThinPixel<N> dequeue_pixel() {
+    ThinPixel<N> buff{};
+    while (!(*_early_return) && !_queue->wait_dequeue_timed(buff, std::chrono::milliseconds(10)));
+    if (*_early_return) {
+      return {ThinPixel<N>::null_id, ThinPixel<N>::null_id, 0};
+    }
+    return buff;
+  }
+
   inline ThinPixel<N> aggregate_pixel() {
-    assert(!!_last_pixel);
-
-    while (std::getline(std::cin, _line_buffer)) {
-      if (_line_buffer.empty()) {
-        continue;
+    while (!(*_early_return)) {
+      auto p = dequeue_pixel();
+      if (!p) {
+        break;
       }
-
-      auto p = parse_pixel<N>(_bins, _line_buffer, _format, _offset);
       if (p.bin1_id != _last_pixel.bin1_id || p.bin2_id != _last_pixel.bin2_id) {
         std::swap(p, _last_pixel);
         return p;
@@ -102,20 +99,25 @@ class PairsAggregator {
   }
 
   inline void read_next_batch(std::size_t batch_size) {
+    assert(batch_size != 0);
     _buffer.clear();
 
-    while (!!_last_pixel) {
+    _last_pixel = dequeue_pixel();
+    while (!!_last_pixel && _buffer.size() != batch_size - 1) {
       const auto pixel = aggregate_pixel();
       if (!pixel) {
-        break;
+        return;
       }
 
       insert_or_update(pixel);
+    }
 
-      if (_buffer.size() == batch_size - 1) {
-        insert_or_update(_last_pixel);
-        break;
-      }
+    while (!!_last_pixel && _buffer.contains(_last_pixel)) {
+      insert_or_update(_last_pixel);
+      _last_pixel = dequeue_pixel();
+    }
+    if (!!_last_pixel) {
+      insert_or_update(_last_pixel);
     }
   }
 };
@@ -123,18 +125,21 @@ class PairsAggregator {
 template <typename N>
 [[nodiscard]] inline Stats ingest_pairs(
     cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<N>>& buffer, std::size_t batch_size, Format format, std::int64_t offset,
-    bool validate_pixels) {
+    PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::vector<ThinPixel<N>>& buffer,
+    std::size_t batch_size, bool validate_pixels) {
+  assert(batch_size != 0);
+  buffer.clear();
   buffer.reserve(batch_size);
-  PairsAggregator<N>{clr.bins(), format, offset}.read_next_chunk(buffer);
+  // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
+  // constructed
+  PairsAggregator aggr(queue, early_return);
+  aggr.read_next_chunk(buffer);
 
   if (buffer.empty()) {
-    assert(std::cin.eof());
     return {N{}, 0};
   }
 
   clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-  buffer.clear();
 
   clr.flush();
   const auto nnz = clr.nnz();
@@ -148,21 +153,23 @@ template <typename N>
 
 [[nodiscard]] inline Stats ingest_pairs(
     hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
-    std::vector<ThinPixel<float>>& buffer, Format format, std::int64_t offset) {
+    PixelQueue<float>& queue, const std::atomic<bool>& early_return,
+    std::vector<ThinPixel<float>>& buffer, std::size_t batch_size) {
   const auto resolution = hf.resolutions().front();
-  assert(buffer.capacity() != 0);
-  buffer.reserve(buffer.capacity());
+  assert(batch_size != 0);
+  buffer.clear();
+  buffer.reserve(batch_size);
   std::size_t i = 0;
 
   try {
     auto t0 = std::chrono::steady_clock::now();
-    for (; !std::cin.eof(); ++i) {
-      PairsAggregator<float>{hf.bins(resolution), format, offset}.read_next_chunk(buffer);
+    for (; !early_return; ++i) {
+      buffer.clear();
+      // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
+      // constructed
+      PairsAggregator aggr(queue, early_return);
+      aggr.read_next_chunk(buffer);
 
-      if (buffer.empty()) {
-        assert(std::cin.eof());
-        break;
-      }
       const auto t1 = std::chrono::steady_clock::now();
       const auto delta =
           static_cast<double>(
@@ -173,9 +180,11 @@ template <typename N>
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   double(buffer.size()) / delta);
       hf.add_pixels(resolution, buffer.begin(), buffer.end());
-      buffer.clear();
+
+      if (buffer.size() != buffer.capacity()) {
+        break;
+      }
     }
-    buffer.shrink_to_fit();
 
     hf.serialize();
     const auto stats = hf.stats(resolution);

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string_view>
 #include <type_traits>
@@ -48,6 +49,8 @@ struct PixelCoordinates {
   explicit PixelCoordinates(Bin bin) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+
   [[nodiscard]] bool operator==(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator<(const PixelCoordinates &other) const noexcept;
@@ -97,5 +100,15 @@ struct Pixel {
 };
 
 }  // namespace hictk
+
+template <typename N>
+struct std::hash<hictk::ThinPixel<N>> {
+  std::size_t operator()(const hictk::ThinPixel<N> &p) const noexcept;
+};
+
+template <typename N>
+struct std::hash<hictk::Pixel<N>> {
+  std::size_t operator()(const hictk::Pixel<N> &p) const noexcept;
+};
 
 #include "./impl/pixel_impl.hpp"  // NOLINT

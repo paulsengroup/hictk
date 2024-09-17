@@ -203,10 +203,10 @@ hictk convert
                                 Batch size to use when converting .[m]cool to .hic.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [2 - 32] [2]
+    -t,--threads UINT:UINT in [2 - 12] [2]
                                 Maximum number of parallel threads to spawn.
                                 When converting from hic to cool, only two threads will be used.
-    -l,--compression-lvl UINT:INT in [1 - 12] [6]
+    -l,--compression-lvl UINT:INT in [1 - 32] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
@@ -231,7 +231,7 @@ hictk dump
   Options:
     -h,--help                   Print this help message and exit
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when file is in .cool format).
+                                Hi-C matrix resolution (ignored when file is in .cool format).
     --matrix-type ENUM:value in {expected->2,observed->0,oe->1} OR {2,0,1} [observed]
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:value in {BP->0,FRAG->1} OR {0,1} [BP]
@@ -286,26 +286,41 @@ hictk load
 .. code-block:: text
 
   Build .cool and .hic files from interactions in various text formats.
-  Usage: hictk load [OPTIONS] chrom-sizes output-path
+  Usage: hictk load [OPTIONS] interactions output-path
   Positionals:
-    chrom-sizes TEXT:FILE REQUIRED
-                                Path to .chrom.sizes file.
+    interactions TEXT:(FILE) OR ({-}) REQUIRED
+                                Path to a file with the interactions to be loaded.
+                                Common compression formats are supported (namely, gzip, bzip2, lz4, lzo, and zstd).
+                                Pass "-" to indicate that interactions should be read from stdin.
     output-path TEXT REQUIRED   Path to output file.
+                                File extension will be used to infer the output format.
+                                This behavior can be overridden by explicitly specifying an
+                                output format through option --output-fmt.
   Options:
     -h,--help                   Print this help message and exit
+    -c,--chrom-sizes TEXT:FILE Excludes: --bin-table
+                                Path to .chrom.sizes file.
+                                Required when interactions are not in 4DN pairs format.
     -b,--bin-size UINT:POSITIVE Excludes: --bin-table
                                 Bin size (bp).
                                 Required when --bin-table is not used.
-    --bin-table TEXT:FILE Excludes: --bin-size
+    --bin-table TEXT:FILE Excludes: --chrom-sizes --bin-size
                                 Path to a BED3+ file with the bin table.
     -f,--format TEXT:{4dn,validpairs,bg2,coo} REQUIRED
                                 Input format.
+    --output-fmt TEXT:{auto,cool,hic} [auto]
+                                Output format (by default this is inferred from the output file extension).
+                                Should be one of:
+                                - autol
+                                - cool
+                                - hic
     --force                     Force overwrite existing output file(s).
     --assembly TEXT [unknown]   Assembly name.
+    --drop-unknown-chroms       Ignore records referencing unknown chromosomes.
     --one-based,--zero-based{false}
                                 Interpret genomic coordinates or bins as one/zero based.
                                 By default coordinates are assumed to be one-based for interactions in
-                                4dn and validapairs formats and zero-based otherwise.
+                                4dn and validpairs formats and zero-based otherwise.
     --count-as-float            Interactions are floats.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
@@ -314,12 +329,12 @@ hictk load
                                 Assume input files are already sorted.
     --chunk-size UINT [10000000]
                                 Number of pixels to buffer in memory.
-    -l,--compression-lvl UINT:INT bounded to [1 - 12]
+    -l,--compression-lvl UINT:INT bounded to [1 - 32]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
-    -t,--threads UINT:UINT in [1 - 32] [1]
+    -t,--threads UINT:UINT in [2 - 12] [2]
                                 Maximum number of parallel threads to spawn.
-                                When loading interactions in a .cool file, only a single thread will be used.
+                                When loading interactions in a .cool file, only up to two threads will be used.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
@@ -338,12 +353,17 @@ hictk merge
     -h,--help                   Print this help message and exit
     -o,--output-file TEXT REQUIRED
                                 Output Cooler or .hic file (Cooler URI syntax supported).
+    --output-fmt TEXT:{cool,hic} [auto]
+                                Output format (by default this is inferred from the output file extension).
+                                Should be one of:
+                                - cool
+                                - hic
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when input files are in .cool format).
+                                Hi-C matrix resolution (ignored when input files are in .cool format).
     -f,--force                  Force overwrite output file.
     --chunk-size UINT [10000000]
                                 Number of pixels to store in memory before writing to disk.
-    -l,--compression-lvl UINT:INT bounded to [1 - 12]
+    -l,--compression-lvl UINT:INT bounded to [1 - 32]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 32] [1]
@@ -353,6 +373,9 @@ hictk merge
     --skip-all-vs-all,--no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
                                 Has no effect when merging .cool files.
+    --count-type TEXT:{int,float} [int]
+                                Specify the count type to be used when merging files.
+                                Ignored when the output file is in .hic format.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
 
@@ -410,6 +433,14 @@ hictk validate
   Options:
     -h,--help                   Print this help message and exit
     --validate-index            Validate Cooler index (may take a long time).
+    -f,--output-format TEXT:{json,toml,yaml} [json]
+                                Format used to report the outcome of file validation.
+                                Should be one of: json, toml, or yaml.
+    --include-file-path,--exclude-file-path{false}
+                                Output the given input path using attribute "uri".
+    --exhaustive,--fail-fast{false}
+                                When processing multi-resolution or single-cell files,
+                                do not fail as soon as the first error is detected.
     --quiet                     Don't print anything to stdout. Success/failure is reported through exit codes
 
 hictk zoomify
@@ -438,7 +469,7 @@ hictk zoomify
                                 Base resolution: 1000
                                 Pow2: 1000, 2000, 4000, 8000...
                                 Nice: 1000, 2000, 5000, 10000...
-    -l,--compression-lvl UINT:INT bounded to [1 - 12] [6]
+    -l,--compression-lvl UINT:INT bounded to [1 - 32] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .mcool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 32] [1]

@@ -194,6 +194,25 @@ void Cli::validate_convert_subcommand() const {
     }
   }
 
+  const auto output_format =
+      c.output_format.empty() ? infer_output_format(c.path_to_output) : c.output_format;
+  if (is_cool && output_format == "hic") {
+    const auto storage_mode = cooler::File(c.path_to_input.string()).attributes().storage_mode;
+    if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+      errors.emplace_back(fmt::format(
+          FMT_STRING("converting .cool with storage-mode=\"{}\" to .hic format is not supported"),
+          *storage_mode));
+    }
+  } else if (is_mcool && output_format == "hic") {
+    const cooler::MultiResFile mclr(c.path_to_input.string());
+    const auto storage_mode = mclr.open(mclr.resolutions().front()).attributes().storage_mode;
+    if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+      errors.emplace_back(fmt::format(
+          FMT_STRING("converting .mcool with storage-mode=\"{}\" to .hic format is not supported"),
+          *storage_mode));
+    }
+  }
+
   if (!c.resolutions.empty()) {
     check_requested_resolutions_avail(c.path_to_input, c.resolutions, errors);
   }
