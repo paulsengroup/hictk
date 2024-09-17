@@ -79,48 +79,49 @@ class ICE {
                      BS::thread_pool* tpool);
 
   template <typename File>
-  [[nodiscard]] static auto construct_sparse_matrix(const File& f, Type type,
-                                                    std::size_t num_masked_diags) -> SparseMatrix;
+  [[nodiscard]] static auto construct_sparse_matrix(
+      const File& f, Type type, std::size_t num_masked_diags) -> internal::SparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags)
-      -> SparseMatrix;
+      -> internal::SparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_cis(
       const File& f, const Chromosome& chrom, std::size_t bin_offset,
-      std::size_t num_masked_diags) -> SparseMatrix;
+      std::size_t num_masked_diags) -> internal::SparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_cis(const File& f, std::size_t num_masked_diags)
-      -> SparseMatrix;
+      -> internal::SparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_trans(
-      const File& f, std::size_t num_masked_diags) -> SparseMatrix;
+      const File& f, std::size_t num_masked_diags) -> internal::SparseMatrix;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked(
       const File& f, Type type, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_gw(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::SparseMatrixChunked;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_cis(
       const File& f, const Chromosome& chrom, std::size_t bin_offset, std::size_t num_masked_diags,
-      const std::filesystem::path& tmpfile, std::size_t chunk_size) -> SparseMatrixChunked;
+      const std::filesystem::path& tmpfile,
+      std::size_t chunk_size) -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_cis(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::SparseMatrixChunked;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_trans(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::SparseMatrixChunked;
 
   template <typename MatrixT>
   [[nodiscard]] static auto inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
-                                       VectorOfAtomicDecimals& marg,
+                                       internal::VectorOfAtomicDecimals& marg,
                                        nonstd::span<const double> weights = {},
                                        BS::thread_pool* tpool = nullptr) -> Result;
   [[nodiscard]] static std::pair<double, std::size_t> aggregate_marg(
@@ -133,7 +134,7 @@ class ICE {
                                                  BS::thread_pool* tpool);
 
   template <typename MatrixT>
-  static void min_nnz_filtering(VectorOfAtomicDecimals& marg, const MatrixT& matrix,
+  static void min_nnz_filtering(internal::VectorOfAtomicDecimals& marg, const MatrixT& matrix,
                                 nonstd::span<double> biases, std::size_t min_nnz,
                                 BS::thread_pool* tpool);
 

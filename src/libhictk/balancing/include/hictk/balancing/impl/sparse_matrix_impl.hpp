@@ -24,18 +24,120 @@
 #include <utility>
 #include <vector>
 
-namespace hictk::balancing {
+#include "hictk/common.hpp"
 
-inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(std::size_t size_, std::size_t decimals)
-    : _margsi(size_), _margsd(size_), _cfx(static_cast<std::uint64_t>(std::pow(10, decimals - 1))) {
+namespace hictk::balancing::internal {
+
+inline AtomicBitSet::AtomicBitSet(std::size_t size_, bool value)
+    : _buff(size_ / sizeof(I)), _size(size_) {
+  fill(value);
+}
+
+inline AtomicBitSet::AtomicBitSet(const AtomicBitSet& other)
+    : _buff(other._buff.size()), _size(other._size) {
+  std::transform(other._buff.begin(), other._buff.end(), _buff.begin(),
+                 [](const auto& n) { return n.load(); });
+}
+
+inline AtomicBitSet& AtomicBitSet::operator=(const AtomicBitSet& other) {
+  if (this == &other) {
+    return *this;
+  }
+  _buff = std::vector<std::atomic<I>>(other._buff.size());
+  _size = other._size;
+
+  std::transform(other._buff.begin(), other._buff.end(), _buff.begin(),
+                 [](const auto& n) { return n.load(); });
+  return *this;
+}
+
+inline void AtomicBitSet::atomic_set(std::size_t i, bool value) noexcept {
+  assert(i < _size);
+  const auto uint_offset = compute_offset(i);
+  const auto bit_offset = i - uint_offset;
+
+  if (HICTK_LIKELY(value)) {
+    const auto byte = static_cast<std::uint8_t>(1U << bit_offset);
+    _buff[uint_offset].fetch_or(byte);
+  } else {
+    const auto byte = static_cast<std::uint8_t>(~(1U << bit_offset));
+    _buff[uint_offset].fetch_and(byte);
+  }
+}
+
+inline bool AtomicBitSet::atomic_test(std::size_t i) const noexcept {
+  assert(i < _size);
+
+  return atomic_test(_buff, i);
+}
+
+inline std::size_t AtomicBitSet::size() const noexcept { return _size; }
+
+inline bool AtomicBitSet::empty() const noexcept { return size() == 0; }
+
+inline void AtomicBitSet::fill(bool value) noexcept {
+  if (value) {
+    std::fill(_buff.begin(), _buff.end(), std::numeric_limits<std::uint8_t>::max());
+  } else {
+    std::fill(_buff.begin(), _buff.end(), std::uint8_t{});
+  }
+}
+
+inline void AtomicBitSet::resize(std::size_t size_, bool value) {
+  if (size_ != size()) {
+    const auto old_size = size();
+    auto new_v = std::vector<std::atomic<I>>(size_ / sizeof(I));
+    std::swap(new_v, _buff);
+    _size = size_;
+
+    for (std::size_t i = 0; i < std::min(old_size, size()); ++i) {
+      atomic_set(i, atomic_test(new_v, i));
+    }
+
+    for (std::size_t i = std::min(old_size, size()); i < size(); ++i) {
+      atomic_set(i, value);
+    }
+  }
+}
+
+inline std::size_t AtomicBitSet::compute_offset(std::size_t i) noexcept { return i / sizeof(I); }
+
+inline bool AtomicBitSet::atomic_test(const std::vector<std::atomic<I>>& buff,
+                                      std::size_t i) noexcept {
+  assert(i / sizeof(I) < buff.size());
+
+  const auto uint_offset = compute_offset(i);
+  const auto bit_offset = i - uint_offset;
+
+  const auto byte = buff[uint_offset].load();
+  return byte & (1U << bit_offset);
+}
+
+inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(std::size_t size_, std::uint64_t decimal_bits)
+    : _margsi(size_),
+      _margsd(size_),
+      _nanmask(size_),
+      _infmask(size_),
+      _cfxi(2ULL << (decimal_bits - 1)),
+      _cfxd(static_cast<double>(_cfxi)),
+      _max_value(compute_max_value(static_cast<std::uint8_t>(decimal_bits))) {
+  if (decimal_bits == 0 || decimal_bits > 63) {
+    throw std::invalid_argument("decimal bits should be between 1 and 64");
+  }
+
   fill(0);
 }
 
 inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(const VectorOfAtomicDecimals& other)
-    : _margsi(other.size()), _margsd(other.size()), _cfx(other._cfx) {
-  for (std::size_t i = 0; i < size(); ++i) {
-    _margsi[i] = other._margsi[i].load();
-  }
+    : _margsi(other.size()),
+      _margsd(other.size()),
+      _nanmask(other._nanmask),
+      _infmask(other._infmask),
+      _cfxi(other._cfxi),
+      _cfxd(other._cfxd),
+      _max_value(other._max_value) {
+  std::transform(other._margsi.begin(), other._margsi.end(), _margsi.begin(),
+                 [&](const auto& n) { return n.load(); });
 }
 
 inline VectorOfAtomicDecimals& VectorOfAtomicDecimals::operator=(
@@ -44,35 +146,95 @@ inline VectorOfAtomicDecimals& VectorOfAtomicDecimals::operator=(
     return *this;
   }
   _margsi = std::vector<N>(other.size());
-  for (std::size_t i = 0; i < size(); ++i) {
-    _margsi[i] = other._margsi[i].load();
-  }
+  std::transform(other._margsi.begin(), other._margsi.end(), _margsi.begin(),
+                 [&](const auto& n) { return n.load(); });
   _margsd = other._margsd;
-  _cfx = other._cfx;
+
+  _nanmask = other._nanmask;
+  _infmask = other._infmask;
+  _cfxi = other._cfxi;
+  _cfxd = other._cfxd;
+  _max_value = other._max_value;
 
   return *this;
 }
 
 inline double VectorOfAtomicDecimals::operator[](std::size_t i) const noexcept {
   assert(i < size());
+  if (HICTK_UNLIKELY(_nanmask.atomic_test(i))) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  if (HICTK_UNLIKELY(_infmask.atomic_test(i))) {
+    return std::numeric_limits<double>::infinity();
+  }
+
   return decode(_margsi[i].load());
 }
 
 inline void VectorOfAtomicDecimals::add(std::size_t i, double n) noexcept {
   assert(i < size());
-  _margsi[i] += encode(n);
+
+  if (HICTK_UNLIKELY(std::isnan(n))) {
+    _nanmask.atomic_set(i, true);
+    return;
+  }
+
+  if (HICTK_UNLIKELY(overflows(n))) {
+    _infmask.atomic_set(i, true);
+    return;
+  }
+
+  const auto old_value = _margsi[i].load();
+  const auto en = encode(n);
+  constexpr auto max_value = std::numeric_limits<std::uint64_t>::max();
+  if (HICTK_UNLIKELY(max_value - en < old_value)) {
+    _infmask.atomic_set(i, true);
+    return;
+  }
+
+  const auto new_value = _margsi[i] += en;
+
+  if (HICTK_UNLIKELY(new_value < old_value)) {
+    _infmask.atomic_set(i, true);
+  }
 }
 
 inline void VectorOfAtomicDecimals::set(std::size_t i, double n) noexcept {
   assert(i < size());
+
+  if (HICTK_UNLIKELY(std::isnan(n))) {
+    _nanmask.atomic_set(i, true);
+    return;
+  }
+
+  if (HICTK_UNLIKELY(overflows(n))) {
+    _infmask.atomic_set(i, true);
+    _nanmask.atomic_set(i, false);
+    return;
+  }
+
   _margsi[i] = encode(n);
+  _nanmask.atomic_set(i, false);
+  _infmask.atomic_set(i, false);
 }
 
 inline void VectorOfAtomicDecimals::multiply(const std::vector<double>& v) noexcept {
   assert(size() == v.size());
   for (std::size_t i = 0; i < size(); ++i) {
-    const auto n = decode(_margsi[i]);
-    _margsi[i] = encode(n * v[i]);
+    const auto n = decode(_margsi[i]) * v[i];
+
+    if (HICTK_UNLIKELY(std::isnan(n))) {
+      _nanmask.atomic_set(i, true);
+      continue;
+    }
+
+    if (HICTK_UNLIKELY(overflows(n))) {
+      _infmask.atomic_set(i, true);
+      continue;
+    }
+
+    _margsi[i] = encode(n);
   }
 }
 
@@ -96,23 +258,65 @@ inline void VectorOfAtomicDecimals::fill(double value) noexcept {
   for (auto& n : _margsi) {
     n = encode(value);
   }
+
+  _nanmask.fill(false);
+  _infmask.fill(false);
 }
 
-inline void VectorOfAtomicDecimals::resize(std::size_t size_) {
+inline void VectorOfAtomicDecimals::resize(std::size_t size_, double value) {
   if (size_ != size()) {
-    _margsi = std::vector<N>(size_);
+    auto new_v = std::vector<N>(size_);
+    const auto i = static_cast<std::ptrdiff_t>(std::min(size(), size_));
+    std::transform(_margsi.begin(), _margsi.begin() + i, new_v.begin(),
+                   [&](const auto& n) { return n.load(); });
+
+    const auto en = std::isfinite(value) && !overflows(value) ? encode(value) : std::uint64_t{};
+    std::generate(_margsi.begin() + i, _margsi.end(), [&]() { return en; });
+    std::swap(new_v, _margsi);
+    _nanmask.resize(size_, std::isnan(value));
+    _infmask.resize(size_, !std::isnan(value) && overflows(value));
   }
 }
 
+inline std::uint8_t VectorOfAtomicDecimals::decimal_bits() const noexcept {
+#ifdef _MSC_VER
+  return static_cast<std::uint8_t>(_tzcnt_u64(_cfx));
+#else
+  return static_cast<std::uint8_t>(__builtin_ctzll(_cfxi));
+#endif
+}
+
 inline std::size_t VectorOfAtomicDecimals::size() const noexcept { return _margsi.size(); }
+
 inline bool VectorOfAtomicDecimals::empty() const noexcept { return size() == 0; }
 
+inline std::pair<double, double> VectorOfAtomicDecimals::domain(bool include_inf) const noexcept {
+  if (include_inf) {
+    return std::make_pair(0.0, std::numeric_limits<double>::infinity());
+  }
+  return std::make_pair(0.0, _max_value);
+}
+
 inline auto VectorOfAtomicDecimals::encode(double n) const noexcept -> I {
-  return static_cast<I>(n * static_cast<double>(_cfx));
+  assert(std::isnan(n) || n >= 0);
+
+  assert(std::isfinite(n));
+  assert(n <= _max_value);
+
+  const auto encoded_n = n * _cfxd;
+  assert(encoded_n <= static_cast<double>(std::numeric_limits<std::uint64_t>::max()));
+  return static_cast<I>(encoded_n);
 }
 
 inline double VectorOfAtomicDecimals::decode(I n) const noexcept {
-  return static_cast<double>(n) / static_cast<double>(_cfx);
+  return static_cast<double>(n) / _cfxd;
+}
+
+constexpr bool VectorOfAtomicDecimals::overflows(double n) const noexcept { return n > _max_value; }
+
+inline double VectorOfAtomicDecimals::compute_max_value(std::uint8_t decimal_bits) const noexcept {
+  assert(decimal_bits < 64);
+  return std::nextafter(static_cast<double>(std::numeric_limits<I>::max() >> decimal_bits), 0.0);
 }
 
 inline bool SparseMatrix::empty() const noexcept { return size() == 0; }
@@ -596,9 +800,6 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
       const auto w1 = weights[bin1_id];
       const auto w2 = weights[bin2_id];
 
-      assert(std::isfinite(w1));
-      assert(std::isfinite(w2));
-
       if (!std::isnan(w1) && !std::isnan(w2)) {
         const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
         sum += count * cfx;
@@ -645,4 +846,4 @@ inline std::vector<std::size_t> SparseMatrixChunked::compute_chunk_offsets(std::
   return offsets;
 }
 
-}  // namespace hictk::balancing
+}  // namespace hictk::balancing::internal

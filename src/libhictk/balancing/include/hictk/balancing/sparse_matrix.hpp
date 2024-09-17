@@ -24,20 +24,54 @@
 #include "hictk/default_delete.hpp"
 #include "hictk/filestream.hpp"
 
-namespace hictk::balancing {
+namespace hictk::balancing::internal {
+
+class AtomicBitSet {
+  using I = std::uint8_t;
+  std::vector<std::atomic<I>> _buff{};
+  std::size_t _size{};
+
+ public:
+  AtomicBitSet() = default;
+  explicit AtomicBitSet(std::size_t size_, bool value = false);
+  AtomicBitSet(const AtomicBitSet& other);
+  AtomicBitSet(AtomicBitSet&& other) = default;
+
+  AtomicBitSet& operator=(const AtomicBitSet& other);
+  AtomicBitSet& operator=(AtomicBitSet&& other) = default;
+
+  void atomic_set(std::size_t i, bool value) noexcept;
+  [[nodiscard]] bool atomic_test(std::size_t i) const noexcept;
+
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+
+  void fill(bool value) noexcept;
+  void resize(std::size_t size_, bool value = false);
+
+ private:
+  [[nodiscard]] static std::size_t compute_offset(std::size_t i) noexcept;
+  [[nodiscard]] static bool atomic_test(const std::vector<std::atomic<I>>& buff,
+                                        std::size_t i) noexcept;
+};
 
 class VectorOfAtomicDecimals {
   using I = std::uint64_t;
   using N = std::atomic<I>;
   std::vector<N> _margsi{};
   mutable std::vector<double> _margsd{};
-  std::uint64_t _cfx{};
-  const static auto DEFAULT_DECIMAL_DIGITS = 9ULL;
+  AtomicBitSet _nanmask{};
+  AtomicBitSet _infmask{};
+  std::uint64_t _cfxi{};
+  double _cfxd{};
+
+  static constexpr std::uint8_t DEFAULT_DECIMAL_BITS = 22;
+  double _max_value{compute_max_value(DEFAULT_DECIMAL_BITS)};
 
  public:
-  VectorOfAtomicDecimals() = delete;
+  VectorOfAtomicDecimals() = default;
   explicit VectorOfAtomicDecimals(std::size_t size_ = 0,
-                                  std::size_t decimals = DEFAULT_DECIMAL_DIGITS);
+                                  std::uint64_t decimal_bits = DEFAULT_DECIMAL_BITS);
 
   VectorOfAtomicDecimals(const VectorOfAtomicDecimals& other);
   VectorOfAtomicDecimals(VectorOfAtomicDecimals&& other) noexcept = default;
@@ -57,14 +91,18 @@ class VectorOfAtomicDecimals {
   [[nodiscard]] std::vector<double>& operator()() noexcept;
 
   void fill(double value = 0) noexcept;
-  void resize(std::size_t size_);
+  void resize(std::size_t size_, double value = 0);
 
+  [[nodiscard]] std::uint8_t decimal_bits() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
+  [[nodiscard]] std::pair<double, double> domain(bool include_inf = true) const noexcept;
 
  private:
-  auto encode(double n) const noexcept -> I;
-  double decode(I n) const noexcept;
+  [[nodiscard]] auto encode(double n) const noexcept -> I;
+  [[nodiscard]] double decode(I n) const noexcept;
+  [[nodiscard]] constexpr bool overflows(double n) const noexcept;
+  [[nodiscard]] double compute_max_value(std::uint8_t decimal_bits) const noexcept;
 };
 
 class SparseMatrix {
@@ -172,6 +210,6 @@ class SparseMatrixChunked {
                                                                       std::size_t num_chunks);
 };
 
-}  // namespace hictk::balancing
+}  // namespace hictk::balancing::internal
 
 #include "./impl/sparse_matrix_impl.hpp"  // NOLINT
