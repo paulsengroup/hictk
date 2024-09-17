@@ -37,6 +37,8 @@ class AtomicBitSet {
   AtomicBitSet(const AtomicBitSet& other);
   AtomicBitSet(AtomicBitSet&& other) = default;
 
+  ~AtomicBitSet() = default;
+
   AtomicBitSet& operator=(const AtomicBitSet& other);
   AtomicBitSet& operator=(AtomicBitSet&& other) = default;
 
@@ -82,9 +84,8 @@ class VectorOfAtomicDecimals {
   VectorOfAtomicDecimals& operator=(VectorOfAtomicDecimals&& other) noexcept = default;
 
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
-  void add(std::size_t i, double n) noexcept;
+  void atomic_add(std::size_t i, double n) noexcept;
   void set(std::size_t i, double n) noexcept;
-  // multiply is not atomic
   void multiply(const std::vector<double>& v) noexcept;
 
   [[nodiscard]] const std::vector<double>& operator()() const noexcept;

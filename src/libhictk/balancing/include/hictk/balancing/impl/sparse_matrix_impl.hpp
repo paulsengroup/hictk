@@ -173,7 +173,7 @@ inline double VectorOfAtomicDecimals::operator[](std::size_t i) const noexcept {
   return decode(_margsi[i].load());
 }
 
-inline void VectorOfAtomicDecimals::add(std::size_t i, double n) noexcept {
+inline void VectorOfAtomicDecimals::atomic_add(std::size_t i, double n) noexcept {
   assert(i < size());
 
   if (HICTK_UNLIKELY(std::isnan(n))) {
@@ -448,8 +448,8 @@ inline void SparseMatrix::marginalize(VectorOfAtomicDecimals& marg, BS::thread_p
       const auto i2 = _bin2_ids[i];
 
       if (_counts[i] != 0) {
-        marg.add(i1, _counts[i]);
-        marg.add(i2, _counts[i]);
+        marg.atomic_add(i1, _counts[i]);
+        marg.atomic_add(i2, _counts[i]);
       }
     }
   };
@@ -475,8 +475,8 @@ inline void SparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thre
       const auto i2 = _bin2_ids[i];
 
       if (_counts[i] != 0) {
-        marg.add(i1, _counts[i] != 0);
-        marg.add(i2, _counts[i] != 0);
+        marg.atomic_add(i1, _counts[i] != 0);
+        marg.atomic_add(i2, _counts[i] != 0);
       }
     }
   };
@@ -510,8 +510,8 @@ inline void SparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
       const auto count = _counts[i] * (w1 * biases[i1]) * (w2 * biases[i2]);
 
       if (count != 0) {
-        marg.add(i1, count);
-        marg.add(i2, count);
+        marg.atomic_add(i1, count);
+        marg.atomic_add(i2, count);
       }
     }
   };
@@ -542,8 +542,8 @@ inline void SparseMatrix::multiply(VectorOfAtomicDecimals& buffer, nonstd::span<
       const auto w2 = cfx[bin2_id];
 
       const auto f = bin1_id == bin2_id ? 0.5 : 1.0;
-      buffer.add(bin1_id, count * f * w2);
-      buffer.add(bin2_id, count * f * w1);
+      buffer.atomic_add(bin1_id, count * f * w2);
+      buffer.atomic_add(bin2_id, count * f * w1);
     }
   };
 

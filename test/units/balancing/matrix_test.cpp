@@ -71,7 +71,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
 
     CHECK(v1.size() == 10);
     CHECK(!v1.empty());
-    CHECK(v1.decimal_bits() == 22);
+    CHECK(v1.decimal_bits() == 30);
 
     const auto& v2 = v1();
     REQUIRE(v1.size() == v2.size());
@@ -186,25 +186,26 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
     SECTION("add (st)") {
       VectorOfAtomicDecimals v(10);
 
-      v.add(0, 0);
+      v.atomic_add(0, 0);
       CHECK(v[0] == 0);
 
-      v.add(0, 1.0e-3);
+      v.atomic_add(0, 1.0e-3);
       CHECK_THAT(v[0], Catch::Matchers::WithinAbs(1.0e-3, 1.0e-6));
 
-      v.add(0, 100.0e9);
-      CHECK_THAT(v[0], Catch::Matchers::WithinRel(100.0e9));
+      v.set(0, 0);
+      v.atomic_add(0, 10.0e9);
+      CHECK_THAT(v[0], Catch::Matchers::WithinAbs(10.0e9, 1.0e-6));
 
-      v.add(0, v.domain(false).second - 100.0e9 + 1);
+      v.atomic_add(0, v.domain(false).second - 10.0e9 + 1000);
       CHECK(std::isinf(v[0]));
 
-      v.add(0, std::numeric_limits<double>::quiet_NaN());
+      v.atomic_add(0, std::numeric_limits<double>::quiet_NaN());
       CHECK(std::isnan(v[0]));
 
-      v.add(0, 10);
+      v.atomic_add(0, 10);
       CHECK(std::isnan(v[0]));
 
-      v.add(0, std::numeric_limits<double>::infinity());
+      v.atomic_add(0, std::numeric_limits<double>::infinity());
       CHECK(std::isnan(v[0]));
     }
 
@@ -222,7 +223,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         while (threads_started != num_threads);
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, 10}(rand_gen);
-          v.add(0, n);
+          v.atomic_add(0, n);
           tot += n;
         }
 
@@ -264,7 +265,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
 
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, ub}(rand_gen);
-          v.add(0, n);
+          v.atomic_add(0, n);
           tot += n;
         }
 
