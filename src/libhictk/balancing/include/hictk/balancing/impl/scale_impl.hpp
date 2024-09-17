@@ -83,8 +83,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 template <typename Matrix>
 inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
   assert(bins.type() == BinTable::Type::fixed);
-  internal::VectorOfAtomicDecimals column(size(), 9);
-  internal::VectorOfAtomicDecimals row(size(), 9);
+  internal::VectorOfAtomicDecimals column(size());
+  internal::VectorOfAtomicDecimals row(size());
 
   m.multiply(row, _one, _tpool.get());
   row.multiply(_biases);

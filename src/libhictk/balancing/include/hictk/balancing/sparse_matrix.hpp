@@ -65,7 +65,7 @@ class VectorOfAtomicDecimals {
   std::uint64_t _cfxi{};
   double _cfxd{};
 
-  static constexpr std::uint8_t DEFAULT_DECIMAL_BITS = 22;
+  static constexpr std::uint8_t DEFAULT_DECIMAL_BITS = 30;
   double _max_value{compute_max_value(DEFAULT_DECIMAL_BITS)};
 
  public:

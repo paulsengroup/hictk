@@ -9,6 +9,7 @@
 #include <BS_thread_pool.hpp>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
