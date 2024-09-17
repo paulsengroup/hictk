@@ -227,6 +227,7 @@ def main(
     Run hictk integration test suite.
 
     HICTK_BIN:   Path to hictk's binary.
+
     CONFIG_FILE: Path to the config.toml.
     """
     logging.basicConfig(level=parse_log_lvl(verbosity))
