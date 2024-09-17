@@ -298,8 +298,6 @@ inline std::pair<double, double> VectorOfAtomicDecimals::domain(bool include_inf
 }
 
 inline auto VectorOfAtomicDecimals::encode(double n) const noexcept -> I {
-  assert(std::isnan(n) || n >= 0);
-
   assert(std::isfinite(n));
   assert(n <= _max_value);
 
