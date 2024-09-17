@@ -78,7 +78,7 @@ static void compare_vectors(const std::vector<T>& v1, const std::vector<T>& v2) 
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
-  using SparseMatrix = hictk::balancing::SparseMatrix;
+  using SparseMatrix = hictk::balancing::internal::SparseMatrix;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
                                 Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
                       50};
@@ -148,7 +148,7 @@ TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SparseMatrixChunked", "[balancing][short]") {
-  using SparseMatrixChunked = hictk::balancing::SparseMatrixChunked;
+  using SparseMatrixChunked = hictk::balancing::internal::SparseMatrixChunked;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
                                 Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
                       50};
