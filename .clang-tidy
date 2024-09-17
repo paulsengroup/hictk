@@ -22,6 +22,7 @@ Checks: >
   -modernize-use-trailing-return-type,
   -readability-identifier-length,
   -readability-magic-numbers,
+  -readability-redundant-member-init,
   -readability-static-definition-in-anonymous-namespace
 WarningsAsErrors: ""
 HeaderFilterRegex: ""

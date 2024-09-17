@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <readerwriterqueue/readerwriterqueue.h>
+
 #include <cassert>
 #include <cstdint>
 #include <string_view>
@@ -15,6 +17,11 @@
 #include "hictk/type_traits.hpp"
 
 namespace hictk::tools {
+
+template <typename N>
+using PixelQueue = moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>;
+
+using PixelQueueVar = std::variant<PixelQueue<std::int32_t>, PixelQueue<float>, PixelQueue<double>>;
 
 using IntBuff = std::vector<ThinPixel<std::int32_t>>;
 using FPBuff = std::vector<ThinPixel<double>>;
@@ -33,30 +40,6 @@ enum class Format { COO, BG2, VP, _4DN };
   }
   assert(s == "4dn");
   return Format::_4DN;
-}
-
-template <typename N>
-[[nodiscard]] inline ThinPixel<N> parse_pixel(const BinTable& bins, std::string_view line,
-                                              Format format, std::int64_t offset) {
-  ThinPixel<N> pixel{};
-  switch (format) {
-    case Format::COO:
-      pixel = ThinPixel<N>::from_coo(bins, line, offset);
-      break;
-    case Format::BG2:
-      pixel = Pixel<N>::from_bg2(bins, line, offset).to_thin();
-      break;
-    case Format::VP:
-      pixel = Pixel<N>::from_validpair(bins, line, offset).to_thin();
-      break;
-    case Format::_4DN:
-      pixel = Pixel<N>::from_4dn_pairs(bins, line, offset).to_thin();
-      break;
-  }
-  if (pixel.bin1_id > pixel.bin2_id) {
-    std::swap(pixel.bin1_id, pixel.bin2_id);
-  }
-  return pixel;
 }
 
 [[nodiscard]] inline bool line_is_header(std::string_view line) {
