@@ -15,7 +15,8 @@
 
 namespace hictk::test::balancing {
 inline void compare_weights(const hictk::balancing::Weights& weights_,
-                            const hictk::balancing::Weights& expected_, double tol = 1.0e-5) {
+                            const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
+                            double rtol = 1.0e-5) {
   REQUIRE(weights_.size() == expected_.size());
 
   const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
@@ -25,7 +26,14 @@ inline void compare_weights(const hictk::balancing::Weights& weights_,
     if (std::isnan(expected[i])) {
       CHECK(std::isnan(weights[i]));
     } else {
-      CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], tol));
+      // Basically we don't care about the relative error when the weights are very small, as this
+      // will not lead to significant differences when balancing interactions
+      const auto delta = std::abs(weights[i] - expected[i]);
+      if (delta > atol) {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], rtol));
+      } else {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], atol));
+      }
     }
   }
 }
