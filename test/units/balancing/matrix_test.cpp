@@ -220,7 +220,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         double tot = 0.0;
 
         ++threads_started;
-        while (threads_started != num_threads);
+        while (threads_started != num_threads);  // NOLINT
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, 10}(rand_gen);
           v.atomic_add(0, n);
@@ -256,12 +256,13 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         std::random_device rd{};
         std::mt19937_64 rand_gen{rd()};
 
+        // NOLINTNEXTLINE(bugprone-integer-division)
         const auto ub = v.domain(false).second / static_cast<double>(iters / num_threads);
 
         double tot = 0.0;
 
         ++threads_started;
-        while (threads_started != num_threads);
+        while (threads_started != num_threads);  // NOLINT
 
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, ub}(rand_gen);
