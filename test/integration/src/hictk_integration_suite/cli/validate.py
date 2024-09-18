@@ -25,9 +25,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("validate",))},
         factory | {"args": tuple(("validate", "--help")), "expect_failure": False},
         factory | {"args": tuple(("validate", "--foobar"))},
-        factory | {"args": tuple(("validate", str(uri), "foobar"))},
-        factory | {"args": tuple(("validate", str(uri), "--foobar"))},
-        factory | {"args": tuple(("validate", str(uri), "--format", "foobar"))},
+        factory | {"args": tuple(("validate", uri.as_posix(), "foobar"))},
+        factory | {"args": tuple(("validate", uri.as_posix(), "--foobar"))},
+        factory | {"args": tuple(("validate", uri.as_posix(), "--format", "foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -48,12 +48,12 @@ def _plan_tests_cmd(
         "expect_failure": False,
     }
     for c in config["test-cases"]:
-        uri = wd[c["uri"]]
+        uri = wd[c["uri"]].as_posix()
         expect_failure = c.get("expect-failure", False)
         timeout = c.get("timeout", 1.0)
 
         for fmt in config["output-formats"]:
-            args = ["validate", str(uri), "--output-format", fmt]
+            args = ["validate", uri, "--output-format", fmt]
             args.extend(_argument_map_to_list(c.get("args", {})))
             plans.append(factory | {"args": tuple(args), "expect_failure": expect_failure, "timeout": timeout})
 

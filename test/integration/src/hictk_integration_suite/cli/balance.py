@@ -54,12 +54,12 @@ def _plan_tests_cli(
         factory | {"args": tuple(("balance", algorithm, "--help")), "expect_failure": False},
         factory | {"args": tuple(("balance", algorithm, "not-a-file"))},
         factory | {"args": tuple(("balance", algorithm, "--foobar"))},
-        factory | {"args": tuple(("balance", algorithm, str(uri), "--foobar"))},
-        factory | {"args": tuple(("balance", algorithm, str(uri), "--mode=invalid"))},
-        factory | {"args": tuple(("balance", algorithm, str(uri), "--tmpdir", "not-a-folder"))},
+        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--foobar"))},
+        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--mode=invalid"))},
+        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(("balance", str(uri))),
+            "args": tuple(("balance", uri.as_posix())),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
@@ -92,12 +92,11 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file, grp = parse_uri(c["uri"])
-        reference = wd[c.get("reference-uri", wd[c["uri"]])]
+        input_file = parse_uri(c["uri"])[0]
+        reference = wd[c.get("reference-uri", wd[c["uri"]])].as_posix()
 
         # Make a writeable copy of the input file
-        input_file = pathlib.Path(input_file)
-        dest = wd.touch(cwd / input_file.name)
+        dest = wd.touch(cwd / input_file.name).as_posix()
         shutil.copy2(input_file, dest)
         input_file = dest
         _make_file_writeable(input_file)
@@ -105,7 +104,7 @@ def _plan_tests_cmd(
         args = [
             "balance",
             algorithm,
-            str(input_file),
+            input_file,
             "--mode",
             mode,
             "--force",
@@ -131,8 +130,8 @@ def _plan_tests_cmd(
             factory
             | {
                 "args": tuple(args),
-                "reference_file": str(reference),
-                "test_file": str(input_file),
+                "reference_file": reference,
+                "test_file": input_file,
                 "cwd": str(cwd),
                 "expect_failure": c.get("expect-failure", False),
                 "no_validate_weights": c.get("no-validate-weights", False),

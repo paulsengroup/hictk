@@ -21,8 +21,8 @@ def _plan_tests_cli(
     wd: WorkingDirectory,
     title: str = "hictk-convert-cli",
 ) -> List[ImmutableOrderedDict]:
-    cool_uri = wd[cool_uri]
-    hic_uri = wd[hic_uri]
+    cool_uri = wd[cool_uri].as_posix()
+    hic_uri = wd[hic_uri].as_posix()
 
     factory = {
         "hictk_bin": str(hictk_bin),
@@ -36,15 +36,15 @@ def _plan_tests_cli(
         factory | {"args": tuple(("convert", "not-a-file"))},
         factory | {"args": tuple(("convert", "not-a-file1", "not-a-file2"))},
         factory | {"args": tuple(("convert", "--foobar"))},
-        factory | {"args": tuple(("convert", str(cool_uri), "foobar"))},
-        factory | {"args": tuple(("convert", str(cool_uri), "--foobar"))},
-        factory | {"args": tuple(("convert", str(cool_uri), "test.scool"))},
-        factory | {"args": tuple(("convert", str(hic_uri), "test.scool"))},
-        factory | {"args": tuple(("convert", str(cool_uri), "test.hic", "--tmpdir", "not-a-folder"))},
-        factory | {"args": tuple(("convert", str(hic_uri), "test.mcool", "--tmpdir", "not-a-folder"))},
+        factory | {"args": tuple(("convert", cool_uri, "foobar"))},
+        factory | {"args": tuple(("convert", cool_uri, "--foobar"))},
+        factory | {"args": tuple(("convert", cool_uri, "test.scool"))},
+        factory | {"args": tuple(("convert", hic_uri, "test.scool"))},
+        factory | {"args": tuple(("convert", cool_uri, "test.hic", "--tmpdir", "not-a-folder"))},
+        factory | {"args": tuple(("convert", hic_uri, "test.mcool", "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(("convert", str(cool_uri), "test.hic")),
+            "args": tuple(("convert", cool_uri, "test.hic")),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
@@ -71,13 +71,13 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file = str(wd[c["input-uri"]])
+        input_file = wd[c["input-uri"]].as_posix()
         output_file = cwd / c["output"]
-        reference = wd[c.get("reference-uri", input_file)]
+        reference = wd[c.get("reference-uri", input_file)].as_posix()
 
         args = [
             "convert",
-            str(input_file),
+            input_file,
             str(output_file),
             "--tmpdir",
             str(tmpdir),
@@ -94,7 +94,7 @@ def _plan_tests_cmd(
             factory
             | {
                 "args": tuple(args),
-                "reference_file": str(reference),
+                "reference_file": reference,
                 "test_file": str(output_file),
                 "resolutions": tuple(resolutions),
                 "cwd": str(cwd),

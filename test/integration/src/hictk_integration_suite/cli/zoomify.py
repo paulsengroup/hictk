@@ -32,12 +32,12 @@ def _plan_tests_cli(
         factory | {"args": tuple(("zoomify", "--help")), "expect_failure": False},
         factory | {"args": tuple(("zoomify", "not-a-file", "test.mcool"))},
         factory | {"args": tuple(("zoomify", "--foobar"))},
-        factory | {"args": tuple(("zoomify", str(uri), "test.mcool", "foobar"))},
-        factory | {"args": tuple(("zoomify", str(uri), "test.mcool", "--foobar"))},
-        factory | {"args": tuple(("zoomify", str(uri), "test.mcool", "--tmpdir", "not-a-folder"))},
+        factory | {"args": tuple(("zoomify", uri.as_posix(), "test.mcool", "foobar"))},
+        factory | {"args": tuple(("zoomify", uri.as_posix(), "test.mcool", "--foobar"))},
+        factory | {"args": tuple(("zoomify", uri.as_posix(), "test.mcool", "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(("zoomify", str(uri), "test.mcool")),
+            "args": tuple(("zoomify", uri.as_posix(), "test.mcool")),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
@@ -64,14 +64,14 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file = str(wd[c["input-uri"]])
+        input_file = wd[c["input-uri"]].as_posix()
         output_file = cwd / c["output"]
-        reference = wd[c.get("reference-uri", input_file)]
+        reference = wd[c.get("reference-uri", input_file)].as_posix()
         resolutions = c["resolutions"]
 
         args = [
             "zoomify",
-            str(input_file),
+            input_file,
             str(output_file),
             "--tmpdir",
             str(tmpdir),
@@ -89,7 +89,7 @@ def _plan_tests_cmd(
             factory
             | {
                 "args": tuple(args),
-                "reference_file": str(reference),
+                "reference_file": reference,
                 "test_file": str(output_file),
                 "resolutions": tuple(resolutions),
                 "cwd": str(cwd),

@@ -39,9 +39,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("rename-chromosomes", "not-a-file"))},
         factory | {"args": tuple(("rename-chromosomes", "not-a-file", "--add-chr-prefix"))},
         factory | {"args": tuple(("rename-chromosomes", "--foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", str(cool_uri), "foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", str(cool_uri), "--foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", str(hic_uri), "--add-chr-prefix"))},
+        factory | {"args": tuple(("rename-chromosomes", cool_uri.as_posix(), "foobar"))},
+        factory | {"args": tuple(("rename-chromosomes", cool_uri.as_posix(), "--foobar"))},
+        factory | {"args": tuple(("rename-chromosomes", hic_uri.as_posix(), "--add-chr-prefix"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -60,9 +60,7 @@ def _stage_invalid_name_mappings(mappings: List[str], wd: WorkingDirectory) -> L
     return paths
 
 
-def _stage_valid_name_mappings(
-    mappings: List[Dict[str, str]], wd: WorkingDirectory
-) -> Dict[pathlib.Path, pathlib.Path]:
+def _stage_valid_name_mappings(mappings: List[Dict[str, str]], wd: WorkingDirectory) -> Dict[str, pathlib.Path]:
     paths = {}
     parent_dir = wd.mkdtemp()
     for i, mapping in enumerate(mappings):
@@ -70,7 +68,7 @@ def _stage_valid_name_mappings(
         path = wd.touch(parent_dir / f"vald_name_mappings_{i:03d}.txt")
         path.write_text(f"{payload}\n")
 
-        uri = wd[mapping["uri"]]
+        uri = wd[mapping["uri"]].as_posix()
         paths[uri] = path
 
     return paths
@@ -106,7 +104,7 @@ def _plan_tests_cmd(
     invalid_name_mappings = _stage_invalid_name_mappings(config["invalid-name-mappings"], wd)
 
     for c in config["test-cases"]:
-        uri = wd[c["uri"]]
+        uri = wd[c["uri"]].as_posix()
         expect_failure = c.get("expect-failure", False)
         for flag in ("--add-chr-prefix", "--remove-chr-prefix"):
             new_uri = _stage_uri(uri, wd)
@@ -126,11 +124,11 @@ def _plan_tests_cmd(
             | {
                 "args": (
                     "rename-chromosomes",
-                    str(new_uri),
+                    new_uri,
                     "--name-mappings",
                     str(valid_name_mappings[uri]),
                 ),
-                "test_file": str(new_uri),
+                "test_file": new_uri,
                 "name_mappings": str(valid_name_mappings[uri]),
                 "expect_failure": expect_failure,
             }

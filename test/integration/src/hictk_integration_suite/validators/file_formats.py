@@ -11,7 +11,7 @@ from hictk_integration_suite.common import parse_uri
 
 def is_cooler(uri) -> bool:
     try:
-        return cooler.fileops.is_cooler(uri)
+        return cooler.fileops.is_cooler(pathlib.Path(uri).as_posix())
     except:  # noqa
         return False
 
@@ -44,6 +44,7 @@ def is_multires(uri) -> bool:
 
 
 def is_variable_bin_size(uri) -> bool:
+    uri = pathlib.Path(uri).as_posix()
     if not is_cooler(uri):
         return False
 

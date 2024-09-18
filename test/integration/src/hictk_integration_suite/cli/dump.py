@@ -31,8 +31,8 @@ def _extract_queries_for_uri(
 
         queries.append(
             {
-                "uri": str(uri),
-                "reference-uri": str(reference_uri),
+                "uri": uri.as_posix(),
+                "reference-uri": reference_uri.as_posix(),
                 "resolution": resolution,
                 "range1": c.get("range1"),
                 "range2": c.get("range2"),
@@ -96,9 +96,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("dump",))},
         factory | {"args": tuple(("dump", "--help")), "expect_failure": False},
         factory | {"args": tuple(("dump", "not-a-file"))},
-        factory | {"args": tuple(("dump", str(uri), "foobar"))},
-        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
-        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
+        factory | {"args": tuple(("dump", uri.as_posix(), "foobar"))},
+        factory | {"args": tuple(("dump", uri.as_posix(), "--foobar"))},
+        factory | {"args": tuple(("dump", uri.as_posix(), "--foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
