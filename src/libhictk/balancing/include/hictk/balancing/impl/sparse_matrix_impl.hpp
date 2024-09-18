@@ -284,7 +284,7 @@ inline void VectorOfAtomicDecimals::resize(std::size_t size_, double value) {
 
 inline std::uint8_t VectorOfAtomicDecimals::decimal_bits() const noexcept {
 #ifdef _MSC_VER
-  return static_cast<std::uint8_t>(_tzcnt_u64(_cfx));
+  return static_cast<std::uint8_t>(_tzcnt_u64(_cfxi));
 #else
   return static_cast<std::uint8_t>(__builtin_ctzll(_cfxi));
 #endif
@@ -331,6 +331,12 @@ inline void SparseMatrix::clear(bool shrink_to_fit_) noexcept {
   if (shrink_to_fit_) {
     shrink_to_fit();
   }
+}
+
+inline void SparseMatrix::reserve(std::size_t capacity) {
+  _bin1_ids.reserve(capacity);
+  _bin2_ids.reserve(capacity);
+  _counts.reserve(capacity);
 }
 
 inline void SparseMatrix::shrink_to_fit() noexcept {
@@ -547,6 +553,7 @@ inline double SparseMatrix::compute_scaling_factor_for_scale(
 inline SparseMatrixChunked::SparseMatrixChunked(std::size_t chunk_size)
     : _chunks(1), _chunk_size(chunk_size) {
   assert(chunk_size != 0);
+  _chunks.back().reserve(_chunk_size);
 }
 
 inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
@@ -554,7 +561,7 @@ inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
 inline std::size_t SparseMatrixChunked::size() const noexcept { return _size; }
 
 inline std::size_t SparseMatrixChunked::num_chunks() const noexcept {
-  return empty() ? std::size_t{} : num_chunks();
+  return empty() ? std::size_t{} : _chunks.size();
 }
 
 inline std::size_t SparseMatrixChunked::chunk_size() const noexcept { return _chunk_size; }
@@ -576,9 +583,10 @@ inline void SparseMatrixChunked::clear(bool shrink_to_fit_) {
 
 inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id,
                                            double count, std::size_t bin_offset) {
-  assert(!_chunk_size.empty());
+  assert(!_chunks.empty());
   if (HICTK_UNLIKELY(_chunks.back().size() == _chunk_size)) {
-    _chunks.emplace_back(SparseMatrix{});
+    auto& chunk = _chunks.emplace_back(SparseMatrix{});
+    chunk.reserve(_chunk_size);
   }
 
   _chunks.back().push_back(bin1_id, bin2_id, count, bin_offset);

@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <future>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <vector>
@@ -591,7 +592,7 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
     }
     m.finalize();
     CHECK(m.size() == pixels.size());
-    CHECK(m.num_chunks() == m.size() / m.chunk_size());
+    CHECK(m.num_chunks() == (m.size() + m.chunk_size() - 1) / m.chunk_size());
 
     m.clear();
     CHECK(m.empty());

@@ -117,6 +117,7 @@ class SparseMatrix {
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
   void clear(bool shrink_to_fit_ = false) noexcept;
+  void reserve(std::size_t capacity);
   void shrink_to_fit() noexcept;
   void finalize();
 
