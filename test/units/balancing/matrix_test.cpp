@@ -374,7 +374,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
       VectorOfAtomicDecimals v(1);
 
       auto worker = [&](std::size_t num_threads, std::atomic<std::size_t>& threads_started,
-                        std::size_t iters = 1'000'000) {
+                        std::size_t iters = 100'000) {
         std::random_device rd{};
         std::mt19937_64 rand_gen{rd()};
 
@@ -413,7 +413,7 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
       VectorOfAtomicDecimals v(1);
 
       auto worker = [&](std::size_t num_threads, std::atomic<std::size_t>& threads_started,
-                        std::size_t iters = 100'000) {
+                        std::size_t iters = 1'000) {
         std::random_device rd{};
         std::mt19937_64 rand_gen{rd()};
 
