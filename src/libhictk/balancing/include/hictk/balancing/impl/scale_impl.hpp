@@ -83,8 +83,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 template <typename Matrix>
 inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
   assert(bins.type() == BinTable::Type::fixed);
-  VectorOfAtomicDecimals column(size(), 9);
-  VectorOfAtomicDecimals row(size(), 9);
+  internal::VectorOfAtomicDecimals column(size());
+  internal::VectorOfAtomicDecimals row(size());
 
   m.multiply(row, _one, _tpool.get());
   row.multiply(_biases);
@@ -280,8 +280,9 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 }
 
 template <typename Matrix>
-inline void SCALE::update_weights(VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
-                                  VectorOfAtomicDecimals& weights,
+inline void SCALE::update_weights(internal::VectorOfAtomicDecimals& buffer,
+                                  const std::vector<bool>& bad,
+                                  internal::VectorOfAtomicDecimals& weights,
                                   const std::vector<double>& target, std::vector<double>& d_vector,
                                   const Matrix& m, BS::thread_pool* tpool) noexcept {
   assert(buffer.size() == bad.size());
@@ -329,7 +330,7 @@ inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
   return std::make_pair(error, num_fail);
 }
 
-inline double SCALE::compute_final_error(const VectorOfAtomicDecimals& col,
+inline double SCALE::compute_final_error(const internal::VectorOfAtomicDecimals& col,
                                          const std::vector<double>& scale,
                                          const std::vector<double>& target,
                                          const std::vector<bool>& bad) noexcept {
@@ -358,9 +359,10 @@ inline void SCALE::multiply(std::vector<double>& v1, const std::vector<double>& 
 }
 
 template <typename PixelIt>
-inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::mask_bins_and_init_buffers(
-    PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
-    const std::filesystem::path& tmpfile, std::size_t chunk_size) {
+inline std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
+SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
+                                  double max_percentile, const std::filesystem::path& tmpfile,
+                                  std::size_t chunk_size) {
   assert(_bad.empty());
   assert(_one.empty());
   assert(_z_target_vector.empty());
@@ -374,10 +376,11 @@ inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::mask_bins_and_init
   _row_wise_nnz.resize(size(), 0);
   _biases1.resize(size(), 0);
 
-  std::variant<SparseMatrix, SparseMatrixChunked> matrix{SparseMatrix{}};
+  std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> matrix{
+      internal::SparseMatrixChunked{}};
 
   if (!tmpfile.empty()) {
-    matrix = SparseMatrixChunked(tmpfile, chunk_size);
+    matrix = internal::FileBackedSparseMatrix(tmpfile, chunk_size);
   }
 
   std::visit(
@@ -427,7 +430,7 @@ inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::mask_bins_and_init
 template <typename Matrix>
 inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
                                        std::vector<double>& dc,
-                                       VectorOfAtomicDecimals& row) -> ControlFlow {
+                                       internal::VectorOfAtomicDecimals& row) -> ControlFlow {
   _yes = true;
   if (_low_cutoff == 1) {
     SPDLOG_DEBUG(FMT_STRING("low cutoff"));
@@ -472,7 +475,7 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
 template <typename Matrix>
 inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                            std::vector<double>& dr, std::vector<double>& dc,
-                                           VectorOfAtomicDecimals& row,
+                                           internal::VectorOfAtomicDecimals& row,
                                            double tolerance) -> ControlFlow {
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
@@ -505,7 +508,7 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
 template <typename Matrix>
 inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b0,
                                    std::vector<double>& dr, std::vector<double>& dc,
-                                   VectorOfAtomicDecimals& row, double frac_bad,
+                                   internal::VectorOfAtomicDecimals& row, double frac_bad,
                                    double frac_bad_cutoff, double tolerance) -> ControlFlow {
   const auto almost_converged = frac_bad < frac_bad_cutoff && _yes;
   if (_convergence_stats.converged) {
@@ -559,13 +562,14 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
 }
 
 template <typename PixelIt>
-inline std::variant<SparseMatrix, SparseMatrixChunked> SCALE::init_matrix(
-    PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
-    std::size_t chunk_size) {
-  std::variant<SparseMatrix, SparseMatrixChunked> matrix{SparseMatrix{}};
+inline std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
+SCALE::init_matrix(PixelIt first, PixelIt last, std::size_t offset,
+                   const std::filesystem::path& tmpfile, std::size_t chunk_size) {
+  std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> matrix{
+      internal::SparseMatrixChunked{}};
 
   if (!tmpfile.empty()) {
-    matrix = SparseMatrixChunked(tmpfile, chunk_size);
+    matrix = internal::FileBackedSparseMatrix(tmpfile, chunk_size);
   }
   std::visit(
       [&](auto& m) {

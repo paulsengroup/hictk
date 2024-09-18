@@ -206,14 +206,33 @@ jobs:
       - name: Extract test dataset
         run: tar -xf test/data/hictk_test_data.tar.xz
 
-      - name: Run unit tests
+      - name: Run unit tests (Debug)
+        if: matrix.build_type == 'Debug'
         run: |
+          skip_labels=(
+            '.*dataset large read\/write.*'
+            '.*HiCFileWriter.*'
+            '.*VectorOfAtomicDecimals.*'
+          )
+
+          pattern="$(IFS='|' ; echo "${skip_labels[*]}")"
+
           ctest --test-dir build    \
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
                 --timeout 360       \
-                --exclude-regex '.*(dataset large read\/write|HiCFileWriter).*' |&
+                --exclude-regex "$pattern" |&
+          tail -n 1000
+
+      - name: Run unit tests (Release)
+        if: matrix.build_type == 'Release'
+        run: |
+          ctest --test-dir build    \
+                --schedule-random   \
+                --output-on-failure \
+                --no-tests=error    \
+                --timeout 120       |&
           tail -n 1000
 
   windows-ci-status-check:

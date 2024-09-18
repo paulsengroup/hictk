@@ -8,26 +8,16 @@
 #include <cassert>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <filesystem>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "./common.hpp"
 #include "hictk/balancing/ice.hpp"
 #include "hictk/balancing/scale.hpp"
-#include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
-#include "hictk/bin_table.hpp"
-#include "hictk/chromosome.hpp"
 #include "hictk/file.hpp"
-#include "hictk/filestream.hpp"
-#include "hictk/pixel.hpp"
-#include "hictk/reference.hpp"
 #include "tmpdir.hpp"
 
 namespace hictk::test {
@@ -49,127 +39,6 @@ namespace hictk::test::balancing {
   }
 
   return {buffer, type};
-}
-
-static void compare_weights(const hictk::balancing::Weights& weights_,
-                            const hictk::balancing::Weights& expected_, double tol = 5.0e-3) {
-  REQUIRE(weights_.size() == expected_.size());
-
-  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
-  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
-
-  for (std::size_t i = 0; i < weights.size(); ++i) {
-    if (std::isnan(weights[i])) {
-      CHECK(std::isnan(expected[i]));
-    } else {
-      CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], tol));
-    }
-  }
-}
-
-template <typename T>
-static void compare_vectors(const std::vector<T>& v1, const std::vector<T>& v2) {
-  REQUIRE(v1.size() == v2.size());
-
-  for (std::size_t i = 0; i < v1.size(); ++i) {
-    CHECK(v1[i] == v2[i]);
-  }
-}
-
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
-  using SparseMatrix = hictk::balancing::SparseMatrix;
-  const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
-                                Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
-                      50};
-  // clang-format off
-  const std::vector<ThinPixel<std::int32_t>> pixels{
-      {1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
-      {3, 3, 4}, {3, 4, 5}};            // chr2
-  // clang-format on
-
-  SECTION("accessors") { CHECK(SparseMatrix{}.empty()); }
-
-  SECTION("push_back") {
-    SparseMatrix m{};
-    for (const auto& p : pixels) {
-      m.push_back(p.bin1_id, p.bin2_id, p.count);
-    }
-    m.finalize();
-    CHECK(m.size() == pixels.size());
-
-    m.clear();
-    CHECK(m.empty());
-  }
-
-  SECTION("serde") {
-    const auto tmpfile = testdir() / "sparse_matrix_serde.bin";
-    std::unique_ptr<ZSTD_CCtx_s> zstd_cctx{ZSTD_createCCtx()};
-    std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
-
-    std::string buff{};
-
-    SECTION("empty matrix") {
-      auto f = filestream::FileStream::create(tmpfile.string());
-
-      SparseMatrix m1{};
-      SparseMatrix m2{};
-      m1.finalize();
-      m1.serialize(f, buff, *zstd_cctx);
-      f.seekg(std::ios::beg);
-      m2.deserialize(f, buff, *zstd_dctx);
-
-      compare_vectors(m1.bin1_ids(), m2.bin1_ids());
-      compare_vectors(m1.bin2_ids(), m2.bin2_ids());
-      compare_vectors(m1.counts(), m2.counts());
-    }
-
-    SECTION("full matrix") {
-      SparseMatrix m1{};
-      for (const auto& p : pixels) {
-        m1.push_back(p.bin1_id, p.bin2_id, p.count);
-      }
-      m1.finalize();
-
-      std::filesystem::remove(tmpfile);
-      auto f = filestream::FileStream::create(tmpfile.string());
-
-      SparseMatrix m2{};
-      m1.serialize(f, buff, *zstd_cctx);
-      f.seekg(std::ios::beg);
-      m2.deserialize(f, buff, *zstd_dctx);
-
-      compare_vectors(m1.bin1_ids(), m2.bin1_ids());
-      compare_vectors(m1.bin2_ids(), m2.bin2_ids());
-      compare_vectors(m1.counts(), m2.counts());
-    }
-  }
-}
-
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Balancing: SparseMatrixChunked", "[balancing][short]") {
-  using SparseMatrixChunked = hictk::balancing::SparseMatrixChunked;
-  const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
-                                Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
-                      50};
-  // clang-format off
-  const std::vector<ThinPixel<std::int32_t>> pixels{
-      {1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
-      {3, 3, 4}, {3, 4, 5}};            // chr2
-  // clang-format on
-  const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
-
-  SECTION("accessors") { CHECK(SparseMatrixChunked{tmpfile, 2, 0}.empty()); }
-
-  SECTION("push_back") {
-    SparseMatrixChunked m{tmpfile, 2, 0};
-    for (const auto& p : pixels) {
-      m.push_back(p.bin1_id, p.bin2_id, p.count);
-    }
-    m.finalize();
-
-    CHECK(m.size() == pixels.size());
-  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
