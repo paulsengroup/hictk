@@ -31,12 +31,147 @@
 namespace hictk::test::balancing {
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: AtomicBitSet", "[balancing][short]") {
+  using AtomicBitSet = hictk::balancing::internal::AtomicBitSet;
+
+  SECTION("Ctors") {
+    AtomicBitSet b1(10);
+    REQUIRE(b1.size() == 10);
+    for (std::size_t i = 0; i < 10; ++i) {
+      CHECK_FALSE(b1.atomic_test(i));
+    }
+
+    b1.atomic_set(0, true);
+    CHECK(b1.atomic_test(0));
+
+    const AtomicBitSet b2(b1);
+    REQUIRE(b2.size() == b1.size());
+    CHECK(b2.atomic_test(0));
+    CHECK_FALSE(b2.atomic_test(1));
+  }
+
+  SECTION("operator=") {
+    AtomicBitSet b1(10);
+    b1.atomic_set(0, true);
+
+    REQUIRE(b1.atomic_test(0));
+
+    const AtomicBitSet b2(1);
+    REQUIRE_FALSE(b2.atomic_test(0));
+
+    b1 = b2;
+    CHECK(b1.size() == b2.size());
+    CHECK_FALSE(b1.atomic_test(0));
+  }
+
+  SECTION("accessors") {
+    const AtomicBitSet b(10, true);
+
+    CHECK(b.size() == 10);
+    for (std::size_t i = 0; i < 10; ++i) {
+      CHECK(b.atomic_test(i));
+    }
+  }
+
+  SECTION("non-atomic modifiers") {
+    AtomicBitSet b(10);
+    b.resize(15, true);
+
+    for (std::size_t i = 0; i < 15; ++i) {
+      if (i < 10) {
+        CHECK_FALSE(b.atomic_test(i));
+      } else {
+        CHECK(b.atomic_test(i));
+      }
+    }
+
+    b.fill(false);
+    for (std::size_t i = 0; i < 15; ++i) {
+      CHECK_FALSE(b.atomic_test(i));
+    }
+  }
+
+  SECTION("atomic modifiers") {
+    constexpr std::size_t nthreads{2};
+
+    SECTION("concurrent set") {
+      std::atomic<bool> buff{false};
+      AtomicBitSet b(1);
+
+      auto worker = [&](std::size_t num_threads, std::atomic<std::size_t>& threads_started,
+                        std::size_t iters = 1'000'000) {
+        std::random_device rd{};
+        std::mt19937_64 rand_gen{rd()};
+
+        ++threads_started;
+        while (threads_started != num_threads);  // NOLINT
+        for (std::size_t i = 0; i < iters; ++i) {
+          const auto x = std::bernoulli_distribution{}(rand_gen);
+          b.atomic_set(0, x);
+          buff = x;
+        }
+      };
+
+      for (std::size_t i = 0; i < 10; ++i) {
+        b.fill(false);
+        buff = false;
+
+        std::atomic<std::size_t> threads_started{0};
+        std::vector<std::future<void>> futures(nthreads);
+        std::generate(futures.begin(), futures.end(),
+                      [&]() { return std::async(worker, nthreads, std::ref(threads_started)); });
+
+        std::for_each(futures.begin(), futures.end(), [](auto& fut) { fut.get(); });
+
+        CHECK(buff.load() == b.atomic_test(0));
+      }
+    }
+
+    SECTION("concurrent set adjacent") {
+      std::vector<std::atomic<bool>> buff(4);
+      AtomicBitSet b(4);
+
+      auto worker = [&](std::size_t num_threads, std::atomic<std::size_t>& threads_started,
+                        std::size_t iters = 1'000'000) {
+        std::random_device rd{};
+        std::mt19937_64 rand_gen{rd()};
+
+        ++threads_started;
+        while (threads_started != num_threads);  // NOLINT
+        for (std::size_t i = 0; i < iters; ++i) {
+          const auto j = std::uniform_int_distribution<std::size_t>{0, b.size() - 1}(rand_gen);
+          const auto x = std::bernoulli_distribution{}(rand_gen);
+          b.atomic_set(j, x);
+          buff[j] = x;
+        }
+      };
+
+      for (std::size_t i = 0; i < 10; ++i) {
+        b.fill(false);
+        std::fill(buff.begin(), buff.end(), false);
+
+        std::atomic<std::size_t> threads_started{0};
+        std::vector<std::future<void>> futures(nthreads);
+        std::generate(futures.begin(), futures.end(),
+                      [&]() { return std::async(worker, nthreads, std::ref(threads_started)); });
+
+        std::for_each(futures.begin(), futures.end(), [](auto& fut) { fut.get(); });
+
+        for (std::size_t j = 0; j < b.size(); ++j) {
+          CHECK(buff[j].load() == b.atomic_test(j));
+        }
+      }
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
   using VectorOfAtomicDecimals = hictk::balancing::internal::VectorOfAtomicDecimals;
 
   SECTION("Ctors") {
     VectorOfAtomicDecimals v1(10);
-    CHECK(v1.size() == 10);
+    REQUIRE(v1.size() == 10);
     for (std::size_t i = 0; i < v1.size(); ++i) {
       CHECK(v1[i] == 0);
     }
@@ -180,6 +315,31 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         }
       }
     }
+
+    SECTION("set") {
+      VectorOfAtomicDecimals v(10);
+
+      v.set(0, 0);
+      CHECK(v[0] == 0);
+
+      v.set(0, 1.0e-3);
+      CHECK_THAT(v[0], Catch::Matchers::WithinAbs(1.0e-3, 1.0e-6));
+
+      v.set(0, 1.0e9);
+      CHECK_THAT(v[0], Catch::Matchers::WithinRel(1.0e9));
+
+      v.set(0, v.domain(false).second + 1);
+      CHECK(std::isinf(v[0]));
+
+      v.set(0, std::numeric_limits<double>::quiet_NaN());
+      CHECK(std::isnan(v[0]));
+
+      v.set(0, std::numeric_limits<double>::infinity());
+      CHECK(std::isinf(v[0]));
+
+      v.set(0, 0);
+      CHECK(v[0] == 0);
+    }
   }
 
   SECTION("atomic modifiers") {
@@ -292,31 +452,6 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
           CHECK_THAT(v[0], Catch::Matchers::WithinAbs(tot, 1.0e-5));
         }
       }
-    }
-
-    SECTION("set") {
-      VectorOfAtomicDecimals v(10);
-
-      v.set(0, 0);
-      CHECK(v[0] == 0);
-
-      v.set(0, 1.0e-3);
-      CHECK_THAT(v[0], Catch::Matchers::WithinAbs(1.0e-3, 1.0e-6));
-
-      v.set(0, 1.0e9);
-      CHECK_THAT(v[0], Catch::Matchers::WithinRel(1.0e9));
-
-      v.set(0, v.domain(false).second + 1);
-      CHECK(std::isinf(v[0]));
-
-      v.set(0, std::numeric_limits<double>::quiet_NaN());
-      CHECK(std::isnan(v[0]));
-
-      v.set(0, std::numeric_limits<double>::infinity());
-      CHECK(std::isinf(v[0]));
-
-      v.set(0, 0);
-      CHECK(v[0] == 0);
     }
   }
 
