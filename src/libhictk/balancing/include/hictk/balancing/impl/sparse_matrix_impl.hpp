@@ -438,65 +438,43 @@ inline void SparseMatrix::deserialize(filestream::FileStream& fs, std::string& t
   }
 }
 
-inline void SparseMatrix::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
-                                      bool init_buffer) const {
+inline void SparseMatrix::marginalize(VectorOfAtomicDecimals& marg, bool init_buffer) const {
   assert(!marg.empty());
   if (init_buffer) {
     marg.fill(0);
   }
 
-  auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
-    for (auto i = istart; i < iend; ++i) {
-      const auto i1 = _bin1_ids[i];
-      const auto i2 = _bin2_ids[i];
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto i1 = _bin1_ids[i];
+    const auto i2 = _bin2_ids[i];
 
-      if (_counts[i] != 0) {
-        marg.atomic_add(i1, _counts[i]);
-        marg.atomic_add(i2, _counts[i]);
-      }
+    if (_counts[i] != 0) {
+      marg.atomic_add(i1, _counts[i]);
+      marg.atomic_add(i2, _counts[i]);
     }
-  };
-
-  if (size() < 1'000'000 || !tpool) {
-    marginalize_impl(0, size());
-    return;
   }
-
-  tpool->detach_blocks(std::size_t(0), size(), marginalize_impl);
-  tpool->wait();
 }
 
-inline void SparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
-                                          bool init_buffer) const {
+inline void SparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg, bool init_buffer) const {
   if (init_buffer) {
     marg.fill(0);
   }
 
-  auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
-    for (auto i = istart; i < iend; ++i) {
-      const auto i1 = _bin1_ids[i];
-      const auto i2 = _bin2_ids[i];
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto i1 = _bin1_ids[i];
+    const auto i2 = _bin2_ids[i];
 
-      if (_counts[i] != 0) {
-        marg.atomic_add(i1, _counts[i] != 0);
-        marg.atomic_add(i2, _counts[i] != 0);
-      }
+    if (_counts[i] != 0) {
+      marg.atomic_add(i1, _counts[i] != 0);
+      marg.atomic_add(i2, _counts[i] != 0);
     }
-  };
-
-  if (size() < 1'000'000 || !tpool) {
-    marginalize_nnz_impl(0, size());
-    return;
   }
-
-  tpool->detach_blocks(std::size_t(0), size(), marginalize_nnz_impl);
-  tpool->wait();
 }
 
 inline void SparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
                                                    nonstd::span<const double> biases,
                                                    nonstd::span<const double> weights,
-                                                   BS::thread_pool* tpool, bool init_buffer) const {
+                                                   bool init_buffer) const {
   assert(biases.size() == weights.size() || weights.empty());
   marg.resize(biases.size());
 
@@ -504,59 +482,39 @@ inline void SparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
     marg.fill(0);
   }
 
-  auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
-    for (auto i = istart; i < iend; ++i) {
-      const auto i1 = _bin1_ids[i];
-      const auto i2 = _bin2_ids[i];
-      const auto w1 = weights.empty() ? 1 : weights[i1];
-      const auto w2 = weights.empty() ? 1 : weights[i2];
-      const auto count = _counts[i] * (w1 * biases[i1]) * (w2 * biases[i2]);
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto i1 = _bin1_ids[i];
+    const auto i2 = _bin2_ids[i];
+    const auto w1 = weights.empty() ? 1 : weights[i1];
+    const auto w2 = weights.empty() ? 1 : weights[i2];
+    const auto count = _counts[i] * (w1 * biases[i1]) * (w2 * biases[i2]);
 
-      if (count != 0) {
-        marg.atomic_add(i1, count);
-        marg.atomic_add(i2, count);
-      }
+    if (count != 0) {
+      marg.atomic_add(i1, count);
+      marg.atomic_add(i2, count);
     }
-  };
-
-  if (size() < 1'000'000 || !tpool) {
-    times_outer_product_marg_impl(0, size());
-    return;
   }
-
-  tpool->detach_blocks(std::size_t(0), size(), times_outer_product_marg_impl);
-  tpool->wait();
 }
 
 inline void SparseMatrix::multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
-                                   BS::thread_pool* tpool, bool init_buffer) const {
+                                   bool init_buffer) const {
   buffer.resize(cfx.size());
 
   if (init_buffer) {
     buffer.fill(0);
   }
 
-  auto matrix_mult_impl = [&](std::size_t istart, std::size_t iend) {
-    for (auto i = istart; i < iend; ++i) {
-      const auto bin1_id = _bin1_ids[i];
-      const auto bin2_id = _bin2_ids[i];
-      const auto count = _counts[i];
-      const auto w1 = cfx[bin1_id];
-      const auto w2 = cfx[bin2_id];
+  for (std::size_t i = 0; i < size(); ++i) {
+    const auto bin1_id = _bin1_ids[i];
+    const auto bin2_id = _bin2_ids[i];
+    const auto count = _counts[i];
+    const auto w1 = cfx[bin1_id];
+    const auto w2 = cfx[bin2_id];
 
-      const auto f = bin1_id == bin2_id ? 0.5 : 1.0;
-      buffer.atomic_add(bin1_id, count * f * w2);
-      buffer.atomic_add(bin2_id, count * f * w1);
-    }
-  };
-
-  if (size() < 1'000'000 || !tpool) {
-    matrix_mult_impl(0, size());
-    return;
+    const auto f = bin1_id == bin2_id ? 0.5 : 1.0;
+    buffer.atomic_add(bin1_id, count * f * w2);
+    buffer.atomic_add(bin2_id, count * f * w1);
   }
-
-  tpool->detach_blocks(std::size_t(0), size(), matrix_mult_impl);
-  tpool->wait();
 }
 
 inline double SparseMatrix::compute_scaling_factor_for_scale(
@@ -586,8 +544,167 @@ inline double SparseMatrix::compute_scaling_factor_for_scale(
   return std::sqrt(norm_sum / sum);
 }
 
-inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
-                                                std::size_t chunk_size, int compression_lvl)
+inline SparseMatrixChunked::SparseMatrixChunked(std::size_t chunk_size)
+    : _chunks(1), _chunk_size(chunk_size) {
+  assert(chunk_size != 0);
+}
+
+inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
+
+inline std::size_t SparseMatrixChunked::size() const noexcept { return _size; }
+
+inline void SparseMatrixChunked::shrink_to_fit() noexcept {
+  assert(!_chunks.empty());
+  _chunks.back().shrink_to_fit();
+}
+
+inline void SparseMatrixChunked::clear(bool shrink_to_fit_) {
+  _chunks.resize(1);
+  _chunks.back().clear();
+  _size = 0;
+
+  if (shrink_to_fit_) {
+    shrink_to_fit();
+  }
+}
+
+inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id,
+                                           double count, std::size_t bin_offset) {
+  assert(!_chunk_size.empty());
+  if (HICTK_UNLIKELY(_chunks.back().size() == _chunk_size)) {
+    _chunks.emplace_back(SparseMatrix{});
+  }
+
+  _chunks.back().push_back(bin1_id, bin2_id, count, bin_offset);
+  ++_size;
+}
+
+inline void SparseMatrixChunked::finalize() { shrink_to_fit(); }
+
+inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
+                                             bool init_buffer) const {
+  auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
+    for (std::size_t i = istart; i < iend; ++i) {
+      _chunks[i].marginalize(marg, false);
+    }
+  };
+
+  assert(!marg.empty());
+  if (init_buffer) {
+    marg.fill(0);
+  }
+
+  if (_chunks.size() == 1 || !tpool) {
+    marginalize_impl(0, _chunks.size());
+    return;
+  }
+
+  tpool->detach_blocks(std::size_t(0), _chunks.size(), marginalize_impl);
+  tpool->wait();
+}
+
+inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
+                                                 BS::thread_pool* tpool, bool init_buffer) const {
+  auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
+    for (std::size_t i = istart; i < iend; ++i) {
+      _chunks[i].marginalize_nnz(marg, false);
+    }
+  };
+
+  assert(!marg.empty());
+  if (init_buffer) {
+    marg.fill(0);
+  }
+
+  if (_chunks.size() == 1 || !tpool) {
+    marginalize_nnz_impl(0, _chunks.size());
+    return;
+  }
+
+  tpool->detach_blocks(std::size_t(0), _chunks.size(), marginalize_nnz_impl);
+  tpool->wait();
+}
+
+inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals& marg,
+                                                          nonstd::span<const double> biases,
+                                                          nonstd::span<const double> weights,
+                                                          BS::thread_pool* tpool,
+                                                          bool init_buffer) const {
+  auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
+    for (std::size_t i = istart; i < iend; ++i) {
+      _chunks[i].times_outer_product_marg(marg, biases, weights, false);
+    }
+  };
+
+  assert(biases.size() == weights.size() || weights.empty());
+  marg.resize(biases.size());
+  if (init_buffer) {
+    marg.fill(0);
+  }
+
+  if (_chunks.size() == 1 || !tpool) {
+    times_outer_product_marg_impl(0, _chunks.size());
+    return;
+  }
+
+  tpool->detach_blocks(std::size_t(0), _chunks.size(), times_outer_product_marg_impl);
+  tpool->wait();
+}
+
+inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
+                                          nonstd::span<const double> cfx, BS::thread_pool* tpool,
+                                          bool init_buffer) const {
+  auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
+    for (std::size_t i = istart; i < iend; ++i) {
+      _chunks[i].multiply(buffer, cfx, false);
+    }
+  };
+
+  buffer.resize(cfx.size());
+  if (init_buffer) {
+    buffer.fill(0);
+  }
+
+  if (_chunks.size() == 1 || !tpool) {
+    multiply_impl(0, _chunks.size());
+    return;
+  }
+
+  tpool->detach_blocks(std::size_t(0), _chunks.size(), multiply_impl);
+  tpool->wait();
+}
+
+inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
+    const std::vector<double>& weights) const {
+  if (empty()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  double sum = 0.0;
+  double norm_sum = 0.0;
+
+  for (const auto& matrix : _chunks) {
+    for (std::size_t i = 0; i < matrix.size(); ++i) {
+      const auto bin1_id = matrix.bin1_ids()[i];
+      const auto bin2_id = matrix.bin2_ids()[i];
+      const auto count = matrix.counts()[i];
+
+      const auto w1 = weights[bin1_id];
+      const auto w2 = weights[bin2_id];
+
+      if (!std::isnan(w1) && !std::isnan(w2)) {
+        const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
+        sum += count * cfx;
+        norm_sum += (count * cfx) / (w1 * w2);
+      }
+    }
+  }
+
+  return std::sqrt(norm_sum / sum);
+}
+
+inline FileBackedSparseMatrix::FileBackedSparseMatrix(std::filesystem::path tmp_file,
+                                                      std::size_t chunk_size, int compression_lvl)
     : _path(std::move(tmp_file)),
       _fs(filestream::FileStream::create(_path.string())),
       _chunk_size(chunk_size),
@@ -595,7 +712,7 @@ inline SparseMatrixChunked::SparseMatrixChunked(std::filesystem::path tmp_file,
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {}
 
-inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
+inline FileBackedSparseMatrix::~FileBackedSparseMatrix() noexcept {
   try {
     if (!_path.empty() && std::filesystem::exists(_path)) {
       _fs = filestream::FileStream{};
@@ -606,9 +723,9 @@ inline SparseMatrixChunked::~SparseMatrixChunked() noexcept {
   }
 }
 
-inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
-inline std::size_t SparseMatrixChunked::size() const noexcept { return _size; }
-inline void SparseMatrixChunked::clear(bool shrink_to_fit_) {
+inline bool FileBackedSparseMatrix::empty() const noexcept { return size() == 0; }
+inline std::size_t FileBackedSparseMatrix::size() const noexcept { return _size; }
+inline void FileBackedSparseMatrix::clear(bool shrink_to_fit_) {
   _index.clear();
   _fs = filestream::FileStream{};
   std::filesystem::remove(_path);
@@ -617,8 +734,8 @@ inline void SparseMatrixChunked::clear(bool shrink_to_fit_) {
   _matrix.clear(shrink_to_fit_);
 }
 
-inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id,
-                                           double count, std::size_t bin_offset) {
+inline void FileBackedSparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id,
+                                              double count, std::size_t bin_offset) {
   if (_matrix.size() == _chunk_size) {
     write_chunk();
   }
@@ -627,15 +744,15 @@ inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t 
   ++_size;
 }
 
-inline void SparseMatrixChunked::finalize() {
+inline void FileBackedSparseMatrix::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
   _fs = filestream::FileStream(_path.string());
 }
 
-inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
-                                             bool init_buffer) const {
+inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
+                                                BS::thread_pool* tpool, bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream fs(_path.string());
@@ -644,7 +761,7 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(static_cast<std::streamoff>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
-      matrix.marginalize(marg, nullptr, false);
+      matrix.marginalize(marg, false);
     }
   };
 
@@ -669,8 +786,9 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
   tpool->wait();
 }
 
-inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
-                                                 BS::thread_pool* tpool, bool init_buffer) const {
+inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg,
+                                                    BS::thread_pool* tpool,
+                                                    bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream fs(_path.string());
@@ -679,7 +797,7 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(static_cast<std::streamoff>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
-      matrix.marginalize_nnz(marg, nullptr, false);
+      matrix.marginalize_nnz(marg, false);
     }
   };
 
@@ -703,11 +821,11 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
   tpool->wait();
 }
 
-inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals& marg,
-                                                          nonstd::span<const double> biases,
-                                                          nonstd::span<const double> weights,
-                                                          BS::thread_pool* tpool,
-                                                          bool init_buffer) const {
+inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
+                                                             nonstd::span<const double> biases,
+                                                             nonstd::span<const double> weights,
+                                                             BS::thread_pool* tpool,
+                                                             bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream fs(_path.string());
@@ -716,7 +834,7 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(static_cast<std::streamoff>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
-      matrix.times_outer_product_marg(marg, biases, weights, nullptr, false);
+      matrix.times_outer_product_marg(marg, biases, weights, false);
     }
   };
 
@@ -742,10 +860,10 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
   tpool->wait();
 }
 
-inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
-                                          nonstd::span<const double> cfx, BS::thread_pool* tpool,
-                                          bool init_buffer) const {
-  auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
+inline void FileBackedSparseMatrix::multiply(VectorOfAtomicDecimals& buffer,
+                                             nonstd::span<const double> cfx, BS::thread_pool* tpool,
+                                             bool init_buffer) const {
+  auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream fs(_path.string());
     auto matrix = _matrix;
@@ -753,7 +871,7 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.seekg(static_cast<std::streamoff>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
-      matrix.multiply(buffer, cfx, nullptr, false);
+      matrix.multiply(buffer, cfx, false);
     }
   };
 
@@ -763,7 +881,7 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
   }
 
   if (_index.size() == 1 || !tpool) {
-    times_outer_product_marg_impl(0, _index.size());
+    multiply_impl(0, _index.size());
     return;
   }
 
@@ -773,12 +891,12 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
     const auto i0 = offsets[i - 1];
     const auto i1 = offsets[i];
 
-    tpool->detach_task([&, ii = i0, jj = i1]() { times_outer_product_marg_impl(ii, jj); });
+    tpool->detach_task([&, ii = i0, jj = i1]() { multiply_impl(ii, jj); });
   }
   tpool->wait();
 }
 
-inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
+inline double FileBackedSparseMatrix::compute_scaling_factor_for_scale(
     const std::vector<double>& weights) const {
   if (empty()) {
     return std::numeric_limits<double>::quiet_NaN();
@@ -813,7 +931,7 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
   return std::sqrt(norm_sum / sum);
 }
 
-inline void SparseMatrixChunked::write_chunk() {
+inline void FileBackedSparseMatrix::write_chunk() {
   assert(!_matrix.empty());
   _index.push_back(_fs.tellp());
   _matrix.finalize();
@@ -821,8 +939,8 @@ inline void SparseMatrixChunked::write_chunk() {
   _matrix.clear();
 }
 
-inline std::vector<std::size_t> SparseMatrixChunked::compute_chunk_offsets(std::size_t size,
-                                                                           std::size_t num_chunks) {
+inline std::vector<std::size_t> FileBackedSparseMatrix::compute_chunk_offsets(
+    std::size_t size, std::size_t num_chunks) {
   std::vector<std::size_t> offsets{};
   if (size < num_chunks) {
     offsets.resize(size + 1, 1);

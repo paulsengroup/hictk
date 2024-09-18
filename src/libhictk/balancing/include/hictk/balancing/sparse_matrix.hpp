@@ -131,6 +131,34 @@ class SparseMatrix {
                  int compression_lvl = 3) const;
   void deserialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
 
+  void marginalize(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
+  void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
+                                nonstd::span<const double> weights, bool init_buffer = true) const;
+
+  void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
+                bool init_buffer = true) const;
+
+  [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
+};
+
+class SparseMatrixChunked {
+  std::vector<SparseMatrix> _chunks{};
+  std::size_t _size{};
+  std::size_t _chunk_size{};
+
+ public:
+  explicit SparseMatrixChunked(std::size_t chunk_size = 16 * 1024 * 1024);
+
+  [[nodiscard]] bool empty() const noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+  void shrink_to_fit() noexcept;
+  void clear(bool shrink_to_fit_ = false);
+
+  void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
+                 std::size_t bin_offset = 0);
+  void finalize();
+
   void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
   void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
@@ -145,7 +173,7 @@ class SparseMatrix {
   [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 };
 
-class SparseMatrixChunked {
+class FileBackedSparseMatrix {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
   std::filesystem::path _path{};
@@ -160,28 +188,28 @@ class SparseMatrixChunked {
   std::unique_ptr<ZSTD_DCtx_s> _zstd_dctx{};
 
  public:
-  SparseMatrixChunked() = default;
-  SparseMatrixChunked(std::filesystem::path tmp_file, std::size_t chunk_size,
-                      int compression_lvl = 3);
+  FileBackedSparseMatrix() = default;
+  FileBackedSparseMatrix(std::filesystem::path tmp_file, std::size_t chunk_size,
+                         int compression_lvl = 3);
 
-  SparseMatrixChunked(const SparseMatrixChunked& other) = delete;
+  FileBackedSparseMatrix(const FileBackedSparseMatrix& other) = delete;
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 10
-  SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+  FileBackedSparseMatrix(FileBackedSparseMatrix&& other) = default;
 #elif defined(__clang__) && __clang__ < 9
-  SparseMatrixChunked(SparseMatrixChunked&& other) = default;
+  FileBackedSparseMatrix(FileBackedSparseMatrix&& other) = default;
 #else
-  SparseMatrixChunked(SparseMatrixChunked&& other) noexcept = default;
+  FileBackedSparseMatrix(FileBackedSparseMatrix&& other) noexcept = default;
 #endif
 
-  ~SparseMatrixChunked() noexcept;
+  ~FileBackedSparseMatrix() noexcept;
 
-  SparseMatrixChunked& operator=(const SparseMatrixChunked& other) = delete;
+  FileBackedSparseMatrix& operator=(const FileBackedSparseMatrix& other) = delete;
 #if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+  FileBackedSparseMatrix& operator=(FileBackedSparseMatrix&& other) noexcept = default;
 #elif defined(__GNUC__) && __GNUC__ > 9
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) noexcept = default;
+  FileBackedSparseMatrix& operator=(FileBackedSparseMatrix&& other) noexcept = default;
 #else
-  SparseMatrixChunked& operator=(SparseMatrixChunked&& other) = default;
+  FileBackedSparseMatrix& operator=(FileBackedSparseMatrix&& other) = default;
 #endif
 
   [[nodiscard]] bool empty() const noexcept;

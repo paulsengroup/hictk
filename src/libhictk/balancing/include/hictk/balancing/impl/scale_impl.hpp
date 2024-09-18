@@ -359,7 +359,7 @@ inline void SCALE::multiply(std::vector<double>& v1, const std::vector<double>& 
 }
 
 template <typename PixelIt>
-inline std::variant<internal::SparseMatrix, internal::SparseMatrixChunked>
+inline std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
 SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset,
                                   double max_percentile, const std::filesystem::path& tmpfile,
                                   std::size_t chunk_size) {
@@ -376,11 +376,11 @@ SCALE::mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offse
   _row_wise_nnz.resize(size(), 0);
   _biases1.resize(size(), 0);
 
-  std::variant<internal::SparseMatrix, internal::SparseMatrixChunked> matrix{
-      internal::SparseMatrix{}};
+  std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> matrix{
+      internal::SparseMatrixChunked{}};
 
   if (!tmpfile.empty()) {
-    matrix = internal::SparseMatrixChunked(tmpfile, chunk_size);
+    matrix = internal::FileBackedSparseMatrix(tmpfile, chunk_size);
   }
 
   std::visit(
@@ -562,14 +562,14 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
 }
 
 template <typename PixelIt>
-inline std::variant<internal::SparseMatrix, internal::SparseMatrixChunked> SCALE::init_matrix(
-    PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
-    std::size_t chunk_size) {
-  std::variant<internal::SparseMatrix, internal::SparseMatrixChunked> matrix{
-      internal::SparseMatrix{}};
+inline std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
+SCALE::init_matrix(PixelIt first, PixelIt last, std::size_t offset,
+                   const std::filesystem::path& tmpfile, std::size_t chunk_size) {
+  std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> matrix{
+      internal::SparseMatrixChunked{}};
 
   if (!tmpfile.empty()) {
-    matrix = internal::SparseMatrixChunked(tmpfile, chunk_size);
+    matrix = internal::FileBackedSparseMatrix(tmpfile, chunk_size);
   }
   std::visit(
       [&](auto& m) {

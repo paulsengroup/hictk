@@ -180,7 +180,7 @@ inline void ICE::balance_cis(const MatrixT& matrix, const Chromosome& chrom, std
 
 template <typename File>
 auto ICE::construct_sparse_matrix(const File& f, Type type,
-                                  std::size_t num_masked_diags) -> internal::SparseMatrix {
+                                  std::size_t num_masked_diags) -> internal::SparseMatrixChunked {
   SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
   if (type == Type::cis) {
     return construct_sparse_matrix_cis(f, num_masked_diags);
@@ -190,8 +190,8 @@ auto ICE::construct_sparse_matrix(const File& f, Type type,
 
 template <typename File>
 inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags)
-    -> internal::SparseMatrix {
-  internal::SparseMatrix m{};
+    -> internal::SparseMatrixChunked {
+  internal::SparseMatrixChunked m{};
 
   const auto sel = f.fetch();
   std::for_each(sel.template begin<double>(), sel.template end<double>(), [&](const auto& p) {
@@ -208,8 +208,8 @@ inline auto ICE::construct_sparse_matrix_gw(const File& f, std::size_t num_maske
 template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(
     const File& f, const Chromosome& chrom, std::size_t bin_offset,
-    std::size_t num_masked_diags) -> internal::SparseMatrix {
-  internal::SparseMatrix m{};
+    std::size_t num_masked_diags) -> internal::SparseMatrixChunked {
+  internal::SparseMatrixChunked m{};
 
   const auto sel = f.fetch(chrom.name());
   std::for_each(sel.template begin<double>(), sel.template end<double>(),
@@ -225,8 +225,8 @@ template <typename File>
 
 template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_cis(
-    const File& f, std::size_t num_masked_diags) -> internal::SparseMatrix {
-  internal::SparseMatrix m{};
+    const File& f, std::size_t num_masked_diags) -> internal::SparseMatrixChunked {
+  internal::SparseMatrixChunked m{};
 
   for (const auto& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
@@ -247,7 +247,7 @@ template <typename File>
 
 template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(
-    const File& f, std::size_t num_masked_diags) -> internal::SparseMatrix {
+    const File& f, std::size_t num_masked_diags) -> internal::SparseMatrixChunked {
   using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 
@@ -282,7 +282,7 @@ template <typename File>
 
   transformers::PixelMerger<PixelIt> merger{heads, tails};
 
-  internal::SparseMatrix m{};
+  internal::SparseMatrixChunked m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
     // TODO: this filtering step is wrong when done on trans matrices, as it will
     // remove the first and last few pixels from trans matrices of adjacent chromosomes.
@@ -298,9 +298,9 @@ template <typename File>
 }
 
 template <typename File>
-auto ICE::construct_sparse_matrix_chunked(const File& f, Type type, std::size_t num_masked_diags,
-                                          const std::filesystem::path& tmpfile,
-                                          std::size_t chunk_size) -> internal::SparseMatrixChunked {
+auto ICE::construct_sparse_matrix_chunked(
+    const File& f, Type type, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
+    std::size_t chunk_size) -> internal::FileBackedSparseMatrix {
   SPDLOG_INFO(FMT_STRING("Writing interactions to temporary file {}..."), tmpfile);
   if (type == Type::cis) {
     return construct_sparse_matrix_chunked_cis(f, num_masked_diags, tmpfile, chunk_size);
@@ -311,8 +311,8 @@ auto ICE::construct_sparse_matrix_chunked(const File& f, Type type, std::size_t 
 template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_gw(
     const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-    std::size_t chunk_size) -> internal::SparseMatrixChunked {
-  internal::SparseMatrixChunked m(tmpfile, chunk_size);
+    std::size_t chunk_size) -> internal::FileBackedSparseMatrix {
+  internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
 
   const auto sel = f.fetch();
   std::for_each(sel.template begin<double>(), sel.template end<double>(), [&](const auto& p) {
@@ -328,8 +328,9 @@ inline auto ICE::construct_sparse_matrix_chunked_gw(
 template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_cis(
     const File& f, const Chromosome& chrom, std::size_t bin_offset, std::size_t num_masked_diags,
-    const std::filesystem::path& tmpfile, std::size_t chunk_size) -> internal::SparseMatrixChunked {
-  internal::SparseMatrixChunked m(tmpfile, chunk_size);
+    const std::filesystem::path& tmpfile,
+    std::size_t chunk_size) -> internal::FileBackedSparseMatrix {
+  internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
 
   const auto sel = f.fetch(chrom.name());
   std::for_each(sel.template begin<double>(), sel.template end<double>(),
@@ -345,8 +346,8 @@ inline auto ICE::construct_sparse_matrix_chunked_cis(
 template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_cis(
     const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-    std::size_t chunk_size) -> internal::SparseMatrixChunked {
-  internal::SparseMatrixChunked m(tmpfile, chunk_size);
+    std::size_t chunk_size) -> internal::FileBackedSparseMatrix {
+  internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
 
   for (const Chromosome& chrom : f.chromosomes()) {
     if (chrom.is_all()) {
@@ -367,7 +368,7 @@ inline auto ICE::construct_sparse_matrix_chunked_cis(
 template <typename File>
 inline auto ICE::construct_sparse_matrix_chunked_trans(
     const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-    std::size_t chunk_size) -> internal::SparseMatrixChunked {
+    std::size_t chunk_size) -> internal::FileBackedSparseMatrix {
   using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 
@@ -396,7 +397,7 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(
 
   transformers::PixelMerger<PixelIt> merger{heads, tails};
 
-  internal::SparseMatrixChunked m(tmpfile, chunk_size);
+  internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
     // TODO: this filtering step is wrong when done on trans matrices, as it will
     // remove the first and last few pixels from trans matrices of adjacent chromosomes.

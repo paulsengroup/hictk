@@ -80,44 +80,44 @@ class ICE {
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix(
-      const File& f, Type type, std::size_t num_masked_diags) -> internal::SparseMatrix;
+      const File& f, Type type, std::size_t num_masked_diags) -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_gw(const File& f, std::size_t num_masked_diags)
-      -> internal::SparseMatrix;
+      -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_cis(
       const File& f, const Chromosome& chrom, std::size_t bin_offset,
-      std::size_t num_masked_diags) -> internal::SparseMatrix;
+      std::size_t num_masked_diags) -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_cis(const File& f, std::size_t num_masked_diags)
-      -> internal::SparseMatrix;
+      -> internal::SparseMatrixChunked;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_trans(
-      const File& f, std::size_t num_masked_diags) -> internal::SparseMatrix;
+      const File& f, std::size_t num_masked_diags) -> internal::SparseMatrixChunked;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked(
       const File& f, Type type, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> internal::SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::FileBackedSparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_gw(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> internal::SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::FileBackedSparseMatrix;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_cis(
       const File& f, const Chromosome& chrom, std::size_t bin_offset, std::size_t num_masked_diags,
       const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> internal::SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::FileBackedSparseMatrix;
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_cis(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> internal::SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::FileBackedSparseMatrix;
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix_chunked_trans(
       const File& f, std::size_t num_masked_diags, const std::filesystem::path& tmpfile,
-      std::size_t chunk_size) -> internal::SparseMatrixChunked;
+      std::size_t chunk_size) -> internal::FileBackedSparseMatrix;
 
   template <typename MatrixT>
   [[nodiscard]] static auto inner_loop(const MatrixT& matrix, nonstd::span<double> biases,

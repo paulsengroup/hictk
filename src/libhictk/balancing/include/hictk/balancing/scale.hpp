@@ -126,7 +126,7 @@ class SCALE {
   static void multiply(std::vector<double>& v1, const std::vector<double>& v2) noexcept;
 
   template <typename PixelIt>
-  [[nodiscard]] std::variant<internal::SparseMatrix, internal::SparseMatrixChunked>
+  [[nodiscard]] std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
   mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
                              const std::filesystem::path& tmpfile, std::size_t chunk_size);
   template <typename Matrix>
@@ -147,7 +147,7 @@ class SCALE {
                                      double frac_bad_cutoff, double tolerance) -> ControlFlow;
 
   template <typename PixelIt>
-  static std::variant<internal::SparseMatrix, internal::SparseMatrixChunked> init_matrix(
+  static std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> init_matrix(
       PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
       std::size_t chunk_size);
 
