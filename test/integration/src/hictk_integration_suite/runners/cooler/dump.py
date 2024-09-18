@@ -142,6 +142,9 @@ class CoolerDump:
             if clr is None:
                 return None
 
+        if clr is None:
+            return None
+
         return filter_bins(
             clr.bins()[["chrom", "start", "end"]][:],
             clr.chromsizes.to_dict(),

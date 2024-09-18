@@ -2,43 +2,17 @@
 #
 # SPDX-License-Identifier: MIT
 
-import contextlib
 import logging
-import multiprocessing as mp
 import os
 import pathlib
 import shutil
-import stat
 import subprocess as sp
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Tuple
 
 import pandas as pd
-
-
-class Fifo:
-    def __init__(self, path: pathlib.Path | str):
-        if not stat.S_ISFIFO(os.stat(path).st_mode):
-            raise ValueError("path does not point to an existing FIFO")
-
-        self._name = pathlib.Path(path)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.remove(self.name)
-
-    def write_handle(self):
-        return open(self.name, "a")
-
-    def read_handle(self):
-        return open(self.name, "r")
-
-    @property
-    def name(self) -> pathlib.Path:
-        return self._name
 
 
 class Runner:
@@ -61,14 +35,6 @@ class Runner:
         logging.debug(f'removing temporary folder "{self._tmpdir}"...')
         os.rmdir(self._tmpdir)
 
-    def _mkfifo(self) -> Fifo:
-        with tempfile.NamedTemporaryFile(dir=self._tmpdir, delete_on_close=True) as tmpfile:
-            path = tmpfile.name
-
-        logging.debug(f'creating FIFO "{path}"...')
-        os.mkfifo(path)
-        return Fifo(path)
-
     def _cmd_args(self, include_exec: bool = True) -> List[str]:
         if include_exec:
             args_ = [str(self._exec)]
@@ -77,32 +43,32 @@ class Runner:
         return args_ + [str(v).strip() for v in self._args]
 
     @staticmethod
-    def _read_table(f, names: List[str] | None = None) -> pd.DataFrame | str:
-        if f is None:
+    def _read_table(handle, names: List[str] | None = None) -> pd.DataFrame | str:
+        if handle is None:
             raise ValueError("stream cannot be None")
 
         if len(names) == 0:
             raise ValueError("names cannot be an empty list")
 
-        logging.debug(f'reading table from file "{f}"...')
         try:
-            df = pd.read_table(f, names=names)
-            logging.debug(f'read {len(df)} records from "{f}"')
+            logging.debug("reading table from FIFO...")
+            df = pd.read_table(handle, names=names)
+            logging.debug(f"read {len(df)} records from FIFO")
         except pd.errors.ParserError as e:
-            logging.warning(f'failed to read table from file "{f}: {e}')
+            logging.warning(f"failed to read table from FIFO: {e}")
             return str(e)
 
         return df
 
     @staticmethod
-    def _read_file(f: pathlib.Path | None) -> List[str]:
-        logging.debug(f'reading data from file "{f}"...')
-        if f is None:
+    def _read_file(handle) -> List[str]:
+
+        if handle is None:
             data = []
         else:
-            with open(f, "r") as h:
-                data = h.readlines()
-        logging.debug(f'read {len(data)} records from file "{f}"...')
+            logging.debug("reading data from FIFO...")
+            data = handle.readlines()
+            logging.debug(f"read {len(data)} records from FIFO...")
 
         return data
 
@@ -113,10 +79,9 @@ class Runner:
         stderr,
         encoding: str,
         env_variables: Dict[str, str],
-        ctx: contextlib.ExitStack | None = None,
     ) -> sp.Popen:
         logging.debug(f"launching subprocess {self._cmd_args()}...")
-        proc = sp.Popen(
+        return sp.Popen(
             self._cmd_args(),
             stdin=stdin,
             stdout=stdout,
@@ -125,9 +90,6 @@ class Runner:
             env=env_variables,
             cwd=self._cwd,
         )
-        if ctx:
-            ctx.enter_context(proc)
-        return proc
 
     @property
     def args(self):
@@ -149,31 +111,25 @@ class Runner:
             env_variables = os.environ.copy()
 
         t0 = time.time()
-        with contextlib.ExitStack() as stack:
-            ppool = mp.Pool(2)
-            stack.enter_context(ppool)
-            stdout_fifo = self._mkfifo()
-            stack.enter_context(stdout_fifo)
-            stderr_fifo = self._mkfifo()
-            stack.enter_context(stderr_fifo)
-
+        with (
+            ThreadPoolExecutor(2) as tpool,
+            self._launch_subproc(stdin, sp.PIPE, sp.PIPE, encoding, env_variables) as proc,
+        ):
             if colnames is None:
-                stdout_async = ppool.apply_async(self._read_file, args=(stdout_fifo.name,))
+                stdout = tpool.submit(self._read_file, proc.stdout)
             else:
                 if isinstance(colnames, str):
                     assert colnames == "infer"
                     colnames = None
-                stdout_async = ppool.apply_async(self._read_table, args=(stdout_fifo.name, colnames))
-            stderr_async = ppool.apply_async(self._read_file, args=(stderr_fifo.name,))
+                stdout = tpool.submit(self._read_table, proc.stdout, colnames)
+            stderr = tpool.submit(self._read_file, proc.stderr)
 
-            with stdout_fifo.write_handle() as stdout, stderr_fifo.write_handle() as stderr:
-                proc = self._launch_subproc(stdin, stdout, stderr, encoding, env_variables, ctx=stack)
-                logging.debug(f"waiting for subprocess to return for up to {timeout}s...")
-                returncode = proc.wait(timeout)
-                logging.debug(f"subprocess terminated with exit code {returncode}")
+            logging.debug(f"waiting for subprocess to return for up to {timeout}s...")
+            returncode = proc.wait(timeout)
+            logging.debug(f"subprocess terminated with exit code {returncode}")
 
-            logging.debug(f"process returned exit code {returncode}")
-            delta = time.time() - t0
-            time_left = max(0.0, timeout - delta)
-            logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
-            return returncode, stdout_async.get(time_left), stderr_async.get(time_left)
+        logging.debug(f"process returned exit code {returncode}")
+        delta = time.time() - t0
+        time_left = max(0.0, timeout - delta)
+        logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
+        return returncode, stdout.result(time_left), stderr.result(time_left)

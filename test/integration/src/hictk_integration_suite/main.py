@@ -8,6 +8,7 @@ import datetime
 import importlib
 import json
 import logging
+import multiprocessing as mp
 import os
 import pathlib
 import platform
@@ -23,7 +24,7 @@ from hictk_integration_suite.runners.hictk.common import version
 
 
 def nproc() -> int:
-    return len(os.sched_getaffinity(0))
+    return mp.cpu_count()
 
 
 def get_test_names(include_all: bool = True) -> List[str]:

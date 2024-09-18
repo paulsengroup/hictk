@@ -78,14 +78,22 @@ class WorkingDirectory:
         _make_file_writeable(path)
 
     @staticmethod
-    def _parse_uri(s: pathlib.Path | str) -> Tuple[pathlib.Path, pathlib.Path | None]:
+    def _parse_uri(s: pathlib.Path | str) -> Tuple[pathlib.Path, str | None]:
         path, _, grp = str(s).partition("::")
         if grp:
-            grp = pathlib.Path(grp)
+            grp = str(pathlib.Path(grp).as_posix())
         else:
             grp = None
 
         return pathlib.Path(path), grp
+
+    @staticmethod
+    def _normalize_path(p: pathlib.Path | str) -> pathlib.Path:
+        path, grp = WorkingDirectory._parse_uri(p)
+        if grp:
+            grp = grp.replace("/", "\\/")
+            return pathlib.Path(f"{path.resolve()}::{grp}")
+        return path.resolve()
 
     def stage_file(
         self,
@@ -93,7 +101,7 @@ class WorkingDirectory:
         make_read_only: bool = True,
         exists_ok: bool = False,
     ) -> pathlib.Path:
-        src = pathlib.Path(src).resolve()
+        src = self._normalize_path(src)
         if src in self._mappings:
             return self._mappings[src]
 
@@ -225,6 +233,21 @@ class WorkingDirectory:
     def cleanup(self):
         if not self._delete or not self._path.exists():
             return
+
+        # Make files writeable by the current user
+        for dirpath, dirnames, filenames in self._path.walk(follow_symlinks=False):
+            for name in dirnames:
+                try:
+                    path = dirpath / name
+                    path.chmod(path.stat().st_mode | stat.S_IWUSR)
+                except:  # noqa
+                    pass
+            for name in filenames:
+                try:
+                    path = dirpath / name
+                    path.chmod(path.stat().st_mode | stat.S_IWUSR)
+                except:  # noqa
+                    pass
 
         def error_handler(_, path, excinfo):
             logging.warning(f'failed to delete "{path}": {excinfo}')
