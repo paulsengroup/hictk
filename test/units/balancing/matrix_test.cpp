@@ -552,7 +552,7 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
       }
       m1.finalize();
 
-      std::filesystem::remove(tmpfile);
+      std::filesystem::remove(tmpfile);  // NOLINT
       auto f = filestream::FileStream::create(tmpfile.string());
 
       SparseMatrix m2{};
@@ -578,12 +578,39 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
 {1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
 {3, 3, 4}, {3, 4, 5}};            // chr2
   // clang-format on
-  const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
 
-  SECTION("accessors") { CHECK(SparseMatrixChunked{tmpfile, 2, 0}.empty()); }
+  SECTION("accessors") { CHECK(SparseMatrixChunked{}.empty()); }
 
   SECTION("push_back") {
-    SparseMatrixChunked m{tmpfile, 2, 0};
+    SparseMatrixChunked m{2};
+    for (const auto& p : pixels) {
+      m.push_back(p.bin1_id, p.bin2_id, p.count);
+    }
+    m.finalize();
+    CHECK(m.size() == pixels.size());
+
+    m.clear();
+    CHECK(m.empty());
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Balancing: FileBackedSparseMatrix", "[balancing][short]") {
+  using FileBackedSparseMatrix = hictk::balancing::internal::FileBackedSparseMatrix;
+  const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
+                                Chromosome{2, "chr2", 50}, Chromosome{3, "chr3", 50}},
+                      50};
+  // clang-format off
+const std::vector<ThinPixel<std::int32_t>> pixels{
+{1, 1, 1}, {1, 2, 2}, {2, 2, 3},  // chr1
+{3, 3, 4}, {3, 4, 5}};            // chr2
+  // clang-format on
+  const auto tmpfile = testdir() / "sparse_matrix_chunked.tmp";
+
+  SECTION("accessors") { CHECK(FileBackedSparseMatrix{tmpfile, 2, 0}.empty()); }
+
+  SECTION("push_back") {
+    FileBackedSparseMatrix m{tmpfile, 2, 0};
     for (const auto& p : pixels) {
       m.push_back(p.bin1_id, p.bin2_id, p.count);
     }
