@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
+from hictk_integration_suite.common import parse_uri
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
 
@@ -22,7 +23,7 @@ def _extract_queries_for_uri(
     cell: str | None,
     config: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
-    file = str(uri).partition("::")[0]
+    file = str(parse_uri(uri)[0])
     queries = []
     for c in config["queries"]:
         if not file.endswith(os.path.basename(c["uri"])):

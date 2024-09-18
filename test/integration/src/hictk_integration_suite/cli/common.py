@@ -14,6 +14,8 @@ from typing import Any, Dict, List, Mapping, Tuple
 
 from immutabledict import immutabledict
 
+from hictk_integration_suite.common import parse_uri
+
 
 def _make_file_read_only(path: pathlib.Path | str):
     mode = stat.S_IRUSR
@@ -77,16 +79,6 @@ class WorkingDirectory:
     def _make_writeable(path: pathlib.Path | str):
         _make_file_writeable(path)
 
-    @staticmethod
-    def _parse_uri(s: pathlib.Path | str) -> Tuple[pathlib.Path, str | None]:
-        path, _, grp = str(s).partition("::")
-        if grp:
-            grp = str(pathlib.Path(grp).as_posix())
-        else:
-            grp = None
-
-        return pathlib.Path(path), grp
-
     def stage_file(
         self,
         src: pathlib.Path | str,
@@ -100,7 +92,7 @@ class WorkingDirectory:
         if nsrc := pathlib.Path(src).as_posix() in self._mappings:
             return self._mappings[nsrc]
 
-        path, grp = self._parse_uri(src)
+        path, grp = parse_uri(src)
         if not path.exists():
             raise RuntimeError(f'source file "{path}" does not exist')
 
@@ -204,7 +196,7 @@ class WorkingDirectory:
         if self._path_belongs_to_wd(item):
             return True
 
-        item, _ = self._parse_uri(item)
+        item, _ = parse_uri(item)
         return item in self._mappings
 
     def get(self, item: pathlib.Path | str, default=None):
@@ -212,7 +204,7 @@ class WorkingDirectory:
         if self._path_belongs_to_wd(item):
             return item.resolve()
 
-        item, grp = self._parse_uri(item)
+        item, grp = parse_uri(item)
         value = self._mappings.get(item, default)
         if value and grp:
             return pathlib.Path(f"{value}::{grp}")
@@ -311,7 +303,7 @@ def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "
     tmpdir = str(tmpdir)
 
     def normalize_uri(uri: str) -> str:
-        path, _, grp = uri.partition("::")
+        path, grp = parse_uri(uri)
         path = pathlib.Path(path).name
         if grp:
             return f"{path}::{grp}"

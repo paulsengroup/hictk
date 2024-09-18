@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 
 import click
 
-from hictk_integration_suite.cli.common import WorkingDirectory
+from hictk_integration_suite.cli.common import WorkingDirectory, parse_uri
 from hictk_integration_suite.runners.hictk.common import version
 
 
@@ -48,8 +48,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
 
 def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
     def _update_uri(uri: pathlib.Path) -> str:
-        uri = str(data_dir / uri)
-        path, _, grp = uri.partition("::")
+        path, grp = parse_uri(data_dir / uri)
         path = pathlib.Path(path)
         if not path.exists():
             raise RuntimeError(f'file "{path}" does not exists')

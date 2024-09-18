@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
+from hictk_integration_suite.common import parse_uri
 from hictk_integration_suite.tests.balance import (
     HictkBalanceICE,
     HictkBalanceICECli,
@@ -91,7 +92,7 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file, _, grp = c["uri"].partition("::")
+        input_file, grp = parse_uri(c["uri"])
         reference = wd[c.get("reference-uri", wd[c["uri"]])]
 
         # Make a writeable copy of the input file

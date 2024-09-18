@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
+from hictk_integration_suite.common import parse_uri
 from hictk_integration_suite.tests.rename_chromosomes import (
     HictkRenameChromosomes,
     HictkRenameChromosomesCli,
@@ -76,7 +77,7 @@ def _stage_valid_name_mappings(
 
 
 def _stage_uri(uri: pathlib.Path | str, wd: WorkingDirectory) -> str:
-    file_name, _, grp = str(uri).partition("::")
+    file_name, grp = parse_uri(uri)
     tmpdir = wd.mkdtemp()
     writeable_file = wd.touch(tmpdir / pathlib.Path(file_name).name)
     shutil.copy2(file_name, writeable_file)
