@@ -44,11 +44,14 @@ inline AtomicBitSet& AtomicBitSet::operator=(const AtomicBitSet& other) {
   if (this == &other) {
     return *this;
   }
+  const auto smallest_size = static_cast<std::ptrdiff_t>(std::min(size(), other.size()));
   _buff = std::vector<std::atomic<I>>(other._buff.size());
   _size = other._size;
 
-  std::transform(other._buff.begin(), other._buff.end(), _buff.begin(),
+  std::transform(other._buff.begin(), other._buff.begin() + smallest_size, _buff.begin(),
                  [](const auto& n) { return n.load(); });
+  std::fill(_buff.begin() + smallest_size, _buff.end(), false);
+
   return *this;
 }
 
