@@ -87,23 +87,18 @@ class WorkingDirectory:
 
         return pathlib.Path(path), grp
 
-    @staticmethod
-    def _normalize_path(p: pathlib.Path | str) -> pathlib.Path:
-        path, grp = WorkingDirectory._parse_uri(p)
-        if grp:
-            grp = grp.replace("/", "\\/")
-            return pathlib.Path(f"{path.resolve()}::{grp}")
-        return path.resolve()
-
     def stage_file(
         self,
         src: pathlib.Path | str,
         make_read_only: bool = True,
         exists_ok: bool = False,
     ) -> pathlib.Path:
-        src = self._normalize_path(src)
+
         if src in self._mappings:
             return self._mappings[src]
+
+        if nsrc := pathlib.Path(src).as_posix() in self._mappings:
+            return self._mappings[nsrc]
 
         path, grp = self._parse_uri(src)
         if not path.exists():

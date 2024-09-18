@@ -54,7 +54,7 @@ class Runner:
             logging.debug("reading table from FIFO...")
             df = pd.read_table(handle, names=names)
             logging.debug(f"read {len(df)} records from FIFO")
-        except pd.errors.ParserError as e:
+        except (pd.errors.ParserError, ValueError, OSError) as e:
             logging.warning(f"failed to read table from FIFO: {e}")
             return str(e)
 
@@ -62,13 +62,18 @@ class Runner:
 
     @staticmethod
     def _read_file(handle) -> List[str]:
-
+        data = []
         if handle is None:
-            data = []
-        else:
-            logging.debug("reading data from FIFO...")
-            data = handle.readlines()
+            return data
+
+        logging.debug("reading data from FIFO...")
+        try:
+            for line in handle:
+                data.append(line)
             logging.debug(f"read {len(data)} records from FIFO...")
+        except (ValueError, OSError) as e:
+            logging.warning(f"failed to read data from FIFO: {e}")
+            return data
 
         return data
 
@@ -128,8 +133,7 @@ class Runner:
             returncode = proc.wait(timeout)
             logging.debug(f"subprocess terminated with exit code {returncode}")
 
-        logging.debug(f"process returned exit code {returncode}")
-        delta = time.time() - t0
-        time_left = max(0.0, timeout - delta)
-        logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
-        return returncode, stdout.result(time_left), stderr.result(time_left)
+            delta = time.time() - t0
+            time_left = max(0.0, timeout - delta)
+            logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
+            return returncode, stdout.result(time_left), stderr.result(time_left)

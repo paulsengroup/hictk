@@ -69,7 +69,7 @@ files = [
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
   { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
-  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000" }
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 }
 ]
 
 queries = [
