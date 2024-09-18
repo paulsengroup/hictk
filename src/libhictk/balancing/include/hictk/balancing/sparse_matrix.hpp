@@ -152,6 +152,8 @@ class SparseMatrixChunked {
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] std::size_t num_chunks() const noexcept;
+  [[nodiscard]] std::size_t chunk_size() const noexcept;
   void shrink_to_fit() noexcept;
   void clear(bool shrink_to_fit_ = false);
 

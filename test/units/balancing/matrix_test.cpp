@@ -579,7 +579,10 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
 {3, 3, 4}, {3, 4, 5}};            // chr2
   // clang-format on
 
-  SECTION("accessors") { CHECK(SparseMatrixChunked{}.empty()); }
+  SECTION("accessors") {
+    CHECK(SparseMatrixChunked{}.empty());
+    CHECK(SparseMatrixChunked{}.num_chunks() == 0);
+  }
 
   SECTION("push_back") {
     SparseMatrixChunked m{2};
@@ -588,9 +591,11 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
     }
     m.finalize();
     CHECK(m.size() == pixels.size());
+    CHECK(m.num_chunks() == m.size() / m.chunk_size());
 
     m.clear();
     CHECK(m.empty());
+    CHECK(m.num_chunks() == 0);
   }
 }
 

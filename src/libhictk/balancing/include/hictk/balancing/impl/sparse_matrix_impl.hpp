@@ -553,6 +553,12 @@ inline bool SparseMatrixChunked::empty() const noexcept { return size() == 0; }
 
 inline std::size_t SparseMatrixChunked::size() const noexcept { return _size; }
 
+inline std::size_t SparseMatrixChunked::num_chunks() const noexcept {
+  return empty() ? std::size_t{} : num_chunks();
+}
+
+inline std::size_t SparseMatrixChunked::chunk_size() const noexcept { return _chunk_size; }
+
 inline void SparseMatrixChunked::shrink_to_fit() noexcept {
   assert(!_chunks.empty());
   _chunks.back().shrink_to_fit();
@@ -594,12 +600,12 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
     marg.fill(0);
   }
 
-  if (_chunks.size() == 1 || !tpool) {
-    marginalize_impl(0, _chunks.size());
+  if (num_chunks() < 2 || !tpool) {
+    marginalize_impl(0, num_chunks());
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), _chunks.size(), marginalize_impl);
+  tpool->detach_blocks(std::size_t(0), num_chunks(), marginalize_impl);
   tpool->wait();
 }
 
@@ -616,12 +622,12 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
     marg.fill(0);
   }
 
-  if (_chunks.size() == 1 || !tpool) {
-    marginalize_nnz_impl(0, _chunks.size());
+  if (num_chunks() < 2 || !tpool) {
+    marginalize_nnz_impl(0, num_chunks());
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), _chunks.size(), marginalize_nnz_impl);
+  tpool->detach_blocks(std::size_t(0), num_chunks(), marginalize_nnz_impl);
   tpool->wait();
 }
 
@@ -642,12 +648,12 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
     marg.fill(0);
   }
 
-  if (_chunks.size() == 1 || !tpool) {
-    times_outer_product_marg_impl(0, _chunks.size());
+  if (num_chunks() < 2 || !tpool) {
+    times_outer_product_marg_impl(0, num_chunks());
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), _chunks.size(), times_outer_product_marg_impl);
+  tpool->detach_blocks(std::size_t(0), num_chunks(), times_outer_product_marg_impl);
   tpool->wait();
 }
 
@@ -665,12 +671,12 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
     buffer.fill(0);
   }
 
-  if (_chunks.size() == 1 || !tpool) {
-    multiply_impl(0, _chunks.size());
+  if (num_chunks() < 2 || !tpool) {
+    multiply_impl(0, num_chunks());
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), _chunks.size(), multiply_impl);
+  tpool->detach_blocks(std::size_t(0), num_chunks(), multiply_impl);
   tpool->wait();
 }
 
