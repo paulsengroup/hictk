@@ -4,6 +4,7 @@
 from typing import Dict
 
 import cooler
+import numpy as np
 import pandas as pd
 
 
@@ -14,11 +15,14 @@ def normalize_df_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     if "chrom" in df.columns:
         df["chrom"] = df["chrom"].astype(str)
 
-    columns = df.select_dtypes(include=int).columns.tolist()
-    df[columns] = df[columns].astype(int)
+    int_types = (int, np.uint8, np.uint16, np.uint32, np.uint64, np.int8, np.int16, np.int32, np.int64)
+    float_types = (float, np.float16, np.float32, np.float64, np.longdouble)
+    columns = df.select_dtypes(include=int_types).columns.tolist()
+    df[columns] = df[columns].astype(np.int64)
 
-    columns = df.select_dtypes(include=float).columns.tolist()
-    df[columns] = df[columns].astype(float)
+    columns = df.select_dtypes(include=float_types).columns.tolist()
+    df[columns] = df[columns].astype(np.float64)
+
     return df
 
 
