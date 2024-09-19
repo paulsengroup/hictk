@@ -6,8 +6,9 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 from hictk_integration_suite import validators
+from hictk_integration_suite.common import parse_uri
 from hictk_integration_suite.runners.hictk import HictkTestHarness
-from hictk_integration_suite.validators.file_formats import is_hic
+from hictk_integration_suite.validators.file_formats import get_format, is_hic
 
 from .cli import HictkCli
 
@@ -37,6 +38,14 @@ class HictkConvert(HictkTestHarness):
         if self.returncode != 0:
             self._failures["unexpected return code"] = (
                 f"expected zero, found {self.returncode}; excerpt from stderr: {self.stderr(500).strip()}"
+            )
+            return
+
+        expected_output_format = parse_uri(test_file)[0].suffix.lstrip(".")
+        found_output_format = get_format(test_file)
+        if expected_output_format != found_output_format:
+            self._failures["unexpected output format"] = (
+                f"expected {expected_output_format}, found {get_format(reference_file)}"
             )
             return
 

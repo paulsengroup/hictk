@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.cooler import CoolerCoarsen
 from hictk_integration_suite.runners.hictk import HictkTestHarness
-from hictk_integration_suite.validators.file_formats import check_format, is_cooler
+from hictk_integration_suite.validators.file_formats import get_format, is_cooler
 
 from .cli import HictkCli
 
@@ -50,7 +50,7 @@ class HictkZoomify(HictkTestHarness):
         if expect_single_resolution:
             if test_file.endswith("cool") and not is_cooler(test_file):
                 self._failures["unexpected file format"] = (
-                    f"expected file in .cool format, found {check_format(test_file)}"
+                    f"expected file in .cool format, found {get_format(test_file)}"
                 )
 
             num_avail_res = len(self._fetch_table(test_file, table="resolutions")[1])

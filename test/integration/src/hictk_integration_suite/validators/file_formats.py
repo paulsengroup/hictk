@@ -52,7 +52,7 @@ def is_variable_bin_size(uri) -> bool:
     return bin_type == "variable"
 
 
-def check_format(uri) -> str:
+def get_format(uri) -> str:
     if is_cooler(uri):
         return "cool"
     if is_mcool(uri):
