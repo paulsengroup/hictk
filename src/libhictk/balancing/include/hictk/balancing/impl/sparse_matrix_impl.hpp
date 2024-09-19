@@ -370,7 +370,7 @@ inline double SparseMatrix::compute_scaling_factor_for_scale(
     const auto w1 = weights[bin1_id];
     const auto w2 = weights[bin2_id];
 
-    if (!std::isnan(w1) && !std::isnan(w2)) {
+    if (std::isfinite(w1) && std::isfinite(w2)) {
       const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
       sum += count * cfx;
       norm_sum += (count * cfx) / (w1 * w2);
@@ -596,10 +596,7 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
       const auto w1 = weights[bin1_id];
       const auto w2 = weights[bin2_id];
 
-      assert(std::isfinite(w1));
-      assert(std::isfinite(w2));
-
-      if (!std::isnan(w1) && !std::isnan(w2)) {
+      if (std::isfinite(w1) && std::isfinite(w2)) {
         const auto cfx = bin1_id != bin2_id ? 2.0 : 1.0;
         sum += count * cfx;
         norm_sum += (count * cfx) / (w1 * w2);
