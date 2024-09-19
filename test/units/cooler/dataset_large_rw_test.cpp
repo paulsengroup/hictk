@@ -41,7 +41,17 @@ TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
 
   std::mt19937_64 rand_eng{seed};  // NOLINT(cert-msc32-c,cert-msc51-cpp)
   std::for_each(dset.begin<std::uint8_t>(256'000), dset.end<std::uint8_t>(256'000),
-                [&](const auto& n) { CHECK(n == static_cast<std::uint8_t>(rand_eng())); });
+                [&](const auto& n1) {
+                  const auto n2 = static_cast<std::uint8_t>(rand_eng());
+#ifdef _MSC_VER
+                  // The CHECK macros appear to be too slow under MSVC
+                  if (n1 != n2) {
+                    CHECK(n1 == n2);
+                  }
+#else
+                    CHECK(n1 == n2);
+#endif
+                });
 }
 
 }  // namespace hictk::cooler::test::dataset
