@@ -94,7 +94,10 @@ jobs:
           conan remove --confirm "*"
 
       - name: Copy Conan settings
-        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
+        run: |
+          if [ ! -f "$CONAN_HOME/settings.yml" ]; then
+            cp "/root/.conan2/settings.yml" "$CONAN_HOME"
+          fi
 
       - name: Install build dependencies
         run: |

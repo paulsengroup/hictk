@@ -199,12 +199,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
-          path: test/data/hictk_test_data.tar.xz
+          path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
           enableCrossOsArchive: true
 
       - name: Extract test dataset
-        run: tar -xf test/data/hictk_test_data.tar.xz
+        run: tar -xf test/data/hictk_test_data.tar.zst
 
       - name: Run unit tests (Debug)
         if: matrix.build_type == 'Debug'
