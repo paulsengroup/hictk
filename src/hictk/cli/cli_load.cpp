@@ -86,7 +86,7 @@ void Cli::make_load_subcommand() {
       c.output_format,
       "Output format (by default this is inferred from the output file extension).\n"
       "Should be one of:\n"
-      "- autol\n"
+      "- auto\n"
       "- cool\n"
       "- hic\n")
       ->check(CLI::IsMember({"auto", "cool", "hic"}))
