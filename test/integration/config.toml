@@ -10,6 +10,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", format = "mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" }
 ]
 
@@ -20,6 +21,7 @@ test-cases = [
   { uri = "cooler/multires_cooler_test_file.mcool", no-validate-weights = true, args = { in-memory = "" } },
   { uri = "cooler/single_cell_cooler_test_file.scool", expect-failure = true },
   { uri = "cooler/cooler_variable_bins_test_file.cool", expect-failure = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", expect-failure = true },
   { uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool", args = { in-memory = "" } }
 ]
@@ -32,6 +34,7 @@ files = [
   { uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", format = "cool" },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool" }
 ]
 
@@ -51,6 +54,7 @@ test-cases = [
   { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.cool", expect-failure = true },
   { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.mcool", expect-failure = true },
   { input-uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", output = "test.hic", expect-failure = true },
+  { input-uri = "cooler/cooler_storage_mode_square_test_file.mcool", format="mcool", output  = "test.hic", expect-failure = true },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.cool", expect-failure = true },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.cool", expect-failure = false, args = { resolutions = [2500000] } },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.mcool", expect-failure = false, args = { resolutions = [1000000, 2500000] } },
@@ -69,6 +73,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", format = "cool" },
   { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 }
@@ -81,6 +86,8 @@ queries = [
   { uri = "cooler/multires_cooler_test_file.mcool", range1 = "1", range2 = "X" },
   { uri = "cooler/single_cell_cooler_test_file.scool", range1 = "1", range2 = "X" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", range1 = "chr1", range2 = "chr2" },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", range1 = "", range2 = "", expect-failure = false },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", range1 = "chr1", range2 = "chr2", expect-failure = true },
   { uri = "cooler/ENCFF993FGR.2500000.cool", range1 = "chr1", range2 = "chrX", normalization = "VC" },
   { uri = "hic/4DNFIZ1ZVXC8.hic8", range1 = "chr2L", range2 = "chrX", normalization = "VC" },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC" }
@@ -93,12 +100,14 @@ files = [
   { uri = "cooler/ENCFF993FGR.2500000.cool", format = "cool" },
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", format = "mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" },
   { uri = "cooler/invalid_coolers/corrupted_index.mcool", format = "mcool" }
 ]
 
 test-cases = [
   { input-uri = "cooler/multires_cooler_test_file.mcool", output = "test.mcool", timeout = 120.0 },
+  { input-uri = "cooler/cooler_storage_mode_square_test_file.mcool", output = "test.mcool", expect-failure = true },
   { input-uri = "cooler/invalid_coolers/corrupted_index.mcool", output = "test.mcool", timeout = 120.0 },
   { input-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.mcool", expect-failure = true },
   { input-uri = "cooler/single_cell_cooler_test_file.scool", output = "test.mcool", expect-failure = true },
@@ -156,6 +165,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", format = "cool" },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" }
 ]
@@ -172,6 +182,7 @@ test-cases = [
   { input-uris = ["cooler/cooler_test_file.cool", "cooler/cooler_variable_bins_test_file.cool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/multires_cooler_test_file.mcool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "cooler/single_cell_cooler_test_file.scool"], output = "test.scool", expect-failure = true },
+  { input-uris = ["cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/cooler_test_file.cool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/multires_cooler_test_file.mcool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
@@ -186,6 +197,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", format = "mcool" },
   { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic" },
   { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" }
 ]
@@ -201,6 +213,7 @@ files = [
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", format = "cool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", format = "mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" }
 ]
 
@@ -210,6 +223,7 @@ test-cases = [
   { uri = "cooler/single_cell_cooler_test_file.scool" },
   { uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", expect-failure = true },
   { uri = "cooler/cooler_variable_bins_test_file.cool" },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", expect-failure = true }
 ]
 
@@ -219,6 +233,7 @@ name-mappings = [
   { uri = "cooler/single_cell_cooler_test_file.scool", mappings = { "1" = "chrA", "X" = "chrB" } },
   { uri = "cooler/single_cell_cooler_test_file.scool::/cells/GSM2687248_41669_ACAGTG-R1-DpnII.100000.cool", mappings = { "1" = "chrA", "X" = "chrB" } },
   { uri = "cooler/cooler_variable_bins_test_file.cool", mappings = { "chr1" = "chrA", "chr2" = "chrB" } },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", mappings = { "chr1" = "chrA", "chr2" = "chrB" } },
   { uri = "hic/ENCFF993FGR.2500000.hic", mappings = { "chr1" = "chrA", "chrX" = "chrB" } }
 ]
 
@@ -237,6 +252,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool", format = "mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" },
   { uri = "cooler/empty_test_file.h5", format = "hdf5" },
   { uri = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs.xz" },
@@ -255,6 +271,7 @@ test-cases = [
   { uri = "cooler/multires_cooler_test_file.mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool" },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool" },
   { uri = "hic/ENCFF993FGR.2500000.hic" },
   { uri = "cooler/empty_test_file.h5", expect-failure = true },
   { uri = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", expect-failure = true },
@@ -280,6 +297,7 @@ files = [
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", format = "cool" },
   { uri = "hic/ENCFF993FGR.2500000.hic", format = "hic" }
 ]
 
@@ -289,6 +307,7 @@ test-cases = [
   { input-uri = "cooler/multires_cooler_test_file.mcool", output = "test.mcool", resolutions = [5000000], expect-failure = true },
   { input-uri = "cooler/single_cell_cooler_test_file.scool", output = "test.mcool", resolutions = [5000000], expect-failure = true },
   { input-uri = "cooler/cooler_variable_bins_test_file.cool", output = "test.mcool", resolutions = [5000000], expect-failure = true },
+  { input-uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", output = "test.mcool", resolutions = [5000], expect-failure = true },
   { input-uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.hic", resolutions = [2500000, 5000000, 10000000] },
   { input-uri = "hic/ENCFF993FGR.2500000.hic", reference-uri = "cooler/ENCFF993FGR.2500000.cool", output = "test.hic", resolutions = [5000000], single-resolution = true, args = { no-copy-base-resolution = "" } }
 ]
