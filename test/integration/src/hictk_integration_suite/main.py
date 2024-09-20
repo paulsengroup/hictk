@@ -296,15 +296,20 @@ def main(
 
     suites = parse_test_suites(suites)
 
+    t0 = time.time()
     results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary)
-
-    if result_file is not None:
-        with open(result_file, "w") as f:
-            f.write(json.dumps(results, indent=2))
+    t1 = time.time()
 
     num_pass = results["results"]["pass"]
     num_fail = results["results"]["fail"]
     num_skip = results["results"]["skip"]
+
+    delta = t1 - t0
+    logging.info(f"running {num_pass + num_fail} tests took {delta:.2f}s")
+
+    if result_file is not None:
+        with open(result_file, "w") as f:
+            f.write(json.dumps(results, indent=2))
 
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)
