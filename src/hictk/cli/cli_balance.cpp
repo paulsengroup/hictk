@@ -28,6 +28,8 @@ void Cli::make_balance_subcommand() {
   auto& sc = *_cli.add_subcommand("balance", "Balance Hi-C matrices using ICE, SCALE, or VC.")
                   ->fallthrough();
 
+  sc.require_subcommand(1);
+
   make_ice_balance_subcommand(sc);
   make_scale_balance_subcommand(sc);
   make_vc_balance_subcommand(sc);
@@ -354,9 +356,11 @@ void Cli::validate_balance_subcommand() const {
     config = std::get<BalanceICEConfig>(_config);
   } else if (std::holds_alternative<BalanceSCALEConfig>(_config)) {
     config = std::get<BalanceSCALEConfig>(_config);
-  } else {
-    assert(std::holds_alternative<BalanceVCConfig>(_config));
+  } else if (std::holds_alternative<BalanceVCConfig>(_config)) {
     config = std::get<BalanceVCConfig>(_config);
+  } else {
+    assert(std::holds_alternative<std::monostate>(_config));
+    return;
   }
 
   std::vector<std::string> errors;
@@ -386,8 +390,10 @@ void Cli::transform_args_balance_subcommand() {
     transform_args_ice_balance_subcommand();
   } else if (std::holds_alternative<BalanceSCALEConfig>(_config)) {
     transform_args_scale_balance_subcommand();
-  } else {
+  } else if (std::holds_alternative<BalanceVCConfig>(_config)) {
     transform_args_vc_balance_subcommand();
+  } else {
+    assert(std::holds_alternative<std::monostate>(_config));
   }
 }
 
