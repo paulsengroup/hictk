@@ -33,12 +33,12 @@ class TestClass:
 
     @staticmethod
     def _is_executable(f: URI) -> bool:
-        return os.access(f.file, os.X_OK)
+        return os.access(f.path, os.X_OK)
 
     @staticmethod
     def _attempt_write(f: URI) -> bool:
-        assert f.file.is_file()
-        f.file.write_text("foo")
+        assert f.path.is_file()
+        f.path.write_text("foo")
         return True
 
     def test_default_ctor(self):

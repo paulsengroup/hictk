@@ -35,7 +35,7 @@ def _argument_map_to_list(args_map: Dict[str, Any]) -> List[str]:
     args = []
     for k, v in args_map.items():
         k = "--" + (str(k).removeprefix("--"))
-        if not v:
+        if isinstance(v, bool):
             args.append(k)
         elif isinstance(v, list):
             args.append(k)
@@ -86,7 +86,7 @@ class WorkingDirectory:
         exists_ok: bool = False,
     ) -> pathlib.Path:
 
-        src = URI(src)
+        src = URI(src, False)
         if not src.path.exists():
             raise RuntimeError(f'source file "{src.path}" does not exist')
 
