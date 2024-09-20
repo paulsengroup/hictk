@@ -141,6 +141,53 @@ def parse_test_suites(s: str) -> List[str]:
     return list(suites)
 
 
+def run_tests(
+    hictk_bin: pathlib.Path,
+    data_dir: pathlib.Path,
+    config_file: pathlib.Path,
+    suites: List[str],
+    threads: int,
+    no_cleanup: bool,
+) -> Dict:
+    num_pass = 0
+    num_fail = 0
+    num_skip = 0
+
+    results = init_results(hictk_bin)
+    with WorkingDirectory(delete=not no_cleanup) as wd:
+        hictk_bin = wd.stage_file(hictk_bin)
+        for test in suites:
+            module_name = test.replace("-", "_")
+            mod = importlib.import_module(f"hictk_integration_suite.cli.{module_name}")
+
+            t0 = time.time()
+            config = import_config_and_stage_files(config_file, data_dir, wd, command=test)
+            delta = (time.time() - t0) * 1000.0
+            logging.info(f"staging test files for {test} tests took {delta:.2f}ms")
+
+            t0 = time.time()
+            plans = mod.plan_tests(hictk_bin, config, wd, threads)
+            delta = (time.time() - t0) * 1000.0
+            logging.info(f"planning for {test} tests took {delta:.2f}ms")
+
+            t0 = time.time()
+            res = mod.run_tests(plans, wd, no_cleanup)
+            delta = time.time() - t0
+            logging.info(f"running tests for {test} took {delta:.2f}s")
+
+            num_pass += res[0]
+            num_fail += res[1]
+            num_skip += res[2]
+            results["results"] |= res[3]
+
+    results["results"]["pass"] = num_pass
+    results["results"]["fail"] = num_fail
+    results["results"]["skip"] = num_skip
+    results["success"] = num_fail == 0
+
+    return results
+
+
 @click.command()
 @click.argument(
     "hictk-bin",
@@ -232,47 +279,19 @@ def main(
         if force:
             result_file.unlink()
         else:
-            raise RuntimeError(f'refusing to ovrewrite file "{result_file}"')
+            raise RuntimeError(f'refusing to overwrite file "{result_file}"')
 
     suites = parse_test_suites(suites)
-    num_pass = 0
-    num_fail = 0
-    num_skip = 0
-    results = init_results(hictk_bin)
 
-    with WorkingDirectory(delete=not no_cleanup) as wd:
-        hictk_bin = wd.stage_file(hictk_bin)
-        for test in suites:
-            module_name = test.replace("-", "_")
-            mod = importlib.import_module(f"hictk_integration_suite.cli.{module_name}")
+    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup)
 
-            t0 = time.time()
-            config = import_config_and_stage_files(config_file, data_dir, wd, command=test)
-            delta = (time.time() - t0) * 1000.0
-            logging.info(f"staging test files for {test} tests took {delta:.2f}ms")
-
-            t0 = time.time()
-            plans = mod.plan_tests(hictk_bin, config, wd, threads)
-            delta = (time.time() - t0) * 1000.0
-            logging.info(f"planning for {test} tests took {delta:.2f}ms")
-
-            t0 = time.time()
-            res = mod.run_tests(plans, wd, no_cleanup)
-            delta = time.time() - t0
-            logging.info(f"running tests for {test} took {delta:.2f}s")
-
-            num_pass += res[0]
-            num_fail += res[1]
-            num_skip += res[2]
-            results["results"] |= res[3]
-
-    results["results"]["pass"] = num_pass
-    results["results"]["fail"] = num_fail
-    results["results"]["fail"] = num_skip
-    results["success"] = num_fail == 0
     if result_file is not None:
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
+
+    num_pass = results["results"]["pass"]
+    num_fail = results["results"]["fail"]
+    num_skip = results["results"]["skip"]
 
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)

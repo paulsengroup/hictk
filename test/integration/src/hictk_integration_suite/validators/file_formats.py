@@ -15,14 +15,14 @@ def is_cooler(uri) -> bool:
 
 def is_mcool(uri) -> bool:
     try:
-        return cooler.fileops.is_multires_file(uri)
+        return cooler.fileops.is_multires_file(str(uri))
     except:  # noqa
         return False
 
 
 def is_scool(uri) -> bool:
     try:
-        return cooler.fileops.is_scool_file(uri)
+        return cooler.fileops.is_scool_file(str(uri))
     except:  # noqa
         return False
 
