@@ -28,7 +28,7 @@ apt-get install -y --no-install-recommends \
   python3 \
   xz-utils
 
-tar -xf test/data/hictk_test_data.tar.xz
+tar -xf test/data/hictk_test_data.tar.zst
 
 tmpdir="$(mktemp -d)"
 trap "rm -rf '$tmpdir'" EXIT
@@ -45,6 +45,6 @@ chmod 755 "$tmpdir/runme.sh"
 sudo docker run --rm --entrypoint=/bin/bash \
   -v "$tmpdir/runme.sh:/tmp/runme.sh:ro" \
   -v "$PWD/test/scripts:/tmp/hictk/test/scripts:ro" \
-  -v "$PWD/test/data/hictk_test_data.tar.xz:/tmp/hictk/test/data/hictk_test_data.tar.xz:ro" \
+  -v "$PWD/test/data/hictk_test_data.tar.zst:/tmp/hictk/test/data/hictk_test_data.tar.zst:ro" \
   "$IMG" \
   /tmp/runme.sh
