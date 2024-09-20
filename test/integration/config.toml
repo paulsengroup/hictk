@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+
 [balance]
 
 files = [
@@ -85,6 +86,7 @@ queries = [
   { uri = "hic/4DNFIZ1ZVXC8.hic9", range1 = "chr2L", range2 = "chrX", normalization = "VC" }
 ]
 
+
 [fix-mcool]
 
 files = [
@@ -103,18 +105,46 @@ test-cases = [
   { input-uri = "hic/ENCFF993FGR.2500000.hic", output = "test.mcool", expect-failure = true }
 ]
 
-[metadata]
+
+[load]
 
 files = [
-  { uri = "cooler/cooler_test_file.cool", format = "cool" },
-  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
-  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
-  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
-  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic" },
-  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" }
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.bz2", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.gz", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.lz4", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.lzo", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.zst", format = "pairs" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.sorted.bg2.xz", format = "bg2" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.sorted.coo.xz", format = "coo" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.unsorted.bg2.xz", format = "bg2" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.unsorted.coo.xz", format = "coo" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.validpairs.xz", format = "validpairs" },
+  { input-path = "integration_tests/dm6.bins.bed", format = "bed" },
+  { input-path = "integration_tests/dm6.chrom.sizes", format = "chrom.sizes" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", format = "cool" },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.variable-bins.cool", format = "cool", variable-bin-size = true }
 ]
 
-output-formats = ["json", "toml", "yaml"]
+test-cases = [
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", bin-table-path = "integration_tests/dm6.bins.bed", reference-uri = "integration_tests/4DNFIKNWM36K.subset.variable-bins.cool", args = { format = "4dn"} },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.bz2", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn",  bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.gz", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.lzo", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.zst", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.validpairs.xz", format = "validpairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "validpairs", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.sorted.bg2.xz", format = "bg2", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "bg2", bin-size = 10000, "assume-sorted" = true } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.sorted.coo.xz", format = "coo", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "coo", bin-size = 10000, "assume-sorted" = true } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.unsorted.bg2.xz", format = "bg2", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "bg2", bin-size = 10000, "assume-unsorted" = true } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.unsorted.coo.xz", format = "coo", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "coo", bin-size = 10000, "assume-unsorted" = true } }
+]
+
+output-names = [
+  "test.cool",
+  "test.hic"
+]
+
 
 [merge]
 
@@ -147,6 +177,21 @@ test-cases = [
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic", expect-failure = true }
 ]
+
+
+[metadata]
+
+files = [
+  { uri = "cooler/cooler_test_file.cool", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
+  { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
+  { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
+  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic" },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic" }
+]
+
+output-formats = ["json", "toml", "yaml"]
+
 
 [rename-chromosomes]
 
@@ -182,6 +227,7 @@ invalid-name-mappings = [
   "chr1",
   "chr1\t"
 ]
+
 
 [validate]
 
@@ -225,6 +271,7 @@ test-cases = [
 ]
 
 output-formats = ["json", "toml", "yaml"]
+
 
 [zoomify]
 
