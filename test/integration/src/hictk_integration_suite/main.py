@@ -149,6 +149,7 @@ def run_tests(
     suites: List[str],
     threads: int,
     no_cleanup: bool,
+    do_not_copy_binary: bool,
 ) -> Dict:
     num_pass = 0
     num_fail = 0
@@ -156,7 +157,10 @@ def run_tests(
 
     results = init_results(hictk_bin)
     with WorkingDirectory(delete=not no_cleanup) as wd:
-        hictk_bin = wd.stage_file(hictk_bin)
+        if not do_not_copy_binary:
+            hictk_bin = wd.stage_file(hictk_bin)
+        else:
+            hictk_bin = URI(hictk_bin)
         for test in suites:
             module_name = test.replace("-", "_")
             mod = importlib.import_module(f"hictk_integration_suite.cli.{module_name}")
@@ -256,6 +260,13 @@ def run_tests(
     is_flag=True,
     show_default=True,
 )
+@click.option(
+    "--do-not-copy-binary",
+    help="Do not stage hictk's binary into the current working directory.",
+    default=False,
+    is_flag=True,
+    show_default=True,
+)
 def main(
     hictk_bin: pathlib.Path,
     data_dir: pathlib.Path,
@@ -266,6 +277,7 @@ def main(
     result_file: pathlib.Path,
     force: bool,
     no_cleanup: bool,
+    do_not_copy_binary: bool,
 ):
     """
     Run hictk integration test suite.
@@ -284,7 +296,7 @@ def main(
 
     suites = parse_test_suites(suites)
 
-    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup)
+    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary)
 
     if result_file is not None:
         with open(result_file, "w") as f:
