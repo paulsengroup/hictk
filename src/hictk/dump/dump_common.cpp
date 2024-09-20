@@ -94,7 +94,6 @@ static void dump_weights(const BinTable& bins, std::string_view range,
 
 void dump_weights(const File& f, std::string_view range1, std::string_view range2) {
   const auto norms = f.avail_normalizations();
-
   if (norms.empty()) {
     return;
   }

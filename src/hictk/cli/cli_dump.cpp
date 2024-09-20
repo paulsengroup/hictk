@@ -164,13 +164,10 @@ void Cli::validate_dump_subcommand() const {
   }
 
   const auto range_parsed = !subcmd.get_option("--range")->empty();
-  if (range_parsed && c.table != "bins" && c.table != "pixels" && c.table != "weights") {
+  if (range_parsed && c.table != "chroms" && c.table != "bins" && c.table != "pixels" &&
+      c.table != "weights") {
     warnings.emplace_back(
-        "--range and --range2 are ignored when --table is not bins, pixels, or weights");
-  }
-
-  if (!c.range2.empty() && c.range2 != "all" && c.table == "weights") {
-    warnings.emplace_back("--range2 is ignored when --table=weights.");
+        "--range and --range2 are ignored when --table is not bins, chroms, pixels, or weights");
   }
 
   const auto query_file_parsed = !subcmd.get_option("--query-file")->empty();
