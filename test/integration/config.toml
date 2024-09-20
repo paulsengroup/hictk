@@ -127,8 +127,8 @@ files = [
 ]
 
 test-cases = [
-  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", args = { format = "4dn", bin-size = 10000 } },
-  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", bin-table-path = "integration_tests/dm6.bins.bed", reference-uri = "integration_tests/4DNFIKNWM36K.subset.variable-bins.cool", args = { format = "4dn"} },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", reference-uri = "integration_tests/4DNFIKNWM36K.subset.fixed-bins.cool", timeout = 180, args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.xz", format = "pairs", bin-table-path = "integration_tests/dm6.bins.bed", reference-uri = "integration_tests/4DNFIKNWM36K.subset.variable-bins.cool", timeout = 180, args = { format = "4dn"} },
   { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.bz2", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn",  bin-size = 10000 } },
   { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.gz", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn", bin-size = 10000 } },
   { input-path = "integration_tests/4DNFIKNWM36K.subset.pairs.lzo", format = "pairs", chrom-sizes-path = "integration_tests/dm6.chrom.sizes", no-validate = true, args = { format = "4dn", bin-size = 10000 } },

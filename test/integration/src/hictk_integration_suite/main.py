@@ -37,6 +37,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
         "convert",
         "dump",
         "fix-mcool",
+        "load",
         "merge",
         "metadata",
         "rename-chromosomes",
