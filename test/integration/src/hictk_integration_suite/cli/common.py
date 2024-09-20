@@ -35,7 +35,9 @@ def _argument_map_to_list(args_map: Dict[str, Any]) -> List[str]:
     args = []
     for k, v in args_map.items():
         k = "--" + (str(k).removeprefix("--"))
-        if isinstance(v, bool):
+        if v is None:
+            args.append(k)
+        elif isinstance(v, str) and len(v) == 0:
             args.append(k)
         elif isinstance(v, list):
             args.append(k)
