@@ -6,7 +6,7 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 from hictk_integration_suite import validators
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 from hictk_integration_suite.validators.file_formats import get_format, is_hic
 
@@ -41,7 +41,7 @@ class HictkConvert(HictkTestHarness):
             )
             return
 
-        expected_output_format = parse_uri(test_file)[0].suffix.lstrip(".")
+        expected_output_format = URI(test_file).path.suffix.lstrip(".")
         found_output_format = get_format(test_file)
         if expected_output_format != found_output_format:
             self._failures["unexpected output format"] = (

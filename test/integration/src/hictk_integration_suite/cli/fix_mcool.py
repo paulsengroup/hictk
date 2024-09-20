@@ -25,9 +25,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("fix-mcool",))},
         factory | {"args": tuple(("fix-mcool", "--help")), "expect_failure": False},
         factory | {"args": tuple(("fix-mcool", "--foobar"))},
-        factory | {"args": tuple(("fix-mcool", uri.as_posix()))},
-        factory | {"args": tuple(("fix-mcool", uri.as_posix(), "--foobar"))},
-        factory | {"args": tuple(("fix-mcool", uri.as_posix(), "test.mcool", "--foobar"))},
+        factory | {"args": tuple(("fix-mcool", str(uri)))},
+        factory | {"args": tuple(("fix-mcool", str(uri), "--foobar"))},
+        factory | {"args": tuple(("fix-mcool", str(uri), "test.mcool", "--foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -53,7 +53,7 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file = wd[c["input-uri"]].as_posix()
+        input_file = str(wd[c["input-uri"]])
         output_file = cwd / c["output"]
         expect_failure = c.get("expect-failure", False)
         timeout = c.get("timeout", 1.0)

@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Mapping, Tuple
 
 from immutabledict import immutabledict
 
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 
 
 def _make_file_read_only(path: pathlib.Path | str):
@@ -72,69 +72,52 @@ class WorkingDirectory:
         self.cleanup()
 
     @staticmethod
-    def _make_read_only(path: pathlib.Path | str):
-        _make_file_read_only(path)
+    def _make_read_only(path: URI):
+        _make_file_read_only(path.path)
 
     @staticmethod
-    def _make_writeable(path: pathlib.Path | str):
-        _make_file_writeable(path)
+    def _make_writeable(path: URI):
+        _make_file_writeable(path.path)
 
     def stage_file(
         self,
-        src: pathlib.Path | str,
+        src: URI | pathlib.Path | str,
         make_read_only: bool = True,
         exists_ok: bool = False,
     ) -> pathlib.Path:
 
-        if src in self._mappings:
-            return self._mappings[src]
-
-        if nsrc := pathlib.Path(src).as_posix() in self._mappings:
-            return self._mappings[nsrc]
-
-        path, grp = parse_uri(src)
-        if not path.exists():
-            raise RuntimeError(f'source file "{path}" does not exist')
+        src = URI(src)
+        if not src.path.exists():
+            raise RuntimeError(f'source file "{src.path}" does not exist')
 
         dest_dir = self._path / "staged_files"
-        dest_dir.mkdir(exist_ok=True)
+        if src.group is None:
+            dest = URI(dest_dir / src.path.name)
+        else:
+            dest = URI(dest_dir / f"{src.path.name}::{src.group}")
 
-        dest = dest_dir / path.name
-        if dest.exists():
+        if dest.path.exists():
             if not exists_ok:
-                raise RuntimeError(f'refusing to overwrite file "{dest}"')
+                raise RuntimeError(f'refusing to overwrite file "{dest.path}"')
 
-            logging.debug(f'file "{path}" was already staged')
+            logging.debug(f'file "{src.path}" was already staged')
+        else:
+            logging.debug(f'staging file "{src.path}"...')
+            dest_dir.mkdir(exist_ok=True)
+            shutil.copy2(src.path, dest.path)
+            if make_read_only:
+                self._make_read_only(dest)
 
-            if src != path:
-                if grp:
-                    uri = pathlib.Path(f"{self._mappings[path]}::{grp}")
-                    self._mappings[src] = uri
-                    self._mappings[uri] = uri
-                else:
-                    self._mappings[src] = self._mappings[path]
-                    self._mappings[path] = self._mappings[path]
-
-            return self._mappings[src]
-
-        logging.debug(f'staging file "{path}"...')
-        shutil.copy2(path, dest)
-        if make_read_only:
-            self._make_read_only(dest)
-
-        dest = dest.resolve()
-        self._mappings[path] = dest
+        self._mappings[src] = dest
         self._mappings[dest] = dest
-        if src != path:
-            if not grp:
-                self._mappings[src] = dest
-                self._mappings[dest] = dest
-            else:
-                uri = pathlib.Path(f"{dest}::{grp}")
-                self._mappings[src] = uri
-                self._mappings[uri] = uri
+        if src.group is not None:
+            assert dest.group is not None
+            dest_file = URI(dest.path)
+            self._mappings[URI(src.path)] = dest_file
+            self._mappings[dest_file] = dest_file
 
-        return self._mappings[src]
+        logging.debug(f'URI "{src}" successfully staged (dest="{dest}")')
+        return dest
 
     def mkdtemp(self, prefix: pathlib.Path | None = None) -> pathlib.Path:
         if prefix is None:
@@ -184,34 +167,29 @@ class WorkingDirectory:
         except ValueError:
             return False
 
-    def __getitem__(self, item: pathlib.Path | str) -> pathlib.Path:
-        value = self.get(pathlib.Path(item))
-        if value:
+    def __getitem__(self, item: URI | pathlib.Path | str) -> URI:
+        value = self.get(URI(item))
+        if value is not None:
             return value
 
         raise KeyError(f'no such file "{item}"')
 
-    def __contains__(self, item: pathlib.Path | str) -> bool:
-        item = pathlib.Path(item)
-        if self._path_belongs_to_wd(item):
+    def __contains__(self, item: URI | pathlib.Path | str) -> bool:
+        item = URI(item)
+        if self._path_belongs_to_wd(item.path) and item.path.exists():
             return True
 
-        item, _ = parse_uri(item)
         return item in self._mappings
 
-    def get(self, item: pathlib.Path | str, default=None):
-        item = pathlib.Path(item)
-        if self._path_belongs_to_wd(item):
-            return item.resolve()
+    def get(self, item: URI | pathlib.Path | str, default=None) -> URI | None:
+        item = URI(item)
+        if self._path_belongs_to_wd(item.path) and item.path.exists():
+            return item
 
-        item, grp = parse_uri(item)
-        value = self._mappings.get(item, default)
-        if value and grp:
-            return pathlib.Path(f"{value}::{grp}")
-        return value
+        return self._mappings.get(item, default)
 
-    def get_staged_file_names(self) -> Dict[pathlib.Path, pathlib.Path]:
-        return dict(sorted(self._mappings.items()))
+    def get_staged_file_names(self) -> Dict[str, str]:
+        return {str(k): str(v) for k, v in sorted(self._mappings.items())}
 
     @property
     def name(self):
@@ -302,14 +280,6 @@ def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
 def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "sha256") -> str:
     tmpdir = str(tmpdir)
 
-    def normalize_uri(uri: str) -> str:
-        path, grp = parse_uri(uri)
-        path = pathlib.Path(path).name
-        if grp:
-            return f"{path}::{grp}"
-
-        return path
-
     def strip_tmpdir(obj) -> Dict:
         for key, value in obj.items():
             if isinstance(value, dict) or isinstance(value, immutabledict):
@@ -317,10 +287,10 @@ def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "
             elif isinstance(value, list):
                 for i, x in enumerate(value):
                     if isinstance(x, str) and tmpdir in x:
-                        value[i] = normalize_uri(x)
+                        value[i] = str(URI(x))
                 obj[key] = value
             elif isinstance(value, str) and tmpdir in value:
-                obj[key] = normalize_uri(value)
+                obj[key] = str(URI(value))
 
         return dict(sorted(obj.items()))
 

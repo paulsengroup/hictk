@@ -10,7 +10,7 @@ from typing import Tuple
 
 import pytest
 
-from hictk_integration_suite.cli.common import WorkingDirectory
+from hictk_integration_suite.cli.common import URI, WorkingDirectory
 
 
 class TestClass:
@@ -32,13 +32,13 @@ class TestClass:
         return plain_file, exec_file
 
     @staticmethod
-    def _is_executable(f: pathlib.Path) -> bool:
-        return os.access(f, os.X_OK)
+    def _is_executable(f: URI) -> bool:
+        return os.access(f.file, os.X_OK)
 
     @staticmethod
-    def _attempt_write(f: pathlib.Path) -> bool:
-        assert f.is_file()
-        f.write_text("foo")
+    def _attempt_write(f: URI) -> bool:
+        assert f.file.is_file()
+        f.file.write_text("foo")
         return True
 
     def test_default_ctor(self):

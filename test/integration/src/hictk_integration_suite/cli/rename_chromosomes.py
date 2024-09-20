@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.rename_chromosomes import (
     HictkRenameChromosomes,
     HictkRenameChromosomesCli,
@@ -39,9 +39,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("rename-chromosomes", "not-a-file"))},
         factory | {"args": tuple(("rename-chromosomes", "not-a-file", "--add-chr-prefix"))},
         factory | {"args": tuple(("rename-chromosomes", "--foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", cool_uri.as_posix(), "foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", cool_uri.as_posix(), "--foobar"))},
-        factory | {"args": tuple(("rename-chromosomes", hic_uri.as_posix(), "--add-chr-prefix"))},
+        factory | {"args": tuple(("rename-chromosomes", str(cool_uri), "foobar"))},
+        factory | {"args": tuple(("rename-chromosomes", str(cool_uri), "--foobar"))},
+        factory | {"args": tuple(("rename-chromosomes", str(hic_uri), "--add-chr-prefix"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))
@@ -68,23 +68,23 @@ def _stage_valid_name_mappings(mappings: List[Dict[str, str]], wd: WorkingDirect
         path = wd.touch(parent_dir / f"vald_name_mappings_{i:03d}.txt")
         path.write_text(f"{payload}\n")
 
-        uri = wd[mapping["uri"]].as_posix()
+        uri = str(wd[mapping["uri"]])
         paths[uri] = path
 
     return paths
 
 
 def _stage_uri(uri: pathlib.Path | str, wd: WorkingDirectory) -> str:
-    file_name, grp = parse_uri(uri)
+    uri = URI(uri)
     tmpdir = wd.mkdtemp()
-    writeable_file = wd.touch(tmpdir / pathlib.Path(file_name).name)
-    shutil.copy2(file_name, writeable_file)
+    writeable_file = wd.touch(tmpdir / uri.path.name)
+    shutil.copy2(uri.path, writeable_file)
     _make_file_writeable(writeable_file)
 
-    if not grp:
+    if uri.group is None:
         return str(writeable_file)
 
-    return f"{writeable_file}::{grp}"
+    return f"{writeable_file}::{uri.group}"
 
 
 def _plan_tests_cmd(
@@ -104,7 +104,7 @@ def _plan_tests_cmd(
     invalid_name_mappings = _stage_invalid_name_mappings(config["invalid-name-mappings"], wd)
 
     for c in config["test-cases"]:
-        uri = wd[c["uri"]].as_posix()
+        uri = str(wd[c["uri"]])
         expect_failure = c.get("expect-failure", False)
         for flag in ("--add-chr-prefix", "--remove-chr-prefix"):
             new_uri = _stage_uri(uri, wd)

@@ -2,11 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 import pathlib
-from typing import Any, Dict
 
 import cooler
-
-from hictk_integration_suite.common import parse_uri
 
 
 def is_cooler(uri) -> bool:

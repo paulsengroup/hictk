@@ -21,8 +21,8 @@ def _plan_tests_cli(
     wd: WorkingDirectory,
     title: str = "hictk-convert-cli",
 ) -> List[ImmutableOrderedDict]:
-    cool_uri = wd[cool_uri].as_posix()
-    hic_uri = wd[hic_uri].as_posix()
+    cool_uri = str(wd[cool_uri])
+    hic_uri = str(wd[hic_uri])
 
     factory = {
         "hictk_bin": str(hictk_bin),
@@ -71,9 +71,9 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file = wd[c["input-uri"]].as_posix()
+        input_file = str(wd[c["input-uri"]])
         output_file = cwd / c["output"]
-        reference = wd[c.get("reference-uri", input_file)].as_posix()
+        reference = str(wd[c.get("reference-uri", input_file)])
 
         args = [
             "convert",

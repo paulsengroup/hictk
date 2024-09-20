@@ -3,13 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-import sys
 from typing import Dict, List, Tuple
 
 import cooler
 import pandas as pd
 
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.runners.common import (
     filter_bins,
     filter_chroms,
@@ -29,7 +28,7 @@ class CoolerDump:
         uri: pathlib.Path,
         resolution: int | None,
     ):
-        self._file = parse_uri(uri)[0]
+        self._file = URI(uri).path
         self._uri = str(uri)
         self._clr = self._open(str(uri), resolution)
 

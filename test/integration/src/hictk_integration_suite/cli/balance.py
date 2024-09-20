@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.balance import (
     HictkBalanceICE,
     HictkBalanceICECli,
@@ -54,12 +54,12 @@ def _plan_tests_cli(
         factory | {"args": tuple(("balance", algorithm, "--help")), "expect_failure": False},
         factory | {"args": tuple(("balance", algorithm, "not-a-file"))},
         factory | {"args": tuple(("balance", algorithm, "--foobar"))},
-        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--foobar"))},
-        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--mode=invalid"))},
-        factory | {"args": tuple(("balance", algorithm, uri.as_posix(), "--tmpdir", "not-a-folder"))},
+        factory | {"args": tuple(("balance", algorithm, str(uri), "--foobar"))},
+        factory | {"args": tuple(("balance", algorithm, str(uri), "--mode=invalid"))},
+        factory | {"args": tuple(("balance", algorithm, str(uri), "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(("balance", uri.as_posix())),
+            "args": tuple(("balance", str(uri))),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
@@ -92,11 +92,11 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_file = parse_uri(c["uri"])[0]
-        reference = wd[c.get("reference-uri", wd[c["uri"]])].as_posix()
+        input_file = URI(c["uri"]).path
+        reference = str(wd[c.get("reference-uri", wd[c["uri"]])])
 
         # Make a writeable copy of the input file
-        dest = wd.touch(cwd / input_file.name).as_posix()
+        dest = str(wd.touch(cwd / input_file.name))
         shutil.copy2(input_file, dest)
         input_file = dest
         _make_file_writeable(input_file)

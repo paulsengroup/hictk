@@ -32,17 +32,13 @@ def _plan_tests_cli(
         factory | {"args": tuple(("merge", "--help")), "expect_failure": False},
         factory | {"args": tuple(("merge", "not-a-file1", "not-a-file2", "test.cool"))},
         factory | {"args": tuple(("merge", "--foobar"))},
-        factory | {"args": tuple(("merge", uri.as_posix(), uri.as_posix(), "--output-file", "test.cool", "foobar"))},
-        factory | {"args": tuple(("merge", uri.as_posix(), uri.as_posix(), "--output-file", "test.cool", "--foobar"))},
+        factory | {"args": tuple(("merge", str(uri), str(uri), "--output-file", "test.cool", "foobar"))},
+        factory | {"args": tuple(("merge", str(uri), str(uri), "--output-file", "test.cool", "--foobar"))},
+        factory
+        | {"args": tuple(("merge", str(uri), str(uri), "--output-file", "test.cool", "--tmpdir", "not-a-folder"))},
         factory
         | {
-            "args": tuple(
-                ("merge", uri.as_posix(), uri.as_posix(), "--output-file", "test.cool", "--tmpdir", "not-a-folder")
-            )
-        },
-        factory
-        | {
-            "args": tuple(("merge", uri.as_posix(), uri.as_posix(), "--output-file", "test.cool")),
+            "args": tuple(("merge", str(uri), str(uri), "--output-file", "test.cool")),
             "env_variables": immutabledict(
                 os.environ | {var: "not-a-folder" for var in ("TMPDIR", "TMP", "TEMP", "TEMPDIR")}
             ),
@@ -69,7 +65,7 @@ def _plan_tests_cmd(
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
 
-        input_files = [wd[uri].as_posix() for uri in c["input-uris"]]
+        input_files = [str(wd[uri]) for uri in c["input-uris"]]
         output_file = cwd / c["output"]
 
         args = [

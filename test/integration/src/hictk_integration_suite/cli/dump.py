@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from immutabledict import ImmutableOrderedDict, immutabledict
 
-from hictk_integration_suite.common import parse_uri
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
 
@@ -23,7 +23,7 @@ def _extract_queries_for_uri(
     cell: str | None,
     config: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
-    file = str(parse_uri(uri)[0])
+    file = str(URI(uri).path)
     queries = []
     for c in config["queries"]:
         if not file.endswith(os.path.basename(c["uri"])):
@@ -31,8 +31,8 @@ def _extract_queries_for_uri(
 
         queries.append(
             {
-                "uri": uri.as_posix(),
-                "reference-uri": reference_uri.as_posix(),
+                "uri": str(uri),
+                "reference-uri": str(reference_uri),
                 "resolution": resolution,
                 "range1": c.get("range1"),
                 "range2": c.get("range2"),
@@ -96,9 +96,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("dump",))},
         factory | {"args": tuple(("dump", "--help")), "expect_failure": False},
         factory | {"args": tuple(("dump", "not-a-file"))},
-        factory | {"args": tuple(("dump", uri.as_posix(), "foobar"))},
-        factory | {"args": tuple(("dump", uri.as_posix(), "--foobar"))},
-        factory | {"args": tuple(("dump", uri.as_posix(), "--foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))

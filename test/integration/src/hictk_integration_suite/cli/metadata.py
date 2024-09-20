@@ -26,11 +26,11 @@ def _plan_tests_cli(
         factory | {"args": tuple(("metadata", "--help")), "expect_failure": False},
         factory | {"args": tuple(("metadata", "not-a-file")), "expect_failure": True},
         factory | {"args": tuple(("metadata", "--foobar")), "expect_failure": True},
-        factory | {"args": tuple(("metadata", uri.as_posix(), "foobar")), "expect_failure": True},
-        factory | {"args": tuple(("metadata", uri.as_posix(), "--foobar")), "expect_failure": True},
+        factory | {"args": tuple(("metadata", str(uri), "foobar")), "expect_failure": True},
+        factory | {"args": tuple(("metadata", str(uri), "--foobar")), "expect_failure": True},
         factory
         | {
-            "args": tuple(("metadata", uri.as_posix(), "--format", "foobar")),
+            "args": tuple(("metadata", str(uri), "--format", "foobar")),
             "expect_failure": True,
         },
     )
@@ -56,7 +56,7 @@ def _plan_tests_cmd(
     for c in config["files"]:
         factory["file_format"] = c["format"]
         factory["variable_bin_size"] = c.get("variable-bin-size", False)
-        uri = wd[c["uri"]].as_posix()
+        uri = str(wd[c["uri"]])
         for fmt in config["output-formats"]:
             for recursive in [True, False]:
                 args = ["metadata", uri, "--output-format", fmt]

@@ -9,7 +9,6 @@ import importlib
 import json
 import logging
 import multiprocessing as mp
-import os
 import pathlib
 import platform
 import sys
@@ -19,7 +18,8 @@ from typing import Any, Dict, List
 
 import click
 
-from hictk_integration_suite.cli.common import WorkingDirectory, parse_uri
+from hictk_integration_suite.cli.common import WorkingDirectory
+from hictk_integration_suite.common import URI
 from hictk_integration_suite.runners.hictk.common import version
 
 
@@ -47,16 +47,12 @@ def get_test_names(include_all: bool = True) -> List[str]:
 
 
 def update_uris(config: Dict, data_dir: pathlib.Path) -> Dict:
-    def _update_uri(uri: pathlib.Path) -> str:
-        path, grp = parse_uri(data_dir / uri)
-        path = pathlib.Path(path)
-        if not path.exists():
-            raise RuntimeError(f'file "{path}" does not exists')
+    def _update_uri(uri: pathlib.Path | str) -> str:
+        uri_ = URI(data_dir / uri, False)
+        if not uri_.path.exists():
+            raise RuntimeError(f'file "{uri_.path}" does not exists')
 
-        path = path.resolve()
-        if not grp:
-            return str(path)
-        return f"{path}::{grp}"
+        return str(URI(data_dir / uri))
 
     if "files" not in config and "test-cases" not in config:
         return config
