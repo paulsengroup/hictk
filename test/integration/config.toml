@@ -53,10 +53,11 @@ test-cases = [
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.cool", expect-failure = true },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.cool", expect-failure = false, args = { resolutions = [2500000] } },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.mcool", expect-failure = false, args = { resolutions = [1000000, 2500000] } },
-  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [999999, 1000000, 2500000] } },
-  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", reference-uri = "integration_tests/4DNFIZ1ZVXC8.mcool", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [1000000, 2500000], normalization-methods = "INVALID", fail-if-norm-not-found = true } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [999999, 1000000, 2500000] } },
+  { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.mcool", expect-failure = true, args = { resolutions = [1000000, 2500000], normalization-methods = "INVALID", fail-if-norm-not-found = true } },
   { input-uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", output = "test.hic", expect-failure = true, args = { resolutions = [1000000, 2500000] } }
 ]
+
 
 [dump]
 
@@ -121,6 +122,7 @@ files = [
   { uri = "cooler/cooler_test_file.cool", format = "cool" },
   { uri = "cooler/ENCFF993FGR.2500000.cool", format = "cool" },
   { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool" },
+  { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/99999", format = "cool" },
   { uri = "cooler/multires_cooler_test_file.mcool", format = "mcool" },
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
@@ -135,7 +137,7 @@ test-cases = [
   { input-uris = ["hic/4DNFIZ1ZVXC8.hic9", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.hic", args = { "resolution" = 100000 } },
   { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic", args = { "resolution" = 2500000 } },
   { input-uris = ["hic/ENCFF993FGR.2500000.hic", "cooler/ENCFF993FGR.2500000.cool"], output = "test.hic", args = { "resolution" = 2500000 } },
-  { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool::/resolutions/1000000"], output = "test.cool", expect-failure = true },
+  { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool::/resolutions/99999"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/cooler_test_file.cool", "cooler/cooler_variable_bins_test_file.cool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/multires_cooler_test_file.mcool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true },
