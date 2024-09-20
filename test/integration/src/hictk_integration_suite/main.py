@@ -226,7 +226,7 @@ def run_tests(
     type=str,
     default="all",
     help="Comma-separated list of names of the tests to be executed.\n"
-    "Should be one of:\n" + "\n - ".join(get_test_names(include_all=True)),
+    "Should be one or more of: " + ", ".join(get_test_names(include_all=True)) + ".",
 )
 @click.option(
     "--threads",
