@@ -83,7 +83,7 @@ Downloading and running the latest stable release can be done as follows:
     -V,--version                Display program version information and exit
 
   Subcommands:
-    convert                     Convert HiC matrices to a different format.
+    convert                     Convert Hi-C matrices to a different format.
     dump                        Dump data from .hic and Cooler files to stdout.
     load                        Build .cool files from interactions in various text formats.
     merge                       Merge coolers.
