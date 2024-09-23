@@ -1,0 +1,24 @@
+# Copyright (C) 2024 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Evict entry from GitHub Actions' Cache
+
+on:
+  workflow_call:
+    inputs:
+      cache-key:
+        description: "Key of the cache entry to be evicted"
+        required: true
+        type: string
+
+jobs:
+  clear-gha-cache:
+    name: Evict entry from GitHub Actions' Cache
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Evict cache entry
+        run: gh cache delete "${{ inputs.cache-key }}" --repo "${{ github.repository }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
