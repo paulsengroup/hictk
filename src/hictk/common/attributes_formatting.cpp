@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include <fmt/format.h>
 
 #include <cassert>
@@ -13,19 +11,20 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <toml++/toml.hpp>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "hictk/common.hpp"
+#include "hictk/tools/file_attributes_formatting.hpp"
+#include "hictk/tools/toml.hpp"
 #include "hictk/version.hpp"
 
 namespace hictk::tools::io {
 
 namespace json {
 
-[[nodiscard]] inline nlohmann::json reformat_nulls(nlohmann::json attributes) {
+[[nodiscard]] nlohmann::json reformat_nulls(nlohmann::json attributes) {
   std::vector<std::string> null_fields{};
   for (const auto& field : attributes.items()) {
     if (field.value() == "null") {
@@ -44,22 +43,7 @@ namespace json {
 
 namespace toml {
 
-template <typename T>
-[[nodiscard]] inline ::toml::array to_array(const std::vector<T>& v, bool sort = false) {
-  if (sort) {
-    auto sv = v;
-    std::sort(sv.begin(), sv.end());
-    return to_array(sv, false);
-  }
-
-  ::toml::array buff;
-  for (const auto& x : v) {
-    buff.push_back(x);
-  }
-  return buff;
-}
-
-[[nodiscard]] inline nlohmann::json toml_to_json(const ::toml::table& t) {
+[[nodiscard]] nlohmann::json toml_to_json(const ::toml::table& t) {
   std::stringstream buff;
   buff << ::toml::json_formatter(t);
 
@@ -77,7 +61,7 @@ template <typename T>
   return j;
 }
 
-[[nodiscard]] inline std::string format_to_json(
+[[nodiscard]] std::string format_to_json(
     const ::toml::table& attributes,
     const std::vector<std::pair<std::string, ::toml::table>>& nested_attributes) {
   auto attributes_json = toml_to_json(attributes);
@@ -89,7 +73,7 @@ template <typename T>
   return attributes_json.dump(4);
 }
 
-[[nodiscard]] inline std::string sanitize_toml_section_title(std::string s) {
+[[nodiscard]] std::string sanitize_toml_section_title(std::string s) {
   if (s.find('.') == std::string::npos) {
     return s;
   }
@@ -107,7 +91,7 @@ template <typename T>
   return s;
 }
 
-[[nodiscard]] inline std::string format_to_toml(
+[[nodiscard]] std::string format_to_toml(
     const ::toml::table& attributes,
     const std::vector<std::pair<std::string, ::toml::table>>& nested_attributes) {
   std::stringstream ss;
@@ -121,7 +105,7 @@ template <typename T>
   return ss.str();
 }
 
-[[nodiscard]] inline std::string format_to_yaml(
+[[nodiscard]] std::string format_to_yaml(
     const ::toml::table& attributes,
     const std::vector<std::pair<std::string, ::toml::table>>& nested_attributes) {
   if (nested_attributes.empty()) {

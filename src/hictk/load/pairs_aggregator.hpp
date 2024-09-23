@@ -4,25 +4,16 @@
 
 #pragma once
 
-#include <fmt/format.h>
 #include <parallel_hashmap/btree.h>
-#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
-#include <cstdint>
-#include <exception>
-#include <iostream>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "./common.hpp"
-#include "hictk/bin_table.hpp"
-#include "hictk/cooler/cooler.hpp"
-#include "hictk/hic/file_writer.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::tools {
@@ -121,80 +112,5 @@ class PairsAggregator {
     }
   }
 };
-
-template <typename N>
-[[nodiscard]] inline Stats ingest_pairs(
-    cooler::File&& clr,  // NOLINT(*-rvalue-reference-param-not-moved)
-    PixelQueue<N>& queue, const std::atomic<bool>& early_return, std::vector<ThinPixel<N>>& buffer,
-    std::size_t batch_size, bool validate_pixels) {
-  assert(batch_size != 0);
-  buffer.clear();
-  buffer.reserve(batch_size);
-  // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
-  // constructed
-  PairsAggregator aggr(queue, early_return);
-  aggr.read_next_chunk(buffer);
-
-  if (buffer.empty()) {
-    return {N{}, 0};
-  }
-
-  clr.append_pixels(buffer.begin(), buffer.end(), validate_pixels);
-
-  clr.flush();
-  const auto nnz = clr.nnz();
-  const auto sum = clr.attributes().sum.value();
-
-  if (clr.has_float_pixels()) {
-    return {std::get<double>(sum), nnz};
-  }
-  return {std::get<std::int64_t>(sum), nnz};
-}
-
-[[nodiscard]] inline Stats ingest_pairs(
-    hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
-    PixelQueue<float>& queue, const std::atomic<bool>& early_return,
-    std::vector<ThinPixel<float>>& buffer, std::size_t batch_size) {
-  const auto resolution = hf.resolutions().front();
-  assert(batch_size != 0);
-  buffer.clear();
-  buffer.reserve(batch_size);
-  std::size_t i = 0;
-
-  try {
-    auto t0 = std::chrono::steady_clock::now();
-    for (; !early_return; ++i) {
-      buffer.clear();
-      // clang-8 does not like when read_next_chunk() is called directly when PairsAggregator is
-      // constructed
-      PairsAggregator aggr(queue, early_return);
-      aggr.read_next_chunk(buffer);
-
-      const auto t1 = std::chrono::steady_clock::now();
-      const auto delta =
-          static_cast<double>(
-              std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
-          1000.0;
-      t0 = t1;
-
-      SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
-                  double(buffer.size()) / delta);
-      hf.add_pixels(resolution, buffer.begin(), buffer.end());
-
-      if (buffer.size() != buffer.capacity()) {
-        break;
-      }
-    }
-
-    hf.serialize();
-    const auto stats = hf.stats(resolution);
-    return {stats.sum, stats.nnz};
-  } catch (const std::exception& e) {
-    const auto i0 = i * buffer.capacity();
-    const auto i1 = i0 + buffer.size();
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("an error occurred while processing chunk {}-{}: {}"), i0, i1, e.what()));
-  }
-}
 
 }  // namespace hictk::tools
