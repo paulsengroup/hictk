@@ -58,7 +58,7 @@ struct SingleCellAttributes {
 class SingleCellFile {
   std::unique_ptr<RootGroup> _root_grp{};
   phmap::btree_set<std::string> _cells{};
-  SingleCellAttributes _attrs{};
+  SingleCellAttributes _attrs{SingleCellAttributes::init_empty()};
   std::shared_ptr<const BinTable> _bins{};
 
   SingleCellFile(HighFive::File fp, BinTable bins, SingleCellAttributes attrs);

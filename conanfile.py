@@ -85,6 +85,7 @@ class HictkConan(ConanFile):
         self.options["boost"].without_atomic = False
         self.options["boost"].without_charconv = True
         self.options["boost"].without_chrono = True
+        self.options["boost"].without_cobalt = True
         self.options["boost"].without_container = True
         self.options["boost"].without_context = True
         self.options["boost"].without_contract = True
