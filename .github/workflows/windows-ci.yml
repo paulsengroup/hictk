@@ -58,9 +58,9 @@ jobs:
       matrix:
         include:
           # prettier-ignore
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Debug,   developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.7.*', cmake-ver: '3.29.*', build_type: Debug,   developer_mode: OFF }
           # prettier-ignore
-          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.4.*', cmake-ver: '3.29.*', build_type: Release, developer_mode: OFF }
+          - { compiler-name: msvc, os: 'windows-2022', conan-ver: '2.7.*', cmake-ver: '3.29.*', build_type: Release, developer_mode: OFF }
 
     steps:
       - uses: actions/checkout@v4
