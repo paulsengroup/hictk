@@ -16,9 +16,10 @@ jobs:
     name: Evict entry from GitHub Actions' Cache
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      actions: write
     steps:
       - name: Evict cache entry
+        if: inputs.cache-key != ''
         run: gh cache delete "${{ inputs.cache-key }}" --repo "${{ github.repository }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
