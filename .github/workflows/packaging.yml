@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build dependencies
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     outputs:
@@ -110,7 +110,7 @@ jobs:
     name: Test find_package()
     needs: [build-deps]
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     steps:
@@ -175,7 +175,7 @@ jobs:
     name: Test add_subdirectory()
     needs: [build-deps]
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     steps:
