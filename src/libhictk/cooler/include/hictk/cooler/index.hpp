@@ -114,8 +114,8 @@ class Index {
   [[nodiscard]] auto at(std::uint32_t chrom_id) -> mapped_type&;
 
   [[nodiscard]] static auto init(const Reference& chroms, const BinTable& bins,
-                                 const std::vector<std::uint64_t>& chrom_offsets,
-                                 bool allocate) -> MapT;
+                                 const std::vector<std::uint64_t>& chrom_offsets, bool allocate)
+      -> MapT;
 
  public:
   class iterator {
