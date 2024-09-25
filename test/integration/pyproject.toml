@@ -22,6 +22,7 @@ classifiers = [
 dependencies = [
   "click>=8",
   "cooler==0.10.*",
+  "h5py!=3.12",  # this version is broken on Windows
   "hictkpy==0.0.5",
   "immutabledict==4.*",
   "numpy==1.26.*",
