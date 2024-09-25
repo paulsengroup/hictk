@@ -123,6 +123,7 @@ class _HictkBalance(HictkTestHarness):
         test_file: pathlib.Path | str,
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
+        max_attempts: int = 1,
         no_validate_weights: bool = False,
         expect_failure: bool = False,
         title: str | None = None,
@@ -139,7 +140,7 @@ class _HictkBalance(HictkTestHarness):
 
         t0 = timer()
         try:
-            self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+            self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
 
         except:  # noqa
             logging.error(f"failed to execute {args}")

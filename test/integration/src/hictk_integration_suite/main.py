@@ -9,6 +9,7 @@ import importlib
 import json
 import logging
 import multiprocessing as mp
+import os
 import pathlib
 import platform
 import sys
@@ -25,6 +26,15 @@ from hictk_integration_suite.runners.hictk.common import version
 
 def nproc() -> int:
     return mp.cpu_count()
+
+
+def user_is_admin() -> bool:
+    try:
+        return os.getuid() == 0
+    except AttributeError:
+        import ctypes
+
+        return ctypes.windll.shell32.IsUserAnAdmin() == 1
 
 
 def get_test_names(include_all: bool = True) -> List[str]:
@@ -150,6 +160,7 @@ def run_tests(
     threads: int,
     no_cleanup: bool,
     do_not_copy_binary: bool,
+    max_attempts: int,
 ) -> Dict:
     num_pass = 0
     num_fail = 0
@@ -176,7 +187,7 @@ def run_tests(
             logging.info(f"planning for {test} tests took {delta:.2f}ms")
 
             t0 = time.time()
-            res = mod.run_tests(plans, wd, no_cleanup)
+            res = mod.run_tests(plans, wd, no_cleanup, max_attempts)
             delta = time.time() - t0
             logging.info(f"running tests for {test} took {delta:.2f}s")
 
@@ -267,6 +278,13 @@ def run_tests(
     is_flag=True,
     show_default=True,
 )
+@click.option(
+    "--max-attempts",
+    help="Maximum number of times to re-submit a test in case of timeout errors.",
+    default=1,
+    type=click.IntRange(1),
+    show_default=True,
+)
 def main(
     hictk_bin: pathlib.Path,
     data_dir: pathlib.Path,
@@ -278,6 +296,7 @@ def main(
     force: bool,
     no_cleanup: bool,
     do_not_copy_binary: bool,
+    max_attempts: int,
 ):
     """
     Run hictk integration test suite.
@@ -294,10 +313,13 @@ def main(
         else:
             raise RuntimeError(f'refusing to overwrite file "{result_file}"')
 
+    if user_is_admin():
+        logging.warning("script is being run by root/admin: beware that file permissions won't be enforced!")
+
     suites = parse_test_suites(suites)
 
     t0 = time.time()
-    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary)
+    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary, max_attempts)
     t1 = time.time()
 
     num_pass = results["results"]["pass"]

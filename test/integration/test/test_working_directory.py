@@ -4,24 +4,41 @@
 
 import os
 import pathlib
+import platform
 import stat
 import tempfile
 from typing import Tuple
 
 import pytest
 
-from hictk_integration_suite.cli.common import URI, WorkingDirectory
+from hictk_integration_suite.cli.common import (
+    URI,
+    WorkingDirectory,
+    _file_is_executable,
+)
 
 
 class TestClass:
+    @staticmethod
+    def _user_is_admin() -> bool:
+        try:
+            return os.getuid() == 0
+        except AttributeError:
+            import ctypes
+
+            return ctypes.windll.shell32.IsUserAnAdmin() == 1
+
     @staticmethod
     def _mkdtemp():
         return tempfile.TemporaryDirectory(prefix="hictk-integration-suite-")
 
     @staticmethod
     def _create_test_files(tmpdir: str) -> Tuple[pathlib.Path, pathlib.Path]:
-        plain_file = pathlib.Path(tmpdir) / "plain.txt"
-        exec_file = pathlib.Path(tmpdir) / "script.sh"
+        plain_file = pathlib.Path(tmpdir) / "plain.foobar"
+        if platform.system() == "Windows":
+            exec_file = pathlib.Path(tmpdir) / "script.exe"
+        else:
+            exec_file = pathlib.Path(tmpdir) / "script.sh"
 
         plain_file.write_text("foo\n")
         plain_file.chmod(stat.S_IRUSR | stat.S_IWUSR)
@@ -33,7 +50,7 @@ class TestClass:
 
     @staticmethod
     def _is_executable(f: URI) -> bool:
-        return os.access(f.path, os.X_OK)
+        return _file_is_executable(f.path)
 
     @staticmethod
     def _attempt_write(f: URI) -> bool:
@@ -86,8 +103,9 @@ class TestClass:
                 assert f is not None
                 if f:
                     assert not self._is_executable(f)
-                    with pytest.raises(Exception):
-                        self._attempt_write(f)
+                    if not self._user_is_admin():
+                        with pytest.raises(Exception):
+                            self._attempt_write(f)
 
     def test_file_staging_exec_file_ro(self):
         with self._mkdtemp() as tmpdir:
@@ -99,8 +117,9 @@ class TestClass:
                 assert f is not None
                 if f:
                     assert self._is_executable(f)
-                    with pytest.raises(Exception):
-                        self._attempt_write(f)
+                    if not self._user_is_admin():
+                        with pytest.raises(Exception):
+                            self._attempt_write(f)
 
     def test_file_staging_plain_file_rw(self):
         with self._mkdtemp() as tmpdir:

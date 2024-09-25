@@ -175,7 +175,9 @@ def plan_tests(
     )
 
 
-def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool) -> Tuple[int, int, int, Dict]:
+def run_tests(
+    plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool, max_attempts: int
+) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
@@ -199,7 +201,7 @@ def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanu
         else:
             test = HictkLoad(hictk, cwd=cwd, tmpdir=tmpdir)
 
-        status = test.run(**p)
+        status = test.run(**p, max_attempts=max_attempts)
         num_pass += status["status"] == "PASS"
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)

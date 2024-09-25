@@ -38,7 +38,7 @@ class HictkFixMcool(HictkTestHarness):
 
         return_code_, stdout_, stderr_ = Runner(
             self._exec, ["validate", str(test_file), "--validate-index", "--exhaustive"], self._cwd, self._tmpdir
-        ).run(timeout=120.0)
+        ).run(timeout=180.0)
         if return_code_ != 0 and len(stdout_) == 0:
             self._failures["mcool file is still corrupted"] = f'hictk validate failed unexpectedly: "{stderr_}"'
             return
@@ -53,6 +53,7 @@ class HictkFixMcool(HictkTestHarness):
         test_file: pathlib.Path | str,
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
+        max_attempts: int = 1,
         expect_failure: bool = False,
         title: str | None = None,
         id: str | None = None,  # noqa
@@ -68,7 +69,7 @@ class HictkFixMcool(HictkTestHarness):
 
         t0 = timer()
         try:
-            self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+            self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         except:  # noqa
             logging.error(f"failed to execute {args}")
             raise

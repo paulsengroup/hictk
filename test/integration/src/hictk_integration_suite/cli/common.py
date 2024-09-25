@@ -9,6 +9,7 @@ import pathlib
 import platform
 import shutil
 import stat
+import sys
 import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
@@ -16,8 +17,60 @@ from immutabledict import immutabledict
 
 from hictk_integration_suite.common import URI
 
+if platform.system() == "Windows":
+    import ntsecuritycon
+    import pywintypes
+    import win32api
+    import win32security
+
+
+def _file_is_executable(path: pathlib.Path | str) -> bool:
+    if platform.system() != "Windows":
+        return bool(shutil.which(path))
+
+    try:
+        win32api.FindExecutable(str(path))
+        return True
+    except pywintypes.error:
+        return False
+
+
+def _make_file_read_only_win(path: pathlib.Path | str):
+    win32security.GetFileSecurity(str(path), win32security.DACL_SECURITY_INFORMATION)
+    user = win32security.LookupAccountName("", win32api.GetUserName())[0]
+    security = win32security.GetFileSecurity(str(path), win32security.DACL_SECURITY_INFORMATION)
+
+    dacl = win32security.ACL()
+
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_READ, user)
+    if _file_is_executable(path):
+        print("FOO")
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_EXECUTE, user)
+
+    security.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(str(path), win32security.DACL_SECURITY_INFORMATION, security)
+
+
+def _make_file_writeable_win(path: pathlib.Path | str):
+    user = win32security.LookupAccountName("", win32api.GetUserName())[0]
+    security = win32security.GetFileSecurity(str(path), win32security.DACL_SECURITY_INFORMATION)
+
+    dacl = win32security.ACL()
+
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_READ, user)
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_WRITE, user)
+    if _file_is_executable(path):
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_EXECUTE, user)
+
+    security.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(str(path), win32security.DACL_SECURITY_INFORMATION, security)
+
 
 def _make_file_read_only(path: pathlib.Path | str):
+    if platform.system() == "Windows":
+        _make_file_read_only_win(path)
+        return
+
     mode = stat.S_IRUSR
     if os.access(path, os.X_OK):
         mode |= stat.S_IXUSR
@@ -25,6 +78,10 @@ def _make_file_read_only(path: pathlib.Path | str):
 
 
 def _make_file_writeable(path: pathlib.Path | str):
+    if platform.version() == "Windows":
+        _make_file_writeable_win(path)
+        return
+
     mode = stat.S_IRUSR | stat.S_IWUSR
     if os.access(path, os.X_OK):
         mode |= stat.S_IXUSR
@@ -51,14 +108,14 @@ def _argument_map_to_list(args_map: Dict[str, Any]) -> List[str]:
 class WorkingDirectory:
     def __init__(self, path: pathlib.Path | str | None = None, delete: bool = True):
         if path is None:
-            path = tempfile.TemporaryDirectory(prefix="hictk-integration-test-", delete=False).name
+            self._path = pathlib.Path(tempfile.mkdtemp(prefix="hictk-integration-test-"))
         else:
-            if pathlib.Path(path).exists():
+            self._path = pathlib.Path(path)
+            if self._path.exists():
                 raise RuntimeError(f'"{path}" already exists')
-            os.mkdir(path)
+            self._path.mkdir()
 
         self._delete = delete
-        self._path = pathlib.Path(path)
         self._mappings = {}
 
     def __str__(self) -> str:
@@ -86,11 +143,12 @@ class WorkingDirectory:
         src: URI | pathlib.Path | str,
         make_read_only: bool = True,
         exists_ok: bool = False,
-    ) -> pathlib.Path:
+    ) -> URI:
 
-        src = URI(src, False)
-        if not src.path.exists():
-            raise RuntimeError(f'source file "{src.path}" does not exist')
+        if not URI(src, False).path.exists():
+            raise RuntimeError(f'source file "{src}" does not exist')
+
+        src = URI(src)
 
         dest_dir = self._path / "staged_files"
         if src.group is None:
@@ -170,21 +228,26 @@ class WorkingDirectory:
             return False
 
     def __getitem__(self, item: URI | pathlib.Path | str) -> URI:
-        value = self.get(URI(item))
+        if not isinstance(item, URI):
+            return self.__getitem__(URI(item))
+
+        value = self.get(item)
         if value is not None:
             return value
 
         raise KeyError(f'no such file "{item}"')
 
     def __contains__(self, item: URI | pathlib.Path | str) -> bool:
-        item = URI(item)
+        if not isinstance(item, URI):
+            return self.__contains__(URI(item))
         if self._path_belongs_to_wd(item.path) and item.path.exists():
             return True
 
         return item in self._mappings
 
     def get(self, item: URI | pathlib.Path | str, default=None) -> URI | None:
-        item = URI(item)
+        if not isinstance(item, URI):
+            return self.get(URI(item), default)
         if self._path_belongs_to_wd(item.path) and item.path.exists():
             return item
 
@@ -202,7 +265,7 @@ class WorkingDirectory:
             return
 
         # Make files writeable by the current user
-        for dirpath, dirnames, filenames in self._path.walk(follow_symlinks=False):
+        for dirpath, dirnames, filenames in os.walk(self._path, followlinks=False):
             for name in dirnames:
                 try:
                     path = dirpath / name
@@ -219,7 +282,11 @@ class WorkingDirectory:
         def error_handler(_, path, excinfo):
             logging.warning(f'failed to delete "{path}": {excinfo}')
 
-        shutil.rmtree(self._path, onexc=error_handler)
+        major, minor = sys.version_info[:2]
+        if major > 2 and minor > 11:
+            shutil.rmtree(self._path, onexc=error_handler)
+        else:
+            shutil.rmtree(self._path, onerror=error_handler)
 
 
 def _check_if_test_should_run(config: Mapping[str, Any]) -> bool:

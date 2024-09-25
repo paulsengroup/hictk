@@ -58,12 +58,16 @@ class HictkTestHarness:
         args_: List[str],
         timeout: int = 1,
         env_variables: Dict[str, str] | None = None,
+        max_attempts: int = 1,
         colnames: List[str] | str | None = None,
     ):
         with Runner(self._exec, args_, cwd=self._cwd, tmpdir=self._tmpdir) as runner:
             self._args = runner.args
             self._returncode, self._stdout, self._stderr = runner.run(
-                timeout=timeout, env_variables=env_variables, colnames=colnames
+                timeout=timeout,
+                env_variables=env_variables,
+                colnames=colnames,
+                max_attempts=max_attempts,
             )
 
     @staticmethod
@@ -115,6 +119,7 @@ class HictkTestHarness:
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
         expect_failure: bool = False,
+        max_attempts: int = 1,
         title: str | None = None,
         id: str | None = None,  # noqa
     ) -> Dict[str, Any]:
@@ -128,7 +133,7 @@ class HictkTestHarness:
         self._expect_failure = expect_failure
 
         t0 = timer()
-        self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+        self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         t1 = timer()
         self._validate(expect_failure=expect_failure)
         t2 = timer()

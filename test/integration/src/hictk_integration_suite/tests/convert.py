@@ -93,6 +93,7 @@ class HictkConvert(HictkTestHarness):
         resolutions: List[int],
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
+        max_attempts: int = 1,
         expect_failure: bool = False,
         title: str | None = None,
         id: str | None = None,  # noqa
@@ -108,7 +109,7 @@ class HictkConvert(HictkTestHarness):
 
         t0 = timer()
         try:
-            self._run_hictk(args, timeout=timeout, env_variables=env_variables)
+            self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         except:  # noqa
             logging.error(f"failed to execute {args}")
             raise

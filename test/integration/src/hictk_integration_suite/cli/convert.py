@@ -66,7 +66,7 @@ def _plan_tests_cmd(
 ) -> List[ImmutableOrderedDict]:
     assert threads > 0
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 60.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title}
     for c in config["test-cases"]:
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
@@ -97,6 +97,7 @@ def _plan_tests_cmd(
                 "reference_file": reference,
                 "test_file": str(output_file),
                 "resolutions": tuple(resolutions),
+                "timeout": c.get("timeout", 60.0),
                 "cwd": str(cwd),
                 "expect_failure": c.get("expect-failure", False),
             }
@@ -115,7 +116,9 @@ def plan_tests(
     )
 
 
-def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool) -> Tuple[int, int, int, Dict]:
+def run_tests(
+    plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool, max_attempts: int
+) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
@@ -138,7 +141,7 @@ def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanu
             test = HictkConvertCli(hictk, cwd=cwd, tmpdir=tmpdir)
         else:
             test = HictkConvert(hictk, cwd=cwd, tmpdir=tmpdir)
-        status = test.run(**p)
+        status = test.run(**p, max_attempts=max_attempts)
         num_pass += status["status"] == "PASS"
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)

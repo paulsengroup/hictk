@@ -27,6 +27,7 @@ dependencies = [
   "numpy==1.26.*",
   "pandas==2.2.*",
   "PyYAML",
+  "pywin32>=306; platform_system == 'Windows'",
 ]
 
 optional-dependencies.test = [

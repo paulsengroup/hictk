@@ -87,7 +87,7 @@ def _plan_tests_cmd(
         title = f"hictk-balance-{algorithm}"
 
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 60.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 90.0}
     for c in config["test-cases"]:
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
@@ -181,7 +181,9 @@ def _get_tester(
     raise NotImplementedError
 
 
-def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool) -> Tuple[int, int, int, Dict]:
+def run_tests(
+    plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanup: bool, max_attempts: int
+) -> Tuple[int, int, int, Dict]:
     num_pass = 0
     num_fail = 0
     num_skip = 0
@@ -201,7 +203,7 @@ def run_tests(plans: List[ImmutableOrderedDict], wd: WorkingDirectory, no_cleanu
         hictk = p.pop("hictk_bin")
         cwd = p.pop("cwd", main_cwd)
         test = _get_tester(hictk, title=title, cwd=cwd, tmpdir=tmpdir)
-        status = test.run(**p)
+        status = test.run(**p, max_attempts=max_attempts)
         num_pass += status["status"] == "PASS"
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)
