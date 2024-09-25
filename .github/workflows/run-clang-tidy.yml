@@ -11,7 +11,6 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
       - "test/units/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
@@ -25,7 +24,6 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
       - "test/units/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
@@ -40,19 +38,21 @@ defaults:
   run:
     shell: bash
 
-env:
-  CCACHE_DIR: "/opt/ccache-cache"
-  CCACHE_COMPRESSLEVEL: "13"
-  CCACHE_MAXSIZE: "200M"
-  CONAN_HOME: "/opt/conan/"
-  HICTK_CI: "1"
-
 jobs:
   run-clang-tidy:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
+
+    outputs:
+      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
+
+    env:
+      CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPRESSLEVEL: "1"
+      CCACHE_MAXSIZE: "300M"
+      CONAN_HOME: "/opt/conan/"
 
     steps:
       - uses: actions/checkout@v4
@@ -67,23 +67,23 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.py', '.github/workflows/run-clang-tidy.yml') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="clang-tidy-ccache-$hash"
+          ccache_key_prefix="ccache-clang-tidy-$GITHUB_REF-$conanfile_hash"
 
-          echo "conan-key=clang-tidy-$hash" >> $GITHUB_OUTPUT
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" >> $GITHUB_OUTPUT
-          echo "ccache-restore-key=$ccache_key_prefix" >> $GITHUB_OUTPUT
+          echo "conan-key=conan-clang-tidy-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -121,8 +121,10 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+        env:
+          ZSTD_CLEVEL: 19
 
       - name: Configure project
         run: |
@@ -139,18 +141,54 @@ jobs:
                 -S .                                          \
                 -B build
 
-      - name: Cache Ccache folder
-        uses: actions/cache@v4
+      - name: Restore Ccache folder
+        id: cache-ccache
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
           path: ${{ env.CCACHE_DIR }}
+
+      - name: Reset Ccache stats
+        run: ccache --zero-stats
 
       - name: Build project
         run: cmake --build build -j $(nproc)
 
-      - name: Print Ccache statistics
-        run: ccache -s
+      - name: Print Ccache statistics (pre-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Cleanup Ccache folder
+        run: |
+          ccache --evict-older-than=14400s # 4h
+          ccache --recompress=19 --recompress-threads="$(nproc)"
+          ccache --cleanup
+
+      - name: Print Ccache statistics (post-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Save Ccache folder
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          path: ${{ env.CCACHE_DIR }}
+        env:
+          ZSTD_CLEVEL: 1
+
+  clean-stale-cache:
+    needs: [run-clang-tidy]
+    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
+    name: Clean stale Ccache cache
+    permissions:
+      actions: write
+    if: needs.build-project.outputs.ccache-old-cache-key != ''
+    with:
+      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
 
   clang-tidy-status-check:
     name: Status Check (clang-tidy)

@@ -119,8 +119,15 @@ jobs:
       options: "--user=root"
 
     env:
-      CONAN_HOME: "/root/.conan2"
+      CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPILERCHECK: "content"
+      CCACHE_COMPRESSLEVEL: "1"
+      CCACHE_MAXSIZE: "100M"
+      CONAN_HOME: "/opt/conan/"
       HICTK_CI: "1"
+
+    outputs:
+      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
 
     steps:
       - name: Clone hictk
@@ -133,9 +140,16 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.py') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
-          echo "key=fuzzy-testing-$hash" >> $GITHUB_OUTPUT
+          # This can be used by to always update a cache entry (useful e.g. for ccache)
+          current_date="$(date '+%s')"
+
+          ccache_key_prefix="ccache-fuzzy-testing-$GITHUB_REF-$conanfile_hash"
+
+          echo "conan-key=fuzzy-testing-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Install Python
         run: |
@@ -146,8 +160,8 @@ jobs:
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -179,8 +193,10 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+        env:
+          ZSTD_CLEVEL: 19
 
       - name: Configure project
         run: |
@@ -196,8 +212,44 @@ jobs:
                 -S .                                                 \
                 -B build
 
+      - name: Restore Ccache folder
+        id: cache-ccache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          path: ${{ env.CCACHE_DIR }}
+
+      - name: Reset Ccache stats
+        run: ccache --zero-stats
+
       - name: Build hictk_fuzzer
         run: cmake --build build -j $(nproc) -t hictk_fuzzer
+
+      - name: Print Ccache statistics (pre-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Cleanup Ccache folder
+        run: |
+          ccache --evict-older-than=14400s # 4h
+          ccache --recompress=19 --recompress-threads="$(nproc)"
+          ccache --cleanup
+
+      - name: Print Ccache statistics (post-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Save Ccache folder
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          path: ${{ env.CCACHE_DIR }}
+        env:
+          ZSTD_CLEVEL: 1
 
       - name: Install test dependencies
         run: |
@@ -207,9 +259,9 @@ jobs:
         id: ci-type
         run: |
           if git log --format=%B -n 1 ${{ github.event.after }} | grep -qF '[ci full]'; then
-            echo "type=full" >> $GITHUB_OUTPUT
+            echo "type=full" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "type=short" >> $GITHUB_OUTPUT
+            echo "type=short" | tee -a "$GITHUB_OUTPUT"
           fi
 
       - name: Prepare for test
@@ -241,8 +293,8 @@ jobs:
           2>&1 echo "Duration: ${duration}"
           2>&1 echo "Resolution: ${resolution}"
 
-          echo "duration=$duration" >> $GITHUB_OUTPUT
-          echo "resolution=$resolution" >> $GITHUB_OUTPUT
+          echo "duration=$duration" | tee -a "$GITHUB_OUTPUT"
+          echo "resolution=$resolution" | tee -a "$GITHUB_OUTPUT"
 
       - name: Download test datasets
         run: |
@@ -286,6 +338,16 @@ jobs:
             --format sparse \
             *".${{ matrix.format }}" \
             *.cool
+
+  clean-stale-cache:
+    needs: [build-project]
+    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
+    name: Clean stale Ccache cache
+    permissions:
+      actions: write
+    if: needs.build-project.outputs.ccache-old-cache-key != ''
+    with:
+      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
 
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)

@@ -34,10 +34,6 @@ defaults:
   run:
     shell: bash
 
-env:
-  CONAN_HOME: "/opt/conan/"
-  HICTK_CI: "1"
-
 jobs:
   build-deps:
     runs-on: ubuntu-latest
@@ -49,6 +45,9 @@ jobs:
     outputs:
       cache-key: ${{ steps.generate-cache-key.outputs.conan-key }}
 
+    env:
+      CONAN_HOME: "/opt/conan/"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -59,15 +58,15 @@ jobs:
       - name: Generate cache key
         id: generate-cache-key
         run: |
-          hash="${{ hashFiles('conanfile.py', '.github/workflows/packaging.yml') }}"
-          echo "conan-key=packaging-$hash" >> $GITHUB_OUTPUT
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          echo "conan-key=packaging-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ steps.generate-cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -106,7 +105,9 @@ jobs:
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
+        env:
+          ZSTD_CLEVEL: 19
 
   test-find-package:
     runs-on: ubuntu-latest
@@ -115,6 +116,9 @@ jobs:
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
+
+    env:
+      CONAN_HOME: "/opt/conan/"
 
     steps:
       - uses: actions/checkout@v4
@@ -128,13 +132,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
           fail-on-cache-miss: true
 
       - name: Install build dependencies
         run: |
           conan install .                        \
-             --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
              -s build_type=Release               \
@@ -181,6 +184,9 @@ jobs:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
 
+    env:
+      CONAN_HOME: "/opt/conan/"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -193,13 +199,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
           fail-on-cache-miss: true
 
       - name: Install build dependencies
         run: |
           conan install .                        \
-             --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
              -s build_type=Release               \

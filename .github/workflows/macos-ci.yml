@@ -11,7 +11,7 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
+      - "test/integration/**"
       - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -24,7 +24,7 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
+      - "test/integration/**"
       - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -74,13 +74,26 @@ jobs:
 
   cache-test-dataset:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+    name: Cache test dataset
 
   build-project:
+    name: Build project
     needs: matrix-factory
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+
+    outputs:
+      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
+
+    env:
+      CCACHE_DIR: "${{ github.workspace }}/ccache-cache"
+      CCACHE_COMPILERCHECK: "content"
+      CCACHE_COMPRESSLEVEL: "1"
+      CCACHE_MAXSIZE: "250M"
+      CONAN_HOME: "${{ github.workspace }}/.conan2"
+      HOMEBREW_NO_AUTO_UPDATE: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -99,6 +112,7 @@ jobs:
         run: |
           ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
 
+          echo "NPROC=$ncpus" >> $GITHUB_ENV
           echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
           echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
 
@@ -118,17 +132,14 @@ jobs:
           build_type="${{ matrix.build_type }}"
 
           conanfile_hash="${{ hashFiles('conanfile.py') }}"
-          workflow_hash="${{ hashFiles('.github/workflows/macos-ci.yml') }}"
-          combined_hash="${{ hashFiles('conanfile.py', '.github/workflows/macos-ci.yml') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
           conan_key_prefix="conan-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
-          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$GITHUB_REF-$conanfile_hash-$build_type"
 
           echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
-          echo "conan-restore-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
 
           echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a $GITHUB_OUTPUT
           echo "ccache-restore-key=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
@@ -137,13 +148,11 @@ jobs:
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-restore-key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
 
       - name: Configure Conan
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan profile detect --force
+        run: conan profile detect --force
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -176,15 +185,10 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
-
-      - name: Cache Ccache folder
-        uses: actions/cache@v4
-        with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
-          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.cache-key.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+        env:
+          ZSTD_CLEVEL: 19
 
       - name: Configure project
         run: |
@@ -201,6 +205,16 @@ jobs:
                 -S "${{ github.workspace }}"                         \
                 -B "${{ github.workspace }}/build"
 
+      - name: Restore Ccache folder
+        id: cache-ccache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          path: ${{ env.CCACHE_DIR }}
+
+      - name: Reset Ccache stats
+        run: ccache --zero-stats
+
       - name: Build project
         run: cmake --build ${{ github.workspace }}/build
 
@@ -208,22 +222,21 @@ jobs:
         run: |
           cmake --install build
 
-          gtar -cf - -C dest/ bin |
-          zstd -T0 -13 -o binaries.tar.zst
+          gtar -cf - -C dest/ bin | zstd -T0 -13 -o binaries.tar.zst
 
       - name: Package unit tests
         run: |
+          rm -r build/src
           gtar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
         uses: actions/upload-artifact@v4
         with:
-          name: >
-            unit-tests-${{ matrix.os }}-
-            ${{ matrix.compiler_name }}-
-            ${{ matrix.compiler_version }}-
-            ${{ matrix.build_type }}-
-            ${{ matrix.developer_mode }}
+          name: "unit-tests-${{ matrix.os }}-\
+            ${{ matrix.compiler_name }}-\
+            ${{ matrix.compiler_version }}-\
+            ${{ matrix.build_type }}-\
+            ${{ matrix.developer_mode }}"
           path: unit-tests.tar.zst
           if-no-files-found: error
           retention-days: 1
@@ -231,18 +244,50 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: >
-            binaries-${{ matrix.os }}-
-            ${{ matrix.compiler_name }}-
-            ${{ matrix.compiler_version }}-
-            ${{ matrix.build_type }}-
-            ${{ matrix.developer_mode }}
+          name: "binaries-${{ matrix.os }}-\
+            ${{ matrix.compiler_name }}-\
+            ${{ matrix.compiler_version }}-\
+            ${{ matrix.build_type }}-\
+            ${{ matrix.developer_mode }}"
           path: binaries.tar.zst
           if-no-files-found: error
           retention-days: 1
 
-      - name: Print Ccache statistics
-        run: ccache -s
+      - name: Print Ccache statistics (pre-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Cleanup Ccache folder
+        run: |
+          ccache --evict-older-than=14400s # 4h
+          ccache --recompress=19 --recompress-threads="$NPROC"
+          ccache --cleanup
+
+      - name: Print Ccache statistics (post-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Save Ccache folder
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          path: ${{ env.CCACHE_DIR }}
+        env:
+          ZSTD_CLEVEL: 1
+
+  clean-stale-cache:
+    needs: [build-project]
+    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
+    name: Clean stale Ccache cache
+    permissions:
+      actions: write
+    if: needs.build-project.outputs.ccache-old-cache-key != ''
+    with:
+      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
 
   run-unit-tests:
     name: Run unit tests
@@ -252,13 +297,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
+    env:
+      HICTK_CI: "1"
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -270,16 +314,15 @@ jobs:
       - name: Download unit tests artifact
         uses: actions/download-artifact@v4
         with:
-          name: >
-            unit-tests-${{ matrix.os }}-
-            ${{ matrix.compiler_name }}-
-            ${{ matrix.compiler_version }}-
-            ${{ matrix.build_type }}-
-            ${{ matrix.developer_mode }}
+          name: "unit-tests-${{ matrix.os }}-\
+            ${{ matrix.compiler_name }}-\
+            ${{ matrix.compiler_version }}-\
+            ${{ matrix.build_type }}-\
+            ${{ matrix.developer_mode }}"
 
       - name: Extract binaries test dataset
         run: |
-          zstd -dcf unit-tests.tar.zst | gtar -xf -
+          gtar -xf unit-tests.tar.zst
           gtar -xf test/data/hictk_test_data.tar.zst
 
       - name: Generate requirements.txt for pip
@@ -311,27 +354,18 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
+    env:
+      HICTK_CI: "1"
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
-
-      - name: Generate requirements.txt for pip
-        run: |
-          echo 'cooler==0.10.0' > requirements.txt
-          echo 'numpy<2' >> requirements.txt
-          echo 'pyyaml' >> requirements.txt
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache-dependency-path: "test/integration/pyproject.toml"
           cache: "pip"
-
-      - name: Install test dependencies
-        run: pip install -r requirements.txt
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -343,111 +377,127 @@ jobs:
       - name: Download binaries artifact
         uses: actions/download-artifact@v4
         with:
-          name: >
-            binaries-${{ matrix.os }}-
-            ${{ matrix.compiler_name }}-
-            ${{ matrix.compiler_version }}-
-            ${{ matrix.build_type }}-
-            ${{ matrix.developer_mode }}
+          name: "binaries-${{ matrix.os }}-\
+            ${{ matrix.compiler_name }}-\
+            ${{ matrix.compiler_version }}-\
+            ${{ matrix.build_type }}-\
+            ${{ matrix.developer_mode }}"
 
       - name: Extract binaries test dataset
         run: |
-          zstd -dcf binaries.tar.zst | tar -xf -
-          tar -xf test/data/hictk_test_data.tar.zst
+          gtar -xf binaries.tar.zst
+          gtar -xf test/data/hictk_test_data.tar.zst
+
+      - name: Install test suite
+        run: |
+          python3.12 -m venv venv --upgrade
+          venv/bin/pip install test/integration
+
+      - name: Detect number available CPUs
+        run: |
+          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+
+          echo "NPROC=$ncpus" | tee -a $GITHUB_ENV
 
       - name: Test hictk balance
         run: |
-          test/scripts/hictk_balance_ice.sh bin/hictk
-          test/scripts/hictk_balance_scale.sh bin/hictk
-          test/scripts/hictk_balance_vc.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.balance.json \
+            --suites=balance
 
-      - name: Test hictk convert (hic2cool)
+      - name: Test hictk convert
         run: |
-          test/scripts/hictk_convert_hic2cool.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.convert.json \
+            --suites=convert
 
-      - name: Test hictk convert (cool2hic)
+      - name: Test hictk dump
         run: |
-          test/scripts/hictk_convert_cool2hic.sh bin/hictk
-
-      - name: Test hictk dump chroms
-        run: |
-          test/scripts/hictk_dump_chroms.sh bin/hictk
-
-      - name: Test hictk dump bins
-        run: |
-          test/scripts/hictk_dump_bins.sh bin/hictk
-
-      - name: Test hictk dump resolutions
-        run: |
-          test/scripts/hictk_dump_resolutions.sh bin/hictk
-
-      - name: Test hictk dump normalizations
-        run: |
-          test/scripts/hictk_dump_normalizations.sh bin/hictk
-
-      - name: Test hictk dump cells
-        run: |
-          test/scripts/hictk_dump_cells.sh bin/hictk
-
-      - name: Test hictk dump genome-wide
-        run: |
-          test/scripts/hictk_dump_gw.sh bin/hictk
-
-      - name: Test hictk dump cis
-        run: |
-          test/scripts/hictk_dump_cis.sh bin/hictk
-
-      - name: Test hictk dump trans
-        run: |
-          test/scripts/hictk_dump_trans.sh bin/hictk
-
-      - name: Test hictk dump balanced
-        run: |
-          test/scripts/hictk_dump_balanced.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.dump.json \
+            --suites=dump
 
       - name: Test hictk fix-mcool
         run: |
-          test/scripts/hictk_fix_mcool.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.fix-mcool.json \
+            --suites=fix-mcool
 
-      - name: Test hictk load coo sorted
+      - name: Test hictk load
         run: |
-          test/scripts/hictk_load_coo.sh bin/hictk sorted
-
-      - name: Test hictk load coo unsorted
-        run: |
-          test/scripts/hictk_load_coo.sh bin/hictk unsorted
-
-      - name: Test hictk load bg2 sorted
-        run: |
-          test/scripts/hictk_load_bg2.sh bin/hictk sorted
-
-      - name: Test hictk load bg2 unsorted
-        run: |
-          test/scripts/hictk_load_bg2.sh bin/hictk unsorted
-
-      - name: Test hictk load 4dn
-        run: |
-          test/scripts/hictk_load_4dn.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.load.json \
+            --suites=load
 
       - name: Test hictk merge
         run: |
-          test/scripts/hictk_merge.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.merge.json \
+            --suites=merge
 
       - name: Test hictk metadata
         run: |
-          test/scripts/hictk_metadata.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.metadata.json \
+            --suites=metadata
 
-      - name: Test hictk rename-chroms
+      - name: Test hictk rename-chromosomes
         run: |
-          test/scripts/hictk_rename_chromosomes.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.rename-chromosomes.json \
+            --suites=rename-chromosomes
 
       - name: Test hictk validate
         run: |
-          test/scripts/hictk_validate.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.validate.json \
+            --suites=validate
 
       - name: Test hictk zoomify
         run: |
-          test/scripts/hictk_zoomify.sh bin/hictk
+          venv/bin/hictk_integration_suite \
+            bin/hictk \
+            test/integration/config.toml \
+            --data-dir test/data \
+            --threads "$NPROC" \
+            --result-file integration-test-report.zoomify.json \
+            --suites=zoomify
 
   macos-ci-status-check:
     name: Status Check (MacOS CI)

@@ -12,7 +12,7 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
+      - "test/integration/**"
       - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -26,7 +26,7 @@ on:
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/scripts/**"
+      - "test/integration/**"
       - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -40,25 +40,27 @@ defaults:
   run:
     shell: bash
 
-env:
-  CCACHE_DIR: "/opt/ccache-cache"
-  CCACHE_COMPILERCHECK: "content"
-  CCACHE_COMPRESSLEVEL: "13"
-  CCACHE_MAXSIZE: "200M"
-  CONAN_HOME: "/opt/conan/"
-  HICTK_CI: "1"
-
 jobs:
   cache-test-dataset:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+    name: Cache test dataset
 
-  run-codecov:
-    name: Codecov
-    needs: cache-test-dataset
+  build-project:
+    name: Build project
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
       options: "--user=root"
+
+    outputs:
+      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
+
+    env:
+      CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPILERCHECK: "content"
+      CCACHE_COMPRESSLEVEL: "1"
+      CCACHE_MAXSIZE: "500M"
+      CONAN_HOME: "/opt/conan/"
 
     steps:
       - uses: actions/checkout@v4
@@ -70,23 +72,23 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.py', '.github/workflows/codecov.yml') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="codecov-ccache-$hash"
+          ccache_key_prefix="codecov-ccache-$conanfile_hash"
 
-          echo "conan-key=codecov-$hash" >> $GITHUB_OUTPUT
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" >> $GITHUB_OUTPUT
-          echo "ccache-restore-key=$ccache_key_prefix" >> $GITHUB_OUTPUT
+          echo "conan-key=codecov-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -125,7 +127,9 @@ jobs:
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
           key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          path: ${{ env.CONAN_HOME }}/p
+        env:
+          ZSTD_CLEVEL: 19
 
       - name: Configure project
         run: |
@@ -143,18 +147,80 @@ jobs:
                 -S .                                          \
                 -B build
 
-      - name: Cache Ccache folder
-        uses: actions/cache@v4
+      - name: Restore Ccache folder
+        id: cache-ccache
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
           path: ${{ env.CCACHE_DIR }}
+
+      - name: Reset Ccache stats
+        run: ccache --zero-stats
 
       - name: Build project
         run: cmake --build build -j $(nproc)
 
-      - name: Print Ccache statistics
-        run: ccache -s
+      - name: Package build folder
+        run: tar -cf - build/ | zstd -T0 -13 -o build.tar.zst
+
+      - name: Upload build folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: "build-codecov"
+          path: build.tar.zst
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Print Ccache statistics (pre-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Cleanup Ccache folder
+        run: |
+          ccache --evict-older-than=14400s # 4h
+          ccache --recompress=19 --recompress-threads="$(nproc)"
+          ccache --cleanup
+
+      - name: Print Ccache statistics (post-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Save Ccache folder
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          path: ${{ env.CCACHE_DIR }}
+        env:
+          ZSTD_CLEVEL: 1
+
+  clean-stale-cache:
+    needs: [build-project]
+    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
+    name: Clean stale Ccache cache
+    permissions:
+      actions: write
+    if: needs.build-project.outputs.ccache-old-cache-key != ''
+    with:
+      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
+
+  run-unit-tests:
+    name: Run unit tests
+    needs: [cache-test-dataset, build-project]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      options: "--user=root"
+
+    env:
+      HICTK_CI: "1"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -163,69 +229,234 @@ jobs:
           path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
 
-      - name: Extract test dataset
-        run: tar -xf test/data/hictk_test_data.tar.zst
+      - name: Download unit tests artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "build-codecov"
 
-      - name: Run unit tests
+      - name: Extract binaries and test dataset
         run: |
-          ctest --test-dir build/   \
-                --schedule-random   \
-                --output-on-failure \
-                --no-tests=error    \
-                --timeout 240       \
-                -j $(nproc) |&
-          head -n 1000
+          tar -xf build.tar.zst
+          tar -xf test/data/hictk_test_data.tar.zst
 
-      - name: Setup test dependencies
+      - name: Add test user
+        run: useradd devel
+
+      - name: Fix permissions
+        run: |
+          chown -R devel:devel build/
+
+      - name: Setup dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends gpg gpg-agent python3-pip xz-utils
-
-          python3 -m pip install 'cooler==0.10.0' 'numpy<2' 'pyyaml'
+          apt-get install -q -y --no-install-recommends \
+            gpg \
+            gpg-agent \
+            sudo \
+            tar
 
           update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
 
-      - name: Run integration tests
+      - name: Run unit tests
         run: |
-          test/scripts/hictk_balance_ice.sh build/src/hictk/hictk
-          test/scripts/hictk_balance_scale.sh build/src/hictk/hictk
-          test/scripts/hictk_balance_vc.sh build/src/hictk/hictk
-
-          test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
-          test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
-
-          test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_resolutions.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_normalizations.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_cells.sh build/src/hictk/hictk
-
-          test/scripts/hictk_dump_gw.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_cis.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_trans.sh build/src/hictk/hictk
-          test/scripts/hictk_dump_balanced.sh build/src/hictk/hictk
-
-          test/scripts/hictk_fix_mcool.sh build/src/hictk/hictk
-
-          test/scripts/hictk_load_coo.sh build/src/hictk/hictk sorted
-          test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted
-          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk sorted
-          test/scripts/hictk_load_bg2.sh build/src/hictk/hictk unsorted
-          test/scripts/hictk_load_4dn.sh build/src/hictk/hictk
-
-          test/scripts/hictk_merge.sh build/src/hictk/hictk
-
-          test/scripts/hictk_metadata.sh build/src/hictk/hictk
-
-          test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
-
-          test/scripts/hictk_validate.sh build/src/hictk/hictk
-
-          test/scripts/hictk_zoomify.sh build/src/hictk/hictk
+          sudo -u devel -E env "PATH=$PATH" \
+          ctest --test-dir build/           \
+                --schedule-random           \
+                --output-on-failure         \
+                --no-tests=error            \
+                --timeout 240               \
+                -j $(nproc) |&
+          head -n 1000
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
+          flags: "tests | unittests"
+          fail_ci_if_error: true
+          plugin: gcov
+          os: linux
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  run-integration-tests:
+    name: Run integration tests
+    needs: [cache-test-dataset, build-project]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      options: "--user=root"
+
+    env:
+      HICTK_CI: "1"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Restore test dataset
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.cache-test-dataset.outputs.cache-key }}
+          path: test/data/hictk_test_data.tar.zst
+          fail-on-cache-miss: true
+
+      - name: Download binaries artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "build-codecov"
+
+      - name: Extract binaries and test dataset
+        run: |
+          tar -xf build.tar.zst
+          tar -xf test/data/hictk_test_data.tar.zst
+
+      - name: Install test suite
+        run: |
+          python3.12 -m venv venv --upgrade
+          venv/bin/pip install test/integration
+
+      - name: Add test user
+        run: useradd devel
+
+      - name: Fix permissions
+        run: |
+          chown -R devel:devel build/
+
+      - name: Setup dependencies
+        run: |
+          apt-get update
+          apt-get install -q -y --no-install-recommends \
+            gpg \
+            gpg-agent \
+            sudo \
+            tar
+
+          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
+
+      - name: Test hictk balance
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.balance.json \
+            --suites=balance
+
+      - name: Test hictk convert
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.convert.json \
+            --suites=convert
+
+      - name: Test hictk dump
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.dump.json \
+            --suites=dump
+
+      - name: Test hictk fix-mcool
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.fix-mcool.json \
+            --suites=fix-mcool
+
+      - name: Test hictk load
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.load.json \
+            --suites=load
+
+      - name: Test hictk merge
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.merge.json \
+            --suites=merge
+
+      - name: Test hictk metadata
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.metadata.json \
+            --suites=metadata
+
+      - name: Test hictk rename-chromosomes
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.rename-chromosomes.json \
+            --suites=rename-chromosomes
+
+      - name: Test hictk validate
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.validate.json \
+            --suites=validate
+
+      - name: Test hictk zoomify
+        run: |
+          sudo -u devel -E env "PATH=$PATH" \
+          venv/bin/hictk_integration_suite \
+            build/src/hictk/hictk \
+            test/integration/config.toml \
+            --do-not-copy-binary \
+            --data-dir test/data \
+            --threads "$(nproc)" \
+            --result-file integration-test-report.zoomify.json \
+            --suites=zoomify
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          flags: "tests | integration"
           fail_ci_if_error: true
           plugin: gcov
           os: linux
@@ -237,9 +468,16 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
-      - run-codecov
+      - cache-test-dataset
+      - build-project
+      - run-unit-tests
+      - run-integration-tests
 
     steps:
       - name: Collect job results
-        if: needs.run-codecov.result != 'success'
+        if: |
+          needs.cache-test-dataset.result != 'success' ||
+          needs.build-project.result != 'success'      ||
+          needs.run-unit-tests.result != 'success'     ||
+          needs.run-integration-tests.result != 'success'
         run: exit 1

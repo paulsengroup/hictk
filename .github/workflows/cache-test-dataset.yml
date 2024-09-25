@@ -35,7 +35,7 @@ jobs:
         run: |
           key="test-dataset-${{ hashFiles( 'cmake/FetchTestDataset.cmake' ) }}"
 
-          echo "key=$key" >> $GITHUB_OUTPUT
+          echo "key=$key" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore cache
         id: cache-dset
@@ -52,8 +52,8 @@ jobs:
           url="$(grep -F 'DOWNLOAD' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*DOWNLOAD[[:space:]]\+//')"
           checksum="$(grep -F 'EXPECTED_HASH' "$FETCH_TEST_DATASET_CMAKE" | sed 's/.*SHA256=//')"
 
-          echo "url=$url" >> $GITHUB_OUTPUT
-          echo "checksum=$checksum" >> $GITHUB_OUTPUT
+          echo "url=$url" | tee -a "$GITHUB_OUTPUT"
+          echo "checksum=$checksum" | tee -a "$GITHUB_OUTPUT"
 
       - name: Download test dataset
         if: steps.cache-dset.outputs.cache-hit != 'true'
