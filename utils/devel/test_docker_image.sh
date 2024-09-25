@@ -25,18 +25,17 @@ whereis -b hictk
 
 apt-get update
 apt-get install -q -y --no-install-recommends \
-  python3 \
+  python3.11 \
   python3-pip \
-  python3-venv \
+  python3.11-venv \
   tar \
-  which \
   zstd
 
 cd /tmp/hictk
 
 tar -xf test/data/hictk_test_data.tar.zst
 
-python3 -m venv venv --upgrade
+python3.11 -m venv venv --upgrade
 venv/bin/pip install test/integration
 
 venv/bin/hictk_integration_suite \
