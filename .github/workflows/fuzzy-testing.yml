@@ -119,15 +119,9 @@ jobs:
       options: "--user=root"
 
     env:
-      CCACHE_DIR: "/opt/ccache-cache"
-      CCACHE_COMPILERCHECK: "content"
-      CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXSIZE: "100M"
+      CCACHE_DISABLE: "1"
       CONAN_HOME: "/opt/conan/"
       HICTK_CI: "1"
-
-    outputs:
-      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
 
     steps:
       - name: Clone hictk
@@ -142,14 +136,7 @@ jobs:
         run: |
           conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
-          # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
-
-          ccache_key_prefix="ccache-fuzzy-testing-$GITHUB_REF-$conanfile_hash"
-
           echo "conan-key=fuzzy-testing-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
-          echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Install Python
         run: |
@@ -212,44 +199,8 @@ jobs:
                 -S .                                                 \
                 -B build
 
-      - name: Restore Ccache folder
-        id: cache-ccache
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
-          path: ${{ env.CCACHE_DIR }}
-
-      - name: Reset Ccache stats
-        run: ccache --zero-stats
-
       - name: Build hictk_fuzzer
         run: cmake --build build -j $(nproc) -t hictk_fuzzer
-
-      - name: Print Ccache statistics (pre-cleanup)
-        run: |
-          ccache --show-stats \
-                 --show-compression \
-                 --verbose
-
-      - name: Cleanup Ccache folder
-        run: |
-          ccache --evict-older-than=14400s # 4h
-          ccache --recompress=19 --recompress-threads="$(nproc)"
-          ccache --cleanup
-
-      - name: Print Ccache statistics (post-cleanup)
-        run: |
-          ccache --show-stats \
-                 --show-compression \
-                 --verbose
-
-      - name: Save Ccache folder
-        uses: actions/cache/save@v4
-        with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          path: ${{ env.CCACHE_DIR }}
-        env:
-          ZSTD_CLEVEL: 1
 
       - name: Install test dependencies
         run: |
@@ -338,16 +289,6 @@ jobs:
             --format sparse \
             *".${{ matrix.format }}" \
             *.cool
-
-  clean-stale-cache:
-    needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
-    name: Clean stale Ccache cache
-    permissions:
-      actions: write
-    if: needs.build-project.outputs.ccache-old-cache-key != ''
-    with:
-      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
 
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
