@@ -27,6 +27,7 @@ Coarsening pixels
 .. cpp:class:: template <typename PixelIt> CoarsenPixels
 
   Class used to coarsen pixels read from a pair of pixel iterators.
+  The underlying sequence of pixels are expected to be sorted by their genomic coordinates.
   Coarsening is performed in a streaming fashion, minimizing the number of pixels that are kept into memory at any given time.
 
   .. cpp:function:: CoarsenPixels(PixelIt first_pixel, PixelIt last_pixel,  std::shared_ptr<const BinTable> source_bins, std::size_t factor);
@@ -134,11 +135,14 @@ Converting streams of pixels to Arrow Tables
 
 .. cpp:class:: template <typename PixelIt> ToDataFrame
 
-  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, bool transpose = false, std::size_t chunk_size = 256'000);
+  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, bool mirror_pixels = true, std::size_t chunk_size = 256'000);
+  .. cpp:function:: template <typename PixelSelector> ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, std::size_t chunk_size = 256'000);
 
   Construct an instance of a :cpp:class:`ToDataFrame` converter given a stream of pixels delimited by ``first_pixel`` and ``last_pixel``, a DataFrame ``format`` and a :cpp:class:`BinTable`.
+  The underlying sequence of pixels are expected to be sorted by their genomic coordinates.
 
-  When ``transpose`` is set to true, the converter will produce a table consisting of pixels overlapping the lower-triangle of the matrix.
+  The optional argument ``span`` determines whether the resulting :cpp:class:`arrow::Table` should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
+  It should be noted that queries spanning the the full-matrix or the lower-triangle are always more expensive because they involve an additional step where pixels are sorted by their genomic coordinates.
 
   .. cpp:function:: [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
@@ -148,33 +152,37 @@ Converting streams of pixels to Arrow Tables
 Converting streams of pixels to Eigen Dense Matrices
 ----------------------------------------------------
 
-.. cpp:class:: template <typename PixelSelector> ToDenseMatrix
+.. cpp:class:: template <typename N, typename PixelSelector> ToDenseMatrix
+
+  .. cpp:type:: MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
   .. cpp:function:: ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
 
   Construct an instance of a :cpp:class:`ToDenseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
-  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regarless of whether they are located above or below the genome-wide matrix diagonal).
+  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
   Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
-  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
-  Convert the stream of pixels into an :cpp:class:`Eigen::Matrix`.
+  Convert the stream of pixels into an :cpp:type:`MatrixT`.
 
 Converting streams of pixels to Eigen Sparse Matrices
 -----------------------------------------------------
 
-.. cpp:class:: template <typename PixelSelector> ToSparseMatrix
+.. cpp:class:: template <typename N, typename PixelSelector> ToSparseMatrix
+
+  .. cpp:type:: MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
 
   .. cpp:function:: ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
 
   Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
-  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regarless of whether they are located above or below the genome-wide matrix diagonal).
+  The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
   Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
-  .. cpp:function:: [[nodiscard]] auto operator()() -> Eigen::SparseMatrix<N>;
+  .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
-  Convert the stream of pixels into an :cpp:class:`Eigen::SparseMatrix`.
+  Convert the stream of pixels into an :cpp:type:`MatrixT`.

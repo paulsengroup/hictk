@@ -75,6 +75,14 @@ File handle
   .. cpp:function:: [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(balancing::Method norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(balancing::Method norm) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm) const;
 
   **Fetch methods (1D queries)**
 
@@ -132,7 +140,7 @@ Pixel selector
   .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
   .. cpp:function:: [[nodiscard]] MatrixType matrix_type() const noexcept;
-  .. cpp:function:: [[nodiscard]] balancing::Method normalization() const noexcept;
+  .. cpp:function:: [[nodiscard]] const balancing::Method& normalization() const noexcept;
   .. cpp:function:: [[nodiscard]] MatrixUnit unit() const noexcept;
   .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const noexcept;
 
@@ -143,6 +151,7 @@ Pixel selector
   .. cpp:function:: [[nodiscard]] const balancing::Weights &weights2() const noexcept;
 
   .. cpp:function:: [[nodiscard]] const BinTable &bins() const noexcept;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   .. cpp:function:: [[nodiscard]] const internal::HiCFooterMetadata &metadata() const noexcept;
 
   .. cpp:function:: [[nodiscard]] bool is_inter() const noexcept;
