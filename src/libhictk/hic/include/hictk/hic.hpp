@@ -87,12 +87,21 @@ class File {
                                     std::uint64_t first_bin2, std::uint64_t last_bin2,
                                     balancing::Method norm = balancing::Method::NONE()) const;
 
-  [[nodiscard]] balancing::Weights normalization(balancing::Method norm,
-                                                 const Chromosome &chrom) const;
-  [[nodiscard]] balancing::Weights normalization(std::string_view norm,
-                                                 const Chromosome &chrom) const;
-  [[nodiscard]] balancing::Weights normalization(balancing::Method norm) const;
-  [[nodiscard]] balancing::Weights normalization(std::string_view norm) const;
+  [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm,
+                                                        const Chromosome &chrom) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view norm,
+                                                        const Chromosome &chrom) const;
+  [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
+
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      balancing::Method norm, const Chromosome &chrom) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view norm, const Chromosome &chrom) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      balancing::Method norm) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view norm) const;
 
   [[nodiscard]] std::vector<double> expected_values(
       const Chromosome &chrom,

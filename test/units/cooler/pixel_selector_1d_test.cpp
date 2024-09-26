@@ -23,8 +23,9 @@
 namespace hictk::cooler::test::pixel_selector {
 
 template <typename N>
-static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, const Reference& chroms,
-                                         std::uint32_t bin_size) {
+static std::pair<std::ptrdiff_t, N> generate_test_data(const std::filesystem::path& path,
+                                                       const Reference& chroms,
+                                                       std::uint32_t bin_size) {
   auto f = File::create<N>(path.string(), chroms, bin_size, true);
 
   const auto num_bins = f.bins().size();
@@ -32,27 +33,30 @@ static std::ptrdiff_t generate_test_data(const std::filesystem::path& path, cons
   std::vector<ThinPixel<N>> pixels;
 
   N n = 1;
+  N sum = 0;
   for (std::uint64_t bin1_id = 0; bin1_id < num_bins; ++bin1_id) {
     for (std::uint64_t bin2_id = bin1_id; bin2_id < num_bins; ++bin2_id) {
+      sum += n;
       pixels.emplace_back(ThinPixel<N>{bin1_id, bin2_id, n++});
     }
   }
   f.append_pixels(pixels.begin(), pixels.end());
-  return static_cast<std::ptrdiff_t>(pixels.size());
+  return std::make_pair(static_cast<std::ptrdiff_t>(pixels.size()), sum);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
+TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector][short]") {
   const auto path1 = testdir() / "pixel_selector_devel.cool";
 
   const Reference chroms{Chromosome{0, "chr1", 1000}, Chromosome{1, "chr2", 100}};
   constexpr std::uint32_t bin_size = 10;
   using T = std::uint32_t;
 
-  const auto expected_nnz = generate_test_data<T>(path1, chroms, bin_size);
+  const auto [expected_nnz, expected_sum] = generate_test_data<T>(path1, chroms, bin_size);
 
   const File f(path1.string());
   REQUIRE(std::distance(f.begin<T>(), f.end<T>()) == expected_nnz);
+  REQUIRE(std::holds_alternative<BinTableFixed>(f.bins().get()));
 
   SECTION("query overlaps chrom start") {
     auto selector = f.fetch("chr1:0-20");
@@ -165,6 +169,15 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
     CHECK(sum == 334'290);
   }
 
+  SECTION("query spans entire genome") {
+    auto selector = f.fetch();
+    CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == expected_nnz);
+    const auto sum = std::accumulate(
+        selector.begin<T>(), selector.end<T>(), T(0),
+        [&](T accumulator, const ThinPixel<T>& pixel) { return accumulator + pixel.count; });
+    CHECK(sum == expected_sum);
+  }
+
   SECTION("equality operator") {
     CHECK(f.fetch("chr1:0-1000") == f.fetch("chr1:0-1000"));
     CHECK(f.fetch("chr1:10-1000") != f.fetch("chr1:0-1000"));
@@ -213,6 +226,119 @@ TEST_CASE("Cooler: pixel selector 1D queries", "[pixel_selector][short]") {
     CHECK_THROWS_WITH(f.fetch("chr1:10-5"),
                       Catch::Matchers::ContainsSubstring(
                           "end position should be greater than the start position"));
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selector][short]") {
+  const auto path1 = datadir / "cooler_variable_bins_test_file.cool";
+  using T = std::uint32_t;
+
+  const File f(path1.string());
+  REQUIRE(std::holds_alternative<BinTableVariable<>>(f.bins().get()));
+
+  SECTION("query overlaps chrom start") {
+    auto selector = f.fetch("chr1:0-20");
+    const auto pixels = selector.read_all<T>();
+    REQUIRE(pixels.size() == 1);
+    const auto& p = pixels.front();
+
+    CHECK(p.coords.bin1.id() == 0);
+    CHECK(p.coords.bin2.id() == 2);
+    CHECK(p.count == 7);
+  }
+
+  SECTION("query overlaps chrom end") {
+    auto selector = f.fetch("chr1:20-32");
+    const auto pixels = selector.read_all<T>();
+    REQUIRE(pixels.size() == 1);
+    const auto& p = pixels.front();
+
+    CHECK(p.coords.bin1.id() == 2);
+    CHECK(p.coords.bin2.id() == 3);
+    CHECK(p.count == 1);
+  }
+
+  SECTION("query does not overlap chrom boundaries") {
+    auto selector = f.fetch("chr1:15-23");
+    const auto pixels = selector.read_all<T>();
+    REQUIRE(pixels.empty());
+  }
+
+  SECTION("query does not line up with bins") {
+    auto selector = f.fetch("chr1:17-27");
+    const auto pixels = selector.read_all<T>();
+    REQUIRE(pixels.size() == 1);
+
+    const auto& p = pixels.front();
+
+    CHECK(p.coords.bin1.id() == 2);
+    CHECK(p.coords.bin2.id() == 3);
+    CHECK(p.count == 1);
+  }
+
+  SECTION("query spans 1 bin") {
+    auto selector = f.fetch("chr1:0-8");
+    CHECK(selector.empty());
+  }
+
+  SECTION("query spans 1bp") {
+    auto selector = f.fetch("chr1:0-1");
+    CHECK(selector.empty());
+  }
+
+  SECTION("query spans entire chromosome") {
+    auto selector = f.fetch("chr1");
+    auto pixels = selector.read_all<T>();
+
+    REQUIRE(pixels.size() == 4);
+    CHECK(pixels[0].count == 7);
+    CHECK(pixels[1].count == 1);
+    CHECK(pixels[2].count == 7);
+    CHECK(pixels[3].count == 1);
+
+    selector = f.fetch("chr2");
+    pixels = selector.read_all<T>();
+
+    REQUIRE(pixels.size() == 3);
+    CHECK(pixels[0].count == 5);
+    CHECK(pixels[1].count == 5);
+    CHECK(pixels[2].count == 6);
+  }
+
+  SECTION("query spans entire genome") {
+    constexpr std::ptrdiff_t expected_nnz = 19;
+    constexpr T expected_sum = 96;
+    auto selector = f.fetch();
+    CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == expected_nnz);
+    const auto sum = std::accumulate(
+        selector.begin<T>(), selector.end<T>(), T(0),
+        [&](T accumulator, const ThinPixel<T>& pixel) { return accumulator + pixel.count; });
+    CHECK(sum == expected_sum);
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_selector][short]") {
+  const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+  using T = std::uint32_t;
+
+  const File f(path.string());
+
+  SECTION("valid queries") {
+    const auto sel = f.fetch();
+    const auto sum = std::accumulate(
+        sel.template begin<T>(), sel.template end<T>(), std::uint64_t(0),
+        [&](std::uint64_t accumulator, const auto& p) { return accumulator + p.count; });
+    const auto nnz =
+        static_cast<std::size_t>(std::distance(sel.template begin<T>(), sel.template end<T>()));
+    CHECK(sum == 594'006'205);
+    CHECK(nnz == 4'241'909);
+  }
+
+  SECTION("invalid queries") {
+    CHECK_THROWS(f.fetch("chr1"));
+    CHECK_THROWS(f.fetch("chr1", "chr2"));
   }
 }
 

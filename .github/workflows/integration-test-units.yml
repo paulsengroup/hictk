@@ -1,0 +1,63 @@
+# Copyright (C) 2024 Roberto Rossini (roberros@uio.no)
+# SPDX-License-Identifier: MIT
+
+name: Run hictk_integration_suite unit tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/integration-test-units.yml"
+      - "test/integration/**"
+
+  pull_request:
+    paths:
+      - ".github/workflows/integration-test-units.yml"
+      - "test/integration/**"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  hictk-integration-suite-units:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, macos-latest, ubuntu-latest]
+        python-version: ["3.11", "3.12"]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-path: "test/integration/pyproject.toml"
+          cache: "pip"
+
+      - name: Install package
+        run: |
+          pip install 'test/integration[test]' -v
+
+      - name: Run tests
+        run: |
+          python -m pytest 'test/integration/test' -v
+
+  hictk-integration-suite-units-status-check:
+    name: Status Check (hictk_integration_suite unit tests)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - hictk-integration-suite-units
+
+    steps:
+      - name: Collect job results
+        if: needs.hictk-integration-suite-units.result != 'success'
+        run: exit 1

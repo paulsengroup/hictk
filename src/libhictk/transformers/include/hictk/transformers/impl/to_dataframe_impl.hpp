@@ -4,41 +4,64 @@
 
 #pragma once
 
+// clang-format: off
+#include "hictk/suppress_warnings.hpp"
+
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include <arrow/array.h>
 #include <arrow/builder.h>
 #include <arrow/compute/api_vector.h>
 #include <arrow/datum.h>
 #include <arrow/table.h>
 #include <arrow/type.h>
+HICTK_DISABLE_WARNING_POP
+// clang-format: on
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
 #include "hictk/bin_table.hpp"
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/transformers/common.hpp"
 
 namespace hictk::transformers {
 
 template <typename PixelIt>
 inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameFormat format,
-                                         std::shared_ptr<const BinTable> bins, bool transpose,
+                                         std::shared_ptr<const BinTable> bins, QuerySpan span,
+                                         bool include_bin_ids, bool mirror_pixels,
                                          std::size_t chunk_size)
     : _first(std::move(first)),
       _last(std::move(last)),
       _bins(std::move(bins)),
-      _transpose(transpose),
-      _format(format) {
+      _format(format),
+      _span(span),
+      _drop_bin_ids(!include_bin_ids),
+      _mirror_pixels(mirror_pixels),
+      _chunk_size(chunk_size) {
+  assert(chunk_size != 0);
+
   if (_format == DataFrameFormat::BG2 && !_bins) {
     throw std::runtime_error(
         "hictk::transformers::ToDataFrame: a bin table is required when format is "
         "DataFrameFormat::BG2");
   }
 
-  if (_bins) {
+  if (_span != QuerySpan::upper_triangle && !_bins) {
+    throw std::runtime_error(
+        "hictk::transformers::ToDataFrame: a bin table is required when span is not "
+        "QuerySpan::upper_triangle");
+  }
+
+  if (_format == DataFrameFormat::BG2) {
+    assert(!!_bins);
     _chrom_id_offset = _bins->chromosomes().at(0).is_all();
     const auto dict = make_chrom_dict(_bins->chromosomes());
 
@@ -51,32 +74,50 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
     if (!status.ok()) {
       throw std::runtime_error(status.ToString());
     }
+
+    _chrom1_id_buff.reserve(_chunk_size);
+    _start1_buff.reserve(_chunk_size);
+    _end1_buff.reserve(_chunk_size);
+
+    _chrom2_id_buff.reserve(_chunk_size);
+    _start2_buff.reserve(_chunk_size);
+    _end2_buff.reserve(_chunk_size);
   }
 
-  if (_bins) {
-    _chrom1_id_buff.reserve(chunk_size);
-    _start1_buff.reserve(chunk_size);
-    _end1_buff.reserve(chunk_size);
-
-    _chrom2_id_buff.reserve(chunk_size);
-    _start2_buff.reserve(chunk_size);
-    _end2_buff.reserve(chunk_size);
+  if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
+    assert(!!_bins);
+    _bin1_id_buff.reserve(_chunk_size);
+    _bin2_id_buff.reserve(_chunk_size);
   }
 
-  if (!_bins || _transpose) {
-    _bin1_id_buff.reserve(chunk_size);
-    _bin2_id_buff.reserve(chunk_size);
-  }
-
-  _count_buff.reserve(chunk_size);
+  _count_buff.reserve(_chunk_size);
 }
 
 template <typename PixelIt>
+template <typename PixelSelector>
+inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
+                                         DataFrameFormat format,
+                                         std::shared_ptr<const BinTable> bins, QuerySpan span,
+                                         bool include_bin_ids, std::size_t chunk_size)
+    : ToDataFrame(sel.template begin<N>(), sel.template end<N>(), format, std::move(bins), span,
+                  include_bin_ids, pixel_selector_is_symmetric_upper(sel), chunk_size) {}
+
+template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::operator()() {
-  if (_bins) {
-    std::for_each(_first, _last, [&](const auto& p) { append(Pixel<N>(*_bins, p)); });
+  if (HICTK_LIKELY(_mirror_pixels)) {
+    if (_format == DataFrameFormat::BG2) {
+      assert(_bins);
+      std::for_each(_first, _last, [&](const auto& p) { append_symmetric(Pixel<N>(*_bins, p)); });
+    } else {
+      std::for_each(_first, _last, [&](auto p) { append_symmetric(std::move(p)); });
+    }
   } else {
-    std::for_each(_first, _last, [&](const auto& p) { append(p); });
+    if (_format == DataFrameFormat::BG2) {
+      assert(_bins);
+      std::for_each(_first, _last, [&](const auto& p) { append_asymmetric(Pixel<N>(*_bins, p)); });
+    } else {
+      std::for_each(_first, _last, [&](auto p) { append_asymmetric(std::move(p)); });
+    }
   }
 
   if (_format == DataFrameFormat::COO) {
@@ -118,38 +159,158 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append(const Pixel<N>& p) {
-  if (_chrom1_id_buff.size() == _chrom1_id_buff.capacity()) {
+inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N>&& p) {
+  assert(_mirror_pixels);
+
+  if (_chrom1_id_buff.size() >= _chunk_size) {
     write_pixels();
   }
 
-  if (_transpose) {
+  if (_span == QuerySpan::lower_triangle) {
+    std::swap(p.coords.bin1, p.coords.bin2);
+  }
+
+  const auto chrom1_id = static_cast<std::int32_t>(p.coords.bin1.chrom().id()) - _chrom_id_offset;
+  const auto chrom2_id = static_cast<std::int32_t>(p.coords.bin2.chrom().id()) - _chrom_id_offset;
+
+  assert(chrom1_id >= 0);
+  assert(chrom2_id >= 0);
+
+  if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
     _bin1_id_buff.push_back(p.coords.bin1.id());
     _bin2_id_buff.push_back(p.coords.bin2.id());
   }
 
-  _chrom1_id_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.chrom().id()) -
-                            _chrom_id_offset);
+  _chrom1_id_buff.push_back(chrom1_id);
   _start1_buff.push_back(p.coords.bin1.start());
   _end1_buff.push_back(p.coords.bin1.end());
 
-  _chrom2_id_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.chrom().id()) -
-                            _chrom_id_offset);
+  _chrom2_id_buff.push_back(chrom2_id);
   _start2_buff.push_back(p.coords.bin2.start());
   _end2_buff.push_back(p.coords.bin2.end());
 
   _count_buff.push_back(p.count);
+
+  if (_span == QuerySpan::full && p.coords.bin1 != p.coords.bin2) {
+    _bin1_id_buff.push_back(p.coords.bin2.id());
+    _bin2_id_buff.push_back(p.coords.bin1.id());
+
+    _chrom1_id_buff.push_back(chrom2_id);
+    _start1_buff.push_back(p.coords.bin2.start());
+    _end1_buff.push_back(p.coords.bin2.end());
+
+    _chrom2_id_buff.push_back(chrom1_id);
+    _start2_buff.push_back(p.coords.bin1.start());
+    _end2_buff.push_back(p.coords.bin1.end());
+
+    _count_buff.push_back(p.count);
+  }
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append(const ThinPixel<N>& p) {
-  if (_bin1_id_buff.size() == _bin1_id_buff.capacity()) {
+inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N>&& p) {
+  assert(_mirror_pixels);
+
+  if (_bin1_id_buff.size() >= _chunk_size) {
     write_thin_pixels();
+  }
+
+  if (_span == QuerySpan::lower_triangle) {
+    std::swap(p.bin1_id, p.bin2_id);
   }
 
   _bin1_id_buff.push_back(p.bin1_id);
   _bin2_id_buff.push_back(p.bin2_id);
   _count_buff.push_back(p.count);
+
+  if (_span == QuerySpan::full && p.bin1_id != p.bin2_id) {
+    _bin1_id_buff.push_back(p.bin2_id);
+    _bin2_id_buff.push_back(p.bin1_id);
+    _count_buff.push_back(p.count);
+  }
+}
+
+template <typename PixelIt>
+inline void ToDataFrame<PixelIt>::append_asymmetric(Pixel<N>&& p) {
+  assert(!_mirror_pixels);
+
+  if (_chrom1_id_buff.size() >= _chunk_size) {
+    write_pixels();
+  }
+
+  const auto populate_lower_triangle =
+      _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
+  const auto populate_upper_triangle =
+      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
+
+  const auto chrom1_id = static_cast<std::int32_t>(p.coords.bin1.chrom().id()) - _chrom_id_offset;
+  const auto chrom2_id = static_cast<std::int32_t>(p.coords.bin2.chrom().id()) - _chrom_id_offset;
+
+  assert(chrom1_id >= 0);
+  assert(chrom2_id >= 0);
+
+  if (populate_upper_triangle && p.coords.bin1 <= p.coords.bin2) {
+    if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
+      _bin1_id_buff.push_back(p.coords.bin1.id());
+      _bin2_id_buff.push_back(p.coords.bin2.id());
+    }
+
+    _chrom1_id_buff.push_back(chrom1_id);
+    _start1_buff.push_back(p.coords.bin1.start());
+    _end1_buff.push_back(p.coords.bin1.end());
+
+    _chrom2_id_buff.push_back(chrom2_id);
+    _start2_buff.push_back(p.coords.bin2.start());
+    _end2_buff.push_back(p.coords.bin2.end());
+
+    _count_buff.push_back(p.count);
+    return;
+  }
+
+  if (populate_lower_triangle && p.coords.bin1 >= p.coords.bin2) {
+    if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
+      _bin1_id_buff.push_back(p.coords.bin1.id());
+      _bin2_id_buff.push_back(p.coords.bin2.id());
+    }
+
+    _chrom1_id_buff.push_back(chrom1_id);
+    _start1_buff.push_back(p.coords.bin1.start());
+    _end1_buff.push_back(p.coords.bin1.end());
+
+    _chrom2_id_buff.push_back(chrom2_id);
+    _start2_buff.push_back(p.coords.bin2.start());
+    _end2_buff.push_back(p.coords.bin2.end());
+
+    _count_buff.push_back(p.count);
+  }
+}
+
+template <typename PixelIt>
+inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N>&& p) {
+  assert(!_mirror_pixels);
+
+  if (_bin1_id_buff.size() >= _chunk_size) {
+    write_thin_pixels();
+  }
+
+  const auto populate_lower_triangle =
+      _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
+  const auto populate_upper_triangle =
+      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
+
+  bool inserted = false;
+  if (populate_upper_triangle && p.bin1_id <= p.bin2_id) {
+    _bin1_id_buff.push_back(p.bin1_id);
+    _bin2_id_buff.push_back(p.bin2_id);
+    _count_buff.push_back(p.count);
+    inserted = true;
+  }
+
+  if (populate_lower_triangle && !inserted && p.bin1_id >= p.bin2_id) {
+    _bin1_id_buff.push_back(p.bin1_id);
+    _bin2_id_buff.push_back(p.bin2_id);
+    _count_buff.push_back(p.count);
+  }
 }
 
 template <typename PixelIt>
@@ -196,15 +357,12 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_coo_table() {
   }
 
   if (_bin1_id.empty()) {
+    assert(_bin2_id.empty());
     auto result = arrow::Table::MakeEmpty(coo_schema());
     if (!result.ok()) {
       throw std::runtime_error(result.status().ToString());
     }
     return result.MoveValueUnsafe();
-  }
-
-  if (_transpose) {
-    std::swap(_bin1_id, _bin2_id);
   }
 
   auto table = arrow::Table::Make(coo_schema(), {std::make_shared<arrow::ChunkedArray>(_bin1_id),
@@ -215,7 +373,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_coo_table() {
   _bin2_id.clear();
   _count.clear();
 
-  if (_transpose) {
+  if (_span != QuerySpan::upper_triangle) {
     table = sort_table(table);
   }
 
@@ -229,7 +387,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
   }
 
   if (_chrom1.empty()) {
-    auto result = arrow::Table::MakeEmpty(bg2_schema());
+    auto result = arrow::Table::MakeEmpty(bg2_schema(!_drop_bin_ids));
     if (!result.ok()) {
       throw std::runtime_error(result.status().ToString());
     }
@@ -237,11 +395,8 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
   }
 
   std::shared_ptr<arrow::Table> table{};
-  if (_transpose) {
-    std::swap(_bin1_id, _bin2_id);
-    std::swap(_chrom1, _chrom2);
-    std::swap(_start1, _start2);
-    std::swap(_end1, _end2);
+  if (!_bin1_id.empty()) {
+    assert(!_bin2_id.empty());
 
     // clang-format off
     table = arrow::Table::Make(
@@ -285,19 +440,21 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
 
   _count.clear();
 
-  if (_transpose) {
+  if (_span != QuerySpan::upper_triangle) {
     table = sort_table(table);
 
-    auto result = table->RemoveColumn(0);
-    if (!result.ok()) {
-      throw std::runtime_error(result.status().ToString());
+    if (_drop_bin_ids) {
+      auto result = table->RemoveColumn(0);
+      if (!result.ok()) {
+        throw std::runtime_error(result.status().ToString());
+      }
+      table = result.MoveValueUnsafe();
+      result = table->RemoveColumn(0);
+      if (!result.ok()) {
+        throw std::runtime_error(result.status().ToString());
+      }
+      table = result.MoveValueUnsafe();
     }
-    table = result.MoveValueUnsafe();
-    result = table->RemoveColumn(0);
-    if (!result.ok()) {
-      throw std::runtime_error(result.status().ToString());
-    }
-    table = result.MoveValueUnsafe();
   }
 
   return table;
@@ -335,8 +492,9 @@ void ToDataFrame<PixelIt>::write_thin_pixels() {
 
 template <typename PixelIt>
 void ToDataFrame<PixelIt>::write_pixels() {
+  const auto populate_lower_triangle = _span != QuerySpan::upper_triangle;
   if (!_chrom1_id_buff.empty()) {
-    if (_transpose) {
+    if (populate_lower_triangle) {
       append(_bin1_id_builder, _bin1_id_buff);
       append(_bin2_id_builder, _bin2_id_buff);
     }
@@ -351,7 +509,7 @@ void ToDataFrame<PixelIt>::write_pixels() {
 
     append(_count_builder, _count_buff);
 
-    if (_transpose) {
+    if (populate_lower_triangle) {
       _bin1_id.emplace_back(finish(_bin1_id_builder));
       _bin2_id.emplace_back(finish(_bin2_id_builder));
     }
@@ -388,14 +546,29 @@ std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::sort_table(
       {arrow::compute::SortKey{"bin1_id", arrow::compute::SortOrder::Ascending},
        arrow::compute::SortKey{"bin2_id", arrow::compute::SortOrder::Ascending}}};
 
-  arrow::Datum vtable{table};
+  arrow::Datum vtable{std::move(table)};
 
   const auto arg_sorter = arrow::compute::SortIndices(vtable, opts);
   if (!arg_sorter.ok()) {
     throw std::runtime_error(arg_sorter.status().ToString());
   }
 
-  return arrow::compute::Take(vtable, *arg_sorter)->table();
+  if constexpr (ndebug_not_defined()) {
+    return arrow::compute::Take(vtable, *arg_sorter)->table();
+  } else {
+    return arrow::compute::Take(vtable, *arg_sorter, arrow::compute::TakeOptions::NoBoundsCheck())
+        ->table();
+  }
+}
+
+template <typename PixelIt>
+template <typename PixelSelector>
+inline bool ToDataFrame<PixelIt>::pixel_selector_is_symmetric_upper(
+    const PixelSelector& sel) noexcept {
+  if constexpr (std::is_same_v<PixelSelector, cooler::PixelSelector>) {
+    return sel.is_symmetric_upper();
+  }
+  return true;
 }
 
 }  // namespace hictk::transformers

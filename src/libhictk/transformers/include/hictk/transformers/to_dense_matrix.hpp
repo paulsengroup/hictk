@@ -11,7 +11,11 @@
 #include <string_view>
 #include <type_traits>
 
+#include "hictk/cooler/pixel_selector.hpp"
+#include "hictk/file.hpp"
+#include "hictk/hic/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/transformers/common.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk::transformers {
@@ -20,23 +24,50 @@ template <typename N, typename PixelSelector>
 class ToDenseMatrix {
   using PixelIt = decltype(std::declval<PixelSelector>().template begin<N>());
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
-  static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
+  static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
   PixelSelector _sel{};
-  bool _mirror{};
+  QuerySpan _span{QuerySpan::full};
 
  public:
-  ToDenseMatrix(PixelSelector&& selector, N n, bool mirror = true);
-  [[nodiscard]] auto operator()() -> Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic>;
+  using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
+  [[nodiscard]] auto operator()() -> MatrixT;
 
  private:
   [[nodiscard]] std::string_view chrom1() const noexcept;
   [[nodiscard]] std::string_view chrom2() const noexcept;
+
+  [[nodiscard]] static std::int64_t num_bins(const PixelCoordinates& coords,
+                                             const BinTable& bins) noexcept;
   [[nodiscard]] std::int64_t num_rows() const noexcept;
   [[nodiscard]] std::int64_t num_cols() const noexcept;
 
-  [[nodiscard]] std::uint64_t row_offset() const noexcept;
-  [[nodiscard]] std::uint64_t col_offset() const noexcept;
+  [[nodiscard]] static std::int64_t offset(const PixelCoordinates& coords) noexcept;
+  [[nodiscard]] std::int64_t row_offset() const noexcept;
+  [[nodiscard]] std::int64_t col_offset() const noexcept;
+
+  [[nodiscard]] auto init_matrix() const -> MatrixT;
+
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const cooler::PixelSelector& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hic::PixelSelector& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hic::PixelSelectorAll& sel) const;
+  [[nodiscard]] std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                          Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const hictk::PixelSelector& sel) const;
+
+  [[nodiscard]] static std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
+                                 Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
+  slice_weights(const balancing::Weights& weights1, const balancing::Weights& weights2,
+                std::int64_t offset1, std::int64_t offset2, std::int64_t size1, std::int64_t size2);
+
+  void validate_dtype() const;
 };
 
 }  // namespace hictk::transformers

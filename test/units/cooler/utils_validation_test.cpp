@@ -79,8 +79,9 @@ TEST_CASE("Cooler: format checking", "[cooler][short]") {
     CHECK(status.uri == path.string());
     CHECK(status.missing_groups.empty());
 
+    CHECK(status.valid_resolutions.size() == 6);
     REQUIRE(status.invalid_resolutions.size() == 1);
-    const auto& invalid_res = status.invalid_resolutions.front();
+    const auto& invalid_res = status.invalid_resolutions.begin()->second;
 
     const auto corrupted_uri_expected =
         fmt::format(FMT_STRING("{}::/resolutions/400000"), path.string());

@@ -113,6 +113,18 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     CHECK(f.has_pixel_of_type<std::int32_t>());
   }
 
+  SECTION("open .cool (storage-mode=square)") {
+    const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+    const File f(path.string());
+
+    CHECK(f.uri() == path.string());
+    CHECK(f.resolution() == 1000);
+    CHECK(f.chromosomes().size() == 10);
+    CHECK(f.bins().size() == 3000);
+    CHECK(f.has_pixel_of_type<std::int32_t>());
+    CHECK(f.attributes().storage_mode == "square");
+  }
+
   SECTION("open .scool") {
     const auto path = datadir / "single_cell_cooler_test_file.scool";
 

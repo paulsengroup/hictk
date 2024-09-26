@@ -107,10 +107,10 @@ class SCALE {
   [[nodiscard]] static VC::Type map_type_to_vc(Type type) noexcept;
 
   template <typename Matrix>
-  static void update_weights(VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
-                             VectorOfAtomicDecimals& weights, const std::vector<double>& target,
-                             std::vector<double>& d_vector, const Matrix& m,
-                             BS::thread_pool* tpool) noexcept;
+  static void update_weights(internal::VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
+                             internal::VectorOfAtomicDecimals& weights,
+                             const std::vector<double>& target, std::vector<double>& d_vector,
+                             const Matrix& m, BS::thread_pool* tpool) noexcept;
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;
@@ -119,35 +119,35 @@ class SCALE {
       const std::vector<double>& calculated_vector_b, const std::vector<double>& current,
       const std::vector<bool>& bad, double tolerance) noexcept;
 
-  [[nodiscard]] static double compute_final_error(const VectorOfAtomicDecimals& col,
+  [[nodiscard]] static double compute_final_error(const internal::VectorOfAtomicDecimals& col,
                                                   const std::vector<double>& scale,
                                                   const std::vector<double>& target,
                                                   const std::vector<bool>& bad) noexcept;
   static void multiply(std::vector<double>& v1, const std::vector<double>& v2) noexcept;
 
   template <typename PixelIt>
-  [[nodiscard]] std::variant<SparseMatrix, SparseMatrixChunked> mask_bins_and_init_buffers(
-      PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
-      const std::filesystem::path& tmpfile, std::size_t chunk_size);
+  [[nodiscard]] std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix>
+  mask_bins_and_init_buffers(PixelIt first, PixelIt last, std::size_t offset, double max_percentile,
+                             const std::filesystem::path& tmpfile, std::size_t chunk_size);
   template <typename Matrix>
   [[nodiscard]] auto handle_convergenece(const Matrix& m, std::vector<double>& dr,
                                          std::vector<double>& dc,
-                                         VectorOfAtomicDecimals& row) -> ControlFlow;
+                                         internal::VectorOfAtomicDecimals& row) -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                              std::vector<double>& dr, std::vector<double>& dc,
-                                             VectorOfAtomicDecimals& row,
+                                             internal::VectorOfAtomicDecimals& row,
                                              double tolerance) -> ControlFlow;
 
   template <typename Matrix>
   [[nodiscard]] auto handle_diverged(const Matrix& m, const std::vector<double>& b0,
                                      std::vector<double>& dr, std::vector<double>& dc,
-                                     VectorOfAtomicDecimals& row, double frac_bad,
+                                     internal::VectorOfAtomicDecimals& row, double frac_bad,
                                      double frac_bad_cutoff, double tolerance) -> ControlFlow;
 
   template <typename PixelIt>
-  static std::variant<SparseMatrix, SparseMatrixChunked> init_matrix(
+  static std::variant<internal::SparseMatrixChunked, internal::FileBackedSparseMatrix> init_matrix(
       PixelIt first, PixelIt last, std::size_t offset, const std::filesystem::path& tmpfile,
       std::size_t chunk_size);
 

@@ -22,11 +22,11 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
 
   SECTION("wo/ weights") { CHECK(clr1.avail_normalizations().empty()); }
   SECTION("w/ weights") {
-    CHECK(clr2.avail_normalizations().size() == 6);
+    CHECK(clr2.avail_normalizations().size() == 8);
     CHECK(clr2.has_normalization("SCALE"));
     CHECK(!clr2.has_normalization("FOOBAR"));
 
-    CHECK(clr2.normalization("SCALE")->type() == hictk::balancing::Weights::Type::DIVISIVE);
+    CHECK(clr2.normalization("SCALE").type() == hictk::balancing::Weights::Type::DIVISIVE);
   }
 }
 
@@ -47,7 +47,7 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
     const std::vector<double> weights(num_bins, 1.23);
     File::write_weights(path2.string(), "weight", weights.begin(), weights.end());
 
-    const auto w = *File(path2.string()).normalization("weight");
+    const auto w = File(path2.string()).normalization("weight");
     CHECK(w.size() == weights.size());
   }
 

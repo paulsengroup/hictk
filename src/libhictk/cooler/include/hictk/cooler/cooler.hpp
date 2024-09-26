@@ -9,11 +9,11 @@
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 #include <initializer_list>
 #include <memory>
@@ -274,20 +274,29 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
-                                                          bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
-                                                          balancing::Weights::Type type,
-                                                          bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view normalization_, bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_,
+                                                        bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_,
+                                                        balancing::Weights::Type type,
+                                                        bool rescale = false) const;
 
   [[nodiscard]] bool has_normalization(std::string_view normalization_) const;
   [[nodiscard]] bool has_normalization(const balancing::Method &normalization_) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
-                                                          bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
-                                                          balancing::Weights::Type type,
-                                                          bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      const balancing::Method &normalization_, bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      const balancing::Method &normalization_, balancing::Weights::Type type,
+      bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_,
+                                                        bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_,
+                                                        balancing::Weights::Type type,
+                                                        bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 

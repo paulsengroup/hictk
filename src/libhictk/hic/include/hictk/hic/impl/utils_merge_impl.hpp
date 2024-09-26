@@ -18,10 +18,10 @@ namespace internal {
 
 inline void validate_chromosomes(const std::vector<hic::File>& files) {
   assert(files.size() > 1);
-  const auto chromosomes = files.front().chromosomes();
+  const auto chromosomes = files.front().chromosomes().remove_ALL();
 
   for (std::size_t i = 1; i < files.size(); ++i) {
-    if (chromosomes != files[i].chromosomes()) {
+    if (chromosomes != files[i].chromosomes().remove_ALL()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("files \"{}\" and \"{}\" use different reference genomes"),
                       files.front().path(), files[i].path()));

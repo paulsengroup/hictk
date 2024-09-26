@@ -30,8 +30,8 @@ namespace internal {
 }
 
 template <typename NameMap>
-[[nodiscard]] inline std::vector<std::string>& rename_chromosomes(std::vector<std::string>&& names,
-                                                                  const NameMap& mappings) {
+[[nodiscard]] inline std::vector<std::string> rename_chromosomes(std::vector<std::string>&& names,
+                                                                 const NameMap& mappings) {
   for (auto& name : names) {
     auto it = mappings.find(name);
     if (it != mappings.end()) {
@@ -82,9 +82,8 @@ inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappi
   if (mappings.empty()) {
     return;
   }
-  auto names = chrom_dset.read_all<std::vector<std::string>>();
-
-  names = internal::rename_chromosomes(std::move(names), mappings);
+  const auto names =
+      internal::rename_chromosomes(chrom_dset.read_all<std::vector<std::string>>(), mappings);
 
   // NOLINTNEXTLINE(misc-const-correctness)
   auto h5f = chrom_dset().getFile();

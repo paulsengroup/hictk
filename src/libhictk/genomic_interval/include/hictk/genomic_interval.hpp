@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 #include "hictk/chromosome.hpp"
 #include "hictk/reference.hpp"
@@ -26,6 +27,12 @@ class GenomicInterval {
   constexpr GenomicInterval() = default;
   explicit GenomicInterval(const Chromosome &chrom_) noexcept;
   GenomicInterval(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
+  [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse(
+      std::string query, Type type = Type::UCSC);
+  [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_ucsc(
+      std::string buffer);
+  [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_bed(
+      std::string_view buffer, char sep = '\t');
   [[nodiscard]] static GenomicInterval parse(const Reference &chroms, std::string query,
                                              Type type = Type::UCSC);
   [[nodiscard]] static GenomicInterval parse_ucsc(const Reference &chroms, std::string buffer);

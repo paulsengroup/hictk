@@ -8,12 +8,13 @@
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
 #include <fmt/format.h>
+#include <parallel_hashmap/btree.h>
 
 #include <cstdint>
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
 #include <string>
 #include <string_view>
@@ -44,7 +45,8 @@ struct ValidationStatusCooler : public internal::ValidationStatusBase {
 struct ValidationStatusMultiresCooler : public internal::ValidationStatusBase {
   bool is_multires_file{false};
 
-  std::vector<ValidationStatusCooler> invalid_resolutions{};
+  phmap::btree_map<std::uint32_t, ValidationStatusCooler> valid_resolutions{};
+  phmap::btree_map<std::string, ValidationStatusCooler> invalid_resolutions{};
 
   constexpr explicit operator bool() const noexcept;
 };
@@ -53,7 +55,8 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
   bool is_scool_file{false};
 
   bool unexpected_number_of_cells{true};
-  std::vector<ValidationStatusCooler> invalid_cells{};
+  phmap::btree_map<std::string, ValidationStatusCooler> valid_cells{};
+  phmap::btree_map<std::string, ValidationStatusCooler> invalid_cells{};
 
   constexpr explicit operator bool() const noexcept;
 };
@@ -67,16 +70,21 @@ struct ValidationStatusScool : public internal::ValidationStatusBase {
 
 [[nodiscard]] ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
                                                               bool validate_resolutions = true,
+                                                              bool exhaustive = true,
                                                               std::int64_t min_version = 1);
 [[nodiscard]] ValidationStatusMultiresCooler is_multires_file(const HighFive::File& fp,
                                                               bool validate_resolutions = true,
+                                                              bool exhaustive = true,
                                                               std::int64_t min_version = 1);
 
-[[nodiscard]] ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells = true);
+[[nodiscard]] ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells = true,
+                                                  bool exhaustive = true);
 [[nodiscard]] ValidationStatusScool is_scool_file(const HighFive::File& fp,
-                                                  bool validate_cells = true);
+                                                  bool validate_cells = true,
+                                                  bool exhaustive = true);
 
-[[nodiscard]] bool index_is_valid(std::string_view uri, bool verbose = false);
+[[nodiscard]] bool index_is_valid(std::string_view uri);
+[[nodiscard]] bool index_is_valid(std::string_view uri, std::string& error_buffer);
 }  // namespace hictk::cooler::utils
 
 namespace fmt {

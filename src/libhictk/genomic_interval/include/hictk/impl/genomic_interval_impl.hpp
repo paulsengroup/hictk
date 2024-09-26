@@ -97,12 +97,111 @@ constexpr std::uint32_t GenomicInterval::start() const noexcept { return _start;
 constexpr std::uint32_t GenomicInterval::end() const noexcept { return _end; }
 constexpr std::uint32_t GenomicInterval::size() const noexcept { return _end - _start; }
 
+inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::parse(
+    std::string query, Type type) {
+  if (type == Type::UCSC) {
+    return parse_ucsc(query);
+  }
+  return parse_bed(query);
+}
+
+inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::parse_ucsc(
+    std::string buffer) {
+  if (buffer.empty()) {
+    throw std::runtime_error("query is empty");
+  }
+
+  if (buffer.back() == '\r') {
+    buffer.pop_back();
+  }
+
+  const auto p1 = buffer.find_last_of(':');
+  auto p2 = buffer.find_last_of('-');
+
+  if (p1 == std::string::npos && p2 == std::string::npos) {
+    return std::make_tuple(std::move(buffer), 0, 0);
+  }
+
+  if (p1 == std::string::npos || p2 == std::string::npos || p1 > p2) {
+    throw std::runtime_error(fmt::format(FMT_STRING("query \"{}\" is malformed"), buffer));
+  }
+
+  if (buffer.find(',', p1) != std::string::npos) {
+    buffer.erase(std::remove(buffer.begin() + std::ptrdiff_t(p1), buffer.end(), ','), buffer.end());
+    p2 = buffer.find_last_of('-');
+  }
+
+  buffer[p1] = '\t';
+  buffer[p2] = '\t';
+
+  return parse_bed(buffer);
+}
+
+inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::parse_bed(
+    std::string_view buffer, char sep) {
+  if (buffer.empty()) {
+    throw std::runtime_error("interval is empty");
+  }
+
+  if (buffer.back() == '\r') {
+    buffer = buffer.substr(0, buffer.size() - 1);
+  }
+
+  const auto p1 = buffer.find(sep);
+  const auto p2 = buffer.find(sep, p1 + 1);
+
+  if (p1 == std::string_view::npos || p2 == std::string_view::npos || p1 > p2) {
+    throw std::runtime_error(fmt::format(FMT_STRING("interval \"{}\" is malformed"), buffer));
+  }
+
+  std::string chrom_name{buffer.substr(0, p1)};
+  const auto start_pos_str = buffer.substr(p1 + 1, p2 - (p1 + 1));
+  const auto end_pos_str = buffer.substr(p2 + 1);
+
+  if (start_pos_str.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("interval \"{}\" is malformed: missing start position"), buffer));
+  }
+
+  if (end_pos_str.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("interval \"{}\" is malformed: missing end position"), buffer));
+  }
+
+  std::uint32_t start_pos{};
+  std::uint32_t end_pos{};
+
+  try {
+    internal::parse_numeric_or_throw(start_pos_str, start_pos);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("invalid start position \"{}\" in interval \"{}\": {}"),
+                    start_pos_str, buffer, e.what()));
+  }
+  try {
+    internal::parse_numeric_or_throw(end_pos_str, end_pos);
+  } catch (const std::exception &e) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("invalid end position \"{}\" in interval \"{}\": {}"), end_pos_str,
+                    buffer, e.what()));
+  }
+
+  if (start_pos >= end_pos) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("invalid interval \"{}\": query end position should be "
+                               "greater than the start position ({} >= {})"),
+                    buffer, start_pos, end_pos));
+  }
+
+  return std::make_tuple(std::move(chrom_name), start_pos, end_pos);
+}
+
 inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::string query,
                                               Type type) {
   if (type == Type::UCSC) {
-    return GenomicInterval::parse_ucsc(chroms, query);
+    return parse_ucsc(chroms, query);
   }
-  return GenomicInterval::parse_bed(chroms, query);
+  return parse_bed(chroms, query);
 }
 
 inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std::string buffer) {
@@ -138,7 +237,7 @@ inline GenomicInterval GenomicInterval::parse_ucsc(const Reference &chroms, std:
   buffer[p1] = '\t';
   buffer[p2] = '\t';
 
-  return GenomicInterval::parse_bed(chroms, buffer);
+  return parse_bed(chroms, buffer);
 }
 
 inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::string_view buffer,

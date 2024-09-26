@@ -37,17 +37,29 @@ void Cli::make_load_subcommand() {
 
   // clang-format off
   sc.add_option(
-      "chrom-sizes",
-      c.path_to_chrom_sizes,
-      "Path to .chrom.sizes file.")
-      ->check(CLI::ExistingFile)
+      "interactions",
+      c.input_path,
+      "Path to a file with the interactions to be loaded.\n"
+      "Common compression formats are supported (namely, gzip, bzip2, lz4, lzo, and zstd).\n"
+      "Pass \"-\" to indicate that interactions should be read from stdin.")
+      ->check(CLI::ExistingFile | CLI::IsMember({"-"}))
       ->required();
 
   sc.add_option(
       "output-path",
       c.output_path,
-      "Path to output file.")
+      "Path to output file.\n"
+      "File extension will be used to infer the output format.\n"
+      "This behavior can be overridden by explicitly specifying an\n"
+      "output format through option --output-fmt.")
       ->required();
+
+  sc.add_option(
+      "-c,--chrom-sizes",
+      c.path_to_chrom_sizes,
+      "Path to .chrom.sizes file.\n"
+      "Required when interactions are not in 4DN pairs format.")
+      ->check(CLI::ExistingFile);
 
   sc.add_option(
       "-b,--bin-size",
@@ -69,6 +81,17 @@ void Cli::make_load_subcommand() {
       ->check(CLI::IsMember({"4dn", "validpairs", "bg2", "coo"}))
       ->required();
 
+  sc.add_option(
+      "--output-fmt",
+      c.output_format,
+      "Output format (by default this is inferred from the output file extension).\n"
+      "Should be one of:\n"
+      "- auto\n"
+      "- cool\n"
+      "- hic\n")
+      ->check(CLI::IsMember({"auto", "cool", "hic"}))
+      ->default_str("auto");
+
   sc.add_flag(
       "--force",
       c.force,
@@ -82,11 +105,17 @@ void Cli::make_load_subcommand() {
       ->capture_default_str();
 
   sc.add_flag(
+      "--drop-unknown-chroms",
+      c.drop_unknown_chroms,
+      "Ignore records referencing unknown chromosomes.")
+      ->capture_default_str();
+
+  sc.add_flag(
       "--one-based,!--zero-based",
       c.one_based,
       "Interpret genomic coordinates or bins as one/zero based.\n"
       "By default coordinates are assumed to be one-based for interactions in\n"
-      "4dn and validapairs formats and zero-based otherwise.");
+      "4dn and validpairs formats and zero-based otherwise.");
 
   sc.add_flag(
       "--count-as-float",
@@ -124,8 +153,8 @@ void Cli::make_load_subcommand() {
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn.\n"
-      "When loading interactions in a .cool file, only a single thread will be used.")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      "When loading interactions in a .cool file, only up to two threads will be used.")
+      ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
       ->capture_default_str();
 
   sc.add_option(
@@ -134,7 +163,6 @@ void Cli::make_load_subcommand() {
       "Path to a folder where to store temporary data.")
       ->check(CLI::ExistingDirectory)
       ->capture_default_str();
-
 
   sc.add_option(
       "-v,--verbosity",
@@ -145,6 +173,8 @@ void Cli::make_load_subcommand() {
   // clang-format on
 
   sc.get_option("--bin-size")->excludes(sc.get_option("--bin-table"));
+  sc.get_option("--bin-table")->excludes(sc.get_option("--chrom-sizes"));
+
   _config = std::monostate{};
 }
 
@@ -159,6 +189,12 @@ void Cli::validate_load_subcommand() const {
   if (!c.force && std::filesystem::exists(c.output_path)) {
     errors.emplace_back(fmt::format(
         FMT_STRING("Refusing to overwrite file {}. Pass --force to overwrite."), c.output_path));
+  }
+
+  if (c.format != "4dn" && c.path_to_chrom_sizes.empty() && c.path_to_bin_table.empty()) {
+    errors.emplace_back(
+        "either --chrom-sizes or --bin-table option is required when interactions are not in 4DN "
+        "format.");
   }
 
   if (c.path_to_bin_table.empty() && c.bin_size == 0) {
@@ -198,7 +234,9 @@ void Cli::transform_args_load_subcommand() {
   auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
 
-  c.output_format = infer_output_format(c.output_path);
+  if (c.output_format == "auto") {
+    c.output_format = infer_output_format(c.output_path);
+  }
 
   if (sc.get_option("--one-based")->empty()) {
     if (c.format == "4dn" || c.format == "validpairs") {

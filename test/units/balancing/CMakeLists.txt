@@ -10,7 +10,10 @@ include(Catch)
 
 add_executable(hictk_balancing_tests)
 
-target_sources(hictk_balancing_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp)
+target_sources(
+  hictk_balancing_tests
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp ${CMAKE_CURRENT_SOURCE_DIR}/matrix_test.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/weights_test.cpp)
 
 target_link_libraries(
   hictk_balancing_tests

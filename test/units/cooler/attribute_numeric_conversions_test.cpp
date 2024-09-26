@@ -52,13 +52,13 @@ TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]"
                       Catch::Matchers::ContainsSubstring("Unable to represent value 12345") &&
                           Catch::Matchers::ContainsSubstring("without overflowing"));
 
-    DISABLE_WARNING_PUSH
-    DISABLE_WARNING_USELESS_CAST
+    HICTK_DISABLE_WARNING_PUSH
+    HICTK_DISABLE_WARNING_USELESS_CAST
     Attribute::write(f, "std::int32_t", std::int32_t(-1), true);
     CHECK_THROWS_WITH(Attribute::read<std::uint64_t>(f, "std::int32_t"),
                       Catch::Matchers::ContainsSubstring("Unable to represent value -1") &&
                           Catch::Matchers::ContainsSubstring("without overflowing"));
-    DISABLE_WARNING_POP
+    HICTK_DISABLE_WARNING_POP
 
     Attribute::write(f, "std::int64_t", std::numeric_limits<std::int64_t>::lowest());
     CHECK_THROWS_WITH(Attribute::read<std::int32_t>(f, "std::int64_t"),
