@@ -59,7 +59,6 @@ COPY external "$src_dir/external/"
 COPY cmake "$src_dir/cmake/"
 COPY CMakeLists.txt "$src_dir/"
 COPY src "$src_dir/src/"
-COPY test "$src_dir/test/"
 
 ARG GIT_HASH
 ARG GIT_SHORT_HASH
@@ -74,6 +73,7 @@ RUN if [ -z "$GIT_HASH" ]; then echo "Missing GIT_HASH --build-arg" && exit 1; f
 # Configure project
 RUN cmake -DCMAKE_BUILD_TYPE=Release            \
           -DCMAKE_PREFIX_PATH="$build_dir"      \
+          -DHICTK_ENABLE_TESTING=OFF            \
           -DENABLE_DEVELOPER_MODE=OFF           \
           -DCMAKE_INSTALL_PREFIX="$staging_dir" \
           -DGIT_RETRIEVED_STATE=true            \
@@ -124,7 +124,7 @@ RUN hictk --version
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.authors='Roberto Rossini <roberros@uio.no>'
 LABEL org.opencontainers.image.url='https://github.com/paulsengroup/hictk'
-LABEL org.opencontainers.image.documentation='https://github.com/paulsengroup/hictk'
+LABEL org.opencontainers.image.documentation='https://hictk.readthedocs.io/en/latest/'
 LABEL org.opencontainers.image.source='https://github.com/paulsengroup/hictk'
 LABEL org.opencontainers.image.licenses='MIT'
 LABEL org.opencontainers.image.title='hictk'

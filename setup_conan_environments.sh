@@ -47,7 +47,7 @@ for compiler in gcc clang; do
        -pr "$profile"  \
        -s compiler.cppstd=17 \
        -s build_type="$build_type" \
-       -o shared=True \
+       -o '*/*:shared=True' \
        --output-folder="$outdir" \
        "$conanfile"
   done

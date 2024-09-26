@@ -11,8 +11,7 @@ on:
       - "cmake/**"
       - "external/**"
       - "src/**"
-      - "test/scripts/hictk_convert_cool2hic.sh"
-      - "test/scripts/hictk_convert_hic2cool.sh"
+      - "test/integration/**"
       - "utils/devel/test_docker_image.sh"
       - ".dockerignore"
       - "CMakeLists.txt"
@@ -27,8 +26,7 @@ on:
       - "cmake/**"
       - "external/**"
       - "src/**"
-      - "test/scripts/hictk_convert_cool2hic.sh"
-      - "test/scripts/hictk_convert_hic2cool.sh"
+      - "test/integration/**"
       - "utils/devel/test_docker_image.sh"
       - ".dockerignore"
       - "CMakeLists.txt"
@@ -47,6 +45,7 @@ defaults:
 jobs:
   cache-test-dataset:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+    name: Cache test dataset
 
   build-dockerfile:
     name: Build Dockerfile
@@ -63,7 +62,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
-          path: test/data/hictk_test_data.tar.xz
+          path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
 
       - name: Generate build args
@@ -98,18 +97,18 @@ jobs:
             VERSION="$GIT_TAG"
           fi
 
-          echo "C_COMPILER=$C_COMPILER" >> $GITHUB_OUTPUT
-          echo "CXX_COMPILER=$CXX_COMPILER" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" >> $GITHUB_OUTPUT
-          echo "GIT_HASH=$GIT_HASH" >> $GITHUB_OUTPUT
-          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" >> $GITHUB_OUTPUT
-          echo "CREATION_DATE=$CREATION_DATE" >> $GITHUB_OUTPUT
-          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_OUTPUT
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "C_COMPILER=$C_COMPILER" | tee -a "$GITHUB_OUTPUT"
+          echo "CXX_COMPILER=$CXX_COMPILER" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" | tee -a "$GITHUB_OUTPUT"
+          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_HASH=$GIT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "CREATION_DATE=$CREATION_DATE" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
@@ -144,6 +143,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Set up QEMU
+        if: github.event_name != 'pull_request'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -178,8 +178,8 @@ jobs:
           utils/devel/test_docker_image.sh hictk:test
 
       - name: Build Docker image (arm64)
-        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
           load: true

@@ -55,11 +55,14 @@ template <typename N>
       }
     }
   }
-  const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
-  SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), uri);
-  std::ignore = tmp_clr.aggregate<N>(uri, force, compression_lvl);
 
-  std::filesystem::remove(tmp_cooler_path);
+  {
+    const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
+    SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), uri);
+    std::ignore = tmp_clr.aggregate<N>(uri, force, compression_lvl);
+  }
+
+  std::filesystem::remove(tmp_cooler_path);  // NOLINT
 
   return stats;
 }
@@ -109,11 +112,13 @@ template <typename N>
     }
   }
 
-  const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
-  SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), uri);
-  std::ignore = tmp_clr.aggregate<N>(uri, force);
+  {
+    const cooler::SingleCellFile tmp_clr(tmp_cooler_path);
+    SPDLOG_INFO(FMT_STRING("merging {} chunks into \"{}\"..."), tmp_clr.cells().size(), uri);
+    std::ignore = tmp_clr.aggregate<N>(uri, force);
+  }
 
-  std::filesystem::remove(tmp_cooler_path);
+  std::filesystem::remove(tmp_cooler_path);  // NOLINT
 
   const cooler::File clr(uri);
   const auto nnz = clr.nnz();

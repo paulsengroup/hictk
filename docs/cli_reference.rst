@@ -19,7 +19,7 @@ Subcommands
     -V,--version                Display program version information and exit
   Subcommands:
     balance                     Balance Hi-C matrices using ICE, SCALE, or VC.
-    convert                     Convert HiC matrices to a different format.
+    convert                     Convert Hi-C matrices to a different format.
     dump                        Dump data from .hic and Cooler files to stdout.
     fix-mcool                   Fix corrupted .mcool files.
     load                        Build .cool and .hic files from interactions in various text formats.
@@ -36,7 +36,7 @@ hictk balance
 .. code-block:: text
 
   Balance Hi-C matrices using ICE, SCALE, or VC.
-  Usage: hictk balance [OPTIONS] [SUBCOMMAND]
+  Usage: hictk balance [OPTIONS] SUBCOMMAND
   Options:
     -h,--help                   Print this help message and exit
   Subcommands:
@@ -176,7 +176,7 @@ hictk convert
 
 .. code-block:: text
 
-  Convert HiC matrices to a different format.
+  Convert Hi-C matrices to a different format.
   Usage: hictk convert [OPTIONS] input output
   Positionals:
     input TEXT:((HiC) OR (Cooler)) OR (Multires-cooler) REQUIRED
@@ -203,10 +203,10 @@ hictk convert
                                 Batch size to use when converting .[m]cool to .hic.
     -v,--verbosity UINT:INT in [1 - 4] []
                                 Set verbosity of output to the console.
-    -t,--threads UINT:UINT in [2 - 12] [2]
+    -t,--threads UINT:UINT in [2 - 32] [2]
                                 Maximum number of parallel threads to spawn.
                                 When converting from hic to cool, only two threads will be used.
-    -l,--compression-lvl UINT:INT in [1 - 32] [6]
+    -l,--compression-lvl UINT:INT in [1 - 12] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
     --skip-all-vs-all,--no-skip-all-vs-all{false}
@@ -231,7 +231,7 @@ hictk dump
   Options:
     -h,--help                   Print this help message and exit
     --resolution UINT:NONNEGATIVE
-                                Hi-C matrix resolution (ignored when file is in .cool format).
+                                HiC matrix resolution (ignored when file is in .cool format).
     --matrix-type ENUM:value in {expected->2,observed->0,oe->1} OR {2,0,1} [observed]
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:value in {BP->0,FRAG->1} OR {0,1} [BP]
@@ -311,7 +311,7 @@ hictk load
     --output-fmt TEXT:{auto,cool,hic} [auto]
                                 Output format (by default this is inferred from the output file extension).
                                 Should be one of:
-                                - autol
+                                - auto
                                 - cool
                                 - hic
     --force                     Force overwrite existing output file(s).
@@ -329,10 +329,10 @@ hictk load
                                 Assume input files are already sorted.
     --chunk-size UINT [10000000]
                                 Number of pixels to buffer in memory.
-    -l,--compression-lvl UINT:INT bounded to [1 - 32]
+    -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
-    -t,--threads UINT:UINT in [2 - 12] [2]
+    -t,--threads UINT:UINT in [2 - 32] [2]
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only up to two threads will be used.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
@@ -363,7 +363,7 @@ hictk merge
     -f,--force                  Force overwrite output file.
     --chunk-size UINT [10000000]
                                 Number of pixels to store in memory before writing to disk.
-    -l,--compression-lvl UINT:INT bounded to [1 - 32]
+    -l,--compression-lvl UINT:INT bounded to [1 - 12]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .cool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 32] [1]
@@ -469,7 +469,7 @@ hictk zoomify
                                 Base resolution: 1000
                                 Pow2: 1000, 2000, 4000, 8000...
                                 Nice: 1000, 2000, 5000, 10000...
-    -l,--compression-lvl UINT:INT bounded to [1 - 32] [6]
+    -l,--compression-lvl UINT:INT bounded to [1 - 12] [6]
                                 Compression level used to compress interactions.
                                 Defaults to 6 and 10 for .mcool and .hic files, respectively.
     -t,--threads UINT:UINT in [1 - 32] [1]
