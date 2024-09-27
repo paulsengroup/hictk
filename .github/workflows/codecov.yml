@@ -49,7 +49,7 @@ jobs:
     name: Build project
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     outputs:
@@ -255,7 +255,8 @@ jobs:
             sudo \
             tar
 
-          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
+          printf '#!/usr/bin/sh\nllvm-cov-19 gcov "$@\n"' > /usr/local/bin/gcov
+          chmod 755 /usr/local/bin/gcov
 
       - name: Run unit tests
         run: |
