@@ -40,7 +40,7 @@ void Cli::make_load_subcommand() {
       "interactions",
       c.input_path,
       "Path to a file with the interactions to be loaded.\n"
-      "Common compression formats are supported (namely, gzip, bzip2, lz4, lzo, and zstd).\n"
+      "Common compression formats are supported (namely, bzip2, gzip, lz4, lzo, xz, and zstd).\n"
       "Pass \"-\" to indicate that interactions should be read from stdin.")
       ->check(CLI::ExistingFile | CLI::IsMember({"-"}))
       ->required();

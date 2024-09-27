@@ -39,6 +39,8 @@ Loading interactions in pairs (4DN-DCIC) format into a .cool/hic file is straigh
 
 To ingest interactions in a .hic file, simply change the extension of the output file (or use the ``--output-fmt`` option).
 
+hictk has native support for reading compressed interactions in the following formats: bzip2, lz4, lzo, gzip, xz, and zstd.
+
 By default, the list of chromosomes is read from the file header.
 The reference genome used to build the .cool or .hic file can be provided explicitly using the ``--chrom-sizes`` option.
 Note that ``--chrom-sizes`` is a mandatory option when ingesting interactions in formats other than ``--format=4dn``.
