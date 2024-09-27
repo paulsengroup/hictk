@@ -12,7 +12,7 @@ Next, verify that hictk was installed correctly with:
 .. code-block:: console
 
   user@dev:/tmp$ hictk --version
-  hictk-v1.0.0
+  hictk-v2.0.0
 
 Command line interface
 ======================
@@ -54,10 +54,13 @@ For more detailed examples refer to :doc:`Reading interactions <./reading_intera
 Other operations
 ----------------
 
-* :doc:`Format conversion <./format_conversion>`
-* :doc:`Creating .cool and .hic files <./creating_cool_and_hic_files>`
-* :doc:`Converting single-resolution files to multi-resolution <./creating_multires_files>`
 * :doc:`Balancing Hi-C matrices <./balancing_matrices>`
+* :doc:`Converting single-resolution files to multi-resolution <./creating_multires_files>`
+* :doc:`Creating .cool and .hic files <./creating_cool_and_hic_files>`
+* :doc:`Dumping tabular information to stdout <./reading_interactions>`
+* :doc:`File validation <./file_validation>`
+* :doc:`Format conversion <./format_conversion>`
+* :doc:`Reading file metadata <./file_metadata>`
 
 
 API

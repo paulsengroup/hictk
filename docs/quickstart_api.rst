@@ -18,7 +18,7 @@ To install libhictk using Conan, first create a conanfile.txt like the following
 .. code-block::
 
   [requires]
-  hictk/1.0.0
+  hictk/2.0.0
 
   [generators]
   CMakeDeps
@@ -47,14 +47,14 @@ Installing using CMake FetchContent
 -----------------------------------
 
 Before beginning, make sure all of hictk dependencies have been installed.
-Refer to `conanfile.txt <https://github.com/paulsengroup/hictk/blob/main/conanfile.txt>`_ for an up-to-date list of hictk dependencies.
+Refer to `conanfile.txt <https://github.com/paulsengroup/hictk/blob/main/conanfile.py>`_ for an up-to-date list of hictk dependencies.
 
 To install and configure hictk using `FetchContent <https://cmake.org/cmake/help/latest/module/FetchContent.html>`_, first write a ``CMakeLists.txt`` file like the following:
 
 .. code-block:: cmake
 
   cmake_minimum_required(VERSION 3.25)
-  cmake_policy(VERSION 3.25...3.27)
+  cmake_policy(VERSION 3.25...3.30)
 
   project(myproject LANGUAGES C CXX)
 
@@ -62,7 +62,7 @@ To install and configure hictk using `FetchContent <https://cmake.org/cmake/help
   FetchContent_Declare(
     hictk
     GIT_REPOSITORY  "https://github.com/paulsengroup/hictk.git"
-    GIT_TAG         v1.0.0
+    GIT_TAG         v2.0.0
     SYSTEM)
 
   # Customize hictk build flags

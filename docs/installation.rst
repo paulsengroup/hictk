@@ -20,12 +20,8 @@ hictk package for Linux and MacOS is available on bioconda and can be installed 
   hictk: /home/user/.miniconda3/envs/hictk/bin/hictk
 
   (hictk) user@dev:/tmp$ hictk --version
-  hictk-v1.0.0-bioconda
+  hictk-v2.0.0-bioconda
 
-If you are trying to install hictk on a Mac with an M chip, the above command may fail due to conda not being able to find a package for hictk.
-You can workaround the above issue by prefixing conda commands with :code:`CONDA_SUBDIR=osx-64`.
-Note that this will make hictk quite a bit slower, as the installed binary will be executed through Rosetta.
-If performance is important, please consider :doc:`compiling hictk from source <./installation_src>` or using containers (see below).
 
 Containers (Docker or Singularity/Apptainer)
 ============================================
@@ -70,25 +66,28 @@ Downloading and running the latest stable release can be done as follows:
 .. code-block:: console
 
   # Using Docker, may require sudo
-  user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:1.0.0 --help
+  user@dev:/tmp$ docker run ghcr.io/paulsengroup/hictk:2.0.0 --help
 
   # Using Singularity/Apptainer
-  user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:1.0.0 --help
+  user@dev:/tmp$ singularity run ghcr.io/paulsengroup/hictk:2.0.0 --help
 
   Blazing fast tools to work with .hic and .cool files.
-  Usage: /usr/local/bin/hictk [OPTIONS] SUBCOMMAND
-
+  Usage: hictk [OPTIONS] SUBCOMMAND
   Options:
     -h,--help                   Print this help message and exit
     -V,--version                Display program version information and exit
-
   Subcommands:
-    convert                     Convert Hi-C matrices to a different format.
-    dump                        Dump data from .hic and Cooler files to stdout.
-    load                        Build .cool files from interactions in various text formats.
-    merge                       Merge coolers.
+    balance                     Balance Hi-C files using ICE, SCALE, or VC.
+    convert                     Convert Hi-C files between different formats.
+    dump                        Read interactions and other kinds of data from .hic and Cooler files and write them to stdout.
+    fix-mcool                   Fix corrupted .mcool files.
+    load                        Build .cool and .hic files from interactions in various text formats.
+    merge                       Merge multiple Cooler or .hic files into a single file.
+    metadata                    Print file metadata to stdout.
+    rename-chromosomes, rename-chroms
+                                Rename chromosomes found in Cooler files.
     validate                    Validate .hic and Cooler files.
-    zoomify                     Convert single-resolution Cooler file to multi-resolution by coarsening.
+    zoomify                     Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
 
 The above will print hictk's help message, and is equivalent to running :code:`hictk --help` on the command line (assuming hictk is available on your machine).
 

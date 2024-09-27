@@ -17,44 +17,42 @@ File requirements:
 * ``dm6.chrom.sizes`` - `download <https://hgdownload.cse.ucsc.edu/goldenpath/dm6/bigZips/dm6.chrom.sizes>`__
 * ``4DNFIKNWM36K.pairs.gz`` - `download <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/930ba072-05ac-4382-9a92-369517184ec7/4DNFIKNWM36K.pairs.gz>`__
 
+
+Ingesting pairwise interactions into a 10kbp .cool file
+-------------------------------------------------------
+
+Loading interactions in pairs (4DN-DCIC) format into a .cool/hic file is straightforward:
+
 .. code-block:: console
 
-  # Create a 10kbp .cool file using dm6 as reference
-  user@dev:/tmp$ zcat 4DNFIKNWM36K.pairs.gz | hictk load --format 4dn --assembly dm6 --bin-size 10000 dm6.chrom.sizes 4DNFIKNWM36K.10000.cool
+  user@dev:/tmp$ hictk load --format 4dn --bin-size 10000 4DNFIKNWM36K.pairs.gz 4DNFIKNWM36K.10000.cool
 
-  [2024-01-23 15:15:00.520] [info]: Running hictk v0.0.6-45c36af-dirty
-  [2024-01-23 15:15:00.531] [info]: writing chunk #1 to intermediate file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp"...
-  [2024-01-23 15:15:23.762] [info]: done writing chunk #1 to tmp file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp".
-  [2024-01-23 15:15:23.762] [info]: writing chunk #2 to intermediate file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp"...
-  [2024-01-23 15:15:49.042] [info]: done writing chunk #2 to tmp file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp".
-  [2024-01-23 15:15:49.042] [info]: writing chunk #3 to intermediate file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp"...
-  [2024-01-23 15:15:49.834] [info]: done writing chunk #3 to tmp file "/tmp/4DNFIKNWM36K.10000.cool.tmp/4DNFIKNWM36K.10000.cool.tmp".
-  [2024-01-23 15:15:49.836] [info]: merging 3 chunks into "4DNFIKNWM36K.10000.cool"...
-  [2024-01-23 15:15:55.118] [info]: processing chr3L:15100000-15110000 chr3L:16230000-16240000 at 4789272 pixels/s...
-  [2024-01-23 15:15:59.718] [info]: ingested 119208613 interactions (18122865 nnz) in 59.197723453s!
+  [2024-09-26 16:51:28.059] [info]: Running hictk v1.0.0-fbdcb591
+  [2024-09-26 16:51:28.068] [info]: begin loading pairwise interactions into a .cool file...
+  [2024-09-26 16:51:28.137] [info]: writing chunk #1 to intermediate file "/tmp/hictk-tmp-XXXXQPdOSn/4DNFIKNWM36K.10000.cool.tmp"...
+  [2024-09-26 16:51:45.281] [info]: done writing chunk #1 to tmp file "/tmp/hictk-tmp-XXXXQPdOSn/4DNFIKNWM36K.10000.cool.tmp".
+  [2024-09-26 16:51:45.281] [info]: writing chunk #2 to intermediate file "/tmp/hictk-tmp-XXXXQPdOSn/4DNFIKNWM36K.10000.cool.tmp"...
+  [2024-09-26 16:52:04.969] [info]: done writing chunk #2 to tmp file "/tmp/hictk-tmp-XXXXQPdOSn/4DNFIKNWM36K.10000.cool.tmp".
+  [2024-09-26 16:52:04.970] [info]: merging 2 chunks into "4DNFIKNWM36K.10000.cool"...
+  [2024-09-26 16:52:06.430] [info]: processing chr3L:1030000-1040000 chr3R:30240000-30250000 at 6882312 pixels/s...
+  [2024-09-26 16:52:08.478] [info]: ingested 119208613 interactions (18122865 nnz) in 40.418916003s!
 
-  # Create a 10kbp .hic file using dm6 as reference
-  user@dev:/tmp$ zcat 4DNFIKNWM36K.pairs.gz | hictk load --format 4dn --assembly dm6 --bin-size 10000 dm6.chrom.sizes 4DNFIKNWM36K.10000.hic
+To ingest interactions in a .hic file, simply change the extension of the output file (or use the ``--output-fmt`` option).
 
-  [2024-01-23 15:45:19.969] [info]: Running hictk v0.0.6-570037c-dirty
-  [2024-01-23 15:45:42.439] [info]: preprocessing chunk #1 at 452919 pixels/s...
-  [2024-01-23 15:46:09.182] [info]: preprocessing chunk #2 at 303750 pixels/s...
-  [2024-01-23 15:46:11.184] [info]: writing header at offset 0
-  [2024-01-23 15:46:11.184] [info]: begin writing interaction blocks to file "4DNFIKNWM36K.10000.hic"...
-  [2024-01-23 15:46:11.184] [info]: [10000 bp] writing pixels for chr3R:chr3R matrix at offset 50632...
-  [2024-01-23 15:46:13.295] [info]: [10000 bp] written 2264963 pixels for chr3R:chr3R matrix
-  [2024-01-23 15:46:13.295] [info]: [10000 bp] writing pixels for chr3R:chr3L matrix at offset 4235718...
-  [2024-01-23 15:46:14.611] [info]: [10000 bp] written 1610264 pixels for chr3R:chr3L matrix
-  ...
-  [2024-01-23 15:46:44.065] [info]: [10000 bp] initializing expected value vector
-  [2024-01-23 15:46:50.531] [info]: [10000 bp] computing expected vector density
-  [2024-01-23 15:46:51.157] [info]: writing 1 expected value vectors at offset 32065110...
-  [2024-01-23 15:46:51.158] [info]: writing 0 normalized expected value vectors at offset 32078017...
-  [2024-01-23 15:46:51.194] [info]: ingested 119208613 interactions (18122865 nnz) in 91.225341628s!
+By default, the list of chromosomes is read from the file header.
+The reference genome used to build the .cool or .hic file can be provided explicitly using the ``--chrom-sizes`` option.
+Note that ``--chrom-sizes`` is a mandatory option when ingesting interactions in formats other than ``--format=4dn``.
+In case the input file contains interactions mapping on chromosomes missing from the reference genome provided through ``--chrom-sizes``, the ``--drop-unknown-chroms`` flag can be used to instruct hictk to ignored said interactions.
+
+When loading interactions using ``--format=pairs`` or ``--format=validPairs`` into a .cool file, tables of variable bins are supported.
+To load interactions in to a .cool with a variable bin size provide the table of bins using the ``--bin-table`` option.
 
 **Tips:**
 
-* When creating large .hic files, ``hictk`` needs to create potentially large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
+* When creating large .cool/hic files, ``hictk`` needs to create potentially large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
+* When loading interactions into .hic files, some of the steps can be run in parallel by increasing the number of processing threads using the ``--threads`` option.
+* When loading pre-binned interactions into .cool file, if the interactions are already sorted by genomic coordinates, the ``--assume-sorted`` option can be used to load interactions at once, without using temporary files.
+* Interaction loading performance can be improved by processing interactions in larger chunks. This can be controlled using the ``--chunk-size`` option. In fact, when ``--chunk-size`` is greater than the number of interactions to be loaded, .hic and .cool files can be created without the use of temporary files.
 
 
 Merging multiple files
@@ -66,35 +64,17 @@ Multiple .cool and .hic files using the same reference genome and resolution can
 
   # Merge multiple cooler files
 
-  user@dev:/tmp$ hictk merge data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 -o 4DNFIZ1ZVXC8.merged.cool
+  user@dev:/tmp$ hictk merge 4DNFIZ1ZVXC8.mcool::/resolutions/10000 4DNFIZ1ZVXC8.mcool::/resolutions/10000 -o 4DNFIZ1ZVXC8.merged.10000.cool
 
-  [2023-09-29 19:24:49.479] [info]: Running hictk v0.0.2
-  [2023-09-29 19:24:49.479] [info]: begin merging 2 coolers...
-  [2023-09-29 19:24:52.032] [info]: processing chr2R:11267000-11268000 chr4:1052000-1053000 at 3976143 pixels/s...
-  [2023-09-29 19:24:55.157] [info]: processing chr3R:5812000-5813000 chr3R:23422000-23423000 at 3201024 pixels/s...
-  [2023-09-29 19:24:57.992] [info]: DONE! Merging 2 coolers took 8.51s!
-  [2023-09-29 19:24:57.992] [info]: 4DNFIZ1ZVXC8.merged.cool size: 36.23 MB
+  [2024-09-26 17:07:57.101] [info]: Running hictk v1.0.0-fbdcb591
+  [2024-09-26 17:07:57.101] [info]: begin merging 2 files into one .cool file...
+  [2024-09-26 17:07:58.978] [info]: processing chr3L:1030000-1040000 chr3R:29720000-29730000 at 5571031 pixels/s...
+  [2024-09-26 17:08:01.224] [info]: DONE! Merging 2 files took 4.12s!
+  [2024-09-26 17:08:01.224] [info]: 4DNFIZ1ZVXC8.merged.10000.cool size: 19.64 MB
 
-  # Merge multiple .hic files
-
-  user@dev:/tmp$ hictk merge data/4DNFIZ1ZVXC8.hic9 data/4DNFIZ1ZVXC8.hic9 -o 4DNFIZ1ZVXC8.10000.merged.hic --resolution 10000
-
-  [2024-01-23 15:49:23.248] [info]: Running hictk v0.0.6-570037c-dirty
-  [2024-01-23 15:49:23.248] [info]: begin merging 2 .hic files...
-  [2024-01-23 15:49:31.101] [info]: ingesting pixels at 1352814 pixels/s...
-  [2024-01-23 15:49:37.777] [info]: writing header at offset 0
-  [2024-01-23 15:49:37.777] [info]: begin writing interaction blocks to file "4DNFIZ1ZVXC8.10000.merged.hic"...
-  [2024-01-23 15:49:37.777] [info]: [10000 bp] writing pixels for chr2L:chr2L matrix at offset 212...
-  [2024-01-23 15:49:39.060] [info]: [10000 bp] written 1433133 pixels for chr2L:chr2L matrix
-  [2024-01-23 15:49:39.060] [info]: [10000 bp] writing pixels for chr2L:chr2R matrix at offset 2619165...
-  ...
-  [2024-01-23 15:49:58.624] [info]: [10000 bp] initializing expected value vector
-  [2024-01-23 15:50:05.276] [info]: [10000 bp] computing expected vector density
-  [2024-01-23 15:50:05.276] [info]: writing 1 expected value vectors at offset 31936601...
-  [2024-01-23 15:50:05.276] [info]: writing 0 normalized expected value vectors at offset 31949508...
-  [2024-01-23 15:50:05.299] [info]: DONE! Merging 2 files took 42.05s!
-  [2024-01-23 15:50:05.299] [info]: 4DNFIZ1ZVXC8.10000.merged.hic size: 31.95 MB
+Merging .hic files as well as a mix of .hic and .cool files is also supported (as long as all files have the same resolution and reference genome).
+When one or more of the input files are in .hic format, the ``--resolution`` option is mandatory.
 
 **Tips:**
 
-* When merging many, large .hic files, ``hictk`` needs to create potentially large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
+See the list of Tips for hictk load.

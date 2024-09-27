@@ -493,19 +493,19 @@ int validate_subcmd(const ValidateConfig& c) {
     if (!c.quiet) {
       print_report(status, c.output_format);
       if (is_hic) {
-        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .hic file."),
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .hic file.\n"),
                    return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (is_mcool) {
-        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .mcool file."),
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .mcool file.\n"),
                    return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (is_scool) {
-        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .scool file."),
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .scool file.\n"),
                    return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else if (std::filesystem::exists(c.uri)) {
-        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .cool file."),
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .cool file.\n"),
                    return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
       } else {
-        fmt::print(stderr, FMT_STRING("### {}: \"{}\" {} to valid Cooler."),
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" {} to valid Cooler.\n"),
                    return_code == 0 ? "SUCCESS" : "FAILURE", c.uri,
                    return_code == 0 ? "points" : "does not point");
       }

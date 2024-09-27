@@ -8,7 +8,7 @@ File validation
 Why is this needed?
 -------------------
 
-``hictk validate`` can detect several types of data corruption in .hic and .cool files, from simple file truncation due to e.g. failed downloads to subtle index corruption in .cool files.
+``hictk validate`` can detect several types of data corruption in .hic and .[ms]cool files, from simple file truncation due to e.g. failed downloads to subtle index corruption in .mcool files.
 
 .. _cooler-index-corruption-label:
 
@@ -38,59 +38,94 @@ Perform a quick check to detect truncated or otherwise invalid files:
 .. code-block:: console
 
   # Validate a .hic file
-  user@dev:/tmp$ hictk validate test/data/hic/4DNFIZ1ZVXC8.hic8
-  ### SUCCESS: "test/data/hic/4DNFIZ1ZVXC8.hic8" is a valid .hic file.
+  user@dev:/tmp$ hictk validate 4DNFIZ1ZVXC8.hic8
+  [2024-09-26 16:20:55.552] [info]: Running hictk v1.0.0-fbdcb591
+  {
+      "format": "hic",
+      "is_valid_hic": true,
+      "uri": "4DNFIZ1ZVXC8.hic8"
+  }
+  ### SUCCESS: "4DNFIZ1ZVXC8.hic8" is a valid .hic file.
 
-  # Validate a .cool file
-  user@dev:/tmp$ hictk validate test/data/integration_tests/4DNFIZ1ZVXC8.mcool
-  uri="test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/2500000"
-  is_hdf5=true
-  unable_to_open_file=false
-  file_was_properly_closed=true
-  missing_or_invalid_format_attr=false
-  missing_or_invalid_bin_type_attr=false
-  missing_groups=[]
-  is_valid_cooler=true
-  index_is_valid=not_checked
-  ### SUCCESS: "test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/2500000" is a valid Cooler.
-  uri="test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/1000000"
-  is_hdf5=true
-  unable_to_open_file=false
-  file_was_properly_closed=true
-  missing_or_invalid_format_attr=false
-  missing_or_invalid_bin_type_attr=false
-  missing_groups=[]
-  is_valid_cooler=true
-  index_is_valid=not_checked
-  ### SUCCESS: "test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/1000000" is a valid Cooler.
-  ...
-  uri="test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/1000"
-  is_hdf5=true
-  unable_to_open_file=false
-  file_was_properly_closed=true
-  missing_or_invalid_format_attr=false
-  missing_or_invalid_bin_type_attr=false
-  missing_groups=[]
-  is_valid_cooler=true
-  index_is_valid=not_checked
-  ### SUCCESS: "test/data/integration_tests/4DNFIZ1ZVXC8.mcool::/resolutions/1000" is a valid Cooler.
-
+  # Validate a .mcool file
+  user@dev:/tmp$ hictk validate 4DNFIZ1ZVXC8.mcool
+  [2024-09-26 16:22:47.348] [info]: Running hictk v1.0.0-fbdcb591
+  {
+      "1000": {
+          "bin_table_dtypes_ok": true,
+          "bin_table_num_invalid_bins": 0,
+          "bin_table_shape_ok": true,
+          "file_was_properly_closed": true,
+          "index_is_valid": "not_checked",
+          "is_hdf5": true,
+          "is_valid_cooler": true,
+          "missing_groups": [],
+          "missing_or_invalid_bin_type_attr": false,
+          "missing_or_invalid_format_attr": false,
+          "unable_to_open_file": false
+      },
+      "100000": {
+          ...
+      },
+      "1000000": {
+          ...
+      },
+      "25000": {
+          ...
+      },
+      "250000": {
+          ...
+      },
+      "2500000": {
+          ...
+      },
+      "5000": {
+          ...
+      },
+      "50000": {
+          ...
+      },
+      "500000": {
+          ...
+      },
+      "file_was_properly_closed": true,
+      "format": "mcool",
+      "is_hdf5": true,
+      "is_valid_mcool": true,
+      "missing_groups": [],
+      "missing_or_invalid_bin_type_attr": false,
+      "missing_or_invalid_format_attr": false,
+      "unable_to_open_file": false,
+      "uri": "4DNFIZ1ZVXC8.mcool"
+  }
+  ### SUCCESS: "4DNFIZ1ZVXC8.mcool" is a valid .mcool file.
 
 The quick check will not detect Cooler files with corrupted index, as this requires the ``--validate-index`` option:
 
 .. code-block:: console
 
   user@dev:/tmp$ hictk validate --validate-index 4DNFI9GMP2J8.mcool::/resolutions/1000000
-  uri="4DNFI9GMP2J8.mcool::/resolutions/1000000"
-  is_hdf5=true
-  unable_to_open_file=false
-  file_was_properly_closed=true
-  missing_or_invalid_format_attr=false
-  missing_or_invalid_bin_type_attr=false
-  missing_groups=[]
-  is_valid_cooler=true
-  index_is_valid=false
-  ### FAILURE: "4DNFI9GMP2J8.mcool::/resolutions/1000000" is not a valid Cooler.
+  [2024-09-26 16:26:32.671] [info]: Running hictk v1.0.0-fbdcb591
+  {
+      "bin_table_dtypes_ok": true,
+      "bin_table_num_invalid_bins": 0,
+      "bin_table_shape_ok": true,
+      "file_was_properly_closed": true,
+      "format": "cool",
+      "index_is_valid": "pixels between 0-2850 are not sorted in ascending order (and very likely contain duplicate entries)",
+      "is_hdf5": true,
+      "is_valid_cooler": false,
+      "missing_groups": [],
+      "missing_or_invalid_bin_type_attr": false,
+      "missing_or_invalid_format_attr": false,
+      "unable_to_open_file": false,
+      "uri": "4DNFI9GMP2J8.mcool::/resolutions/100000"
+  }
+  ### FAILURE: "4DNFI9GMP2J8.mcool::/resolutions/100000" does not point to valid Cooler.
+
+When launched with default settings, hictk validate outputs its report in .json format. The output format can be changed using the ``--output-format`` option.
+Output to stdout can be completely suppressed by providing the ``--quiet`` option (the outcome of file validation can still be determined based on hictk's exit code).
+When processing multi-resolution or single-cell files, hictk validate returns as soon as the first validation failure is encountered. This behavior can be changed by specifying the ``--exhaustive`` flag.
 
 Restoring corrupted .mcool files
 --------------------------------
@@ -106,3 +141,5 @@ File restoration is automated with ``hictk fix-mcool``:
 ``hictk fix-mcool`` is basically a wrapper around ``hictk zoomify`` and ``hictk balance``.
 
 When balancing, ``hictk fix-mcool`` will try to use the same parameters used to balance the original .mcool file. When this is not possible, ``hictk fix-mcool`` will fall back to the default parameters used by ``hictk balance``.
+
+To improve performance, consider using the ``--in-memory`` and/or ``--threads`` CLI options when appropriate (see :doc:`/balancing_matrices` for more details).

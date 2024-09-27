@@ -13,7 +13,7 @@ After downloading the data, move to a folder with at least ~1 GB of free space a
   :class: no-copybutton
 
   user@dev:/tmp$ mkdir data/
-  user@dev:/tmp$ tar -xf hictk_test_data.tar.xz                     \
+  user@dev:/tmp$ tar -xf hictk_test_data.tar.zst                    \
                      -C data --strip-components=3                   \
                      test/data/hic/4DNFIZ1ZVXC8.hic9                \
                      test/data/integration_tests/4DNFIZ1ZVXC8.mcool \
