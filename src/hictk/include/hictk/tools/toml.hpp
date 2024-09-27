@@ -4,6 +4,7 @@
 
 #pragma once
 
+// NOLINTBEGIN(clang-analyzer-optin.core.EnumCastOutOfRange)
 #if __has_include(<toml++/toml.hpp>)
 #include <toml++/toml.hpp>
 #elif __has_include(<toml++/toml.h>)
@@ -13,3 +14,4 @@
 #else
 #include <toml.h>
 #endif
+// NOLINTEND(clang-analyzer-optin.core.EnumCastOutOfRange)

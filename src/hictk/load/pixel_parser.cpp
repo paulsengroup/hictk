@@ -114,7 +114,8 @@ std::string_view PixelParser::remove_prefix(std::string_view s, std::string_view
 std::pair<std::string, std::uint32_t> PixelParser::parse_chromsize(std::string_view line) {
   assert(internal::starts_with(line, "#chromsize:"));
   line = remove_prefix(line, "#chromsize:");
-  auto it = std::find_if(line.begin(), line.end(), [](const char c) { return std::isspace(c); });
+  const auto* it =
+      std::find_if(line.begin(), line.end(), [](const char c) { return std::isspace(c); });
   if (it == line.begin() || it == line.end()) {
     throw std::runtime_error(fmt::format(FMT_STRING("malformed chromsize entry \"{}\"."), line));
   }
