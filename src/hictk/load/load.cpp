@@ -259,7 +259,7 @@ class PixelParser {
 using PixelParserVar = std::variant<PixelParser<Format::_4DN>, PixelParser<Format::BG2>,
                                     PixelParser<Format::COO>, PixelParser<Format::VP>>;
 
-template <typename N, Format format>
+template <bool transpose_pixels = true, typename N, Format format>
 static void parse_pixels(PixelParser<format>& parser, std::int64_t offset, PixelQueue<N>& queue,
                          std::atomic<bool>& early_return) {
   ThinPixel<N> buffer{};
@@ -267,6 +267,13 @@ static void parse_pixels(PixelParser<format>& parser, std::int64_t offset, Pixel
     assert(buffer.bin1_id != ThinPixel<N>::null_id);
     assert(buffer.bin2_id != ThinPixel<N>::null_id);
     assert(buffer.count != 0);
+
+    if constexpr (transpose_pixels) {
+      if (buffer.bin1_id > buffer.bin2_id) {
+        std::swap(buffer.bin1_id, buffer.bin2_id);
+      }
+    }
+
     while (!queue.try_enqueue(buffer) && !early_return) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -548,10 +555,15 @@ template <typename N, Format format>
 [[nodiscard]] static std::future<void> spawn_producer(BS::thread_pool& tpool,
                                                       PixelParser<format>& parser,
                                                       PixelQueue<N>& queue, std::int64_t offset,
-                                                      std::atomic<bool>& early_return) {
-  return tpool.submit_task([&parser, &queue, offset, &early_return]() {
+                                                      std::atomic<bool>& early_return,
+                                                      bool transpose_lower_triangular_pixels) {
+  return tpool.submit_task([&parser, &queue, offset, &early_return,
+                            transpose_lower_triangular_pixels]() {
     try {
-      return parse_pixels(parser, offset, queue, early_return);
+      if (transpose_lower_triangular_pixels) {
+        return parse_pixels<true>(parser, offset, queue, early_return);
+      }
+      return parse_pixels<false>(parser, offset, queue, early_return);
     } catch (...) {
       SPDLOG_WARN(
           FMT_STRING("exception caught in thread parsing interactions: returning immediately!"));
@@ -607,7 +619,8 @@ int load_subcmd(const LoadConfig& c) {
         auto [producer, consumer] = std::visit(
             [&](auto& queue) {
               return std::make_pair(
-                  spawn_producer(tpool, parser, queue, c.offset, early_return),
+                  spawn_producer(tpool, parser, queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels),
                   spawn_consumer(tpool, c, bins, parser.assembly(), format, queue, early_return));
             },
             pixel_queue_var);
