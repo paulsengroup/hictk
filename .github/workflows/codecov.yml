@@ -14,6 +14,7 @@ on:
       - "src/**"
       - "test/integration/**"
       - "test/units/**"
+      - "test/utils/devel/collect_coverage_data.py"
       - "CMakeLists.txt"
       - "conanfile.py"
     tags:
@@ -28,6 +29,7 @@ on:
       - "src/**"
       - "test/integration/**"
       - "test/units/**"
+      - "test/utils/devel/collect_coverage_data.py"
       - "CMakeLists.txt"
       - "conanfile.py"
 
@@ -110,7 +112,7 @@ jobs:
              --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-             -s build_type=Debug                 \
+             -s build_type=RelWithDebInfo        \
              -s compiler.libcxx=libstdc++11      \
              -s compiler.cppstd=17               \
              --output-folder=build
@@ -133,18 +135,19 @@ jobs:
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Debug                      \
-                -DCMAKE_PREFIX_PATH="$PWD/build"              \
-                -DENABLE_DEVELOPER_MODE=ON                    \
-                -DOPT_ENABLE_COVERAGE=ON                      \
-                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
-                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                   \
-                -DHICTK_BUILD_EXAMPLES=OFF                    \
-                -DHICTK_ENABLE_TESTING=ON                     \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
-                -S .                                          \
+          cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
+
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo        \
+                -DCMAKE_PREFIX_PATH="$PWD/build"         \
+                -DHICTK_BUILD_EXAMPLES=OFF               \
+                -DHICTK_ENABLE_TESTING=ON                \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF         \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF        \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF  \
+                -DCMAKE_C_FLAGS="$cov_flags"             \
+                -DCMAKE_CXX_FLAGS="$cov_flags"           \
+                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags" \
+                -S .                                     \
                 -B build
 
       - name: Restore Ccache folder
@@ -257,26 +260,35 @@ jobs:
 
       - name: Run unit tests
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          ctest --test-dir build/           \
-                --schedule-random           \
-                --output-on-failure         \
-                --no-tests=error            \
-                --timeout 240               \
+          LLVM_PROFILE_FILE="hictk.unittest.$(nproc).profraw"
+
+          sudo -u devel                                      \
+               -E env "PATH=$PATH"                           \
+                      "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE" \
+          ctest --test-dir build/                            \
+                --schedule-random                            \
+                --output-on-failure                          \
+                --no-tests=error                             \
+                --timeout 240                                \
                 -j $(nproc) |&
           head -n 1000
 
       - name: Collect coverage data
         run: |
-          mkdir coverage
-          cd coverage
-          find ../build -type f -name "*.gcda" -exec llvm-cov gcov --threads=$(nproc) {} +
+          readarray -t -d '' binaries < <(find build/test/units/ -type f -executable | xargs printf '%q\0')
+
+          utils/devel/collect_coverage_data.py \
+            --output-dir coverage/ \
+            --prefix="hictk.unittest" \
+            --format text \
+            "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           flags: "tests | unittests"
           fail_ci_if_error: true
+          handle_no_reports_found: true
           directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -337,135 +349,158 @@ jobs:
 
       - name: Test hictk balance
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                        \
+          -E env "PATH=$PATH"                                  \
+                 "LLVM_PROFILE_FILE=hictk.balance.%id.profraw" \
+          venv/bin/hictk_integration_suite                     \
+            build/src/hictk/hictk                              \
+            test/integration/config.toml                       \
+            --do-not-copy-binary                               \
+            --data-dir test/data                               \
+            --threads "$(nproc)"                               \
             --result-file integration-test-report.balance.json \
             --suites=balance
 
       - name: Test hictk convert
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                        \
+          -E env "PATH=$PATH"                                  \
+                 "LLVM_PROFILE_FILE=hictk.convert.%id.profraw" \
+          venv/bin/hictk_integration_suite                     \
+            build/src/hictk/hictk                              \
+            test/integration/config.toml                       \
+            --do-not-copy-binary                               \
+            --data-dir test/data                               \
+            --threads "$(nproc)"                               \
             --result-file integration-test-report.convert.json \
             --suites=convert
 
       - name: Test hictk dump
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
-            --result-file integration-test-report.dump.json \
+          sudo -u devel                                        \
+          -E env "PATH=$PATH"                                  \
+                 "LLVM_PROFILE_FILE=hictk.dump.%id.profraw"    \
+          venv/bin/hictk_integration_suite                     \
+            build/src/hictk/hictk                              \
+            test/integration/config.toml                       \
+            --do-not-copy-binary                               \
+            --data-dir test/data                               \
+            --threads "$(nproc)"                               \
+            --result-file integration-test-report.dump.json    \
             --suites=dump
 
       - name: Test hictk fix-mcool
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                          \
+          -E env "PATH=$PATH"                                    \
+                 "LLVM_PROFILE_FILE=hictk.fix-mcool.%id.profraw" \
+          venv/bin/hictk_integration_suite                       \
+            build/src/hictk/hictk                                \
+            test/integration/config.toml                         \
+            --do-not-copy-binary                                 \
+            --data-dir test/data                                 \
+            --threads "$(nproc)"                                 \
             --result-file integration-test-report.fix-mcool.json \
             --suites=fix-mcool
 
       - name: Test hictk load
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                     \
+          -E env "PATH=$PATH"                               \
+                 "LLVM_PROFILE_FILE=hictk.load.%id.profraw" \
+          venv/bin/hictk_integration_suite                  \
+            build/src/hictk/hictk                           \
+            test/integration/config.toml                    \
+            --do-not-copy-binary                            \
+            --data-dir test/data                            \
+            --threads "$(nproc)"                            \
             --result-file integration-test-report.load.json \
             --suites=load
 
       - name: Test hictk merge
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                      \
+          -E env "PATH=$PATH"                                \
+                 "LLVM_PROFILE_FILE=hictk.merge.%id.profraw" \
+          venv/bin/hictk_integration_suite                   \
+            build/src/hictk/hictk                            \
+            test/integration/config.toml                     \
+            --do-not-copy-binary                             \
+            --data-dir test/data                             \
+            --threads "$(nproc)"                             \
             --result-file integration-test-report.merge.json \
             --suites=merge
 
       - name: Test hictk metadata
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                         \
+          -E env "PATH=$PATH"                                   \
+                 "LLVM_PROFILE_FILE=hictk.metadata.%id.profraw" \
+          venv/bin/hictk_integration_suite                      \
+            build/src/hictk/hictk                               \
+            test/integration/config.toml                        \
+            --do-not-copy-binary                                \
+            --data-dir test/data                                \
+            --threads "$(nproc)"                                \
             --result-file integration-test-report.metadata.json \
             --suites=metadata
 
       - name: Test hictk rename-chromosomes
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                                   \
+          -E env "PATH=$PATH"                                             \
+                 "LLVM_PROFILE_FILE=hictk.rename-chromosomes.%id.profraw" \
+          venv/bin/hictk_integration_suite                                \
+            build/src/hictk/hictk                                         \
+            test/integration/config.toml                                  \
+            --do-not-copy-binary                                          \
+            --data-dir test/data                                          \
+            --threads "$(nproc)"                                          \
             --result-file integration-test-report.rename-chromosomes.json \
             --suites=rename-chromosomes
 
       - name: Test hictk validate
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                         \
+          -E env "PATH=$PATH"                                   \
+                 "LLVM_PROFILE_FILE=hictk.validate.%id.profraw" \
+          venv/bin/hictk_integration_suite                      \
+            build/src/hictk/hictk                               \
+            test/integration/config.toml                        \
+            --do-not-copy-binary                                \
+            --data-dir test/data                                \
+            --threads "$(nproc)"                                \
             --result-file integration-test-report.validate.json \
             --suites=validate
 
       - name: Test hictk zoomify
         run: |
-          sudo -u devel -E env "PATH=$PATH" \
-          venv/bin/hictk_integration_suite \
-            build/src/hictk/hictk \
-            test/integration/config.toml \
-            --do-not-copy-binary \
-            --data-dir test/data \
-            --threads "$(nproc)" \
+          sudo -u devel                                        \
+          -E env "PATH=$PATH"                                  \
+                 "LLVM_PROFILE_FILE=hictk.zoomify.%id.profraw" \
+          venv/bin/hictk_integration_suite                     \
+            build/src/hictk/hictk                              \
+            test/integration/config.toml                       \
+            --do-not-copy-binary                               \
+            --data-dir test/data                               \
+            --threads "$(nproc)"                               \
             --result-file integration-test-report.zoomify.json \
             --suites=zoomify
 
       - name: Collect coverage data
         run: |
-          mkdir coverage
-          cd coverage
-          find ../build -type f -name "*.gcda" -exec llvm-cov gcov --threads=$(nproc) {} +
+          utils/devel/collect_coverage_data.py \
+            --output-dir coverage/             \
+            --prefix="hictk"                   \
+            --format text                      \
+            build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           flags: "tests | integration"
           fail_ci_if_error: true
+          handle_no_reports_found: true
           directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
