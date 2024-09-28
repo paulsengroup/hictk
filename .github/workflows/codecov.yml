@@ -280,7 +280,7 @@ jobs:
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="hictk.unittest"            \
-            --format text                        \
+            --format lcov                        \
             --llvm-cov-bin llvm-cov-19           \
             --llvm-profdata-bin llvm-profdata-19 \
             "${binaries[@]}"
@@ -494,7 +494,7 @@ jobs:
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="hictk"                     \
-            --format text                        \
+            --format lcov                        \
             --llvm-cov-bin llvm-cov-19           \
             --llvm-profdata-bin llvm-profdata-19 \
             build/src/hictk/hictk
