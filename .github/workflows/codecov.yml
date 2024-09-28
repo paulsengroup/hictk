@@ -212,7 +212,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     env:
@@ -255,9 +255,6 @@ jobs:
             sudo \
             tar
 
-          printf '#!/usr/bin/sh\nllvm-cov-19 gcov "$@\n"' > /usr/local/bin/gcov
-          chmod 755 /usr/local/bin/gcov
-
       - name: Run unit tests
         run: |
           sudo -u devel -E env "PATH=$PATH" \
@@ -269,12 +266,18 @@ jobs:
                 -j $(nproc) |&
           head -n 1000
 
+      - name: Collect coverage data
+        run: |
+          mkdir coverage
+          cd coverage
+          find ../build -type f -name "*.gcda" -exec llvm-cov gcov --threads=$(nproc) {} +
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           flags: "tests | unittests"
           fail_ci_if_error: true
-          plugin: gcov
+          directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
@@ -284,7 +287,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-gcc-14
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     env:
@@ -331,8 +334,6 @@ jobs:
             gpg-agent \
             sudo \
             tar
-
-          update-alternatives --install /usr/bin/gcov gcov /usr/bin/gcov-14 100
 
       - name: Test hictk balance
         run: |
@@ -454,12 +455,18 @@ jobs:
             --result-file integration-test-report.zoomify.json \
             --suites=zoomify
 
+      - name: Collect coverage data
+        run: |
+          mkdir coverage
+          cd coverage
+          find ../build -type f -name "*.gcda" -exec llvm-cov gcov --threads=$(nproc) {} +
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           flags: "tests | integration"
           fail_ci_if_error: true
-          plugin: gcov
+          directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
