@@ -156,7 +156,8 @@ Converting streams of pixels to Eigen Dense Matrices
 
   .. cpp:type:: MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-  .. cpp:function:: ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
+  .. cpp:function:: ToDenseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::full);
+  .. cpp:function:: ToDenseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full);
 
   Construct an instance of a :cpp:class:`ToDenseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
@@ -175,7 +176,8 @@ Converting streams of pixels to Eigen Sparse Matrices
 
   .. cpp:type:: MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
 
-  .. cpp:function:: ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
+  .. cpp:function:: ToSparseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::upper_triangle);
+  .. cpp:function:: ToSparseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full);
 
   Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
