@@ -4,6 +4,7 @@
 
 import json
 import logging
+import os
 import tomllib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
@@ -123,6 +124,14 @@ class HictkMetadata(HictkTestHarness):
         self._title = title
         self._args = args
         self._expect_failure = expect_failure
+
+        if env_variables is None:
+            env_variables = os.environ.copy()
+        else:
+            env_variables = dict(env_variables.copy())
+
+        if "LLVM_PROFILE_FILE" in env_variables:
+            env_variables["LLVM_PROFILE_FILE"] = env_variables["LLVM_PROFILE_FILE"].replace("%id", str(id))
 
         t0 = timer()
         try:

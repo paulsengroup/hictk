@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 import logging
+import os
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
@@ -138,6 +139,14 @@ class HictkDump(HictkTestHarness):
             colnames = "infer"
         else:
             colnames = None
+
+        if env_variables is None:
+            env_variables = os.environ.copy()
+        else:
+            env_variables = dict(env_variables.copy())
+
+        if "LLVM_PROFILE_FILE" in env_variables:
+            env_variables["LLVM_PROFILE_FILE"] = env_variables["LLVM_PROFILE_FILE"].replace("%id", str(id))
 
         t0 = timer()
         try:
