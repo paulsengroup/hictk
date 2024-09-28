@@ -115,7 +115,10 @@ class HictkpyDump:
         if range2 is None:
             range2 = ""
 
-        return self._f.fetch(range1, range2, normalization=normalization, join=join).to_df()
+        df = self._f.fetch(range1, range2, normalization=normalization, join=join, count_type="float").to_df()
+        df["count"] = df["count"].convert_dtypes()  # cast float to int when this does not cause any loss in precision
+
+        return df
 
     def _fetch_bins(self, range1: str | None, range2: str | None) -> pd.DataFrame | None:
         if self._is_multi_res_file() or self._f is None:

@@ -28,7 +28,10 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_rename_chromosomes.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_validate.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli_zoomify.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance_ice.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance_scale.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/balance/balance_vc.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/common/attributes_formatting.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/common/compressed_reader.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/convert.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/convert/cool_to_hic.cpp
@@ -36,15 +39,29 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/dump/dump_common.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/fix_mcool/fix_mcool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/load/common.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/load/hic.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/load/init_bin_table.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/load/load.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/load/pixel_parser.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/merge/cool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/merge/hic.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/merge/merge.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/cool.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/hic.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/mcool.hpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/scool.hpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/common.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/cool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/hic.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/mcool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/metadata/scool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/metadata/metadata.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/rename_chromosomes/rename_chromosomes.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/validate/cool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/validate/hic.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/validate/mcool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/validate/scool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/validate/validate.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/cool.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/hic.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 
 target_include_directories(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

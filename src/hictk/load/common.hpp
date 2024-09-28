@@ -4,17 +4,22 @@
 
 #pragma once
 
+#if __has_include(<readerwriterqueue.h>)
+#include <readerwriterqueue.h>
+#else
 #include <readerwriterqueue/readerwriterqueue.h>
+#endif
 
+#include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <string_view>
 #include <variant>
 #include <vector>
 
-#include "hictk/bin_table.hpp"
+#include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
-#include "hictk/type_traits.hpp"
 
 namespace hictk::tools {
 
@@ -27,50 +32,57 @@ using IntBuff = std::vector<ThinPixel<std::int32_t>>;
 using FPBuff = std::vector<ThinPixel<double>>;
 using PixelBuffer = std::variant<IntBuff, FPBuff>;
 
-enum class Format { COO, BG2, VP, _4DN };
-[[nodiscard]] inline Format format_from_string(std::string_view s) {
-  if (s == "coo") {
-    return Format::COO;
-  }
-  if (s == "bg2") {
-    return Format::BG2;
-  }
-  if (s == "validpairs") {
-    return Format::VP;
-  }
-  assert(s == "4dn");
-  return Format::_4DN;
-}
-
-[[nodiscard]] inline bool line_is_header(std::string_view line) {
-  return !line.empty() && line.front() == '#';
-}
-
 struct Stats {
   std::variant<std::uint64_t, double> sum{0.0};
   std::uint64_t nnz{};
 
-  inline Stats& operator+=(const Stats& other) {
-    std::visit(
-        [&](auto& sum_) {
-          using T = remove_cvref_t<decltype(sum_)>;
-
-          sum_ += std::get<T>(other.sum);
-        },
-        sum);
-    nnz += other.nnz;
-
-    return *this;
-  }
-
   template <typename N>
   inline Stats(N sum_, std::uint64_t nnz_) : nnz(nnz_) {
     if constexpr (std::is_floating_point_v<N>) {
-      sum = static_cast<double>(sum_);
+      sum = conditional_static_cast<double>(sum_);
     } else {
-      sum = static_cast<std::uint64_t>(sum_);
+      sum = conditional_static_cast<std::uint64_t>(sum_);
     }
   }
+
+  Stats& operator+=(const Stats& other);
 };
+
+enum class Format : std::uint_fast8_t { COO, BG2, VP, _4DN };
+[[nodiscard]] Format format_from_string(std::string_view s);
+
+template <typename N>
+[[nodiscard]] inline Stats read_batch(PixelQueue<N>& queue, const std::atomic<bool>& early_return,
+                                      std::vector<ThinPixel<N>>& buffer) {
+  assert(buffer.capacity() != 0);
+  buffer.clear();
+  Stats stats{N{}, 0};
+  ThinPixel<N> pixel{};
+
+  while (!early_return) {
+    if (!queue.wait_dequeue_timed(pixel, std::chrono::milliseconds(10))) {
+      continue;
+    }
+
+    if (pixel.bin1_id == ThinPixel<N>::null_id && pixel.bin2_id == ThinPixel<N>::null_id &&
+        pixel.count == 0) {
+      // EOQ signal received
+      return stats;
+    }
+
+    buffer.emplace_back(pixel);
+    stats.nnz++;
+    if constexpr (std::is_floating_point_v<N>) {
+      std::get<double>(stats.sum) += conditional_static_cast<double>(pixel.count);
+    } else {
+      std::get<std::uint64_t>(stats.sum) += conditional_static_cast<std::uint64_t>(pixel.count);
+    }
+    if (buffer.size() == buffer.capacity()) {
+      return stats;
+    }
+  }
+
+  return stats;
+}
 
 }  // namespace hictk::tools

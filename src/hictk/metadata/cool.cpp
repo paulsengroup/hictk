@@ -2,19 +2,18 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
+#include <cassert>
+#include <filesystem>
 #include <string>
-#include <toml++/toml.hpp>
 
-#include "./common.hpp"
+#include "./metadata.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/tools/toml.hpp"
 
 namespace hictk::tools {
 
-[[nodiscard]] inline toml::table normalize_attribute_map(const cooler::Attributes& map,
-                                                         const std::string& uri) {
+toml::table normalize_attribute_map(const cooler::Attributes& map, const std::string& uri) {
   toml::table attributes;
 
   if (!uri.empty()) {
@@ -49,8 +48,8 @@ namespace hictk::tools {
   return attributes;
 }
 
-[[nodiscard]] inline int print_cool_metadata(const std::filesystem::path& p,
-                                             MetadataOutputFormat format, bool include_file_path) {
+int print_cool_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                        bool include_file_path) {
   const auto attributes = normalize_attribute_map(cooler::File(p.string()).attributes(),
                                                   include_file_path ? p.string() : "");
   print_attributes(attributes, {}, format);

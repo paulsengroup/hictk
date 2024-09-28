@@ -58,6 +58,7 @@ class HictkConan(ConanFile):
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")
         self.requires("spdlog/1.14.1#972bbf70be1da4bc57ea589af0efde03")
         self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
+        self.requires("xz_utils/5.4.5#b885d1d79c9d30cff3803f7f551dbe66")
         self.requires("zstd/1.5.6#afefe79a309bc2a7b9f56c2093504c8b", force=True)
         self.requires("zlib/1.3.1#f52e03ae3d251dec704634230cd806a2")
 

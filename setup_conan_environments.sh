@@ -38,7 +38,7 @@ for compiler in gcc clang; do
       -pr "$profile"  \
       -s compiler.cppstd=17 \
       -s build_type="$build_type" \
-      --output-folder="$outdir" \
+      --output-folder="$outdir/static" \
       "$conanfile"
 
      conan install \
@@ -48,7 +48,7 @@ for compiler in gcc clang; do
        -s compiler.cppstd=17 \
        -s build_type="$build_type" \
        -o '*/*:shared=True' \
-       --output-folder="$outdir" \
+       --output-folder="$outdir/shared" \
        "$conanfile"
   done
 done
