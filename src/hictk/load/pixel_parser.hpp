@@ -46,7 +46,6 @@ class PixelParser {
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
   [[nodiscard]] std::string_view assembly() const noexcept;
   [[nodiscard]] const BinTable& bins() const noexcept;
-  [[nodiscard]] Format format() const noexcept;
 
   template <typename N>
   [[nodiscard]] inline ThinPixel<N> next_pixel(std::int64_t offset) {
