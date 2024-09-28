@@ -277,10 +277,12 @@ jobs:
         run: |
           readarray -t -d '' binaries < <(find build/test/units/ -type f -executable | xargs printf '%q\0')
 
-          utils/devel/collect_coverage_data.py \
-            --output-dir coverage/ \
-            --prefix="hictk.unittest" \
-            --format text \
+          utils/devel/collect_coverage_data.py   \
+            --output-dir coverage/               \
+            --prefix="hictk.unittest"            \
+            --format text                        \
+            --llvm-cov-bin llvm-cov-19           \
+            --llvm-profdata-bin llvm-profdata-19 \
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
@@ -489,10 +491,12 @@ jobs:
 
       - name: Collect coverage data
         run: |
-          utils/devel/collect_coverage_data.py \
-            --output-dir coverage/             \
-            --prefix="hictk"                   \
-            --format text                      \
+          utils/devel/collect_coverage_data.py   \
+            --output-dir coverage/               \
+            --prefix="hictk"                     \
+            --format text                        \
+            --llvm-cov-bin llvm-cov-19           \
+            --llvm-profdata-bin llvm-profdata-19 \
             build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
