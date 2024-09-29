@@ -28,20 +28,11 @@ RUN if [ -z "$C_COMPILER" ]; then echo "Missing C_COMPILER --build-arg" && exit 
 ENV CC="$C_COMPILER"
 ENV CXX="$CXX_COMPILER"
 
-# Install b2 using Conan
-RUN printf '[requires]\nb2/5.2.1\n[options]\nb2*:toolset=%s' \
-           "$(basename "$(which "$CC")")" | cut -f 1 -d - > /tmp/conanfile.txt
-
-RUN conan install /tmp/conanfile.txt                 \
-                 --build=missing                     \
-                 -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-                 -pr:h="$CONAN_DEFAULT_PROFILE_PATH"
-
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"
 
-COPY conanfile.py "$src_dir"
-RUN conan install "$src_dir/conanfile.py"       \
+COPY conanfile.Dockerfile.py "$src_dir/conanfile.py"
+RUN conan install "$src_dir/conanfile.py"        \
              --build=missing                     \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
@@ -73,8 +64,10 @@ RUN if [ -z "$GIT_HASH" ]; then echo "Missing GIT_HASH --build-arg" && exit 1; f
 # Configure project
 RUN cmake -DCMAKE_BUILD_TYPE=Release            \
           -DCMAKE_PREFIX_PATH="$build_dir"      \
-          -DHICTK_ENABLE_TESTING=OFF            \
           -DENABLE_DEVELOPER_MODE=OFF           \
+          -DHICTK_ENABLE_TESTING=OFF            \
+          -DHICTK_WITH_ARROW=OFF                \
+          -DHICTK_WITH_EIGEN=OFF                \
           -DCMAKE_INSTALL_PREFIX="$staging_dir" \
           -DGIT_RETRIEVED_STATE=true            \
           -DGIT_TAG="$GIT_TAG"                  \
@@ -87,7 +80,8 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release            \
 
 # Build and install project
 RUN cmake --build "$build_dir" -t hictk -j "$(nproc)"  \
-&& cmake --install "$build_dir" --component Runtime
+&& cmake --install "$build_dir" --component Runtime    \
+&& rm -r "$build_dir"
 
 ARG FINAL_BASE_IMAGE
 ARG FINAL_BASE_IMAGE_DIGEST

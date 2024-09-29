@@ -16,7 +16,7 @@ on:
       - ".dockerignore"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.py"
+      - "conanfile.Dockerfile.py"
     tags:
       - "v*.*.*"
 
@@ -31,7 +31,7 @@ on:
       - ".dockerignore"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.py"
+      - "conanfile.Dockerfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
