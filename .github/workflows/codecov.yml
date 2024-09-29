@@ -265,17 +265,16 @@ jobs:
 
       - name: Run unit tests
         run: |
-          LLVM_PROFILE_FILE="hictk.unittest.$(nproc).profraw"
+          LLVM_PROFILE_FILE="$PWD/hictk.unittest.profraw"
 
           sudo -u devel                                      \
                -E env "PATH=$PATH"                           \
                       "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE" \
           ctest --test-dir build/                            \
-                --schedule-random                            \
                 --output-on-failure                          \
                 --no-tests=error                             \
                 --timeout 240                                \
-                -j $(nproc) |&
+                -j 1 |&
           head -n 1000
 
       - name: Collect coverage data
@@ -284,7 +283,7 @@ jobs:
 
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
-            --prefix="hictk.unittest"            \
+            --prefix="$PWD/hictk.unittest"       \
             --format lcov                        \
             --llvm-cov-bin llvm-cov-19           \
             --llvm-profdata-bin llvm-profdata-19 \
@@ -356,9 +355,11 @@ jobs:
 
       - name: Test hictk balance
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.balance.%id.profraw"
+
           sudo -u devel                                        \
           -E env "PATH=$PATH"                                  \
-                 "LLVM_PROFILE_FILE=hictk.balance.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"        \
           venv/bin/hictk_integration_suite                     \
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
@@ -370,9 +371,11 @@ jobs:
 
       - name: Test hictk convert
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.convert.%id.profraw"
+
           sudo -u devel                                        \
           -E env "PATH=$PATH"                                  \
-                 "LLVM_PROFILE_FILE=hictk.convert.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"        \
           venv/bin/hictk_integration_suite                     \
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
@@ -384,9 +387,11 @@ jobs:
 
       - name: Test hictk dump
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.dump.%id.profraw"
+
           sudo -u devel                                        \
           -E env "PATH=$PATH"                                  \
-                 "LLVM_PROFILE_FILE=hictk.dump.%id.profraw"    \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"        \
           venv/bin/hictk_integration_suite                     \
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
@@ -398,9 +403,11 @@ jobs:
 
       - name: Test hictk fix-mcool
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.fix-mcool.%id.profraw"
+
           sudo -u devel                                          \
           -E env "PATH=$PATH"                                    \
-                 "LLVM_PROFILE_FILE=hictk.fix-mcool.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"          \
           venv/bin/hictk_integration_suite                       \
             build/src/hictk/hictk                                \
             test/integration/config.toml                         \
@@ -412,9 +419,11 @@ jobs:
 
       - name: Test hictk load
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.load.%id.profraw"
+
           sudo -u devel                                     \
           -E env "PATH=$PATH"                               \
-                 "LLVM_PROFILE_FILE=hictk.load.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"     \
           venv/bin/hictk_integration_suite                  \
             build/src/hictk/hictk                           \
             test/integration/config.toml                    \
@@ -426,9 +435,11 @@ jobs:
 
       - name: Test hictk merge
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.merge.%id.profraw"
+
           sudo -u devel                                      \
           -E env "PATH=$PATH"                                \
-                 "LLVM_PROFILE_FILE=hictk.merge.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"      \
           venv/bin/hictk_integration_suite                   \
             build/src/hictk/hictk                            \
             test/integration/config.toml                     \
@@ -440,9 +451,10 @@ jobs:
 
       - name: Test hictk metadata
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.metadata.%id.profraw"
           sudo -u devel                                         \
           -E env "PATH=$PATH"                                   \
-                 "LLVM_PROFILE_FILE=hictk.metadata.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"         \
           venv/bin/hictk_integration_suite                      \
             build/src/hictk/hictk                               \
             test/integration/config.toml                        \
@@ -454,9 +466,11 @@ jobs:
 
       - name: Test hictk rename-chromosomes
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.rename-chromosomes.%id.profraw"
+
           sudo -u devel                                                   \
           -E env "PATH=$PATH"                                             \
-                 "LLVM_PROFILE_FILE=hictk.rename-chromosomes.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"                   \
           venv/bin/hictk_integration_suite                                \
             build/src/hictk/hictk                                         \
             test/integration/config.toml                                  \
@@ -468,9 +482,11 @@ jobs:
 
       - name: Test hictk validate
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.validate.%id.profraw"
+
           sudo -u devel                                         \
           -E env "PATH=$PATH"                                   \
-                 "LLVM_PROFILE_FILE=hictk.validate.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"         \
           venv/bin/hictk_integration_suite                      \
             build/src/hictk/hictk                               \
             test/integration/config.toml                        \
@@ -482,9 +498,11 @@ jobs:
 
       - name: Test hictk zoomify
         run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.zoomify.%id.profraw"
+
           sudo -u devel                                        \
           -E env "PATH=$PATH"                                  \
-                 "LLVM_PROFILE_FILE=hictk.zoomify.%id.profraw" \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"        \
           venv/bin/hictk_integration_suite                     \
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
@@ -498,7 +516,7 @@ jobs:
         run: |
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
-            --prefix="hictk"                     \
+            --prefix="$PWD/hictk"                \
             --format lcov                        \
             --llvm-cov-bin llvm-cov-19           \
             --llvm-profdata-bin llvm-profdata-19 \
