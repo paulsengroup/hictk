@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/evict-gha-cache.yml"
       - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
@@ -15,11 +17,11 @@ on:
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
-    tags:
-      - "v*.*.*"
 
   pull_request:
     paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/evict-gha-cache.yml"
       - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
@@ -39,6 +41,12 @@ defaults:
     shell: bash
 
 jobs:
+  build-conan-deps:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    with:
+      os: ubuntu-20.04
+
   run-clang-tidy:
     runs-on: ubuntu-latest
     container:
@@ -74,7 +82,6 @@ jobs:
 
           ccache_key_prefix="ccache-clang-tidy-$GITHUB_REF-$conanfile_hash"
 
-          echo "conan-key=conan-clang-tidy-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
           echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
           echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
@@ -82,54 +89,26 @@ jobs:
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
 
-      - name: Clean Conan cache (pre-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-          conan remove --confirm "*"
-
-      - name: Copy Conan settings
-        run: |
-          if [ ! -f "$CONAN_HOME/settings.yml" ]; then
-            cp "/root/.conan2/settings.yml" "$CONAN_HOME"
-          fi
-
-      - name: Install build dependencies
-        run: |
-          conan install .                        \
-             --build=missing                     \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-             -s build_type=Debug                 \
-             -s compiler.libcxx=libstdc++11      \
-             -s compiler.cppstd=17               \
-             --output-folder=build
-
-      - name: Clean Conan cache (post-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-        env:
-          ZSTD_CLEVEL: 19
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
+          path: /tmp/cmake-prefix-dbg.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug                      \
-                -DCMAKE_PREFIX_PATH="$PWD/build"              \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
