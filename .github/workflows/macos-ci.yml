@@ -231,7 +231,8 @@ jobs:
         id: cache-ccache
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
           path: ${{ env.CCACHE_DIR }}
 
       - name: Reset Ccache stats
