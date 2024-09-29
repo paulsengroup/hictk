@@ -49,7 +49,7 @@ BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-$C_COMP
 
 sudo docker pull "$BUILD_BASE_IMAGE"
 
-sudo docker buildx build --platform linux/amd64 \
+sudo docker buildx build --platform linux/amd64 --load \
   --build-arg "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" \
   --build-arg "FINAL_BASE_IMAGE=docker.io/library/ubuntu" \
   --build-arg "FINAL_BASE_IMAGE_TAG=24.04" \
