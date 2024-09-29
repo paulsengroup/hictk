@@ -61,6 +61,8 @@ RUN if [ -z "$GIT_HASH" ]; then echo "Missing GIT_HASH --build-arg" && exit 1; f
 &&  if [ -z "$GIT_IS_DIRTY" ]; then echo "Missing GIT_IS_DIRTY --build-arg" && exit 1; fi \
 &&  if [ -z "$GIT_TAG" ]; then echo "Missing GIT_TAG --build-arg" && exit 1; fi
 
+ARG CCACHE_DISABLE=1
+
 # Configure project
 RUN cmake -DCMAKE_BUILD_TYPE=Release            \
           -DCMAKE_PREFIX_PATH="$build_dir"      \
