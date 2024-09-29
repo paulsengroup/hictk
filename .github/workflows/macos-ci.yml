@@ -153,10 +153,11 @@ jobs:
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$GITHUB_REF-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
 
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a $GITHUB_OUTPUT
-          echo "ccache-restore-key=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
+          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a $GITHUB_OUTPUT
+          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a $GITHUB_OUTPUT
+          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
 
       - name: Restore Conan cache (x86)
         if: matrix.os == 'macos-12' || matrix.os == 'macos-13'

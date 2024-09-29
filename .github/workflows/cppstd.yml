@@ -99,8 +99,9 @@ jobs:
 
           ccache_key_prefix="ccache-cppstd-${{ matrix.cppstd }}-$conanfile_hash"
 
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" | tee -a "$GITHUB_OUTPUT"
-          echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache (C++20)
         if: matrix.cppstd == '20'
@@ -166,7 +167,8 @@ jobs:
         id: cache-ccache
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.generate-cache-key.outputs.ccache-restore-key }}
+          key: ${{ steps.generate-cache-key.outputs.ccache-restore-key-1 }}
+          restore-keys: ${{ steps.generate-cache-key.outputs.ccache-restore-key-2 }}
           path: ${{ env.CCACHE_DIR }}
 
       - name: Reset Ccache stats
