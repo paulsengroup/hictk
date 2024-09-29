@@ -48,6 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
+      ci-type: ${{ steps.ci-type.outputs.type }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -314,12 +315,14 @@ jobs:
                  --verbose
 
       - name: Cleanup Ccache folder
+        if: needs.matrix-factory.outputs.ci-type == 'short'
         run: |
           ccache --evict-older-than=14400s # 4h
           ccache --recompress=19 --recompress-threads="$(nproc)"
           ccache --cleanup
 
       - name: Print Ccache statistics (post-cleanup)
+        if: needs.matrix-factory.outputs.ci-type == 'short'
         run: |
           ccache --show-stats \
                  --show-compression \
