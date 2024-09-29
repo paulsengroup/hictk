@@ -45,14 +45,14 @@ jobs:
     name: Build Conan deps
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
     with:
-      os: ubuntu-20.04
+      os: ubuntu-24.04
       cppstd: 20
 
   build-conan-deps-cpp23:
     name: Build Conan deps
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
     with:
-      os: ubuntu-20.04
+      os: ubuntu-24.04
       cppstd: 23
 
   build-project:
