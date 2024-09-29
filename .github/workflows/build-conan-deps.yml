@@ -90,6 +90,22 @@ jobs:
           path: ${{ env.CONAN_HOME }}/p
           lookup-only: true
 
+      - name: Restore CMake configs (Debug) cache
+        id: cache-cmake-dbg
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
+          path: /tmp/cmake-prefix-dbg.tar
+          lookup-only: true
+
+      - name: Restore CMake configs (Release) cache
+        id: cache-cmake-rel
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
+          path: /tmp/cmake-prefix-rel.tar
+          lookup-only: true
+
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
@@ -99,7 +115,9 @@ jobs:
           conan remove --confirm "*"
 
       - name: Install dependencies (Debug)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -113,7 +131,9 @@ jobs:
           tar -cf /tmp/cmake-prefix-dbg.tar cmake-prefix-dbg
 
       - name: Install dependencies (Release)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -144,7 +164,9 @@ jobs:
 
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
           path: /tmp/cmake-prefix-dbg.tar
@@ -153,7 +175,9 @@ jobs:
 
       - name: Save CMake configs (Release)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
           path: /tmp/cmake-prefix-rel.tar
@@ -206,6 +230,22 @@ jobs:
           path: ${{ env.CONAN_HOME }}/p
           lookup-only: true
 
+      - name: Restore CMake configs (Debug) cache
+        id: cache-cmake-dbg
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
+          path: /tmp/cmake-prefix-dbg.tar
+          lookup-only: true
+
+      - name: Restore CMake configs (Release) cache
+        id: cache-cmake-rel
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
+          path: /tmp/cmake-prefix-rel.tar
+          lookup-only: true
+
       - uses: actions/setup-python@v5
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
@@ -228,7 +268,9 @@ jobs:
           conan remove --confirm "*"
 
       - name: Install dependencies (Debug)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -242,7 +284,9 @@ jobs:
           gtar -cf /tmp/cmake-prefix-dbg.tar cmake-prefix-dbg
 
       - name: Install dependencies (Release)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -273,7 +317,9 @@ jobs:
 
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
           path: /tmp/cmake-prefix-dbg.tar
@@ -282,7 +328,9 @@ jobs:
 
       - name: Save CMake configs (Release)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
           path: /tmp/cmake-prefix-rel.tar
@@ -338,6 +386,22 @@ jobs:
           path: ${{ env.CONAN_HOME }}\p
           lookup-only: true
 
+      - name: Restore CMake configs (Debug) cache
+        id: cache-cmake-dbg
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
+          path: ${{ github.workspace }}\cmake-prefix-dbg.tar
+          lookup-only: true
+
+      - name: Restore CMake configs (Release) cache
+        id: cache-cmake-rel
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
+          path: ${{ github.workspace }}\cmake-prefix-rel.tar
+          lookup-only: true
+
       - uses: actions/setup-python@v5
         if: steps.cache-conan.outputs.cache-hit != 'true'
         with:
@@ -364,7 +428,9 @@ jobs:
           conan remove --confirm "*"
 
       - name: Install dependencies (Debug)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -381,7 +447,9 @@ jobs:
           tar -cf "$dest" cmake-prefix-dbg
 
       - name: Install dependencies (Release)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
           conan install conanfile.py                  \
              --build='missing'                        \
@@ -415,7 +483,9 @@ jobs:
 
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
           path: ${{ github.workspace }}\cmake-prefix-dbg.tar
@@ -424,7 +494,9 @@ jobs:
 
       - name: Save CMake configs (Release)
         uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
           path: ${{ github.workspace }}\cmake-prefix-rel.tar
