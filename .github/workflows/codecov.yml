@@ -161,7 +161,7 @@ jobs:
         run: cmake --build build -j $(nproc)
 
       - name: Package build folder
-        run: tar -cf - build/ | zstd -T0 -13 -o build.tar.zst
+        run: tar --exclude='*.o' -cf - build/ | zstd -T0 -13 -o build.tar.zst
 
       - name: Upload build folder
         uses: actions/upload-artifact@v4
