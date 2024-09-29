@@ -265,25 +265,27 @@ jobs:
 
       - name: Run unit tests
         run: |
-          sudo -u devel                                      \
-               -E env "PATH=$PATH"                           \
-          ctest --test-dir build/                            \
-                --output-on-failure                          \
-                --no-tests=error                             \
-                --timeout 240                                \
-                -j 1 |&
-          head -n 1000
+          readarray -t -d '' binaries < <(find build/test/units/ -type f -executable | xargs printf '%q\0')
+
+          mkdir profiles
+
+          for bin in "${binaries[@]}"; do
+            hash="$(sha256sum "$bin" | cut -f1 -d ' ')"
+            LLVM_PROFILE_FILE="$PWD/profiles/$hash.profraw"
+
+            sudo -u devel                                      \
+                 -E env "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE" \
+                 "$bin"
+
+            if [ $? -ne 0 ]; then
+              exit 1
+            fi
+
+          done
 
       - name: Collect coverage data
         run: |
           readarray -t -d '' binaries < <(find build/test/units/ -type f -executable | xargs printf '%q\0')
-          readarray -t -d '' profiles < <(find build/test/units/ -type f -name 'default.profraw' | xargs printf '%q\0')
-
-          mkdir profiles
-          for prof in "${profiles[@]}"; do
-            hash="$(sha256sum "$prof" | cut -f1 -d ' ')"
-            ln -s "$prof" "profiles/$hash.profraw"
-          done
 
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
