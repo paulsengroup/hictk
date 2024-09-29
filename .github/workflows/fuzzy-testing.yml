@@ -145,7 +145,6 @@ jobs:
           apt-get install -y python3.12 python3.12-dev
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}

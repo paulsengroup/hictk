@@ -104,7 +104,6 @@ jobs:
 
       - name: Restore Conan cache (C++20)
         if: matrix.cppstd == '20'
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-cpp20.outputs.conan-key }}
@@ -121,7 +120,6 @@ jobs:
 
       - name: Restore Conan cache (C++23)
         if: matrix.cppstd == '23'
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-cpp23.outputs.conan-key }}

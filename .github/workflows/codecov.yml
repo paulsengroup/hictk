@@ -94,7 +94,6 @@ jobs:
           echo "ccache-restore-key=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}

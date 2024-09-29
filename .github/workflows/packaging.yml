@@ -60,7 +60,6 @@ jobs:
           chown -R $(id -u):$(id -g) $PWD
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}
@@ -128,7 +127,6 @@ jobs:
           chown -R $(id -u):$(id -g) $PWD
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}
