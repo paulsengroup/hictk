@@ -7,7 +7,6 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import pandas as pd
-
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.common import normalize_df_dtypes
 from hictk_integration_suite.runners.hictk import HictkTestHarness

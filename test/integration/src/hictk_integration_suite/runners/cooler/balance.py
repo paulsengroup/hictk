@@ -9,7 +9,6 @@ from typing import List, Tuple
 
 import cooler
 import numpy.typing as npt
-
 from hictk_integration_suite.validators.file_formats import is_cooler, is_multires
 
 

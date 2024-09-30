@@ -9,7 +9,6 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import pandas as pd
-
 from hictk_integration_suite.runners import Runner, cooler, hictkpy
 from hictk_integration_suite.validators.file_formats import is_hic
 
