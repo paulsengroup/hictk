@@ -1,3 +1,4 @@
+
 ..
    Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
    SPDX-License-Identifier: MIT
@@ -5,12 +6,13 @@
 CLI Reference
 #############
 
-For an up-to-date list of subcommands and CLI options refer to hictk --help.
+For an up-to-date list of subcommands and CLI options refer to ``hictk --help``.
 
 Subcommands
 -----------
 
 .. code-block:: text
+
 
   Blazing fast tools to work with .hic and .cool files.
   Usage: hictk [OPTIONS] SUBCOMMAND
@@ -30,6 +32,7 @@ Subcommands
     validate                    Validate .hic and Cooler files.
     zoomify                     Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
 
+
 hictk balance
 -------------
 
@@ -43,6 +46,7 @@ hictk balance
     ice                         Balance Hi-C files using ICE.
     scale                       Balance Hi-C files using SCALE.
     vc                          Balance Hi-C matrices using VC.
+
 
 hictk balance ice
 -----------------
@@ -86,13 +90,14 @@ hictk balance ice
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once. Ignored when using --in-memory.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
-    -l,--compression-lvl UINT:INT in [0 - 19] []
+    -l,--compression-lvl INT:INT in [0 - 19] [3]
                                 Compression level used to compress temporary files using ZSTD.
     -f,--force                  Overwrite existing files and datasets (if any).
+
 
 hictk balance scale
 -------------------
@@ -133,13 +138,14 @@ hictk balance scale
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once. Ignored when using --in-memory.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
-    -l,--compression-lvl UINT:INT in [0 - 19] []
+    -l,--compression-lvl INT:INT in [0 - 19] [3]
                                 Compression level used to compress temporary files using ZSTD.
     -f,--force                  Overwrite existing files and datasets (if any).
+
 
 hictk balance vc
 ----------------
@@ -167,9 +173,10 @@ hictk balance vc
                                 Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
     -f,--force                  Overwrite existing files and datasets (if any).
+
 
 hictk convert
 -------------
@@ -201,7 +208,7 @@ hictk convert
     --tmpdir TEXT:DIR           Path where to store temporary files.
     --chunk-size UINT:POSITIVE [10000000]
                                 Batch size to use when converting .[m]cool to .hic.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [2 - 32] [2]
                                 Maximum number of parallel threads to spawn.
@@ -217,6 +224,7 @@ hictk convert
                                 files to .[m]cool format.
                                 Can be one of: int, float, auto.
     -f,--force                  Overwrite existing files (if any).
+
 
 hictk dump
 ----------
@@ -252,6 +260,7 @@ hictk dump
     --sorted,--unsorted{false}  Return interactions in ascending order.
     --join,--no-join{false}     Output pixels in BG2 format.
 
+
 hictk fix-mcool
 ---------------
 
@@ -272,13 +281,14 @@ hictk fix-mcool
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once during balancing.
                                 Ignored when using --in-memory.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn (only applies to the balancing stage).
-    -l,--compression-lvl UINT:INT in [0 - 19] []
+    -l,--compression-lvl INT:INT in [0 - 19] [3]
                                 Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).
     -f,--force                  Overwrite existing files (if any).
+
 
 hictk load
 ----------
@@ -344,8 +354,9 @@ hictk load
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only up to two threads will be used.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
+
 
 hictk merge
 -----------
@@ -384,8 +395,9 @@ hictk merge
     --count-type TEXT:{int,float} [int]
                                 Specify the count type to be used when merging files.
                                 Ignored when the output file is in .hic format.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
+
 
 hictk metadata
 --------------
@@ -407,6 +419,7 @@ hictk metadata
     --recursive                 Print metadata for each resolution or cell contained in a
                                 multi-resolution or single-cell file.
 
+
 hictk rename-chromosomes
 ------------------------
 
@@ -426,8 +439,9 @@ hictk rename-chromosomes
                                 Prefix chromosome names with "chr".
     --remove-chr-prefix Excludes: --name-mappings --add-chr-prefix
                                 Remove prefix "chr" from chromosome names.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
+
 
 hictk validate
 --------------
@@ -450,6 +464,7 @@ hictk validate
                                 When processing multi-resolution or single-cell files,
                                 do not fail as soon as the first error is detected.
     --quiet                     Don't print anything to stdout. Success/failure is reported through exit codes
+
 
 hictk zoomify
 -------------
@@ -490,5 +505,5 @@ hictk zoomify
                                 Do not generate All vs All matrix.
                                 Has no effect when zoomifying .cool files.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
-    -v,--verbosity UINT:INT in [1 - 4] []
+    -v,--verbosity INT:INT in [1 - 4] [4]
                                 Set verbosity of output to the console.
