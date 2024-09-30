@@ -18,7 +18,6 @@ import tomllib
 from typing import Any, Dict, List
 
 import click
-
 from hictk_integration_suite.cli.common import WorkingDirectory
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.runners.hictk.common import version

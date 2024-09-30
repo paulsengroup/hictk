@@ -7,13 +7,12 @@ import pathlib
 import shutil
 from typing import Any, Dict, List, Tuple
 
-from immutabledict import ImmutableOrderedDict, immutabledict
-
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.rename_chromosomes import (
     HictkRenameChromosomes,
     HictkRenameChromosomesCli,
 )
+from immutabledict import ImmutableOrderedDict, immutabledict
 
 from .common import WorkingDirectory, _get_uri, _make_file_writeable, _preprocess_plan
 

@@ -15,6 +15,9 @@ on:
       cmake-prefix-release-key:
         description: "CMake config dir (Release)"
         value: ${{ jobs.collect-outputs.outputs.cmake-rel-key }}
+      cmake-prefix-relwithdebinfo-key:
+        description: "CMake config dir (RelWithDebInfo)"
+        value: ${{ jobs.collect-outputs.outputs.cmake-rwdi-key }}
 
     inputs:
       conan-version:
@@ -54,6 +57,7 @@ jobs:
       conan-key: ${{ steps.generate-cache-key.outputs.conan-key }}
       cmake-dbg-key: ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}
       cmake-rel-key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
+      cmake-rwdi-key: ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }}
 
     steps:
       - name: Checkout repo
@@ -81,6 +85,7 @@ jobs:
           echo "conan-key=conan-$suffix" | tee -a "$GITHUB_OUTPUT"
           echo "cmake-dbg-key=cmake-dbg-$suffix" | tee -a "$GITHUB_OUTPUT"
           echo "cmake-rel-key=cmake-rel-$suffix" | tee -a "$GITHUB_OUTPUT"
+          echo "cmake-rwdi-key=cmake-rwdi-$suffix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore CMake configs (Debug) cache
         id: cache-cmake-dbg
@@ -98,15 +103,20 @@ jobs:
           path: /tmp/cmake-prefix-rel.tar
           lookup-only: true
 
+      - name: Restore CMake configs (RelWithDebInfo) cache
+        id: cache-cmake-rwdi
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }}
+          path: /tmp/cmake-prefix-rwdi.tar
+          lookup-only: true
+
       - name: Restore package cache
         id: cache-conan
         uses: actions/cache/restore@v4
         with:
           key: ${{ steps.generate-cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}/p
-          lookup-only: |
-            steps.cache-cmake-dbg.outputs.cache-hit == 'true' &&
-            steps.cache-cmake-rel.outputs.cache-hit == 'true'
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -148,6 +158,22 @@ jobs:
 
           tar -cf /tmp/cmake-prefix-rel.tar cmake-prefix-rel
 
+      - name: Install dependencies (RelWithDebInfo)
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
+        run: |
+          conan install conanfile.py                  \
+             --build='missing'                        \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
+             -s build_type=RelWithDebInfo             \
+             -s compiler.libcxx=libstdc++11           \
+             -s compiler.cppstd=${{ inputs.cppstd }}  \
+             --output-folder cmake-prefix-rwdi
+
+          tar -cf /tmp/cmake-prefix-rwdi.tar cmake-prefix-rwdi
+
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
@@ -183,6 +209,17 @@ jobs:
         with:
           key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
           path: /tmp/cmake-prefix-rel.tar
+        env:
+          ZSTD_CLEVEL: 19
+
+      - name: Save CMake configs (RelWithDebInfo)
+        uses: actions/cache/save@v4
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true' ||
+          steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }}
+          path: /tmp/cmake-prefix-rwdi.tar
         env:
           ZSTD_CLEVEL: 19
 
@@ -246,9 +283,6 @@ jobs:
         with:
           key: ${{ steps.generate-cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}/p
-          lookup-only: |
-            steps.cache-cmake-dbg.outputs.cache-hit == 'true' &&
-            steps.cache-cmake-rel.outputs.cache-hit == 'true'
 
       - uses: actions/setup-python@v5
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -404,9 +438,6 @@ jobs:
         with:
           key: ${{ steps.generate-cache-key.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}\p
-          lookup-only: |
-            steps.cache-cmake-dbg.outputs.cache-hit == 'true' &&
-            steps.cache-cmake-rel.outputs.cache-hit == 'true'
 
       - uses: actions/setup-python@v5
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -531,6 +562,7 @@ jobs:
             echo "conan-key=${{ needs.build-deps-ubuntu.outputs.conan-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-dbg-key=${{ needs.build-deps-ubuntu.outputs.cmake-dbg-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-rel-key=${{ needs.build-deps-ubuntu.outputs.cmake-rel-key }}" | tee -a "$GITHUB_OUTPUT"
+            echo "cmake-rwdi-key=${{ needs.build-deps-ubuntu.outputs.cmake-rwdi-key }}" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -538,6 +570,7 @@ jobs:
             echo "conan-key=${{ needs.build-deps-macos.outputs.conan-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-dbg-key=${{ needs.build-deps-macos.outputs.cmake-dbg-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-rel-key=${{ needs.build-deps-macos.outputs.cmake-rel-key }}" | tee -a "$GITHUB_OUTPUT"
+            echo "cmake-rwdi-key=NONE" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -545,6 +578,7 @@ jobs:
             echo "conan-key=${{ needs.build-deps-windows.outputs.conan-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-dbg-key=${{ needs.build-deps-windows.outputs.cmake-dbg-key }}" | tee -a "$GITHUB_OUTPUT"
             echo "cmake-rel-key=${{ needs.build-deps-windows.outputs.cmake-rel-key }}" | tee -a "$GITHUB_OUTPUT"
+            echo "cmake-rwdi-key=NONE" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 

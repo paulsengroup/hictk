@@ -7,9 +7,8 @@ import os
 import pathlib
 from typing import Any, Dict, List, Tuple
 
-from immutabledict import ImmutableOrderedDict, immutabledict
-
 from hictk_integration_suite.tests.convert import HictkConvert, HictkConvertCli
+from immutabledict import ImmutableOrderedDict, immutabledict
 
 from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
 
