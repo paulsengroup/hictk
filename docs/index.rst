@@ -15,13 +15,18 @@ hictk is capable of reading and writing files in .cool, .mcool, .scool and .hic 
    ---------------------
 
    You are reading the HTML version of the documentation. An alternative `PDF
-   version <https://hictk.readthedocs.io/_/downloads/en/latest/pdf/>`_ is
+   version <https://hictk.readthedocs.io/_/downloads/en/stable/pdf/>`_ is
    also available.
 
    Installation
    ------------
 
 .. only:: latex
+
+   Documentation formats
+   ---------------------
+
+   You are reading the PDF version of the documentation. The live HTML version of the documentation is available at `<https://hictk.readthedocs.io/en/stable/>`_.
 
    .. rubric:: Installation
 
