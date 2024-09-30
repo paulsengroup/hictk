@@ -26,7 +26,9 @@ hictk is capable of reading and writing files in .cool, .mcool, .scool and .hic 
    Documentation formats
    ---------------------
 
-   You are reading the PDF version of the documentation. The live HTML version of the documentation is available at `<https://hictk.readthedocs.io/en/stable/>`_.
+   You are reading the PDF version of the documentation.
+
+   The live HTML version of the documentation is available at `<https://hictk.readthedocs.io/en/stable/>`_.
 
    .. rubric:: Installation
 
