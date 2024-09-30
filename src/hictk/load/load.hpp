@@ -37,7 +37,7 @@ namespace hictk::tools {
                                             const std::filesystem::path& path_to_bins,
                                             std::uint32_t resolution, std::string_view assembly);
 
-template <typename N>
+template <bool transpose_pixels = true, typename N>
 inline void parse_pixels(PixelParser& parser, std::int64_t offset, PixelQueue<N>& queue,
                          std::atomic<bool>& early_return) {
   ThinPixel<N> buffer{};
@@ -45,6 +45,13 @@ inline void parse_pixels(PixelParser& parser, std::int64_t offset, PixelQueue<N>
     assert(buffer.bin1_id != ThinPixel<N>::null_id);
     assert(buffer.bin2_id != ThinPixel<N>::null_id);
     assert(buffer.count != 0);
+
+    if constexpr (transpose_pixels) {
+      if (buffer.bin1_id > buffer.bin2_id) {
+        std::swap(buffer.bin1_id, buffer.bin2_id);
+      }
+    }
+
     while (!queue.try_enqueue(buffer) && !early_return) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -133,10 +140,15 @@ template <typename N>
 template <typename N>
 [[nodiscard]] inline std::future<void> spawn_producer(BS::thread_pool& tpool, PixelParser& parser,
                                                       PixelQueue<N>& queue, std::int64_t offset,
-                                                      std::atomic<bool>& early_return) {
-  return tpool.submit_task([&parser, &queue, offset, &early_return]() {
+                                                      std::atomic<bool>& early_return,
+                                                      bool transpose_lower_triangular_pixels) {
+  return tpool.submit_task([&parser, &queue, offset, &early_return,
+                            transpose_lower_triangular_pixels]() {
     try {
-      return parse_pixels(parser, offset, queue, early_return);
+      if (transpose_lower_triangular_pixels) {
+        return parse_pixels<true>(parser, offset, queue, early_return);
+      }
+      return parse_pixels<false>(parser, offset, queue, early_return);
     } catch (...) {
       SPDLOG_WARN(
           FMT_STRING("exception caught in thread parsing interactions: returning immediately!"));

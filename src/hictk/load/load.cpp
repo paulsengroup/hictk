@@ -42,7 +42,8 @@ namespace hictk::tools {
   const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<float>);
   PixelQueue<float> pixel_queue{queue_capacity};
 
-  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return);
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
   auto consumer =
       spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
 
@@ -73,7 +74,8 @@ namespace hictk::tools {
 
   const auto& bins = parser.bins();
 
-  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return);
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
   auto consumer =
       spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
 
@@ -104,7 +106,8 @@ namespace hictk::tools {
 
   const auto& bins = parser.bins();
 
-  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return);
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
   auto consumer =
       spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
 
