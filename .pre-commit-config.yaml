@@ -38,6 +38,13 @@ repos:
       - id: prettier
         types_or: [markdown, yaml]
 
+  - repo: https://github.com/sphinx-contrib/sphinx-lint
+    rev: v1.0.0
+    hooks:
+      - id: sphinx-lint
+        files: ^docs/
+        args: ["-d", "horizontal-tab"]
+
   - repo: local
     hooks:
       - id: clang-format
