@@ -106,7 +106,7 @@ jobs:
       - name: Restore CMake configs
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}
+          key: "${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}"
           path: /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
