@@ -20,8 +20,8 @@ constexpr bool BlockID::operator==(const BlockID &other) const noexcept {
 inline BlockCache::BlockCache(std::size_t capacity_bytes)
     : _capacity(capacity_bytes / sizeof(ThinPixel<float>)) {}
 
-inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id,
-                             std::size_t block_id) -> Value {
+inline auto BlockCache::find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
+    -> Value {
   auto match = _map.find({chrom1_id, chrom2_id, block_id});
   if (match != _map.end()) {
     ++_hits;

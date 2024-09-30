@@ -111,8 +111,8 @@ class Index {
   [[nodiscard]] auto generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
                                          std::size_t bin4) const -> Overlap;
   [[nodiscard]] auto generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
-                                                      std::size_t bin3,
-                                                      std::size_t bin4) const -> Overlap;
+                                                      std::size_t bin3, std::size_t bin4) const
+      -> Overlap;
   void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
                                         std::size_t bin4,
                                         phmap::flat_hash_set<BlockIndex>& buffer) const;
