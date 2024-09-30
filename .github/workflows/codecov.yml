@@ -106,7 +106,9 @@ jobs:
       - name: Debugging
         run: |
           echo "1: ${{ needs.build-conan-deps.outputs }}"
-          echo "2: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}"
+          echo "2: ${{ needs.build-conan-deps.outputs.cmake-prefix-dbg-key }}"
+          echo "3: ${{ needs.build-conan-deps.outputs.cmake-prefix-rel-key }}"
+          echo "4: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}"
 
       - name: Restore CMake configs
         uses: actions/cache/restore@v4
