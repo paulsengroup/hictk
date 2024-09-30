@@ -12,6 +12,7 @@ build:
   commands:
     - pip install -r docs/requirements.txt
     - make -C docs linkcheck
+    - docs/update_index_links.py --root-dir "$PWD"
     - make -C docs html
     - make -C docs latexpdf
     - mkdir -p "$READTHEDOCS_OUTPUT/pdf"
