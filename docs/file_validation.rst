@@ -24,9 +24,15 @@ Example:
   :header-rows: 1
   :delim: tab
 
-Unfortunately, this is not a rare issue, as the above bug currently affects most (possibly all) .mcool files released by 4DNucleome:
+Unfortunately, this is not a rare issue, as the above bug currently affects most .mcool files released by 4DNucleome:
 
-.. image:: assets/4dnucleome_bug_notice.avif
+.. only:: not latex
+
+  .. image:: assets/4dnucleome_bug_notice.avif
+
+.. only:: latex
+
+  .. image:: assets/4dnucleome_bug_notice.pdf
 
 hictk validate
 --------------
