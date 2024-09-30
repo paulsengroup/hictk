@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/windows-ci.yml"
       - "cmake/**"
       - "examples/**"
@@ -15,11 +17,11 @@ on:
       - "test/units/**"
       - "CMakeLists.txt"
       - "conanfile.py"
-    tags:
-      - "v*.*.*"
 
   pull_request:
     paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/windows-ci.yml"
       - "cmake/**"
       - "examples/**"
@@ -59,8 +61,8 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', conan: '2.4.*', cmake: '3.29.*', build_type: 'Debug', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', conan: '2.4.*', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.29.*', build_type: 'Debug', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -68,9 +70,17 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
     name: Cache test dataset
 
+  build-conan-deps:
+    name: Build Conan deps
+    uses: robomics/gha-devel/.github/workflows/build-conan-deps.yml@main
+    with:
+      os: windows-2019
+
   build-project:
-    needs: matrix-factory
-    runs-on: windows-latest
+    needs:
+      - matrix-factory
+      - build-conan-deps
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
@@ -79,9 +89,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Generate requirements.txt for pip
-        run: |
-          echo 'conan==${{ matrix.conan }}' > requirements.txt
-          echo 'cmake==${{ matrix.cmake }}' >> requirements.txt
+        run: echo 'cmake==${{ matrix.cmake }}' > requirements.txt
 
       - uses: actions/setup-python@v5
         with:
@@ -98,97 +106,39 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
-      - name: Generate cache key
-        id: cache-key
-        run: |
-          set -u
-
-          os="${{ matrix.os }}"
-          compiler="${{ matrix.compiler_name }}"
-          build_type="${{ matrix.build_type }}"
-
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
-
-          conan_key_prefix="conan-$os-$compiler-$conanfile_hash-$build_type"
-
-          echo "conan-key=$conan_key_prefix" | tee -a $GITHUB_OUTPUT
-
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}\p
+          fail-on-cache-miss: true
 
-      - name: Configure Conan
-        run: |
-          conan profile detect --force
-          conan_profile="$(conan profile path default)"
-
-          sed -i 's/build_type=Release/build_type=${{ matrix.build_type }}/' "$conan_profile"
-          sed -i 's/compiler\.cppstd=.*/compiler.cppstd=17/' "$conan_profile"
-
-      - name: Clean Conan cache (pre-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-          conan remove --confirm "*"
-
-      - name: Compile build dependencies
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan install .                                           \
-             --build=missing                                        \
-             --build="b2/*"                                         \
-             --build="catch2/*"                                     \
-             -pr:h default                                          \
-             -pr:b default                                          \
-             -s:h "compiler=${{ matrix.compiler_name }}"            \
-             -s:h "build_type=${{ matrix.build_type }}"             \
-             -s:h "compiler.runtime_type=${{ matrix.build_type }}"  \
-             -s:h compiler.cppstd=17                                \
-             -s:b "compiler=${{ matrix.compiler_name }}"            \
-             -s:b "build_type=${{ matrix.build_type }}"             \
-             -s:b "compiler.runtime_type=${{ matrix.build_type }}"  \
-             -s:b compiler.cppstd=17
-
-      - name: Install build dependencies
-        run: |
-          conan install .                                           \
-             -pr:h default                                          \
-             -pr:b default                                          \
-             -s:h "compiler=${{ matrix.compiler_name }}"            \
-             -s:h "build_type=${{ matrix.build_type }}"             \
-             -s:h "compiler.runtime_type=${{ matrix.build_type }}"  \
-             -s:h compiler.cppstd=17                                \
-             -s:b "compiler=${{ matrix.compiler_name }}"            \
-             -s:b "build_type=${{ matrix.build_type }}"             \
-             -s:b "compiler.runtime_type=${{ matrix.build_type }}"  \
-             -s:b compiler.cppstd=17                                \
-             --output-folder=build
-
-      - name: Clean Conan cache (post-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+      - name: Restore CMake configs (Debug)
+        if: matrix.build_type == 'Debug'
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}\p
-        env:
-          ZSTD_CLEVEL: 19
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
+          path: ${{ github.workspace }}\cmake-prefix-dbg.tar
+          fail-on-cache-miss: true
+
+      - name: Restore CMake configs (Release)
+        if: matrix.build_type == 'Release'
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
+          path: ${{ github.workspace }}\cmake-prefix-rel.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          srcdir="$(cygpath '${{ github.workspace }}')"
+          tar -xf "$srcdir/"cmake-prefix-*.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/build"  \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"                 \
                 -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
@@ -212,7 +162,7 @@ jobs:
       - name: Package unit tests
         run: |
           rm -r build/src
-          tar -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
+          tar --exclude='*.obj' -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
         uses: actions/upload-artifact@v4
@@ -474,8 +424,6 @@ jobs:
     steps:
       - name: Collect job results
         if: |
-          needs.matrix-factory.result != 'success'     ||
-          needs.cache-test-dataset.result != 'success' ||
           needs.build-project.result != 'success'      ||
           needs.run-unit-tests.result != 'success'     ||
           needs.run-integration-tests.result != 'success'

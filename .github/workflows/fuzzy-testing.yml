@@ -7,17 +7,17 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
       - "src/**"
       - "test/fuzzer/**"
       - "CMakeLists.txt"
       - "conanfile.py"
-    tags:
-      - "v*.*.*"
 
   pull_request:
     paths:
+      - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
       - "src/**"
@@ -53,7 +53,15 @@ defaults:
     shell: bash
 
 jobs:
+  build-conan-deps:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    with:
+      os: ubuntu-20.04
+
   build-project:
+    name: Build project
+    needs: build-conan-deps
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -131,72 +139,42 @@ jobs:
         run: |
           chown -R $(id -u):$(id -g) $PWD
 
-      - name: Generate cache key
-        id: cache-key
-        run: |
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
-
-          echo "conan-key=fuzzy-testing-$conanfile_hash" | tee -a "$GITHUB_OUTPUT"
-
       - name: Install Python
         run: |
           apt-get update
           apt-get install -y python3.12 python3.12-dev
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
           path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
 
-      - name: Clean Conan cache (pre-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-          conan remove --confirm "*"
-
-      - name: Install build dependencies
-        run: |
-          conan install .                             \
-             --build=missing                          \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -s build_type=Release                    \
-             -s compiler.libcxx=libstdc++11           \
-             -s compiler.cppstd=17                    \
-             --output-folder=build
-
-      - name: Clean Conan cache (post-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-        env:
-          ZSTD_CLEVEL: 19
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
+          path: /tmp/cmake-prefix-rel.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release                           \
-                -DCMAKE_PREFIX_PATH="$PWD/build"                     \
-                -DENABLE_DEVELOPER_MODE=ON                           \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
-                -DOPT_ENABLE_CPPCHECK=OFF                            \
-                -DHICTK_ENABLE_TESTING=ON                            \
-                -DHICTK_ENABLE_FUZZY_TESTING=ON                      \
-                -DHICTK_BUILD_EXAMPLES=OFF                           \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
-                -S .                                                 \
+          cmake -DCMAKE_BUILD_TYPE=Release           \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
+                -DENABLE_DEVELOPER_MODE=ON           \
+                -DOPT_ENABLE_CLANG_TIDY=OFF          \
+                -DOPT_ENABLE_CPPCHECK=OFF            \
+                -DHICTK_ENABLE_TESTING=ON            \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON      \
+                -DHICTK_BUILD_EXAMPLES=OFF           \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF    \
+                -S .                                 \
                 -B build
 
       - name: Build hictk_fuzzer
