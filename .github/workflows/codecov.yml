@@ -103,6 +103,11 @@ jobs:
           path: ${{ env.CONAN_HOME }}/p
           fail-on-cache-miss: true
 
+      - name: Debugging
+        run: |
+          echo "1: ${{ needs.build-conan-deps.outputs }}"
+          echo "2: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}"
+
       - name: Restore CMake configs
         uses: actions/cache/restore@v4
         with:
