@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <type_traits>
 
@@ -26,12 +27,24 @@ class ToDenseMatrix {
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
   static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
-  PixelSelector _sel{};
+  std::shared_ptr<const PixelSelector> _sel{};
   QuerySpan _span{QuerySpan::full};
 
  public:
   using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  ToDenseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::full);
+  ToDenseMatrix() = delete;
+  ToDenseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::full);
+  ToDenseMatrix(std::shared_ptr<const PixelSelector> selector, N n,
+                QuerySpan span = QuerySpan::full);
+
+  ToDenseMatrix(const ToDenseMatrix& other) = delete;
+  ToDenseMatrix(ToDenseMatrix&& other) noexcept = default;
+
+  ~ToDenseMatrix() noexcept = default;
+
+  ToDenseMatrix& operator=(const ToDenseMatrix& other) = delete;
+  ToDenseMatrix& operator=(ToDenseMatrix&& other) noexcept = default;
+
   [[nodiscard]] auto operator()() -> MatrixT;
 
  private:

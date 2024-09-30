@@ -6,49 +6,32 @@
 
 #include <fmt/format.h>
 
-#include <cassert>
 #include <cstdint>
-#include <iostream>
+#include <filesystem>
 #include <limits>
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <toml++/toml.hpp>
 #include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
 
-#include "hictk/common.hpp"
+#include "hictk/cooler/cooler.hpp"
 #include "hictk/suppress_warnings.hpp"
-#include "hictk/tools/common.hpp"
+#include "hictk/tools/toml.hpp"
 
 namespace hictk::tools {
 enum class MetadataOutputFormat : std::uint8_t { json, toml, yaml };
 
-[[nodiscard]] inline MetadataOutputFormat parse_output_format(std::string_view format) {
-  if (format == "json") {
-    return MetadataOutputFormat::json;
-  }
-  if (format == "toml") {
-    return MetadataOutputFormat::toml;
-  }
-  assert(format == "yaml");
-  return MetadataOutputFormat::yaml;
-}
+[[nodiscard]] toml::table normalize_attribute_map(const cooler::Attributes& map,
+                                                  const std::string& uri);
 
-inline void emplace_if_valid(std::string_view key, const std::string& value, toml::table& buff) {
-  if (!key.empty()) {
-    buff.insert(key, value);
-  }
-}
+[[nodiscard]] MetadataOutputFormat parse_output_format(std::string_view format);
 
-inline void emplace_if_valid(std::string_view key, const toml::array& values, toml::table& buff) {
-  if (!key.empty()) {
-    buff.insert(key, values);
-  }
-}
+void emplace_if_valid(std::string_view key, const std::string& value, toml::table& buff);
+
+void emplace_if_valid(std::string_view key, const toml::array& values, toml::table& buff);
 
 template <typename T, typename std::enable_if_t<std::is_integral_v<T>>* = nullptr>
 inline void emplace_if_valid(std::string_view key, const T& value, toml::table& buff) {
@@ -88,27 +71,20 @@ inline void emplace_if_valid(std::string_view key, const std::optional<T>& value
   }
 }
 
-inline void print_attributes(
-    const toml::table& top_lvl_attributes,
-    const std::vector<std::pair<std::string, toml::table>>& nested_attributes,
-    MetadataOutputFormat format) {
-  std::string buff;
-  switch (format) {
-    case MetadataOutputFormat::json: {
-      buff = io::toml::format_to_json(top_lvl_attributes, nested_attributes);
-      break;
-    }
-    case MetadataOutputFormat::toml: {
-      buff = io::toml::format_to_toml(top_lvl_attributes, nested_attributes);
-      break;
-    }
-    case MetadataOutputFormat::yaml: {
-      buff = io::toml::format_to_yaml(top_lvl_attributes, nested_attributes);
-      break;
-    }
-  }
+[[nodiscard]] int print_cool_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                                      bool include_file_path);
 
-  fmt::print(FMT_STRING("{}\n"), buff);
-}
+[[nodiscard]] int print_hic_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                                     bool include_file_path, bool recursive);
+
+[[nodiscard]] int print_mcool_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                                       bool include_file_path, bool recursive);
+
+[[nodiscard]] int print_scool_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                                       bool include_file_path, bool recursive);
+
+void print_attributes(const toml::table& top_lvl_attributes,
+                      const std::vector<std::pair<std::string, toml::table>>& nested_attributes,
+                      MetadataOutputFormat format);
 
 }  // namespace hictk::tools

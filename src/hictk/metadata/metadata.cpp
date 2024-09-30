@@ -2,12 +2,10 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "./metadata.hpp"
+
 #include <cassert>
 
-#include "./cool.hpp"
-#include "./hic.hpp"
-#include "./mcool.hpp"
-#include "./scool.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
