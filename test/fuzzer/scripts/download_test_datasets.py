@@ -160,9 +160,7 @@ def digest_file(path: pathlib.Path, chunk_size: int = 4 * 1024 * 1024) -> str:
     return digest
 
 
-def download_file(
-    url: str, md5sum: str, dest: pathlib.Path, max_attempts: int = 3
-) -> pathlib.Path:
+def download_file(url: str, md5sum: str, dest: pathlib.Path, max_attempts: int = 3) -> pathlib.Path:
     setup_logger(logging.INFO)
     dest.unlink(missing_ok=True)
     with tempfile.TemporaryDirectory(prefix=f"{dest.parent}/") as tmpdir:
@@ -170,20 +168,14 @@ def download_file(
 
         for attempt in range(1, max_attempts + 1):
             try:
-                logging.info(
-                    'downloading "%s" (attempt %d/%d)...', url, attempt, max_attempts
-                )
+                logging.info('downloading "%s" (attempt %d/%d)...', url, attempt, max_attempts)
                 t0 = time.time()
                 urlretrieve(url, tmpdest)
                 t1 = time.time()
-                logging.info(
-                    'finished downloading "%s": download took %fs.', url, t1 - t0
-                )
+                logging.info('finished downloading "%s": download took %fs.', url, t1 - t0)
                 break
             except HTTPError as e:
-                logging.warning(
-                    f'failed to download file from URL "{url}" (attempt {attempt}/{max_attempts}): {e}'
-                )
+                logging.warning(f'failed to download file from URL "{url}" (attempt {attempt}/{max_attempts}): {e}')
                 if attempt == max_attempts:
                     msg = f'Failed to download file from URL "{url}": {e}'
                     logging.error(msg)
@@ -223,9 +215,7 @@ def main() -> int:
         if args["download_all"]:
             tasks = generate_download_list_all(json.load(f))
         else:
-            tasks = generate_download_list(
-                json.load(f), args["format"], args["dataset"], args["resolution"]
-            )
+            tasks = generate_download_list(json.load(f), args["format"], args["dataset"], args["resolution"])
 
     output_dir = args["output-dir"]
     output_dir.mkdir(exist_ok=True)

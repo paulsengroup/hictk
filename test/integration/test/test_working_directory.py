@@ -10,7 +10,6 @@ import tempfile
 from typing import Tuple
 
 import pytest
-
 from hictk_integration_suite.cli.common import (
     URI,
     WorkingDirectory,

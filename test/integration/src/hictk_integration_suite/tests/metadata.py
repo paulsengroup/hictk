@@ -9,7 +9,6 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import yaml
-
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 
