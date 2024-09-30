@@ -13,6 +13,7 @@ build:
     - pip install -r docs/requirements.txt
     - make -C docs html
     - make -C docs latexpdf
+    - mkdir -p "$READTHEDOCS_OUTPUT"
     - cp -r docs/_build/* "$READTHEDOCS_OUTPUT/"
 
 formats:
