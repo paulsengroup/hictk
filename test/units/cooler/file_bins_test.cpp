@@ -24,7 +24,9 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
   constexpr std::uint32_t bin_size = 5000;
   const BinTable table(chroms, bin_size);
 
-  { auto f = File::create(path, chroms, bin_size, true); }
+  {
+    auto f = File::create(path, chroms, bin_size, true);
+  }
 
   File f(path);
 

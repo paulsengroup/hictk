@@ -401,8 +401,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::par
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
-    const hictk::cooler::utils::ValidationStatusCooler &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusCooler &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),
@@ -434,8 +434,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCool
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::format(
-    const hictk::cooler::utils::ValidationStatusMultiresCooler &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusMultiresCooler &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),
@@ -470,8 +470,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::pars
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
-    const hictk::cooler::utils::ValidationStatusScool &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusScool &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),
