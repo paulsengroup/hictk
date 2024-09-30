@@ -74,8 +74,8 @@ jobs:
       - name: Stage input files
         run: |
           # This is required because sparse cloning does not seem to work reliably
-          mkdir -p hictk-workflow/.github/workflows/
-          mv hictk-workflow/.github/workflows/build-conan-deps.yml
+          mkdir -p .github/workflows/
+          mv hictk-workflow/.github/workflows/build-conan-deps.yml .github/workflows/
           mv hictk-conanfile/conanfile.py .
           rm -rf hictk-workflow hictk-conanfile
 
