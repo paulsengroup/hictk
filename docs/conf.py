@@ -247,5 +247,9 @@ latex_documents = [
 # If false, no module index is generated.
 # latex_domain_indices = True
 
+linkcheck_ignore = [
+    r"https://github\.com/4dn-dcic/pairix/blob/master/pairs_format_specification\.md.*",
+]
+
 primary_domain = "cpp"
 highlight_language = "cpp"
