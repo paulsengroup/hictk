@@ -46,7 +46,7 @@ repos:
         types_or: [c, c++]
         language: python
         args: ["-i"]
-        additional_dependencies: ["clang-format==18.1.8"]
+        additional_dependencies: ["clang-format==19.1.0"]
       - id: cmake-format
         name: cmake-format
         entry: cmake-format
