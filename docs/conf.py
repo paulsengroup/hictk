@@ -16,7 +16,6 @@ import re
 # ones.
 extensions = [
     "sphinx_copybutton",
-    "sphinxcontrib.rsvgconverter",
     "sphinxcontrib.moderncmakedomain",
     "sphinx.ext.intersphinx",
 ]
@@ -211,13 +210,6 @@ latex_elements = {
     "papersize": "a4paper",
     "pointsize": "10pt",
     "classoptions": ",openany,oneside",
-    "preamble": r"""
-\usepackage{MnSymbol}
-\DeclareUnicodeCharacter{25CB}{\ensuremath{\circ}}
-\DeclareUnicodeCharacter{25CF}{\ensuremath{\bullet}}
-\DeclareUnicodeCharacter{21B5}{\ensuremath{\rhookswarrow}}
-\DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}
-""",
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
