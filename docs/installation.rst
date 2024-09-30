@@ -35,7 +35,7 @@ First, make sure you follow the instructions on how to install Docker or Singula
 
 The following instructions assume you have root/admin permissions.
 
-* `Linux <https://docs.docker.com/desktop/install/linux-install/#generic-installation-steps/>`_
+* `Linux <https://docs.docker.com/desktop/install/linux-install/>`_
 * `MacOS <https://docs.docker.com/desktop/install/mac-install/>`_
 * `Windows <https://docs.docker.com/desktop/install/windows-install/>`_
 
