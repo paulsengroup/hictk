@@ -136,6 +136,22 @@ void Cli::make_load_subcommand() {
       "Assume input files are already sorted.")
       ->capture_default_str();
 
+  sc.add_flag(
+      "--validate-pixels,!--no-validate-pixels",
+      c.validate_pixels,
+      "Toggle pixel validation on or off.\n"
+      "When --no-validate-pixels is used and invalid pixels are encountered,\n"
+      "hictk will either crash or produce invalid files.")
+      ->capture_default_str();
+
+  sc.add_flag(
+      "--transpose-lower-triangular-pixels,!--no-transpose-lower-triangular-pixels",
+      c.transpose_lower_triangular_pixels,
+      "Transpose pixels overlapping the lower-triangular matrix.\n"
+      "When --no-transpose-lower-triangular-pixels is used and one or more pixels overlapping\n"
+      "with the lower triangular matrix are encountered an exception will be raised.")
+      ->capture_default_str();
+
   sc.add_option(
       "--chunk-size",
       c.batch_size,

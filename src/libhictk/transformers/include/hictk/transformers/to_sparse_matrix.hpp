@@ -8,6 +8,7 @@
 
 #include <Eigen/SparseCore>
 #include <cstdint>
+#include <memory>
 #include <type_traits>
 
 #include "hictk/pixel.hpp"
@@ -22,12 +23,24 @@ class ToSparseMatrix {
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
   static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
-  PixelSelector _sel{};
+  std::shared_ptr<const PixelSelector> _sel{};
   QuerySpan _span{QuerySpan::upper_triangle};
 
  public:
   using MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
-  ToSparseMatrix(PixelSelector&& selector, N n, QuerySpan span = QuerySpan::upper_triangle);
+  ToSparseMatrix() = delete;
+  ToSparseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::upper_triangle);
+  ToSparseMatrix(std::shared_ptr<const PixelSelector> selector, N n,
+                 QuerySpan span = QuerySpan::upper_triangle);
+
+  ToSparseMatrix(const ToSparseMatrix& other) = delete;
+  ToSparseMatrix(ToSparseMatrix&& other) noexcept = default;
+
+  ~ToSparseMatrix() noexcept = default;
+
+  ToSparseMatrix& operator=(const ToSparseMatrix& other) = delete;
+  ToSparseMatrix& operator=(ToSparseMatrix&& other) noexcept = default;
+
   [[nodiscard]] auto operator()() -> MatrixT;
 
  private:

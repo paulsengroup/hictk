@@ -157,6 +157,7 @@ struct LoadConfig {
   bool assume_sorted{false};
   bool force{false};
   bool validate_pixels{true};
+  bool transpose_lower_triangular_pixels{false};
   bool skip_all_vs_all_matrix{true};
 
   std::string output_format{"auto"};

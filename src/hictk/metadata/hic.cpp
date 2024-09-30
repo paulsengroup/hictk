@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
+#include "hictk/hic.hpp"
 
 #include <fmt/format.h>
 
@@ -10,20 +10,20 @@
 #include <filesystem>
 #include <optional>
 #include <string>
-#include <toml++/toml.hpp>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
 
-#include "./common.hpp"
-#include "hictk/hic.hpp"
+#include "./metadata.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/tools/toml.hpp"
 
 namespace hictk::tools {
 using AttributeValue = std::variant<std::int64_t, double, bool, std::string>;
 
-[[nodiscard]] inline AttributeValue try_parse_str(const std::string& value) {
+[[nodiscard]] static AttributeValue try_parse_str(const std::string& value) {
   try {
     return {internal::parse_numeric_or_throw<std::int64_t>(value)};
     // NOLINTNEXTLINE
@@ -51,19 +51,19 @@ using AttributeValue = std::variant<std::int64_t, double, bool, std::string>;
 }
 
 template <typename... T>
-[[nodiscard]] inline AttributeValue try_parse_str(const std::variant<T...>& var) {
+[[nodiscard]] static AttributeValue try_parse_str(const std::variant<T...>& var) {
   return std::visit([&](const auto& value) { return try_parse_str(value); }, var);
 }
 
 template <typename T>
-[[nodiscard]] inline AttributeValue try_parse_str(const std::optional<T>& opt) {
+[[nodiscard]] static AttributeValue try_parse_str(const std::optional<T>& opt) {
   if (opt.has_value()) {
     return try_parse_str(opt.value());
   }
   return {"null"};
 }
 
-[[nodiscard]] inline toml::table normalize_attribute_map(const hic::File& hf,
+[[nodiscard]] static toml::table normalize_attribute_map(const hic::File& hf,
                                                          const std::string& uri) {
   toml::table attributes;
 
@@ -85,7 +85,7 @@ template <typename T>
   return attributes;
 }
 
-[[nodiscard]] inline toml::table extract_top_lvl_metadata_hic(const std::filesystem::path& p,
+[[nodiscard]] static toml::table extract_top_lvl_metadata_hic(const std::filesystem::path& p,
                                                               bool include_file_path) {
   const auto resolution = hic::utils::list_resolutions(p).back();
   return normalize_attribute_map(
@@ -93,7 +93,7 @@ template <typename T>
       include_file_path ? p.string() : "");
 }
 
-[[nodiscard]] inline toml::array read_hic_matrix_types(const std::filesystem::path& p,
+[[nodiscard]] static toml::array read_hic_matrix_types(const std::filesystem::path& p,
                                                        std::uint32_t resolution) {
   toml::array buff;
   for (const auto& mt : {"observed", "expected", "oe"}) {
@@ -108,7 +108,7 @@ template <typename T>
   return buff;
 }
 
-[[nodiscard]] inline toml::array read_hic_normalizations_ev(const hic::File& hf) {
+[[nodiscard]] static toml::array read_hic_normalizations_ev(const hic::File& hf) {
   toml::array buff;
   for (const auto& norm : hf.avail_normalizations()) {
     try {
@@ -122,7 +122,7 @@ template <typename T>
   return buff;
 }
 
-[[nodiscard]] inline toml::array read_hic_normalizations(const hic::File& hf) {
+[[nodiscard]] static toml::array read_hic_normalizations(const hic::File& hf) {
   toml::array buff;
   for (const auto& norm : hf.avail_normalizations()) {
     buff.push_back(norm.to_string());
@@ -131,7 +131,7 @@ template <typename T>
   return buff;
 }
 
-[[nodiscard]] inline std::vector<std::pair<std::string, toml::table>> extract_nested_metadata_hic(
+[[nodiscard]] static std::vector<std::pair<std::string, toml::table>> extract_nested_metadata_hic(
     const std::filesystem::path& p) {
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
   for (const auto& resolution : hic::utils::list_resolutions(p)) {
@@ -150,9 +150,8 @@ template <typename T>
   return nested_attributes;
 }
 
-[[nodiscard]] inline int print_hic_metadata(const std::filesystem::path& p,
-                                            MetadataOutputFormat format, bool include_file_path,
-                                            bool recursive) {
+int print_hic_metadata(const std::filesystem::path& p, MetadataOutputFormat format,
+                       bool include_file_path, bool recursive) {
   auto attributes = extract_top_lvl_metadata_hic(p, include_file_path);
   std::vector<std::pair<std::string, toml::table>> nested_attributes{};
 
