@@ -60,12 +60,24 @@ jobs:
       cmake-rwdi-key: ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout workflow
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            .github/workflows/build-conan-deps.yml
-            conanfile.py
+          ref: main
+          path: hictk-workflow
+
+      - name: Checkout conanfile.py
+        uses: actions/checkout@v4
+        with:
+          path: hictk-conanfile
+
+      - name: Stage input files
+        run: |
+          # This is required because sparse cloning does not seem to work reliably
+          mkdir -p hictk-workflow/.github/workflows/
+          mv hictk-workflow/.github/workflows/build-conan-deps.yml
+          mv hictk-conanfile/conanfile.py .
+          rm -rf hictk-workflow hictk-conanfile
 
       - name: Update build deps
         run: pip install "conan==${{ inputs.conan-version }}"
@@ -131,6 +143,8 @@ jobs:
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-dbg
+
           conan install conanfile.py                  \
              --build='missing'                        \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
@@ -141,12 +155,15 @@ jobs:
              --output-folder cmake-prefix-dbg
 
           tar -cf /tmp/cmake-prefix-dbg.tar cmake-prefix-dbg
+          rm -r cmake-prefix-dbg
 
       - name: Install dependencies (Release)
         if: |
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-rel
+
           conan install conanfile.py                  \
              --build='missing'                        \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
@@ -157,12 +174,15 @@ jobs:
              --output-folder cmake-prefix-rel
 
           tar -cf /tmp/cmake-prefix-rel.tar cmake-prefix-rel
+          rm -r cmake-prefix-rel
 
       - name: Install dependencies (RelWithDebInfo)
         if: |
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-rwdi
+
           conan install conanfile.py                  \
              --build='missing'                        \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
@@ -173,6 +193,7 @@ jobs:
              --output-folder cmake-prefix-rwdi
 
           tar -cf /tmp/cmake-prefix-rwdi.tar cmake-prefix-rwdi
+          rm -r cmake-prefix-rwdi
 
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -238,12 +259,24 @@ jobs:
       cmake-rel-key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout workflow
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            .github/workflows/build-conan-deps.yml
-            conanfile.py
+          ref: main
+          path: hictk-workflow
+
+      - name: Checkout conanfile.py
+        uses: actions/checkout@v4
+        with:
+          path: hictk-conanfile
+
+      - name: Stage input files
+        run: |
+          # This is required because sparse cloning does not seem to work reliably
+          mkdir -p hictk-workflow/.github/workflows/
+          mv hictk-workflow/.github/workflows/build-conan-deps.yml
+          mv hictk-conanfile/conanfile.py .
+          rm -rf hictk-workflow hictk-conanfile
 
       - name: Generate cache key
         id: generate-cache-key
@@ -310,6 +343,8 @@ jobs:
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-dbg
+
           conan install conanfile.py                  \
              --build='missing'                        \
              -pr:b=default                            \
@@ -320,12 +355,15 @@ jobs:
              --output-folder cmake-prefix-dbg
 
           gtar -cf /tmp/cmake-prefix-dbg.tar cmake-prefix-dbg
+          rm -r cmake-prefix-dbg
 
       - name: Install dependencies (Release)
         if: |
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-rel
+
           conan install conanfile.py                  \
              --build='missing'                        \
              -pr:b=default                            \
@@ -336,6 +374,7 @@ jobs:
              --output-folder cmake-prefix-rel
 
           gtar -cf /tmp/cmake-prefix-rel.tar cmake-prefix-rel
+          rm -r cmake-prefix-rel
 
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -389,12 +428,24 @@ jobs:
       cmake-rel-key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout workflow
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            .github/workflows/build-conan-deps.yml
-            conanfile.py
+          ref: main
+          path: hictk-workflow
+
+      - name: Checkout conanfile.py
+        uses: actions/checkout@v4
+        with:
+          path: hictk-conanfile
+
+      - name: Stage input files
+        run: |
+          # This is required because sparse cloning does not seem to work reliably
+          mkdir -p hictk-workflow/.github/workflows/
+          mv hictk-workflow/.github/workflows/build-conan-deps.yml
+          mv hictk-conanfile/conanfile.py .
+          rm -rf hictk-workflow hictk-conanfile
 
       - name: Add devtools to PATH
         uses: ilammy/msvc-dev-cmd@v1
@@ -469,6 +520,8 @@ jobs:
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-dbg.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-dbg
+
           conan install conanfile.py                  \
              --build='missing'                        \
              --build="b2/*"                           \
@@ -482,12 +535,15 @@ jobs:
 
           dest="$(cygpath "${{ github.workspace }}/cmake-prefix-dbg.tar")"
           tar -cf "$dest" cmake-prefix-dbg
+          rm -r cmake-prefix-dbg
 
       - name: Install dependencies (Release)
         if: |
           steps.cache-conan.outputs.cache-hit != 'true' ||
           steps.cache-cmake-rel.outputs.cache-hit != 'true'
         run: |
+          rm -rf cmake-prefix-rel
+
           conan install conanfile.py                  \
              --build='missing'                        \
              --build="b2/*"                           \
@@ -501,6 +557,7 @@ jobs:
 
           dest="$(cygpath "${{ github.workspace }}/cmake-prefix-rel.tar")"
           tar -cf "$dest" cmake-prefix-rel
+          rm -r cmake-prefix-rel
 
       - name: Clean Conan cache (post-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
