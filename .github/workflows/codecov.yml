@@ -106,14 +106,14 @@ jobs:
       - name: Restore CMake configs
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
-          path: /tmp/cmake-prefix-dbg.tar
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}
+          path: /tmp/cmake-prefix-rwdbi.tar
           fail-on-cache-miss: true
 
       - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+          tar -xf /tmp/cmake-prefix-rwdbi.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
