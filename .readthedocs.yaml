@@ -14,8 +14,9 @@ build:
     - make -C docs linkcheck
     - make -C docs html
     - make -C docs latexpdf
-    - mkdir -p "$READTHEDOCS_OUTPUT"
-    - cp -r docs/_build/* "$READTHEDOCS_OUTPUT/"
+    - mkdir -p "$READTHEDOCS_OUTPUT/pdf"
+    - cp -r docs/_build/html "$READTHEDOCS_OUTPUT/"
+    - cp docs/_build/latex/hictk.pdf "$READTHEDOCS_OUTPUT/pdf/"
 
 formats:
   - pdf
