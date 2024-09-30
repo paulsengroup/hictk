@@ -290,7 +290,7 @@ hictk load
   Positionals:
     interactions TEXT:(FILE) OR ({-}) REQUIRED
                                 Path to a file with the interactions to be loaded.
-                                Common compression formats are supported (namely, gzip, bzip2, lz4, lzo, and zstd).
+                                Common compression formats are supported (namely, bzip2, gzip, lz4, lzo, xz, and zstd).
                                 Pass "-" to indicate that interactions should be read from stdin.
     output-path TEXT REQUIRED   Path to output file.
                                 File extension will be used to infer the output format.
@@ -327,6 +327,14 @@ hictk load
                                 Has no effect when creating .cool files.
     --assume-sorted,--assume-unsorted{false}
                                 Assume input files are already sorted.
+    --validate-pixels,--no-validate-pixels{false}
+                                Toggle pixel validation on or off.
+                                When --no-validate-pixels is used and invalid pixels are encountered,
+                                hictk will either crash or produce invalid files.
+    --transpose-lower-triangular-pixels,--no-transpose-lower-triangular-pixels{false}
+                                Transpose pixels overlapping the lower-triangular matrix.
+                                When --no-transpose-lower-triangular-pixels is used and one or more pixels overlapping
+                                with the lower triangular matrix are encountered an exception will be raised.
     --chunk-size UINT [10000000]
                                 Number of pixels to buffer in memory.
     -l,--compression-lvl UINT:INT bounded to [1 - 12]
