@@ -553,6 +553,7 @@ jobs:
       conan-key: ${{ steps.collect-cache-key.outputs.conan-key }}
       cmake-dbg-key: ${{ steps.collect-cache-key.outputs.cmake-dbg-key }}
       cmake-rel-key: ${{ steps.collect-cache-key.outputs.cmake-rel-key }}
+      cmake-rwdi-key: ${{ steps.collect-cache-key.outputs.cmake-rwdi-key }}
 
     steps:
       - name: Collect job outputs
