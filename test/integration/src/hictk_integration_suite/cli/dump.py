@@ -7,11 +7,10 @@ import os
 import pathlib
 from typing import Any, Dict, List, Set, Tuple
 
-from immutabledict import ImmutableOrderedDict, immutabledict
-
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
+from immutabledict import ImmutableOrderedDict, immutabledict
 
 from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
 

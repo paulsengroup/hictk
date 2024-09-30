@@ -1,0 +1,75 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Lint project
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/lint.yml"
+      - "CITATION.cff"
+
+  pull_request:
+    paths:
+      - ".github/workflows/lint.yml"
+      - "CITATION.cff"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint-cff:
+    runs-on: ubuntu-latest
+    name: Lint CITATION.cff
+
+    steps:
+      - name: Checkout CITATION.cff
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: CITATION.cff
+          sparse-checkout-cone-mode: false
+
+      - name: Generate DESCRIPTION file
+        run: |
+          cat << EOF > DESCRIPTION
+          Package: hictk
+          Title: What the Package Does (One Line, Title Case)
+          Version: 0.0.0.9000
+          Authors@R:
+            person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+          Description: What the package does (one paragraph).
+          License: MIT
+          Encoding: UTF-8
+          Roxygen: list(markdown = TRUE)
+          RoxygenNote: 7.3.2
+          Imports:
+            cffr
+          EOF
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Add requirements
+        uses: r-lib/actions/setup-r-dependencies@v2
+
+      - name: Lint CITATION.cff
+        run: Rscript -e 'cffr::cff_validate("CITATION.cff")'
+
+  lint-status-check:
+    name: Status Check (Lint)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - lint-cff
+
+    steps:
+      - name: Collect job results
+        if: needs.lint-cff.result != 'success'
+        run: exit 1

@@ -113,9 +113,7 @@ def ingest_pairs(
         dest.unlink(missing_ok=True)
 
     if dest.exists():
-        raise RuntimeError(
-            f'refusing to overwrite existing file "{dest}". Pass --force to overwrite existing file(s).'
-        )
+        raise RuntimeError(f'refusing to overwrite existing file "{dest}". Pass --force to overwrite existing file(s).')
 
     cmd = [
         "cooler",
@@ -178,9 +176,7 @@ def generate_bin_size(avg: float, std: float) -> int:
     return int(bin_size)
 
 
-def generate_bin_table(
-    chrom_sizes: Dict[str, int], bin_size_avg: float, bin_size_std: float
-) -> pd.DataFrame:
+def generate_bin_table(chrom_sizes: Dict[str, int], bin_size_avg: float, bin_size_std: float) -> pd.DataFrame:
     chroms = []
     starts = []
     ends = []
@@ -220,27 +216,20 @@ def main():
     nproc = args["nproc"]
     force = args["force"]
 
-    with tempfile.TemporaryDirectory(
-        prefix=str(args["tmpdir"] / "hictk-")
-    ) as tmpdir, Pool(
-        max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)
-    ) as pool:
+    with (
+        tempfile.TemporaryDirectory(prefix=str(args["tmpdir"] / "hictk-")) as tmpdir,
+        Pool(max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)) as pool,
+    ):
         tmpdir = pathlib.Path(tmpdir)
         out_prefix.parent.mkdir(parents=True, exist_ok=True)
 
         if args["chrom_sizes"] is None:
             chrom_sizes = read_chrom_sizes_from_header(pairs)
         else:
-            chrom_sizes = (
-                pd.read_table(args["chrom_sizes"], names=["chrom", "length"])
-                .set_index("chrom")
-                .to_dict()
-            )
+            chrom_sizes = pd.read_table(args["chrom_sizes"], names=["chrom", "length"]).set_index("chrom").to_dict()
 
         random.seed(args["seed"])
-        bin_table = generate_bin_table(
-            chrom_sizes, args["bin_size_avg"], args["bin_size_std"]
-        )
+        bin_table = generate_bin_table(chrom_sizes, args["bin_size_avg"], args["bin_size_std"])
 
         bin_table_bed = tmpdir / "bins.bed"
         bin_table.to_csv(bin_table_bed, sep="\t", index=False, header=False)

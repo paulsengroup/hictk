@@ -7,7 +7,6 @@ from typing import Dict, List, Tuple
 
 import hictkpy
 import pandas as pd
-
 from hictk_integration_suite.runners.common import (
     filter_bins,
     filter_chroms,

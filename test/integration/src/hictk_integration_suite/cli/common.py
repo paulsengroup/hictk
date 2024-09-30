@@ -13,9 +13,8 @@ import sys
 import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
-from immutabledict import immutabledict
-
 from hictk_integration_suite.common import URI
+from immutabledict import immutabledict
 
 if platform.system() == "Windows":
     import ntsecuritycon

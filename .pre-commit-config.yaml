@@ -5,7 +5,7 @@
 default_language_version:
   python: python3 # Defaults to python2, so override it.
 
-exclude: ^data
+exclude: ^test/data
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

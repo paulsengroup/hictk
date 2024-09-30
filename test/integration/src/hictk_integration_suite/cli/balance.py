@@ -8,8 +8,6 @@ import pathlib
 import shutil
 from typing import Any, Dict, List, Tuple
 
-from immutabledict import ImmutableOrderedDict, immutabledict
-
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.balance import (
     HictkBalanceICE,
@@ -19,6 +17,7 @@ from hictk_integration_suite.tests.balance import (
     HictkBalanceVC,
     HictkBalanceVCCli,
 )
+from immutabledict import ImmutableOrderedDict, immutabledict
 
 from .common import (
     WorkingDirectory,

@@ -6,9 +6,8 @@ import logging
 import pathlib
 from typing import Any, Dict, List, Tuple
 
-from immutabledict import ImmutableOrderedDict, immutabledict
-
 from hictk_integration_suite.tests.fix_mcool import HictkFixMcool, HictkFixMcoolCli
+from immutabledict import ImmutableOrderedDict, immutabledict
 
 from .common import WorkingDirectory, _argument_map_to_list, _get_uri, _preprocess_plan
 
