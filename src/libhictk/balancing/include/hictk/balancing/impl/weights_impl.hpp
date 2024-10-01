@@ -451,7 +451,6 @@ constexpr void Weights::iterator::ConstIt::bound_check([[maybe_unused]] std::ptr
                                          offset, value->size));
     }
   }
-}
 #endif
 }
 
