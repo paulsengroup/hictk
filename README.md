@@ -31,7 +31,7 @@ hictk is capable of reading files in `.cool`, `.mcool`, `.scool` and `.hic` form
 
 hictk is developed on Linux and tested on Linux, MacOS and Windows.
 
-hictk can be installed using containers, bioconda or directly from source. Refer to [Installation](https://hictk.readthedocs.io/en/latest/installation.html) for more information.
+hictk can be installed using containers, bioconda or directly from source. Refer to [Installation](https://hictk.readthedocs.io/en/stable/installation.html) for more information.
 
 ## Running hictk
 
@@ -50,15 +50,15 @@ hictk provides the following subcommands:
 | **validate**           | Validate .hic and Cooler files.                                                                |
 | **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.             |
 
-Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/latest/cli_reference.html) for more details.
+Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/stable/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/stable/cli_reference.html) for more details.
 
 ## Using libhictk
 
-libhictk can be installed in various way, including with Conan and CMake FetchContent. Section [Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) of hictk documentation contains further details on how this can be accomplished.
+libhictk can be installed in various way, including with Conan and CMake FetchContent. Section [Quickstart (API)](https://hictk.readthedocs.io/en/stable/quickstart_api.html) of hictk documentation contains further details on how this can be accomplished.
 
-[Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](./examples/) folder as well as to the [source code](./src/hictk/) of hictk.
+[Quickstart (API)](https://hictk.readthedocs.io/en/stable/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](./examples/) folder as well as to the [source code](./src/hictk/) of hictk.
 
-The public C++ API of hictk is documented in the [C++ API Reference](https://hictk.readthedocs.io/en/latest/cpp_api/index.html) section of hictk documentation.
+The public C++ API of hictk is documented in the [C++ API Reference](https://hictk.readthedocs.io/en/stable/cpp_api/index.html) section of hictk documentation.
 
 ## Citing
 
