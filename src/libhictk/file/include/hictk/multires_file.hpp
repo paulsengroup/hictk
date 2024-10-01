@@ -24,7 +24,7 @@ class MultiResFile {
   std::vector<std::uint32_t> _resolutions{};
   std::string _format{};
   std::uint8_t _format_version{};
-  std::string _bin_type{};
+  BinTable::Type _bin_type{};
 
  public:
   using QUERY_TYPE = hictk::GenomicInterval::Type;
@@ -43,7 +43,7 @@ class MultiResFile {
   [[nodiscard]] constexpr hic::MatrixUnit matrix_unit() const noexcept;
   [[nodiscard]] std::string_view format() const noexcept;
   [[nodiscard]] constexpr std::uint8_t version() const noexcept;
-  [[nodiscard]] std::string_view bin_type() const noexcept;
+  [[nodiscard]] constexpr BinTable::Type bin_type() const noexcept;
   [[nodiscard]] constexpr const std::vector<std::uint32_t>& resolutions() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
 

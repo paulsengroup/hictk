@@ -120,6 +120,16 @@ static void create_hardlinks_scool(HighFive::File& h5f,
 }
 
 [[nodiscard]] static int rename_chromosomes_cooler(const RenameChromosomesConfig& c) {
+  const auto parent_file = cooler::File(c.uri).path();
+  if (parent_file != c.uri && cooler::utils::is_scool_file(parent_file)) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("Cooler at URI \"{}\" belongs to an .scool file.\n"
+                   "Renaming chromosomes under the provided URI would result in renaming of the"
+                   "chromosomes for all cells belonging to \"{}\".\n"
+                   "If this is intended, please re-run hictk rename-chromosomes on \"{}\" itself."),
+        c.uri, parent_file, parent_file));
+  }
+
   const auto mappings =
       generate_name_mappings(c.uri, c.path_to_name_mappings, c.add_chr_prefix, c.remove_chr_prefix);
   cooler::utils::rename_chromosomes(c.uri, mappings);

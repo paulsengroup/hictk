@@ -28,15 +28,17 @@ namespace hictk::cooler {
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count, PixelCoordinates coords,
-                                    std::shared_ptr<const balancing::Weights> weights)
+                                    std::shared_ptr<const balancing::Weights> weights,
+                                    bool symmetric_upper_)
     : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords, coords,
-                    std::move(weights)) {}
+                    std::move(weights), symmetric_upper_) {}
 
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count, PixelCoordinates coord1,
                                     PixelCoordinates coord2,
-                                    std::shared_ptr<const balancing::Weights> weights)
+                                    std::shared_ptr<const balancing::Weights> weights,
+                                    bool symmetric_upper_)
     : _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
       _index(std::move(index)),
@@ -44,8 +46,15 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
-      _weights(std::move(weights)) {
+      _weights(std::move(weights)),
+      _symmetric_upper(symmetric_upper_) {
   assert(_index);
+  assert(_weights);
+
+  if (!_symmetric_upper) {
+    assert(_coord1.empty() && _coord2.empty());
+  }
+
   const auto query_is_cis = _coord1.bin1.chrom() == _coord2.bin1.chrom();
   if ((!query_is_cis && _coord1.bin1 > _coord2.bin1) ||
       (query_is_cis && _coord1.bin1.start() > _coord2.bin1.start())) {
@@ -59,18 +68,23 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                                     const Dataset &pixels_count,
-                                    std::shared_ptr<const balancing::Weights> weights) noexcept
+                                    std::shared_ptr<const balancing::Weights> weights,
+                                    bool symmetric_upper_) noexcept
     : _bins(index->bins_ptr()),
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
-      _weights(std::move(weights)) {}
+      _weights(std::move(weights)),
+      _symmetric_upper(symmetric_upper_) {
+  assert(_weights);
+}
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
   // clang-format off
   return begin<int>() == other.begin<int>() &&
          end<int>() == other.end<int>() &&
-         _weights == other._weights;
+         _weights == other._weights &&
+         _symmetric_upper == other._symmetric_upper;
   // clang-format on
 }
 
@@ -91,7 +105,8 @@ inline auto PixelSelector::end() const -> iterator<N> {
 template <typename N>
 inline auto PixelSelector::cbegin() const -> iterator<N> {
   if constexpr (std::is_integral_v<N>) {
-    if (!!_weights) {
+    assert(_weights);
+    if (!_weights->is_vector_of_ones()) {
       throw std::logic_error(
           "iterator template parameter should be of floating point type when processing balanced "
           "matrices.");
@@ -110,7 +125,8 @@ inline auto PixelSelector::cbegin() const -> iterator<N> {
 template <typename N>
 inline auto PixelSelector::cend() const -> iterator<N> {
   if constexpr (std::is_integral_v<N>) {
-    if (!!_weights) {
+    assert(_weights);
+    if (!_weights->is_vector_of_ones()) {
       throw std::logic_error(
           "iterator template parameter should be of floating point type when processing balanced "
           "matrices.");
@@ -140,6 +156,19 @@ inline const BinTable &PixelSelector::bins() const noexcept { return *bins_ptr()
 
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept { return _bins; }
 
+inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordinates coord2) const {
+  return {_index,         *_pixels_bin1_id,  *_pixels_bin2_id,
+          *_pixels_count, std::move(coord1), std::move(coord2),
+          _weights,       _symmetric_upper};
+}
+
+inline const balancing::Weights &PixelSelector::weights() const noexcept {
+  assert(_weights);
+  return *_weights;
+}
+
+inline bool PixelSelector::is_symmetric_upper() const noexcept { return _symmetric_upper; }
+
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
@@ -148,7 +177,9 @@ inline PixelSelector::iterator<N>::iterator(
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
       _count_it(pixels_count.begin<N>()),
       _weights(std::move(weights)),
-      _h5_end_offset(pixels_bin2_id.size()) {}
+      _h5_end_offset(pixels_bin2_id.size()) {
+  assert(_weights);
+}
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
@@ -166,6 +197,7 @@ inline PixelSelector::iterator<N>::iterator(
   assert(_coord2);
   assert(_coord1.bin1.id() <= _coord1.bin2.id());
   assert(_coord2.bin1.id() <= _coord2.bin2.id());
+  assert(_weights);
 
   if (_index->empty(coord1.bin1.chrom().id())) {
     *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count,
@@ -193,10 +225,12 @@ inline PixelSelector::iterator<N>::iterator(
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::at_end(
-    std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
-    const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-    std::shared_ptr<const balancing::Weights> weights) -> iterator {
+inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> index,
+                                               const Dataset &pixels_bin1_id,
+                                               const Dataset &pixels_bin2_id,
+                                               const Dataset &pixels_count,
+                                               std::shared_ptr<const balancing::Weights> weights)
+    -> iterator {
   iterator it{};
   it._index = std::move(index);
   it._bin1_id_it = pixels_bin1_id.end<BinIDT>(0);
@@ -249,9 +283,11 @@ inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
   _value = {*_bin1_id_it, *_bin2_id_it, conditional_static_cast<N>(*_count_it)};
 
   if constexpr (std::is_floating_point_v<N>) {
-    if (_weights) {
-      _value = _weights->balance(_value);
-    }
+    assert(_weights);
+    _value.count = _weights->balance<N>(_value.bin1_id, _value.bin2_id, _value.count);
+  } else {
+    assert(_weights);
+    assert(_weights->is_vector_of_ones());
   }
   return _value;
 }
@@ -303,7 +339,7 @@ inline void PixelSelector::iterator<N>::jump_to_row(std::uint64_t bin_id) {
   const auto current_offset = h5_offset();
 
   assert(row_offset >= current_offset);
-  const auto offset = row_offset - current_offset;
+  const auto offset = static_cast<std::ptrdiff_t>(row_offset - current_offset);
 
   _bin1_id_it += offset;
   _bin2_id_it += offset;

@@ -2,148 +2,137 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "./load.hpp"
+
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <BS_thread_pool.hpp>
+#include <atomic>
 #include <cassert>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string>
 #include <variant>
-#include <vector>
 
-#include "./common.hpp"
-#include "./load_cooler.hpp"
-#include "./load_hic.hpp"
-#include "hictk/cooler/cooler.hpp"
-#include "hictk/cooler/singlecell_cooler.hpp"
-#include "hictk/hic/file_writer.hpp"
 #include "hictk/pixel.hpp"
-#include "hictk/reference.hpp"
-#include "hictk/tmpdir.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/tools.hpp"
 
 namespace hictk::tools {
 
-[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
-                                             std::uint32_t bin_size) {
-  auto chroms = Reference::from_chrom_sizes(path_to_chrom_sizes);
-  return {chroms, bin_size};
-}
+[[nodiscard]] static Stats load_hic(const LoadConfig& c,
+                                    std::size_t queue_capacity_bytes = 64'000'000) {
+  assert(c.output_format == "hic");
 
-[[nodiscard]] static BinTable init_bin_table(const std::filesystem::path& path_to_chrom_sizes,
-                                             const std::filesystem::path& path_to_bin_table) {
-  auto chroms = Reference::from_chrom_sizes(path_to_chrom_sizes);
+  BS::thread_pool tpool(2);
+  std::atomic<bool> early_return{false};
 
-  std::ifstream ifs{};
-  ifs.exceptions(std::ios::badbit);
-  ifs.open(path_to_bin_table);
-
-  std::vector<std::uint32_t> start_pos{};
-  std::vector<std::uint32_t> end_pos{};
-
-  std::string line{};
-  GenomicInterval record{};
-  bool fixed_bin_size = true;
-  std::uint32_t bin_size = 0;
-  while (std::getline(ifs, line)) {
-    record = GenomicInterval::parse_bed(chroms, line);
-    if (bin_size == 0) {
-      bin_size = record.size();
-    }
-
-    fixed_bin_size &= record.size() == bin_size || record.chrom().size() == record.end();
-
-    start_pos.push_back(record.start());
-    end_pos.push_back(record.end());
-  }
-
-  if (fixed_bin_size) {
-    SPDLOG_INFO(FMT_STRING("detected bin table with uniform bin size."));
-    return {chroms, bin_size};
-  }
-
-  SPDLOG_INFO(FMT_STRING("detected bin table with variable bin size."));
-  return {chroms, start_pos, end_pos};
-}
-
-static Stats ingest_pixels_hic(const LoadConfig& c) {
   const auto format = format_from_string(c.format);
-  const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
 
-  [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir, true};
-  return ingest_pixels_hic(c.output_path, tmpdir(), chroms, c.bin_size, c.assembly, c.offset,
-                           c.skip_all_vs_all_matrix, format, c.threads, c.batch_size,
-                           c.compression_lvl, c.force);
+  auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
+                                  c.bin_size, c.assembly);
+
+  const auto& bins = parser.bins();
+
+  if (c.output_format == "hic" && bins.type() == BinTable::Type::variable) {
+    throw std::runtime_error("creating a .hic file with variable bin size is not supported");
+  }
+
+  const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<float>);
+  PixelQueue<float> pixel_queue{queue_capacity};
+
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
+  auto consumer =
+      spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
+
+  try {
+    producer.get();
+    return consumer.get();
+  } catch (...) {  // NOLINT
+    tpool.wait();
+    throw;
+  }
 }
 
-static Stats ingest_pixels_cooler(const LoadConfig& c) {
+[[nodiscard]] static Stats load_cool_float(const LoadConfig& c,
+                                           std::size_t queue_capacity_bytes = 64'000'000) {
+  assert(c.count_as_float);
   assert(c.output_format == "cool");
-  const auto format = format_from_string(c.format);
-  auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
 
-  const internal::TmpDir tmpdir{c.tmp_dir, true};
-  const auto tmp_cooler_path =
-      (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
+  BS::thread_pool tpool(2);
+  std::atomic<bool> early_return{false};
 
-  return c.assume_sorted
-             ? ingest_pixels_sorted_cooler(c.output_path, chroms, c.bin_size, c.assembly, c.offset,
-                                           format, c.batch_size, c.compression_lvl, c.force,
-                                           c.count_as_float, c.validate_pixels)
-             : ingest_pixels_unsorted_cooler(
-                   c.output_path, tmp_cooler_path, chroms, c.bin_size, c.assembly, c.offset, format,
-                   c.batch_size, c.compression_lvl, c.force, c.count_as_float, c.validate_pixels);
-}
-
-static Stats ingest_pairs_cooler(const LoadConfig& c) {
-  auto bins = c.path_to_bin_table.empty()
-                  ? init_bin_table(c.path_to_chrom_sizes, c.bin_size)
-                  : init_bin_table(c.path_to_chrom_sizes, c.path_to_bin_table);
   const auto format = format_from_string(c.format);
 
-  const internal::TmpDir tmpdir{c.tmp_dir, true};
-  const auto tmp_cooler_path =
-      (tmpdir() / (std::filesystem::path{c.output_path}.filename().string() + ".tmp")).string();
+  auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
+                                  c.bin_size, c.assembly);
 
-  return ingest_pairs_cooler(c.output_path, tmp_cooler_path, bins, c.assembly, c.offset, format,
-                             c.batch_size, c.compression_lvl, c.force, c.count_as_float,
-                             c.validate_pixels);
-}
+  const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<double>);
+  PixelQueue<double> pixel_queue{queue_capacity};
 
-static Stats ingest_pairs_hic(const LoadConfig& c) {
-  const auto chroms = Reference::from_chrom_sizes(c.path_to_chrom_sizes);
-  const auto format = format_from_string(c.format);
+  const auto& bins = parser.bins();
 
-  [[maybe_unused]] const internal::TmpDir tmpdir{c.tmp_dir, true};
-  return ingest_pairs_hic(c.output_path, c.tmp_dir, chroms, c.bin_size, c.assembly, c.offset,
-                          c.skip_all_vs_all_matrix, format, c.threads, c.batch_size,
-                          c.compression_lvl, c.force);
-}
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
+  auto consumer =
+      spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
 
-static Stats ingest_pixels(const LoadConfig& c) {
-  if (c.output_format == "hic") {
-    return ingest_pixels_hic(c);
+  try {
+    producer.get();
+    return consumer.get();
+  } catch (...) {  // NOLINT
+    tpool.wait();
+    throw;
   }
-
-  return ingest_pixels_cooler(c);
 }
 
-static Stats ingest_pairs(const LoadConfig& c) {
-  if (c.output_format == "hic") {
-    return ingest_pairs_hic(c);
-  }
+[[nodiscard]] static Stats load_cool_int(const LoadConfig& c,
+                                         std::size_t queue_capacity_bytes = 64'000'000) {
+  assert(!c.count_as_float);
+  assert(c.output_format == "cool");
 
-  return ingest_pairs_cooler(c);
+  BS::thread_pool tpool(2);
+  std::atomic<bool> early_return{false};
+
+  const auto format = format_from_string(c.format);
+
+  auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
+                                  c.bin_size, c.assembly);
+
+  const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<std::int32_t>);
+  PixelQueue<std::int32_t> pixel_queue{queue_capacity};
+
+  const auto& bins = parser.bins();
+
+  auto producer = spawn_producer(tpool, parser, pixel_queue, c.offset, early_return,
+                                 c.transpose_lower_triangular_pixels);
+  auto consumer =
+      spawn_consumer(tpool, c, bins, parser.assembly(), format, pixel_queue, early_return);
+
+  try {
+    producer.get();
+    return consumer.get();
+  } catch (...) {  // NOLINT
+    tpool.wait();
+    throw;
+  }
 }
 
 int load_subcmd(const LoadConfig& c) {
-  const auto format = format_from_string(c.format);
-  const auto pixel_has_count = format == Format::COO || format == Format::BG2;
-
   const auto t0 = std::chrono::system_clock::now();
-  const auto stats = pixel_has_count ? ingest_pixels(c) : ingest_pairs(c);
+
+  const auto stats = [&]() {
+    if (c.count_as_float && c.output_format == "cool") {
+      return load_cool_float(c);
+    }
+    if (!c.count_as_float && c.output_format == "cool") {
+      return load_cool_int(c);
+    }
+    assert(c.output_format == "hic");
+    return load_hic(c);
+  }();
 
   const auto t1 = std::chrono::system_clock::now();
   const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();

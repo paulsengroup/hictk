@@ -41,7 +41,7 @@ TEST_CASE("MultiResFile", "[file][short]") {
 
       CHECK(MultiResFile{path_hic}.format() == "HIC");
       CHECK(MultiResFile{path_hic}.version() == 8);
-      CHECK(MultiResFile{path_hic}.bin_type() == "fixed");
+      CHECK(MultiResFile{path_hic}.bin_type() == BinTable::Type::fixed);
 
       CHECK(MultiResFile{path_hic}.resolutions().size() == 10);
       CHECK(MultiResFile{path_hic}.chromosomes().size() == 9);
@@ -55,7 +55,7 @@ TEST_CASE("MultiResFile", "[file][short]") {
       CHECK(MultiResFile{path_mcool}.format() == "HDF5::MCOOL");
 
       CHECK(MultiResFile{path_mcool}.version() == 2);
-      CHECK(MultiResFile{path_mcool}.bin_type() == "fixed");
+      CHECK(MultiResFile{path_mcool}.bin_type() == BinTable::Type::fixed);
 
       CHECK(MultiResFile{path_mcool}.resolutions().size() == 10);
       CHECK(MultiResFile{path_mcool}.chromosomes().size() == 8);

@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Roberto Rossini (roberros@uio.no)
+# Copyright (C) 2022 Roberto Rossini <roberros@uio.no>
 # SPDX-License-Identifier: MIT
 
 name: Run clang-tidy
@@ -7,24 +7,26 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/run-clang-tidy.yml"
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/evict-gha-cache.yml"
+      - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/units/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
-    tags:
-      - "v*.*.*"
 
   pull_request:
     paths:
-      - ".github/workflows/run-clang-tidy.yml"
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/evict-gha-cache.yml"
+      - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"
-      - "test/**"
+      - "test/units/**"
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -38,19 +40,29 @@ defaults:
   run:
     shell: bash
 
-env:
-  CCACHE_DIR: "/opt/ccache-cache"
-  CCACHE_COMPRESSLEVEL: "13"
-  CCACHE_MAXSIZE: "200M"
-  CONAN_HOME: "/opt/conan/"
-  HICTK_CI: "1"
-
 jobs:
-  run-clang-tidy:
+  build-conan-deps:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    with:
+      os: ubuntu-20.04
+
+  build-project:
+    name: Build project
+    needs: build-conan-deps
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
       options: "--user=root"
+
+    outputs:
+      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
+
+    env:
+      CCACHE_DIR: "/opt/ccache-cache"
+      CCACHE_COMPRESSLEVEL: "1"
+      CCACHE_MAXSIZE: "300M"
+      CONAN_HOME: "/opt/conan/"
 
     steps:
       - uses: actions/checkout@v4
@@ -65,64 +77,40 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          hash="${{ hashFiles('conanfile.py', '.github/workflows/run-clang-tidy.yml') }}"
+          conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="clang-tidy-ccache-$hash"
+          ccache_key_prefix="ccache-clang-tidy-$conanfile_hash"
 
-          echo "conan-key=clang-tidy-$hash" >> $GITHUB_OUTPUT
-          echo "ccache-key=${ccache_key_prefix}-${current_date}" >> $GITHUB_OUTPUT
-          echo "ccache-restore-key=$ccache_key_prefix" >> $GITHUB_OUTPUT
+          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a "$GITHUB_OUTPUT"
+          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
-        id: cache-conan
         uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
 
-      - name: Clean Conan cache (pre-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-          conan remove --confirm "*"
-
-      - name: Copy Conan settings
-        run: cp "/root/.conan2/settings.yml" "$CONAN_HOME"
-
-      - name: Install build dependencies
-        run: |
-          conan install .                        \
-             --build=missing                     \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-             -s build_type=Debug                 \
-             -s compiler.libcxx=libstdc++11      \
-             -s compiler.cppstd=17               \
-             --output-folder=build
-
-      - name: Clean Conan cache (post-build)
-        if: steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: steps.cache-conan.outputs.cache-hit != 'true'
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
         with:
-          key: conan-${{ steps.cache-key.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
+          path: /tmp/cmake-prefix-dbg.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug                      \
-                -DCMAKE_PREFIX_PATH="$PWD/build"              \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
@@ -134,27 +122,64 @@ jobs:
                 -S .                                          \
                 -B build
 
-      - name: Cache Ccache folder
-        uses: actions/cache@v4
+      - name: Restore Ccache folder
+        id: cache-ccache
+        uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key }}
+          key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
           path: ${{ env.CCACHE_DIR }}
+
+      - name: Reset Ccache stats
+        run: ccache --zero-stats
 
       - name: Build project
         run: cmake --build build -j $(nproc)
 
-      - name: Print Ccache statistics
-        run: ccache -s
+      - name: Print Ccache statistics (pre-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Cleanup Ccache folder
+        run: |
+          ccache --evict-older-than=14400s # 4h
+          ccache --recompress=19 --recompress-threads="$(nproc)"
+          ccache --cleanup
+
+      - name: Print Ccache statistics (post-cleanup)
+        run: |
+          ccache --show-stats \
+                 --show-compression \
+                 --verbose
+
+      - name: Save Ccache folder
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.cache-key.outputs.ccache-key }}
+          path: ${{ env.CCACHE_DIR }}
+        env:
+          ZSTD_CLEVEL: 1
+
+  clean-stale-cache:
+    needs: [build-project]
+    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
+    name: Clean stale Ccache cache
+    permissions:
+      actions: write
+    if: needs.build-project.outputs.ccache-old-cache-key != ''
+    with:
+      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
 
   clang-tidy-status-check:
     name: Status Check (clang-tidy)
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
-      - run-clang-tidy
+      - build-project
 
     steps:
       - name: Collect job results
-        if: needs.run-clang-tidy.result != 'success'
+        if: needs.build-project.result != 'success'
         run: exit 1

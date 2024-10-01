@@ -2,150 +2,141 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <fmt/format.h>
+#include "./validate.hpp"
 
-#include <algorithm>
-#include <cstdint>
-#include <exception>
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
+
+#include <cassert>
+#include <cstdio>
 #include <filesystem>
-#include <functional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
-#include <tuple>
 
-#include "hictk/chromosome.hpp"
-#include "hictk/cooler/multires_cooler.hpp"
-#include "hictk/cooler/singlecell_cooler.hpp"
 #include "hictk/cooler/validation.hpp"
-#include "hictk/hic.hpp"
-#include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/file_attributes_formatting.hpp"
+#include "hictk/tools/toml.hpp"
+#include "hictk/tools/tools.hpp"
 
 namespace hictk::tools {
 
-static void validate_hic(const hic::File& hf, const Chromosome& chrom1, const Chromosome& chrom2) {
-  if (chrom1.is_all() || chrom2.is_all()) {
+static void print_report(const toml::table& status, std::string_view format) {
+  if (format == "json") {
+    fmt::print(FMT_STRING("{}\n"), io::toml::format_to_json(status, {}));
     return;
   }
 
-  try {
-    std::ignore = hf.fetch(chrom1.name(), chrom2.name());
-  } catch (const std::exception& e) {
-    const std::string_view msg{e.what()};
-    if (msg.find("Unable to find block map") != std::string_view::npos) {
-      return;
-    }
-
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("### FAILURE: \"{}\" is not a valid .hic file:\n"
-                               "Validation failed for {}:{} map at {} resolution:\n"
-                               "{}"),
-                    hf.path(), chrom1.name(), chrom2.name(), hf.resolution(), e.what()));
+  if (format == "toml") {
+    fmt::print(FMT_STRING("{}\n"), io::toml::format_to_toml(status, {}));
+    return;
   }
+
+  assert(format == "yaml");
+  fmt::print(FMT_STRING("{}\n"), io::toml::format_to_yaml(status, {}));
 }
 
-static int validate_hic(const std::string& path, bool quiet) {
-  try {
-    for (const auto& res : hic::utils::list_resolutions(path)) {
-      const hic::File hf(path, res);
-      const auto& chroms = hf.chromosomes();
-      for (std::uint32_t i = 0; i < chroms.size(); ++i) {
-        for (std::uint32_t j = i; j < chroms.size(); ++j) {
-          const auto& chrom1 = chroms.at(i);
-          const auto& chrom2 = chroms.at(j);
+[[nodiscard]] static toml::table merge_tables(const toml::table& t1, const toml::table& t2) {
+  auto t = t1;
+  for (const auto& [k, v] : t2) {
+    t.insert(k, v);
+  }
+  return t;
+}
 
-          validate_hic(hf, chrom1, chrom2);
-        }
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+int validate_subcmd(const ValidateConfig& c) {
+  try {
+    int return_code = 0;
+    toml::table status;
+
+    if (c.quiet) {
+      // In theory nothing should write to stdout, but better to be safe than sorry
+#ifdef _WIN32
+      std::ignore = std::freopen("nul", "w", stdout);  // NOLINT
+#else
+      std::ignore = std::freopen("/dev/null", "w", stdout);  // NOLINT
+#endif
+    }
+
+    const auto is_cooler = cooler::utils::is_cooler(c.uri);
+    const auto is_hic = hic::utils::is_hic_file(c.uri);
+    const auto is_mcool = cooler::utils::is_multires_file(c.uri, false);
+    const auto is_scool = cooler::utils::is_scool_file(c.uri, false);
+
+    if (c.include_file_path) {
+      status.insert("uri", c.uri);
+    }
+
+    if (is_cooler) {
+      status.insert("format", "cool");
+    }
+    if (is_hic) {
+      status.insert("format", "hic");
+    }
+    if (is_mcool) {
+      status.insert("format", "mcool");
+    }
+    if (is_scool) {
+      status.insert("format", "scool");
+    }
+
+    if (!is_hic && !is_cooler && !is_mcool && !is_scool) {
+      if (!c.quiet) {
+        print_report(status, c.output_format);
+        fmt::print(stderr, FMT_STRING("### FAILURE: \"{}\" is not in .hic or .[ms]cool format!\n"),
+                   c.uri);
+      }
+      return 1;
+    }
+
+    if (is_hic) {
+      auto res = validate_hic(c.uri, c.exhaustive);
+      return_code = res.first;
+      status = merge_tables(status, res.second);
+    } else if (is_mcool) {
+      auto res = validate_mcool(c.uri, c.validate_index, c.exhaustive);
+      return_code = res.first;
+      status = merge_tables(status, res.second);
+    } else if (is_scool) {
+      auto res = validate_scool(c.uri, c.validate_index, c.exhaustive);
+      return_code = res.first;
+      status = merge_tables(status, res.second);
+    } else {
+      auto res = validate_cooler(c.uri, c.validate_index);
+      return_code = res.first;
+      status = merge_tables(status, res.second);
+    }
+
+    if (!c.quiet) {
+      print_report(status, c.output_format);
+      if (is_hic) {
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .hic file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
+      } else if (is_mcool) {
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .mcool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
+      } else if (is_scool) {
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .scool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
+      } else if (std::filesystem::exists(c.uri)) {
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" is {}a valid .cool file."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri, return_code == 0 ? "" : "not ");
+      } else {
+        fmt::print(stderr, FMT_STRING("### {}: \"{}\" {} to valid Cooler."),
+                   return_code == 0 ? "SUCCESS" : "FAILURE", c.uri,
+                   return_code == 0 ? "points" : "does not point");
       }
     }
-  } catch (const std::exception& e) {
-    if (!quiet) {
-      fmt::print(FMT_STRING("{}\n"), e.what());
-    }
-    return 1;
-  }
 
-  if (!quiet) {
-    fmt::print(FMT_STRING("### SUCCESS: \"{}\" is a valid .hic file.\n"), path);
-  }
-  return 0;
-}
-
-static int validate_cooler(std::string_view path, bool validate_index, bool quiet) {
-  auto status = cooler::utils::is_cooler(path);
-  auto index_ok = true;
-  if (validate_index) {
-    index_ok = cooler::utils::index_is_valid(path, quiet);
-  }
-
-  const auto cooler_is_valid = !!status && index_ok;
-
-  if (!quiet) {
-    fmt::print(FMT_STRING("{}\n"), status);
-    if (validate_index) {
-      fmt::print(FMT_STRING("index_is_valid={}\n"), index_ok);
-    } else {
-      fmt::print(FMT_STRING("index_is_valid=not_checked\n"));
-    }
-
-    fmt::print(FMT_STRING("### {}: \"{}\" {} a valid Cooler.\n"),
-               cooler_is_valid ? "SUCCESS" : "FAILURE", path, cooler_is_valid ? "is" : "is not");
-  }
-  return static_cast<int>(!cooler_is_valid);
-}
-
-static int validate_mcool(std::string_view path, bool validate_index, bool quiet) {
-  const cooler::MultiResFile mclr{std::filesystem::path(path)};
-  auto resolutions = mclr.resolutions();
-  std::sort(resolutions.begin(), resolutions.end(), std::greater{});
-  for (const auto& res : resolutions) {
-    const auto status = validate_cooler(mclr.open(res).uri(), validate_index, quiet);
-    if (status != 0) {
+    return return_code;
+  } catch (...) {
+    if (c.quiet) {
       return 1;
     }
+    throw;
   }
-  return 0;
-}
-
-static int validate_scool(std::string_view path, bool validate_index, bool quiet) {
-  const cooler::SingleCellFile sclr{std::filesystem::path(path)};
-  for (const auto& cell : sclr.cells()) {
-    const auto status = validate_cooler(sclr.open(cell).uri(), validate_index, quiet);
-    if (status != 0) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-int validate_subcmd(const ValidateConfig& c) {
-  const auto is_cooler = cooler::utils::is_cooler(c.uri);
-  const auto is_hic = hic::utils::is_hic_file(c.uri);
-  const auto is_mcool = cooler::utils::is_multires_file(c.uri);
-  const auto is_scool = cooler::utils::is_scool_file(c.uri);
-
-  if (!is_hic && !is_cooler && !is_mcool && !is_scool) {
-    if (!c.quiet) {
-      fmt::print(FMT_STRING("### FAILURE: \"{}\" is not in .hic or .[ms]cool format!\n"), c.uri);
-    }
-    return 1;
-  }
-
-  if (is_hic) {
-    return validate_hic(c.uri, c.quiet);
-  }
-
-  if (is_mcool) {
-    return validate_mcool(c.uri, c.validate_index, c.quiet);
-  }
-
-  if (is_scool) {
-    return validate_scool(c.uri, c.validate_index, c.quiet);
-  }
-
-  return validate_cooler(c.uri, c.validate_index, c.quiet);
 }
 
 }  // namespace hictk::tools

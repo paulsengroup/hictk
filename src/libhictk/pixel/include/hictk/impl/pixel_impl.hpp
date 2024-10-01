@@ -16,6 +16,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/hash.hpp"
 #include "hictk/numeric_utils.hpp"
 
 // NOLINTNEXTLINE(*-concat-nested-namespaces)
@@ -129,8 +130,8 @@ inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
 }
 
 template <typename N>
-inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line,
-                                   std::int64_t offset) -> ThinPixel<N> {
+inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line, std::int64_t offset)
+    -> ThinPixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 
@@ -186,7 +187,9 @@ inline PixelCoordinates::PixelCoordinates(std::pair<Bin, Bin> bins) noexcept
 
 inline PixelCoordinates::PixelCoordinates(Bin bin) noexcept : bin1(bin), bin2(std::move(bin)) {}
 
-inline PixelCoordinates::operator bool() const noexcept { return !!bin1 && !!bin2; }
+inline PixelCoordinates::operator bool() const noexcept { return !empty(); }
+
+inline bool PixelCoordinates::empty() const noexcept { return !bin1 && !bin2; }
 
 inline bool PixelCoordinates::operator==(const PixelCoordinates &other) const noexcept {
   return bin1 == other.bin1 && bin2 == other.bin2;
@@ -408,3 +411,14 @@ inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_vi
 }
 
 }  // namespace hictk
+
+template <typename N>
+inline std::size_t std::hash<hictk::ThinPixel<N>>::operator()(
+    const hictk::ThinPixel<N> &p) const noexcept {
+  return hictk::internal::hash_combine(0, p.bin1_id, p.bin2_id, p.count);
+}
+
+template <typename N>
+inline std::size_t std::hash<hictk::Pixel<N>>::operator()(const hictk::Pixel<N> &p) const noexcept {
+  return hictk::internal::hash_combine(0, p.coords.bin1.id(), p.coords.bin2.id(), p.count);
+}

@@ -1,0 +1,176 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Test packaging
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/packaging.yml"
+      - "cmake/**"
+      - "src/**"
+      - "test/packaging/**"
+      - "CMakeLists.txt"
+      - "conanfile.py"
+
+  pull_request:
+    paths:
+      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/packaging.yml"
+      - "cmake/**"
+      - "src/**"
+      - "test/packaging/**"
+      - "CMakeLists.txt"
+      - "conanfile.py"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-conan-deps:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    with:
+      os: ubuntu-20.04
+
+  test-find-package:
+    runs-on: ubuntu-latest
+    name: Test find_package()
+    needs: build-conan-deps
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      options: "--user=root"
+
+    env:
+      CONAN_HOME: "/opt/conan/"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Restore Conan cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
+
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
+          path: /tmp/cmake-prefix-rel.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release           \
+                -DHICTK_ENABLE_TESTING=OFF           \
+                -DHICTK_BUILD_TOOLS=OFF              \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
+                -DCMAKE_INSTALL_PREFIX=hictk_install \
+                -S .                                 \
+                -B hictk_build
+
+      - name: Install hictk
+        run: |
+          cmake --build hictk_build/
+          cmake --install hictk_build/
+
+      - name: Configure test project
+        run: |
+          CMAKE_PREFIX_PATH="$PWD/conan-env;$PWD/hictk_install/lib/cmake/hictk/"
+
+          cmake -DCMAKE_BUILD_TYPE=Release               \
+                -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
+                -S test/packaging/test_find_package      \
+                -B test_find_package_build
+
+      - name: Build test project
+        run: cmake --build test_find_package_build
+
+      - name: Test binary
+        run: test_find_package_build/hictk_test_find_package
+
+  test-add-subdirectory:
+    runs-on: ubuntu-latest
+    name: Test add_subdirectory()
+    needs: build-conan-deps
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      options: "--user=root"
+
+    env:
+      CONAN_HOME: "/opt/conan/"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Restore Conan cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
+
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
+          path: /tmp/cmake-prefix-rel.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+
+      - name: Configure project
+        run: |
+          ln -s "$PWD" test/packaging/test_add_subdirectory/hictk_root
+
+          cmake -DCMAKE_BUILD_TYPE=Release              \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"    \
+                -S test/packaging/test_add_subdirectory \
+                -B test_add_subdirectory_build
+
+      - name: Build test project
+        run: cmake --build test_add_subdirectory_build
+
+      - name: Test binary
+        run: test_add_subdirectory_build/hictk_test_add_subdirectory
+
+  packaging-status-check:
+    name: Status Check (packaging)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs:
+      - test-find-package
+      - test-add-subdirectory
+
+    steps:
+      - name: Collect job results
+        if: |
+          needs.test-find-package.result != 'success'     ||
+          needs.test-add-subdirectory.result != 'success'
+        run: exit 1

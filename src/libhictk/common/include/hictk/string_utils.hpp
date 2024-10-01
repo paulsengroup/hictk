@@ -22,7 +22,7 @@ namespace hictk::internal {
   return true;
 }
 
-/// Checks whether a string ends with the given prefix
+/// Checks whether a string ends with the given suffix
 [[nodiscard]] constexpr bool ends_with(std::string_view s, std::string_view suffix) {
   if (s.size() < suffix.size()) {
     return false;

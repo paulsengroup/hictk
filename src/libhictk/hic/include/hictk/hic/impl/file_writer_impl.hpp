@@ -427,8 +427,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
   }
 }
 
-inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1,
-                                        const Chromosome &chrom2) -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
+    -> HiCSectionOffsets {
   try {
     write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
@@ -672,10 +672,10 @@ inline void HiCFileWriter::write_empty_normalized_expected_values() {
                offset);
   try {
     _fs.seekp(offset);
-    DISABLE_WARNING_PUSH
-    DISABLE_WARNING_USELESS_CAST
+    HICTK_DISABLE_WARNING_PUSH
+    HICTK_DISABLE_WARNING_USELESS_CAST
     _fs.write(std::int32_t(0));
-    DISABLE_WARNING_POP
+    HICTK_DISABLE_WARNING_POP
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while writing an empty normalized expected "
@@ -830,6 +830,10 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
 inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &blk,
                                            const std::vector<float> &weights,
                                            bool force_overwrite) {
+  if (blk.type == "NONE") {
+    throw std::runtime_error("caught attempt to write NONE weights");
+  }
+
   const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
   SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector for {} ({}): {} values"), blk.binSize,
               blk.type, chrom.name(), blk.unit, weights.size());
@@ -877,8 +881,8 @@ inline void HiCFileWriter::add_norm_vector(const NormalizationVectorIndexBlock &
                                            const balancing::Weights &weights,
                                            bool force_overwrite) {
   std::vector<float> weights_f(weights.size());
-  const auto weights_d = weights(balancing::Weights::Type::DIVISIVE);
-  std::transform(weights_d.begin(), weights_d.end(), weights_f.begin(),
+  std::transform(weights.begin(balancing::Weights::Type::DIVISIVE),
+                 weights.end(balancing::Weights::Type::DIVISIVE), weights_f.begin(),
                  [](const auto n) { return static_cast<float>(n); });
   add_norm_vector(blk, weights_f, force_overwrite);
 }
@@ -1048,8 +1052,9 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
   };
 }
 
-inline auto HiCFileWriter::init_bin_tables(
-    const Reference &chromosomes, const std::vector<std::uint32_t> &resolutions) -> BinTables {
+inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
+                                           const std::vector<std::uint32_t> &resolutions)
+    -> BinTables {
   BinTables bin_tables(resolutions.size());
   for (const auto &res : resolutions) {
     bin_tables.emplace(res, std::make_shared<const BinTable>(chromosomes, res));
@@ -1213,9 +1218,11 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
   }
 }
 
-inline auto HiCFileWriter::write_interaction_block(
-    std::uint64_t block_id, const Chromosome &chrom1, const Chromosome &chrom2,
-    std::uint32_t resolution, const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_interaction_block(std::uint64_t block_id, const Chromosome &chrom1,
+                                                   const Chromosome &chrom2,
+                                                   std::uint32_t resolution,
+                                                   const MatrixInteractionBlock<float> &blk)
+    -> HiCSectionOffsets {
   const auto offset = _fs.tellp();
 
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);
@@ -1244,6 +1251,10 @@ inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
 
 inline void HiCFileWriter::add_norm_expected_values(const NormalizedExpectedValuesBlock &blk,
                                                     bool force_overwrite) {
+  if (blk.type == "NONE") {
+    throw std::runtime_error("caught attempt to write NONE weights");
+  }
+
   try {
     auto [it, inserted] = _normalized_expected_values.emplace(blk);
     if (!inserted) {

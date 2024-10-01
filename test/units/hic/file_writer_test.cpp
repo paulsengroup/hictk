@@ -90,8 +90,21 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void hic_file_writer_compare_pixels(const std::vector<Pixel<float>>& expected,
-                                           const std::vector<Pixel<float>>& found) {
+[[maybe_unused]] static void compare_weights(const balancing::Weights& expected,
+                                             const balancing::Weights& found) {
+  REQUIRE(expected.size() == found.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    if (std::isnan(expected[i])) {
+      CHECK(std::isnan(found[i]));
+    } else {
+      CHECK(expected[i] == found[i]);
+    }
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+[[maybe_unused]] static void hic_file_writer_compare_pixels(
+    const std::vector<Pixel<float>>& expected, const std::vector<Pixel<float>>& found) {
   REQUIRE(expected.size() == found.size());
 
   for (std::size_t i = 0; i < expected.size(); ++i) {
@@ -105,9 +118,10 @@ static void hic_file_writer_compare_pixels(const std::vector<Pixel<float>>& expe
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void hic_file_writer_create_file_test(const std::string& path1, const std::string& path2,
-                                             const std::vector<std::uint32_t>& resolutions,
-                                             std::size_t num_threads, bool skip_all_vs_all_matrix) {
+[[maybe_unused]] static void hic_file_writer_create_file_test(
+    const std::string& path1, const std::string& path2,
+    const std::vector<std::uint32_t>& resolutions, std::size_t num_threads,
+    bool skip_all_vs_all_matrix) {
   {
     const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
     const auto tmpdir = testdir() / (path1 + ".tmp");
@@ -226,19 +240,16 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
     REQUIRE(avail_norms.size() == 1);
     CHECK(avail_norms.front() == balancing::Method::SCALE());
 
-    const auto correct_pixels = hf1.fetch(balancing::Method::SCALE()).read_all<float>();
-    const auto pixels = hf2.fetch(balancing::Method::SCALE()).read_all<float>();
+    compare_weights(hf1.normalization("SCALE"), hf2.normalization("SCALE"));
+    hic_file_writer_compare_pixels(hf1.fetch(balancing::Method::SCALE()).read_all<float>(),
+                                   hf2.fetch(balancing::Method::SCALE()).read_all<float>());
 
-    hic_file_writer_compare_pixels(correct_pixels, pixels);
+    const hic::File hf3(path1, resolution, MatrixType::expected);
+    const hic::File hf4(path3, resolution, MatrixType::expected);
 
-    const hic::File f3(path1, resolution, MatrixType::expected);
-    const hic::File f4(path3, resolution, MatrixType::expected);
-
-    const auto correct_expected_pixels = f3.fetch(balancing::Method::SCALE()).read_all<float>();
-    const auto expected_pixels = f4.fetch(balancing::Method::SCALE()).read_all<float>();
-
-    // NOLINTNEXTLINE(*-suspicious-call-argument)
-    hic_file_writer_compare_pixels(correct_expected_pixels, expected_pixels);
+    compare_weights(hf3.normalization("SCALE"), hf4.normalization("SCALE"));
+    hic_file_writer_compare_pixels(hf3.fetch(balancing::Method::SCALE()).read_all<float>(),
+                                   hf4.fetch(balancing::Method::SCALE()).read_all<float>());
   }
 }
 

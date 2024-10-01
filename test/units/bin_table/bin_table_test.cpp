@@ -104,7 +104,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK(table.has_fixed_resolution());
+    CHECK(table.type() == BinTable::Type::fixed);
     CHECK_NOTHROW(table.get<BinTableFixed>());
     CHECK_THROWS(table.get<BinTableVariable<>>());
   }
@@ -180,10 +180,12 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     SECTION("operator+") {
       CHECK(table.begin() + 0 == table.begin());
       CHECK(*(table.begin() + 5) == expected[5]);
+      CHECK(*(table.end() + -1) == expected.back());
 
       auto it = table.begin() + 5;
-      for (std::size_t i = 0; i < expected.size() - 5; ++i) {
-        CHECK(*(it + i) == expected[i + 5]);  // NOLINT
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 0; i < size - 5; ++i) {
+        CHECK(*(it + i) == expected[static_cast<std::size_t>(i) + 5]);  // NOLINT
       }
 
       CHECK_THROWS_AS(it + 100, std::out_of_range);
@@ -192,10 +194,12 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     SECTION("operator-") {
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
+      CHECK(*(table.begin() - -1) == expected[1]);
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
-      for (std::size_t i = 1; i < expected.size(); ++i) {
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 1; i < size; ++i) {
         CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
       }
 
@@ -294,7 +298,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   }
 
   SECTION("accessors") {
-    CHECK_FALSE(table.has_fixed_resolution());
+    CHECK(table.type() == BinTable::Type::variable);
     CHECK_NOTHROW(table.get<BinTableVariable<>>());
     CHECK_THROWS(table.get<BinTableFixed>());
   }
@@ -411,10 +415,12 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     SECTION("operator+") {
       CHECK(table.begin() + 0 == table.begin());
       CHECK(*(table.begin() + 5) == expected[5]);
+      CHECK(*(table.end() + -1) == expected.back());
 
       auto it = table.begin() + 5;
-      for (std::size_t i = 0; i < expected.size() - 5; ++i) {
-        CHECK(*(it + i) == expected[i + 5]);  // NOLINT
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 0; i < size - 5; ++i) {
+        CHECK(*(it + i) == expected[static_cast<std::size_t>(i) + 5]);  // NOLINT
       }
 
       CHECK_THROWS_AS(it + 100, std::out_of_range);
@@ -423,10 +429,12 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     SECTION("operator-") {
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
+      CHECK(*(table.begin() - -1) == expected[1]);
 
       auto it1 = table.end();
       auto it2 = expected.end();  // NOLINT
-      for (std::size_t i = 1; i < expected.size(); ++i) {
+      const auto size = static_cast<std::ptrdiff_t>(expected.size());
+      for (std::ptrdiff_t i = 1; i < size; ++i) {
         CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
       }
 

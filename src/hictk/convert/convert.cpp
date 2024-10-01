@@ -6,11 +6,13 @@
 #include <fmt/std.h>
 #include <spdlog/spdlog.h>
 
+#include <cassert>
 #include <chrono>
 #include <filesystem>
 
 #include "./common.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/string_utils.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
@@ -20,8 +22,10 @@ int convert_subcmd(const ConvertConfig& c) {
   SPDLOG_INFO(FMT_STRING("Converting {} to {} ({} -> {})..."), c.path_to_input, c.path_to_output,
               c.input_format, c.output_format);
   if (c.input_format == "hic") {
+    assert(internal::ends_with(c.output_format, "cool"));
     hic_to_cool(c);
   } else {
+    assert(internal::starts_with(c.output_format, "hic"));
     cool_to_hic(c);
   }
   auto t1 = std::chrono::steady_clock::now();

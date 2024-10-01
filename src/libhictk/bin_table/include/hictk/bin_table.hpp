@@ -22,6 +22,7 @@ class BinTable {
   std::variant<BinTableFixed, BinTableVariable<>> _table{BinTableFixed{}};
 
  public:
+  enum class Type : std::uint_fast8_t { fixed, variable };
   using BinTableVar = decltype(_table);
   class iterator;
   friend iterator;
@@ -45,7 +46,11 @@ class BinTable {
   [[nodiscard]] std::size_t num_chromosomes() const;
   [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
+  // clang-format off
+  [[deprecated("superseded by BinTable::type() == BinTable::Type::fixed")]]
   [[nodiscard]] constexpr bool has_fixed_resolution() const noexcept;
+  // clang-format on
+  [[nodiscard]] constexpr auto type() const noexcept -> Type;
 
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 
@@ -60,13 +65,15 @@ class BinTable {
 
   [[nodiscard]] auto find_overlap(const GenomicInterval &query) const
       -> std::pair<BinTable::iterator, BinTable::iterator>;
-  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTable::iterator, BinTable::iterator>;
+  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTable::iterator, BinTable::iterator>;
   [[nodiscard]] auto find_overlap(std::string_view chrom_name, std::uint32_t start,
                                   std::uint32_t end) const
       -> std::pair<BinTable::iterator, BinTable::iterator>;
-  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTable::iterator, BinTable::iterator>;
+  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTable::iterator, BinTable::iterator>;
 
   // Map bin_id to Bin
   [[nodiscard]] Bin at(std::uint64_t bin_id) const;
@@ -119,17 +126,17 @@ class BinTable {
     constexpr bool operator>=(const iterator &other) const;
 
     auto operator*() const -> value_type;
-    auto operator[](std::size_t i) const -> iterator;
+    auto operator[](difference_type i) const -> value_type;
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
-    auto operator+=(std::size_t i) -> iterator &;
-    auto operator+(std::size_t i) const -> iterator;
+    auto operator+=(difference_type i) -> iterator &;
+    auto operator+(difference_type i) const -> iterator;
 
     auto operator--() -> iterator &;
     auto operator--(int) -> iterator;
-    auto operator-=(std::size_t i) -> iterator &;
-    auto operator-(std::size_t i) const -> iterator;
+    auto operator-=(difference_type i) -> iterator &;
+    auto operator-(difference_type i) const -> iterator;
     auto operator-(const iterator &other) const -> difference_type;
 
     template <typename IteratorT>

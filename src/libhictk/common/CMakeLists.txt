@@ -8,6 +8,7 @@ find_package(zstd REQUIRED)
 
 add_library(common INTERFACE)
 add_library(hictk::common ALIAS common)
+add_dependencies(common _hictk_check_git)
 
 target_sources(
   common

@@ -28,7 +28,7 @@ struct SingleCellAttributes {
 
   // Mandatory attributes
   std::uint32_t bin_size{0};
-  std::string bin_type{"fixed"};
+  BinTable::Type bin_type{BinTable::Type::fixed};
   std::string format{SCOOL_MAGIC};
   std::uint8_t format_version{1};
 
@@ -58,7 +58,7 @@ struct SingleCellAttributes {
 class SingleCellFile {
   std::unique_ptr<RootGroup> _root_grp{};
   phmap::btree_set<std::string> _cells{};
-  SingleCellAttributes _attrs{};
+  SingleCellAttributes _attrs{SingleCellAttributes::init_empty()};
   std::shared_ptr<const BinTable> _bins{};
 
   SingleCellFile(HighFive::File fp, BinTable bins, SingleCellAttributes attrs);

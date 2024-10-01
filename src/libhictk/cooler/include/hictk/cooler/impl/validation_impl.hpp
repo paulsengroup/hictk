@@ -27,6 +27,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/numeric_utils.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -59,12 +60,12 @@ inline ValidationStatusCooler is_cooler(std::string_view uri) {
 }
 
 inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
-                                                       bool validate_resolutions,
+                                                       bool validate_resolutions, bool exhaustive,
                                                        std::int64_t min_version) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
-    return is_multires_file(fp, validate_resolutions, min_version);
+    return is_multires_file(fp, validate_resolutions, exhaustive, min_version);
   } catch (const std::exception &e) {
     const std::string_view msg{e.what()};
     ValidationStatusMultiresCooler s{};
@@ -79,11 +80,12 @@ inline ValidationStatusMultiresCooler is_multires_file(std::string_view uri,
   }
 }
 
-inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells) {
+inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_cells,
+                                           bool exhaustive) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     const HighFive::File fp(std::string{uri}, HighFive::File::ReadOnly);
-    return is_scool_file(fp, validate_cells);
+    return is_scool_file(fp, validate_cells, exhaustive);
   } catch (const std::exception &e) {
     const std::string_view msg{e.what()};
     ValidationStatusScool s{};
@@ -132,7 +134,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
 
   // Check file has a bin-type that we support
   if (Attribute::exists(root_group, "bin-type")) {
-    const auto bin_type = Attribute::read<std::string>(root_group, "bin-type");
+    const std::string bin_type = Attribute::read<std::string>(root_group, "bin-type");
     status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
@@ -161,7 +163,7 @@ inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {
 }
 
 inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
-                                                       bool validate_resolutions,
+                                                       bool validate_resolutions, bool exhaustive,
                                                        std::int64_t min_version) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   ValidationStatusMultiresCooler status{};
@@ -190,7 +192,7 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
   // NOTE: .mcool files are not required to advertise the bin type they are using at the root level
   status.missing_or_invalid_bin_type_attr = false;
   if (Attribute::exists(fp, "bin-type")) {
-    const auto bin_type = Attribute::read<std::string>(fp, "bin-type");
+    const std::string bin_type = Attribute::read<std::string>(fp, "bin-type");
     status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
@@ -230,7 +232,13 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
 
       if (auto status_ = is_cooler(fp, suffix); !status_) {
         status.file_was_properly_closed &= status_.file_was_properly_closed;
-        status.invalid_resolutions.emplace_back(std::move(status_));
+        status.invalid_resolutions.emplace(resolution, std::move(status_));
+        if (!exhaustive) {
+          break;
+        }
+      } else if (exhaustive) {
+        status.valid_resolutions.emplace(
+            hictk::internal::parse_numeric_or_throw<std::uint32_t>(resolution), std::move(status_));
       }
     }
   }
@@ -247,7 +255,8 @@ inline ValidationStatusMultiresCooler is_multires_file(const HighFive::File &fp,
   return status;
 }
 
-inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool validate_cells) {
+inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool validate_cells,
+                                           bool exhaustive) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   ValidationStatusScool status{};
   status.uri = fp.getName();
@@ -274,7 +283,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   // NOTE: .scool files are not required to advertise the bin type they are using at the root level
   status.missing_or_invalid_bin_type_attr = false;
   if (Attribute::exists(fp, "bin-type")) {
-    const auto bin_type = Attribute::read<std::string>(fp, "bin-type");
+    const std::string bin_type = Attribute::read<std::string>(fp, "bin-type");
     status.missing_or_invalid_bin_type_attr = bin_type != "fixed" && bin_type != "variable";
   }
 
@@ -313,7 +322,12 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
       const auto suffix = fmt::format(FMT_STRING("cells/{}"), cell);
       if (auto status_ = is_cooler(fp, suffix); !status_) {
         status.file_was_properly_closed &= status_.file_was_properly_closed;
-        status.invalid_cells.emplace_back(std::move(status_));
+        status.invalid_cells.emplace(cell, std::move(status_));
+        if (!exhaustive) {
+          break;
+        }
+      } else if (exhaustive) {
+        status.valid_cells.emplace(cell, std::move(status_));
       }
     }
   }
@@ -331,14 +345,29 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   return status;
 }
 
-[[nodiscard]] inline bool index_is_valid(std::string_view uri, bool verbose) {
+[[nodiscard]] inline bool index_is_valid(std::string_view uri) {
+  [[maybe_unused]] std::string buff{};
+  return index_is_valid(uri, buff);
+}
+
+[[nodiscard]] inline bool index_is_valid(std::string_view uri, std::string &error_buffer) {
   // See https://github.com/robomics/20221129_4dnucleome_bug_report
   // and https://github.com/open2c/cooler/issues/319
+
+  error_buffer.clear();
   if (!is_cooler(uri)) {
     return false;
   }
 
-  File clr(uri, DEFAULT_HDF5_CACHE_SIZE * 4, false);
+  const File clr(uri, DEFAULT_HDF5_CACHE_SIZE * 4, false);
+
+  if (const auto &storage_mode = clr.attributes().storage_mode;
+      storage_mode.has_value() && storage_mode != "symmetric-upper") {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("validating the index of Coolers with storage-mode=\"{}\" is not supported"),
+        *storage_mode));
+  }
+
   const auto bin1_dset = clr.dataset("indexes/bin1_offset");
   const auto bin2_dset = clr.dataset("pixels/bin2_id");
 
@@ -351,13 +380,10 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
     auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1], 64'000);
 
     if (!std::is_sorted(first, last)) {
-      if (verbose) {
-        fmt::print(
-            stderr,
-            FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
-                       "contain duplicate entries)\n"),
-            bin1_offset[i0], bin1_offset[i1]);
-      }
+      error_buffer = fmt::format(
+          FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
+                     "contain duplicate entries)"),
+          bin1_offset[i0], bin1_offset[i1]);
       return false;
     }
   }
@@ -375,8 +401,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::par
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusCooler>::format(
-    const hictk::cooler::utils::ValidationStatusCooler &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusCooler &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),
@@ -408,8 +434,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCool
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusMultiresCooler>::format(
-    const hictk::cooler::utils::ValidationStatusMultiresCooler &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusMultiresCooler &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),
@@ -444,8 +470,8 @@ constexpr auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::pars
 }
 
 inline auto fmt::formatter<hictk::cooler::utils::ValidationStatusScool>::format(
-    const hictk::cooler::utils::ValidationStatusScool &s,
-    format_context &ctx) -> decltype(ctx.out()) {
+    const hictk::cooler::utils::ValidationStatusScool &s, format_context &ctx)
+    -> decltype(ctx.out()) {
   // clang-format off
   return fmt::format_to(
       ctx.out(),

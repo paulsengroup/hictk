@@ -9,11 +9,11 @@
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
 // clang-format on
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_NULL_DEREF
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 #include <initializer_list>
 #include <memory>
@@ -51,7 +51,7 @@ struct Attributes {
 
   // Mandatory attributes
   std::uint32_t bin_size{0};
-  std::optional<std::string> bin_type{"fixed"};  // Mandatory in v3
+  BinTable::Type bin_type{BinTable::Type::fixed};
   std::string format{COOL_MAGIC};
   std::uint8_t format_version{3};
   std::optional<std::string> storage_mode{"symmetric-upper"};  // Mandatory in v3
@@ -274,20 +274,29 @@ class File {
       std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
       std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
 
-  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
-                                                          bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization_,
-                                                          balancing::Weights::Type type,
-                                                          bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view normalization_, bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_,
+                                                        bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_,
+                                                        balancing::Weights::Type type,
+                                                        bool rescale = false) const;
 
   [[nodiscard]] bool has_normalization(std::string_view normalization_) const;
   [[nodiscard]] bool has_normalization(const balancing::Method &normalization_) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
-                                                          bool rescale = false) const;
-  std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization_,
-                                                          balancing::Weights::Type type,
-                                                          bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      const balancing::Method &normalization_, bool rescale = false) const;
+  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+      const balancing::Method &normalization_, balancing::Weights::Type type,
+      bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_,
+                                                        bool rescale = false) const;
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_,
+                                                        balancing::Weights::Type type,
+                                                        bool rescale = false) const;
 
   bool purge_weights(std::string_view name = "");
 
@@ -310,12 +319,12 @@ class File {
   [[nodiscard]] static HighFive::File open_file(std::string_view uri, unsigned int mode,
                                                 bool validate);
 
-  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f,
-                                                      std::string_view uri) -> RootGroup;
+  [[nodiscard]] static auto open_or_create_root_group(HighFive::File f, std::string_view uri)
+      -> RootGroup;
 
   // Open/read groups, datasets and attributes
-  [[nodiscard]] static auto open_root_group(const HighFive::File &f,
-                                            std::string_view uri) -> RootGroup;
+  [[nodiscard]] static auto open_root_group(const HighFive::File &f, std::string_view uri)
+      -> RootGroup;
   [[nodiscard]] static auto open_groups(const RootGroup &root_grp) -> GroupMap;
   [[nodiscard]] static auto open_datasets(const RootGroup &root_grp, std::size_t cache_size_bytes,
                                           double w0) -> DatasetMap;
@@ -326,8 +335,8 @@ class File {
   [[nodiscard]] static auto create_root_group(HighFive::File &f, std::string_view uri,
                                               bool write_sentinel_attr = true) -> RootGroup;
   [[nodiscard]] static auto create_groups(RootGroup &root_grp) -> GroupMap;
-  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp,
-                                          Group bins_grp) -> GroupMap;
+  [[nodiscard]] static auto create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp)
+      -> GroupMap;
   template <typename PixelT>
   [[nodiscard]] static auto create_datasets(RootGroup &root_grp, const Reference &chroms,
                                             std::size_t cache_size_bytes,
@@ -338,7 +347,7 @@ class File {
   [[nodiscard]] static auto import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                           bool missing_ok) -> Reference;
 
-  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, std::string_view bin_type,
+  [[nodiscard]] static BinTable init_bin_table(const DatasetMap &dsets, BinTable::Type bin_type,
                                                std::uint32_t bin_size);
 
   [[nodiscard]] static Index init_index(const Dataset &chrom_offset_dset,

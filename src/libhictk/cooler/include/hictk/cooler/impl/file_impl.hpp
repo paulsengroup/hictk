@@ -44,8 +44,8 @@ inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_siz
       _datasets(open_datasets(_root_group, cache_size_bytes, w0)),
       _attrs(read_standard_attributes(_root_group)),
       _pixel_variant(detect_pixel_type(_root_group)),
-      _bins(std::make_shared<BinTable>(
-          init_bin_table(_datasets, _attrs.bin_type.value(), _attrs.bin_size))),
+      _bins(
+          std::make_shared<BinTable>(init_bin_table(_datasets, _attrs.bin_type, _attrs.bin_size))),
       _index(std::make_shared<Index>(init_index(_datasets.at("indexes/chrom_offset"),
                                                 _datasets.at("indexes/bin1_offset"), _bins,
                                                 _datasets.at("pixels/count").size(), false))) {
@@ -106,7 +106,7 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
     _attrs.cis = std::int64_t(0);
   }
 
-  _bins = std::make_shared<BinTable>(init_bin_table(_datasets, *_attrs.bin_type, _attrs.bin_size));
+  _bins = std::make_shared<BinTable>(init_bin_table(_datasets, _attrs.bin_type, _attrs.bin_size));
   _index = std::make_shared<Index>(_bins);
 
   assert(std::holds_alternative<PixelT>(_pixel_variant));
@@ -218,13 +218,8 @@ template <typename PixelT>
 inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attributes,
                          std::size_t cache_size_bytes, std::uint32_t compression_lvl) {
   static_assert(std::is_arithmetic_v<PixelT>);
-  if (std::holds_alternative<BinTableVariable<>>(bins.get())) {
-    attributes.bin_type = "variable";
-    attributes.bin_size = 0;
-  } else {
-    attributes.bin_type = "fixed";
-    attributes.bin_size = bins.resolution();
-  }
+  attributes.bin_type = bins.type();
+  attributes.bin_size = bins.resolution();
 
   try {
     if (utils::is_cooler(entrypoint())) {
@@ -298,7 +293,7 @@ inline HighFive::File File::open_file(std::string_view uri, unsigned int mode, b
     throw std::runtime_error(
         fmt::format(FMT_STRING("\"{}\" does not look like a valid Cooler file:\n"
                                "Validation report:\n{}"),
-                    uri, status));
+                    uri, fmt::to_string(status)));
   }
 
   return f;
@@ -311,8 +306,8 @@ inline auto File::open_or_create_root_group(HighFive::File f, std::string_view u
   return create_root_group(f, uri);
 }
 
-DISABLE_WARNING_PUSH
-DISABLE_WARNING_UNREACHABLE_CODE
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 namespace internal {
 template <typename Variant, std::size_t i = 0>
 [[nodiscard]] inline Variant read_pixel_variant(const HighFive::DataSet &dset) {
@@ -333,7 +328,7 @@ template <typename Variant, std::size_t i = 0>
         fmt::format(FMT_STRING("Unsupported type for dataset \"{}\""), dset.getPath()));
   }
 }
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 }  // namespace internal
 
 inline hictk::internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,

@@ -31,7 +31,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     std::ignore = File::create(path.string(), chroms, bin_size, true);
     CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
     CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
-    CHECK(File(path.string()).attributes().bin_type.value() == "fixed");  // NOLINT
+    CHECK(File(path.string()).attributes().bin_type == BinTable::Type::fixed);
   }
 
   SECTION("variable bins") {
@@ -48,7 +48,7 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     std::ignore = File::create(path.string(), table, true);
     CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
     CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
-    CHECK(File(path.string()).attributes().bin_type.value() == "variable");  // NOLINT
+    CHECK(File(path.string()).attributes().bin_type == BinTable::Type::variable);
   }
 }
 
@@ -111,6 +111,18 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     CHECK(f.chromosomes().size() == 2);
     CHECK(f.bins().size() == 8);
     CHECK(f.has_pixel_of_type<std::int32_t>());
+  }
+
+  SECTION("open .cool (storage-mode=square)") {
+    const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+    const File f(path.string());
+
+    CHECK(f.uri() == path.string());
+    CHECK(f.resolution() == 1000);
+    CHECK(f.chromosomes().size() == 10);
+    CHECK(f.bins().size() == 3000);
+    CHECK(f.has_pixel_of_type<std::int32_t>());
+    CHECK(f.attributes().storage_mode == "square");
   }
 
   SECTION("open .scool") {

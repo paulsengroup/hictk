@@ -5,16 +5,14 @@
 #pragma once
 
 #include <cstdint>
-#include <limits>
-#include <map>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "hictk/bin.hpp"
-#include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
 
 namespace hictk {
@@ -52,7 +50,7 @@ inline std::size_t BinTable::num_chromosomes() const {
 }
 
 constexpr std::uint32_t BinTable::resolution() const noexcept {
-  if (std::holds_alternative<BinTableFixed>(_table)) {
+  if (type() == BinTable::Type::fixed) {
     return std::get<BinTableFixed>(_table).resolution();
   }
   return 0;
@@ -62,8 +60,10 @@ constexpr const Reference &BinTable::chromosomes() const noexcept {
   return std::visit([&](const auto &t) -> const Reference & { return t.chromosomes(); }, _table);
 }
 
-constexpr bool BinTable::has_fixed_resolution() const noexcept {
-  return std::holds_alternative<BinTableFixed>(_table);
+constexpr bool BinTable::has_fixed_resolution() const noexcept { return type() == Type::fixed; }
+
+constexpr auto BinTable::type() const noexcept -> Type {
+  return std::holds_alternative<BinTableFixed>(_table) ? Type::fixed : Type::variable;
 }
 
 constexpr const std::vector<std::uint64_t> &BinTable::num_bin_prefix_sum() const noexcept {
@@ -101,16 +101,17 @@ inline auto BinTable::find_overlap(const GenomicInterval &query) const
   return std::visit(
       [&](const auto &t) {
         auto its = t.find_overlap(query);
-        DISABLE_WARNING_PUSH
-        DISABLE_WARNING_MAYBE_UNINITIALIZED
+        HICTK_DISABLE_WARNING_PUSH
+        HICTK_DISABLE_WARNING_MAYBE_UNINITIALIZED
         return std::make_pair(iterator{its.first}, iterator{its.second});
-        DISABLE_WARNING_POP
+        HICTK_DISABLE_WARNING_POP
       },
       _table);
 }
 
-inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start, std::uint32_t end)
-    const -> std::pair<BinTable::iterator, BinTable::iterator> {
+inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                   std::uint32_t end) const
+    -> std::pair<BinTable::iterator, BinTable::iterator> {
   return find_overlap(GenomicInterval{chrom, start, end});
 }
 
@@ -120,8 +121,9 @@ inline auto BinTable::find_overlap(std::string_view chrom_name, std::uint32_t st
   return find_overlap(chromosomes().at(chrom_name), start, end);
 }
 
-inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start, std::uint32_t end)
-    const -> std::pair<BinTable::iterator, BinTable::iterator> {
+inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                   std::uint32_t end) const
+    -> std::pair<BinTable::iterator, BinTable::iterator> {
   return find_overlap(chromosomes().at(chrom_id), start, end);
 }
 
@@ -253,9 +255,8 @@ constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
 inline auto BinTable::iterator::operator*() const -> value_type {
   return std::visit([&](const auto &it) { return *it; }, _it);
 }
-inline auto BinTable::iterator::operator[](std::size_t i) const -> iterator {
-  std::visit([&](const auto &it) { std::ignore = it + i; }, _it);
-  return *this;
+inline auto BinTable::iterator::operator[](difference_type i) const -> value_type {
+  return std::visit([&](const auto &it) { return it[i]; }, _it);
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {
@@ -269,12 +270,12 @@ inline auto BinTable::iterator::operator++(int) -> iterator {
   return old_it;
 }
 
-inline auto BinTable::iterator::operator+=(std::size_t i) -> iterator & {
+inline auto BinTable::iterator::operator+=(difference_type i) -> iterator & {
   std::visit([&](auto &it) { std::ignore = it += i; }, _it);
   return *this;
 }
 
-inline auto BinTable::iterator::operator+(std::size_t i) const -> iterator {
+inline auto BinTable::iterator::operator+(difference_type i) const -> iterator {
   auto it = *this;
   it += i;
   return it;
@@ -291,12 +292,12 @@ inline auto BinTable::iterator::operator--(int) -> iterator {
   return old_it;
 }
 
-inline auto BinTable::iterator::operator-=(std::size_t i) -> iterator & {
+inline auto BinTable::iterator::operator-=(difference_type i) -> iterator & {
   std::visit([&](auto &it) { std::ignore = it -= i; }, _it);
   return *this;
 }
 
-inline auto BinTable::iterator::operator-(std::size_t i) const -> iterator {
+inline auto BinTable::iterator::operator-(difference_type i) const -> iterator {
   auto it = *this;
   it -= i;
   return it;

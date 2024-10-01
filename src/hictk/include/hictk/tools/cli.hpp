@@ -172,27 +172,27 @@ class Formatter : public CLI::Formatter {
 };
 
 // clang-format off
-    inline const auto IsValidCoolerFile = CoolerFileValidator();                      // NOLINT(cert-err58-cpp)
-    inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();      // NOLINT(cert-err58-cpp)
-    inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();  // NOLINT(cert-err58-cpp)
-    inline const auto IsValidHiCFile = HiCFileValidator();                            // NOLINT(cert-err58-cpp)
+inline const auto IsValidCoolerFile = CoolerFileValidator();                      // NOLINT(cert-err58-cpp)
+inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();      // NOLINT(cert-err58-cpp)
+inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();  // NOLINT(cert-err58-cpp)
+inline const auto IsValidHiCFile = HiCFileValidator();                            // NOLINT(cert-err58-cpp)
 // clang-format on
 
 // clang-format off
 // NOLINTNEXTLINE(cert-err58-cpp)
-    inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
-            std::map<std::string, hictk::hic::MatrixType>{
-                    {"observed", hictk::hic::MatrixType::observed},
-                    {"oe", hictk::hic::MatrixType::oe},
-                    {"expected", hictk::hic::MatrixType::expected}},
-            CLI::ignore_case);
+inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
+        std::map<std::string, hictk::hic::MatrixType>{
+                {"observed",  hictk::hic::MatrixType::observed},
+                {"oe",        hictk::hic::MatrixType::oe},
+                {"expected",  hictk::hic::MatrixType::expected}},
+        CLI::ignore_case);
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-    inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
-            std::map<std::string, hictk::hic::MatrixUnit>{
-                    {"BP", hictk::hic::MatrixUnit::BP},
-                    {"FRAG", hictk::hic::MatrixUnit::FRAG}},
-            CLI::ignore_case);
+inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
+        std::map<std::string, hictk::hic::MatrixUnit>{
+                {"BP",   hictk::hic::MatrixUnit::BP},
+                {"FRAG", hictk::hic::MatrixUnit::FRAG}},
+        CLI::ignore_case);
 // clang-format on
 
 class Cli {
@@ -264,6 +264,7 @@ class Cli {
   void transform_args_merge_subcommand();
   void transform_args_metadata_subcommand();
   void transform_args_rename_chromosomes_subcommand();
+  void transform_args_validate_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
 };

@@ -99,9 +99,10 @@ inline CoarsenPixels<PixelIt>::iterator::iterator(PixelIt first, PixelIt last,
 }
 
 template <typename PixelIt>
-inline auto CoarsenPixels<PixelIt>::iterator::at_end(
-    PixelIt last, std::shared_ptr<const BinTable> src_bins,
-    std::shared_ptr<const BinTable> dest_bins) -> iterator {
+inline auto CoarsenPixels<PixelIt>::iterator::at_end(PixelIt last,
+                                                     std::shared_ptr<const BinTable> src_bins,
+                                                     std::shared_ptr<const BinTable> dest_bins)
+    -> iterator {
   iterator it{};
   it._pixel_it = last;
   it._pixel_last = last;

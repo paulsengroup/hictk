@@ -28,6 +28,8 @@ void Cli::make_balance_subcommand() {
   auto& sc = *_cli.add_subcommand("balance", "Balance Hi-C matrices using ICE, SCALE, or VC.")
                   ->fallthrough();
 
+  sc.require_subcommand(1);
+
   make_ice_balance_subcommand(sc);
   make_scale_balance_subcommand(sc);
   make_vc_balance_subcommand(sc);
@@ -233,7 +235,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
@@ -322,7 +324,7 @@ void Cli::make_vc_balance_subcommand(CLI::App& app) {
       "Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and gw, respectively.")
       ->capture_default_str();
   sc.add_flag(
-      "--create-weight-link" ,
+      "--create-weight-link,!--no-create-weight-link",
       c.symlink_to_weight,
       "Create a symbolic link to the balancing weights at clr::/bins/weight.\n"
       "Ignored when balancing .hic files")
@@ -354,9 +356,11 @@ void Cli::validate_balance_subcommand() const {
     config = std::get<BalanceICEConfig>(_config);
   } else if (std::holds_alternative<BalanceSCALEConfig>(_config)) {
     config = std::get<BalanceSCALEConfig>(_config);
-  } else {
-    assert(std::holds_alternative<BalanceVCConfig>(_config));
+  } else if (std::holds_alternative<BalanceVCConfig>(_config)) {
     config = std::get<BalanceVCConfig>(_config);
+  } else {
+    assert(std::holds_alternative<std::monostate>(_config));
+    return;
   }
 
   std::vector<std::string> errors;
@@ -386,8 +390,10 @@ void Cli::transform_args_balance_subcommand() {
     transform_args_ice_balance_subcommand();
   } else if (std::holds_alternative<BalanceSCALEConfig>(_config)) {
     transform_args_scale_balance_subcommand();
-  } else {
+  } else if (std::holds_alternative<BalanceVCConfig>(_config)) {
     transform_args_vc_balance_subcommand();
+  } else {
+    assert(std::holds_alternative<std::monostate>(_config));
   }
 }
 

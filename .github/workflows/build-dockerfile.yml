@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Roberto Rossini (roberros@uio.no)
+# Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
 # SPDX-License-Identifier: MIT
 
 name: Build Dockerfile
@@ -11,10 +11,12 @@ on:
       - "cmake/**"
       - "external/**"
       - "src/**"
-      - "test/**"
+      - "test/integration/**"
+      - "utils/devel/test_docker_image.sh"
+      - ".dockerignore"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.py"
+      - "conanfile.Dockerfile.py"
     tags:
       - "v*.*.*"
 
@@ -24,10 +26,12 @@ on:
       - "cmake/**"
       - "external/**"
       - "src/**"
-      - "test/**"
+      - "test/integration/**"
+      - "utils/devel/test_docker_image.sh"
+      - ".dockerignore"
       - "CMakeLists.txt"
       - "Dockerfile"
-      - "conanfile.py"
+      - "conanfile.Dockerfile.py"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -41,6 +45,7 @@ defaults:
 jobs:
   cache-test-dataset:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+    name: Cache test dataset
 
   build-dockerfile:
     name: Build Dockerfile
@@ -57,7 +62,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
-          path: test/data/hictk_test_data.tar.xz
+          path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
 
       - name: Generate build args
@@ -69,8 +74,8 @@ jobs:
 
           OS_NAME='ubuntu'
           OS_VERSION='22.04'
-          C_COMPILER='clang-18'
-          CXX_COMPILER='clang++-18'
+          C_COMPILER='clang-19'
+          CXX_COMPILER='clang++-19'
 
           BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
           TEST_BASE_IMAGE="$BUILD_BASE_IMAGE"
@@ -92,18 +97,22 @@ jobs:
             VERSION="$GIT_TAG"
           fi
 
-          echo "C_COMPILER=$C_COMPILER" >> $GITHUB_OUTPUT
-          echo "CXX_COMPILER=$CXX_COMPILER" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" >> $GITHUB_OUTPUT
-          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" >> $GITHUB_OUTPUT
-          echo "GIT_HASH=$GIT_HASH" >> $GITHUB_OUTPUT
-          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" >> $GITHUB_OUTPUT
-          echo "CREATION_DATE=$CREATION_DATE" >> $GITHUB_OUTPUT
-          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_OUTPUT
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          CACHE_REGISTRY='ghcr.io/${{ github.repository }}:buildcache'
+
+          echo "C_COMPILER=$C_COMPILER" | tee -a "$GITHUB_OUTPUT"
+          echo "CXX_COMPILER=$CXX_COMPILER" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" | tee -a "$GITHUB_OUTPUT"
+          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
+          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_HASH=$GIT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "CREATION_DATE=$CREATION_DATE" | tee -a "$GITHUB_OUTPUT"
+          echo "GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" | tee -a "$GITHUB_OUTPUT"
+          echo "CACHE_REGISTRY_X86=$CACHE_REGISTRY-x86" | tee -a "$GITHUB_OUTPUT"
+          echo "CACHE_REGISTRY_ARM64=$CACHE_REGISTRY-arm64" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
@@ -138,6 +147,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Set up QEMU
+        if: github.event_name != 'pull_request'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -148,9 +158,9 @@ jobs:
           context: ${{ github.workspace }}
           load: true
           push: false
-          cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=max,scope=build-dockerfile
-          tags: hictk:test
+          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }}
+          cache-to: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }},mode=max,compression=zstd
+          tags: hictk:x86
           platforms: linux/amd64
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
@@ -168,19 +178,17 @@ jobs:
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
       - name: Test Docker image (x86)
-        run: |
-          utils/devel/test_docker_image.sh hictk:test
+        run: utils/devel/test_docker_image.sh hictk:x86
 
       - name: Build Docker image (arm64)
-        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
         with:
           context: ${{ github.workspace }}
-          load: true
           push: false
-          cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=max,scope=build-dockerfile
-          tags: hictk:test
+          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }}
+          cache-to: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }},mode=max,compression=zstd
+          tags: hictk:arm64
           platforms: linux/arm64
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
@@ -203,8 +211,9 @@ jobs:
         with:
           context: ${{ github.workspace }}
           push: true
-          cache-from: type=gha,scope=build-dockerfile
-          cache-to: type=gha,mode=max,scope=build-dockerfile
+          cache-from: |
+            type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }}
+            type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64,linux/arm64
           build-args: |
@@ -231,6 +240,5 @@ jobs:
 
     steps:
       - name: Collect job results
-        if: |
-          needs.build-dockerfile.result != 'success'
+        if: needs.build-dockerfile.result != 'success'
         run: exit 1

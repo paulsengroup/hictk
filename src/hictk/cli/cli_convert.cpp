@@ -25,6 +25,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/string_utils.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -32,7 +33,7 @@
 namespace hictk::tools {
 
 void Cli::make_convert_subcommand() {
-  auto& sc = *_cli.add_subcommand("convert", "Convert HiC matrices to a different format.")
+  auto& sc = *_cli.add_subcommand("convert", "Convert Hi-C matrices to a different format.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -123,6 +124,14 @@ void Cli::make_convert_subcommand() {
       "Do not generate All vs All matrix.\n"
       "Has no effect when creating .[m]cool files.")
       ->capture_default_str();
+  sc.add_option(
+      "--count-type",
+      c.count_type,
+      "Specify the strategy used to infer count types when converting .hic\n"
+      "files to .[m]cool format.\n"
+      "Can be one of: int, float, auto.")
+      ->check(CLI::IsMember{{"auto", "int", "float"}})
+      ->capture_default_str();
   sc.add_flag(
       "-f,--force",
       c.force,
@@ -182,6 +191,25 @@ void Cli::validate_convert_subcommand() const {
     if ((is_hic && c.output_format == "hic") || (is_cool && c.output_format == "cool") ||
         (is_mcool && c.output_format == "mcool")) {
       errors.emplace_back("input and output file already are in the same format");
+    }
+  }
+
+  const auto output_format =
+      c.output_format.empty() ? infer_output_format(c.path_to_output) : c.output_format;
+  if (is_cool && output_format == "hic") {
+    const auto storage_mode = cooler::File(c.path_to_input.string()).attributes().storage_mode;
+    if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+      errors.emplace_back(fmt::format(
+          FMT_STRING("converting .cool with storage-mode=\"{}\" to .hic format is not supported"),
+          *storage_mode));
+    }
+  } else if (is_mcool && output_format == "hic") {
+    const cooler::MultiResFile mclr(c.path_to_input.string());
+    const auto storage_mode = mclr.open(mclr.resolutions().front()).attributes().storage_mode;
+    if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
+      errors.emplace_back(fmt::format(
+          FMT_STRING("converting .mcool with storage-mode=\"{}\" to .hic format is not supported"),
+          *storage_mode));
     }
   }
 
@@ -255,6 +283,36 @@ void Cli::transform_args_convert_subcommand() {
 
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+  }
+
+  // validate transformed args
+  std::vector<std::string> errors;
+  if (internal::ends_with(c.input_format, "cool") && internal::ends_with(c.output_format, "cool")) {
+    if (c.input_format == c.output_format) {
+      errors.emplace_back(fmt::format(FMT_STRING("input is already in {} format"), c.input_format));
+    } else {
+      errors.emplace_back(fmt::format(FMT_STRING("converting {} -> {} is not supported"),
+                                      c.input_format, c.output_format));
+    }
+  }
+
+  if (internal::starts_with(c.input_format, "hic") &&
+      internal::starts_with(c.output_format, "hic")) {
+    errors.emplace_back("input is already in hic format");
+  }
+
+  if (internal::starts_with(c.input_format, "hic") && c.output_format == "cool" &&
+      c.resolutions.size() != 1) {
+    errors.emplace_back(
+        "converting multi-resolution .hic files to .cool format requires specifying the resolution "
+        "to be converted through the --resolutions option");
+  }
+
+  if (!errors.empty()) {
+    throw std::runtime_error(fmt::format(
+        FMT_STRING(
+            "The following error(s) where encountered while validating CLI arguments:\n - {}"),
+        fmt::join(errors, "\n - ")));
   }
 }
 

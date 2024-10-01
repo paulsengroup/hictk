@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string_view>
 #include <type_traits>
@@ -34,8 +35,8 @@ struct ThinPixel {
   [[nodiscard]] bool operator>=(const ThinPixel &other) const noexcept;
 
   static auto from_coo(std::string_view line, std::int64_t offset = 0) -> ThinPixel;
-  static auto from_coo(const BinTable &bins, std::string_view line,
-                       std::int64_t offset = 0) -> ThinPixel;
+  static auto from_coo(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
+      -> ThinPixel;
 };
 
 struct PixelCoordinates {
@@ -48,6 +49,8 @@ struct PixelCoordinates {
   explicit PixelCoordinates(Bin bin) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+
   [[nodiscard]] bool operator==(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator!=(const PixelCoordinates &other) const noexcept;
   [[nodiscard]] bool operator<(const PixelCoordinates &other) const noexcept;
@@ -86,16 +89,26 @@ struct Pixel {
   [[nodiscard]] bool operator>=(const Pixel<N> &other) const noexcept;
 
   [[nodiscard]] ThinPixel<N> to_thin() const noexcept;
-  static auto from_coo(const BinTable &bins, std::string_view line,
-                       std::int64_t offset = 0) -> Pixel;
-  static auto from_bg2(const BinTable &bins, std::string_view line,
-                       std::int64_t offset = 0) -> Pixel;
-  static auto from_validpair(const BinTable &bins, std::string_view line,
-                             std::int64_t offset = 0) -> Pixel;
-  static auto from_4dn_pairs(const BinTable &bins, std::string_view line,
-                             std::int64_t offset = 0) -> Pixel;
+  static auto from_coo(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
+      -> Pixel;
+  static auto from_bg2(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
+      -> Pixel;
+  static auto from_validpair(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
+      -> Pixel;
+  static auto from_4dn_pairs(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
+      -> Pixel;
 };
 
 }  // namespace hictk
+
+template <typename N>
+struct std::hash<hictk::ThinPixel<N>> {
+  std::size_t operator()(const hictk::ThinPixel<N> &p) const noexcept;
+};
+
+template <typename N>
+struct std::hash<hictk::Pixel<N>> {
+  std::size_t operator()(const hictk::Pixel<N> &p) const noexcept;
+};
 
 #include "./impl/pixel_impl.hpp"  // NOLINT

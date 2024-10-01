@@ -41,11 +41,7 @@ namespace hictk::cooler {
 inline SingleCellAttributes SingleCellAttributes::init(std::uint32_t bin_size_) {
   SingleCellAttributes attrs{};
   attrs.bin_size = bin_size_;
-  if (bin_size_ == 0) {
-    attrs.bin_type = "variable";
-  } else {
-    attrs.bin_type = "fixed";
-  }
+  attrs.bin_type = bin_size_ == 0 ? BinTable::Type::variable : BinTable::Type::fixed;
   return attrs;
 }
 
@@ -117,7 +113,7 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   RootGroup root_grp{fp.getGroup("/")};
 
   attributes.bin_size = bins.resolution();
-  attributes.bin_type = bins.resolution() == 0 ? "variable" : "fixed";
+  attributes.bin_type = bins.resolution() == 0 ? BinTable::Type::variable : BinTable::Type::fixed;
   create_groups(root_grp);
   create_datasets(root_grp, bins);
 
@@ -209,6 +205,9 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
                                       std::uint32_t compression_lvl, std::size_t chunk_size,
                                       std::size_t update_frequency) const {
   if (_cells.size() == 1) {
+    if (overwrite_if_exists && std::filesystem::exists(uri)) {
+      std::filesystem::remove(uri);
+    }
     utils::copy(open(*_cells.begin()).uri(), uri);
     return File(uri);
   }
@@ -232,7 +231,7 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
   return File(uri);
 }
 
-DISABLE_WARNING_PUSH DISABLE_WARNING_UNREACHABLE_CODE inline SingleCellAttributes
+HICTK_DISABLE_WARNING_PUSH HICTK_DISABLE_WARNING_UNREACHABLE_CODE inline SingleCellAttributes
 SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initialize_missing) {
   const RootGroup root_grp{f.getGroup("/")};
   auto attrs =
@@ -252,7 +251,9 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 
   // Read mandatory attributes
   read_or_throw("bin-size", attrs.bin_size);
-  read_or_throw("bin-type", attrs.bin_type);
+  std::string bin_type{"fixed"};
+  read_or_throw("bin-type", bin_type);
+  attrs.bin_type = bin_type == "fixed" ? BinTable::Type::fixed : BinTable::Type::variable;
   read_or_throw("format", attrs.format);
   read_or_throw("format-version", attrs.format_version);
 
@@ -276,14 +277,14 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 
   return attrs;
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
-DISABLE_WARNING_POP
+HICTK_DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
   const RootGroup root_grp{f.getGroup("/")};
   auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
                                     Dataset(root_grp, f.getDataSet("/chroms/length")), false);
-  const auto bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
+  const std::string bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
   if (bin_type == "fixed") {
     const auto bin_size = Attribute::read<std::uint32_t>(root_grp(), "bin-size");
 
@@ -317,7 +318,8 @@ inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
   Attribute::write(root_grp(), "assembly",
                    attrs.assembly.has_value() ? *attrs.assembly : "unknown");
   Attribute::write(root_grp(), "bin-size", attrs.bin_size);
-  Attribute::write(root_grp(), "bin-type", attrs.bin_type);
+  const std::string bin_type = attrs.bin_type == BinTable::Type::fixed ? "fixed" : "variable";
+  Attribute::write(root_grp(), "bin-type", bin_type);
   if (attrs.creation_date.has_value()) {
     Attribute::write(root_grp(), "creation-date", *attrs.creation_date);
   }

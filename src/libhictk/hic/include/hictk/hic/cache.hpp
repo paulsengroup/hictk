@@ -54,11 +54,11 @@ class BlockCache {
   BlockCache() = delete;
   explicit BlockCache(std::size_t capacity_bytes);
 
-  [[nodiscard]] auto find(std::size_t chrom1_id, std::size_t chrom2_id,
-                          std::size_t block_id) -> Value;
+  [[nodiscard]] auto find(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id)
+      -> Value;
 
-  auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
-               Value block) -> Value;
+  auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id, Value block)
+      -> Value;
   auto emplace(std::size_t chrom1_id, std::size_t chrom2_id, std::size_t block_id,
                InteractionBlock&& block) -> Value;
 
@@ -89,8 +89,11 @@ class WeightCache {
  public:
   WeightCache() = default;
 
-  [[nodiscard]] auto find_or_emplace(std::uint32_t chrom_id, balancing::Method norm) -> Value;
-  [[nodiscard]] auto find_or_emplace(const Chromosome& chrom, balancing::Method norm) -> Value;
+  [[nodiscard]] auto get_or_init(std::uint32_t chrom_id, balancing::Method norm) -> Value;
+  [[nodiscard]] auto get_or_init(const Chromosome& chrom, balancing::Method norm) -> Value;
+
+  [[nodiscard]] auto at(std::uint32_t chrom_id, balancing::Method norm) const -> Value;
+  [[nodiscard]] auto at(const Chromosome& chrom, balancing::Method norm) const -> Value;
 
   void clear() noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

@@ -49,13 +49,15 @@ class BinTableVariable {
 
   [[nodiscard]] auto find_overlap(const GenomicInterval &query) const
       -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
-  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
+  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
   [[nodiscard]] auto find_overlap(std::string_view chrom_name, std::uint32_t start,
                                   std::uint32_t end) const
       -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
-  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
+  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTableVariable::iterator, BinTableVariable::iterator>;
 
   // Map bin_id to Bin
   [[nodiscard]] Bin at(std::uint64_t bin_id) const;
@@ -108,17 +110,17 @@ class BinTableVariable {
     constexpr bool operator>=(const iterator &other) const noexcept;
 
     auto operator*() const noexcept -> value_type;
-    auto operator[](std::size_t i) const -> iterator;
+    auto operator[](difference_type i) const -> value_type;
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
-    auto operator+=(std::size_t i) -> iterator &;
-    auto operator+(std::size_t i) const -> iterator;
+    auto operator+=(difference_type i) -> iterator &;
+    auto operator+(difference_type i) const -> iterator;
 
     auto operator--() -> iterator &;
     auto operator--(int) -> iterator;
-    auto operator-=(std::size_t i) -> iterator &;
-    auto operator-(std::size_t i) const -> iterator;
+    auto operator-=(difference_type i) -> iterator &;
+    auto operator-(difference_type i) const -> iterator;
     auto operator-(const iterator &other) const -> difference_type;
 
    private:
