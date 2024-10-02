@@ -6,10 +6,13 @@
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,7 +29,7 @@ const auto path_plaintext = (datadir / "data.txt").string();  // NOLINT(cert-err
 const auto path_binary = (datadir / "data.zip").string();     // NOLINT(cert-err58-cpp)
 const auto& path = path_plaintext;
 
-static std::string read_file(const std::string& path_) {
+[[maybe_unused]] static std::string read_file(const std::string& path_) {
   std::ifstream ifs(path_, std::ios::ate);
   REQUIRE(ifs);
   const auto size = ifs.tellg();
@@ -37,7 +40,8 @@ static std::string read_file(const std::string& path_) {
   return buff;
 }
 
-static std::vector<std::string> read_file_by_line(const std::string& path_, char delim = '\n') {
+[[maybe_unused]] static std::vector<std::string> read_file_by_line(const std::string& path_,
+                                                                   char delim = '\n') {
   std::ifstream ifs(path_);
   REQUIRE(ifs);
 
@@ -53,15 +57,15 @@ static std::vector<std::string> read_file_by_line(const std::string& path_, char
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
+TEST_CASE("FileStream ctor", "[filestream][short]") {
   SECTION("default") {
-    const FileStream s{};
+    const FileStream<> s{};
     CHECK(s.path().empty());
     CHECK(s.size() == 0);
   }
 
   SECTION("valid path (read)") {
-    const FileStream s(path_plaintext);
+    const FileStream<> s(path_plaintext, nullptr);
     CHECK(s.path() == path_plaintext);
     CHECK(s.size() == 502941);
     CHECK(!s.eof());
@@ -69,19 +73,19 @@ TEST_CASE("HiC: filestream ctor", "[hic][filestream][short]") {
 
   SECTION("valid path (write)") {
     const auto path1 = testdir() / "filestream_ctor_write.bin";
-    const auto s = FileStream::create(path1.string());
+    const auto s = FileStream<>::create(path1.string(), nullptr);
     CHECK(s.path() == path1);
     CHECK(s.size() == 0);
     CHECK(!s.eof());
   }
 
-  SECTION("invalid path") { CHECK_THROWS(FileStream("not-a-path")); }
+  SECTION("invalid path") { CHECK_THROWS(FileStream<>("not-a-path", nullptr)); }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
+TEST_CASE("FileStream seek", "[filestream][short]") {
   SECTION("read") {
-    FileStream s(path_plaintext);
+    FileStream<> s(path_plaintext, nullptr);
     SECTION("seek within chunk") {
       s.seekg(5);
       CHECK(s.tellg() == 5);
@@ -113,14 +117,14 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
       CHECK_THROWS(s.seekg(1, std::ios::cur));
 
       s.seekg(0);
-      CHECK_THROWS(s.seekg(1, std::ios::end));
+      CHECK_THROWS(s.seekg(-1, std::ios::end));
       CHECK(s.tellg() == 0);
     }
   }
   SECTION("write") {
     const auto path1 = testdir() / "filestream_seek.bin";
-    std::filesystem::remove(path1);
-    auto s = FileStream::create(path1.string());
+    std::filesystem::remove(path1);  // NOLINT
+    auto s = FileStream<>::create(path1.string(), nullptr);
 
     SECTION("seek within chunk") {
       s.seekp(5);
@@ -156,12 +160,11 @@ TEST_CASE("HiC: filestream seek", "[hic][filestream][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream read", "[hic][filestream][short]") {
-  FileStream s(path_plaintext);
-
+TEST_CASE("FileStream read", "[filestream][short]") {
+  FileStream<> s(path_plaintext, nullptr);
   std::string buffer{"garbage"};
   const auto expected = read_file(path);
-  REQUIRE(s.size() == expected.size());
+  REQUIRE(s.size() == static_cast<std::streamsize>(expected.size()));
 
   SECTION("small read") {
     s.read(buffer, 10);
@@ -169,7 +172,7 @@ TEST_CASE("HiC: filestream read", "[hic][filestream][short]") {
   }
 
   SECTION("large read") {
-    s.read(buffer, s.size());
+    s.read(buffer, static_cast<std::size_t>(s.size()));
     CHECK(buffer == expected);
   }
 
@@ -179,16 +182,14 @@ TEST_CASE("HiC: filestream read", "[hic][filestream][short]") {
   }
 
   SECTION("seek and read") {
-    const auto offset = s.size() - 10;
-    s.seekg(std::int64_t(offset));
-    s.read(buffer, 10);
+    const auto offset = static_cast<std::size_t>(s.size() - 10);
+    s.seek_and_read(static_cast<std::int64_t>(offset), buffer, 10);
     CHECK(buffer == expected.substr(offset));
   }
 
   SECTION("seek and read out-of-bound") {
-    const auto offset = s.size() - 10;
-    s.seekg(std::int64_t(offset));
-    CHECK_THROWS(s.read(buffer, 11));
+    const auto offset = static_cast<std::streampos>(s.size() - 10);
+    CHECK_THROWS(s.seek_and_read(offset, buffer, 11));
   }
 
   SECTION("read within chunk") {
@@ -198,11 +199,64 @@ TEST_CASE("HiC: filestream read", "[hic][filestream][short]") {
     s.read(buffer, 5);
     CHECK(buffer == expected.substr(5, 5));
   }
+
+  SECTION("multi-threaded") {
+    s = FileStream<>(path_plaintext, std::make_shared<std::mutex>());
+
+    const std::streampos offset1 = 0;
+    const std::streampos offset2 = 5;
+
+    s.seekg(offset1);
+    const auto expected1 = s.read(10);
+    s.seekg(offset2);
+    const auto expected2 = s.read(10);
+
+    REQUIRE(expected1.size() == 10);
+    REQUIRE(expected2.size() == 10);
+
+    std::atomic<std::size_t> threads_started{};
+
+    auto worker = [&](std::size_t id, std::streampos offset, std::string_view expected_) {
+      std::string buffer_;
+      std::size_t tests = 0;
+      std::size_t failures = 0;
+
+      threads_started++;
+      while (threads_started != 2);
+
+      try {
+        const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
+          buffer_.clear();
+          const auto new_offset = s.seek_and_read(offset, buffer_, expected_.size()).second;
+          CHECK(new_offset == offset + std::streamoff(expected_.size()));
+          const auto success = expected_ == buffer_;
+          failures += !success;
+          CHECK(success);
+        }
+
+        return std::make_pair(tests, failures);
+      } catch (const std::exception& e) {
+        throw std::runtime_error("Exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + "): " + e.what());
+      } catch (...) {
+        throw std::runtime_error("Unknown exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + ")");
+      }
+    };
+
+    auto w1 = std::async(std::launch::async, worker, 1, offset1, expected1);
+    auto w2 = std::async(std::launch::async, worker, 2, offset2, expected2);
+
+    const auto [tests1, fails1] = w1.get();
+    const auto [tests2, fails2] = w2.get();
+    printf("performed %zu reads (%zu failures)\n", tests1 + tests2, fails1 + fails2);  // NOLINT
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream read_append", "[hic][filestream][short]") {
-  FileStream s(path_plaintext);
+TEST_CASE("FileStream read_append", "[filestream][short]") {
+  FileStream<> s(path_plaintext, nullptr);
 
   std::string buffer;
   const auto expected = read_file(path);
@@ -219,7 +273,7 @@ TEST_CASE("HiC: filestream read_append", "[hic][filestream][short]") {
   }
 
   SECTION("large append") {
-    s.read_append(buffer, s.size());
+    s.read_append(buffer, static_cast<std::size_t>(s.size()));
     CHECK(buffer == expected);
   }
 
@@ -229,14 +283,14 @@ TEST_CASE("HiC: filestream read_append", "[hic][filestream][short]") {
   }
 
   SECTION("out-of-bound read") {
-    s.seekg(-1, std::ios::end);
+    s.seekg(1, std::ios::end);
     CHECK_THROWS(s.read_append(buffer, 10));
   }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream getline", "[hic][filestream][short]") {
-  FileStream s(path_plaintext);
+TEST_CASE("FileStream getline", "[filestream][short]") {
+  FileStream<> s(path_plaintext, nullptr);
 
   std::string buffer;
   const auto expected = read_file_by_line(path);
@@ -249,12 +303,12 @@ TEST_CASE("HiC: filestream getline", "[hic][filestream][short]") {
   }
 
   SECTION("seek and getline") {
-    s.seekg(765);
-    CHECK(s.getline(buffer) == true);
+    auto status = s.seek_and_getline(765, buffer);
+    CHECK(std::get<0>(status) == true);
     CHECK(buffer == "ibes the overall architecture of HTTP,");
 
-    s.seekg(0);
-    CHECK(s.getline(buffer) == true);
+    status = s.seek_and_getline(0, buffer);
+    CHECK(std::get<0>(status) == true);
     CHECK(buffer == expected.at(0));
   }
 
@@ -275,12 +329,67 @@ TEST_CASE("HiC: filestream getline", "[hic][filestream][short]") {
     CHECK(s.getline(buffer, ':'));
     CHECK(buffer == " Ed.\nRequest for Comments");
   }
+
+  SECTION("multi-threaded") {
+    s = FileStream<>(path_plaintext, std::make_shared<std::mutex>());
+
+    const std::streampos offset1 = 25;
+    const std::streampos offset2 = 30;
+
+    s.seekg(offset1);
+    const auto expected1 = s.getline();
+    s.seekg(offset2);
+    const auto expected2 = s.getline();
+
+    REQUIRE(!expected1.empty());
+    REQUIRE(!expected2.empty());
+
+    std::atomic<std::size_t> threads_started{};
+
+    auto worker = [&](std::size_t id, std::streampos offset, std::string_view expected_) {
+      std::string buffer_;
+      std::size_t tests = 0;
+      std::size_t failures = 0;
+
+      threads_started++;
+      while (threads_started != 2);
+
+      try {
+        const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
+          buffer_.clear();
+          const auto status = s.seek_and_getline(offset, buffer_);
+          const auto delimiter_found = std::get<0>(status);
+          CHECK(std::get<2>(status) == offset + std::streamoff(expected_.size() + delimiter_found));
+          const auto success = expected_ == buffer_;
+          failures += !success;
+          CHECK(success);
+        }
+
+        return std::make_pair(tests, failures);
+      } catch (const std::exception& e) {
+        throw std::runtime_error("Exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + "): " + e.what());
+      } catch (...) {
+        throw std::runtime_error("Unknown exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + ")");
+      }
+    };
+
+    auto w1 = std::async(std::launch::async, worker, 1, offset1, expected1);
+    auto w2 = std::async(std::launch::async, worker, 2, offset2, expected2);
+
+    const auto [tests1, fails1] = w1.get();
+    const auto [tests2, fails2] = w2.get();
+    printf("performed %zu reads (%zu failures)\n", tests1 + tests2, fails1 + fails2);  // NOLINT
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
-  FileStream s(path_binary);
-  s.seekg(10);
+TEST_CASE("FileStream read binary", "[filestream][short]") {
+  FileStream<> s(path_binary, nullptr);
+  const std::streampos offset = 10;
+  s.seekg(offset);
 
   // Expected numbers were computed with Python code like the following:
   // for t in [np.uint8, np.uint16, np.uint32, np.uint64, np.int8, np.int16, np.int32, np.int64,
@@ -291,23 +400,46 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
   HICTK_DISABLE_WARNING_USELESS_CAST
   SECTION("uint8") { CHECK(s.read<std::uint8_t>() == std::uint8_t(162)); }
   SECTION("uint16") { CHECK(s.read<std::uint16_t>() == std::uint16_t(42658)); }
-  SECTION("uint32") { CHECK(s.read<std::uint32_t>() == std::uint32_t(1433446050)); }
-  SECTION("uint64") { CHECK(s.read<std::uint64_t>() == std::uint64_t(18260117889181853346ULL)); }
+  SECTION("uint32") {
+    CHECK(s.read<std::uint32_t>() == std::uint32_t(1433446050));
+    CHECK(std::is_same_v<decltype(s.read_as_signed<std::uint32_t>()), std::int32_t>);
+    s.seekg(offset);
+    CHECK(s.read_as_signed<std::uint32_t>() == std::int32_t(1433446050));
+  }
+  SECTION("uint64") {
+    CHECK(s.read<std::uint64_t>() == std::uint64_t(18260117889181853346ULL));
+    CHECK(std::is_same_v<decltype(s.read_as_signed<std::uint64_t>()), std::int64_t>);
+    s.seekg(offset);
+    CHECK(s.read_as_signed<std::uint64_t>() == std::int64_t(-186626184527698270LL));
+  }
 
   SECTION("int8") { CHECK(s.read<std::int8_t>() == std::int8_t(-94)); }
   SECTION("int16") { CHECK(s.read<std::int16_t>() == std::int16_t(-22878)); }
-  SECTION("int32") { CHECK(s.read<std::int32_t>() == std::int32_t(1433446050)); }
-  SECTION("int64") { CHECK(s.read<std::int64_t>() == std::int64_t(-186626184527698270)); }
+  SECTION("int32") {
+    CHECK(s.read<std::int32_t>() == std::int32_t(1433446050));
+    CHECK(std::is_same_v<decltype(s.read_as_unsigned<std::int32_t>()), std::uint32_t>);
+    s.seekg(offset);
+    CHECK(s.read_as_unsigned<std::int32_t>() == std::uint32_t(1433446050));
+  }
+  SECTION("int64") {
+    CHECK(s.read<std::int64_t>() == std::int64_t(-186626184527698270));
+    CHECK(std::is_same_v<decltype(s.read_as_unsigned<std::int64_t>()), std::uint64_t>);
+    s.seekg(offset);
+    CHECK(s.read_as_unsigned<std::int64_t>() == std::uint64_t(18260117889181853346ULL));
+  }
 
   SECTION("float") { CHECK(s.read<float>() == 16537405000000.0F); }
-  SECTION("double") { CHECK(s.read<double>() == -1.2758357206942371e+296); }
+  SECTION("double") {
+    CHECK(s.read<double>() == -1.2758357206942371e+296);
+    s.seekg(offset);
+    CHECK(s.read_as_double<float>() == 16537404571648.0);
+  }
 
   SECTION("char") { CHECK(s.read<char>() == static_cast<char>(162)); }
   SECTION("unsigned char") { CHECK(s.read<unsigned char>() == static_cast<unsigned char>(162)); }
   HICTK_DISABLE_WARNING_POP
 
   SECTION("vector") {
-    s.seekg(0);
     constexpr std::array<std::int32_t, 32> expected{
         67324752,    20,          -1499332600, -126266000,  316472680,   -71892991,  720898,
         926220316,   758592304,   2020879920,  156521844,   1067451136,  1101095797, 2020959093,
@@ -315,7 +447,15 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
         -1957338045, 1449544581,  1142046551,  -518143477,  -1249957234, 831590659,  -732484307,
         1294996684,  -1436898904, 1231094186,  1614771469};
 
-    const auto buffer = s.read<std::int32_t>(expected.size());
+    s.seekg(0);
+    auto buffer = s.read_vector<std::int32_t>(expected.size());
+    REQUIRE(expected.size() == buffer.size());
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+      CHECK(expected[i] == buffer[i]);
+    }
+
+    std::fill(buffer.begin(), buffer.end(), 0);
+    s.seek_and_read(0, buffer);
     REQUIRE(expected.size() == buffer.size());
     for (std::size_t i = 0; i < expected.size(); ++i) {
       CHECK(expected[i] == buffer[i]);
@@ -324,10 +464,10 @@ TEST_CASE("HiC: filestream read binary", "[hic][filestream][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
+TEST_CASE("FileStream write", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
-  std::filesystem::remove(tmpfile);
-  auto s = FileStream::create(tmpfile.string());
+  std::filesystem::remove(tmpfile);  // NOLINT
+  auto s = FileStream<>::create(tmpfile.string(), nullptr);
 
   SECTION("small write") {
     constexpr std::string_view buffer{"test"};
@@ -338,7 +478,7 @@ TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
   SECTION("large write") {
     const auto buffer = read_file(path);
     s.write(buffer);
-    CHECK(s.size() == buffer.size());
+    CHECK(s.size() == static_cast<std::streamsize>(buffer.size()));
   }
 
   SECTION("no-op read") {
@@ -354,10 +494,67 @@ TEST_CASE("HiC: filestream write", "[hic][filestream][short]") {
     s.write(buffer);
     CHECK(s.size() == buffer.size() + offset);
   }
+  SECTION("multi-threaded") {
+    std::filesystem::remove(tmpfile);  // NOLINT
+    s = FileStream<>::create(tmpfile.string(), std::make_shared<std::mutex>());
+
+    std::string_view msg1{"0123456789"};
+    std::string_view msg2{"abcdefghijklmnopqrstwxyz"};
+
+    const std::streampos offset1 = 0;
+    const std::streampos offset2 = offset1 + static_cast<std::streamoff>(msg1.size());
+
+    const std::streamsize expected_file_size = offset2 + static_cast<std::streamoff>(msg2.size());
+
+    REQUIRE(s.size() == 0);
+
+    std::atomic<std::size_t> threads_started{};
+
+    auto worker = [&](std::size_t id, std::streampos offset, std::string_view message) {
+      std::size_t tests = 0;
+      std::size_t failures = 0;
+
+      threads_started++;
+      while (threads_started != 2);
+
+      try {
+        const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
+          const auto new_offset = s.seek_and_write(offset, message).second;
+          const auto success = offset + static_cast<std::streamoff>(message.size()) == new_offset;
+          failures += !success;
+          CHECK(success);
+        }
+
+        return std::make_pair(tests, failures);
+      } catch (const std::exception& e) {
+        throw std::runtime_error("Exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + "): " + e.what());
+      } catch (...) {
+        throw std::runtime_error("Unknown exception caught in worker #" + std::to_string(id) +
+                                 " (iteration " + std::to_string(tests) + ")");
+      }
+    };
+
+    auto w1 = std::async(std::launch::async, worker, 1, offset1, msg1);
+    auto w2 = std::async(std::launch::async, worker, 2, offset2, msg2);
+
+    const auto [tests1, fails1] = w1.get();
+    const auto [tests2, fails2] = w2.get();
+    printf("performed %zu writes (%zu failures)\n", tests1 + tests2, fails1 + fails2);  // NOLINT
+
+    REQUIRE(s.size() == expected_file_size);
+
+    std::string buff{};
+    s.seek_and_read(offset1, buff, msg1.size());
+    CHECK(buff == msg1);
+    s.seek_and_read(offset2, buff, msg2.size());
+    CHECK(buff == msg2);
+  }
 }
 
 template <typename T>
-static void write_and_compare(FileStream& s, const T& data) {
+static void write_and_compare(FileStream<>& s, const T& data) {
   s.write(data);
   s.flush();
   REQUIRE(s.size() == sizeof(T));
@@ -365,10 +562,10 @@ static void write_and_compare(FileStream& s, const T& data) {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
+TEST_CASE("FileStream write binary", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write_binary.bin";
-  std::filesystem::remove(tmpfile);
-  auto s = FileStream::create(tmpfile.string());
+  std::filesystem::remove(tmpfile);  // NOLINT
+  auto s = FileStream<>::create(tmpfile.string(), nullptr);
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_USELESS_CAST
@@ -400,8 +597,8 @@ TEST_CASE("HiC: filestream write binary", "[hic][filestream][short]") {
 
     s.write(data);
     s.flush();
-    REQUIRE(s.size() == sizeof(std::int32_t) * data.size());
-    const auto buffer = s.read<std::int32_t>(data.size());
+    REQUIRE(s.size() == static_cast<std::streamsize>(sizeof(std::int32_t) * data.size()));
+    const auto buffer = s.read_vector<std::int32_t>(data.size());
     REQUIRE(data.size() == buffer.size());
     for (std::size_t i = 0; i < data.size(); ++i) {
       CHECK(data[i] == buffer[i]);

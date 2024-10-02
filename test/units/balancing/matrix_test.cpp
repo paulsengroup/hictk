@@ -532,7 +532,7 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
     std::string buff{};
 
     SECTION("empty matrix") {
-      auto f = filestream::FileStream::create(tmpfile.string());
+      auto f = filestream::FileStream<>::create(tmpfile.string(), nullptr);
 
       SparseMatrix m1{};
       SparseMatrix m2{};
@@ -554,7 +554,7 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
       m1.finalize();
 
       std::filesystem::remove(tmpfile);  // NOLINT
-      auto f = filestream::FileStream::create(tmpfile.string());
+      auto f = filestream::FileStream<>::create(tmpfile.string(), nullptr);
 
       SparseMatrix m2{};
       m1.serialize(f, buff, *zstd_cctx);
