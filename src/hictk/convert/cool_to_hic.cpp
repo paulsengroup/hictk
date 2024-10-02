@@ -16,6 +16,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic/file_writer.hpp"
+#include "hictk/tmpdir.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
@@ -102,7 +103,7 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
 void cool_to_hic(const ConvertConfig& c) {
   if (c.force && std::filesystem::exists(c.path_to_output)) {
     [[maybe_unused]] std::error_code ec{};
-    std::filesystem::remove(c.path_to_output, ec);
+    std::filesystem::remove(c.path_to_output, ec);  // NOLINT
   }
 
   const auto base_uri = c.input_format == "cool"
@@ -120,7 +121,7 @@ void cool_to_hic(const ConvertConfig& c) {
 
   const internal::TmpDir tmpdir{c.tmp_dir, true};
   hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
-                                        c.genome, c.threads, c.chunk_size, c.tmp_dir,
+                                        c.genome, c.threads, c.chunk_size, tmpdir(),
                                         c.compression_lvl, c.skip_all_vs_all_matrix);
   copy_pixels(w, base_clr, c);
   w.serialize();

@@ -141,6 +141,9 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {
   assert(_chunk_size != 0);
+  SPDLOG_INFO(
+      FMT_STRING("initializing HiCInteractionToBlockMapper using \"{}\" as temporary file..."),
+      _path);
   init_block_mappers();
 }
 
