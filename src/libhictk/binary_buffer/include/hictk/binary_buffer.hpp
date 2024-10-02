@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -20,20 +21,20 @@ class BinaryBuffer {
   BinaryBuffer() = default;
 
   // NOLINTNEXTLINE
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   T read();
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   void read(T& buff);
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   void read(std::vector<T>& buff);
   void read(std::string& buff, std::size_t n);
   void read(char* buff, std::size_t n);
   std::string getline(char delim = '\n');
   // NOLINTNEXTLINE
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   void write(T data);
   void write(const std::string& data, bool add_nullterm = true);
-  template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type* = nullptr>
+  template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   void write(const std::vector<T>& data);
 
   // Return the offset of the underlying buffer. Useful for error checking

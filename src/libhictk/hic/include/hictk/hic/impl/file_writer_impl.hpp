@@ -42,6 +42,7 @@
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/static_binary_buffer.hpp"
 #include "hictk/transformers/coarsen.hpp"
 #include "hictk/version.hpp"
 
@@ -49,21 +50,34 @@ namespace hictk::hic::internal {
 
 template <typename I1, typename I2>
 inline HiCSectionOffsets::HiCSectionOffsets(I1 start_, I2 size_)
-    : _position(conditional_static_cast<std::streamoff>(start_)),
+    : _position(conditional_static_cast<std::streampos>(start_)),
       _size(conditional_static_cast<std::size_t>(size_)) {
-  static_assert(std::is_integral_v<I1>);
-  static_assert(std::is_integral_v<I2>);
+  static_assert(std::is_integral_v<I1> || is_specialization_v<I1, std::fpos>);
+  static_assert(std::is_integral_v<I2> || is_specialization_v<I2, std::fpos>);
+
+  if constexpr (std::is_signed_v<I1> || is_specialization_v<I1, std::fpos>) {
+    assert(start_ >= 0);  // NOLINT
+  }
+  if constexpr (std::is_signed_v<I2> || is_specialization_v<I2, std::fpos>) {
+    assert(size_ >= 0);  // NOLINT
+  }
 }
 
-inline std::streamoff HiCSectionOffsets::start() const noexcept { return _position; }
+inline std::streampos HiCSectionOffsets::start() const noexcept { return _position; }
 
-inline std::streamoff HiCSectionOffsets::end() const noexcept {
+inline std::streampos HiCSectionOffsets::end() const noexcept {
   return _position + static_cast<std::streamoff>(size());
 }
 
 inline std::size_t HiCSectionOffsets::size() const noexcept { return _size; }
 
-inline std::size_t &HiCSectionOffsets::size() noexcept { return _size; }
+inline void HiCSectionOffsets::extend(std::size_t s) noexcept { _size += s; }
+inline void HiCSectionOffsets::extend(std::streamoff s) noexcept {
+  assert(s >= 0);
+  extend(static_cast<std::size_t>(s));
+}
+
+inline void HiCSectionOffsets::set_size(std::size_t new_size) noexcept { _size = new_size; }
 
 inline bool BlockIndexKey::operator<(const BlockIndexKey &other) const noexcept {
   if (chrom1 != other.chrom1) {
@@ -164,7 +178,7 @@ inline auto MatrixBodyMetadataTank::operator()() const noexcept
 }
 
 inline HiCFileWriter::HiCFileWriter(std::string_view path_, std::size_t n_threads)
-    : _fs(std::string{path_}, std::ios::in | std::ios::out),
+    : _fs(std::string{path_}, std::make_shared<std::mutex>(), std::ios::in | std::ios::out),
       _header(read_header(_fs)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
       _tpool(init_tpool(n_threads)) {
@@ -179,7 +193,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::size_t chunk_size, const std::filesystem::path &tmpdir,
                                     std::uint32_t compression_lvl, bool skip_all_vs_all_matrix,
                                     std::size_t buffer_size)
-    : _fs(filestream::FileStream::create(std::string{path_})),
+    : _fs(filestream::FileStream<>::create(std::string{path_}, std::make_shared<std::mutex>())),
       _tmpdir(tmpdir),
       _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
                           skip_all_vs_all_matrix)),
@@ -231,16 +245,12 @@ inline void HiCFileWriter::serialize() {
 }
 
 inline void HiCFileWriter::write_header() {
-  assert(_fs.tellp() == 0);
-
   assert(_header.version == 9);
   assert(!chromosomes().empty());
 
   try {
-    const auto offset1 = _fs.tellp();
-    SPDLOG_INFO(FMT_STRING("writing header at offset {}"), offset1);
-    _fs.write(_header.serialize(_bbuffer));
-    const auto offset2 = _fs.tellp();
+    SPDLOG_INFO(FMT_STRING("writing header at offset {}"), 0);
+    const auto [offset1, offset2] = _fs.seek_and_write(0, _header.serialize(_bbuffer));
 
     _header_section = {offset1, offset2 - offset1};
     _data_block_section = {offset2, 0};
@@ -260,8 +270,7 @@ inline void HiCFileWriter::write_footer_size() {
                         static_cast<std::int64_t>(sizeof(std::int64_t));
 
   try {
-    _fs.seekp(_footer_section.start());
-    _fs.write(nBytesV5);
+    _fs.seek_and_write(_footer_section.start(), nBytesV5);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing the footer size for file \"{}\" to disk: {}"),
@@ -270,12 +279,12 @@ inline void HiCFileWriter::write_footer_size() {
 }
 
 inline void HiCFileWriter::write_footer_offset() {
-  SPDLOG_DEBUG(FMT_STRING("updating footer offset to {}"), _footer_section.start());
+  SPDLOG_DEBUG(FMT_STRING("updating footer offset to {}"),
+               static_cast<std::int64_t>(_footer_section.start()));
   const auto offset = sizeof("HIC") + sizeof(_header.version);
 
   try {
-    _fs.seekp(offset);
-    _fs.write(conditional_static_cast<std::int64_t>(_footer_section.start()));
+    _fs.seek_and_write(offset, conditional_static_cast<std::int64_t>(_footer_section.start()));
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing the footer offset for file \"{}\" to disk: {}"),
@@ -292,12 +301,11 @@ inline void HiCFileWriter::write_norm_vector_index() {
   const auto normVectorIndexLength = static_cast<std::int64_t>(_norm_vector_index_section.size());
 
   SPDLOG_DEBUG(FMT_STRING("writing normVectorIndex {}:{} at offset {}..."), normVectorIndexPosition,
-               normVectorIndexLength, offset);
+               normVectorIndexLength, static_cast<std::int64_t>(offset));
 
   try {
-    _fs.seekp(offset);
-    _fs.write(normVectorIndexPosition);
-    _fs.write(normVectorIndexLength);
+    const hictk::internal::StaticBinaryBuffer buff{normVectorIndexPosition, normVectorIndexLength};
+    _fs.seek_and_write(offset, buff());
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while writing the normVectorIndex position and "
@@ -405,14 +413,17 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
       it->second.emplace_back(std::move(coarsened_pixel));
     });
 
-    const auto offset = _data_block_section.end();
-    _fs.seekp(offset);
+    const auto section_start = _data_block_section.end();
+    auto section_end = section_start;
 
     for (auto &[bid, blk] : blocks) {
       blk.finalize();
-      write_interaction_block(bid, chrom, chrom, target_resolution_scaled, blk);
+      const auto section =
+          write_interaction_block(section_start, bid, chrom, chrom, target_resolution_scaled, blk);
+      section_end = section.end();
     }
-    _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
+    assert(section_end >= section_start);
+    _data_block_section.extend(section_end - section_start);
 
     add_body_metadata(target_resolution_scaled, chrom, chrom);
     write_body_metadata();
@@ -500,29 +511,28 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1,
                                            chrom1.name(), chrom2.name(), res, path(), e.what()));
     }
   }
-  return {_data_block_section.start(),
-          _fs.tellp() - static_cast<std::size_t>(_data_block_section.start())};
+  return {_data_block_section.start(), _fs.tellp() - _data_block_section.start()};
 }
 
 inline void HiCFileWriter::write_body_metadata() {
-  const auto pos = _data_block_section.end();
-  _fs.seekp(pos);
+  auto pos1 = _data_block_section.end();
   for (const auto &[chroms, metadata] : _matrix_metadata()) {
     const auto &chrom1 = chroms.chrom1;
     const auto &chrom2 = chroms.chrom2;
     [[maybe_unused]] const auto &num_resolutions = metadata.resolutionMetadata.size();
 
     try {
-      const auto pos1 = _fs.tellp();
       SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
-                   chrom1.name(), chrom2.name(), num_resolutions, pos1);
-      _fs.write(metadata.serialize(_bbuffer));
-      const auto pos2 = _fs.tellp();
+                   chrom1.name(), chrom2.name(), num_resolutions, static_cast<std::int64_t>(pos));
+      const auto pos2 = _fs.seek_and_write(pos1, metadata.serialize(_bbuffer)).second;
+      const auto delta = pos2 - pos1;
       SPDLOG_DEBUG(FMT_STRING("updating MatrixBodyMetadata offset and size for {}:{} ({} "
                               "resolutions) to {} and {}"),
-                   chrom1.name(), chrom2.name(), num_resolutions, pos1, pos2 - pos1);
-      _matrix_metadata.update_offsets(chrom1, chrom2, static_cast<std::streamoff>(pos1),
-                                      pos2 - pos1);
+                   chrom1.name(), chrom2.name(), num_resolutions, static_cast<std::int64_t>(pos1),
+                   static_cast<std::int64_t>(delta));
+      assert(delta >= 0);
+      _matrix_metadata.update_offsets(chrom1, chrom2, pos1, static_cast<std::size_t>(delta));
+      pos1 += delta;
     } catch (const std::exception &e) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("an error occurred while writing the MatrixBodyMetadata for {}:{} "
@@ -531,8 +541,8 @@ inline void HiCFileWriter::write_body_metadata() {
     }
   }
 
-  const auto size = _fs.tellp() - static_cast<std::size_t>(pos);
-  _body_metadata_section = {pos, size};
+  const auto size = static_cast<std::size_t>(pos1 - _data_block_section.end());
+  _body_metadata_section = {pos1, size};
 }
 
 inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chromosome &chrom1,
@@ -584,24 +594,26 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
 }
 
 inline void HiCFileWriter::write_footers() {
-  const auto offset1 = _body_metadata_section.end();
+  const auto section_start = _body_metadata_section.end();
+  auto offset = section_start;
 
   try {
-    _fs.seekp(offset1);
-    SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"), offset1);
+    SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"),
+                 static_cast<std::int64_t>(offset1));
     const std::int64_t nBytesV5 = -1;
     const auto nEntries = static_cast<std::int32_t>(_footers.size());
-    _fs.write(nBytesV5);
-    _fs.write(nEntries);
+    const hictk::internal::StaticBinaryBuffer buff(nBytesV5, nEntries);
+    offset = _fs.seek_and_write(offset, buff()).second;
 
     for (auto &[chroms, footer] : _footers) {
       try {
-        const auto offset = _matrix_metadata.offset(chroms.first, chroms.second);
-        footer.position = conditional_static_cast<std::int64_t>(offset.start());
-        footer.size = static_cast<std::int32_t>(offset.size());
+        const auto section = _matrix_metadata.offset(chroms.first, chroms.second);
+        footer.position = conditional_static_cast<std::int64_t>(section.start());
+        footer.size = static_cast<std::int32_t>(section.size());
         SPDLOG_DEBUG(FMT_STRING("writing FooterMasterIndex for {}:{} at offset {}"),
-                     chroms.first.name(), chroms.second.name(), _fs.tellp());
-        _fs.write(footer.serialize(_bbuffer));
+                     chroms.first.name(), chroms.second.name(),
+                     static_cast<std::int64_t>(_fs.tellp()));
+        offset = _fs.seek_and_write(offset, footer.serialize(_bbuffer)).second;
       } catch (const std::exception &e) {
         throw std::runtime_error(
             fmt::format(FMT_STRING("an error occurred while writing the footer for {}:{}: {}"),
@@ -609,14 +621,14 @@ inline void HiCFileWriter::write_footers() {
       }
     }
 
-    write_empty_expected_values();
+    const auto ev_section = write_empty_expected_values();
+
+    _footer_section = {section_start, ev_section.end()};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing the footer section to file \"{}\": {}"), path(),
         e.what()));
   }
-
-  _footer_section = {offset1, _fs.tellp() - static_cast<std::size_t>(offset1)};
 }
 
 inline void HiCFileWriter::add_footer(const Chromosome &chrom1, const Chromosome &chrom2) {
@@ -649,15 +661,17 @@ inline void HiCFileWriter::write_norm_vectors_and_norm_expected_values() {
   write_norm_vectors();
 }
 
-inline void HiCFileWriter::write_empty_expected_values() {
+inline HiCSectionOffsets HiCFileWriter::write_empty_expected_values() {
   ExpectedValues ev{};
 
   try {
     const auto offset = _fs.tellp();
-    SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."), offset);
-    _fs.write(ev.serialize(_bbuffer));
+    SPDLOG_DEBUG(FMT_STRING("writing empty expected values section at offset {}..."),
+                 static_cast<std::int64_t>(offset));
+    const auto new_offset = _fs.seek_and_write(offset, ev.serialize(_bbuffer)).second;
 
-    _expected_values_section = {offset, _fs.tellp() - offset};
+    _expected_values_section = {offset, new_offset - offset};
+    return _expected_values_section;
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
@@ -666,23 +680,23 @@ inline void HiCFileWriter::write_empty_expected_values() {
   }
 }
 
-inline void HiCFileWriter::write_empty_normalized_expected_values() {
+inline HiCSectionOffsets HiCFileWriter::write_empty_normalized_expected_values() {
   const auto offset = _expected_values_section.end();
   SPDLOG_DEBUG(FMT_STRING("writing empty expected values (normalized) section at offset {}..."),
-               offset);
+               static_cast<std::int64_t>(offset));
   try {
-    _fs.seekp(offset);
     HICTK_DISABLE_WARNING_PUSH
     HICTK_DISABLE_WARNING_USELESS_CAST
-    _fs.write(std::int32_t(0));
+    const auto new_offset = _fs.seek_and_write(offset, std::int32_t(0)).second;  // NOLINT
     HICTK_DISABLE_WARNING_POP
+    _expected_values_norm_section = {offset, new_offset - offset};
+    return _expected_values_norm_section;
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while writing an empty normalized expected "
                                "values section to file \"{}\": {}"),
                     path(), e.what()));
   }
-  _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
 }
 
 inline ExpectedValuesBlock HiCFileWriter::compute_expected_values(std::uint32_t resolution) {
@@ -752,7 +766,7 @@ inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_
   }
 }
 
-inline void HiCFileWriter::compute_and_write_expected_values() {
+inline HiCSectionOffsets HiCFileWriter::compute_and_write_expected_values() {
   assert(_tpool.get_thread_count() != 0);
   ExpectedValues ev{};
 
@@ -770,12 +784,12 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
     const auto offset = _footer_section.end() -
                         conditional_static_cast<std::streamoff>(sizeof(ev.nExpectedValueVectors()));
     SPDLOG_INFO(FMT_STRING("writing {} expected value vectors at offset {}..."),
-                ev.nExpectedValueVectors(), offset);
-    _fs.seekp(offset);
-    _fs.write(ev.serialize(_bbuffer));
+                ev.nExpectedValueVectors(), static_cast<std::int64_t>(offset));
+    const auto new_offset = _fs.seek_and_write(offset, ev.serialize(_bbuffer)).second;
 
-    _expected_values_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
-    _footer_section.size() += _expected_values_section.size() - sizeof(ev.nExpectedValueVectors());
+    _expected_values_section = {offset, new_offset - offset};
+    _footer_section.extend(_expected_values_section.size() - sizeof(ev.nExpectedValueVectors()));
+    return _expected_values_section;
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing expected values to file \"{}\": {}"), path(),
@@ -783,7 +797,7 @@ inline void HiCFileWriter::compute_and_write_expected_values() {
   }
 }
 
-inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
+inline HiCSectionOffsets HiCFileWriter::compute_and_write_normalized_expected_values() {
   assert(_tpool.get_thread_count() != 0);
   NormalizedExpectedValues ev{};
 
@@ -815,11 +829,11 @@ inline void HiCFileWriter::compute_and_write_normalized_expected_values() {
   try {
     const auto offset = _footer_section.end();
     SPDLOG_INFO(FMT_STRING("writing {} normalized expected value vectors at offset {}..."),
-                ev.nNormExpectedValueVectors(), offset);
-    _fs.seekp(offset);
-    _fs.write(ev.serialize(_bbuffer));
+                ev.nNormExpectedValueVectors(), static_cast<std::int64_t>(offset));
+    const auto new_offset = _fs.seek_and_write(offset, ev.serialize(_bbuffer)).second;
 
-    _expected_values_norm_section = {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+    _expected_values_norm_section = {offset, new_offset - offset};
+    return _expected_values_norm_section;
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing normalized expected values to file \"{}\": {}"),
@@ -943,29 +957,30 @@ inline void HiCFileWriter::finalize(bool compute_expected_values) {
   }
 }
 
-inline void HiCFileWriter::write_norm_vectors() {
+inline HiCSectionOffsets HiCFileWriter::write_norm_vectors() {
   try {
     const auto offset1 =
         std::max(_expected_values_norm_section.end(), _norm_vector_index_section.start());
-    _fs.seekp(offset1);
 
     if (_normalization_vectors.empty()) {
       SPDLOG_DEBUG(FMT_STRING("writing empty normalization vector section at offset {}..."),
-                   offset1);
+                   static_cast<std::int64_t>(offset1));
     } else {
       SPDLOG_INFO(FMT_STRING("writing {} normalization vectors at offset {}..."),
-                  _normalization_vectors.size(), offset1);
+                  _normalization_vectors.size(), static_cast<std::int64_t>(offset1));
     }
 
     const auto nNormVectors = static_cast<std::int32_t>(_normalization_vectors.size());
-    _fs.write(nNormVectors);
+    auto current_offset = _fs.seek_and_write(offset1, nNormVectors).second;
 
     phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> index_offsets{};
     for (const auto &[blk, _] : _normalization_vectors) {
       try {
-        const auto offset2 = _fs.tellp();
-        _fs.write(blk.serialize(_bbuffer));
-        index_offsets.emplace(blk, HiCSectionOffsets{offset2, _fs.tellp() - offset2});
+        const auto section_start = current_offset;
+        current_offset = _fs.seek_and_write(current_offset, blk.serialize(_bbuffer)).second;
+
+        index_offsets.emplace(blk,
+                              HiCSectionOffsets{section_start, current_offset - section_start});
       } catch (const std::exception &e) {
         throw std::runtime_error(fmt::format(
             FMT_STRING(
@@ -975,16 +990,17 @@ inline void HiCFileWriter::write_norm_vectors() {
             path(), e.what()));
       }
     }
-    const auto offset2 = _fs.tellp();
+    const auto offset2 = current_offset;
 
     phmap::btree_map<NormalizationVectorIndexBlock, HiCSectionOffsets> vector_offsets{};
     for (const auto &[blk, weights] : _normalization_vectors) {
       try {
-        const auto offset3 = _fs.tellp();
+        const auto section_start = current_offset;
         const auto nValues = static_cast<std::int64_t>(weights.size());
-        _fs.write(nValues);
-        _fs.write(weights);
-        vector_offsets.emplace(blk, HiCSectionOffsets{offset3, _fs.tellp() - offset3});
+        current_offset = _fs.seek_and_write(current_offset, nValues).second;
+        current_offset = _fs.seek_and_write(current_offset, weights).second;
+        vector_offsets.emplace(blk,
+                               HiCSectionOffsets{section_start, current_offset - section_start});
       } catch (const std::exception &e) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("an error occurred while writing the {} normalization vector for {} "
@@ -994,7 +1010,7 @@ inline void HiCFileWriter::write_norm_vectors() {
       }
     }
 
-    const auto offset4 = _fs.tellp();
+    const auto offset3 = current_offset;
 
     for (const auto &[blk, idx_offsets] : index_offsets) {
       try {
@@ -1002,8 +1018,7 @@ inline void HiCFileWriter::write_norm_vectors() {
         auto new_blk = blk;
         new_blk.position = vect_offsets.start();
         new_blk.nBytes = static_cast<std::int64_t>(vect_offsets.size());
-        _fs.seekp(idx_offsets.start());
-        _fs.write(new_blk.serialize(_bbuffer));
+        current_offset = _fs.seek_and_write(current_offset, new_blk.serialize(_bbuffer)).second;
       } catch (const std::exception &e) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("an error occurred while updating file offsets in the {} "
@@ -1013,12 +1028,14 @@ inline void HiCFileWriter::write_norm_vectors() {
       }
     }
 
-    _norm_vector_index_section = {offset1, offset2 - static_cast<std::size_t>(offset1)};
-    _norm_vectors_section = {offset2, offset4 - static_cast<std::size_t>(offset2)};
+    _norm_vector_index_section = {offset1, offset2 - offset1};
+    _norm_vectors_section = {offset2, offset3 - offset2};
 
     write_norm_vector_index();
-    _fs.seekp(0, std::ios::end);
-    _fs.flush();
+    [[maybe_unused]] const auto lck = _fs.lock();
+    _fs.unsafe_flush();
+    _fs.unsafe_seekp(0, std::ios::end);
+    return {offset1, offset3 - offset1};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing normalization vectors to file \"{}\": {}"),
@@ -1026,8 +1043,8 @@ inline void HiCFileWriter::write_norm_vectors() {
   }
 }
 
-inline HiCHeader HiCFileWriter::read_header(filestream::FileStream &fs) {
-  return HiCHeader::deserialize(fs);
+inline HiCHeader HiCFileWriter::read_header(filestream::FileStream<> &fs) {
+  return HiCHeader::deserialize(0, fs);
 }
 
 inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chromosomes,
@@ -1080,16 +1097,15 @@ inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
       conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t(1) : n_threads)};
 }
 
-inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2,
-                                        std::uint32_t resolution) -> HiCSectionOffsets {
+inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
+                                                     const Chromosome &chrom2,
+                                                     std::uint32_t resolution) {
   try {
     const auto offset = _data_block_section.end();
-    _fs.seekp(offset);
-
     SPDLOG_INFO(FMT_STRING("[{} bp] writing pixels for {}:{} matrix at offset {}..."), resolution,
-                chrom1.name(), chrom2.name(), offset);
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(offset));
 
-    const auto stats = write_interaction_blocks(chrom1, chrom2, resolution);
+    const auto [section, stats] = write_interaction_blocks(offset, chrom1, chrom2, resolution);
 
     SPDLOG_INFO(FMT_STRING("[{} bp] written {} pixels for {}:{} matrix"), resolution, stats.nnz,
                 chrom1.name(), chrom2.name());
@@ -1100,8 +1116,8 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
       it->second.nnz += stats.nnz;
     }
 
-    _data_block_section.size() += _fs.tellp() - static_cast<std::size_t>(offset);
-    return {offset, _fs.tellp() - static_cast<std::size_t>(offset)};
+    _data_block_section.extend(section.end() - offset);
+    return {offset, section.end() - offset};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing pixels for {}:{} to file \"{}\": {}"),
@@ -1109,9 +1125,10 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
   }
 }
 
-inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
-                                                    const Chromosome &chrom2,
-                                                    std::uint32_t resolution) -> Stats {
+inline auto HiCFileWriter::write_interaction_blocks(
+    std::streampos offset, const Chromosome &chrom1, const Chromosome &chrom2,
+    std::uint32_t resolution) -> std::pair<HiCSectionOffsets, Stats> {
+  assert(offset >= 0);
   auto &mapper = _block_mappers.at(resolution);
   mapper.finalize();
 
@@ -1124,15 +1141,18 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
 
   if (_tpool.get_thread_count() < 3 || block_ids->second.size() == 1) {
     try {
+      const auto section_start = offset;
       Stats stats{};
       for (const auto &bid : block_ids->second) {
         auto blk = mapper.merge_blocks(bid);
         stats.sum += blk.sum();
         stats.nnz += blk.size();
-        write_interaction_block(bid.bid, chrom1, chrom2, resolution, std::move(blk));
+        offset =
+            write_interaction_block(offset, bid.bid, chrom1, chrom2, resolution, std::move(blk))
+                .end();
       }
 
-      return stats;
+      return std::make_pair(HiCSectionOffsets{section_start, offset}, stats);
     } catch (const std::exception &e) {
       throw std::runtime_error(
           "an error occurred while writing interaction blocks using a single thread: " +
@@ -1209,7 +1229,7 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
     }
     writer.get();
 
-    return stats;
+    return std::make_pair(HiCSectionOffsets{offset, _fs.tellp()}, stats);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
@@ -1218,17 +1238,19 @@ inline auto HiCFileWriter::write_interaction_blocks(const Chromosome &chrom1,
 }
 
 inline auto HiCFileWriter::write_interaction_block(
-    std::uint64_t block_id, const Chromosome &chrom1, const Chromosome &chrom2,
-    std::uint32_t resolution, const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
-  const auto offset = _fs.tellp();
-
+    std::streampos offset, std::uint64_t block_id, const Chromosome &chrom1,
+    const Chromosome &chrom2, std::uint32_t resolution,
+    const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
+  assert(offset >= 0);
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);
   SPDLOG_DEBUG(FMT_STRING("writing block #{} for {}:{}:{} at {}:{}"), block_id, chrom1.name(),
-               chrom2.name(), resolution, offset, _compression_buffer.size());
-  _fs.write(_compression_buffer);
+               chrom2.name(), resolution, static_cast<std::int64_t>(offset),
+               _compression_buffer.size());
+  const auto new_offset = _fs.seek_and_write(offset, _compression_buffer).second;
 
-  MatrixBlockMetadata mm{static_cast<std::int32_t>(block_id), static_cast<std::int64_t>(offset),
-                         static_cast<std::int32_t>(_fs.tellp() - offset)};
+  MatrixBlockMetadata mm{static_cast<std::int32_t>(block_id),
+                         conditional_static_cast<std::int64_t>(offset),
+                         static_cast<std::int32_t>(new_offset - offset)};
 
   const BlockIndexKey key{chrom1, chrom2, resolution};
   auto idx = _block_index.find(key);
@@ -1237,7 +1259,7 @@ inline auto HiCFileWriter::write_interaction_block(
   } else {
     _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
   }
-  return {offset, _fs.tellp() - offset};
+  return {offset, new_offset - offset};
 }
 
 inline std::size_t HiCFileWriter::compute_num_bins(const Chromosome &chrom1,
@@ -1274,8 +1296,7 @@ inline void HiCFileWriter::read_norm_expected_values() {
   assert(_expected_values_norm_section.start() != 0);
   try {
     const auto offset = _expected_values_norm_section.start();
-    _fs.seekg(offset);
-    const auto nev = NormalizedExpectedValues::deserialize(_fs);
+    const auto nev = NormalizedExpectedValues::deserialize(offset, _fs);
 
     for (const auto &ev : nev.normExpectedValues()) {
       add_norm_expected_values(ev);
@@ -1291,8 +1312,7 @@ inline void HiCFileWriter::read_norm_vectors() {
   assert(_norm_vector_index_section.start() != 0);
   try {
     const auto offset = _norm_vector_index_section.start();
-    _fs.seekg(offset);
-    const auto nvi = NormalizationVectorIndex::deserialize(_fs);
+    const auto nvi = NormalizationVectorIndex::deserialize(offset, _fs);
 
     for (const auto &blk : nvi.normalizationVectorIndex()) {
       add_norm_vector(blk, read_norm_vector(blk), true);
@@ -1308,14 +1328,14 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
     const NormalizationVectorIndexBlock &blk) {
   try {
     const auto offset = blk.position;
-    _fs.seekg(offset);
-
     const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
     const auto bin_size = static_cast<std::size_t>(blk.binSize);
     const auto nValuesExpected = (static_cast<std::size_t>(chrom.size()) + bin_size - 1) / bin_size;
 
+    [[maybe_unused]] auto lck = _fs.lock();
+    _fs.unsafe_seekg(offset);
     // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-arrays-1-per-normalization-vector
-    const auto nValues = static_cast<std::size_t>(_fs.read<std::int64_t>());
+    const auto nValues = static_cast<std::size_t>(_fs.unsafe_read<std::int64_t>());
     // We cannot use numValues directly because sometimes hic files have few trailing zeros for some
     // reason
     if (nValues < nValuesExpected) {
@@ -1324,12 +1344,14 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
     }
 
     std::vector<float> buffer(nValues);
-    _fs.read(buffer);
+    _fs.unsafe_read(buffer);
+    const auto bytes_read = _fs.unsafe_tellg() - offset;
+    lck.release();
+
     buffer.resize(nValuesExpected);
-    const auto bytes_read = _fs.tellg() - static_cast<std::size_t>(offset);
-    if (bytes_read != static_cast<std::size_t>(blk.nBytes)) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("expected to read {} bytes but read {}"), blk.nBytes, bytes_read));
+    if (bytes_read != blk.nBytes) {
+      throw std::runtime_error(fmt::format(FMT_STRING("expected to read {} bytes but read {}"),
+                                           blk.nBytes, static_cast<std::int64_t>(bytes_read)));
     }
     return buffer;
   } catch (const std::exception &e) {
@@ -1342,25 +1364,26 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
 
 inline void HiCFileWriter::read_offsets() {
   try {
-    _fs.seekg(0, std::ios::beg);
-    const auto header_start = _fs.tellg();
-    const auto header = HiCHeader::deserialize(_fs);
-    const auto header_end = _fs.tellg();
+    [[maybe_unused]] const auto lck = _fs.lock();
+    _fs.unsafe_seekg(0, std::ios::beg);
+    const auto header_start = _fs.unsafe_tellg();
+    const auto header = HiCHeader::unsafe_deserialize(0, _fs);
+    const auto header_end = _fs.unsafe_tellg();
 
     // read footer offsets
-    _fs.seekg(header.footerPosition);
-    const auto footer_start = _fs.tellg();
-    const auto nBytesV5 = _fs.read<std::int64_t>();
-    _fs.seekg(nBytesV5, std::ios::cur);
-    const auto footer_end = _fs.tellg();
+    _fs.unsafe_seekg(header.footerPosition);
+    const auto footer_start = _fs.unsafe_tellg();
+    const auto nBytesV5 = _fs.unsafe_read<std::int64_t>();
+    _fs.unsafe_seekg(nBytesV5, std::ios::cur);
+    const auto footer_end = _fs.unsafe_tellg();
 
     // read norm expected values offsets
-    const auto norm_expected_values_start = _fs.tellg();
-    const auto nNormExpectedValueVectors = _fs.read<std::int32_t>();
+    const auto norm_expected_values_start = _fs.unsafe_tellg();
+    const auto nNormExpectedValueVectors = _fs.unsafe_read<std::int32_t>();
     for (std::int32_t i = 0; i < nNormExpectedValueVectors; ++i) {
-      std::ignore = NormalizationVectorIndexBlock::deserialize(_fs);
+      std::ignore = NormalizationVectorIndexBlock::unsafe_deserialize(_fs.unsafe_tellg(), _fs);
     }
-    const auto norm_expected_values_end = _fs.tellg();
+    const auto norm_expected_values_end = _fs.unsafe_tellg();
 
     // compute norm vector index offsets
     const auto norm_vector_index_start = header.normVectorIndexPosition;
@@ -1504,12 +1527,12 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
         return;
       }
 
-      const auto offset = _fs.tellp();
       SPDLOG_DEBUG(FMT_STRING("writing block #{} for {}:{}:{} at {}:{}"), bid, chrom1.name(),
-                   chrom2.name(), resolution, offset, buffer.size());
-      _fs.write(buffer);
+                   chrom2.name(), resolution, static_cast<std::int64_t>(offset), buffer.size());
+      const auto start_offset = _fs.append(buffer).first;
 
-      MatrixBlockMetadata mm{static_cast<std::int32_t>(bid), static_cast<std::int64_t>(offset),
+      MatrixBlockMetadata mm{static_cast<std::int32_t>(bid),
+                             static_cast<std::int64_t>(start_offset),
                              static_cast<std::int32_t>(buffer.size())};
       const BlockIndexKey key{chrom1, chrom2, resolution};
       auto idx = _block_index.find(key);

@@ -78,9 +78,17 @@ inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const 
   return buffer.get();
 }
 
-inline HiCHeader HiCHeader::deserialize(filestream::FileStream &fs) {
-  fs.seekg(0, std::ios::beg);
-  const auto magic_string_found = fs.getline('\0') == "HIC";
+inline HiCHeader HiCHeader::deserialize(std::streampos offset, filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
+                                               filestream::FileStream<> &fs) {
+  fs.unsafe_seekg(offset);
+  std::string strbuff;
+  fs.unsafe_getline(strbuff, '\0');
+  const auto magic_string_found = strbuff == "HIC";
   if (!magic_string_found) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Hi-C magic string is missing. {} does not appear to be a hic file"),
@@ -89,48 +97,51 @@ inline HiCHeader HiCHeader::deserialize(filestream::FileStream &fs) {
 
   HiCHeader header{fs.path()};
 
-  fs.read(header.version);
+  fs.unsafe_read(header.version);
   if (header.version < 6) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
         header.version));
   }
-  fs.read(header.footerPosition);
-  if (header.footerPosition < 0 || header.footerPosition >= static_cast<std::int64_t>(fs.size())) {
+  fs.unsafe_read(header.footerPosition);
+  if (header.footerPosition < 0 ||
+      header.footerPosition >= static_cast<std::int64_t>(fs.unsafe_size())) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("file appears to be corrupted: expected footerPosition to be "
                                "between 0 and {}, found {}"),
-                    fs.size(), header.footerPosition));
+                    fs.unsafe_size(), header.footerPosition));
   }
 
-  fs.getline(header.genomeID, '\0');
+  fs.unsafe_getline(header.genomeID, '\0');
   if (header.genomeID.empty()) {
     header.genomeID = "unknown";
   }
 
   if (header.version > 8) {
-    fs.read(header.normVectorIndexPosition);
-    fs.read(header.normVectorIndexLength);
+    fs.unsafe_read(header.normVectorIndexPosition);
+    fs.unsafe_read(header.normVectorIndexLength);
   }
 
-  const auto nAttributes = fs.read<std::int32_t>();
+  const auto nAttributes = fs.unsafe_read<std::int32_t>();
 
   // reading attribute-value dictionary
+  std::string key;
+  std::string value;
   for (std::int32_t i = 0; i < nAttributes; i++) {
-    auto key = fs.getline('\0');    // key
-    auto value = fs.getline('\0');  // value
-    header.attributes.emplace(std::move(key), std::move(value));
+    fs.unsafe_getline(key, '\0');
+    fs.unsafe_getline(value, '\0');
+    header.attributes.emplace(key, value);
   }
 
   // Read chromosomes
-  auto numChromosomes = static_cast<std::uint32_t>(fs.read<std::int32_t>());
+  auto numChromosomes = static_cast<std::uint32_t>(fs.unsafe_read<std::int32_t>());
   std::vector<std::string> chrom_names(numChromosomes);
   std::vector<std::uint32_t> chrom_sizes(numChromosomes);
   for (std::size_t i = 0; i < chrom_names.size(); ++i) {
-    fs.getline(chrom_names[i], '\0');
+    fs.unsafe_getline(chrom_names[i], '\0');
     chrom_sizes[i] = static_cast<std::uint32_t>(
-        header.version > 8 ? fs.read<std::int64_t>()
-                           : static_cast<std::int64_t>(fs.read<std::int32_t>()));
+        header.version > 8 ? fs.unsafe_read<std::int64_t>()
+                           : static_cast<std::int64_t>(fs.unsafe_read<std::int32_t>()));
   }
 
   if (chrom_names.empty()) {
@@ -140,7 +151,7 @@ inline HiCHeader HiCHeader::deserialize(filestream::FileStream &fs) {
   header.chromosomes = Reference(chrom_names.begin(), chrom_names.end(), chrom_sizes.begin());
 
   // Read resolutions
-  const auto numResolutions = static_cast<std::size_t>(fs.read<std::int32_t>());
+  const auto numResolutions = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
   if (numResolutions == 0) {
     throw std::runtime_error("unable to read the list of available resolutions");
   }
@@ -148,9 +159,11 @@ inline HiCHeader HiCHeader::deserialize(filestream::FileStream &fs) {
   // sometimes .hic files have duplicate resolutions for some obscure reason...
   phmap::btree_set<std::uint32_t> resolutions{};
   for (std::size_t i = 0; i < numResolutions; ++i) {
-    const auto res = fs.read_as_unsigned<std::int32_t>();
+    const auto res = static_cast<std::uint32_t>(fs.unsafe_read<std::int32_t>());
     resolutions.emplace(res);
   }
+
+  header.resolutions.reserve(resolutions.size());
   std::copy(resolutions.begin(), resolutions.end(), std::back_inserter(header.resolutions));
 
   return header;

@@ -471,7 +471,7 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(
 
 inline void HiCInteractionToBlockMapper::write_blocks() {
   if (!std::filesystem::exists(_path)) {
-    _fs = filestream::FileStream::create(_path.string());
+    _fs = filestream::FileStream<>::create(_path.string(), std::make_shared<std::mutex>());
   }
   SPDLOG_DEBUG(FMT_STRING("writing {} pixels to file {}..."), _pending_pixels, _path);
   for (auto &[bid, blk] : _blocks) {

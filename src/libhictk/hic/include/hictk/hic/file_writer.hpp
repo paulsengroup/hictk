@@ -40,7 +40,7 @@
 namespace hictk::hic::internal {
 
 class HiCSectionOffsets {
-  std::streamoff _position{};
+  std::streampos _position{};
   std::size_t _size{};
 
  public:
@@ -48,10 +48,13 @@ class HiCSectionOffsets {
   template <typename I1, typename I2>
   HiCSectionOffsets(I1 start_, I2 size_);
 
-  [[nodiscard]] std::streamoff start() const noexcept;
-  [[nodiscard]] std::streamoff end() const noexcept;
+  [[nodiscard]] std::streampos start() const noexcept;
+  [[nodiscard]] std::streampos end() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
-  [[nodiscard]] std::size_t& size() noexcept;
+
+  void extend(std::size_t s) noexcept;
+  void extend(std::streamoff s) noexcept;
+  void set_size(std::size_t new_size) noexcept;
 };
 
 struct BlockIndexKey {
@@ -99,7 +102,7 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  filestream::FileStream _fs{};
+  filestream::FileStream<> _fs{};
   std::filesystem::path _tmpdir{};
 
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
@@ -175,7 +178,7 @@ class HiCFileWriter {
   void serialize();
 
  private:
-  [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
+  [[nodiscard]] static HiCHeader read_header(filestream::FileStream<>& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
@@ -186,7 +189,7 @@ class HiCFileWriter {
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,
                                                            int compression_lvl) -> BlockMappers;
-  [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
+  [[nodiscard]] static BS::thread_pool init_tpool(std::size_t n_threads);
 
   // Write header
   void write_header();
@@ -195,16 +198,17 @@ class HiCFileWriter {
 
   // Write pixels
   void write_pixels(bool skip_all_vs_all_matrix);
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
-                    std::uint32_t resolution) -> HiCSectionOffsets;
+  HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2);
+  HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
+                                 std::uint32_t resolution);
   void write_all_matrix(std::uint32_t target_num_bins = 500);
 
-  auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
-                               const Chromosome& chrom2, std::uint32_t resolution,
-                               const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
-  auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
-                                std::uint32_t resolution) -> Stats;
+  [[nodiscard]] HiCSectionOffsets write_interaction_block(
+      std::streampos offset, std::uint64_t block_id, const Chromosome& chrom1,
+      const Chromosome& chrom2, std::uint32_t resolution, const MatrixInteractionBlock<float>& blk);
+  [[nodiscard]] auto write_interaction_blocks(std::streampos offset, const Chromosome& chrom1,
+                                              const Chromosome& chrom2, std::uint32_t resolution)
+      -> std::pair<HiCSectionOffsets, Stats>;
 
   // Normalization
   void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
@@ -222,11 +226,11 @@ class HiCFileWriter {
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
   void write_footer_size();
 
-  void write_empty_expected_values();
-  void write_empty_normalized_expected_values();
-  void compute_and_write_expected_values();
-  void compute_and_write_normalized_expected_values();
-  void write_norm_vectors();
+  HiCSectionOffsets write_empty_expected_values();
+  HiCSectionOffsets write_empty_normalized_expected_values();
+  HiCSectionOffsets compute_and_write_expected_values();
+  HiCSectionOffsets compute_and_write_normalized_expected_values();
+  HiCSectionOffsets write_norm_vectors();
 
   void finalize(bool compute_expected_values = false);
 

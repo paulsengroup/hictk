@@ -464,22 +464,31 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
   return buffer.get();
 }
 
-inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(filestream::FileStream &fs) {
+inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(std::streampos offset,
+                                                            filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline ExpectedValuesBlock ExpectedValuesBlock::unsafe_deserialize(std::streampos offset,
+                                                                   filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   ExpectedValuesBlock evb{};
 
   try {
-    evb.unit = fs.getline('\0');
-    fs.read(evb.binSize);
-    const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+    fs.unsafe_seekg(offset);
+    fs.unsafe_getline(evb.unit, '\0');
+    fs.unsafe_read(evb.binSize);
+    const auto nValues = static_cast<std::size_t>(fs.unsafe_read<std::int64_t>());
     evb.value.resize(nValues);
-    fs.read(evb.value);
-    const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    fs.unsafe_read(evb.value);
+    const auto nChrScaleFactors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
     evb.chrIndex.resize(nChrScaleFactors);
     evb.chrScaleFactor.resize(nChrScaleFactors);
 
     for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-      evb.chrIndex.emplace_back(fs.read<std::int32_t>());
-      evb.chrScaleFactor.emplace_back(fs.read<float>());
+      evb.chrIndex.emplace_back(fs.unsafe_read<std::int32_t>());
+      evb.chrScaleFactor.emplace_back(fs.unsafe_read<float>());
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(
@@ -535,13 +544,22 @@ inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) c
   return buffer.get();
 }
 
-inline ExpectedValues ExpectedValues::deserialize(filestream::FileStream &fs) {
+inline ExpectedValues ExpectedValues::deserialize(std::streampos offset,
+                                                  filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline ExpectedValues ExpectedValues::unsafe_deserialize(std::streampos offset,
+                                                         filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   ExpectedValues evs{};
 
   try {
-    const auto nExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    fs.unsafe_seekg(offset);
+    const auto nExpectedValueVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
     for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
-      evs.emplace(ExpectedValuesBlock::deserialize(fs), true);
+      evs.emplace(ExpectedValuesBlock::unsafe_deserialize(fs.unsafe_tellg(), fs), true);
     }
   } catch (const std::exception &e) {
     throw std::runtime_error("an error occurred while deserializing an ExpectedValues object: " +
@@ -615,25 +633,32 @@ inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer
 
   return buffer.get();
 }
-
 inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::deserialize(
-    filestream::FileStream &fs) {
+    std::streampos offset, filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::unsafe_deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   NormalizedExpectedValuesBlock nevb{};
 
   try {
-    nevb.type = fs.getline('\0');
-    nevb.unit = fs.getline('\0');
-    fs.read(nevb.binSize);
-    const auto nValues = static_cast<std::size_t>(fs.read<std::int64_t>());
+    fs.unsafe_seekg(offset);
+    fs.unsafe_getline(nevb.type, '\0');
+    fs.unsafe_getline(nevb.unit, '\0');
+    fs.unsafe_read(nevb.binSize);
+    const auto nValues = static_cast<std::size_t>(fs.unsafe_read<std::int64_t>());
     nevb.value.resize(nValues);
-    fs.read(nevb.value);
-    const auto nChrScaleFactors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    fs.unsafe_read(nevb.value);
+    const auto nChrScaleFactors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
     nevb.chrIndex.resize(nChrScaleFactors);
     nevb.chrScaleFactor.resize(nChrScaleFactors);
 
     for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-      nevb.chrIndex.emplace_back(fs.read<std::int32_t>());
-      nevb.chrScaleFactor.emplace_back(fs.read<float>());
+      nevb.chrIndex.emplace_back(fs.unsafe_read<std::int32_t>());
+      nevb.chrScaleFactor.emplace_back(fs.unsafe_read<float>());
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(
@@ -686,13 +711,22 @@ inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, boo
   return buffer.get();
 }
 
-inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(filestream::FileStream &fs) {
+inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline NormalizedExpectedValues NormalizedExpectedValues::unsafe_deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   NormalizedExpectedValues nevs{};
 
   try {
-    const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    fs.unsafe_seekg(offset);
+    const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
     for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
-      nevs.emplace(NormalizedExpectedValuesBlock::deserialize(fs), true);
+      nevs.emplace(NormalizedExpectedValuesBlock::unsafe_deserialize(fs.unsafe_tellg(), fs), true);
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(
@@ -750,16 +784,24 @@ inline std::string NormalizationVectorIndexBlock::serialize(BinaryBuffer &buffer
 }
 
 inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::deserialize(
-    filestream::FileStream &fs) {
+    std::streampos offset, filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::unsafe_deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   NormalizationVectorIndexBlock nvib{};
 
   try {
-    nvib.type = fs.getline('\0');
-    nvib.chrIdx = fs.read<std::int32_t>();
-    nvib.unit = fs.getline('\0');
-    nvib.binSize = fs.read<std::int32_t>();
-    nvib.position = fs.read<std::int64_t>();
-    nvib.nBytes = fs.read<std::int64_t>();
+    fs.unsafe_seekg(offset);
+    fs.unsafe_getline(nvib.type, '\0');
+    nvib.chrIdx = fs.unsafe_read<std::int32_t>();
+    fs.unsafe_getline(nvib.unit, '\0');
+    nvib.binSize = fs.unsafe_read<std::int32_t>();
+    nvib.position = fs.unsafe_read<std::int64_t>();
+    nvib.nBytes = fs.unsafe_read<std::int64_t>();
   } catch (const std::exception &e) {
     throw std::runtime_error(
         "an error occurred while deserializing a NormalizationVectorIndexBlock object: " +
@@ -802,13 +844,22 @@ inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, boo
   return buffer.get();
 }
 
-inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(filestream::FileStream &fs) {
+inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  [[maybe_unused]] const auto lck = fs.lock();
+  return unsafe_deserialize(offset, fs);
+}
+
+inline NormalizationVectorIndex NormalizationVectorIndex::unsafe_deserialize(
+    std::streampos offset, filestream::FileStream<> &fs) {
+  assert(offset >= 0);
   NormalizationVectorIndex nvi{};
 
   try {
-    const auto nNormVectors = static_cast<std::size_t>(fs.read<std::int32_t>());
+    fs.unsafe_seekg(offset);
+    const auto nNormVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
     for (std::size_t i = 0; i < nNormVectors; ++i) {
-      nvi.emplace_back(NormalizationVectorIndexBlock::deserialize(fs));
+      nvi.emplace_back(NormalizationVectorIndexBlock::unsafe_deserialize(fs.unsafe_tellg(), fs));
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(

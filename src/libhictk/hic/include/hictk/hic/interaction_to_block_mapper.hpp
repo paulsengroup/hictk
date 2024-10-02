@@ -79,7 +79,7 @@ class HiCInteractionToBlockMapper {
 
  private:
   std::filesystem::path _path{};
-  filestream::FileStream _fs{};
+  filestream::FileStream<> _fs{};
   std::shared_ptr<const BinTable> _bin_table{};
 
   using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;

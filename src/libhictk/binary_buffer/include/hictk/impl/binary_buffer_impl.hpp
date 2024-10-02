@@ -11,7 +11,7 @@
 
 namespace hictk {
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline T BinaryBuffer::read() {
   static_assert(sizeof(char) == 1);
   assert(_i < _buffer.size());
@@ -22,12 +22,12 @@ inline T BinaryBuffer::read() {
   return x;
 }
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void BinaryBuffer::read(T &buff) {
   buff = read<T>();
 }
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void BinaryBuffer::read(std::vector<T> &buff) {
   read(reinterpret_cast<char *>(buff.data()), sizeof(T) * buff.size());
 }
@@ -51,7 +51,7 @@ inline std::string BinaryBuffer::getline(char delim) {
   return std::string{view.substr(0, pos)};
 }
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void BinaryBuffer::write(T data) {
   static_assert(sizeof(char) == 1);
   _buffer.append(reinterpret_cast<const char *>(&data), sizeof(T));
@@ -61,7 +61,7 @@ inline void BinaryBuffer::write(const std::string &data, bool add_nullterm) {
   _buffer.append(data.c_str(), data.size() + add_nullterm);
 }
 
-template <typename T, typename std::enable_if<std::is_fundamental<T>::value>::type *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 void BinaryBuffer::write(const std::vector<T> &data) {
   _buffer.append(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(T));
 }
