@@ -1402,7 +1402,7 @@ inline void HiCFileWriter::read_offsets() {
     _norm_vector_index_section = {norm_vector_index_start,
                                   norm_vector_index_end - norm_vector_index_start};
 
-    _fs.seekg(0, std::ios::end);
+    _fs.unsafe_seekg(0, std::ios::end);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while reading section offsets from file \"{}\": {}"), path(),
