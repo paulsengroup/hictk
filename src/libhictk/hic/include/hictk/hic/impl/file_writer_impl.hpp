@@ -56,10 +56,19 @@ inline HiCSectionOffsets::HiCSectionOffsets(I1 start_, I2 size_)
   static_assert(std::is_integral_v<I2> || is_specialization_v<I2, std::fpos>);
 
   if constexpr (std::is_signed_v<I1> || is_specialization_v<I1, std::fpos>) {
-    assert(start_ >= 0);  // NOLINT
+    if (start_ < 0) {
+      throw std::logic_error(fmt::format(
+          FMT_STRING("start position for HiCSectionOffset cannot be negative, found {}"),
+          static_cast<std::int64_t>(start_)));
+    }
   }
   if constexpr (std::is_signed_v<I2> || is_specialization_v<I2, std::fpos>) {
     assert(size_ >= 0);  // NOLINT
+    if (size_ < 0) {
+      throw std::logic_error(
+          fmt::format(FMT_STRING("size given to HiCSectionOffset cannot be negative, found {}"),
+                      static_cast<std::int64_t>(start_)));
+    }
   }
 }
 
@@ -73,11 +82,17 @@ inline std::size_t HiCSectionOffsets::size() const noexcept { return _size; }
 
 inline void HiCSectionOffsets::extend(std::size_t s) noexcept { _size += s; }
 inline void HiCSectionOffsets::extend(std::streamoff s) noexcept {
-  assert(s >= 0);
   extend(static_cast<std::size_t>(s));
 }
 
-inline void HiCSectionOffsets::set_size(std::size_t new_size) noexcept { _size = new_size; }
+inline void HiCSectionOffsets::set_size(std::size_t new_size) {
+  if (new_size < 0) {
+    throw std::logic_error(
+        fmt::format(FMT_STRING("size given to HiCSectionOffset cannot be negative, found {}"),
+                    static_cast<std::int64_t>(new_size)));
+  }
+  _size = new_size;
+}
 
 inline bool BlockIndexKey::operator<(const BlockIndexKey &other) const noexcept {
   if (chrom1 != other.chrom1) {
@@ -1139,7 +1154,7 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
   if (block_ids == mapper.chromosome_index().end()) {
     SPDLOG_DEBUG(FMT_STRING("no pixels to write for {}:{} matrix at {} resolution"), chrom1.name(),
                  chrom2.name(), resolution);
-    return {};
+    return {{_fs.size(), 0}, {}};
   }
 
   if (_tpool.get_thread_count() < 3 || block_ids->second.size() == 1) {
@@ -1187,9 +1202,9 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
     }
 
     auto writer = _tpool.submit_task([&]() {
-      write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue, block_id_queue_mtx,
-                                  serialized_block_tank, serialized_block_tank_mtx, early_return,
-                                  stop_token);
+      return write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue,
+                                         block_id_queue_mtx, serialized_block_tank,
+                                         serialized_block_tank_mtx, early_return, stop_token);
     });
 
     auto producer = _tpool.submit_task([&]() {
@@ -1230,9 +1245,8 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
       std::scoped_lock lck(block_id_queue_mtx);
       block_id_queue.emplace(stop_token);
     }
-    writer.get();
 
-    return std::make_pair(HiCSectionOffsets{offset, _fs.tellp()}, stats);
+    return std::make_pair(HiCSectionOffsets{offset, writer.get() - offset}, stats);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
@@ -1479,7 +1493,7 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
   }
 }
 
-inline void HiCFileWriter::write_compressed_blocks_thr(
+inline std::streampos HiCFileWriter::write_compressed_blocks_thr(
     const Chromosome &chrom1, const Chromosome &chrom2, std::uint32_t resolution,
     std::queue<std::uint64_t> &block_id_queue, std::mutex &block_id_queue_mtx,
     phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
@@ -1512,7 +1526,7 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
       if (bid == stop_token) {
         SPDLOG_DEBUG(FMT_STRING(
             "write_compressed_blocks thread: no more blocks to be processed. Returning!"));
-        return;
+        return _fs.size();
       }
 
       SPDLOG_DEBUG(FMT_STRING("write_compressed_blocks thread: waiting for block #{}..."), bid);
@@ -1529,7 +1543,7 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
       if (early_return) {
-        return;
+        return _fs.size();
       }
 
       SPDLOG_DEBUG(FMT_STRING("preparing to write block #{} for {}:{}:{}..."), bid, chrom1.name(),
@@ -1558,6 +1572,7 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
     early_return = true;
     throw;
   }
+  return _fs.size();
 }
 
 }  // namespace hictk::hic::internal

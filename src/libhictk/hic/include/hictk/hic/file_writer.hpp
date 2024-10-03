@@ -54,7 +54,7 @@ class HiCSectionOffsets {
 
   void extend(std::size_t s) noexcept;
   void extend(std::streamoff s) noexcept;
-  void set_size(std::size_t new_size) noexcept;
+  void set_size(std::size_t new_size);
 };
 
 struct BlockIndexKey {
@@ -261,7 +261,7 @@ class HiCFileWriter {
       phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
       std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
       std::uint64_t stop_token) -> Stats;
-  void write_compressed_blocks_thr(
+  [[nodiscard]] std::streampos write_compressed_blocks_thr(
       const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
       std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
       phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
