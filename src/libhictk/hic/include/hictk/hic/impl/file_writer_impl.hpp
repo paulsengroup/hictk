@@ -1246,7 +1246,6 @@ inline auto HiCFileWriter::write_interaction_block(std::streampos offset, std::u
                                                    const MatrixInteractionBlock<float> &blk)
     -> HiCSectionOffsets {
   assert(offset >= 0);
-  const auto offset = _fs.tellp();
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);
   SPDLOG_DEBUG(FMT_STRING("writing block #{} for {}:{}:{} at {}:{}"), block_id, chrom1.name(),
                chrom2.name(), resolution, static_cast<std::int64_t>(offset),
