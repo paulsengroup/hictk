@@ -431,26 +431,27 @@ constexpr auto Weights::iterator::ConstIt::operator-(const ConstIt& other) const
   return i - other.i;
 }
 
-constexpr void Weights::iterator::ConstIt::bound_check(std::ptrdiff_t offset, bool end_ok) const {
-  if constexpr (ndebug_not_defined()) {
-    assert(!!value);
-    if (offset < 0 && offset > i) {
-      throw std::logic_error(
-          fmt::format(FMT_STRING("Invalid offset {}: {} - {} < 0"), offset, i, offset));
-    }
+constexpr void Weights::iterator::ConstIt::bound_check([[maybe_unused]] std::ptrdiff_t offset,
+                                                       [[maybe_unused]] bool end_ok) const {
+#ifndef NDEBUG  // GCC8 does not like it when we use if constexpr in this context
+  assert(!!value);
+  if (offset < 0 && offset > i) {
+    throw std::logic_error(
+        fmt::format(FMT_STRING("Invalid offset {}: {} - {} < 0"), offset, i, offset));
+  }
 
-    if (end_ok) {
-      if (i + offset > static_cast<std::ptrdiff_t>(value->size)) {
-        throw std::logic_error(fmt::format(FMT_STRING("Invalid offset {}: {} + {} > {}"), offset, i,
-                                           offset, value->size));
-      }
-    } else {
-      if (i + offset > static_cast<std::ptrdiff_t>(value->size)) {
-        throw std::logic_error(fmt::format(FMT_STRING("Invalid offset {}: {} + {} >= {}"), offset,
-                                           i, offset, value->size));
-      }
+  if (end_ok) {
+    if (i + offset > static_cast<std::ptrdiff_t>(value->size)) {
+      throw std::logic_error(fmt::format(FMT_STRING("Invalid offset {}: {} + {} > {}"), offset, i,
+                                         offset, value->size));
+    }
+  } else {
+    if (i + offset > static_cast<std::ptrdiff_t>(value->size)) {
+      throw std::logic_error(fmt::format(FMT_STRING("Invalid offset {}: {} + {} >= {}"), offset, i,
+                                         offset, value->size));
     }
   }
+#endif
 }
 
 inline Weights::iterator::iterator(std::vector<double>::const_iterator it, bool reciprocal)

@@ -82,8 +82,8 @@ class MatrixBodyMetadataTank {
   MatrixBodyMetadataTank() = default;
 
   [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
-  [[nodiscard]] auto at(const Chromosome& chrom1,
-                        const Chromosome& chrom2) const -> const MatrixBodyMetadata&;
+  [[nodiscard]] auto at(const Chromosome& chrom1, const Chromosome& chrom2) const
+      -> const MatrixBodyMetadata&;
   [[nodiscard]] HiCSectionOffsets offset(const Chromosome& chrom1, const Chromosome& chrom2) const;
 
   void insert(const Chromosome& chrom1, const Chromosome& chrom2, MatrixMetadata matrix_metadata,
@@ -183,8 +183,9 @@ class HiCFileWriter {
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
                                              bool skip_all_vs_all_matrix);
-  [[nodiscard]] static auto init_bin_tables(
-      const Reference& chromosomes, const std::vector<std::uint32_t>& resolutions) -> BinTables;
+  [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
+                                            const std::vector<std::uint32_t>& resolutions)
+      -> BinTables;
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,

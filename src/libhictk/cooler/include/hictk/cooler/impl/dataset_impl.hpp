@@ -168,8 +168,8 @@ inline void Dataset::throw_out_of_range_excp(std::size_t offset, std::size_t n) 
 }
 
 template <typename T>
-inline auto Dataset::make_iterator_at_offset(std::size_t offset,
-                                             std::size_t chunk_size) const -> iterator<T> {
+inline auto Dataset::make_iterator_at_offset(std::size_t offset, std::size_t chunk_size) const
+    -> iterator<T> {
   return iterator<T>(*this, chunk_size, offset);
 }
 

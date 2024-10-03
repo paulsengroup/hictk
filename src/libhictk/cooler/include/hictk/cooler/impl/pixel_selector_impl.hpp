@@ -225,10 +225,12 @@ inline PixelSelector::iterator<N>::iterator(
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::at_end(
-    std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
-    const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-    std::shared_ptr<const balancing::Weights> weights) -> iterator {
+inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> index,
+                                               const Dataset &pixels_bin1_id,
+                                               const Dataset &pixels_bin2_id,
+                                               const Dataset &pixels_count,
+                                               std::shared_ptr<const balancing::Weights> weights)
+    -> iterator {
   iterator it{};
   it._index = std::move(index);
   it._bin1_id_it = pixels_bin1_id.end<BinIDT>(0);

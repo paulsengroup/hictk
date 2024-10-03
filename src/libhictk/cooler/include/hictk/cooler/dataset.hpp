@@ -195,8 +195,8 @@ class Dataset {
   template <typename T>
   [[nodiscard]] T read_attribute(std::string_view key) const;
 
-  [[nodiscard]] auto read_attribute(std::string_view key,
-                                    bool missing_ok = false) const -> Attribute::AttributeVar;
+  [[nodiscard]] auto read_attribute(std::string_view key, bool missing_ok = false) const
+      -> Attribute::AttributeVar;
 
   template <typename T>
   void read_attribute(std::string_view key, std::vector<T> &buff) const;
@@ -214,8 +214,8 @@ class Dataset {
   [[nodiscard]] auto cend(std::size_t chunk_size = 0) const -> iterator<T>;
 
   template <typename T>
-  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset,
-                                             std::size_t chunk_size = 0) const -> iterator<T>;
+  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset, std::size_t chunk_size = 0) const
+      -> iterator<T>;
 
   [[nodiscard]] static std::pair<std::string, std::string> parse_uri(std::string_view uri);
 

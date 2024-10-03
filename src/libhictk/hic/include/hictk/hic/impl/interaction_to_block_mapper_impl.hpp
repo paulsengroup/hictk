@@ -141,6 +141,9 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {
   assert(_chunk_size != 0);
+  SPDLOG_INFO(
+      FMT_STRING("initializing HiCInteractionToBlockMapper using \"{}\" as temporary file..."),
+      _path);
   init_block_mappers();
 }
 
@@ -300,9 +303,11 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
   return merge_blocks(bid, _bbuffer, *_zstd_dctx, _compression_buffer, dummy_mtx);
 }
 
-inline auto HiCInteractionToBlockMapper::merge_blocks(
-    const BlockID &bid, BinaryBuffer &bbuffer, ZSTD_DCtx_s &zstd_dctx,
-    std::string &compression_buffer, std::mutex &mtx) -> MatrixInteractionBlock<float> {
+inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid, BinaryBuffer &bbuffer,
+                                                      ZSTD_DCtx_s &zstd_dctx,
+                                                      std::string &compression_buffer,
+                                                      std::mutex &mtx)
+    -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
   for (auto &&pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
     blk.emplace_back(std::move(pixel));

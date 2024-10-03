@@ -109,8 +109,9 @@ inline auto BinTable::find_overlap(const GenomicInterval &query) const
       _table);
 }
 
-inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start, std::uint32_t end)
-    const -> std::pair<BinTable::iterator, BinTable::iterator> {
+inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                   std::uint32_t end) const
+    -> std::pair<BinTable::iterator, BinTable::iterator> {
   return find_overlap(GenomicInterval{chrom, start, end});
 }
 
@@ -120,8 +121,9 @@ inline auto BinTable::find_overlap(std::string_view chrom_name, std::uint32_t st
   return find_overlap(chromosomes().at(chrom_name), start, end);
 }
 
-inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start, std::uint32_t end)
-    const -> std::pair<BinTable::iterator, BinTable::iterator> {
+inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                   std::uint32_t end) const
+    -> std::pair<BinTable::iterator, BinTable::iterator> {
   return find_overlap(chromosomes().at(chrom_id), start, end);
 }
 

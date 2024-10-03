@@ -130,8 +130,8 @@ inline bool ThinPixel<N>::operator>=(const ThinPixel &other) const noexcept {
 }
 
 template <typename N>
-inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line,
-                                   std::int64_t offset) -> ThinPixel<N> {
+inline auto ThinPixel<N>::from_coo(const BinTable &bins, std::string_view line, std::int64_t offset)
+    -> ThinPixel<N> {
   try {
     const auto toks = internal::tokenize_n<3>(line);
 

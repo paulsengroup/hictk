@@ -95,16 +95,16 @@ class Weights {
       constexpr auto operator++() noexcept(ndebug_defined()) -> ConstIt &;
       [[nodiscard]] constexpr auto operator++(int) noexcept(ndebug_defined()) -> ConstIt;
       constexpr auto operator+=(std::ptrdiff_t i_) noexcept(ndebug_defined()) -> ConstIt &;
-      [[nodiscard]] constexpr auto operator+(std::ptrdiff_t i_) const
-          noexcept(ndebug_defined()) -> ConstIt;
+      [[nodiscard]] constexpr auto operator+(std::ptrdiff_t i_) const noexcept(ndebug_defined())
+          -> ConstIt;
 
       constexpr auto operator--() noexcept(ndebug_defined()) -> ConstIt &;
       [[nodiscard]] constexpr auto operator--(int) noexcept(ndebug_defined()) -> ConstIt;
       constexpr auto operator-=(std::ptrdiff_t i_) noexcept(ndebug_defined()) -> ConstIt &;
-      [[nodiscard]] constexpr auto operator-(std::ptrdiff_t i_) const
-          noexcept(ndebug_defined()) -> ConstIt;
-      [[nodiscard]] constexpr auto operator-(const ConstIt &other) const
-          noexcept(ndebug_defined()) -> std::ptrdiff_t;
+      [[nodiscard]] constexpr auto operator-(std::ptrdiff_t i_) const noexcept(ndebug_defined())
+          -> ConstIt;
+      [[nodiscard]] constexpr auto operator-(const ConstIt &other) const noexcept(ndebug_defined())
+          -> std::ptrdiff_t;
 
      private:
       constexpr void bound_check(std::ptrdiff_t offset, bool end_ok = true) const;

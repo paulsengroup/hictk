@@ -438,8 +438,8 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
   }
 }
 
-inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1,
-                                        const Chromosome &chrom2) -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
+    -> HiCSectionOffsets {
   try {
     write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
@@ -1069,8 +1069,9 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
   };
 }
 
-inline auto HiCFileWriter::init_bin_tables(
-    const Reference &chromosomes, const std::vector<std::uint32_t> &resolutions) -> BinTables {
+inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
+                                           const std::vector<std::uint32_t> &resolutions)
+    -> BinTables {
   BinTables bin_tables(resolutions.size());
   for (const auto &res : resolutions) {
     bin_tables.emplace(res, std::make_shared<const BinTable>(chromosomes, res));
@@ -1125,9 +1126,10 @@ inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
   }
 }
 
-inline auto HiCFileWriter::write_interaction_blocks(
-    std::streampos offset, const Chromosome &chrom1, const Chromosome &chrom2,
-    std::uint32_t resolution) -> std::pair<HiCSectionOffsets, Stats> {
+inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const Chromosome &chrom1,
+                                                    const Chromosome &chrom2,
+                                                    std::uint32_t resolution)
+    -> std::pair<HiCSectionOffsets, Stats> {
   assert(offset >= 0);
   auto &mapper = _block_mappers.at(resolution);
   mapper.finalize();
@@ -1237,11 +1239,14 @@ inline auto HiCFileWriter::write_interaction_blocks(
   }
 }
 
-inline auto HiCFileWriter::write_interaction_block(
-    std::streampos offset, std::uint64_t block_id, const Chromosome &chrom1,
-    const Chromosome &chrom2, std::uint32_t resolution,
-    const MatrixInteractionBlock<float> &blk) -> HiCSectionOffsets {
+inline auto HiCFileWriter::write_interaction_block(std::streampos offset, std::uint64_t block_id,
+                                                   const Chromosome &chrom1,
+                                                   const Chromosome &chrom2,
+                                                   std::uint32_t resolution,
+                                                   const MatrixInteractionBlock<float> &blk)
+    -> HiCSectionOffsets {
   assert(offset >= 0);
+  const auto offset = _fs.tellp();
   std::ignore = blk.serialize(_bbuffer, *_compressor, _compression_buffer);
   SPDLOG_DEBUG(FMT_STRING("writing block #{} for {}:{}:{} at {}:{}"), block_id, chrom1.name(),
                chrom2.name(), resolution, static_cast<std::int64_t>(offset),
