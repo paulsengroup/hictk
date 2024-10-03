@@ -200,7 +200,7 @@ inline bool FileStream<Mutex>::is_locked() const noexcept {
   if (!_mtx) {
     return false;
   }
-  return !std::unique_lock{*_mtx, std::try_lock}.owns_lock();
+  return !std::unique_lock{*_mtx, std::try_to_lock}.owns_lock();
 }
 
 template <typename Mutex>
@@ -514,7 +514,13 @@ inline std::streampos FileStream<Mutex>::new_posg_checked(std::streamoff offset,
                                                           std::ios::seekdir way) {
   const auto new_pos = new_posg(offset, way);
   if (new_pos < 0 || new_pos >= static_cast<std::streampos>(_file_size + 1)) {
-    throw std::runtime_error(get_underlying_os_error());
+    auto msg1 = "new_posg_checked returned invalid offset=" + std::to_string(new_pos) +
+                "; offset not between 0 and " + std::to_string(_file_size + 1);
+    if (const auto msg2 = get_underlying_os_error(); msg1 != "Success") {
+      msg1 += msg2;
+    }
+
+    throw std::runtime_error(msg1);
   }
   return new_pos;
 }

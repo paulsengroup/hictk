@@ -249,13 +249,13 @@ inline void HiCFileWriter::write_header() {
   assert(!chromosomes().empty());
 
   try {
-    SPDLOG_INFO(FMT_STRING("writing header at offset {}"), 0);
-    const auto [offset1, offset2] = _fs.seek_and_write(0, _header.serialize(_bbuffer));
+    SPDLOG_INFO(FMT_STRING("writing header at offset 0"));
+    const auto section_end = _fs.seek_and_write(0, _header.serialize(_bbuffer)).second;
 
-    _header_section = {offset1, offset2 - offset1};
-    _data_block_section = {offset2, 0};
-    _body_metadata_section = {offset2, 0};
-    _footer_section = {offset2, 0};
+    _header_section = {0, section_end};
+    _data_block_section = {section_end, 0};
+    _body_metadata_section = {section_end, 0};
+    _footer_section = {section_end, 0};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing the .hic header for file \"{}\" to disk: {}"),
@@ -515,7 +515,8 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
 }
 
 inline void HiCFileWriter::write_body_metadata() {
-  auto pos1 = _data_block_section.end();
+  const auto section_start = _data_block_section.end();
+  auto pos1 = section_start;
   for (const auto &[chroms, metadata] : _matrix_metadata()) {
     const auto &chrom1 = chroms.chrom1;
     const auto &chrom2 = chroms.chrom2;
@@ -523,7 +524,7 @@ inline void HiCFileWriter::write_body_metadata() {
 
     try {
       SPDLOG_DEBUG(FMT_STRING("writing MatrixBodyMetadata for {}:{} ({} resolutions) at offset {}"),
-                   chrom1.name(), chrom2.name(), num_resolutions, static_cast<std::int64_t>(pos));
+                   chrom1.name(), chrom2.name(), num_resolutions, static_cast<std::int64_t>(pos1));
       const auto pos2 = _fs.seek_and_write(pos1, metadata.serialize(_bbuffer)).second;
       const auto delta = pos2 - pos1;
       SPDLOG_DEBUG(FMT_STRING("updating MatrixBodyMetadata offset and size for {}:{} ({} "
@@ -541,7 +542,7 @@ inline void HiCFileWriter::write_body_metadata() {
     }
   }
 
-  const auto size = static_cast<std::size_t>(pos1 - _data_block_section.end());
+  const auto size = static_cast<std::size_t>(section_start - _data_block_section.end());
   _body_metadata_section = {pos1, size};
 }
 
@@ -599,7 +600,7 @@ inline void HiCFileWriter::write_footers() {
 
   try {
     SPDLOG_DEBUG(FMT_STRING("initializing footer section at offset {}"),
-                 static_cast<std::int64_t>(offset1));
+                 static_cast<std::int64_t>(offset));
     const std::int64_t nBytesV5 = -1;
     const auto nEntries = static_cast<std::int32_t>(_footers.size());
     const hictk::internal::StaticBinaryBuffer buff(nBytesV5, nEntries);
@@ -611,8 +612,7 @@ inline void HiCFileWriter::write_footers() {
         footer.position = conditional_static_cast<std::int64_t>(section.start());
         footer.size = static_cast<std::int32_t>(section.size());
         SPDLOG_DEBUG(FMT_STRING("writing FooterMasterIndex for {}:{} at offset {}"),
-                     chroms.first.name(), chroms.second.name(),
-                     static_cast<std::int64_t>(_fs.tellp()));
+                     chroms.first.name(), chroms.second.name(), static_cast<std::int64_t>(offset));
         offset = _fs.seek_and_write(offset, footer.serialize(_bbuffer)).second;
       } catch (const std::exception &e) {
         throw std::runtime_error(
@@ -623,7 +623,7 @@ inline void HiCFileWriter::write_footers() {
 
     const auto ev_section = write_empty_expected_values();
 
-    _footer_section = {section_start, ev_section.end()};
+    _footer_section = {section_start, ev_section.end() - section_start};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while writing the footer section to file \"{}\": {}"), path(),
@@ -832,6 +832,7 @@ inline HiCSectionOffsets HiCFileWriter::compute_and_write_normalized_expected_va
                 ev.nNormExpectedValueVectors(), static_cast<std::int64_t>(offset));
     const auto new_offset = _fs.seek_and_write(offset, ev.serialize(_bbuffer)).second;
 
+    _fs.flush();
     _expected_values_norm_section = {offset, new_offset - offset};
     return _expected_values_norm_section;
   } catch (const std::exception &e) {
@@ -1018,7 +1019,7 @@ inline HiCSectionOffsets HiCFileWriter::write_norm_vectors() {
         auto new_blk = blk;
         new_blk.position = vect_offsets.start();
         new_blk.nBytes = static_cast<std::int64_t>(vect_offsets.size());
-        current_offset = _fs.seek_and_write(current_offset, new_blk.serialize(_bbuffer)).second;
+        _fs.seek_and_write(idx_offsets.start(), new_blk.serialize(_bbuffer));
       } catch (const std::exception &e) {
         throw std::runtime_error(fmt::format(
             FMT_STRING("an error occurred while updating file offsets in the {} "
@@ -1117,7 +1118,7 @@ inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
       it->second.nnz += stats.nnz;
     }
 
-    _data_block_section.extend(section.end() - offset);
+    _data_block_section.extend(section.size());
     return {offset, section.end() - offset};
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
@@ -1154,7 +1155,7 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
                 .end();
       }
 
-      return std::make_pair(HiCSectionOffsets{section_start, offset}, stats);
+      return std::make_pair(HiCSectionOffsets{section_start, offset - section_start}, stats);
     } catch (const std::exception &e) {
       throw std::runtime_error(
           "an error occurred while writing interaction blocks using a single thread: " +
@@ -1350,7 +1351,7 @@ inline std::vector<float> HiCFileWriter::read_norm_vector(
     std::vector<float> buffer(nValues);
     _fs.unsafe_read(buffer);
     const auto bytes_read = _fs.unsafe_tellg() - offset;
-    lck.release();
+    lck.unlock();
 
     buffer.resize(nValuesExpected);
     if (bytes_read != blk.nBytes) {
@@ -1531,12 +1532,14 @@ inline void HiCFileWriter::write_compressed_blocks_thr(
         return;
       }
 
-      SPDLOG_DEBUG(FMT_STRING("writing block #{} for {}:{}:{} at {}:{}"), bid, chrom1.name(),
-                   chrom2.name(), resolution, static_cast<std::int64_t>(offset), buffer.size());
-      const auto start_offset = _fs.append(buffer).first;
+      SPDLOG_DEBUG(FMT_STRING("preparing to write block #{} for {}:{}:{}..."), bid, chrom1.name(),
+                   chrom2.name(), resolution);
+      const auto blk_start = _fs.append(buffer).first;
+      SPDLOG_DEBUG(FMT_STRING("block #{} for {}:{}:{} successfully written at {}:{}"), bid,
+                   chrom1.name(), chrom2.name(), resolution, static_cast<std::int64_t>(blk_start),
+                   buffer.size());
 
-      MatrixBlockMetadata mm{static_cast<std::int32_t>(bid),
-                             static_cast<std::int64_t>(start_offset),
+      MatrixBlockMetadata mm{static_cast<std::int32_t>(bid), static_cast<std::int64_t>(blk_start),
                              static_cast<std::int32_t>(buffer.size())};
       const BlockIndexKey key{chrom1, chrom2, resolution};
       auto idx = _block_index.find(key);
