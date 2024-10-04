@@ -40,7 +40,7 @@ inline FileStream<Mutex>::FileStream(std::string path, std::shared_ptr<Mutex> mt
       _ofs(mode & std::ios::out
                ? open_file_write(_path, std::ios::in | std::ios::out | std::ios::binary)
                : std::ofstream{}),
-      _file_size(_ifs.tellg()) {
+      _file_size(unsafe_tellg()) {
   unsafe_seekg(0);
 }
 
@@ -104,7 +104,9 @@ inline void FileStream<Mutex>::seekp(std::streamoff offset, std::ios::seekdir wa
 
 template <typename Mutex>
 inline void FileStream<Mutex>::unsafe_seekp(std::streamoff offset, std::ios::seekdir way) {
-  _ofs.seekp(new_posp(offset, way), std::ios::beg);
+  const auto pos = new_posp(offset, way);
+  _ofs.seekp(pos, std::ios::beg);
+  _file_size = std::max(static_cast<std::streamsize>(pos), _file_size);
 }
 
 template <typename Mutex>
