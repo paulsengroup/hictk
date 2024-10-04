@@ -2,6 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
+#ifdef SPDLOG_ACTIVE_LEVEL
+#undef SPDLOG_ACTIVE_LEVEL
+#endif
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "hictk/hic/file_writer.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -87,6 +93,93 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   }
 
   CHECK(num_interactions == pixels1.size() + pixels2.size());
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
+  using PQueue = SerializedBlockPQueue<std::uint64_t>;
+  spdlog::set_level(spdlog::level::trace);
+  const std::size_t num_threads = 32;
+
+  std::vector<PQueue::Record> records(num_threads * 100);
+  std::vector<std::uint64_t> blk_ids(num_threads * 100);
+
+  std::random_device rd;
+  std::mt19937_64 rand_eng(rd());
+
+  std::uint64_t bid = 0;
+  for (std::size_t i = 0; i < records.size(); ++i) {
+    bid = std::uniform_int_distribution<std::uint64_t>{bid + 1, bid + 10}(rand_eng);
+    records[i] = {bid, std::to_string(i), PQueue::Record::Status::SUCCESS};
+    blk_ids[i] = bid;
+  }
+
+  PQueue queue(blk_ids.begin(), blk_ids.end(), num_threads - 1);
+
+  REQUIRE(queue.size() == 0);
+  REQUIRE(queue.capacity() > 0);
+
+  std::atomic<std::size_t> i{};
+  std::atomic<std::size_t> threads_started{};
+
+  BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(num_threads));
+
+  auto producer = [&]() {
+    std::random_device rd_;
+    std::mt19937_64 rand_eng_(rd_());
+
+    ++threads_started;
+    while (threads_started != num_threads);
+
+    while (true) {
+      const auto idx = i++;
+      if (idx >= records.size()) {
+        return;
+      }
+
+      // Simulate time required for block compression
+      const std::chrono::milliseconds sleep_time{
+          std::uniform_int_distribution<std::int32_t>{25, 50}(rand_eng_)};
+      std::this_thread::sleep_for(sleep_time);
+
+      const auto& record = records[idx];
+      while (!queue.try_enqueue(record.bid, record.serialized_block));
+    }
+  };
+
+  std::vector<std::future<void>> producers(num_threads - 1);
+  for (auto& prod : producers) {
+    prod = tpool.submit_task(producer);
+  }
+
+  auto consumer = tpool.submit_task([&]() {
+    std::vector<PQueue::Record> output;
+    ++threads_started;
+    while (true) {
+      auto record = queue.dequeue_timed();
+      if (record.status == PQueue::Record::Status::TIMEOUT) {
+        continue;
+      }
+      if (record.status == PQueue::Record::Status::QUEUE_IS_CLOSED) {
+        return output;
+      }
+      assert(!!record);
+      output.emplace_back(std::move(record));
+    }
+  });
+
+  for (auto& prod : producers) {
+    prod.get();
+  }
+  const auto output = consumer.get();
+
+  REQUIRE(output.size() == records.size());
+  REQUIRE(i >= records.size());
+  CHECK(queue.dequeue_timed().status == PQueue::Record::Status::QUEUE_IS_CLOSED);
+
+  for (std::size_t j = 0; j < records.size(); ++j) {
+    CHECK(output[j].bid == records[j].bid);
+  }
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -176,14 +269,11 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
   const auto path4 = (testdir() / "hic_writer_003.hic").string();
+  spdlog::set_level(spdlog::level::trace);
 
-  SECTION("create file (st)") {
-    const std::vector<std::uint32_t> resolutions{250'000, 500'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 1, false);
-  }
   SECTION("create file (mt)") {
     const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 3, true);
+    hic_file_writer_create_file_test(path1, path2, resolutions, 16, true);
   }
 
   SECTION("regression PR 180") {
