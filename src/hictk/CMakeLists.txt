@@ -64,6 +64,8 @@ target_sources(
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/mcool.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp)
 
+target_compile_definitions(hictk PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
+
 target_include_directories(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(hictk PRIVATE hictk_project_options hictk_project_warnings hictk::libhictk)
 

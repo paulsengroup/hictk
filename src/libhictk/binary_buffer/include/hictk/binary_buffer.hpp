@@ -14,6 +14,10 @@
 namespace hictk {
 
 class BinaryBuffer {
+  static_assert(sizeof(char) == 1);
+  static_assert(sizeof(float) == 4);
+  static_assert(sizeof(double) == 8);
+
   std::string _buffer{};
   std::size_t _i{};
 
@@ -30,7 +34,8 @@ class BinaryBuffer {
   void read(std::string& buff, std::size_t n);
   void read(char* buff, std::size_t n);
   std::string getline(char delim = '\n');
-  // NOLINTNEXTLINE
+
+  void write(const char* data, std::size_t count, bool add_nullterm = false);
   template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>>* = nullptr>
   void write(T data);
   void write(const std::string& data, bool add_nullterm = true);

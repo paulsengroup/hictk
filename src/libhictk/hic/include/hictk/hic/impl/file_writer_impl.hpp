@@ -451,12 +451,33 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
     -> HiCSectionOffsets {
   try {
     write_pixels(chrom1, chrom2, resolutions().front());
+    SPDLOG_INFO(FMT_STRING("about to write pixels for {}:{}: tellg={}; tellp={}; size={};"),
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
+                static_cast<std::int64_t>(_fs.tellp()),
+                conditional_static_cast<std::int64_t>(_fs.size()));
     add_body_metadata(resolutions().front(), chrom1, chrom2);
+    SPDLOG_INFO(FMT_STRING("about to write body metadata for {}:{}: tellg={}; tellp={}; size={};"),
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
+                static_cast<std::int64_t>(_fs.tellp()),
+                conditional_static_cast<std::int64_t>(_fs.size()));
     write_body_metadata();
     add_footer(chrom1, chrom2);
+    SPDLOG_INFO(FMT_STRING("about to write footers for {}:{}: tellg={}; tellp={}; size={};"),
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
+                static_cast<std::int64_t>(_fs.tellp()),
+                conditional_static_cast<std::int64_t>(_fs.size()));
     write_footers();
 
+    SPDLOG_INFO(FMT_STRING("about to finalize pixels for {}:{}: tellg={}; tellp={}; size={};"),
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
+                static_cast<std::int64_t>(_fs.tellp()),
+                conditional_static_cast<std::int64_t>(_fs.size()));
     finalize();
+
+    SPDLOG_INFO(FMT_STRING("DONE writing pixels for {}:{}: tellg={}; tellp={}; size={};"),
+                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
+                static_cast<std::int64_t>(_fs.tellp()),
+                conditional_static_cast<std::int64_t>(_fs.size()));
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
@@ -1431,14 +1452,14 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
           write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
         }
       }
-
-      compressed_block_queue.dequeue(compressed_blocks_buffer);
-      if (!compressed_blocks_buffer.empty()) {
-        write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
-      }
-
-      return stats;
     }
+
+    compressed_block_queue.dequeue(compressed_blocks_buffer);
+    if (!compressed_blocks_buffer.empty()) {
+      write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
+    }
+
+    return stats;
   } catch (const std::exception &e) {
     early_return = true;
     throw std::runtime_error(
@@ -1480,8 +1501,7 @@ inline void HiCFileWriter::write_compressed_blocks(
     [[maybe_unused]] const std::scoped_lock lck(_block_index_mtx);
     auto idx = _block_index.find(key);
     if (idx != _block_index.end()) {
-      [[maybe_unused]] const auto inserted = idx->second.emplace(std::move(mm)).second;
-      assert(inserted);
+      idx->second.emplace(std::move(mm));
     } else {
       _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
     }

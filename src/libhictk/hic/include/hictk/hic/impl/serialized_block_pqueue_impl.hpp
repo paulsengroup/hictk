@@ -56,13 +56,15 @@ template <typename BlockID>
 inline bool SerializedBlockPQueue<BlockID>::try_enqueue(const BlockID& block_id,
                                                         const std::string& serialized_block,
                                                         std::chrono::milliseconds timeout) {
-  assert(!_block_ids.empty());
   const auto expiration = std::chrono::steady_clock::now() + timeout;
   while (HICTK_LIKELY(std::chrono::steady_clock::now() < expiration)) {
     {
       [[maybe_unused]] const auto lck = std::scoped_lock(_mtx);
+      assert(!_block_ids.empty());
+      assert(block_id == _block_ids.back() || block_id > _block_ids.back());
       if (HICTK_LIKELY(_buff.size() < _capacity - 1) || block_id == _block_ids.back()) {
-        _buff.emplace(block_id, serialized_block);
+        [[maybe_unused]] const auto inserted = _buff.emplace(block_id, serialized_block).second;
+        assert(inserted);
         SPDLOG_DEBUG(
             FMT_STRING("SerializedBlockPQueue::try_enqueue(): successfully enqueued block {}"),
             block_id);
@@ -128,24 +130,25 @@ inline auto SerializedBlockPQueue<BlockID>::dequeue_unsafe() noexcept -> Record 
     return {{}, "", Record::Status::QUEUE_IS_CLOSED};
   }
 
-  if (_buff.empty()) {
-    SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): queue is empty!"));
-  }
-
-  assert(!_block_ids.empty());
-  auto& [bid, value] = *_buff.begin();
-  if (bid == _block_ids.back()) {
-    assert(!value.empty());
-    SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): returning block {}..."), bid);
-    Record record{bid, std::move(value), Record::Status::SUCCESS};
-    _buff.erase(_buff.begin());
-    _block_ids.pop_back();
-    return record;
+  const auto wanted_bid = _block_ids.back();
+  if (!_buff.empty()) {
+    assert(!_block_ids.empty());
+    auto& [bid, value] = *_buff.begin();
+    assert(bid > wanted_bid || bid == wanted_bid);
+    if (bid == wanted_bid) {
+      assert(!value.empty());
+      SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): returning block {}..."),
+                   bid);
+      Record record{bid, std::move(value), Record::Status::SUCCESS};
+      _buff.erase(_buff.begin());
+      _block_ids.pop_back();
+      return record;
+    }
   }
 
   SPDLOG_DEBUG(
-      FMT_STRING("SerializedBlockPQueue::dequeue_undafe(): block {} has not yet been enqueued!"),
-      bid);
+      FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): block {} has not yet been enqueued!"),
+      wanted_bid);
   return {{}, "", Record::Status::NOT_AVAILABLE};
 }
 

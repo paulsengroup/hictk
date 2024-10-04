@@ -51,19 +51,25 @@ inline std::string BinaryBuffer::getline(char delim) {
   return std::string{view.substr(0, pos)};
 }
 
+inline void BinaryBuffer::write(const char *data, std::size_t count, bool add_nullterm) {
+  _buffer.append(data, count);
+  if (add_nullterm) {
+    _buffer.append("\0", 1);
+  }
+}
+
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void BinaryBuffer::write(T data) {
-  static_assert(sizeof(char) == 1);
-  _buffer.append(reinterpret_cast<const char *>(&data), sizeof(T));
+  write(reinterpret_cast<const char *>(&data), sizeof(T), false);
 }
 
 inline void BinaryBuffer::write(const std::string &data, bool add_nullterm) {
-  _buffer.append(data.c_str(), data.size() + add_nullterm);
+  write(data.c_str(), data.size() + add_nullterm, false);
 }
 
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 void BinaryBuffer::write(const std::vector<T> &data) {
-  _buffer.append(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(T));
+  write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(T), false);
 }
 
 inline std::size_t BinaryBuffer::operator()() const noexcept { return _i; }

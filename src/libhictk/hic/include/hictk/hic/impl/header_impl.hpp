@@ -44,7 +44,7 @@ inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const 
   buffer.write("HIC\0", 4);
   buffer.write(version);
   buffer.write(footerPosition);
-  buffer.write(genomeID.c_str(), genomeID.size() + 1);
+  buffer.write(genomeID, true);
   buffer.write(normVectorIndexPosition);
   buffer.write(normVectorIndexLength);
 
@@ -52,8 +52,8 @@ inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const 
   const auto nAttributes = static_cast<std::int32_t>(attributes.size());
   buffer.write(nAttributes);
   for (const auto &[k, v] : attributes) {
-    buffer.write(k.c_str(), k.size() + 1);
-    buffer.write(v.c_str(), v.size() + 1);
+    buffer.write(k, true);
+    buffer.write(v, true);
   }
 
   // Write chromosomes
@@ -62,7 +62,7 @@ inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const 
 
   for (const Chromosome &c : chromosomes) {
     const auto name = std::string{c.name()};
-    buffer.write(name.c_str(), name.size() + 1);
+    buffer.write(name, true);
     buffer.write<std::int64_t>(c.size());
   }
 
