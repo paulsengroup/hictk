@@ -105,7 +105,7 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
   }
   fs.unsafe_read(header.footerPosition);
   if (header.footerPosition < 0 ||
-      header.footerPosition >= static_cast<std::int64_t>(fs.unsafe_size())) {
+      header.footerPosition >= conditional_static_cast<std::int64_t>(fs.unsafe_size())) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("file appears to be corrupted: expected footerPosition to be "
                                "between 0 and {}, found {}"),

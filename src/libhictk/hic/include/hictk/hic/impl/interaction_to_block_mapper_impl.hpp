@@ -127,6 +127,16 @@ inline bool HiCInteractionToBlockMapper::BlockID::operator<(const BlockID &other
   return bid < other.bid;
 }
 
+inline bool HiCInteractionToBlockMapper::BlockID::operator>(const BlockID &other) const noexcept {
+  if (chrom1_id != other.chrom1_id) {
+    return chrom1_id > other.chrom1_id;
+  }
+  if (chrom2_id != other.chrom2_id) {
+    return chrom2_id > other.chrom2_id;
+  }
+  return bid > other.bid;
+}
+
 inline bool HiCInteractionToBlockMapper::BlockID::operator==(const BlockID &other) const noexcept {
   return chrom1_id == other.chrom1_id && chrom2_id == other.chrom2_id && bid == other.bid;
 }
@@ -293,7 +303,7 @@ inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const B
 }
 
 inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept
-    -> const ChromosomeIndexMap & {
+    -> const MatrixIndexMap & {
   return _chromosome_index;
 }
 

@@ -35,6 +35,7 @@
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
 #include "hictk/hic/interaction_to_block_mapper.hpp"
+#include "hictk/hic/serialized_block_pqueue.hpp"
 #include "hictk/tmpdir.hpp"
 
 namespace hictk::hic::internal {
@@ -54,7 +55,7 @@ class HiCSectionOffsets {
 
   void extend(std::size_t s) noexcept;
   void extend(std::streamoff s) noexcept;
-  void set_size(std::size_t new_size);
+  void set_size(std::size_t new_size) noexcept;
 };
 
 struct BlockIndexKey {
@@ -108,9 +109,11 @@ class HiCFileWriter {
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
   using BlockIndex = phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>>;
   using BlockMappers = phmap::flat_hash_map<std::uint32_t, HiCInteractionToBlockMapper>;
+  using CompressedBlockPQueue = SerializedBlockPQueue<HiCInteractionToBlockMapper::BlockID>;
 
   HiCHeader _header{};
   BinTables _bin_tables{};
+  std::mutex _block_index_mtx{};
   BlockIndex _block_index{};
   BlockMappers _block_mappers{};
 
@@ -253,20 +256,20 @@ class HiCFileWriter {
 
   void read_offsets();
 
+  [[nodiscard]] const phmap::btree_set<HiCInteractionToBlockMapper::BlockID>&
+  initialize_block_queue(const Chromosome& chrom1, const Chromosome& chrom2,
+                         std::uint32_t resolution) const noexcept;
+
   // Methods to be called from worker threads
   auto merge_and_compress_blocks_thr(
-      HiCInteractionToBlockMapper& mapper, std::mutex& mapper_mtx,
-      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
-      moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID>& block_queue,
-      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
-      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
-      std::uint64_t stop_token) -> Stats;
-  [[nodiscard]] std::streampos write_compressed_blocks_thr(
-      const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
-      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
-      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
-      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
-      std::uint64_t stop_token);
+      std::size_t thread_id, const Chromosome& chrom1, const Chromosome& chrom2,
+      std::uint32_t resolution, HiCInteractionToBlockMapper& block_mapper, std::mutex& mapper_mtx,
+      std::atomic<const HiCInteractionToBlockMapper::BlockID*>& first_bid,
+      const HiCInteractionToBlockMapper::BlockID* last_bid,
+      CompressedBlockPQueue& compressed_block_queue, std::atomic<bool>& early_return) -> Stats;
+  void write_compressed_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
+                               std::uint32_t resolution,
+                               std::vector<CompressedBlockPQueue::Record>& compressed_blocks);
 };
 }  // namespace hictk::hic::internal
 

@@ -41,6 +41,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/hic/serialized_block_pqueue.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/static_binary_buffer.hpp"
 #include "hictk/transformers/coarsen.hpp"
@@ -85,14 +86,7 @@ inline void HiCSectionOffsets::extend(std::streamoff s) noexcept {
   extend(static_cast<std::size_t>(s));
 }
 
-inline void HiCSectionOffsets::set_size(std::size_t new_size) {
-  if (new_size < 0) {
-    throw std::logic_error(
-        fmt::format(FMT_STRING("size given to HiCSectionOffset cannot be negative, found {}"),
-                    static_cast<std::int64_t>(new_size)));
-  }
-  _size = new_size;
-}
+inline void HiCSectionOffsets::set_size(std::size_t new_size) noexcept { _size = new_size; }
 
 inline bool BlockIndexKey::operator<(const BlockIndexKey &other) const noexcept {
   if (chrom1 != other.chrom1) {
@@ -1147,106 +1141,48 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
                                                     std::uint32_t resolution)
     -> std::pair<HiCSectionOffsets, Stats> {
   assert(offset >= 0);
-  auto &mapper = _block_mappers.at(resolution);
-  mapper.finalize();
-
-  const auto block_ids = mapper.chromosome_index().find(std::make_pair(chrom1, chrom2));
-  if (block_ids == mapper.chromosome_index().end()) {
-    SPDLOG_DEBUG(FMT_STRING("no pixels to write for {}:{} matrix at {} resolution"), chrom1.name(),
-                 chrom2.name(), resolution);
-    return {{_fs.size(), 0}, {}};
-  }
-
-  if (_tpool.get_thread_count() < 3 || block_ids->second.size() == 1) {
-    try {
-      const auto section_start = offset;
-      Stats stats{};
-      for (const auto &bid : block_ids->second) {
-        auto blk = mapper.merge_blocks(bid);
-        stats.sum += blk.sum();
-        stats.nnz += blk.size();
-        offset =
-            write_interaction_block(offset, bid.bid, chrom1, chrom2, resolution, std::move(blk))
-                .end();
-      }
-
-      return std::make_pair(HiCSectionOffsets{section_start, offset - section_start}, stats);
-    } catch (const std::exception &e) {
-      throw std::runtime_error(
-          "an error occurred while writing interaction blocks using a single thread: " +
-          std::string{e.what()});
-    }
-  }
+  assert(_tpool.get_thread_count() > 0);
 
   try {
-    std::mutex block_id_queue_mtx{};
-    std::queue<std::uint64_t> block_id_queue{};
-    moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> block_queue(
-        block_ids->second.size());
-
-    std::mutex serialized_block_tank_mtx{};
-    phmap::flat_hash_map<std::uint64_t, std::string> serialized_block_tank{
-        block_ids->second.size()};
-    const auto stop_token = std::numeric_limits<std::uint64_t>::max();
-    std::atomic<bool> early_return = false;
-
     std::mutex mapper_mtx{};
+    auto &mapper = _block_mappers.at(resolution);
+    mapper.finalize();
 
-    std::vector<std::future<Stats>> worker_threads{};
-    for (BS::concurrency_t i = 2; i < _tpool.get_thread_count(); ++i) {
-      worker_threads.emplace_back(_tpool.submit_task([&]() {
-        return merge_and_compress_blocks_thr(mapper, mapper_mtx, block_id_queue, block_id_queue_mtx,
-                                             block_queue, serialized_block_tank,
-                                             serialized_block_tank_mtx, early_return, stop_token);
-      }));
+    const auto matrix_block_mapper = mapper.chromosome_index().find(std::make_pair(chrom1, chrom2));
+    if (matrix_block_mapper == mapper.chromosome_index().end()) {
+      SPDLOG_DEBUG(FMT_STRING("no pixels to write for {}:{} matrix at {} resolution"),
+                   chrom1.name(), chrom2.name(), resolution);
+      return {{_fs.size(), 0}, {}};
     }
 
-    auto writer = _tpool.submit_task([&]() {
-      return write_compressed_blocks_thr(chrom1, chrom2, resolution, block_id_queue,
-                                         block_id_queue_mtx, serialized_block_tank,
-                                         serialized_block_tank_mtx, early_return, stop_token);
-    });
+    const std::vector block_ids(matrix_block_mapper->second.begin(),
+                                matrix_block_mapper->second.end());
+    CompressedBlockPQueue compressed_block_queue(
+        block_ids.begin(), block_ids.end(),
+        conditional_static_cast<std::size_t>(_tpool.get_thread_count()));
 
-    auto producer = _tpool.submit_task([&]() {
-      try {
-        for (const auto &bid : block_ids->second) {
-          if (early_return) {
-            break;
-          }
+    std::atomic<bool> early_return = false;
 
-          block_queue.enqueue(bid);
-          if (early_return) {
-            break;
-          }
-        }
-        for (std::size_t i = 0; i < worker_threads.size(); ++i) {
-          block_queue.enqueue(HiCInteractionToBlockMapper::BlockID{0, 0, stop_token});
-        }
-      } catch (const std::exception &e) {
-        early_return = true;
-        throw std::runtime_error("an error occurred in the producer thread: " +
-                                 std::string{e.what()});
-      } catch (...) {
-        early_return = true;
-        throw;
-      }
-    });
+    std::atomic first_bid{block_ids.data()};
+    auto *last_bid = block_ids.data() + block_ids.size();
 
-    producer.get();
+    std::vector<std::future<Stats>> workers(
+        conditional_static_cast<std::size_t>(_tpool.get_thread_count()));
+    for (std::size_t i = 0; i < workers.size(); ++i) {
+      workers[i] = _tpool.submit_task([&, i]() {
+        return merge_and_compress_blocks_thr(i, chrom1, chrom2, resolution, mapper, mapper_mtx,
+                                             first_bid, last_bid, compressed_block_queue,
+                                             early_return);
+      });
+    }
 
     Stats stats{};
-    for (auto &worker : worker_threads) {
+    for (auto &worker : workers) {
       const auto partial_stats = worker.get();
       stats.sum += partial_stats.sum;
       stats.nnz += partial_stats.nnz;
     }
-    // signal no more blocks will be enqueued
-    {
-      std::scoped_lock lck(block_id_queue_mtx);
-      block_id_queue.emplace(stop_token);
-    }
-
-    return std::make_pair(HiCSectionOffsets{offset, writer.get() - offset}, stats);
+    return std::make_pair(HiCSectionOffsets{offset, _fs.size() - offset}, stats);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
@@ -1435,38 +1371,45 @@ inline std::size_t HiCFileWriter::compute_block_column_count(const Chromosome &c
 }
 
 inline auto HiCFileWriter::merge_and_compress_blocks_thr(
-    HiCInteractionToBlockMapper &mapper, std::mutex &mapper_mtx,
-    std::queue<std::uint64_t> &block_id_queue, std::mutex &block_id_queue_mtx,
-    moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID> &block_queue,
-    phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
-    std::mutex &serialized_block_tank_mtx, std::atomic<bool> &early_return,
-    std::uint64_t stop_token) -> Stats {
-  SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks thread: start-up..."));
+    std::size_t thread_id, const Chromosome &chrom1, const Chromosome &chrom2,
+    std::uint32_t resolution, HiCInteractionToBlockMapper &block_mapper, std::mutex &mapper_mtx,
+    std::atomic<const HiCInteractionToBlockMapper::BlockID *> &first_bid,
+    const HiCInteractionToBlockMapper::BlockID *last_bid,
+    CompressedBlockPQueue &compressed_block_queue, std::atomic<bool> &early_return) -> Stats {
+  assert(!!first_bid);
+  assert(!!last_bid);
+
+  SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: start-up..."), thread_id);
+  Stats stats{};
+
   try {
-    HiCInteractionToBlockMapper::BlockID buffer{};
+    std::vector<CompressedBlockPQueue::Record> compressed_blocks_buffer{};
     BinaryBuffer bbuffer{};
     std::string compression_buffer(16'000'000, '\0');
     std::unique_ptr<libdeflate_compressor> libdeflate_compressor(
         libdeflate_alloc_compressor(static_cast<std::int32_t>(_compression_lvl)));
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
-    Stats stats{};
-    while (!early_return) {
-      // dequeue block
-      if (!block_queue.wait_dequeue_timed(buffer, std::chrono::milliseconds(500))) {
-        continue;
-      }
-      if (buffer.bid == stop_token) {
-        SPDLOG_DEBUG(
-            FMT_STRING("merge_and_compress_blocks thread: processed all blocks. Returning!"));
+    for ([[maybe_unused]] std::size_t blocks_processed = 0; !early_return; ++blocks_processed) {
+      auto *block_idx = first_bid++;
+      if (block_idx >= last_bid) {
+        compressed_block_queue.dequeue(compressed_blocks_buffer);
+        if (!compressed_blocks_buffer.empty()) {
+          write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
+        }
+
+        SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: no more blocks to be "
+                                "processed: processed a total of {} blocks. Returning!"),
+                     blocks_processed, thread_id);
         return stats;
       }
 
       SPDLOG_DEBUG(
-          FMT_STRING("merge_and_compress_blocks thread: merging partial blocks for block #{}"),
-          buffer.bid);
+          FMT_STRING("merge_and_compress_blocks [tid={}]: merging partial blocks for block #{}"),
+          thread_id, block_idx->bid);
       // read and merge partial blocks
-      auto blk = mapper.merge_blocks(buffer, bbuffer, *zstd_dctx, compression_buffer, mapper_mtx);
+      auto blk = block_mapper.merge_blocks(*block_idx, bbuffer, *zstd_dctx, compression_buffer,
+                                           mapper_mtx);
       stats.nnz += blk.size();
       stats.sum += blk.sum();
 
@@ -1474,105 +1417,78 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
       std::ignore = blk.serialize(bbuffer, *libdeflate_compressor, compression_buffer);
 
       // enqueue serialized block
-      std::scoped_lock lck(serialized_block_tank_mtx, block_id_queue_mtx);
-      SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks thread: done processing block #{}"),
-                   buffer.bid);
-      serialized_block_tank.emplace(std::make_pair(buffer.bid, compression_buffer));
-      block_id_queue.emplace(buffer.bid);
-    }
+      SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: done processing block #{}"),
+                   thread_id, block_idx->bid);
+      while (!compressed_block_queue.try_enqueue(*block_idx, compression_buffer)) {
+        if (early_return) {
+          SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: early return signal "
+                                  "received: returning immediately!"),
+                       thread_id);
+        }
 
-    return stats;
+        compressed_block_queue.dequeue(compressed_blocks_buffer);
+        if (!compressed_blocks_buffer.empty()) {
+          write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
+        }
+      }
+
+      compressed_block_queue.dequeue(compressed_blocks_buffer);
+      if (!compressed_blocks_buffer.empty()) {
+        write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
+      }
+
+      return stats;
+    }
   } catch (const std::exception &e) {
     early_return = true;
-    throw std::runtime_error("an error occurred in merge_and_compress_blocks thread: " +
-                             std::string{e.what()});
-
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("an error occurred in merge_and_compress_blocks [tid={}]: {}"),
+                    thread_id, e.what()));
   } catch (...) {
     early_return = true;
     throw;
   }
+
+  if (early_return) {
+    SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: early return signal "
+                            "received: returning immediately!"),
+                 thread_id);
+  }
+
+  return stats;
 }
 
-inline std::streampos HiCFileWriter::write_compressed_blocks_thr(
+inline void HiCFileWriter::write_compressed_blocks(
     const Chromosome &chrom1, const Chromosome &chrom2, std::uint32_t resolution,
-    std::queue<std::uint64_t> &block_id_queue, std::mutex &block_id_queue_mtx,
-    phmap::flat_hash_map<std::uint64_t, std::string> &serialized_block_tank,
-    std::mutex &serialized_block_tank_mtx, std::atomic<bool> &early_return,
-    std::uint64_t stop_token) {
-  SPDLOG_DEBUG(FMT_STRING("write_compressed_blocks thread: start-up..."));
-  try {
-    std::string buffer;
+    std::vector<CompressedBlockPQueue::Record> &compressed_blocks) {
+  for (auto &[bid, buffer, _] : compressed_blocks) {
+    const auto [file_offset, buffer_size] = [&, &buffer_ = buffer]() {
+      [[maybe_unused]] const auto lck = _fs.lock();
+      _fs.unsafe_seekp(0, std::ios::end);
+      const auto offset = _fs.unsafe_tellp();
+      _fs.unsafe_write(buffer_.data(), buffer_.size());
+      return std::make_pair(static_cast<std::int64_t>(offset),
+                            static_cast<std::int32_t>(buffer_.size()));
+    }();
 
-    while (!early_return) {
-      const auto do_sleep = [&]() {
-        std::scoped_lock lck(block_id_queue_mtx);
-        return block_id_queue.empty();
-      }();
+    buffer.clear();
+    buffer.shrink_to_fit();
 
-      if (do_sleep) {
-        SPDLOG_DEBUG(
-            FMT_STRING("write_compressed_blocks thread: no blocks to consume. Sleeping..."));
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        continue;
-      }
+    MatrixBlockMetadata mm{static_cast<std::int32_t>(bid.bid), file_offset, buffer_size};
+    const BlockIndexKey key{chrom1, chrom2, resolution};
 
-      const auto bid = [&]() {
-        std::scoped_lock lck(block_id_queue_mtx);
-        const auto n = block_id_queue.front();
-        block_id_queue.pop();
-        return n;
-      }();
-
-      if (bid == stop_token) {
-        SPDLOG_DEBUG(FMT_STRING(
-            "write_compressed_blocks thread: no more blocks to be processed. Returning!"));
-        return _fs.size();
-      }
-
-      SPDLOG_DEBUG(FMT_STRING("write_compressed_blocks thread: waiting for block #{}..."), bid);
-      while (!early_return) {
-        {
-          std::scoped_lock lck(serialized_block_tank_mtx);
-          auto match = serialized_block_tank.find(bid);
-          if (match != serialized_block_tank.end()) {
-            buffer = match->second;
-            serialized_block_tank.erase(match);
-            break;
-          }
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }
-      if (early_return) {
-        return _fs.size();
-      }
-
-      SPDLOG_DEBUG(FMT_STRING("preparing to write block #{} for {}:{}:{}..."), bid, chrom1.name(),
-                   chrom2.name(), resolution);
-      const auto blk_start = _fs.append(buffer).first;
-      SPDLOG_DEBUG(FMT_STRING("block #{} for {}:{}:{} successfully written at {}:{}"), bid,
-                   chrom1.name(), chrom2.name(), resolution, static_cast<std::int64_t>(blk_start),
-                   buffer.size());
-
-      MatrixBlockMetadata mm{static_cast<std::int32_t>(bid), static_cast<std::int64_t>(blk_start),
-                             static_cast<std::int32_t>(buffer.size())};
-      const BlockIndexKey key{chrom1, chrom2, resolution};
-      auto idx = _block_index.find(key);
-      if (idx != _block_index.end()) {
-        idx->second.emplace(std::move(mm));
-      } else {
-        _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
-      }
+    [[maybe_unused]] const std::scoped_lock lck(_block_index_mtx);
+    auto idx = _block_index.find(key);
+    if (idx != _block_index.end()) {
+      [[maybe_unused]] const auto inserted = idx->second.emplace(std::move(mm)).second;
+      assert(inserted);
+    } else {
+      _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
     }
-  } catch (const std::exception &e) {
-    early_return = true;
-    throw std::runtime_error("an error occurred in write_compressed_blocks thread: " +
-                             std::string{e.what()});
 
-  } catch (...) {
-    early_return = true;
-    throw;
+    SPDLOG_DEBUG(FMT_STRING("wrote block #{} for {}:{}:{} at {}:{}"), bid, chrom1.name(),
+                 chrom2.name(), resolution, file_offset, buffer.size());
   }
-  return _fs.size();
 }
 
 }  // namespace hictk::hic::internal
