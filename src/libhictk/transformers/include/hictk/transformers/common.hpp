@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 #include "hictk/pixel.hpp"
 #include "hictk/suppress_warnings.hpp"
@@ -31,14 +32,23 @@ template <typename T>
 inline constexpr bool has_weights_member_fx<T, std::void_t<decltype(std::declval<T>().weights())>> =
     true;
 
-template <typename N, typename PixelSelector, typename MatrixT, typename SetterOp>
-inline void fill_matrix_square(const PixelSelector& sel, MatrixT& buffer, std::int64_t num_rows,
-                               std::int64_t num_cols, std::int64_t offset1, std::int64_t offset2,
-                               bool populate_lower_triangle, bool populate_upper_triangle,
-                               SetterOp matrix_setter) {
+template <typename PixelSelector>
+[[nodiscard]] inline bool selector_is_symmetric_upper(const PixelSelector& sel) noexcept {
+  if constexpr (std::is_same_v<PixelSelector, cooler::PixelSelector>) {
+    return sel.is_symmetric_upper();
+  }
+  return true;
+}
+
+template <typename PixelIt, typename MatrixT, typename SetterOp>
+inline void fill_matrix_square(PixelIt first_pixel, PixelIt last_pixel, MatrixT& buffer,
+                               std::int64_t num_rows, std::int64_t num_cols, std::int64_t offset1,
+                               std::int64_t offset2, bool populate_lower_triangle,
+                               bool populate_upper_triangle, SetterOp matrix_setter) {
+  using N = decltype(std::declval<PixelIt>()->count);
   assert(populate_lower_triangle || populate_upper_triangle);
 
-  std::for_each(sel.template begin<N>(), sel.template end<N>(), [&](const ThinPixel<N>& p) {
+  std::for_each(std::move(first_pixel), std::move(last_pixel), [&](const ThinPixel<N>& p) {
     const auto i1 = static_cast<std::int64_t>(p.bin1_id) - offset1;
     const auto i2 = static_cast<std::int64_t>(p.bin2_id) - offset2;
 
@@ -63,15 +73,16 @@ inline void fill_matrix_square(const PixelSelector& sel, MatrixT& buffer, std::i
   });
 }
 
-template <typename N, typename PixelSelector, typename MatrixT, typename SetterOp>
-inline void fill_matrix_symmetric_upper(const PixelSelector& sel, MatrixT& buffer,
+template <typename PixelIt, typename MatrixT, typename SetterOp>
+inline void fill_matrix_symmetric_upper(PixelIt first_pixel, PixelIt last_pixel, MatrixT& buffer,
                                         std::int64_t num_rows, std::int64_t num_cols,
                                         std::int64_t offset1, std::int64_t offset2,
                                         bool populate_lower_triangle, bool populate_upper_triangle,
                                         SetterOp matrix_setter) {
+  using N = decltype(std::declval<PixelIt>()->count);
   assert(populate_lower_triangle || populate_upper_triangle);
 
-  std::for_each(sel.template begin<N>(), sel.template end<N>(), [&](const ThinPixel<N>& p) {
+  std::for_each(std::move(first_pixel), std::move(last_pixel), [&](const ThinPixel<N>& p) {
     const auto i1 = static_cast<std::int64_t>(p.bin1_id) - offset1;
     const auto i2 = static_cast<std::int64_t>(p.bin2_id) - offset2;
     bool inserted = false;
@@ -103,27 +114,22 @@ inline void fill_matrix_symmetric_upper(const PixelSelector& sel, MatrixT& buffe
   });
 }
 
-template <typename N, typename PixelSelector, typename MatrixT, typename SetterOp>
-inline void fill_matrix(const PixelSelector& sel, MatrixT& buffer, std::int64_t num_rows,
-                        std::int64_t num_cols, std::int64_t offset1, std::int64_t offset2,
-                        bool populate_lower_triangle, bool populate_upper_triangle,
-                        SetterOp matrix_setter) {
+template <typename PixelIt, typename MatrixT, typename SetterOp>
+inline void fill_matrix(PixelIt first_pixel, PixelIt last_pixel, bool symmetric_upper,
+                        MatrixT& buffer, std::int64_t num_rows, std::int64_t num_cols,
+                        std::int64_t offset1, std::int64_t offset2, bool populate_lower_triangle,
+                        bool populate_upper_triangle, SetterOp matrix_setter) {
   assert(populate_lower_triangle || populate_upper_triangle);
 
-  const auto selector_is_symmetric_upper = [&]() constexpr {
-    if constexpr (std::is_same_v<PixelSelector, cooler::PixelSelector>) {
-      return sel.is_symmetric_upper();
-    }
-    return true;
-  }();
-
-  if (HICTK_UNLIKELY(!selector_is_symmetric_upper)) {
-    fill_matrix_square<N>(sel, buffer, num_rows, num_cols, offset1, offset2,
-                          populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  if (HICTK_UNLIKELY(!symmetric_upper)) {
+    fill_matrix_square(std::move(first_pixel), std::move(last_pixel), buffer, num_rows, num_cols,
+                       offset1, offset2, populate_lower_triangle, populate_upper_triangle,
+                       matrix_setter);
     return;
   }
-  fill_matrix_symmetric_upper<N>(sel, buffer, num_rows, num_cols, offset1, offset2,
-                                 populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  fill_matrix_symmetric_upper(std::move(first_pixel), std::move(last_pixel), buffer, num_rows,
+                              num_cols, offset1, offset2, populate_lower_triangle,
+                              populate_upper_triangle, matrix_setter);
 }
 
 }  // namespace internal

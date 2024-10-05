@@ -57,16 +57,20 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       coord3.bin2 = std::max(coord3.bin2, coord4.bin2);
       coord4 = coord3;
 
-      internal::fill_matrix<N>(_sel->fetch(coord3, coord4), matrix, matrix.rows(), matrix.cols(),
-                               row_offset(), col_offset(), populate_lower_triangle,
-                               populate_upper_triangle, matrix_setter);
+      const auto new_sel = _sel->fetch(coord3, coord4);
+      internal::fill_matrix(new_sel.template begin<N>(), new_sel.template end<N>(),
+                            internal::selector_is_symmetric_upper(new_sel), matrix, matrix.rows(),
+                            matrix.cols(), row_offset(), col_offset(), populate_lower_triangle,
+                            populate_upper_triangle, matrix_setter);
       matrix.makeCompressed();
       return matrix;
     }
   }
 
-  internal::fill_matrix<N>(*_sel, matrix, matrix.rows(), matrix.cols(), row_offset(), col_offset(),
-                           populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  internal::fill_matrix(_sel->template begin<N>(), _sel->template end<N>(),
+                        internal::selector_is_symmetric_upper(*_sel), matrix, matrix.rows(),
+                        matrix.cols(), row_offset(), col_offset(), populate_lower_triangle,
+                        populate_upper_triangle, matrix_setter);
   matrix.makeCompressed();
   return matrix;
 }
