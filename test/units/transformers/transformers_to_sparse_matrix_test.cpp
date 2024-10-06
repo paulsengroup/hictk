@@ -63,6 +63,39 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
           matrix.triangularView<Eigen::Lower>().sum());
   }
 
+  SECTION("cis upper_triangle (asymmetric)") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const cooler::File clr(path.string());
+    const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
+                                       std::int32_t{}, QuerySpan::upper_triangle)();
+    CHECK(matrix.nonZeros() == 30);
+    CHECK(matrix.rows() == 4);
+    CHECK(matrix.cols() == 9);
+    CHECK(matrix.sum() == 2'231'517);
+  }
+
+  SECTION("cis lower_triangle (asymmetric)") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const cooler::File clr(path.string());
+    const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
+                                       std::int32_t{}, QuerySpan::lower_triangle)();
+    CHECK(matrix.nonZeros() == 10);
+    CHECK(matrix.rows() == 4);
+    CHECK(matrix.cols() == 9);
+    CHECK(matrix.sum() == 2'007'400);
+  }
+
+  SECTION("cis full (asymmetric)") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const cooler::File clr(path.string());
+    const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
+                                       std::int32_t{}, QuerySpan::full)();
+    CHECK(matrix.nonZeros() == 36);
+    CHECK(matrix.rows() == 4);
+    CHECK(matrix.cols() == 9);
+    CHECK(matrix.sum() == 2'411'797);
+  }
+
   SECTION("trans upper_triangle") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
