@@ -36,7 +36,7 @@ struct BalanceICEConfig {
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   bool force{false};
 };
 
@@ -58,7 +58,7 @@ struct BalanceSCALEConfig {
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   bool force{false};
 };
 
@@ -72,7 +72,7 @@ struct BalanceVCConfig {
   bool symlink_to_weight{true};
   bool stdout_{false};
 
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   bool force{false};
 };
 
@@ -95,7 +95,7 @@ struct ConvertConfig {
   std::size_t threads{2};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   bool force{false};
 };
 
@@ -135,7 +135,7 @@ struct FixMcoolConfig {
   std::size_t chunk_size{10'000'000};
 
   std::size_t threads{1};
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   bool force{false};
 };
 
@@ -165,7 +165,7 @@ struct LoadConfig {
   std::size_t threads{2};
   std::uint32_t compression_lvl{9};
 
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
   std::size_t batch_size{10'000'000};
 };
 
@@ -184,7 +184,7 @@ struct MergeConfig {
   std::string count_type{"int"};
 
   bool force{false};
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
 };
 
 struct MetadataConfig {
@@ -202,7 +202,7 @@ struct RenameChromosomesConfig {
   std::filesystem::path path_to_name_mappings{};
   bool add_chr_prefix{false};
   bool remove_chr_prefix{false};
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
 };
 
 struct ValidateConfig {
@@ -212,7 +212,7 @@ struct ValidateConfig {
   bool include_file_path{true};
   bool exhaustive{true};
   bool quiet{false};
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
 };
 
 struct ZoomifyConfig {
@@ -232,7 +232,7 @@ struct ZoomifyConfig {
   bool skip_all_vs_all_matrix{false};
 
   bool force{false};
-  std::uint8_t verbosity{4};
+  std::uint8_t verbosity{3};
 };
 
 // clang-format off
