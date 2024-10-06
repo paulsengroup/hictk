@@ -50,6 +50,7 @@ class SerializedBlockPQueue {
 
  private:
   [[nodiscard]] auto dequeue_unsafe() noexcept -> Record;
+  void dequeue_unsafe(std::vector<Record>& buffer);
 };
 
 }  // namespace hictk::hic::internal

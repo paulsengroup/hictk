@@ -1390,14 +1390,17 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
         libdeflate_alloc_compressor(static_cast<std::int32_t>(_compression_lvl)));
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
 
+    auto try_dequeue_and_write_blocks = [&]() {
+      compressed_block_queue.dequeue(compressed_blocks_buffer);
+      if (!compressed_blocks_buffer.empty()) {
+        write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
+      }
+    };
+
     for ([[maybe_unused]] std::size_t blocks_processed = 0; !early_return; ++blocks_processed) {
       auto *block_idx = first_bid++;
       if (block_idx >= last_bid) {
-        compressed_block_queue.dequeue(compressed_blocks_buffer);
-        if (!compressed_blocks_buffer.empty()) {
-          write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
-        }
-
+        try_dequeue_and_write_blocks();
         SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: no more blocks to be "
                                 "processed: processed a total of {} blocks. Returning!"),
                      blocks_processed, thread_id);
@@ -1426,17 +1429,12 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
                        thread_id);
         }
 
-        compressed_block_queue.dequeue(compressed_blocks_buffer);
-        if (!compressed_blocks_buffer.empty()) {
-          write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
-        }
+        try_dequeue_and_write_blocks();
       }
+      try_dequeue_and_write_blocks();
     }
 
-    compressed_block_queue.dequeue(compressed_blocks_buffer);
-    if (!compressed_blocks_buffer.empty()) {
-      write_compressed_blocks(chrom1, chrom2, resolution, compressed_blocks_buffer);
-    }
+    try_dequeue_and_write_blocks();
 
     return stats;
   } catch (const std::exception &e) {

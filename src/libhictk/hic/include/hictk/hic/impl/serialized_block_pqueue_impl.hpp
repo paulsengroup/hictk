@@ -34,7 +34,8 @@ inline SerializedBlockPQueue<BlockID>::SerializedBlockPQueue(It first_bid, It la
     return;
   }
 
-  _capacity = std::max(capacity_ == 0 ? 3 * _producers : capacity_, std::size_t{2});
+  _capacity =
+      std::clamp(capacity_ == 0 ? 3 * _producers : capacity_, std::size_t{2}, std::size_t{32});
   std::sort(_block_ids.begin(), _block_ids.end(), std::greater{});
 
   SPDLOG_DEBUG(FMT_STRING("initialized a BlockPQueue with capacity blocks with bids {}-{}"),
@@ -110,15 +111,15 @@ template <typename BlockID>
 inline void SerializedBlockPQueue<BlockID>::dequeue(std::vector<Record>& buffer) {
   buffer.clear();
   [[maybe_unused]] const auto lck = std::scoped_lock(_mtx);
-  while (true) {
-    auto record = dequeue_unsafe();
-    if (!record) {
-      SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue(): dequeued {} blocks"),
-                   buffer.size());
-      return;
-    }
-    buffer.emplace_back(std::move(record));
+  const auto fill_rate = static_cast<double>(_buff.size()) / static_cast<double>(_capacity);
+  if (_block_ids.size() != _buff.size() && fill_rate < 0.5) {
+    // Queue is not full enough to be worth returning available items
+    SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue(): not bothering dequeuing blocks "
+                            "(queue is only {}% full)"),
+                 100.0 * fill_rate);
+    return;
   }
+  dequeue_unsafe(buffer);
 }
 
 template <typename BlockID>
@@ -150,6 +151,20 @@ inline auto SerializedBlockPQueue<BlockID>::dequeue_unsafe() noexcept -> Record 
       FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): block {} has not yet been enqueued!"),
       wanted_bid);
   return {{}, "", Record::Status::NOT_AVAILABLE};
+}
+
+template <typename BlockID>
+inline void SerializedBlockPQueue<BlockID>::dequeue_unsafe(std::vector<Record>& buffer) {
+  buffer.clear();
+  while (true) {
+    auto record = dequeue_unsafe();
+    if (!record) {
+      SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): dequeued {} blocks"),
+                   buffer.size());
+      return;
+    }
+    buffer.emplace_back(std::move(record));
+  }
 }
 
 }  // namespace hictk::hic::internal
