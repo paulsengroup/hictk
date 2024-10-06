@@ -448,11 +448,11 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
     -> HiCSectionOffsets {
   try {
-    write_pixels(chrom1, chrom2, resolutions().front());
     SPDLOG_INFO(FMT_STRING("about to write pixels for {}:{}: tellg={}; tellp={}; size={};"),
                 chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_fs.tellp()),
+                static_cast<std::int64_t>(_data_block_section.end()),
                 conditional_static_cast<std::int64_t>(_fs.size()));
+    write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
     SPDLOG_INFO(FMT_STRING("about to write body metadata for {}:{}: tellg={}; tellp={}; size={};"),
                 chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
@@ -1132,6 +1132,8 @@ inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
                                                      std::uint32_t resolution) {
   try {
     const auto offset = _data_block_section.end();
+    _fs.resize(offset);
+
     SPDLOG_INFO(FMT_STRING("[{} bp] writing pixels for {}:{} matrix at offset {}..."), resolution,
                 chrom1.name(), chrom2.name(), static_cast<std::int64_t>(offset));
 
@@ -1201,7 +1203,7 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
       stats.sum += partial_stats.sum;
       stats.nnz += partial_stats.nnz;
     }
-    return std::make_pair(HiCSectionOffsets{offset, _fs.size() - offset}, stats);
+    return std::make_pair(HiCSectionOffsets{offset, _fs.tellp() - offset}, stats);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
@@ -1480,10 +1482,10 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
 inline void HiCFileWriter::write_compressed_blocks(
     const Chromosome &chrom1, const Chromosome &chrom2, std::uint32_t resolution,
     std::vector<CompressedBlockPQueue::Record> &compressed_blocks) {
+  [[maybe_unused]] const auto lck1 = _fs.lock();
+  _fs.unsafe_seekp(0, std::ios::end);
   for (auto &[bid, buffer, _] : compressed_blocks) {
     const auto [file_offset, buffer_size] = [&, &buffer_ = buffer]() {
-      [[maybe_unused]] const auto lck = _fs.lock();
-      _fs.unsafe_seekp(0, std::ios::end);
       const auto offset = _fs.unsafe_tellp();
       _fs.unsafe_write(buffer_.data(), buffer_.size());
       return std::make_pair(static_cast<std::int64_t>(offset),
@@ -1496,7 +1498,7 @@ inline void HiCFileWriter::write_compressed_blocks(
     MatrixBlockMetadata mm{static_cast<std::int32_t>(bid.bid), file_offset, buffer_size};
     const BlockIndexKey key{chrom1, chrom2, resolution};
 
-    [[maybe_unused]] const std::scoped_lock lck(_block_index_mtx);
+    [[maybe_unused]] const std::scoped_lock lck2(_block_index_mtx);
     auto idx = _block_index.find(key);
     if (idx != _block_index.end()) {
       idx->second.emplace(std::move(mm));
@@ -1505,7 +1507,7 @@ inline void HiCFileWriter::write_compressed_blocks(
     }
 
     SPDLOG_DEBUG(FMT_STRING("wrote block #{} for {}:{}:{} at {}:{}"), bid, chrom1.name(),
-                 chrom2.name(), resolution, file_offset, buffer.size());
+                 chrom2.name(), resolution, file_offset, buffer_size);
   }
 }
 
