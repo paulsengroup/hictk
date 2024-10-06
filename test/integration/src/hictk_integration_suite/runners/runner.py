@@ -155,7 +155,8 @@ class Runner:
             if not isinstance(data, list):
                 data = [data]
 
-            for line in data:
+            i = min(500, len(data))
+            for line in data[-i:]:
                 logging.warning(f"{label}: {line.strip()}")
 
         log_output(stdout.result(5.0), "stdout")
