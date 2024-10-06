@@ -155,8 +155,7 @@ class HiCFileWriter {
       std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
       std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
-      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
-      std::size_t buffer_size = 32'000'000);
+      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;

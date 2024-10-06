@@ -374,8 +374,11 @@ template <typename N>
 inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
                                                 std::string &buffer_out,
                                                 libdeflate_compressor &compressor) {
-  assert(buffer_out.capacity() != 0);
   buffer_out.resize(buffer_out.capacity());
+  if (buffer_out.empty()) {
+    buffer_out.resize(libdeflate_deflate_compress_bound(&compressor, buffer_in.size()));
+  }
+
   while (true) {
     const auto compressed_size = libdeflate_zlib_compress(
         &compressor, buffer_in.data(), buffer_in.size(), buffer_out.data(), buffer_out.size());
@@ -384,7 +387,9 @@ inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
       break;
     }
 
-    buffer_out.resize(buffer_out.size() * 2);
+    const auto new_size = std::max(
+        buffer_out.size() * 2, libdeflate_deflate_compress_bound(&compressor, buffer_in.size()));
+    buffer_out.resize(new_size);
   }
 }
 

@@ -200,8 +200,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::vector<std::uint32_t> resolutions_,
                                     std::string_view assembly_, std::size_t n_threads,
                                     std::size_t chunk_size, const std::filesystem::path &tmpdir,
-                                    std::uint32_t compression_lvl, bool skip_all_vs_all_matrix,
-                                    std::size_t buffer_size)
+                                    std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
     : _fs(filestream::FileStream<>::create(std::string{path_}, std::make_shared<std::mutex>())),
       _tmpdir(tmpdir),
       _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
@@ -210,7 +209,6 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
       _block_mappers(init_interaction_block_mappers(_tmpdir, _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
       _compressor(libdeflate_alloc_compressor(static_cast<std::int32_t>(compression_lvl))),
-      _compression_buffer(buffer_size, '\0'),
       _tpool(init_tpool(n_threads)),
       _skip_all_vs_all_matrix(skip_all_vs_all_matrix) {
   if (!std::filesystem::exists(_tmpdir)) {
@@ -1406,7 +1404,7 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
   try {
     std::vector<CompressedBlockPQueue::Record> compressed_blocks_buffer{};
     BinaryBuffer bbuffer{};
-    std::string compression_buffer(16'000'000, '\0');
+    std::string compression_buffer{};
     std::unique_ptr<libdeflate_compressor> libdeflate_compressor(
         libdeflate_alloc_compressor(static_cast<std::int32_t>(_compression_lvl)));
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx{ZSTD_createDCtx()};
