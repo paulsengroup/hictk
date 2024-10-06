@@ -224,7 +224,7 @@ TEST_CASE("FileStream read", "[filestream][short]") {
       std::size_t failures = 0;
 
       threads_started++;
-      while (threads_started != 2);
+      while (threads_started != 2);  // NOLINT
 
       try {
         const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
@@ -355,7 +355,7 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
       std::size_t failures = 0;
 
       threads_started++;
-      while (threads_started != 2);
+      while (threads_started != 2);  // NOLINT
 
       try {
         const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
@@ -524,7 +524,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
       std::size_t failures = 0;
 
       threads_started++;
-      while (threads_started != 2);
+      while (threads_started != 2);  // NOLINT
 
       try {
         const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
