@@ -448,34 +448,13 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
     -> HiCSectionOffsets {
   try {
-    SPDLOG_INFO(FMT_STRING("about to write pixels for {}:{}: tellg={}; tellp={}; size={};"),
-                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_data_block_section.end()),
-                conditional_static_cast<std::int64_t>(_fs.size()));
     write_pixels(chrom1, chrom2, resolutions().front());
     add_body_metadata(resolutions().front(), chrom1, chrom2);
-    SPDLOG_INFO(FMT_STRING("about to write body metadata for {}:{}: tellg={}; tellp={}; size={};"),
-                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_fs.tellp()),
-                conditional_static_cast<std::int64_t>(_fs.size()));
     write_body_metadata();
     add_footer(chrom1, chrom2);
-    SPDLOG_INFO(FMT_STRING("about to write footers for {}:{}: tellg={}; tellp={}; size={};"),
-                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_fs.tellp()),
-                conditional_static_cast<std::int64_t>(_fs.size()));
     write_footers();
 
-    SPDLOG_INFO(FMT_STRING("about to finalize pixels for {}:{}: tellg={}; tellp={}; size={};"),
-                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_fs.tellp()),
-                conditional_static_cast<std::int64_t>(_fs.size()));
     finalize();
-
-    SPDLOG_INFO(FMT_STRING("DONE writing pixels for {}:{}: tellg={}; tellp={}; size={};"),
-                chrom1.name(), chrom2.name(), static_cast<std::int64_t>(_fs.tellg()),
-                static_cast<std::int64_t>(_fs.tellp()),
-                conditional_static_cast<std::int64_t>(_fs.size()));
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING(
