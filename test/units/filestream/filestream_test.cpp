@@ -14,6 +14,7 @@
 #include <fstream>
 #include <future>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -215,6 +216,7 @@ TEST_CASE("FileStream read", "[filestream][short]") {
     REQUIRE(expected2.size() == 10);
 
     std::atomic<std::size_t> threads_started{};
+    std::mutex catch2_mtx{};
 
     auto worker = [&](std::size_t id, std::streampos offset, std::string_view expected_) {
       std::string buffer_;
@@ -229,10 +231,10 @@ TEST_CASE("FileStream read", "[filestream][short]") {
         for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
           buffer_.clear();
           const auto new_offset = s.seek_and_read(offset, buffer_, expected_.size()).second;
+          failures += new_offset != offset + std::streamoff(expected_.size());
+
+          [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);
           CHECK(new_offset == offset + std::streamoff(expected_.size()));
-          const auto success = expected_ == buffer_;
-          failures += !success;
-          CHECK(success);
         }
 
         return std::make_pair(tests, failures);
@@ -345,6 +347,7 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
     REQUIRE(!expected2.empty());
 
     std::atomic<std::size_t> threads_started{};
+    std::mutex catch2_mtx{};
 
     auto worker = [&](std::size_t id, std::streampos offset, std::string_view expected_) {
       std::string buffer_;
@@ -360,10 +363,15 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
           buffer_.clear();
           const auto status = s.seek_and_getline(offset, buffer_);
           const auto delimiter_found = std::get<0>(status);
-          CHECK(std::get<2>(status) == offset + std::streamoff(expected_.size() + delimiter_found));
-          const auto success = expected_ == buffer_;
-          failures += !success;
-          CHECK(success);
+          const auto offset_after_read = std::get<2>(status);
+
+          failures +=
+              offset_after_read != offset + std::streamoff(expected_.size() + delimiter_found) ||
+              expected_ != buffer_;
+
+          [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);
+          CHECK(offset_after_read == offset + std::streamoff(expected_.size() + delimiter_found));
+          CHECK(expected_ == buffer_);
         }
 
         return std::make_pair(tests, failures);
@@ -509,6 +517,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
     REQUIRE(s.size() == 0);
 
     std::atomic<std::size_t> threads_started{};
+    std::mutex catch2_mtx{};
 
     auto worker = [&](std::size_t id, std::streampos offset, std::string_view message) {
       std::size_t tests = 0;
@@ -521,9 +530,10 @@ TEST_CASE("FileStream write", "[filestream][short]") {
         const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
           const auto new_offset = s.seek_and_write(offset, message).second;
-          const auto success = offset + static_cast<std::streamoff>(message.size()) == new_offset;
-          failures += !success;
-          CHECK(success);
+          failures += offset + static_cast<std::streamoff>(message.size()) != new_offset;
+
+          [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);
+          CHECK(offset + static_cast<std::streamoff>(message.size()) == new_offset);
         }
 
         return std::make_pair(tests, failures);
