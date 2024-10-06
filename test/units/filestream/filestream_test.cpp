@@ -606,4 +606,27 @@ TEST_CASE("FileStream write binary", "[filestream][short]") {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("FileStream resize", "[filestream][short]") {
+  const auto tmpfile = testdir() / "filestream_write.bin";
+  std::filesystem::remove(tmpfile);  // NOLINT
+  auto s = FileStream<>::create(tmpfile.string(), nullptr);
+
+  const std::string_view msg{"this is a relatively long string"};
+
+  s.write(msg);
+  CHECK(s.size() == conditional_static_cast<std::streamsize>(msg.size()));
+  CHECK(s.tellg() == 0);
+  CHECK(s.tellp() == s.size());
+
+  s.resize(5);
+  CHECK(s.size() == std::streamsize{5});
+  CHECK(s.tellg() == 0);
+  CHECK(s.tellp() == 5);
+
+  s.resize(100);
+  CHECK(s.size() == std::streamsize{100});
+  CHECK(s.tellg() == 0);
+  CHECK(s.tellp() == 5);
+}
 }  // namespace hictk::filestream::test

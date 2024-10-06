@@ -36,10 +36,8 @@ inline FileStream<Mutex>::FileStream(std::string path, std::shared_ptr<Mutex> mt
                                      std::ios::openmode mode)
     : _path(std::move(path)),
       _mtx(std::move(mtx)),
-      _ifs(open_file_read(_path, std::ios::in | std::ios::binary | std::ios::ate)),
-      _ofs(mode & std::ios::out
-               ? open_file_write(_path, std::ios::in | std::ios::out | std::ios::binary)
-               : std::ofstream{}),
+      _ifs(open_file_read(_path, _ifs_flags | std::ios::ate)),
+      _ofs(mode & std::ios::out ? open_file_write(_path, _ofs_flags) : std::ofstream{}),
       _file_size(unsafe_tellg()) {
   unsafe_seekg(0);
 }
@@ -53,8 +51,8 @@ inline FileStream<Mutex> FileStream<Mutex>::create(std::string path, std::shared
   FileStream fs{};
   fs._path = std::move(path);
   fs._mtx = std::move(mtx);
-  fs._ofs = open_file_write(fs._path, std::ios::trunc | std::ios::binary);
-  fs._ifs = open_file_read(fs._path, std::ios::binary);
+  fs._ofs = open_file_write(fs._path, _ofs_flags | std::ios::trunc);
+  fs._ifs = open_file_read(fs._path, _ifs_flags);
 
   return fs;
 }
@@ -498,6 +496,28 @@ inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::append(
 }
 
 template <typename Mutex>
+inline void FileStream<Mutex>::resize(std::streamsize new_size) {
+  [[maybe_unused]] const auto lck = lock();
+  if (!_ofs.is_open()) {
+    throw std::runtime_error("FileStream::resize() was called on a file opened in read-only mode");
+  }
+
+  if (new_size != _file_size) {
+    std::filesystem::resize_file(_path, conditional_static_cast<std::uintmax_t>(new_size));
+    const auto current_ifs_offset = unsafe_tellg();
+    const auto current_ofs_offset = unsafe_tellp();
+    _ifs = open_file_read(_path, _ifs_flags);
+    _ofs = open_file_write(_path, _ofs_flags);
+    _file_size = new_size;
+
+    unsafe_seekg(std::min(conditional_static_cast<std::streampos>(_file_size),
+                          conditional_static_cast<std::streampos>(current_ifs_offset)));
+    unsafe_seekp(std::min(conditional_static_cast<std::streampos>(_file_size),
+                          conditional_static_cast<std::streampos>(current_ofs_offset)));
+  }
+}
+
+template <typename Mutex>
 inline std::streampos FileStream<Mutex>::new_posg(std::streamoff offset, std::ios::seekdir way) {
   switch (way) {
     case std::ios::beg:
@@ -551,7 +571,7 @@ inline void FileStream<Mutex>::unsafe_update_file_size() {
   unsafe_flush();
   const auto offset = unsafe_tellg();
   unsafe_seekg(0, std::ios::end);
-  _file_size = std::max(unsafe_tellg(), _file_size);
+  _file_size = std::max(static_cast<std::streamsize>(unsafe_tellg()), _file_size);
   unsafe_seekg(offset);
 }
 

@@ -24,11 +24,15 @@ class FileStream {
   static_assert(sizeof(char) == 1, "char must be 1 byte wide!");
   static_assert(sizeof(float) == 4, "float must be 4 bytes wide!");
   static_assert(sizeof(double) == 8, "double must be 8 bytes wide!");
+
   std::string _path{};
   mutable std::shared_ptr<Mutex> _mtx{};
   mutable std::ifstream _ifs{};
   mutable std::ofstream _ofs{};
   std::streamsize _file_size{};
+
+  static const std::ifstream::openmode _ifs_flags{std::ios::in | std::ios::binary};
+  static const std::ofstream::openmode _ofs_flags{std::ios::in | std::ios::out | std::ios::binary};
 
  public:
   FileStream() = default;
@@ -170,6 +174,8 @@ class FileStream {
                                                            std::ios::seekdir way = std::ios::beg);
   template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> * = nullptr>
   std::pair<std::streampos, std::streampos> append(const std::vector<T> &buffer);
+
+  void resize(std::streamsize new_size);
 
  private:
   [[nodiscard]] std::streampos new_posg(std::streamoff offset, std::ios::seekdir way);
