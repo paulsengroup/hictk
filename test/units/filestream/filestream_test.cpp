@@ -231,6 +231,7 @@ TEST_CASE("FileStream read", "[filestream][short]") {
         for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
           buffer_.clear();
           const auto new_offset = s.seek_and_read(offset, buffer_, expected_.size()).second;
+          // NOLINTNEXTLINE(readability-implicit-bool-conversion)
           failures += new_offset != offset + std::streamoff(expected_.size());
 
           [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);
@@ -354,6 +355,8 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
       std::size_t tests = 0;
       std::size_t failures = 0;
 
+      const auto offset_after_read_expected = offset + std::streamoff(expected_.size() + 1);
+
       threads_started++;
       while (threads_started != 2);  // NOLINT
 
@@ -365,12 +368,12 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
           const auto delimiter_found = std::get<0>(status);
           const auto offset_after_read = std::get<2>(status);
 
-          failures +=
-              offset_after_read != offset + std::streamoff(expected_.size() + delimiter_found) ||
-              expected_ != buffer_;
+          failures += static_cast<std::size_t>(offset_after_read != offset_after_read_expected ||
+                                               expected_ != buffer_);
 
           [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);
-          CHECK(offset_after_read == offset + std::streamoff(expected_.size() + delimiter_found));
+          CHECK(delimiter_found);
+          CHECK(offset_after_read == offset_after_read_expected);
           CHECK(expected_ == buffer_);
         }
 
@@ -530,6 +533,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
         const auto timepoint = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         for (; std::chrono::steady_clock::now() < timepoint; ++tests) {
           const auto new_offset = s.seek_and_write(offset, message).second;
+          // NOLINTNEXTLINE(readability-implicit-bool-conversion)
           failures += offset + static_cast<std::streamoff>(message.size()) != new_offset;
 
           [[maybe_unused]] const auto lck = std::scoped_lock(catch2_mtx);

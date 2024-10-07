@@ -130,7 +130,7 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
     std::mt19937_64 rand_eng_(rd_());
 
     ++threads_started;
-    while (threads_started != num_threads);
+    while (threads_started != num_threads);  // NOLINT
 
     while (true) {
       const auto idx = i++;
@@ -144,7 +144,7 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
       std::this_thread::sleep_for(sleep_time);
 
       const auto& record = records[idx];
-      while (!queue.try_enqueue(record.bid, record.serialized_block));
+      while (!queue.try_enqueue(record.bid, record.serialized_block));  // NOLINT
     }
   };
 
