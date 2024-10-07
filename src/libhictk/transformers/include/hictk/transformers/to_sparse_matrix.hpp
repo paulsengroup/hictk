@@ -29,13 +29,15 @@ class ToSparseMatrix {
 
   std::shared_ptr<const PixelSelector> _sel{};
   QuerySpan _span{QuerySpan::upper_triangle};
+  bool _minimize_memory_usage{false};
 
  public:
   using MatrixT = MatrixRowMajor;
   ToSparseMatrix() = delete;
-  ToSparseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::upper_triangle);
+  ToSparseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::upper_triangle,
+                 bool minimize_memory_usage = false);
   ToSparseMatrix(std::shared_ptr<const PixelSelector> selector, N n,
-                 QuerySpan span = QuerySpan::upper_triangle);
+                 QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false);
 
   ToSparseMatrix(const ToSparseMatrix& other) = delete;
   ToSparseMatrix(ToSparseMatrix&& other) noexcept = default;
@@ -62,14 +64,26 @@ class ToSparseMatrix {
 
   void validate_dtype() const;
 
-  template <typename Matrix, typename SetterOp>
+  [[nodiscard]] bool interactions_should_be_transposed() const noexcept;
+  [[nodiscard]] bool interactions_should_be_mirrored() const noexcept;
+
+  [[nodiscard]] auto fill_matrix_fast(const PixelSelector& sel, bool populate_upper_triangle,
+                                      bool populate_lower_triangle) const -> MatrixT;
+
+  [[nodiscard]] auto fill_matrix_low_mem(const PixelSelector& sel, bool populate_upper_triangle,
+                                         bool populate_lower_triangle) const -> MatrixT;
+
+  template <typename Matrix>
   [[nodiscard]] static auto fill_row(PixelIt first_pixel, PixelIt last_pixel,
                                      MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
                                      std::int64_t& reserved_size_ut, std::int64_t& reserved_size_lt,
                                      std::vector<ThinPixel<N>>& buffer, bool symmetric_upper,
                                      std::int64_t offset1, std::int64_t offset2,
-                                     bool populate_lower_triangle, bool populate_upper_triangle,
-                                     SetterOp matrix_setter) -> PixelIt;
+                                     bool populate_lower_triangle, bool populate_upper_triangle)
+      -> PixelIt;
+
+  [[nodiscard]] auto pre_allocate_matrix(const PixelSelector& sel, bool populate_upper_triangle,
+                                         bool populate_lower_triangle) const -> MatrixT;
 };
 
 }  // namespace hictk::transformers
