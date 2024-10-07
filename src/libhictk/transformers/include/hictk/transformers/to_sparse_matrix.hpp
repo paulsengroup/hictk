@@ -64,8 +64,8 @@ class ToSparseMatrix {
 
   void validate_dtype() const;
 
-  [[nodiscard]] bool interactions_should_be_transposed() const noexcept;
-  [[nodiscard]] bool interactions_should_be_mirrored() const noexcept;
+  [[nodiscard]] bool interactions_can_be_transposed() const noexcept;
+  [[nodiscard]] bool interactions_can_be_mirrored() const noexcept;
 
   [[nodiscard]] auto fill_matrix_fast(const PixelSelector& sel, bool populate_upper_triangle,
                                       bool populate_lower_triangle) const -> MatrixT;

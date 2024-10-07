@@ -184,20 +184,17 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelect
   MatrixRowMajor matrix_ut(num_rows(), num_cols());
   MatrixColMajor matrix_lt{};
 
-  const auto transpose_interactions = interactions_should_be_transposed();
-  const auto mirror_interactions = interactions_should_be_mirrored();
+  const auto mirror_interactions = interactions_can_be_mirrored();
+  auto transpose_interactions = interactions_can_be_transposed();
 
-  if (transpose_interactions && mirror_interactions) {
+  if (_span == QuerySpan::full && transpose_interactions) {
     // output matrix will be computed as M = MU + MU.T, where MU is row-major
     populate_upper_triangle = true;
     populate_lower_triangle = false;
-  } else if (transpose_interactions) {
-    // output matrix will be computed as M = MU.T, where MU is row-major
-    populate_upper_triangle = true;
-    populate_lower_triangle = false;
-  } else if (mirror_interactions) {
+  } else if (selector_is_symmetric_upper && mirror_interactions) {
     // output matrix will be computed as M = MU + ML, where MU is row-major and ML is col-major
     matrix_lt = MatrixColMajor(num_rows(), num_cols());
+    transpose_interactions = false;
   }
 
   std::vector<ThinPixel<N>> row_buff{};
@@ -217,19 +214,17 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelect
   } else {
     while (first_pixel != last_pixel) {
       first_pixel =
-          fill_row(std::move(first_pixel), last_pixel, matrix_ut, matrix_ut, reserved_size_lt,
+          fill_row(std::move(first_pixel), last_pixel, matrix_ut, matrix_lt, reserved_size_lt,
                    reserved_size_lt, row_buff, selector_is_symmetric_upper, row_offset(),
                    col_offset(), populate_lower_triangle, populate_upper_triangle);
     }
   }
 
-  if (mirror_interactions && transpose_interactions) {
+  if (matrix_lt.nonZeros() != 0) {
+    matrix_ut += MatrixRowMajor(std::move(matrix_lt));
+  } else if (_span == QuerySpan::full && transpose_interactions) {
     matrix_ut +=
         MatrixRowMajor(matrix_ut.template triangularView<Eigen::StrictlyUpper>().transpose());
-  } else if (transpose_interactions) {
-    matrix_ut = MatrixRowMajor(matrix_ut.transpose());
-  } else if (mirror_interactions && matrix_lt.nonZeros() != 0) {
-    matrix_ut += MatrixRowMajor(matrix_lt);
   }
 
   matrix_ut.makeCompressed();
@@ -270,7 +265,7 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_low_mem(
 }
 
 template <typename N, typename PixelSelector>
-inline bool ToSparseMatrix<N, PixelSelector>::interactions_should_be_transposed() const noexcept {
+inline bool ToSparseMatrix<N, PixelSelector>::interactions_can_be_transposed() const noexcept {
   if (!_sel) {
     return false;
   }
@@ -278,23 +273,20 @@ inline bool ToSparseMatrix<N, PixelSelector>::interactions_should_be_transposed(
   const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(*_sel);
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
-  const auto populate_upper_triangle =
-      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
-  bool res = selector_is_symmetric_upper && !populate_upper_triangle && populate_lower_triangle &&
+  bool res = selector_is_symmetric_upper && populate_lower_triangle &&
              !internal::has_coord1_member_fx<PixelSelector>;
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (selector_is_symmetric_upper) {
-      res = !populate_upper_triangle && populate_lower_triangle &&
-            _sel->coord1().bin1.chrom() == _sel->coord2().bin1.chrom() &&
-            _sel->coord1() == _sel->coord2();
+      res = populate_lower_triangle && _sel->coord1() == _sel->coord2();
     }
   }
+
   return res;
 }
 
 template <typename N, typename PixelSelector>
-inline bool ToSparseMatrix<N, PixelSelector>::interactions_should_be_mirrored() const noexcept {
+inline bool ToSparseMatrix<N, PixelSelector>::interactions_can_be_mirrored() const noexcept {
   if (!_sel) {
     return false;
   }
@@ -302,16 +294,12 @@ inline bool ToSparseMatrix<N, PixelSelector>::interactions_should_be_mirrored() 
   const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(*_sel);
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
-  const auto populate_upper_triangle =
-      _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
-  bool res = selector_is_symmetric_upper && populate_upper_triangle && populate_lower_triangle &&
+  bool res = selector_is_symmetric_upper && populate_lower_triangle &&
              !internal::has_coord1_member_fx<PixelSelector>;
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (selector_is_symmetric_upper) {
-      res = populate_upper_triangle && populate_lower_triangle &&
-            _sel->coord1().bin1.chrom() == _sel->coord2().bin1.chrom() &&
-            _sel->coord1() == _sel->coord2();
+      res = populate_lower_triangle && _sel->coord1().bin1.chrom() == _sel->coord2().bin1.chrom();
     }
   }
 
@@ -338,7 +326,9 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
     if (pixel.bin1_id != row) {
       break;
     }
-    num_pixels_ut += !symmetric_upper || pixel.bin2_id >= pixel.bin1_id;
+
+    num_pixels_ut +=
+        !symmetric_upper || (populate_upper_triangle && pixel.bin2_id >= pixel.bin1_id);
     buffer.emplace_back(std::move(pixel));
     std::ignore = ++first_pixel;
   }
@@ -356,14 +346,14 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
 
   if constexpr (!std::is_same_v<MatrixRowMajor, Matrix>) {
     const auto num_pixels_lt = static_cast<std::int64_t>(buffer.size()) - num_pixels_ut;
-    const auto size_lt_upper_bound = matrix_lt.rows() * num_pixels_lt;
+    const auto size_lt_upper_bound = matrix_lt.cols() * num_pixels_lt;
     if (size_lt_upper_bound > reserved_size_lt) {
       const auto new_size =
           static_cast<std::int64_t>(1.25 * static_cast<double>(size_lt_upper_bound));
       SPDLOG_DEBUG(FMT_STRING("ToSparseMatrix::fill_row(): resizing LT matrix from {} to {}..."),
                    reserved_size_lt, new_size);
-      matrix_lt.reserve(std::vector(static_cast<std::size_t>(matrix_lt.rows()),
-                                    (new_size + matrix_lt.rows() - 1) / matrix_lt.rows()));
+      matrix_lt.reserve(std::vector(static_cast<std::size_t>(matrix_lt.cols()),
+                                    (new_size + matrix_lt.cols() - 1) / matrix_lt.cols()));
       reserved_size_lt = new_size;
     }
   }
