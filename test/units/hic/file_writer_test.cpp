@@ -184,14 +184,29 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-[[maybe_unused]] static void compare_weights(const balancing::Weights& expected,
-                                             const balancing::Weights& found) {
-  REQUIRE(expected.size() == found.size());
-  for (std::size_t i = 0; i < expected.size(); ++i) {
+static void compare_weights(const hictk::balancing::Weights& weights_,
+                            const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
+                            double rtol = 1.0e-5) {
+  REQUIRE(weights_.size() == expected_.size());
+
+  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
+  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
+
+  for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(expected[i])) {
-      CHECK(std::isnan(found[i]));
+      CHECK(std::isnan(weights[i]));
     } else {
-      CHECK(expected[i] == found[i]);
+      // Basically we don't care about the relative error when the weights are very small, as this
+      // will not lead to significant differences when balancing interactions
+      if (std::isnan(weights[i])) {
+        [[maybe_unused]] const volatile int foo{};
+      }
+      const auto delta = std::abs(weights[i] - expected[i]);
+      if (delta > atol) {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], rtol));
+      } else {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], atol));
+      }
     }
   }
 }
@@ -265,8 +280,13 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
 }
 
 [[nodiscard]] static std::vector<double> generate_random_weights(std::uint32_t chrom_size,
-                                                                 std::uint32_t resolution) {
+                                                                 std::uint32_t resolution,
+                                                                 bool fill_with_nans) {
   std::vector<double> buff((chrom_size + resolution - 1) / resolution);
+  if (fill_with_nans) {
+    std::fill(buff.begin(), buff.end(), std::numeric_limits<double>::quiet_NaN());
+    return buff;
+  }
   std::random_device rd{};
   std::mt19937_64 rand_eng{rd()};
 
@@ -377,43 +397,49 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
     // add normalization weights
     std::vector<double> weights{};
     {
+      const hic::File hf(path1, resolution);
       HiCFileWriter w(path2);
       for (const auto& chrom : w.chromosomes()) {
         if (chrom.is_all()) {
           continue;
         }
-        const auto buff = generate_random_weights(chrom.size(), resolution);
+        const auto buff =
+            generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
         weights.insert(weights.end(), buff.begin(), buff.end());
         w.add_norm_vector("FOO", chrom, "BP", resolution,
-                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE});
+                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, false);
       }
+      w.write_norm_vectors_and_norm_expected_values();
     }
     // compare weights
     {
       const hic::File hf(path2, resolution);
-      compare_weights(balancing::Weights{weights, balancing::Weights::Type::DIVISIVE},
-                      hf.normalization("FOO"));
+      compare_weights(hf.normalization("FOO"),
+                      balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
     }
 
     // overwrite weights
     {
       weights.clear();
+      const hic::File hf(path1, resolution);
       HiCFileWriter w(path2);
       for (const auto& chrom : w.chromosomes()) {
         if (chrom.is_all()) {
           continue;
         }
-        const auto buff = generate_random_weights(chrom.size(), resolution);
+        const auto buff =
+            generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
         weights.insert(weights.end(), buff.begin(), buff.end());
         w.add_norm_vector("FOO", chrom, "BP", resolution,
-                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE});
+                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, true);
       }
+      w.write_norm_vectors_and_norm_expected_values();
     }
 
     // compare weights
     const hic::File hf(path2, resolution);
-    compare_weights(balancing::Weights{weights, balancing::Weights::Type::DIVISIVE},
-                    hf.normalization("FOO"));
+    compare_weights(hf.normalization("FOO"),
+                    balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
   }
 }
 
