@@ -40,7 +40,10 @@ inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(std::shared_ptr<const Pixe
 
 template <typename N, typename PixelSelector>
 inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
-  assert(!!_sel);
+  if (!_sel) {
+    return {};
+  }
+
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
   const auto populate_upper_triangle =
