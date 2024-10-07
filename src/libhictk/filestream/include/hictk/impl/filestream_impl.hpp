@@ -656,10 +656,10 @@ inline void FileStream<Mutex>::get_underlying_os_error([[maybe_unused]] int errn
 #if defined(_GNU_SOURCE)
   buffer = strerror_r(errno_, buffer.data(), buffer.size());
 #elif defined(_WIN32)
-  buffer.resize(std::max(buffer.capacity(), 1024), '\0');
+  buffer.resize(std::max(buffer.capacity(), std::size_t{1024}), '\0');
   const int status = strerror_s(buffer.data(), buffer.size(), errno_);
 #else
-  buffer.resize(std::max(buffer.capacity(), 1024), '\0');
+  buffer.resize(std::max(buffer.capacity(), std::size_t{1024}), '\0');
   const int status = strerror_r(errno_, buffer.data(), buffer.size());
 #endif
 
