@@ -49,7 +49,12 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   const auto populate_upper_triangle =
       _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
-  auto matrix_setter = [](MatrixT& matrix, std::int64_t i1, std::int64_t i2, N count) {
+  auto matrix_setter = [](MatrixT& matrix, std::int64_t i1, std::int64_t i2, N count) noexcept {
+    assert(i1 >= 0);
+    assert(i1 < matrix.rows());
+    assert(i2 >= 0);
+    assert(i2 < matrix.cols());
+
     matrix(i1, i2) = count;
   };
 

@@ -53,6 +53,7 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   const auto populate_upper_triangle =
       _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
+  MatrixT matrix(num_rows(), num_cols());
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (chrom1() == chrom2() && _sel->coord1() != _sel->coord2()) {
       auto coord3 = _sel->coord1();
@@ -381,12 +382,13 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
                         populate_lower_triangle, populate_upper_triangle, matrix_setter);
   return first_pixel;
 }
+
 template <typename N, typename PixelSelector>
 inline auto ToSparseMatrix<N, PixelSelector>::pre_allocate_matrix(
     const PixelSelector& sel, bool populate_upper_triangle, bool populate_lower_triangle) const
     -> MatrixT {
   auto setter = [](std::vector<std::int64_t>& buff, std::int64_t i1,
-                   [[maybe_unused]] std::int64_t i2, [[maybe_unused]] N count) {
+                   [[maybe_unused]] std::int64_t i2, [[maybe_unused]] N count) noexcept {
     assert(i1 >= 0);
     assert(static_cast<std::size_t>(i1) < buff.size());
     ++buff[static_cast<std::size_t>(i1)];
