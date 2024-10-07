@@ -159,7 +159,7 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
 
 inline HiCInteractionToBlockMapper::~HiCInteractionToBlockMapper() noexcept {
   try {
-    _fs = filestream::FileStream();
+    _fs = filestream::FileStream<>();
     std::filesystem::remove(_path);
   } catch (...) {
   }
