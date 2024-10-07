@@ -41,12 +41,12 @@ class FileStream {
   static FileStream create(std::string path, std::shared_ptr<Mutex> mtx);
 
   FileStream(const FileStream &other) = delete;
-  FileStream(FileStream &&other) noexcept = default;
+  FileStream(FileStream &&other) noexcept;
 
   ~FileStream() noexcept = default;
 
   FileStream &operator=(const FileStream &other) = delete;
-  FileStream &operator=(FileStream &&other) noexcept = default;
+  FileStream &operator=(FileStream &&other) noexcept;
 
   [[nodiscard]] const std::string &path() const noexcept;
 

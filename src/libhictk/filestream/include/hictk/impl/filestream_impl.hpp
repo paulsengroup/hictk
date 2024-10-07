@@ -57,6 +57,31 @@ inline FileStream<Mutex> FileStream<Mutex>::create(std::string path, std::shared
   return fs;
 }
 
+// We need to explicitly define the move constructor to make things compile on older compilers
+// (where std::mutex is not moveable)
+template <typename Mutex>
+inline FileStream<Mutex>::FileStream(FileStream &&other) noexcept
+    : _path(std::move(other._path)),
+      _ifs(std::move(other._ifs)),
+      _ofs(std::move(other._ofs)),
+      _file_size(other._file_size) {}
+
+// We need to explicitly define the move assignment operator to make things compile on older
+// compilers (where std::mutex is not moveable)
+template <typename Mutex>
+inline FileStream<Mutex> &FileStream<Mutex>::operator=(FileStream &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+
+  _path = std::move(other._path);
+  _ifs = std::move(other._ifs);
+  _ofs = std::move(other._ofs);
+  _file_size = other._file_size;
+
+  return *this;
+}
+
 template <typename Mutex>
 inline const std::string &FileStream<Mutex>::path() const noexcept {
   return _path;
