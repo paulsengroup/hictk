@@ -192,7 +192,7 @@ inline std::streampos FileStream::new_posg(std::streamoff offset, std::ios::seek
     case std::ios::end:
       return std::int64_t(_file_size) + offset;
     default:
-      HICTK_UNREACHABLE_CODE;
+      unreachable_code();
   }
 }
 
@@ -205,7 +205,7 @@ inline std::streampos FileStream::new_posp(std::streamoff offset, std::ios::seek
     case std::ios::end:
       return std::int64_t(_file_size) + offset;
     default:
-      HICTK_UNREACHABLE_CODE;
+      unreachable_code();
   }
 }
 
