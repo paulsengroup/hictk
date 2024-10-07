@@ -5,8 +5,10 @@
 #pragma once
 
 #ifdef _WIN32
-#include <errhandlingapi.h>
+// clang-format off
 #include <windows.h>
+#include <errhandlingapi.h>
+// clang-format on
 #endif
 
 #include <cassert>
