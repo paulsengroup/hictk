@@ -6,7 +6,9 @@
 
 #ifdef _WIN32
 #include <errhandlingapi.h>
+#include <windows.h>
 #endif
+
 #include <cassert>
 #include <cerrno>
 #include <cstddef>
@@ -635,7 +637,14 @@ inline void FileStream<Mutex>::get_underlying_os_error([[maybe_unused]] int errn
                                                        std::string &buffer) {
 #ifdef _WIN32
   if (const auto ec = GetLastError(); ec != 0) {
-    buffer = FormatSystemMessage(ec);
+    LPSTR msg_buffer = nullptr;
+
+    const auto msg_size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msg_buffer, 0, nullptr);
+
+    buffer.assign(msg_buffer, msg_size);
+    LocalFree(msg_buffer);
     return;
   }
 #endif
@@ -644,25 +653,36 @@ inline void FileStream<Mutex>::get_underlying_os_error([[maybe_unused]] int errn
     buffer = "Success";
     return;
   }
-#ifdef _GNU_SOURCE
+#if defined(_GNU_SOURCE)
   buffer = strerror_r(errno_, buffer.data(), buffer.size());
+#elif defined(_WIN32)
+  buffer.resize(std::max(buffer.capacity(), 1024), '\0');
+  const int status = strerror_s(buffer.data(), buffer.size(), errno_);
 #else
+  buffer.resize(std::max(buffer.capacity(), 1024), '\0');
   const int status = strerror_r(errno_, buffer.data(), buffer.size());
+#endif
+
+#ifndef _GNU_SOURCE
   switch (status) {
     case 0: {
-      // strerror_r call was successful
+      // strerror_r/s call was successful
       if (const auto pos = buffer.find('\0'); pos != std::string::npos) {
         if (pos == 0) {
           // this should never happen
           buffer.clear();
         } else {
-          buffer.resize(pos - 1);
+          buffer.resize(pos);
         }
       }
       return;
     }
     case EINVAL: {
+#ifdef _WIN32
+      buffer = "strerror_s: unknown errno: " + std::to_string(errno_);
+#else
       buffer = "strerror_r: unknown errno: " + std::to_string(errno_);
+#endif
       return;
     }
     case ERANGE: {
