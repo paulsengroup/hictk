@@ -4,6 +4,14 @@
 
 #ifdef HICTK_WITH_EIGEN
 
+#ifdef SPDLOG_ACTIVE_LEVEL
+#undef SPDLOG_ACTIVE_LEVEL
+#endif
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
+#include <spdlog/spdlog.h>
+
 #include <cassert>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
@@ -27,6 +35,7 @@ namespace hictk::test::transformers {
 using namespace hictk::transformers;
 
 TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
+  spdlog::set_level(spdlog::level::trace);
   SECTION("cis upper_triangle") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());

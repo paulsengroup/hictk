@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <Eigen/SparseCore>
 #include <algorithm>
 #include <cassert>
@@ -51,10 +53,10 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   auto matrix_ut = std::make_shared<SparseMatrix>(MatrixRowMajor(num_rows(), num_cols()));
   auto matrix_lt = matrix_ut;
 
-  bool transpose_matrix = !populate_upper_triangle && populate_lower_triangle &&
-                          !internal::has_coord1_member_fx<PixelSelector>;
-  bool mirror_matrix = populate_upper_triangle && populate_lower_triangle &&
-                       !internal::has_coord1_member_fx<PixelSelector>;
+  bool transpose_matrix = selector_is_symmetric_upper && !populate_upper_triangle &&
+                          populate_lower_triangle && !internal::has_coord1_member_fx<PixelSelector>;
+  bool mirror_matrix = selector_is_symmetric_upper && populate_upper_triangle &&
+                       populate_lower_triangle && !internal::has_coord1_member_fx<PixelSelector>;
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (selector_is_symmetric_upper) {
       transpose_matrix = !populate_upper_triangle && populate_lower_triangle &&
@@ -62,15 +64,21 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       mirror_matrix = populate_upper_triangle && populate_lower_triangle && chrom1() == chrom2() &&
                       _sel->coord1() == _sel->coord2();
 
-      if (transpose_matrix || mirror_matrix) {
+      if (transpose_matrix && mirror_matrix) {
         populate_upper_triangle = true;
         populate_lower_triangle = false;
+      } else if (transpose_matrix) {
+        populate_upper_triangle = true;
+        populate_lower_triangle = false;
+      } else if (mirror_matrix) {
+        matrix_lt = std::make_shared<SparseMatrix>(MatrixColMajor(num_rows(), num_cols()));
       }
     }
   }
 
   std::vector<ThinPixel<N>> row_buff{};
-  std::vector<std::int64_t> row_sizes(static_cast<std::size_t>(num_rows()), 0);
+  std::int64_t reserved_size_ut{0};
+  std::int64_t reserved_size_lt{0};
 
   auto first_pixel = _sel->template begin<N>();
   auto last_pixel = _sel->template end<N>();
@@ -97,27 +105,33 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   std::visit(
       [&](auto& matrix2) {
         while (first_pixel != last_pixel) {
-          first_pixel = fill_row(std::move(first_pixel), last_pixel, matrix1, matrix2, row_sizes,
-                                 row_buff, selector_is_symmetric_upper, row_offset(), col_offset(),
+          first_pixel = fill_row(std::move(first_pixel), last_pixel, matrix1, matrix2,
+                                 reserved_size_ut, reserved_size_lt, row_buff,
+                                 selector_is_symmetric_upper, row_offset(), col_offset(),
                                  populate_lower_triangle, populate_upper_triangle, matrix_setter);
         }
       },
       *matrix_lt);
 
-  if (transpose_matrix) {
+  if (mirror_matrix && transpose_matrix) {
+    assert(matrix_ut == matrix_lt);
+    matrix1 += MatrixRowMajor(matrix1.template triangularView<Eigen::StrictlyUpper>().transpose());
+  } else if (transpose_matrix) {
     assert(matrix_ut == matrix_lt);
     matrix1 = MatrixRowMajor(matrix1.transpose());
   } else if (mirror_matrix) {
-    assert(matrix_ut == matrix_lt);
-    matrix1 += MatrixRowMajor(matrix1.template triangularView<Eigen::StrictlyUpper>().transpose());
-  }
-
-  if (matrix_ut != matrix_lt) {
     assert(matrix_ut != matrix_lt);
     matrix1 += MatrixRowMajor(std::get<MatrixColMajor>(*matrix_lt));
   }
 
   matrix1.makeCompressed();
+
+  [[maybe_unused]] const auto space_overhead =
+      1.0 - (static_cast<double>(matrix1.nonZeros()) /
+             static_cast<double>(reserved_size_ut + reserved_size_lt));
+
+  SPDLOG_DEBUG(FMT_STRING("ToSparseMatrix::operator()(): space overhead: {:.3f}% ({} nnz)"),
+               100.0 * space_overhead, (reserved_size_ut + reserved_size_lt) - matrix1.nonZeros());
   return matrix1;
 }
 
@@ -223,13 +237,16 @@ template <typename N, typename PixelSelector>
 template <typename Matrix, typename SetterOp>
 inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
     PixelIt first_pixel, PixelIt last_pixel, MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
-    std::vector<std::int64_t>& row_sizes, std::vector<ThinPixel<N>>& buffer, bool symmetric_upper,
-    std::int64_t offset1, std::int64_t offset2, bool populate_lower_triangle,
-    bool populate_upper_triangle, SetterOp matrix_setter) -> PixelIt {
+    std::int64_t& reserved_size_ut, std::int64_t& reserved_size_lt,
+    std::vector<ThinPixel<N>>& buffer, bool symmetric_upper, std::int64_t offset1,
+    std::int64_t offset2, bool populate_lower_triangle, bool populate_upper_triangle,
+    SetterOp matrix_setter) -> PixelIt {
   buffer.clear();
   if (first_pixel == last_pixel) {
     return last_pixel;
   }
+
+  std::int64_t num_pixels_ut{};
 
   const auto row = first_pixel->bin1_id;
   while (first_pixel != last_pixel) {
@@ -237,13 +254,36 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
     if (pixel.bin1_id != row) {
       break;
     }
+    num_pixels_ut += !symmetric_upper || pixel.bin2_id >= pixel.bin1_id;
     buffer.emplace_back(std::move(pixel));
     std::ignore = ++first_pixel;
   }
 
-  if (const auto i = row - static_cast<std::size_t>(offset1); i < row_sizes.size()) {
-    row_sizes[i] = static_cast<std::int64_t>(buffer.size());
-    matrix_lt.reserve(row_sizes);
+  const auto size_ut_upper_bound = matrix_ut.rows() * num_pixels_ut;
+  if (size_ut_upper_bound > reserved_size_ut) {
+    const auto new_size =
+        static_cast<std::int64_t>(1.25 * static_cast<double>(size_ut_upper_bound));
+    SPDLOG_DEBUG(
+        FMT_STRING("ToSparseMatrix::operator()(): resizing UT sparse matrix from {} to {}..."),
+        reserved_size_ut, new_size);
+    matrix_ut.reserve(std::vector(static_cast<std::size_t>(matrix_ut.rows()),
+                                  (new_size + matrix_ut.rows() - 1) / matrix_ut.rows()));
+    reserved_size_ut = new_size;
+  }
+
+  if constexpr (!std::is_same_v<MatrixRowMajor, Matrix>) {
+    const auto num_pixels_lt = static_cast<std::int64_t>(buffer.size()) - num_pixels_ut;
+    const auto size_lt_upper_bound = matrix_lt.rows() * num_pixels_lt;
+    if (size_lt_upper_bound > reserved_size_lt) {
+      const auto new_size =
+          static_cast<std::int64_t>(1.25 * static_cast<double>(size_lt_upper_bound));
+      SPDLOG_DEBUG(
+          FMT_STRING("ToSparseMatrix::operator()(): resizing LT sparse matrix from {} to {}..."),
+          reserved_size_lt, new_size);
+      matrix_lt.reserve(std::vector(static_cast<std::size_t>(matrix_lt.rows()),
+                                    (new_size + matrix_lt.rows() - 1) / matrix_lt.rows()));
+      reserved_size_lt = new_size;
+    }
   }
 
   internal::fill_matrix(buffer.begin(), buffer.end(), symmetric_upper, matrix_ut, matrix_lt,

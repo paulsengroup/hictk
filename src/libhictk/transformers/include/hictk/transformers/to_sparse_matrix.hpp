@@ -65,7 +65,7 @@ class ToSparseMatrix {
   template <typename Matrix, typename SetterOp>
   [[nodiscard]] static auto fill_row(PixelIt first_pixel, PixelIt last_pixel,
                                      MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
-                                     std::vector<std::int64_t>& row_sizes,
+                                     std::int64_t& reserved_size_ut, std::int64_t& reserved_size_lt,
                                      std::vector<ThinPixel<N>>& buffer, bool symmetric_upper,
                                      std::int64_t offset1, std::int64_t offset2,
                                      bool populate_lower_triangle, bool populate_upper_triangle,
