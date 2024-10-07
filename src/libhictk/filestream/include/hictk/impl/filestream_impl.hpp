@@ -227,7 +227,7 @@ inline bool FileStream<Mutex>::is_locked() const noexcept {
   if (!_mtx) {
     return false;
   }
-  return !std::unique_lock{*_mtx, std::try_to_lock}.owns_lock();
+  return !std::unique_lock(*_mtx, std::try_to_lock).owns_lock();
 }
 
 template <typename Mutex>
