@@ -388,7 +388,8 @@ inline auto ToSparseMatrix<N, PixelSelector>::pre_allocate_matrix(
     const PixelSelector& sel, bool populate_upper_triangle, bool populate_lower_triangle) const
     -> MatrixT {
   auto setter = [](std::vector<std::int64_t>& buff, std::int64_t i1,
-                   [[maybe_unused]] std::int64_t i2, [[maybe_unused]] N count) noexcept {
+                   [[maybe_unused]] std::int64_t i2,
+                   [[maybe_unused]] std::int_fast8_t count) noexcept {
     assert(i1 >= 0);
     assert(static_cast<std::size_t>(i1) < buff.size());
     ++buff[static_cast<std::size_t>(i1)];
