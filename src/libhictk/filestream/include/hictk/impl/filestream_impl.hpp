@@ -66,6 +66,7 @@ inline FileStream<Mutex> FileStream<Mutex>::create(std::string path, std::shared
 template <typename Mutex>
 inline FileStream<Mutex>::FileStream(FileStream &&other) noexcept
     : _path(std::move(other._path)),
+      _mtx(std::move(other._mtx)),
       _ifs(std::move(other._ifs)),
       _ofs(std::move(other._ofs)),
       _file_size(other._file_size) {}
@@ -79,6 +80,7 @@ inline FileStream<Mutex> &FileStream<Mutex>::operator=(FileStream &&other) noexc
   }
 
   _path = std::move(other._path);
+  _mtx = std::move(other._mtx);
   _ifs = std::move(other._ifs);
   _ofs = std::move(other._ofs);
   _file_size = other._file_size;
