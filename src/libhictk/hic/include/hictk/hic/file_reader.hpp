@@ -28,7 +28,7 @@ namespace hictk::hic::internal {
 
 class HiCFileReader {
   using Decompressor = UniquePtrWithDeleter<libdeflate_decompressor>;
-  std::shared_ptr<filestream::FileStream> _fs{};
+  std::shared_ptr<filestream::FileStream<>> _fs{};
   std::shared_ptr<const HiCHeader> _header{};
   std::string _strbuff{};
   Decompressor _decompressor{init_decompressor()};
@@ -66,10 +66,10 @@ class HiCFileReader {
       MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
   [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations_v9();
 
-  [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream &fs, std::string &buff);
-  [[nodiscard]] static balancing::Method readNormalizationMethod(filestream::FileStream &fs,
+  [[nodiscard]] static MatrixType readMatrixType(filestream::FileStream<> &fs, std::string &buff);
+  [[nodiscard]] static balancing::Method readNormalizationMethod(filestream::FileStream<> &fs,
                                                                  std::string &buff);
-  [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream &fs, std::string &buff);
+  [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream<> &fs, std::string &buff);
 
   [[nodiscard]] Index read_index(std::int64_t fileOffset, const Chromosome &chrom1,
                                  const Chromosome &chrom2, MatrixUnit wantedUnit,
@@ -79,10 +79,10 @@ class HiCFileReader {
   [[nodiscard]] static bool checkMagicString(std::string url) noexcept;
 
  private:
-  [[nodiscard]] static filestream::FileStream openStream(std::string url);
+  [[nodiscard]] static filestream::FileStream<> openStream(std::string url);
   // reads the header, storing the positions of the normalization vectors and returning the
   // masterIndexPosition pointer
-  [[nodiscard]] static HiCHeader readHeader(filestream::FileStream &fs);
+  [[nodiscard]] static HiCHeader readHeader(filestream::FileStream<> &fs);
 
   [[nodiscard]] std::vector<double> readExpectedVector(std::int64_t nValues);
   [[nodiscard]] std::vector<double> readNormalizationFactors(std::uint32_t wantedChrom);
@@ -100,7 +100,7 @@ class HiCFileReader {
 
   [[nodiscard]] std::int64_t readNValues();
   [[nodiscard]] bool checkMagicString();
-  [[nodiscard]] static bool checkMagicString(filestream::FileStream &fs);
+  [[nodiscard]] static bool checkMagicString(filestream::FileStream<> &fs);
   [[nodiscard]] std::int64_t masterOffset() const noexcept;
 
   [[nodiscard]] static auto init_decompressor() -> Decompressor;
