@@ -1,0 +1,14 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+cache: true
+color: false
+definitions: []
+indent: 2
+line_length: 120
+list_expansion: favour-expansion
+quiet: false
+unsafe: false
+warn_about_unknown_commands: true
+workers: 8
