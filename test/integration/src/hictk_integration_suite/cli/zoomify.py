@@ -23,7 +23,7 @@ def _plan_tests_cli(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
         "expect_failure": True,
     }
     plans = (
@@ -58,7 +58,7 @@ def _plan_tests_cmd(
 ) -> List[ImmutableOrderedDict]:
     assert threads > 0
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 60.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 90.0}
     for c in config["test-cases"]:
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")

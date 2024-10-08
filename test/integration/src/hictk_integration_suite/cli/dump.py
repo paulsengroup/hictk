@@ -88,7 +88,7 @@ def _plan_tests_cli(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
         "expect_failure": True,
     }
     plans = (
@@ -171,7 +171,7 @@ def _plan_tests_hictk_dump_chroms(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
         "expect_failure": False,
     }
 

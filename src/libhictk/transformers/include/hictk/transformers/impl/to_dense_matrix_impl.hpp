@@ -40,13 +40,21 @@ inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(std::shared_ptr<const Pixe
 
 template <typename N, typename PixelSelector>
 inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
-  assert(!!_sel);
+  if (!_sel) {
+    return {};
+  }
+
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
   const auto populate_upper_triangle =
       _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
-  auto matrix_setter = [](MatrixT& matrix, std::int64_t i1, std::int64_t i2, N count) {
+  auto matrix_setter = [](MatrixT& matrix, std::int64_t i1, std::int64_t i2, N count) noexcept {
+    assert(i1 >= 0);
+    assert(i1 < matrix.rows());
+    assert(i2 >= 0);
+    assert(i2 < matrix.cols());
+
     matrix(i1, i2) = count;
   };
 
@@ -60,15 +68,18 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
       coord4 = coord3;
 
       const auto new_sel = _sel->fetch(coord3, coord4);
-      internal::fill_matrix<N>(new_sel, matrix, matrix.rows(), matrix.cols(), row_offset(),
-                               col_offset(), populate_lower_triangle, populate_upper_triangle,
-                               matrix_setter);
+      internal::fill_matrix(new_sel.template begin<N>(), new_sel.template end<N>(),
+                            internal::selector_is_symmetric_upper(new_sel), matrix, matrix,
+                            matrix.rows(), matrix.cols(), row_offset(), col_offset(),
+                            populate_lower_triangle, populate_upper_triangle, matrix_setter);
       return matrix;
     }
   }
 
-  internal::fill_matrix<N>(*_sel, matrix, matrix.rows(), matrix.cols(), row_offset(), col_offset(),
-                           populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  internal::fill_matrix(_sel->template begin<N>(), _sel->template end<N>(),
+                        internal::selector_is_symmetric_upper(*_sel), matrix, matrix, matrix.rows(),
+                        matrix.cols(), row_offset(), col_offset(), populate_lower_triangle,
+                        populate_upper_triangle, matrix_setter);
   return matrix;
 }
 
