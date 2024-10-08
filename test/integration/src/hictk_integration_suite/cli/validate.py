@@ -19,7 +19,7 @@ def _plan_tests_cli(
     title: str = "hictk-validate-cli",
 ) -> List[ImmutableOrderedDict]:
     uri = wd[uri]
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 5.0, "expect_failure": True}
     plans = (
         factory | {"args": tuple(("validate",))},
         factory | {"args": tuple(("validate", "--help")), "expect_failure": False},

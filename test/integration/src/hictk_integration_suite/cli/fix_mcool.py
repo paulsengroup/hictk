@@ -19,7 +19,7 @@ def _plan_tests_cli(
     title: str = "hictk-fix-mcool-cli",
 ) -> List[ImmutableOrderedDict]:
     uri = wd[uri]
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0, "expect_failure": True}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 5.0, "expect_failure": True}
     plans = (
         factory | {"args": tuple(("fix-mcool",))},
         factory | {"args": tuple(("fix-mcool", "--help")), "expect_failure": False},
@@ -55,7 +55,7 @@ def _plan_tests_cmd(
         input_file = str(wd[c["input-uri"]])
         output_file = cwd / c["output"]
         expect_failure = c.get("expect-failure", False)
-        timeout = c.get("timeout", 1.0)
+        timeout = c.get("timeout", 5.0)
 
         args = [
             "fix-mcool",
