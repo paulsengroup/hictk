@@ -2,6 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
+#ifdef SPDLOG_ACTIVE_LEVEL
+#undef SPDLOG_ACTIVE_LEVEL
+#endif
+
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include "hictk/hic/file_writer.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -10,6 +16,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
+#include <random>
 #include <string>
 
 #include "hictk/chromosome.hpp"
@@ -90,14 +97,116 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-[[maybe_unused]] static void compare_weights(const balancing::Weights& expected,
-                                             const balancing::Weights& found) {
-  REQUIRE(expected.size() == found.size());
-  for (std::size_t i = 0; i < expected.size(); ++i) {
+TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
+  using PQueue = SerializedBlockPQueue<std::uint64_t>;
+  spdlog::set_level(spdlog::level::trace);
+  const std::size_t num_threads = 32;
+
+  std::vector<PQueue::Record> records(num_threads * 100);
+  std::vector<std::uint64_t> blk_ids(num_threads * 100);
+
+  std::random_device rd;
+  std::mt19937_64 rand_eng(rd());
+
+  std::uint64_t bid = 0;
+  for (std::size_t i = 0; i < records.size(); ++i) {
+    bid = std::uniform_int_distribution<std::uint64_t>{bid + 1, bid + 10}(rand_eng);
+    records[i] = {bid, std::to_string(i), PQueue::Record::Status::SUCCESS};
+    blk_ids[i] = bid;
+  }
+
+  PQueue queue(blk_ids.begin(), blk_ids.end(), num_threads - 1);
+
+  REQUIRE(queue.size() == 0);
+  REQUIRE(queue.capacity() > 0);
+
+  std::atomic<std::size_t> i{};
+  std::atomic<std::size_t> threads_started{};
+
+  BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(num_threads));
+
+  auto producer = [&]() {
+    std::random_device rd_;
+    std::mt19937_64 rand_eng_(rd_());
+
+    ++threads_started;
+    while (threads_started != num_threads);  // NOLINT
+
+    while (true) {
+      const auto idx = i++;
+      if (idx >= records.size()) {
+        return;
+      }
+
+      // Simulate time required for block compression
+      const std::chrono::milliseconds sleep_time{
+          std::uniform_int_distribution<std::int32_t>{25, 50}(rand_eng_)};
+      std::this_thread::sleep_for(sleep_time);
+
+      const auto& record = records[idx];
+      while (!queue.try_enqueue(record.bid, record.serialized_block));  // NOLINT
+    }
+  };
+
+  std::vector<std::future<void>> producers(num_threads - 1);
+  for (auto& prod : producers) {
+    prod = tpool.submit_task(producer);
+  }
+
+  auto consumer = tpool.submit_task([&]() {
+    std::vector<PQueue::Record> output;
+    ++threads_started;
+    while (true) {
+      auto record = queue.dequeue_timed();
+      if (record.status == PQueue::Record::Status::TIMEOUT) {
+        continue;
+      }
+      if (record.status == PQueue::Record::Status::QUEUE_IS_CLOSED) {
+        return output;
+      }
+      assert(!!record);
+      output.emplace_back(std::move(record));
+    }
+  });
+
+  for (auto& prod : producers) {
+    prod.get();
+  }
+  const auto output = consumer.get();
+
+  REQUIRE(output.size() == records.size());
+  REQUIRE(i >= records.size());
+  CHECK(queue.dequeue_timed().status == PQueue::Record::Status::QUEUE_IS_CLOSED);
+
+  for (std::size_t j = 0; j < records.size(); ++j) {
+    CHECK(output[j].bid == records[j].bid);
+  }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static void compare_weights(const hictk::balancing::Weights& weights_,
+                            const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
+                            double rtol = 1.0e-5) {
+  REQUIRE(weights_.size() == expected_.size());
+
+  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
+  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
+
+  for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(expected[i])) {
-      CHECK(std::isnan(found[i]));
+      CHECK(std::isnan(weights[i]));
     } else {
-      CHECK(expected[i] == found[i]);
+      // Basically we don't care about the relative error when the weights are very small, as this
+      // will not lead to significant differences when balancing interactions
+      if (std::isnan(weights[i])) {
+        [[maybe_unused]] const volatile int foo{};
+      }
+      const auto delta = std::abs(weights[i] - expected[i]);
+      if (delta > atol) {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinRel(expected[i], rtol));
+      } else {
+        CHECK_THAT(weights[i], Catch::Matchers::WithinAbs(expected[i], atol));
+      }
     }
   }
 }
@@ -170,32 +279,52 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   }
 }
 
+[[nodiscard]] static std::vector<double> generate_random_weights(std::uint32_t chrom_size,
+                                                                 std::uint32_t resolution,
+                                                                 bool fill_with_nans) {
+  std::vector<double> buff((chrom_size + resolution - 1) / resolution);
+  if (fill_with_nans) {
+    std::fill(buff.begin(), buff.end(), std::numeric_limits<double>::quiet_NaN());
+    return buff;
+  }
+  std::random_device rd{};
+  std::mt19937_64 rand_eng{rd()};
+
+  std::generate(buff.begin(), buff.end(),
+                [&]() { return std::uniform_real_distribution<double>{0, 1}(rand_eng); });
+
+  return buff;
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
+TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
-  const auto path4 = (testdir() / "hic_writer_003.hic").string();
 
-  SECTION("create file (st)") {
-    const std::vector<std::uint32_t> resolutions{250'000, 500'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 1, false);
-  }
+  spdlog::set_level(spdlog::level::trace);
+
   SECTION("create file (mt)") {
     const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path2, resolutions, 3, true);
+    hic_file_writer_create_file_test(path1, path2, resolutions, 16, true);
   }
 
   SECTION("regression PR 180") {
     // Ensure we can create .hic files having bin tables with 1 bin per chromosome
     // See https://github.com/paulsengroup/hictk/pull/180
     const hictk::Reference chromosomes{{0, "chr1", 10}};
-    HiCFileWriter w(path4, chromosomes, {100});
+    HiCFileWriter w(path3, chromosomes, {100});
 
     const std::vector<Pixel<float>> pixels{Pixel<float>{w.bins(100), 0, 0, 1.0F}};
     w.add_pixels(100, pixels.begin(), pixels.end());
     w.serialize();  // Before PR 180, this used to throw
   }
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
+  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path2 = (testdir() / "hic_writer_004.hic").string();
 
   SECTION("add weights") {
     const std::uint32_t resolution = 500'000;
@@ -203,7 +332,7 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
 
     {
       // init file
-      HiCFileWriter w(path3, hf1.chromosomes(), {hf1.resolution()}, "dm6");
+      HiCFileWriter w(path2, hf1.chromosomes(), {hf1.resolution()}, "dm6");
       const auto sel = hf1.fetch();
       w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
       w.serialize();
@@ -211,7 +340,7 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
 
     // add normalization weights
     {
-      HiCFileWriter w(path3);
+      HiCFileWriter w(path2);
       for (const auto& chrom : w.chromosomes()) {
         if (chrom.is_all()) {
           continue;
@@ -234,7 +363,7 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
     }
 
     // compare
-    const hic::File hf2(path3, resolution);
+    const hic::File hf2(path2, resolution);
 
     const auto avail_norms = hf2.avail_normalizations();
     REQUIRE(avail_norms.size() == 1);
@@ -245,11 +374,72 @@ TEST_CASE("HiC: HiCFileWriter", "[hic][v9][long]") {
                                    hf2.fetch(balancing::Method::SCALE()).read_all<float>());
 
     const hic::File hf3(path1, resolution, MatrixType::expected);
-    const hic::File hf4(path3, resolution, MatrixType::expected);
+    const hic::File hf4(path2, resolution, MatrixType::expected);
 
     compare_weights(hf3.normalization("SCALE"), hf4.normalization("SCALE"));
     hic_file_writer_compare_pixels(hf3.fetch(balancing::Method::SCALE()).read_all<float>(),
                                    hf4.fetch(balancing::Method::SCALE()).read_all<float>());
+  }
+
+  SECTION("overwrite weights") {
+    const std::uint32_t resolution = 500'000;
+
+    {
+      // init file
+      const hic::File hf(path1, resolution);
+      std::filesystem::remove(path2);  // NOLINT
+      HiCFileWriter w(path2, hf.chromosomes(), {hf.resolution()}, "dm6");
+      const auto sel = hf.fetch();
+      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+      w.serialize();
+    }
+
+    // add normalization weights
+    std::vector<double> weights{};
+    {
+      const hic::File hf(path1, resolution);
+      HiCFileWriter w(path2);
+      for (const auto& chrom : w.chromosomes()) {
+        if (chrom.is_all()) {
+          continue;
+        }
+        const auto buff =
+            generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
+        weights.insert(weights.end(), buff.begin(), buff.end());
+        w.add_norm_vector("FOO", chrom, "BP", resolution,
+                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, false);
+      }
+      w.write_norm_vectors_and_norm_expected_values();
+    }
+    // compare weights
+    {
+      const hic::File hf(path2, resolution);
+      compare_weights(hf.normalization("FOO"),
+                      balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
+    }
+
+    // overwrite weights
+    {
+      weights.clear();
+      const hic::File hf(path1, resolution);
+      HiCFileWriter w(path2);
+      for (const auto& chrom : w.chromosomes()) {
+        if (chrom.is_all()) {
+          continue;
+        }
+        const auto buff =
+            generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
+        weights.insert(weights.end(), buff.begin(), buff.end());
+        w.add_norm_vector("FOO", chrom, "BP", resolution,
+                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, true);
+      }
+      w.write_norm_vectors_and_norm_expected_values();
+    }
+
+    // compare weights
+    const hic::File hf(path2, resolution);
+    compare_weights(hf.normalization("FOO"),
+                    balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
   }
 }
 
