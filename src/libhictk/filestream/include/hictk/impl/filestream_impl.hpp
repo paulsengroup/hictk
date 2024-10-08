@@ -35,7 +35,7 @@ inline FileStream::FileStream(std::string path, std::ios::openmode mode)
 
 inline FileStream FileStream::create(std::string path) {
   if (std::filesystem::exists(path)) {
-    throw std::runtime_error("file\"" + path + "\" already exists");
+    throw std::runtime_error("file \"" + path + "\" already exists");
   }
   FileStream fs{};
   fs._path = std::move(path);

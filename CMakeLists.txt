@@ -153,7 +153,7 @@ endif()
 if(BUILD_SHARED_LIBS)
   set(HICTK_WITH_ARROW_SHARED
       ON
-      CACHE BOOL "Force dynamic linking to Arrow libs")
+      CACHE BOOL "Force dynamic linking to Arrow libs" FORCE)
 endif()
 
 add_subdirectory(src)

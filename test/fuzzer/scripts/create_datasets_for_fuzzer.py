@@ -163,9 +163,7 @@ def get_compressor(compression_level: int, nproc: int) -> Union[list, None]:
 
 def fetch_pixels(cf: cooler.Cooler, chrom1: str, chrom2: str) -> pd.DataFrame:
     logging.info("[%d] Processing pixels for %s:%s...", cf.binsize, chrom1, chrom2)
-    pixels = pd.DataFrame(
-        cf.matrix(balance=False, as_pixels=True, join=True).fetch(chrom1, chrom2)
-    )
+    pixels = pd.DataFrame(cf.matrix(balance=False, as_pixels=True, join=True).fetch(chrom1, chrom2))
 
     pixels["end1"] = 0
     pixels["end2"] = 1
@@ -235,9 +233,7 @@ def get_base_resolution_uri(uri: str) -> str:
     return f"{uri}::/resolutions/{base_resolution}"
 
 
-def dump_pixels(
-    uri: str, out_prefix: pathlib.Path, compression_level: int, nproc: int
-) -> pathlib.Path:
+def dump_pixels(uri: str, out_prefix: pathlib.Path, compression_level: int, nproc: int) -> pathlib.Path:
     uri = get_base_resolution_uri(uri)
 
     cmd = get_compressor(compression_level, max(1, nproc - 1))
@@ -249,9 +245,7 @@ def dump_pixels(
 
     dest = pathlib.Path(f"{out_prefix}.pixels.txt.gz")
     with open(dest, "wb") as f:  # For some reason using shell=True is faster
-        with sp.Popen(
-            cmd, stdin=sp.PIPE, stderr=sp.PIPE, stdout=f, shell=True
-        ) as compressor:
+        with sp.Popen(cmd, stdin=sp.PIPE, stderr=sp.PIPE, stdout=f, shell=True) as compressor:
             dump_pixels_helper_(uri, compressor.stdin)
             compressor.communicate()
             if (code := compressor.returncode) != 0:
@@ -406,9 +400,7 @@ def check_juicer_tools_is_available(path_to_jar: pathlib.Path):
         raise RuntimeError("Unable to find java in your PATH!")
 
     sp.check_output([java, "-jar", str(path_to_jar), "pre", "--help"], stderr=sp.STDOUT)
-    sp.check_output(
-        [java, "-jar", str(path_to_jar), "addNorm", "--help"], stderr=sp.STDOUT
-    )
+    sp.check_output([java, "-jar", str(path_to_jar), "addNorm", "--help"], stderr=sp.STDOUT)
 
 
 def ingest_pairs(
@@ -450,9 +442,7 @@ def cooler_zoomify(
     return outpath
 
 
-def mcool_to_cool(
-    mclr: pathlib.Path, outprefix: pathlib.Path, force: bool, pool: Pool
-) -> Dict[int, pathlib.Path]:
+def mcool_to_cool(mclr: pathlib.Path, outprefix: pathlib.Path, force: bool, pool: Pool) -> Dict[int, pathlib.Path]:
     coolers = {}
     results = []
     for res in get_mcool_resolutions(mclr):
@@ -465,11 +455,7 @@ def mcool_to_cool(
                 f'refusing to overwrite existing file "{dest}". Pass --force to overwrite existing file(s).'
             )
 
-        results.append(
-            pool.submit(
-                cooler.fileops.cp, f"{mclr}::/resolutions/{res}", str(dest), False
-            )
-        )
+        results.append(pool.submit(cooler.fileops.cp, f"{mclr}::/resolutions/{res}", str(dest), False))
         coolers[res] = dest
 
     for r in results:
@@ -509,9 +495,7 @@ def cool_to_hic(
                 f'refusing to overwrite existing file "{dest}". Pass --force to overwrite existing file(s).'
             )
 
-        run_juicer_tools_pre(
-            pixels, path_to_chrom_sizes, tmpdest, jar, tmpdir, 1, xms, xmx, [resolution]
-        )
+        run_juicer_tools_pre(pixels, path_to_chrom_sizes, tmpdest, jar, tmpdir, 1, xms, xmx, [resolution])
 
         tmpdest.rename(dest)
 
@@ -533,21 +517,15 @@ def copy_hic_norms(
     t0 = time.time()
     with contextlib.redirect_stdout(None), warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        hic2cool.hic2cool_extractnorms(
-            str(path_to_hic), str(path_to_cooler), silent=True
-        )
+        hic2cool.hic2cool_extractnorms(str(path_to_hic), str(path_to_cooler), silent=True)
 
     columns = cooler.Cooler(str(path_to_cooler)).bins().columns.tolist()
     for norm in normalization_methods:
         if norm not in columns:
-            raise RuntimeError(
-                f'failed to copy "{norm}" normalization to Cooler file "{path_to_cooler}"'
-            )
+            raise RuntimeError(f'failed to copy "{norm}" normalization to Cooler file "{path_to_cooler}"')
     t1 = time.time()
 
-    logging.info(
-        f"DONE! Copying weights from {path_to_hic} to {path_to_cooler}. Copying took {t1 - t0}s."
-    )
+    logging.info(f"DONE! Copying weights from {path_to_hic} to {path_to_cooler}. Copying took {t1 - t0}s.")
 
 
 def main():
@@ -564,11 +542,10 @@ def main():
     nproc = args["nproc"]
     force = args["force"]
 
-    with tempfile.TemporaryDirectory(
-        prefix=str(args["tmpdir"] / "hictk-")
-    ) as tmpdir, Pool(
-        max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)
-    ) as pool:
+    with (
+        tempfile.TemporaryDirectory(prefix=str(args["tmpdir"] / "hictk-")) as tmpdir,
+        Pool(max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)) as pool,
+    ):
 
         if args["chrom_sizes"] is None:
             chrom_sizes = pathlib.Path(tmpdir) / "chrom.sizes"
@@ -577,9 +554,7 @@ def main():
             chrom_sizes = args["chrom_sizes"]
 
         # pairs to cool
-        base_clr = ingest_pairs(
-            pairs, chrom_sizes, min(resolutions), pathlib.Path(tmpdir)
-        )
+        base_clr = ingest_pairs(pairs, chrom_sizes, min(resolutions), pathlib.Path(tmpdir))
 
         # cool to mcool
         mclr = cooler_zoomify(base_clr, resolutions, pathlib.Path(tmpdir))
@@ -659,9 +634,7 @@ def main():
             # Copy hic weights to cool
             results = []
             for res, hf in hic_v8_files.items():
-                results.append(
-                    pool.submit(copy_hic_norms, hf, coolers[res], norm_methods)
-                )
+                results.append(pool.submit(copy_hic_norms, hf, coolers[res], norm_methods))
 
             for r in results:
                 _ = r.result()

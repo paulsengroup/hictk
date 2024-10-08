@@ -22,7 +22,7 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
 
   SECTION("wo/ weights") { CHECK(clr1.avail_normalizations().empty()); }
   SECTION("w/ weights") {
-    CHECK(clr2.avail_normalizations().size() == 6);
+    CHECK(clr2.avail_normalizations().size() == 8);
     CHECK(clr2.has_normalization("SCALE"));
     CHECK(!clr2.has_normalization("FOOBAR"));
 

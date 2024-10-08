@@ -9,13 +9,10 @@
 !cmake/**
 !external/**
 !src/**
-!test/scripts/**
-!test/units/**
-!test/utils/**
 
 # Allowed files
 !CMakeLists.txt
 !LICENSE
-!conanfile.*
+!conanfile.Dockerfile.py
 !test/CMakeLists.txt
-!test/data/hictk_test_data.tar.xz
+!test/data/hictk_test_data.tar.zst

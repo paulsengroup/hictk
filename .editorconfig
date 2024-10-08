@@ -16,3 +16,6 @@ indent_style = space
 indent_size = 2
 trim_trailing_whitespace = true
 charset = utf-8
+
+[*.py]
+indent_size = 4

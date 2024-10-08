@@ -22,6 +22,7 @@ target_sources(
           "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 target_include_directories(hictk_fuzzer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set_target_properties(hictk_fuzzer PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_link_libraries(hictk_fuzzer PRIVATE hictk_fuzzer_project_options hictk_fuzzer_project_warnings hictk::libhictk)
 
 target_link_system_libraries(
