@@ -94,6 +94,20 @@ inline const std::string &FileStream<Mutex>::path() const noexcept {
 }
 
 template <typename Mutex>
+inline void FileStream<Mutex>::close() {
+  {
+    [[maybe_unused]] const auto lck = lock();
+    if (_ifs.is_open()) {
+      _ifs.close();
+    }
+    if (_ofs.is_open()) {
+      _ofs.close();
+    }
+  }
+  _mtx.reset();
+}
+
+template <typename Mutex>
 inline void FileStream<Mutex>::seekg(std::streampos position) {
   seekg(position, std::ios::beg);
 }

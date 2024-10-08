@@ -50,6 +50,8 @@ class FileStream {
 
   [[nodiscard]] const std::string &path() const noexcept;
 
+  void close();
+
   // seek*
   void seekg(std::streampos position);
   void unsafe_seekg(std::streampos position);

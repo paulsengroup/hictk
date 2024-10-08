@@ -506,6 +506,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
     CHECK(s.size() == buffer.size() + offset);
   }
   SECTION("multi-threaded") {
+    s.close();
     std::filesystem::remove(tmpfile);  // NOLINT
     s = FileStream<>::create(tmpfile.string(), std::make_shared<std::mutex>());
 
