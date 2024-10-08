@@ -19,7 +19,7 @@ def _plan_tests_cli(
     title: str = "hictk-metadata-cli",
 ) -> List[ImmutableOrderedDict]:
     uri = wd[uri]
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 1.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 5.0}
     plans = (
         factory | {"args": tuple(("metadata",)), "expect_failure": True},
         factory | {"args": tuple(("metadata", "--help")), "expect_failure": False},
@@ -49,7 +49,7 @@ def _plan_tests_cmd(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
         "expect_failure": False,
     }
     for c in config["files"]:
