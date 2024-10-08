@@ -8,7 +8,7 @@ default_language_version:
 exclude: ^test/data
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -23,7 +23,7 @@ repos:
       - id: trailing-whitespace
   # Formatters should be run late so that they can re-format any prior changes.
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.8.0
+    rev: 24.10.0
     hooks:
       - id: black
         args: ["--line-length", "120", "--target-version", "py311"]
@@ -33,7 +33,7 @@ repos:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         types_or: [markdown, yaml]
