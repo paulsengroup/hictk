@@ -8,7 +8,7 @@ default_language_version:
 exclude: ^test/data
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -23,7 +23,7 @@ repos:
       - id: trailing-whitespace
   # Formatters should be run late so that they can re-format any prior changes.
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.8.0
+    rev: 24.10.0
     hooks:
       - id: black
         args: ["--line-length", "120", "--target-version", "py311"]
@@ -46,7 +46,7 @@ repos:
         types_or: [c, c++]
         language: python
         args: ["-i"]
-        additional_dependencies: ["clang-format==19.1.0"]
+        additional_dependencies: ["clang-format==19.1.1"]
       - id: cmake-format
         name: cmake-format
         entry: cmake-format
