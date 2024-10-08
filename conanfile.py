@@ -36,7 +36,7 @@ class HictkConan(ConanFile):
 
     def requirements(self):
         self.requires("arrow/17.0.0#81be2aa6c49800df8cc163adf4b99e9f")
-        self.requires("boost/1.86.0#eda761979eec4c0fb143027ed15123a2", force=True)
+        self.requires("boost/1.86.0#cd839a2082585255010f9e82eea94c7f", force=True)
         self.requires("bshoshany-thread-pool/4.1.0#be1802a8768416a6c9b1393cf0ce5e9c")
         self.requires("bzip2/1.0.8#d00dac990f08d991998d624be81a9526")
         self.requires("catch2/3.7.1#431d772165ed0bc5adaabaa44a9f53ca")
@@ -48,11 +48,11 @@ class HictkConan(ConanFile):
         self.requires("hdf5/1.14.4.3#df1467d7374938c231edbe10e83f2bb4", force=True)
         self.requires("highfive/2.10.0#3d1bd25944a57fa1bc30a0a22923d528")
         self.requires("libarchive/3.7.6#f45e4a7fca516510284cecb8cf5fab81")
-        self.requires("libdeflate/1.21#7be662d433b8a5d0c7debfe8240ffa09")
+        self.requires("libdeflate/1.22#f95aebe763153ccbc4cc76c023e42e5a")
         self.requires("lz4/1.10.0#68a01ece147a441b463d8cefea68d555", force=True)
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
         self.requires("nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d")
-        self.requires("parallel-hashmap/1.4.0#36ac84df77219748440cdb0f23624d56")
+        self.requires("parallel-hashmap/1.37#36ac84df77219748440cdb0f23624d56")
         self.requires("pybind11/2.13.6#7d301b76bc1a308a51b506dd2de145b0")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")
