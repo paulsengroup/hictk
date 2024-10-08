@@ -32,6 +32,11 @@ repos:
     hooks:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
+  - repo: https://github.com/BlankSpruce/gersemi
+    rev: 0.15.1
+    hooks:
+      - id: gersemi
+        exclude: ^cmake/modules/
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.1.0
     hooks:
@@ -47,10 +52,3 @@ repos:
         language: python
         args: ["-i"]
         additional_dependencies: ["clang-format==19.1.0"]
-      - id: cmake-format
-        name: cmake-format
-        entry: cmake-format
-        types_or: [cmake]
-        language: python
-        args: ["-i"]
-        additional_dependencies: ["cmake-format==0.6.13", "pyyaml"]

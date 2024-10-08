@@ -17,26 +17,32 @@ add_library(cooler INTERFACE)
 add_library(hictk::cooler ALIAS cooler)
 target_sources(
   cooler
-  INTERFACE FILE_SET
-            HEADERS
-            BASE_DIRS
-            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  INTERFACE
+    FILE_SET HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
 
-target_include_directories(cooler INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                            "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  cooler
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>"
+)
 
 target_link_libraries(
   cooler
-  INTERFACE hictk::balancing
-            hictk::bin_table
-            hictk::chromosome
-            hictk::common
-            hictk::format
-            hictk::genomic_interval
-            hictk::pixel
-            hictk::reference
-            hictk::transformers
-            hictk::variant)
+  INTERFACE
+    hictk::balancing
+    hictk::bin_table
+    hictk::chromosome
+    hictk::common
+    hictk::format
+    hictk::genomic_interval
+    hictk::pixel
+    hictk::reference
+    hictk::transformers
+    hictk::variant
+)
 
 target_link_system_libraries(
   cooler
@@ -47,4 +53,5 @@ target_link_system_libraries(
   HDF5::HDF5
   HighFive
   phmap
-  spdlog::spdlog_header_only)
+  spdlog::spdlog_header_only
+)

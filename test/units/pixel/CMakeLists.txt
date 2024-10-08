@@ -14,14 +14,20 @@ target_sources(hictk_pixel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pixel_test
 
 target_link_libraries(
   hictk_pixel_tests
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::pixel hictk::format)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::pixel
+    hictk::format
+)
 
 target_link_system_libraries(
   hictk_pixel_tests
   PUBLIC
   Catch2::Catch2WithMain
-  std::filesystem)
+  std::filesystem
+)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 
@@ -39,7 +45,8 @@ catch_discover_tests(
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_pixel_tests
@@ -51,7 +58,8 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_pixel_tests
@@ -63,4 +71,5 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)

@@ -9,20 +9,26 @@ add_library(hictk::format ALIAS formatting)
 
 target_sources(
   formatting
-  INTERFACE FILE_SET
-            HEADERS
-            BASE_DIRS
-            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  INTERFACE
+    FILE_SET HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
 
-target_include_directories(formatting INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                                "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  formatting
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>"
+)
 
 target_link_libraries(
   formatting
-  INTERFACE hictk::bin_table
-            hictk::chromosome
-            hictk::common
-            hictk::genomic_interval
-            hictk::pixel)
+  INTERFACE
+    hictk::bin_table
+    hictk::chromosome
+    hictk::common
+    hictk::genomic_interval
+    hictk::pixel
+)
 
 target_link_system_libraries(formatting INTERFACE fmt::fmt-header-only)
