@@ -21,7 +21,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: init files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
 
@@ -52,7 +52,6 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   SECTION("default") { CHECK_NOTHROW(File{}); }
 
@@ -205,5 +204,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

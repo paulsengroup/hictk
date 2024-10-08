@@ -28,8 +28,9 @@ using namespace hictk::filestream;
 
 const auto path_plaintext = (datadir / "data.txt").string();  // NOLINT(cert-err58-cpp)
 const auto path_binary = (datadir / "data.zip").string();     // NOLINT(cert-err58-cpp)
-const auto& path = path_plaintext;
+static const auto& path = path_plaintext;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 [[maybe_unused]] static std::string read_file(const std::string& path_) {
   std::ifstream ifs(path_, std::ios::ate);
   REQUIRE(ifs);
@@ -57,7 +58,6 @@ const auto& path = path_plaintext;
   return lines;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream ctor", "[filestream][short]") {
   SECTION("default") {
     const FileStream<> s{};
@@ -83,7 +83,6 @@ TEST_CASE("FileStream ctor", "[filestream][short]") {
   SECTION("invalid path") { CHECK_THROWS(FileStream<>("not-a-path", nullptr)); }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream seek", "[filestream][short]") {
   SECTION("read") {
     FileStream<> s(path_plaintext, nullptr);
@@ -160,7 +159,6 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream read", "[filestream][short]") {
   FileStream<> s(path_plaintext, nullptr);
   std::string buffer{"garbage"};
@@ -257,7 +255,6 @@ TEST_CASE("FileStream read", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream read_append", "[filestream][short]") {
   FileStream<> s(path_plaintext, nullptr);
 
@@ -291,7 +288,6 @@ TEST_CASE("FileStream read_append", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream getline", "[filestream][short]") {
   FileStream<> s(path_plaintext, nullptr);
 
@@ -396,7 +392,6 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream read binary", "[filestream][short]") {
   FileStream<> s(path_binary, nullptr);
   const std::streampos offset = 10;
@@ -409,16 +404,16 @@ TEST_CASE("FileStream read binary", "[filestream][short]") {
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_USELESS_CAST
-  SECTION("uint8") { CHECK(s.read<std::uint8_t>() == std::uint8_t(162)); }
-  SECTION("uint16") { CHECK(s.read<std::uint16_t>() == std::uint16_t(42658)); }
+  SECTION("uint8") { CHECK(s.read<std::uint8_t>() == std::uint8_t{162}); }
+  SECTION("uint16") { CHECK(s.read<std::uint16_t>() == std::uint16_t{42658}); }
   SECTION("uint32") {
-    CHECK(s.read<std::uint32_t>() == std::uint32_t(1433446050));
+    CHECK(s.read<std::uint32_t>() == std::uint32_t{1433446050});
     CHECK(std::is_same_v<decltype(s.read_as_signed<std::uint32_t>()), std::int32_t>);
     s.seekg(offset);
-    CHECK(s.read_as_signed<std::uint32_t>() == std::int32_t(1433446050));
+    CHECK(s.read_as_signed<std::uint32_t>() == std::int32_t{1433446050});
   }
   SECTION("uint64") {
-    CHECK(s.read<std::uint64_t>() == std::uint64_t(18260117889181853346ULL));
+    CHECK(s.read<std::uint64_t>() == std::uint64_t{18260117889181853346ULL});
     CHECK(std::is_same_v<decltype(s.read_as_signed<std::uint64_t>()), std::int64_t>);
     s.seekg(offset);
     CHECK(s.read_as_signed<std::uint64_t>() == std::int64_t(-186626184527698270LL));
@@ -427,16 +422,16 @@ TEST_CASE("FileStream read binary", "[filestream][short]") {
   SECTION("int8") { CHECK(s.read<std::int8_t>() == std::int8_t(-94)); }
   SECTION("int16") { CHECK(s.read<std::int16_t>() == std::int16_t(-22878)); }
   SECTION("int32") {
-    CHECK(s.read<std::int32_t>() == std::int32_t(1433446050));
+    CHECK(s.read<std::int32_t>() == std::int32_t{1433446050});
     CHECK(std::is_same_v<decltype(s.read_as_unsigned<std::int32_t>()), std::uint32_t>);
     s.seekg(offset);
-    CHECK(s.read_as_unsigned<std::int32_t>() == std::uint32_t(1433446050));
+    CHECK(s.read_as_unsigned<std::int32_t>() == std::uint32_t{1433446050});
   }
   SECTION("int64") {
     CHECK(s.read<std::int64_t>() == std::int64_t(-186626184527698270));
     CHECK(std::is_same_v<decltype(s.read_as_unsigned<std::int64_t>()), std::uint64_t>);
     s.seekg(offset);
-    CHECK(s.read_as_unsigned<std::int64_t>() == std::uint64_t(18260117889181853346ULL));
+    CHECK(s.read_as_unsigned<std::int64_t>() == std::uint64_t{18260117889181853346ULL});
   }
 
   SECTION("float") { CHECK(s.read<float>() == 16537405000000.0F); }
@@ -474,7 +469,6 @@ TEST_CASE("FileStream read binary", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream write", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
@@ -500,7 +494,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
 
   SECTION("seek and write") {
     const std::size_t offset = 10;
-    s.seekp(std::int64_t(offset));
+    s.seekp(std::int64_t{offset});
     constexpr std::string_view buffer{"test"};
     s.write(buffer);
     CHECK(s.size() == buffer.size() + offset);
@@ -576,7 +570,6 @@ static void write_and_compare(FileStream<>& s, const T& data) {
   CHECK(s.read<T>() == data);
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream write binary", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write_binary.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
@@ -584,14 +577,14 @@ TEST_CASE("FileStream write binary", "[filestream][short]") {
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_USELESS_CAST
-  SECTION("uint8") { write_and_compare(s, std::uint8_t(162)); }
-  SECTION("uint16") { write_and_compare(s, std::uint16_t(42658)); }
-  SECTION("uint32") { write_and_compare(s, std::uint32_t(1433446050)); }
-  SECTION("uint64") { write_and_compare(s, std::uint64_t(18260117889181853346ULL)); }
+  SECTION("uint8") { write_and_compare(s, std::uint8_t{162}); }
+  SECTION("uint16") { write_and_compare(s, std::uint16_t{42658}); }
+  SECTION("uint32") { write_and_compare(s, std::uint32_t{1433446050}); }
+  SECTION("uint64") { write_and_compare(s, std::uint64_t{18260117889181853346ULL}); }
 
   SECTION("int8") { write_and_compare(s, std::int8_t(-94)); }
   SECTION("int16") { write_and_compare(s, std::int16_t(-22878)); }
-  SECTION("int32") { write_and_compare(s, std::int32_t(1433446050)); }
+  SECTION("int32") { write_and_compare(s, std::int32_t{1433446050}); }
   SECTION("int64") { write_and_compare(s, std::int64_t(-186626184527698270)); }
 
   SECTION("float") { write_and_compare(s, 16537405000000.0F); }
@@ -621,7 +614,6 @@ TEST_CASE("FileStream write binary", "[filestream][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("FileStream resize", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
@@ -644,4 +636,7 @@ TEST_CASE("FileStream resize", "[filestream][short]") {
   CHECK(s.tellg() == 0);
   CHECK(s.tellp() == 5);
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk::filestream::test

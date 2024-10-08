@@ -14,7 +14,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
   const auto path = (testdir() / "test_write_bin_table.cool").string();
 
@@ -45,7 +45,6 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
   CHECK(end_it == f.dataset("bins/end").end<std::uint32_t>(0));
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: validate bin table", "[cooler][short]") {
   auto path = datadir / "ENCFF993FGR.2500000.cool";
 
@@ -53,5 +52,7 @@ TEST_CASE("Cooler: validate bin table", "[cooler][short]") {
 
   CHECK_NOTHROW(f.validate_bins(true));
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

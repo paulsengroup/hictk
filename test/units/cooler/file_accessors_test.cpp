@@ -18,7 +18,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: version", "[cooler][short]") {
   // clang-format off
   constexpr std::array<std::uint_fast8_t, 3> ver{config::version::major(),
@@ -35,7 +35,6 @@ TEST_CASE("Cooler: version", "[cooler][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: accessors", "[cooler][short]") {
   const auto path = datadir / "cooler_test_file.cool";
   const File f(path.string());
@@ -63,5 +62,7 @@ TEST_CASE("Cooler: accessors", "[cooler][short]") {
     CHECK_FALSE(f.has_float_pixels());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

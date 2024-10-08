@@ -16,7 +16,7 @@
 namespace hictk::test::variantbuff {
 using namespace hictk::internal;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("VariantBuffer: ctor", "[numeric_buff][short]") {
   const std::vector<double> buff0(10, 1.0);
 
@@ -75,9 +75,9 @@ TEST_CASE("VariantBuffer: ctor", "[numeric_buff][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("VariantBuffer: accessors", "[numeric_buff][short]") {
   using T = std::uint64_t;
+
   std::vector<T> buff0(10);
   std::iota(buff0.begin(), buff0.end(), 0);
 
@@ -110,5 +110,7 @@ TEST_CASE("VariantBuffer: accessors", "[numeric_buff][short]") {
         std::accumulate(buff2.begin<std::uint64_t>(), buff2.end<std::uint64_t>(), std::size_t(0)));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::variantbuff

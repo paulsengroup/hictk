@@ -15,7 +15,6 @@
 
 namespace hictk::test::balancing {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void compare_weights(const hictk::balancing::Weights& weights_,
                             const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
                             double rtol = 1.0e-5) {
@@ -41,7 +40,7 @@ inline void compare_weights(const hictk::balancing::Weights& weights_,
 }
 
 template <typename T>
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
 inline void compare_vectors(const std::vector<T>& v1, const std::vector<T>& v2) {
   REQUIRE(v1.size() == v2.size());
 

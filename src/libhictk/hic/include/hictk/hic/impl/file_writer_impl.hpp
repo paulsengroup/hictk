@@ -366,7 +366,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
     const auto base_resolution = resolutions().back();
     auto target_resolution =
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
-    const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
+    const auto factor = std::max(std::uint32_t{1}, target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
     const auto target_resolution_scaled =
         std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
@@ -694,7 +694,7 @@ inline HiCSectionOffsets HiCFileWriter::write_empty_normalized_expected_values()
   try {
     HICTK_DISABLE_WARNING_PUSH
     HICTK_DISABLE_WARNING_USELESS_CAST
-    const auto new_offset = _fs.seek_and_write(offset, std::int32_t(0)).second;  // NOLINT
+    const auto new_offset = _fs.seek_and_write(offset, std::int32_t{0}).second;  // NOLINT
     HICTK_DISABLE_WARNING_POP
     _expected_values_norm_section = {offset, new_offset - offset};
     return _expected_values_norm_section;

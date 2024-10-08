@@ -166,8 +166,8 @@ void Cli::make_cli() {
   make_launch_worker_subcommand();
 }
 
-void validate_resolution(const std::filesystem::path& uri, std::uint32_t expected_resolution,
-                         std::vector<std::string>& errors) {
+static void validate_resolution(const std::filesystem::path& uri, std::uint32_t expected_resolution,
+                                std::vector<std::string>& errors) {
   if (expected_resolution != 0) {
     if (hictk::cooler::utils::is_cooler(uri.string())) {
       const auto found_resolution = cooler::File(uri.string()).resolution();
@@ -212,7 +212,7 @@ static void validate_normalization(const std::filesystem::path& uri, std::uint32
   }
 }
 
-void validate_common_args(const Config& c) {
+static void validate_common_args(const Config& c) {
   std::vector<std::string> errors;
 
   validate_resolution(c.test_uri, c.resolution, errors);
@@ -277,8 +277,9 @@ void Cli::transform_args_fuzz_subcommand() {
 
   if (!_config.seed.has_value()) {
     _config.seed = 0;
+    // NOLINTNEXTLINE(*-reinterpret-cast)
     auto* ptr = reinterpret_cast<std::uint32_t*>(&_config.seed.value());
-    *ptr++ = std::random_device{}();
+    *ptr++ = std::random_device{}();  // NOLINT(*-pointer-arithmetic)
     *ptr = std::random_device{}();
   }
 }

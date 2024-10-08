@@ -102,4 +102,10 @@ class PixelParser {
   [[nodiscard]] Header parse_header(Format format_);
 };
 
+[[nodiscard]] PixelParser init_pixel_parser(Format format,
+                                            const std::filesystem::path& path_to_interactions,
+                                            const std::filesystem::path& path_to_chrom_sizes,
+                                            const std::filesystem::path& path_to_bins,
+                                            std::uint32_t resolution, std::string_view assembly);
+
 }  // namespace hictk::tools

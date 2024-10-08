@@ -17,7 +17,8 @@
 using namespace hictk;
 
 // clang-format off
-const std::vector<Chromosome> hg38{
+// NOLINTNEXTLINE(cert-err58-cpp)
+static const std::vector<Chromosome> hg38{
    Chromosome{0,  "chr1",  248956422},
    Chromosome{1,  "chr2",  242193529},
    Chromosome{2,  "chr3",  198295559},
@@ -46,12 +47,14 @@ const std::vector<Chromosome> hg38{
 
 // clang-format on
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 struct Config {
   std::uint32_t resolution{1'000};
   std::size_t batch_size{10'000'000};
   std::size_t iterations{1};
   std::uint64_t seed{123456789};
 };
+// NOLINTEND(*-avoid-magic-numbers)
 
 [[nodiscard]] static std::vector<std::uint64_t> init_bin_ids(const BinTable &bins,
                                                              std::size_t batch_size,
@@ -65,8 +68,8 @@ struct Config {
   return buff;
 }
 
-[[nodiscard]] std::uint64_t run_benchmark(const BinTable &bins,
-                                          const std::vector<std::uint64_t> &queries) {
+[[nodiscard]] static std::uint64_t run_benchmark(const BinTable &bins,
+                                                 const std::vector<std::uint64_t> &queries) {
   const auto t0 = std::chrono::system_clock::now();
   for (const auto &q : queries) {
     std::ignore = bins.at(q);
@@ -79,6 +82,8 @@ struct Config {
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
+  const auto *argv0 = argv[0];  // NOLINT(*-pointer-arithmetic)
+
   CLI::App cli{};
   Config config{};
   cli.add_option("--resolution", config.resolution, "Resolution of the bin table.")
@@ -106,17 +111,17 @@ int main(int argc, char **argv) noexcept {
     fmt::print(FMT_STRING("hictk::BinTable::at(bin_id) throughput: {:.4} num/s\n"), throughput);
 
   } catch (const CLI::ParseError &e) {
+    assert(cli);
     return cli.exit(e);
   } catch (const std::exception &e) {
-    assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv0,
                e.what());
     return 1;
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error: Caught an "
                           "unhandled exception!\n"),
-               argv[0]);
+               argv0);
     return 1;
   }
   return 0;

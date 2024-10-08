@@ -25,20 +25,22 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::transformers;
 
 template <typename Matrix>
-[[nodiscard]] double sum_finite(const Matrix& matrix) noexcept {
+[[nodiscard]] static double sum_finite(const Matrix& matrix) noexcept {
   const double* first = matrix.data();
-  const double* last = first + matrix.size();  // NOLINT(*-pro-bounds-pointer-arithmetic)
+  const double* last = first + matrix.size();  // NOLINT(*-pointer-arithmetic)
   return std::accumulate(first, last, 0.0, [](double accumulator, double n) {
     return accumulator + (std::isfinite(n) ? n : 0.0);
   });
 }
 
 template <typename Matrix>
-[[nodiscard]] std::size_t count_nans(const Matrix& matrix) noexcept {
-  // NOLINTNEXTLINE(*-pro-bounds-pointer-arithmetic)
+[[nodiscard]] static std::size_t count_nans(const Matrix& matrix) noexcept {
+  // NOLINTNEXTLINE(*-pointer-arithmetic)
   return static_cast<std::size_t>(std::count_if(matrix.data(), matrix.data() + matrix.size(),
                                                 [&](auto n) { return std::isnan(n); }));
 }
@@ -274,6 +276,8 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
     CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers
 

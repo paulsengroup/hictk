@@ -25,8 +25,8 @@ inline Attributes Attributes::init(std::uint32_t bin_size_) {
     attrs.cis = 0.0;
   }
   if constexpr (std::is_integral_v<PixelT>) {
-    attrs.sum = std::int64_t(0);
-    attrs.cis = std::int64_t(0);
+    attrs.sum = std::int64_t{0};
+    attrs.cis = std::int64_t{0};
   }
   return attrs;
 }

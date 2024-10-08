@@ -68,8 +68,8 @@ struct Attributes {
   std::optional<std::int32_t> nchroms{0};
   std::optional<std::int64_t> nnz{0};
   using SumVar = std::variant<double, std::int64_t>;
-  std::optional<SumVar> sum{std::int64_t(0)};
-  std::optional<SumVar> cis{std::int64_t(0)};
+  std::optional<SumVar> sum{std::int64_t{0}};
+  std::optional<SumVar> cis{std::int64_t{0}};
 
   template <typename PixelT = DefaultPixelT,
             typename = std::enable_if_t<std::is_arithmetic_v<PixelT>>>

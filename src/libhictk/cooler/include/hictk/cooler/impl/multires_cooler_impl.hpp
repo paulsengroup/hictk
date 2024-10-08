@@ -103,7 +103,7 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
       [&]([[maybe_unused]] auto count_type) {
         using PixelT = decltype(count_type);
 
-        std::vector<ThinPixel<PixelT>> buffer{500'000};
+        std::vector<ThinPixel<PixelT>> buffer{500'000};  // NOLINT(*-avoid-magic-numbers)
         for (std::size_t i = 1; i < resolutions_.size(); ++i) {
           const auto tgt_resolution = resolutions_[i];
           const auto base_resolution = compute_base_resolution(mclr._resolutions, tgt_resolution);
@@ -158,7 +158,7 @@ template <typename N>
 inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes attributes) {
   const auto base_resolution = compute_base_resolution(resolutions(), resolution);
 
-  std::vector<ThinPixel<N>> buffer{500'000};
+  std::vector<ThinPixel<N>> buffer{500'000};  // NOLINT(*-avoid-magic-numbers)
   auto base_clr = open(base_resolution);
   attributes.assembly = base_clr.attributes().assembly;
   attributes.bin_size = resolution;

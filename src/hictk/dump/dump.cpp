@@ -42,10 +42,10 @@ template <typename PixelIt>
 static void dump_pixels(PixelIt first_pixel, PixelIt last_pixel,
                         const std::shared_ptr<const BinTable>& bins, bool join) {
   if (!join) {
-    print_pixels(first_pixel, last_pixel);
+    print_pixels(std::move(first_pixel), std::move(last_pixel));
     return;
   }
-  auto jsel = transformers::JoinGenomicCoords(first_pixel, last_pixel, bins);
+  auto jsel = transformers::JoinGenomicCoords(std::move(first_pixel), std::move(last_pixel), bins);
   print_pixels(jsel.begin(), jsel.end());
 }
 
@@ -243,7 +243,7 @@ static void dump_tables(const DumpConfig& c) {
   }
 }
 
-int dump_subcmd(const DumpConfig& c) {
+int dump_subcmd(const DumpConfig& c) {  // NOLINT(misc-use-internal-linkage)
   if (c.table == "bins" || c.table == "pixels" || c.table == "weights") {
     dump_tables(c);
     return 0;

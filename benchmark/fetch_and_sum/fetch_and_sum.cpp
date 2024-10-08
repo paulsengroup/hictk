@@ -22,7 +22,7 @@ struct Config {
 
 using namespace hictk;
 
-[[nodiscard]] inline std::pair<std::string, std::string> parse_bedpe(std::string_view line) {
+[[nodiscard]] static std::pair<std::string, std::string> parse_bedpe(std::string_view line) {
   auto parse_bed = [&]() {
     assert(!line.empty());
     const auto pos1 = line.find('\t');
@@ -43,7 +43,7 @@ template <typename PixelIt>
 [[nodiscard]] static std::pair<std::size_t, double> accumulate_interactions(PixelIt first_pixel,
                                                                             PixelIt last_pixel) {
   std::size_t nnz = 0;
-  const auto sum = std::accumulate(first_pixel, last_pixel, 0.0,
+  const auto sum = std::accumulate(std::move(first_pixel), std::move(last_pixel), 0.0,
                                    [&](const double accumulator, const auto &pixel) {
                                      ++nnz;
                                      return accumulator + double(pixel.count);
@@ -51,7 +51,7 @@ template <typename PixelIt>
   return std::make_pair(nnz, sum);
 }
 
-void fetch_and_sum(const Config &c, cooler::File &&clr) {
+static void fetch_and_sum(const Config &c, cooler::File clr) {
   auto weights = clr.normalization_ptr(c.weights);
 
   std::string line;
@@ -64,11 +64,12 @@ void fetch_and_sum(const Config &c, cooler::File &&clr) {
 
     const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
+    // NOLINTNEXTLINE(*-avoid-magic-numbers)
     fmt::print(FMT_STRING("{}\t{}\t{}\t{}\n"), line, nnz, sum, double(delta) / 1.0e9);
   }
 }
 
-void fetch_and_sum(const Config &c, hic::File &&hf) {
+static void fetch_and_sum(const Config &c, hic::File hf) {
   hf.optimize_cache_size_for_random_access();
   const auto norm = balancing::Method(c.weights);
 
@@ -82,11 +83,12 @@ void fetch_and_sum(const Config &c, hic::File &&hf) {
 
     const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
+    // NOLINTNEXTLINE(*-avoid-magic-numbers)
     fmt::print(FMT_STRING("{}\t{}\t{}\t{}\n"), line, nnz, sum, double(delta) / 1.0e9);
   }
 }
 
-void fetch_and_sum(const Config &c) {
+static void fetch_and_sum(const Config &c) {
   fmt::print(FMT_STRING("chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tnnz\tsum\ttime\n"));
   if (hic::utils::is_hic_file(c.path)) {
     fetch_and_sum(c, hic::File(c.path, c.resolution));
@@ -97,6 +99,8 @@ void fetch_and_sum(const Config &c) {
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
+  const auto *argv0 = argv[0];  // NOLINT(*-pointer-arithmetic)
+
   CLI::App cli{};
   Config config{};
   cli.add_option("file", config.path, "Path to a .cool or .hic file (Cooler URI syntax supported).")
@@ -116,17 +120,17 @@ int main(int argc, char **argv) noexcept {
     }
 
   } catch (const CLI::ParseError &e) {
+    assert(cli);
     return cli.exit(e);
   } catch (const std::exception &e) {
-    assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv0,
                e.what());
     return 1;
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error: Caught an "
                           "unhandled exception!\n"),
-               argv[0]);
+               argv0);
     return 1;
   }
   return 0;

@@ -126,8 +126,8 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
     sumv = 0.0;
     cis_sumv = 0.0;
   } else {
-    sumv = std::int64_t(0);
-    cis_sumv = std::int64_t(0);
+    sumv = std::int64_t{0};
+    cis_sumv = std::int64_t{0};
   }
 
   // NOLINTEND(*-avoid-non-const-global-variables)
@@ -193,7 +193,7 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     dset.write(first_weight, last_weight);
   }
 
-  dset.write_attribute("divisive_weights", std::uint8_t(divisive), overwrite_if_exists);
+  dset.write_attribute("divisive_weights", std::uint8_t{divisive}, overwrite_if_exists);
 }
 
 inline auto File::create_root_group(HighFive::File &f, std::string_view uri,

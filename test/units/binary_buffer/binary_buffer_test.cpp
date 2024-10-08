@@ -8,6 +8,7 @@
 
 namespace hictk::binary_buffer::test {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("BinaryBuffer") {
   const std::vector<std::uint32_t> ibuff{1, 2, 3};
   // NOLINTNEXTLINE
@@ -81,7 +82,7 @@ TEST_CASE("BinaryBuffer") {
     }
 
     SECTION("N") {
-      buff.write(std::int64_t(123));
+      buff.write(std::int64_t{123});
       CHECK(buff.read<std::int64_t>() == 123);
     }
 
@@ -97,5 +98,7 @@ TEST_CASE("BinaryBuffer") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::binary_buffer::test

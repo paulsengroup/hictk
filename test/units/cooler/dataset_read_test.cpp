@@ -20,7 +20,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::dataset {
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset read", "[dataset][short]") {
   const auto path = datadir / "cooler_test_file.cool";
   const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
@@ -97,5 +98,7 @@ TEST_CASE("Cooler: dataset read", "[dataset][short]") {
     SECTION("enum") { CHECK(Dataset{grp, "bins/chrom"}.read<std::uint32_t>(0) == 0); }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

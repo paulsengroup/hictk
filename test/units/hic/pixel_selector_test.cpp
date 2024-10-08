@@ -29,6 +29,10 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
+namespace hictk::hic::test::pixel_selector {
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 template <typename N>
 using Pixel = hictk::Pixel<N>;
 
@@ -51,13 +55,13 @@ static std::vector<hictk::Pixel<N>> head(const std::vector<hictk::Pixel<N>>& buf
   return slice;
 }
 
-template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+template <typename N>
 static std::vector<hictk::Pixel<N>> tail(const std::vector<hictk::Pixel<N>>& buffer,
                                          std::size_t n = 5) {
   REQUIRE(buffer.size() >= n);
 
   std::vector<hictk::Pixel<N>> slice(n);
-  std::copy_n(buffer.end() - std::int32_t(n), n, slice.begin());
+  std::copy_n(buffer.end() - static_cast<std::ptrdiff_t>(n), n, slice.begin());
   return slice;
 }
 
@@ -69,7 +73,7 @@ static N sumCounts(const std::vector<hictk::Pixel<N>>& buffer) {
                          });
 }
 
-template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+template <typename N>
 static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_t end1,
                                               std::uint32_t start2, std::uint32_t end2,
                                               const std::vector<Pixel<N>>& buffer) {
@@ -84,7 +88,7 @@ static void checkContactRecordsAreWithinBound(std::uint32_t start1, std::uint32_
   }
 }
 
-template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+template <typename N>
 static void compareContactRecord(const hictk::Pixel<N>& r1, const hictk::ThinPixel<float>& r2) {
   CHECK(r1.coords.bin1.start() == r2.bin1_id);
   CHECK(r1.coords.bin2.start() == r2.bin2_id);
@@ -95,7 +99,6 @@ static void compareContactRecord(const hictk::Pixel<N>& r1, const hictk::ThinPix
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector accessors", "[hic][short]") {
   const auto sel = File(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP)
                        .fetch("chr2L", hictk::balancing::Method::NONE());
@@ -110,7 +113,6 @@ TEST_CASE("HiC: pixel selector accessors", "[hic][short]") {
   REQUIRE(sel.chrom1().size() == 23513712);
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
   for (const std::string version : {"v8", "v9"}) {
     const auto path = version == "v8" ? pathV8 : pathV9;
@@ -272,7 +274,6 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
   for (const std::string version : {"v8", "v9"}) {
     const auto path = version == "v8" ? pathV8 : pathV9;
@@ -299,7 +300,6 @@ TEST_CASE("HiC: pixel selector fetch (observed VC BP 10000)", "[hic][long]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
   for (const std::string version : {"v8", "v9"}) {
     const auto path = version == "v8" ? pathV8 : pathV9;
@@ -326,7 +326,6 @@ TEST_CASE("HiC: pixel selector fetch (expected NONE BP 10000)", "[hic][long]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
   for (const std::string version : {"v8", "v9"}) {
     const auto path = version == "v8" ? pathV8 : pathV9;
@@ -353,7 +352,6 @@ TEST_CASE("HiC: pixel selector fetch (oe NONE BP 10000)", "[hic][long]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long]") {
   SECTION("accessors") {
     auto sel = File(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
@@ -386,7 +384,6 @@ TEST_CASE("HiC: pixel selector fetch all (observed NONE BP 100000)", "[hic][long
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: pixel selector fetch all repeatedly", "[hic][short]") {
   const auto sel = File(pathV8, 100'000, MatrixType::observed, MatrixUnit::BP).fetch();
 
@@ -398,3 +395,7 @@ TEST_CASE("HiC: pixel selector fetch all repeatedly", "[hic][short]") {
 
   CHECK(num_pixel1 == num_pixel2);
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
+}  // namespace hictk::hic::test::pixel_selector

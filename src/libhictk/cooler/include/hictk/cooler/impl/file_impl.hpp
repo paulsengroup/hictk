@@ -80,8 +80,8 @@ inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT p
     _attrs.sum = 0.0;
     _attrs.cis = 0.0;
   } else {
-    _attrs.sum = std::int64_t(0);
-    _attrs.cis = std::int64_t(0);
+    _attrs.sum = std::int64_t{0};
+    _attrs.cis = std::int64_t{0};
   }
 
   write_sentinel_attr();
@@ -102,8 +102,8 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
     _attrs.sum = 0.0;
     _attrs.cis = 0.0;
   } else {
-    _attrs.sum = std::int64_t(0);
-    _attrs.cis = std::int64_t(0);
+    _attrs.sum = std::int64_t{0};
+    _attrs.cis = std::int64_t{0};
   }
 
   _bins = std::make_shared<BinTable>(init_bin_table(_datasets, _attrs.bin_type, _attrs.bin_size));

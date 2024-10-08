@@ -14,6 +14,7 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 struct Config {
   std::size_t genome_size{3'300'000};
   std::size_t num_pixels_per_chunk{100'000'000};
@@ -22,6 +23,7 @@ struct Config {
   std::size_t iterations{1};
   std::uint64_t seed{123456789};
 };
+// NOLINTEND(*-avoid-magic-numbers)
 
 using PixelBuffer = std::vector<ThinPixel<std::uint32_t>>;
 
@@ -43,6 +45,8 @@ using PixelBuffer = std::vector<ThinPixel<std::uint32_t>>;
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
+  const auto *argv0 = argv[0];  // NOLINT(*-pointer-arithmetic)
+
   CLI::App cli{};
   Config config{};
   cli.add_option("--genome-size", config.genome_size, "Genome size in bp.")->capture_default_str();
@@ -101,14 +105,14 @@ int main(int argc, char **argv) noexcept {
     return cli.exit(e);
   } catch (const std::exception &e) {
     assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv0,
                e.what());
     return 1;
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error: Caught an "
                           "unhandled exception!\n"),
-               argv[0]);
+               argv0);
     return 1;
   }
   return 0;

@@ -209,7 +209,7 @@ inline void Index::compute_chrom_offsets(std::vector<std::uint64_t> &buff) const
   buff[0] = 0;
 
   std::transform(_idx.begin(), _idx.end(), buff.begin() + 1,
-                 [offset = std::uint64_t(0)](const auto &it) mutable {
+                 [offset = std::uint64_t{0}](const auto &it) mutable {
                    return offset += conditional_static_cast<std::uint64_t>(it.second.size());
                  });
 }

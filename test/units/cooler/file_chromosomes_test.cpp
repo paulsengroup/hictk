@@ -14,7 +14,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write chromosomes", "[cooler][short]") {
   const auto path = (testdir() / "test_write_chroms.cool").string();
 
@@ -30,5 +30,7 @@ TEST_CASE("Cooler: read/write chromosomes", "[cooler][short]") {
   const File f(path, DEFAULT_HDF5_CACHE_SIZE, false);
   CHECK(chroms == f.chromosomes());
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

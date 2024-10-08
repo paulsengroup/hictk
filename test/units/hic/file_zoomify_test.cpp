@@ -19,6 +19,8 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_writer {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::hic::internal;
 
 TEST_CASE("HiC: HiCFileZoomify") {
@@ -46,5 +48,7 @@ TEST_CASE("HiC: HiCFileZoomify") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::hic::test::file_writer
