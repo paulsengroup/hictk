@@ -12,7 +12,8 @@ option(HICTK_ENABLE_GIT_VERSION_TRACKING "Retrieve project version and metadata 
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND HICTK_ENABLE_GIT_VERSION_TRACKING)
   message(
     WARNING
-      "-- Unable to find .git/ under \"${CMAKE_CURRENT_SOURCE_DIR}\". Setting -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF")
+    "-- Unable to find .git/ under \"${CMAKE_CURRENT_SOURCE_DIR}\". Setting -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF"
+  )
   set(HICTK_ENABLE_GIT_VERSION_TRACKING OFF)
 endif()
 
@@ -25,8 +26,10 @@ function(ConfigureVersioning input_config_folder output_config_folder)
     include(FetchContent)
     FetchContent_Declare(
       _hictk_cmake-git-version-tracking
-      URL "${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz"
-      URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365)
+      URL
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/cmake-git-version-tracking.20221027.tar.xz"
+      URL_HASH SHA256=f2d407c9b45bf8874e5f2126147fbb4e7d2872d586f43d6a2c45d09f60f04365
+    )
     FetchContent_MakeAvailable(_hictk_cmake-git-version-tracking)
 
     set(GIT_IGNORE_UNTRACKED ON)
@@ -80,4 +83,5 @@ function(ConfigureVersioning input_config_folder output_config_folder)
 endfunction()
 
 configureversioning("${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk"
+)

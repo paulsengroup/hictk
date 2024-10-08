@@ -9,11 +9,16 @@ add_executable(hictk_hdf5_iterator_bench hdf5_iterator.cpp)
 
 target_link_libraries(
   hictk_hdf5_iterator_bench
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::cooler)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::cooler
+)
 
 target_link_system_libraries(
   hictk_hdf5_iterator_bench
   PUBLIC
   CLI11::CLI11
-  std::filesystem)
+  std::filesystem
+)

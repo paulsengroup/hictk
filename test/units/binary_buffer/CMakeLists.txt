@@ -14,14 +14,19 @@ target_sources(hictk_binary_buffer_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bi
 
 target_link_libraries(
   hictk_binary_buffer_tests
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::binary_buffer)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::binary_buffer
+)
 
 target_link_system_libraries(
   hictk_binary_buffer_tests
   PUBLIC
   Catch2::Catch2WithMain
-  std::filesystem)
+  std::filesystem
+)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 
@@ -39,7 +44,8 @@ catch_discover_tests(
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_binary_buffer_tests
@@ -51,7 +57,8 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_binary_buffer_tests
@@ -63,4 +70,5 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
