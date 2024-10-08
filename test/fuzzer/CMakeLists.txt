@@ -15,7 +15,9 @@ target_compile_features(hictk_fuzzer_project_options INTERFACE "cxx_std_${CMAKE_
 
 if(NOT HICTK_WITH_EIGEN OR NOT HICTK_WITH_ARROW)
   message(
-    FATAL_ERROR "HICTK_ENABLE_FUZZY_TESTING=ON requires HICTK_WITH_EIGEN and HICTK_WITH_ARROW to also be set to ON")
+    FATAL_ERROR
+    "HICTK_ENABLE_FUZZY_TESTING=ON requires HICTK_WITH_EIGEN and HICTK_WITH_ARROW to also be set to ON"
+  )
 endif()
 
 add_subdirectory(src)

@@ -25,25 +25,30 @@ add_library(hictk::libhictk ALIAS libhictk)
 
 target_link_libraries(
   libhictk
-  INTERFACE hictk::balancing
-            hictk::bin_table
-            hictk::binary_buffer
-            hictk::chromosome
-            hictk::common
-            hictk::cooler
-            hictk::expected_values_aggregator
-            hictk::file
-            hictk::filestream
-            hictk::format
-            hictk::genomic_interval
-            hictk::hic
-            hictk::numeric
-            hictk::pixel
-            hictk::reference
-            hictk::transformers
-            hictk::variant)
+  INTERFACE
+    hictk::balancing
+    hictk::bin_table
+    hictk::binary_buffer
+    hictk::chromosome
+    hictk::common
+    hictk::cooler
+    hictk::expected_values_aggregator
+    hictk::file
+    hictk::filestream
+    hictk::format
+    hictk::genomic_interval
+    hictk::hic
+    hictk::numeric
+    hictk::pixel
+    hictk::reference
+    hictk::transformers
+    hictk::variant
+)
 
 target_include_directories(
   libhictk
   INTERFACE
-  INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" "$<INSTALL_INTERFACE:include>")
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>"
+)
