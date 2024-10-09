@@ -28,7 +28,7 @@ Checks: >
   -readability-static-definition-in-anonymous-namespace,
   -zircon-*
 WarningsAsErrors: ""
-HeaderFilterRegex: ""
+HeaderFilterRegex: "(^\\.\\/.*)|(.*hictk.*)"
 FormatStyle: none
 CheckOptions:
   - key: cppcoreguidelines-macro-usage.AllowedRegexp
