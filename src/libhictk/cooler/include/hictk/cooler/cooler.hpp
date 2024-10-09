@@ -115,7 +115,7 @@ class File {
        double w0);
 
  public:
-  using QUERY_TYPE = hictk::GenomicInterval::Type;
+  using QUERY_TYPE = GenomicInterval::Type;
 
   File() = default;
 

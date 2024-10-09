@@ -113,7 +113,7 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
 void Cli::make_cli() {
   _cli.name(_exec_name);
   _cli.description("Blazing fast tools to work with .hic and .cool files.");
-  _cli.set_version_flag("-V,--version", std::string{hictk::config::version::str_long()});
+  _cli.set_version_flag("-V,--version", std::string{config::version::str_long()});
   _cli.require_subcommand(1);
 
   make_balance_subcommand();

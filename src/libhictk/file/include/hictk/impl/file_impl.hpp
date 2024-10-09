@@ -342,7 +342,7 @@ inline PixelSelector File::fetch(const balancing::Method& normalization) const {
 }
 
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method& normalization,
-                                 hictk::File::QUERY_TYPE query_type) const {
+                                 QUERY_TYPE query_type) const {
   assert(!_fp.valueless_by_exception());
   return fetch(range, range, normalization, query_type);
 }
