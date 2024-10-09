@@ -29,6 +29,7 @@
 #include "hictk/cooler/group.hpp"
 #include "hictk/cooler/uri.hpp"
 #include "hictk/numeric_utils.hpp"
+#include "hictk/type_traits.hpp"
 
 namespace hictk::cooler::utils {
 
@@ -373,7 +374,7 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
         if constexpr (std::is_same_v<T, std::monostate>) {
           return;
         }
-        if constexpr (std::is_same_v<T, std::string>) {
+        if constexpr (is_string_v<T>) {
           if (storage_mode != "symmetric-upper") {
             throw std::runtime_error(fmt::format(
                 FMT_STRING(
