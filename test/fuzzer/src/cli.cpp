@@ -83,13 +83,14 @@ int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
 int Cli::exit() const noexcept { return _exit_code; }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
+  using sc = subcommand;
   switch (s) {
-    case fuzz:
+    case sc::fuzz:
       return "fuzz";
-    case launch_worker:
+    case sc::launch_worker:
       return "launch-worker";
     default:
-      assert(s == help);
+      assert(s == sc::help);
       return "--help";
   }
 }
@@ -236,14 +237,15 @@ void Cli::validate_fuzz_subcommand() const { validate_common_args(_config); }
 void Cli::validate_launch_worker_subcommand() const { validate_common_args(_config); }
 
 void Cli::validate_args() const {
+  using sc = subcommand;
   switch (_subcommand) {
-    case fuzz:
+    case sc::fuzz:
       validate_fuzz_subcommand();
       break;
-    case launch_worker:
+    case sc::launch_worker:
       validate_launch_worker_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }
@@ -287,14 +289,15 @@ void Cli::transform_args_fuzz_subcommand() {
 void Cli::transform_args_launch_worker_subcommand() {}
 
 void Cli::transform_args() {
+  using sc = subcommand;
   switch (_subcommand) {
-    case fuzz:
+    case sc::fuzz:
       transform_args_fuzz_subcommand();
       break;
-    case launch_worker:
+    case sc::launch_worker:
       transform_args_launch_worker_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }
