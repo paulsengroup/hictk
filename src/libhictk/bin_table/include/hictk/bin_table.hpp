@@ -65,13 +65,15 @@ class BinTable {
 
   [[nodiscard]] auto find_overlap(const GenomicInterval &query) const
       -> std::pair<BinTable::iterator, BinTable::iterator>;
-  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTable::iterator, BinTable::iterator>;
+  [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTable::iterator, BinTable::iterator>;
   [[nodiscard]] auto find_overlap(std::string_view chrom_name, std::uint32_t start,
                                   std::uint32_t end) const
       -> std::pair<BinTable::iterator, BinTable::iterator>;
-  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start, std::uint32_t end)
-      const -> std::pair<BinTable::iterator, BinTable::iterator>;
+  [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                  std::uint32_t end) const
+      -> std::pair<BinTable::iterator, BinTable::iterator>;
 
   // Map bin_id to Bin
   [[nodiscard]] Bin at(std::uint64_t bin_id) const;

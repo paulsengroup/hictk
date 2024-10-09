@@ -150,7 +150,10 @@ struct ExpectedValuesBlock {
   [[nodiscard]] bool operator<(const ExpectedValuesBlock& other) const noexcept;
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static ExpectedValuesBlock deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static ExpectedValuesBlock deserialize(std::streampos offset,
+                                                       filestream::FileStream<>& fs);
+  [[nodiscard]] static ExpectedValuesBlock unsafe_deserialize(std::streampos offset,
+                                                              filestream::FileStream<>& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#expected-value-vectors
@@ -162,7 +165,10 @@ class ExpectedValues {
   [[nodiscard]] const phmap::btree_set<ExpectedValuesBlock>& expectedValues() const noexcept;
   void emplace(const ExpectedValuesBlock& evb, bool force_overwrite = false);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static ExpectedValues deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static ExpectedValues deserialize(std::streampos offset,
+                                                  filestream::FileStream<>& fs);
+  [[nodiscard]] static ExpectedValues unsafe_deserialize(std::streampos offset,
+                                                         filestream::FileStream<>& fs);
 };
 
 struct NormalizedExpectedValuesBlock {
@@ -184,7 +190,10 @@ struct NormalizedExpectedValuesBlock {
   [[nodiscard]] bool operator<(const NormalizedExpectedValuesBlock& other) const noexcept;
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static NormalizedExpectedValuesBlock deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static NormalizedExpectedValuesBlock deserialize(std::streampos offset,
+                                                                 filestream::FileStream<>& fs);
+  [[nodiscard]] static NormalizedExpectedValuesBlock unsafe_deserialize(
+      std::streampos offset, filestream::FileStream<>& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalized-expected-value-vectors
@@ -197,7 +206,10 @@ class NormalizedExpectedValues {
       const noexcept;
   void emplace(const NormalizedExpectedValuesBlock& evb, bool force_overwrite = false);
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static NormalizedExpectedValues deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static NormalizedExpectedValues deserialize(std::streampos offset,
+                                                            filestream::FileStream<>& fs);
+  [[nodiscard]] static NormalizedExpectedValues unsafe_deserialize(std::streampos offset,
+                                                                   filestream::FileStream<>& fs);
 };
 
 struct NormalizationVectorIndexBlock {
@@ -217,7 +229,10 @@ struct NormalizationVectorIndexBlock {
   [[nodiscard]] bool operator<(const NormalizationVectorIndexBlock& other) const noexcept;
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static NormalizationVectorIndexBlock deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static NormalizationVectorIndexBlock deserialize(std::streampos offset,
+                                                                 filestream::FileStream<>& fs);
+  [[nodiscard]] static NormalizationVectorIndexBlock unsafe_deserialize(
+      std::streampos offset, filestream::FileStream<>& fs);
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#normalization-vector-index
@@ -231,7 +246,10 @@ class NormalizationVectorIndex {
   void emplace_back(NormalizationVectorIndexBlock blk);
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static NormalizationVectorIndex deserialize(filestream::FileStream& fs);
+  [[nodiscard]] static NormalizationVectorIndex deserialize(std::streampos offset,
+                                                            filestream::FileStream<>& fs);
+  [[nodiscard]] static NormalizationVectorIndex unsafe_deserialize(std::streampos offset,
+                                                                   filestream::FileStream<>& fs);
 };
 
 }  // namespace hictk::hic::internal

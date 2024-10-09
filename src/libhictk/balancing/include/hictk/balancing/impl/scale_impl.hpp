@@ -219,8 +219,8 @@ inline balancing::Weights SCALE::get_weights(bool rescale) const {
 inline const std::vector<double>& SCALE::get_scale() const noexcept { return _scale; }
 
 template <typename File>
-inline auto SCALE::compute_cis(const File& f,
-                               const hictk::balancing::SCALE::Params& params) -> Result {
+inline auto SCALE::compute_cis(const File& f, const hictk::balancing::SCALE::Params& params)
+    -> Result {
   std::vector<std::uint64_t> offsets{};
   std::vector<double> scales{};
   std::vector<double> weights{};
@@ -475,8 +475,8 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
 template <typename Matrix>
 inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<double>& b0,
                                            std::vector<double>& dr, std::vector<double>& dc,
-                                           internal::VectorOfAtomicDecimals& row,
-                                           double tolerance) -> ControlFlow {
+                                           internal::VectorOfAtomicDecimals& row, double tolerance)
+    -> ControlFlow {
   for (std::size_t i = 0; i < size(); ++i) {
     if (_bad[i]) {
       continue;

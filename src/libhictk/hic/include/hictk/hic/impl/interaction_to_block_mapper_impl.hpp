@@ -127,6 +127,16 @@ inline bool HiCInteractionToBlockMapper::BlockID::operator<(const BlockID &other
   return bid < other.bid;
 }
 
+inline bool HiCInteractionToBlockMapper::BlockID::operator>(const BlockID &other) const noexcept {
+  if (chrom1_id != other.chrom1_id) {
+    return chrom1_id > other.chrom1_id;
+  }
+  if (chrom2_id != other.chrom2_id) {
+    return chrom2_id > other.chrom2_id;
+  }
+  return bid > other.bid;
+}
+
 inline bool HiCInteractionToBlockMapper::BlockID::operator==(const BlockID &other) const noexcept {
   return chrom1_id == other.chrom1_id && chrom2_id == other.chrom2_id && bid == other.bid;
 }
@@ -141,12 +151,15 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {
   assert(_chunk_size != 0);
+  SPDLOG_INFO(
+      FMT_STRING("initializing HiCInteractionToBlockMapper using \"{}\" as temporary file..."),
+      _path);
   init_block_mappers();
 }
 
 inline HiCInteractionToBlockMapper::~HiCInteractionToBlockMapper() noexcept {
   try {
-    _fs = filestream::FileStream();
+    _fs.close();
     std::filesystem::remove(_path);
   } catch (...) {
   }
@@ -290,7 +303,7 @@ inline auto HiCInteractionToBlockMapper::block_index() const noexcept -> const B
 }
 
 inline auto HiCInteractionToBlockMapper::chromosome_index() const noexcept
-    -> const ChromosomeIndexMap & {
+    -> const MatrixIndexMap & {
   return _chromosome_index;
 }
 
@@ -300,9 +313,11 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid)
   return merge_blocks(bid, _bbuffer, *_zstd_dctx, _compression_buffer, dummy_mtx);
 }
 
-inline auto HiCInteractionToBlockMapper::merge_blocks(
-    const BlockID &bid, BinaryBuffer &bbuffer, ZSTD_DCtx_s &zstd_dctx,
-    std::string &compression_buffer, std::mutex &mtx) -> MatrixInteractionBlock<float> {
+inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid, BinaryBuffer &bbuffer,
+                                                      ZSTD_DCtx_s &zstd_dctx,
+                                                      std::string &compression_buffer,
+                                                      std::mutex &mtx)
+    -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
   for (auto &&pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
     blk.emplace_back(std::move(pixel));
@@ -471,7 +486,7 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(
 
 inline void HiCInteractionToBlockMapper::write_blocks() {
   if (!std::filesystem::exists(_path)) {
-    _fs = filestream::FileStream::create(_path.string());
+    _fs = filestream::FileStream<>::create(_path.string(), std::make_shared<std::mutex>());
   }
   SPDLOG_DEBUG(FMT_STRING("writing {} pixels to file {}..."), _pending_pixels, _path);
   for (auto &[bid, blk] : _blocks) {

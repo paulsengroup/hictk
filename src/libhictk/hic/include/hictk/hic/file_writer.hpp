@@ -35,12 +35,13 @@
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/interaction_block.hpp"
 #include "hictk/hic/interaction_to_block_mapper.hpp"
+#include "hictk/hic/serialized_block_pqueue.hpp"
 #include "hictk/tmpdir.hpp"
 
 namespace hictk::hic::internal {
 
 class HiCSectionOffsets {
-  std::streamoff _position{};
+  std::streampos _position{};
   std::size_t _size{};
 
  public:
@@ -48,10 +49,13 @@ class HiCSectionOffsets {
   template <typename I1, typename I2>
   HiCSectionOffsets(I1 start_, I2 size_);
 
-  [[nodiscard]] std::streamoff start() const noexcept;
-  [[nodiscard]] std::streamoff end() const noexcept;
+  [[nodiscard]] std::streampos start() const noexcept;
+  [[nodiscard]] std::streampos end() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
-  [[nodiscard]] std::size_t& size() noexcept;
+
+  void extend(std::size_t s) noexcept;
+  void extend(std::streamoff s) noexcept;
+  void set_size(std::size_t new_size) noexcept;
 };
 
 struct BlockIndexKey {
@@ -79,8 +83,8 @@ class MatrixBodyMetadataTank {
   MatrixBodyMetadataTank() = default;
 
   [[nodiscard]] bool contains(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
-  [[nodiscard]] auto at(const Chromosome& chrom1,
-                        const Chromosome& chrom2) const -> const MatrixBodyMetadata&;
+  [[nodiscard]] auto at(const Chromosome& chrom1, const Chromosome& chrom2) const
+      -> const MatrixBodyMetadata&;
   [[nodiscard]] HiCSectionOffsets offset(const Chromosome& chrom1, const Chromosome& chrom2) const;
 
   void insert(const Chromosome& chrom1, const Chromosome& chrom2, MatrixMetadata matrix_metadata,
@@ -99,15 +103,17 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  filestream::FileStream _fs{};
+  filestream::FileStream<> _fs{};
   std::filesystem::path _tmpdir{};
 
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
   using BlockIndex = phmap::btree_map<BlockIndexKey, phmap::btree_set<MatrixBlockMetadata>>;
   using BlockMappers = phmap::flat_hash_map<std::uint32_t, HiCInteractionToBlockMapper>;
+  using CompressedBlockPQueue = SerializedBlockPQueue<HiCInteractionToBlockMapper::BlockID>;
 
   HiCHeader _header{};
   BinTables _bin_tables{};
+  std::mutex _block_index_mtx{};
   BlockIndex _block_index{};
   BlockMappers _block_mappers{};
 
@@ -149,8 +155,7 @@ class HiCFileWriter {
       std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
       std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
-      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false,
-      std::size_t buffer_size = 32'000'000);
+      std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -175,18 +180,19 @@ class HiCFileWriter {
   void serialize();
 
  private:
-  [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
+  [[nodiscard]] static HiCHeader read_header(filestream::FileStream<>& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
                                              bool skip_all_vs_all_matrix);
-  [[nodiscard]] static auto init_bin_tables(
-      const Reference& chromosomes, const std::vector<std::uint32_t>& resolutions) -> BinTables;
+  [[nodiscard]] static auto init_bin_tables(const Reference& chromosomes,
+                                            const std::vector<std::uint32_t>& resolutions)
+      -> BinTables;
   [[nodiscard]] static auto init_interaction_block_mappers(const std::filesystem::path& root_folder,
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,
                                                            int compression_lvl) -> BlockMappers;
-  [[nodiscard]] BS::thread_pool init_tpool(std::size_t n_threads);
+  [[nodiscard]] static BS::thread_pool init_tpool(std::size_t n_threads);
 
   // Write header
   void write_header();
@@ -195,16 +201,17 @@ class HiCFileWriter {
 
   // Write pixels
   void write_pixels(bool skip_all_vs_all_matrix);
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2) -> HiCSectionOffsets;
-  auto write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
-                    std::uint32_t resolution) -> HiCSectionOffsets;
+  HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2);
+  HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
+                                 std::uint32_t resolution);
   void write_all_matrix(std::uint32_t target_num_bins = 500);
 
-  auto write_interaction_block(std::uint64_t block_id, const Chromosome& chrom1,
-                               const Chromosome& chrom2, std::uint32_t resolution,
-                               const MatrixInteractionBlock<float>& blk) -> HiCSectionOffsets;
-  auto write_interaction_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
-                                std::uint32_t resolution) -> Stats;
+  [[nodiscard]] HiCSectionOffsets write_interaction_block(
+      std::streampos offset, std::uint64_t block_id, const Chromosome& chrom1,
+      const Chromosome& chrom2, std::uint32_t resolution, const MatrixInteractionBlock<float>& blk);
+  [[nodiscard]] auto write_interaction_blocks(std::streampos offset, const Chromosome& chrom1,
+                                              const Chromosome& chrom2, std::uint32_t resolution)
+      -> std::pair<HiCSectionOffsets, Stats>;
 
   // Normalization
   void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
@@ -222,11 +229,11 @@ class HiCFileWriter {
   void add_footer(const Chromosome& chrom1, const Chromosome& chrom2);
   void write_footer_size();
 
-  void write_empty_expected_values();
-  void write_empty_normalized_expected_values();
-  void compute_and_write_expected_values();
-  void compute_and_write_normalized_expected_values();
-  void write_norm_vectors();
+  HiCSectionOffsets write_empty_expected_values();
+  HiCSectionOffsets write_empty_normalized_expected_values();
+  HiCSectionOffsets compute_and_write_expected_values();
+  HiCSectionOffsets compute_and_write_normalized_expected_values();
+  HiCSectionOffsets write_norm_vectors();
 
   void finalize(bool compute_expected_values = false);
 
@@ -248,20 +255,20 @@ class HiCFileWriter {
 
   void read_offsets();
 
+  [[nodiscard]] const phmap::btree_set<HiCInteractionToBlockMapper::BlockID>&
+  initialize_block_queue(const Chromosome& chrom1, const Chromosome& chrom2,
+                         std::uint32_t resolution) const noexcept;
+
   // Methods to be called from worker threads
   auto merge_and_compress_blocks_thr(
-      HiCInteractionToBlockMapper& mapper, std::mutex& mapper_mtx,
-      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
-      moodycamel::BlockingConcurrentQueue<HiCInteractionToBlockMapper::BlockID>& block_queue,
-      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
-      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
-      std::uint64_t stop_token) -> Stats;
-  void write_compressed_blocks_thr(
-      const Chromosome& chrom1, const Chromosome& chrom2, std::uint32_t resolution,
-      std::queue<std::uint64_t>& block_id_queue, std::mutex& block_id_queue_mtx,
-      phmap::flat_hash_map<std::uint64_t, std::string>& serialized_block_tank,
-      std::mutex& serialized_block_tank_mtx, std::atomic<bool>& early_return,
-      std::uint64_t stop_token);
+      std::size_t thread_id, const Chromosome& chrom1, const Chromosome& chrom2,
+      std::uint32_t resolution, HiCInteractionToBlockMapper& block_mapper, std::mutex& mapper_mtx,
+      std::atomic<const HiCInteractionToBlockMapper::BlockID*>& first_bid,
+      const HiCInteractionToBlockMapper::BlockID* last_bid,
+      CompressedBlockPQueue& compressed_block_queue, std::atomic<bool>& early_return) -> Stats;
+  void write_compressed_blocks(const Chromosome& chrom1, const Chromosome& chrom2,
+                               std::uint32_t resolution,
+                               std::vector<CompressedBlockPQueue::Record>& compressed_blocks);
 };
 }  // namespace hictk::hic::internal
 

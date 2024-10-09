@@ -29,12 +29,12 @@
 namespace hictk::cooler::utils {
 
 inline void copy(std::string_view uri1, std::string_view uri2) {
-  const auto [path2, grp2] = cooler::parse_cooler_uri(uri2);
+  const auto uri = cooler::parse_cooler_uri(uri2);
   if (std::filesystem::exists(uri2) && utils::is_cooler(uri2)) {
     throw std::runtime_error("destination already contains a Cooler");
   }
-  const HighFive::File dest(path2, HighFive::File::OpenOrCreate);
-  return copy(uri1, RootGroup{dest.getGroup(grp2)});
+  const HighFive::File dest(uri.file_path, HighFive::File::OpenOrCreate);
+  return copy(uri1, RootGroup{dest.getGroup(uri.group_path)});
 }
 
 inline void copy(std::string_view uri1, RootGroup dest) {
@@ -46,8 +46,8 @@ inline void copy(std::string_view uri1, RootGroup dest) {
     /* Attempt to open an existing HDF5 file first. Need to open the dst file
          before the src file just in case that the dst and src are the same file
     */
-    const auto [path1, grp1] = cooler::parse_cooler_uri(uri1);
-    const HighFive::File fin(path1, HighFive::File::ReadOnly);
+    const auto uri = cooler::parse_cooler_uri(uri1);
+    const HighFive::File fin(uri.file_path, HighFive::File::ReadOnly);
 
     /* create property to pass copy options */
     auto ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
@@ -96,12 +96,12 @@ inline void copy(std::string_view uri1, RootGroup dest) {
       }
     };
 
-    for (const auto &obj : fin.getGroup(grp1).listObjectNames()) {
-      copy_h5_object(fin.getGroup(grp1), dest(), obj);
+    for (const auto &obj : fin.getGroup(uri.group_path).listObjectNames()) {
+      copy_h5_object(fin.getGroup(uri.group_path), dest(), obj);
     }
 
-    for (const auto &attr : fin.getGroup(grp1).listAttributeNames()) {
-      copy_h5_attribute(fin.getGroup(grp1), dest(), std::string{attr});
+    for (const auto &attr : fin.getGroup(uri.group_path).listAttributeNames()) {
+      copy_h5_attribute(fin.getGroup(uri.group_path), dest(), std::string{attr});
     }
 
     /* close propertis */

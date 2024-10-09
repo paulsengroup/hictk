@@ -9,11 +9,18 @@ add_executable(hictk_pixel_formatting_bench pixel_formatting.cpp)
 
 target_link_libraries(
   hictk_pixel_formatting_bench
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::cooler hictk::format hictk::pixel)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::cooler
+    hictk::format
+    hictk::pixel
+)
 
 target_link_system_libraries(
   hictk_pixel_formatting_bench
   PUBLIC
   CLI11::CLI11
-  std::filesystem)
+  std::filesystem
+)

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
 import pathlib
 from datetime import timedelta
 from timeit import default_timer as timer
@@ -130,6 +131,14 @@ class HictkTestHarness:
         self._title = title
         self._args = args
         self._expect_failure = expect_failure
+
+        if env_variables is None:
+            env_variables = os.environ.copy()
+        else:
+            env_variables = dict(env_variables.copy())
+
+        if "LLVM_PROFILE_FILE" in env_variables:
+            env_variables["LLVM_PROFILE_FILE"] = env_variables["LLVM_PROFILE_FILE"].replace("%id", str(id))
 
         t0 = timer()
         self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)

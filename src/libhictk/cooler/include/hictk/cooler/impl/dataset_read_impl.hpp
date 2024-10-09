@@ -222,8 +222,8 @@ inline void Dataset::read_attribute(std::string_view key, std::vector<T> &buff) 
   Attribute::read_vector(_dataset, key, buff);
 }
 
-inline auto Dataset::read_attribute(std::string_view key,
-                                    bool missing_ok) const -> Attribute::AttributeVar {
+inline auto Dataset::read_attribute(std::string_view key, bool missing_ok) const
+    -> Attribute::AttributeVar {
   return Attribute::read(_dataset, key, missing_ok);
 }
 

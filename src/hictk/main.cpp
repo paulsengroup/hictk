@@ -36,6 +36,7 @@ static void setup_logger_console() {
 }
 
 static void setup_logger_console(int verbosity_lvl, bool print_version) {
+  spdlog::set_level(spdlog::level::level_enum(verbosity_lvl));
   for (auto& sink : spdlog::default_logger()->sinks()) {
     sink->set_level(spdlog::level::level_enum(verbosity_lvl));
   }

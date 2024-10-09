@@ -76,8 +76,8 @@ inline T Attribute::read(const ParentObj& h5obj, std::string_view key) {
 }
 
 template <typename ParentObj>
-inline auto Attribute::read(const ParentObj& h5obj, std::string_view key,
-                            bool missing_ok) -> AttributeVar {
+inline auto Attribute::read(const ParentObj& h5obj, std::string_view key, bool missing_ok)
+    -> AttributeVar {
   [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
 
   if (missing_ok && !Attribute::exists(h5obj, key)) {

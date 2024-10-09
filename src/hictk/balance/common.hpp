@@ -192,7 +192,9 @@ inline int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_
   }
 
   const auto tmpfile =
-      tmp_dir / (std::filesystem::path{c.path_to_input}.filename().string() + ".tmp");
+      tmp_dir.empty()
+          ? ""
+          : tmp_dir / (std::filesystem::path{c.path_to_input}.filename().string() + ".tmp");
 
   const auto params = init_params<Balancer>(c, tmpfile);
   typename Balancer::Type mode{};

@@ -130,8 +130,8 @@ inline EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj) {
 
   EigenSparse<N> m(num_rows, num_cols);
   if (rows.size() != 0) {
-    const auto max_nnz_row = obj.attr("getnnz")(0).attr("max")().cast<std::int64_t>();
-    m.reserve(Eigen::Matrix<std::int64_t, Eigen::Dynamic, 1>::Constant(num_cols, max_nnz_row));
+    const auto max_nnz_row = obj.attr("getnnz")(1).attr("max")().cast<std::int64_t>();
+    m.reserve(Eigen::Matrix<std::int64_t, Eigen::Dynamic, 1>::Constant(num_rows, max_nnz_row));
 
     for (std::int64_t i = 0; i < rows.size(); ++i) {
       m.insert(rows.at(i), cols.at(i)) = count.at(i);

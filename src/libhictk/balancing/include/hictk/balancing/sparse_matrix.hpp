@@ -128,9 +128,9 @@ class SparseMatrix {
   void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
                  std::size_t bin_offset = 0);
 
-  void serialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
+  void serialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
                  int compression_lvl = 3) const;
-  void deserialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
+  void deserialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
 
   void marginalize(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
   void marginalize_nnz(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
@@ -180,9 +180,9 @@ class FileBackedSparseMatrix {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
   std::filesystem::path _path{};
-  mutable filestream::FileStream _fs{};
+  mutable filestream::FileStream<> _fs{};
 
-  std::vector<std::size_t> _index{};
+  std::vector<std::streampos> _index{};
   std::size_t _size{};
   std::size_t _chunk_size{};
   int _compression_lvl{};
