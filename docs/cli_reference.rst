@@ -90,7 +90,7 @@ hictk balance ice
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once. Ignored when using --in-memory.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
@@ -138,7 +138,7 @@ hictk balance scale
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once. Ignored when using --in-memory.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn.
@@ -173,7 +173,7 @@ hictk balance vc
                                 Create a symbolic link to the balancing weights at clr::/bins/weight.
                                 Ignored when balancing .hic files
     --stdout                    Write balancing weights to stdout instead of writing them to the input file.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
     -f,--force                  Overwrite existing files and datasets (if any).
 
@@ -208,7 +208,7 @@ hictk convert
     --tmpdir TEXT:DIR           Path where to store temporary files.
     --chunk-size UINT:POSITIVE [10000000]
                                 Batch size to use when converting .[m]cool to .hic.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [2 - 32] [2]
                                 Maximum number of parallel threads to spawn.
@@ -281,7 +281,7 @@ hictk fix-mcool
     --chunk-size UINT:POSITIVE [10000000]
                                 Number of interactions to process at once during balancing.
                                 Ignored when using --in-memory.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
     -t,--threads UINT:UINT in [1 - 32] [1]
                                 Maximum number of parallel threads to spawn (only applies to the balancing stage).
@@ -354,7 +354,7 @@ hictk load
                                 Maximum number of parallel threads to spawn.
                                 When loading interactions in a .cool file, only up to two threads will be used.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
 
 
@@ -395,7 +395,7 @@ hictk merge
     --count-type TEXT:{int,float} [int]
                                 Specify the count type to be used when merging files.
                                 Ignored when the output file is in .hic format.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
 
 
@@ -439,7 +439,7 @@ hictk rename-chromosomes
                                 Prefix chromosome names with "chr".
     --remove-chr-prefix Excludes: --name-mappings --add-chr-prefix
                                 Remove prefix "chr" from chromosome names.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
 
 
@@ -505,5 +505,5 @@ hictk zoomify
                                 Do not generate All vs All matrix.
                                 Has no effect when zoomifying .cool files.
     --tmpdir TEXT:DIR           Path to a folder where to store temporary data.
-    -v,--verbosity INT:INT in [1 - 4] [4]
+    -v,--verbosity INT:INT in [1 - 4] [3]
                                 Set verbosity of output to the console.
