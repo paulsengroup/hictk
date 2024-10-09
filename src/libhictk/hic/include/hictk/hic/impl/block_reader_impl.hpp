@@ -24,13 +24,13 @@
 
 namespace hictk::hic::internal {
 
-inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index &master_index,
+inline HiCBlockReader::HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, Index master_index,
                                       std::shared_ptr<const BinTable> bins_,
-                                      std::shared_ptr<BlockCache> block_cache_)
+                                      std::shared_ptr<BlockCache> block_cache_) noexcept
     : _hfs(std::move(hfs)),
       _blk_cache(std::move(block_cache_)),
       _bins(std::move(bins_)),
-      _index(master_index) {}
+      _index(std::move(master_index)) {}
 
 inline HiCBlockReader::operator bool() const noexcept { return !!_hfs; }
 
@@ -61,7 +61,7 @@ inline double HiCBlockReader::avg() const {
   const auto num_bins1 = chrom1().size() / bin_size;
   const auto num_bins2 = chrom2().size() / bin_size;
 
-  return sum() / double(num_bins1 * num_bins2);
+  return sum() / static_cast<double>(num_bins1 * num_bins2);
 }
 
 inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &footer) {
@@ -112,7 +112,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
                                                                     const Chromosome &chrom2,
                                                                     const BlockIndex &idx,
                                                                     bool cache_block) {
-  if (_hfs->version() == 6) {
+  if (_hfs->version() == 6) {  // NOLINT(*-avoid-magic-numbers)
     return read_v6(chrom1, chrom2, idx, cache_block);
   }
 
@@ -138,7 +138,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
   const auto i16Counts = _bbuffer.read<char>() == 0;
 
   auto readUseShortBinFlag = [&]() {
-    if (_hfs->version() > 8) {
+    if (_hfs->version() > 8) {  // NOLINT(*-avoid-magic-numbers)
       return _bbuffer.read<char>() == 0;
     }
     return true;
@@ -258,9 +258,9 @@ inline void HiCBlockReader::read_type1_block(std::int32_t bin1Offset, std::int32
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
-  static_assert(std::is_same<i16, Bin1Type>::value || std::is_same<i32, Bin1Type>::value, "");
-  static_assert(std::is_same<i16, Bin2Type>::value || std::is_same<i32, Bin2Type>::value, "");
-  static_assert(std::is_same<i16, CountType>::value || std::is_same<f32, CountType>::value, "");
+  static_assert(std::is_same_v<i16, Bin1Type> || std::is_same_v<i32, Bin1Type>);
+  static_assert(std::is_same_v<i16, Bin2Type> || std::is_same_v<i32, Bin2Type>);
+  static_assert(std::is_same_v<i16, CountType> || std::is_same_v<f32, CountType>);
 
   constexpr auto expectedOffsetV7 = (3 * sizeof(i32)) + (2 * sizeof(char));
   constexpr auto expectedOffsetV8plus = expectedOffsetV7 + (2 * sizeof(char));
@@ -295,13 +295,13 @@ inline void HiCBlockReader::read_type2_block(std::int32_t bin1Offset, std::int32
   using i16 = std::int16_t;
   using i32 = std::int32_t;
   using f32 = float;
-  static_assert(std::is_same<i16, CountType>::value || std::is_same<f32, CountType>::value, "");
+  static_assert(std::is_same_v<i16, CountType> || std::is_same_v<f32, CountType>);
 
   const auto nPts = src.read<i32>();
   const auto w = static_cast<i32>(src.read<i16>());
 
   constexpr auto i16Sentinel = (std::numeric_limits<i16>::lowest)();
-  constexpr auto i16Counts = std::is_same<i16, CountType>::value;
+  constexpr auto i16Counts = std::is_same_v<i16, CountType>;
 
   auto isValid = [&](CountType n) {
     return (i16Counts && static_cast<i16>(n) != i16Sentinel) ||
@@ -317,8 +317,8 @@ inline void HiCBlockReader::read_type2_block(std::int32_t bin1Offset, std::int32
     }
     const auto row = i / w;
     const auto col = i - row * w;
-    const auto bin1 = static_cast<std::uint64_t>(bin1Offset + col);
-    const auto bin2 = static_cast<std::uint64_t>(bin2Offset + row);
+    const auto bin1 = static_cast<std::uint64_t>(bin1Offset) + static_cast<std::uint64_t>(col);
+    const auto bin2 = static_cast<std::uint64_t>(bin2Offset) + static_cast<std::uint64_t>(row);
 
     dest.emplace_back(ThinPixel<float>{bin1, bin2, static_cast<f32>(count)});
   }

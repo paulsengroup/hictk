@@ -80,7 +80,7 @@ int main(int argc, char **argv) noexcept {
     std::uint64_t elapsed_time = 0;
     std::uint64_t sum = 0;
     for (std::size_t i = 0; i < config.iterations; ++i) {
-      const transformers::PixelMerger merger(heads, tails);
+      const transformers::PixelMerger merger{heads, tails};
 
       const auto t0 = std::chrono::system_clock::now();
       std::for_each(merger.begin(), merger.end(), [&](const auto &p) { sum += p.count; });

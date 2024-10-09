@@ -131,7 +131,9 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
     std::mt19937_64 rand_eng_(rd_());
 
     ++threads_started;
+    // clang-format off
     while (threads_started != num_threads);  // NOLINT
+    // clang-format on
 
     while (true) {
       const auto idx = i++;
@@ -145,7 +147,9 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
       std::this_thread::sleep_for(sleep_time);
 
       const auto& record = records[idx];
+      // clang-format off
       while (!queue.try_enqueue(record.bid, record.serialized_block));  // NOLINT
+      // clang-format on
     }
   };
 
@@ -184,13 +188,13 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
   }
 }
 
-static void compare_weights(const hictk::balancing::Weights& weights_,
-                            const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
-                            double rtol = 1.0e-5) {
+static void compare_weights(const balancing::Weights& weights_, const balancing::Weights& expected_,
+                            // NOLINTNEXTLINE(*-avoid-magic-numbers)
+                            double atol = 1.0e-5, double rtol = 1.0e-5) {
   REQUIRE(weights_.size() == expected_.size());
 
-  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
-  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
+  const auto weights = weights_(balancing::Weights::Type::DIVISIVE);
+  const auto expected = expected_(balancing::Weights::Type::DIVISIVE);
 
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(expected[i])) {

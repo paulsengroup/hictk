@@ -39,8 +39,8 @@ inline bool Attribute::exists(ParentObj& h5obj, std::string_view key) {
 template <typename T, typename ParentObj>
 inline void Attribute::write(ParentObj& h5obj, std::string_view key, const T& value,
                              bool overwrite_if_exists) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
-  const std::string key_{key};                        // NOLINT(cert-err58-cpp)
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
+  const std::string key_{key};                              // NOLINT(cert-err58-cpp)
   if (overwrite_if_exists && Attribute::exists(h5obj, key)) {
     h5obj.deleteAttribute(key_);
   }
@@ -78,7 +78,7 @@ inline T Attribute::read(const ParentObj& h5obj, std::string_view key) {
 template <typename ParentObj>
 inline auto Attribute::read(const ParentObj& h5obj, std::string_view key, bool missing_ok)
     -> AttributeVar {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
 
   if (missing_ok && !Attribute::exists(h5obj, key)) {
     return std::monostate();
@@ -103,7 +103,7 @@ inline std::vector<T> Attribute::read_vector(const ParentObj& h5obj, std::string
 template <typename T, typename ParentObj>
 inline void Attribute::read_vector(const ParentObj& h5obj, std::string_view key,
                                    std::vector<T>& buff) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     h5obj.getAttribute(std::string{key}).read(buff);
   } catch (const std::exception& e) {
@@ -199,7 +199,7 @@ inline Tout Attribute::numeric_converter(T1& buff) {
         const auto ub = conditional_static_cast<std::int64_t>(std::numeric_limits<Tout>::max());
 
         const auto buff_ = conditional_static_cast<std::int64_t>(buff);
-        if (buff_ >= lb && buff_ <= ub) {
+        if (buff_ >= lb && buff_ <= ub) {  // NOLINT(*-redundant-expression)
           return static_cast<Tout>(buff);
         }
       }

@@ -48,14 +48,14 @@ class PixelParser {
   [[nodiscard]] const BinTable& bins() const noexcept;
 
   template <typename N>
-  [[nodiscard]] inline ThinPixel<N> next_pixel(std::int64_t offset) {
+  [[nodiscard]] ThinPixel<N> next_pixel(std::int64_t offset) {
     ThinPixel<N> p{};
     std::ignore = next_pixel(p, offset);
     return p;
   }
 
   template <typename N>
-  [[nodiscard]] inline bool next_pixel(ThinPixel<N>& buff, std::int64_t offset) {
+  [[nodiscard]] bool next_pixel(ThinPixel<N>& buff, std::int64_t offset) {
     if (_strbuff.empty()) {  // EOF
       buff.bin1_id = ThinPixel<N>::null_id;
       buff.bin2_id = ThinPixel<N>::null_id;

@@ -132,8 +132,8 @@ inline File File::open_random_access(std::string_view uri, std::size_t cache_siz
 
 inline File File::open_read_once(std::string_view uri, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
-              HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return {open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+          HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate};
 }
 template <typename PixelT>
 inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
@@ -203,7 +203,7 @@ inline File File::open_random_access(RootGroup entrypoint, std::size_t cache_siz
 
 inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File(std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return {std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate};
 }
 
 template <typename PixelT>
@@ -235,6 +235,23 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
   }
 }
 
+// We need to explicitly define the move ctor because older compilers are not able to automatically
+// generate it
+inline File::File(File &&other) noexcept
+    : _mode(other._mode),
+      _root_group(std::move(other._root_group)),
+      _groups(std::move(other._groups)),
+      _datasets(std::move(other._datasets)),
+      _weights(std::move(other._weights)),
+      _weights_scaled(std::move(other._weights_scaled)),
+      _attrs(std::move(other._attrs)),
+      _pixel_variant(other._pixel_variant),
+      _bins(std::move(other._bins)),
+      _index(std::move(other._index)),
+      _finalize(other._finalize) {
+  other._finalize = false;
+}
+
 // NOLINTNEXTLINE(*-exception-escape)
 inline File::~File() noexcept {
   try {
@@ -247,6 +264,44 @@ inline File::~File() noexcept {
                           "corrupted or incomplete."),
                path());
   }
+}
+
+// We need to explicitly define the move ctor because older compilers are not able to automatically
+// generate it
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline File &File::operator=(File &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+
+  if (_finalize) {
+    try {
+      finalize();
+    } catch (const std::exception &e) {
+      fmt::print(stderr, FMT_STRING("{}\n"), e.what());
+    } catch (...) {
+      fmt::print(stderr,
+                 FMT_STRING("An unknown error occurred while finalizing file {}. File is likely "
+                            "corrupted or incomplete."),
+                 path());
+    }
+  }
+
+  _mode = other._mode;
+  _root_group = std::move(other._root_group);
+  _groups = std::move(other._groups);
+  _datasets = std::move(other._datasets);
+  _weights = std::move(other._weights);
+  _weights_scaled = std::move(other._weights_scaled);
+  _attrs = std::move(other._attrs);
+  _pixel_variant = other._pixel_variant;
+  _bins = std::move(other._bins);
+  _index = std::move(other._index);
+  _finalize = other._finalize;
+
+  other._finalize = false;
+
+  return *this;
 }
 
 inline File::operator bool() const noexcept { return !!_bins; }
@@ -333,7 +388,7 @@ HICTK_DISABLE_WARNING_POP
 
 inline hictk::internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,
                                                                std::string_view path) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto dset = root_grp().getDataSet(std::string{path});
   return internal::read_pixel_variant<hictk::internal::NumericVariant>(dset);
 }

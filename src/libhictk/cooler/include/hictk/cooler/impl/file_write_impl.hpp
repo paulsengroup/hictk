@@ -184,7 +184,7 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     throw std::runtime_error(fmt::format(FMT_STRING("dataset \"{}\" already exists"), path));
   }
 
-  typename std::iterator_traits<It>::value_type buff{};
+  const typename std::iterator_traits<It>::value_type buff{};
   auto dset = existing ? Dataset(_root_group, _root_group().getDataSet(path))
                        : Dataset(_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
 
@@ -198,18 +198,18 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
 
 inline auto File::create_root_group(HighFive::File &f, std::string_view uri,
                                     bool write_sentinel_attr) -> RootGroup {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto grp = f.createGroup(parse_cooler_uri(uri).group_path);
   if (write_sentinel_attr) {
     Attribute::write(grp, internal::SENTINEL_ATTR_NAME, internal::SENTINEL_ATTR_VALUE);
     f.flush();
   }
 
-  return {grp};
+  return RootGroup{grp};
 }
 
 inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
   groups.emplace(root_grp.hdf5_path(), Group{root_grp, root_grp()});
 
@@ -224,7 +224,7 @@ inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
 }
 
 inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp) -> GroupMap {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
   root_grp().createHardLink("chroms", chroms_grp());
   root_grp().createHardLink("bins", bins_grp());
@@ -292,7 +292,7 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
 
 inline void File::write_standard_attributes(RootGroup &root_grp, const Attributes &attributes,
                                             bool skip_sentinel_attr) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (attributes.assembly) {
     Attribute::write(root_grp(), "assembly", *attributes.assembly);
   }
@@ -413,6 +413,7 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
     return;
   }
 
+  assert(_attrs.nnz.has_value());  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   auto nnz = static_cast<std::uint64_t>(*_attrs.nnz);
   PixelCoordinates first_pixel_in_row(get_last_bin_written());
 

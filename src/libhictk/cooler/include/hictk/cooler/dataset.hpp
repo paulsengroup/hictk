@@ -40,14 +40,12 @@ HICTK_DISABLE_WARNING_POP
 
 namespace hictk::cooler {
 
-struct RootGroup;
-
 namespace internal {
 template <typename T>
 struct is_atomic_buffer
-    : public std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
-                              std::is_same<std::string, std::decay_t<T>>,
-                              std::is_arithmetic<std::decay_t<T>>> {};
+    : std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
+                       std::is_same<std::string, std::decay_t<T>>,
+                       std::is_arithmetic<std::decay_t<T>>> {};
 
 template <typename T>
 inline constexpr bool is_atomic_buffer_v = is_atomic_buffer<T>::value;
@@ -260,7 +258,12 @@ class Dataset {
     using reference = value_type &;
     using iterator_category = std::random_access_iterator_tag;
 
-    enum OverlapStatus { UPSTREAM, OVERLAPPING, DOWNSTEAM, UNINITIALIZED };
+    enum class OverlapStatus : std::uint_fast8_t {
+      UPSTREAM,
+      OVERLAPPING,
+      DOWNSTEAM,
+      UNINITIALIZED
+    };
 
     iterator() = default;
 

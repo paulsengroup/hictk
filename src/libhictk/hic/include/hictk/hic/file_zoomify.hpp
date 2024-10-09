@@ -22,12 +22,14 @@ class HiCFileZoomify {
   HiCFileWriter _hfw{};
 
  public:
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   HiCFileZoomify(
       std::string_view input_hic, std::string_view output_hic,
       const std::vector<std::uint32_t>& resolutions, std::size_t n_threads = 1,
       std::size_t chunk_size = 10'000'000,
       const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
       std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
+  // NOLINTEND(*-avoid-magic-numbers)
   void zoomify();
 
  private:

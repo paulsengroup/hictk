@@ -82,29 +82,30 @@ int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
 int Cli::exit() const noexcept { return _exit_code; }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
+  using sc = subcommand;
   switch (s) {
-    case balance:
+    case sc::balance:
       return "balance";
-    case convert:
+    case sc::convert:
       return "convert";
-    case dump:
+    case sc::dump:
       return "dump";
-    case fix_mcool:
+    case sc::fix_mcool:
       return "fix-mcool";
-    case load:
+    case sc::load:
       return "load";
-    case merge:
+    case sc::merge:
       return "merge";
-    case metadata:
+    case sc::metadata:
       return "metadata";
-    case rename_chromosomes:
+    case sc::rename_chromosomes:
       return "rename-chromosomes";
-    case validate:
+    case sc::validate:
       return "validate";
-    case zoomify:
+    case sc::zoomify:
       return "zoomify";
     default:
-      assert(s == help);
+      assert(s == sc::help);
       return "--help";
   }
 }
@@ -128,73 +129,75 @@ void Cli::make_cli() {
 }
 
 void Cli::validate_args() const {
+  using sc = subcommand;
   switch (_subcommand) {
-    case balance:
+    case sc::balance:
       validate_balance_subcommand();
       break;
-    case convert:
+    case sc::convert:
       validate_convert_subcommand();
       break;
-    case dump:
+    case sc::dump:
       validate_dump_subcommand();
       break;
-    case fix_mcool:
+    case sc::fix_mcool:
       validate_fix_mcool_subcommand();
       break;
-    case load:
+    case sc::load:
       validate_load_subcommand();
       break;
-    case merge:
+    case sc::merge:
       validate_merge_subcommand();
       break;
-    case metadata:
+    case sc::metadata:
       break;
-    case rename_chromosomes:
+    case sc::rename_chromosomes:
       validate_rename_chromosomes_subcommand();
       break;
-    case validate:
+    case sc::validate:
       break;
-    case zoomify:
+    case sc::zoomify:
       validate_zoomify_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }
 
 void Cli::transform_args() {
+  using sc = subcommand;
   switch (_subcommand) {
-    case balance:
+    case sc::balance:
       transform_args_balance_subcommand();
       break;
-    case convert:
+    case sc::convert:
       transform_args_convert_subcommand();
       break;
-    case dump:
+    case sc::dump:
       transform_args_dump_subcommand();
       break;
-    case fix_mcool:
+    case sc::fix_mcool:
       transform_args_fix_mcool_subcommand();
       break;
-    case load:
+    case sc::load:
       transform_args_load_subcommand();
       break;
-    case merge:
+    case sc::merge:
       transform_args_merge_subcommand();
       break;
-    case metadata:
+    case sc::metadata:
       transform_args_metadata_subcommand();
       break;
-    case rename_chromosomes:
+    case sc::rename_chromosomes:
       transform_args_rename_chromosomes_subcommand();
       break;
-    case validate:
+    case sc::validate:
       transform_args_validate_subcommand();
       break;
-    case zoomify:
+    case sc::zoomify:
       transform_args_zoomify_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }

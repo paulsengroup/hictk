@@ -72,21 +72,21 @@ inline void merge(Str first_file, Str last_file, std::string_view dest_file,
 
 template <typename PixelIt>
 inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
-                  const BinTable& bins, std::string_view dest_uri, std::string_view assembly,
+                  const BinTable& bins, std::string_view dest_file, std::string_view assembly,
                   const std::filesystem::path& tmp_dir, bool overwrite_if_exists,
                   std::size_t chunk_size, std::size_t n_threads, std::uint32_t compression_lvl,
                   bool skip_all_vs_all) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
-  hictk::transformers::PixelMerger merger{heads, tails};
+  const transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
   if (overwrite_if_exists) {
-    std::filesystem::remove(dest_uri);
+    std::filesystem::remove(dest_file);
   }
 
-  hic::internal::HiCFileWriter w(dest_uri, bins.chromosomes(), {bins.resolution()}, assembly,
+  hic::internal::HiCFileWriter w(dest_file, bins.chromosomes(), {bins.resolution()}, assembly,
                                  n_threads, chunk_size, tmp_dir, compression_lvl, skip_all_vs_all);
 
   w.add_pixels(bins.resolution(), merger.begin(), merger.end());

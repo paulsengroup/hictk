@@ -106,8 +106,8 @@ TEST_CASE("VariantBuffer: accessors", "[numeric_buff][short]") {
     std::shuffle(buff2.begin<std::uint64_t>(), buff2.end<std::uint64_t>(), prng);
 
     CHECK(
-        std::accumulate(buff0.begin(), buff0.end(), std::size_t(0)) ==
-        std::accumulate(buff2.begin<std::uint64_t>(), buff2.end<std::uint64_t>(), std::size_t(0)));
+        std::accumulate(buff0.begin(), buff0.end(), std::size_t{0}) ==
+        std::accumulate(buff2.begin<std::uint64_t>(), buff2.end<std::uint64_t>(), std::size_t{0}));
   }
 }
 

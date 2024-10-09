@@ -15,12 +15,11 @@
 #include <vector>
 
 #include "hictk/chromosome.hpp"
-#include "hictk/cooler/cooler.hpp"
 
 namespace hictk::cooler::utils {
 
 namespace internal {
-[[nodiscard]] inline std::vector<std::string> get_chrom_names(const cooler::File& clr) {
+[[nodiscard]] inline std::vector<std::string> get_chrom_names(const File& clr) {
   std::vector<std::string> names(clr.chromosomes().size());
 
   std::transform(clr.chromosomes().begin(), clr.chromosomes().end(), names.begin(),
@@ -30,7 +29,7 @@ namespace internal {
 }
 
 template <typename NameMap>
-[[nodiscard]] inline std::vector<std::string> rename_chromosomes(std::vector<std::string>&& names,
+[[nodiscard]] inline std::vector<std::string> rename_chromosomes(std::vector<std::string> names,
                                                                  const NameMap& mappings) {
   for (auto& name : names) {
     auto it = mappings.find(name);
@@ -54,8 +53,7 @@ template <typename NameMap>
 
 template <typename It>
 inline void rename_chromosomes(std::string_view uri, It first_mapping, It last_mapping) {
-  return rename_chromosomes(
-      uri, phmap::btree_map<std::string, std::string>{first_mapping, last_mapping});
+  rename_chromosomes(uri, phmap::btree_map<std::string, std::string>{first_mapping, last_mapping});
 }
 
 template <typename NameMap, typename>
@@ -63,7 +61,7 @@ inline void rename_chromosomes(std::string_view uri, const NameMap& mappings) {
   if (mappings.empty()) {
     return;
   }
-  cooler::File clr(uri);
+  File clr(uri);
   auto names = internal::get_chrom_names(clr);
   const auto file_path = clr.path();
   const auto chrom_dset = fmt::format(FMT_STRING("{}/chroms/name"), clr.hdf5_path());
@@ -71,14 +69,14 @@ inline void rename_chromosomes(std::string_view uri, const NameMap& mappings) {
 
   // NOLINTNEXTLINE(misc-const-correctness)
   HighFive::File h5f(file_path, HighFive::File::ReadWrite);
-  const cooler::RootGroup root_grp{h5f.getGroup("/")};
-  cooler::Dataset dset{root_grp, chrom_dset};
+  const RootGroup root_grp{h5f.getGroup("/")};
+  Dataset dset{root_grp, chrom_dset};
 
-  return rename_chromosomes(dset, mappings);
+  rename_chromosomes(dset, mappings);
 }
 
 template <typename NameMap, typename>
-inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappings) {
+inline void rename_chromosomes(Dataset& chrom_dset, const NameMap& mappings) {
   if (mappings.empty()) {
     return;
   }
@@ -92,9 +90,9 @@ inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappi
 
   h5f.unlink(chrom_dset().getPath());
 
-  const cooler::RootGroup root_grp{h5f.getGroup("/")};
-  cooler::Dataset dset{root_grp, chrom_path, internal::find_chrom_with_longest_name(names),
-                       HighFive::DataSpace::UNLIMITED, aprop};
+  const RootGroup root_grp{h5f.getGroup("/")};
+  Dataset dset{root_grp, chrom_path, internal::find_chrom_with_longest_name(names),
+               HighFive::DataSpace::UNLIMITED, aprop};
 
   try {
     dset.write(names.begin(), names.end(), 0, true, [&](const auto& name) { return name; });

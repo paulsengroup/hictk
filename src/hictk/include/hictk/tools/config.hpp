@@ -16,6 +16,8 @@
 
 namespace hictk::tools {
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
+
 static constexpr std::uint8_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
 static constexpr std::uint8_t MAX_COOL_COMPRESSION_LEVEL = 9;
 
@@ -243,6 +245,8 @@ struct ZoomifyConfig {
   bool force{false};
   std::uint8_t verbosity{3};
 };
+
+// NOLINTEND(*-avoid-magic-numbers)
 
 // clang-format off
 using Config = std::variant<std::monostate,

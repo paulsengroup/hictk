@@ -35,7 +35,7 @@ template <typename PixelIt>
 inline double avg(PixelIt first, PixelIt last) {
   std::size_t nnz = 0;
   const auto sum =
-      std::accumulate(first, last, double(0), [&](const double accumulator, const auto& p) {
+      std::accumulate(first, last, double{0}, [&](const double accumulator, const auto& p) {
         ++nnz;
         return accumulator + p.count;
       });

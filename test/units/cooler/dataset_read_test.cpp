@@ -72,7 +72,7 @@ TEST_CASE("Cooler: dataset read", "[dataset][short]") {
     }
 
     SECTION("variant buff") {
-      hictk::internal::VariantBuffer vbuff{std::size_t(0), 0.0};
+      hictk::internal::VariantBuffer vbuff{std::size_t{0}, 0.0};
       std::ignore = Dataset{grp, "bins/start"}.read(vbuff, expected.size());
       const auto& buff = vbuff.get<T>();
       REQUIRE(buff.size() == expected.size());

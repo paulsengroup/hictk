@@ -56,7 +56,7 @@ inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType 
   }
 
   const auto prev_block_cache_capacity = _block_cache->capacity_bytes();
-  *this = File(url_, resolution_, type_, unit_, block_cache_capacity);
+  *this = File(std::move(url_), resolution_, type_, unit_, block_cache_capacity);
 
   if (_block_cache->capacity_bytes() < prev_block_cache_capacity) {
     _block_cache->set_capacity(prev_block_cache_capacity);
@@ -117,7 +117,7 @@ inline std::vector<balancing::Method> File::avail_normalizations() const {
 
 inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
     const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
-    balancing::Method norm, MatrixUnit unit, std::uint32_t resolution) const {
+    const balancing::Method& norm, MatrixUnit unit, std::uint32_t resolution) const {
   const internal::HiCFooterMetadata metadata{path(),     matrix_type, norm,  unit,
                                              resolution, chrom1,      chrom2};
   auto it = _footers.find(metadata);
@@ -138,7 +138,7 @@ constexpr auto File::matrix_type() const noexcept -> MatrixType { return _type; 
 
 constexpr auto File::matrix_unit() const noexcept -> MatrixUnit { return _unit; }
 
-inline PixelSelectorAll File::fetch(balancing::Method norm) const {
+inline PixelSelectorAll File::fetch(const balancing::Method& norm) const {
   std::vector<PixelSelector> selectors;
 
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
@@ -176,7 +176,7 @@ inline PixelSelectorAll File::fetch(balancing::Method norm) const {
   return PixelSelectorAll{std::move(selectors), _weight_cache};
 }
 
-inline PixelSelector File::fetch(std::string_view range, balancing::Method norm,
+inline PixelSelector File::fetch(std::string_view range, const balancing::Method& norm,
                                  QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(chromosomes(), range)
@@ -186,12 +186,12 @@ inline PixelSelector File::fetch(std::string_view range, balancing::Method norm,
 }
 
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
-                                 std::uint32_t end, balancing::Method norm) const {
+                                 std::uint32_t end, const balancing::Method& norm) const {
   return fetch(chrom_name, start, end, chrom_name, start, end, norm);
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
-                                 balancing::Method norm, QUERY_TYPE query_type) const {
+                                 const balancing::Method& norm, QUERY_TYPE query_type) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
                        ? GenomicInterval::parse_bed(chromosomes(), range1)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
@@ -206,14 +206,14 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
 inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                  std::uint32_t end1, std::string_view chrom2_name,
                                  std::uint32_t start2, std::uint32_t end2,
-                                 balancing::Method norm) const {
+                                 const balancing::Method& norm) const {
   return fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name), start2,
                end2, norm);
 }
 
 inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1, std::uint32_t end1,
                                  const Chromosome& chrom2, std::uint32_t start2, std::uint32_t end2,
-                                 balancing::Method norm) const {
+                                 const balancing::Method& norm) const {
   if (chrom1 > chrom2) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
@@ -229,22 +229,21 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
-                                 balancing::Method norm) const {
-  return fetch(first_bin, last_bin, first_bin, last_bin, std::move(norm));
+                                 const balancing::Method& norm) const {
+  return fetch(first_bin, last_bin, first_bin, last_bin, norm);
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
                                  std::uint64_t first_bin2, std::uint64_t last_bin2,
-                                 balancing::Method norm) const {
-  PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1 - 1)};
-  PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2 - 1)};
+                                 const balancing::Method& norm) const {
+  const PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1 - 1)};
+  const PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2 - 1)};
 
   return fetch(coord1.bin1.chrom().name(), coord1.bin1.start(), coord1.bin2.end() - 1,
-               coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1,
-               std::move(norm));
+               coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1, norm);
 }
 
-inline const balancing::Weights& File::normalization(balancing::Method norm,
+inline const balancing::Weights& File::normalization(const balancing::Method& norm,
                                                      const Chromosome& chrom) const {
   const auto w = normalization_ptr(norm, chrom);
   assert(w);
@@ -256,7 +255,7 @@ inline const balancing::Weights& File::normalization(std::string_view norm,
   assert(w);
   return *w;
 }
-inline const balancing::Weights& File::normalization(balancing::Method norm) const {
+inline const balancing::Weights& File::normalization(const balancing::Method& norm) const {
   const auto w = normalization_ptr(norm);
   assert(w);
   return *w;
@@ -268,7 +267,7 @@ inline const balancing::Weights& File::normalization(std::string_view norm) cons
 }
 
 inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
-    balancing::Method norm, const Chromosome& chrom) const {
+    const balancing::Method& norm, const Chromosome& chrom) const {
   assert(_weight_cache);
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
 
@@ -312,7 +311,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
 }
 
 inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
-    balancing::Method norm) const {
+    const balancing::Method& norm) const {
   assert(_weight_cache);
   auto weights = _weight_cache->get_or_init(0, norm);
   if (!weights->empty()) {
@@ -368,27 +367,31 @@ inline double File::block_cache_hit_rate() const noexcept { return _block_cache-
 inline void File::reset_cache_stats() const noexcept { _block_cache->reset_stats(); }
 inline void File::clear_cache() noexcept { _block_cache->clear(); }
 inline void File::optimize_cache_size(std::size_t upper_bound) {
-  return optimize_cache_size_for_random_access(upper_bound);
+  optimize_cache_size_for_random_access(upper_bound);
 }
 
 inline void File::optimize_cache_size_for_iteration(std::size_t upper_bound) {
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   if (version() < 9) {
-    _block_cache->set_capacity(std::min(upper_bound, std::size_t(10'000'000)));
+    _block_cache->set_capacity(std::min(upper_bound, std::size_t{10'000'000}));
     return;
   }
   std::size_t cache_size = estimate_cache_size_cis() + estimate_cache_size_trans();
-  cache_size = std::max(cache_size, std::size_t(10'000'000));
+  cache_size = std::max(cache_size, std::size_t{10'000'000});
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
+  // NOLINTEND(*-avoid-magic-numbers)
 }
 
 inline void File::optimize_cache_size_for_random_access(std::size_t upper_bound) {
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   if (version() < 9) {
-    _block_cache->set_capacity(std::min(upper_bound, std::size_t(10'000'000)));
+    _block_cache->set_capacity(std::min(upper_bound, std::size_t{10'000'000}));
     return;
   }
   std::size_t cache_size = estimate_cache_size_cis();
-  cache_size = std::max(cache_size, std::size_t(10'000'000));
+  cache_size = std::max(cache_size, std::size_t{10'000'000});
   _block_cache->set_capacity(std::min(upper_bound, cache_size));
+  // NOLINTEND(*-avoid-magic-numbers)
 }
 
 inline std::size_t File::cache_capacity() const noexcept { return _block_cache->capacity_bytes(); }

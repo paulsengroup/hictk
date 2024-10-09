@@ -40,7 +40,7 @@ TEST_CASE("Cooler: accessors", "[cooler][short]") {
   const File f(path.string());
 
   SECTION("group") {
-    CHECK(f.group("bins").group.getPath() == "/bins");
+    CHECK(f.group("bins")().getPath() == "/bins");
     CHECK_THROWS(f.group("foo"));
   }
 

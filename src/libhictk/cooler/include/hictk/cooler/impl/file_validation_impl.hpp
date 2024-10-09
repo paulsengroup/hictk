@@ -43,9 +43,11 @@ inline void File::validate_bins(bool full) const {
           fmt::format(FMT_STRING("Expected {} bins, found {}"), bins().size(), nchroms));
     }
 
+    // NOLINTBEGIN(*-avoid-magic-numbers)
     auto chrom_it = dataset("bins/chrom").begin<std::uint32_t>(64'000);
     auto start_it = dataset("bins/start").begin<std::uint32_t>(64'000);
     auto end_it = dataset("bins/end").begin<std::uint32_t>(64'000);
+    // NOLINTEND(*-avoid-magic-numbers)
 
     auto last_chrom = dataset("bins/chrom").end<std::uint32_t>(0);
     auto last_start = dataset("bins/start").end<std::uint32_t>(0);

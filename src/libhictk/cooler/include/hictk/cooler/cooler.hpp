@@ -75,6 +75,7 @@ struct Attributes {
             typename = std::enable_if_t<std::is_arithmetic_v<PixelT>>>
   [[nodiscard]] static Attributes init(std::uint32_t bin_size_);
   [[nodiscard]] static Attributes init_empty() noexcept;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] bool operator==(const Attributes &other) const noexcept;
   [[nodiscard]] bool operator!=(const Attributes &other) const noexcept;
   [[nodiscard]] static std::string generate_creation_date();
@@ -117,13 +118,6 @@ class File {
   using QUERY_TYPE = hictk::GenomicInterval::Type;
 
   File() = default;
-  File(const File &other) = delete;
-
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 7
-  File(File &&other) noexcept = default;
-#else
-  File(File &&other) = default;
-#endif
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
   explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
@@ -172,16 +166,15 @@ class File {
                                    std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
                                    std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
+  File(const File &other) = delete;
+  File(File &&other) noexcept;
+
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~File() noexcept;
 
   File &operator=(const File &other) = delete;
-#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
-  File &operator=(File &&other) noexcept = default;
-#elif defined(__GNUC__) && __GNUC__ > 9
-  File &operator=(File &&other) noexcept = default;
-#else
-  File &operator=(File &&other) = default;
-#endif
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  File &operator=(File &&other) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
 
@@ -403,7 +396,7 @@ class File {
   void validate_pixel_type() const noexcept;
 
   // IMPORTANT: the private fetch() methods interpret queries as open-open
-  [[nodiscard]] PixelSelector fetch(PixelCoordinates coord,
+  [[nodiscard]] PixelSelector fetch(const PixelCoordinates &coord,
                                     std::shared_ptr<const balancing::Weights> weights) const;
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                     std::shared_ptr<const balancing::Weights> weights) const;

@@ -126,7 +126,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         constexpr std::array<std::int32_t, N> tail_expected{119, 34, 281, 53, 193};
 
         constexpr auto expected_value = std::make_pair(
-            std::size_t(1229799), hictk::ThinPixel<float>{15770000, 15770000, 1234.0F});
+            std::size_t{1229799}, hictk::ThinPixel<float>{15770000, 15770000, 1234.0F});
 
         SECTION("iterable") {
           auto sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
@@ -180,7 +180,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         constexpr std::array<std::int32_t, N> tail_expected{1, 1, 1, 1, 1};
 
         constexpr auto expected_value =
-            std::make_pair(std::size_t(3541), hictk::ThinPixel<float>{770000, 1300000, 13.0F});
+            std::make_pair(std::size_t{3541}, hictk::ThinPixel<float>{770000, 1300000, 13.0F});
 
         SECTION("iterable") {
           auto sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP)

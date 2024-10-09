@@ -163,7 +163,7 @@ inline const auto IsValidHiCFile = HiCFileValidator();                          
 
 class Cli {
  public:
-  enum subcommand {
+  enum class subcommand : std::uint_fast8_t {
     help,
     fuzz,
     launch_worker,

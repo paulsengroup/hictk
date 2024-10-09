@@ -34,7 +34,7 @@ inline SerializedBlockPQueue<BlockID>::SerializedBlockPQueue(It first_bid, It la
     return;
   }
 
-  _capacity =
+  _capacity =  // NOLINTNEXTLINE(*-avoid-magic-numbers)
       std::clamp(capacity_ == 0 ? 3 * _producers : capacity_, std::size_t{2}, std::size_t{32});
   std::sort(_block_ids.begin(), _block_ids.end(), std::greater{});
 
@@ -76,6 +76,7 @@ inline bool SerializedBlockPQueue<BlockID>::try_enqueue(const BlockID& block_id,
                             "(queue is full). Sleeping "
                             "before trying one more time..."),
                  block_id);
+    // NOLINTNEXTLINE(*-avoid-magic-numbers)
     std::this_thread::sleep_for(timeout / 25);
   }
 
@@ -100,6 +101,7 @@ inline auto SerializedBlockPQueue<BlockID>::dequeue_timed(std::chrono::milliseco
     SPDLOG_DEBUG(
         FMT_STRING("SerializedBlockPQueue::dequeue_timed(): queue is empty. Sleeping before trying "
                    "one more time..."));
+    // NOLINTNEXTLINE(*-avoid-magic-numbers)
     std::this_thread::sleep_for(timeout / 25);
   }
 
@@ -112,7 +114,7 @@ inline void SerializedBlockPQueue<BlockID>::dequeue(std::vector<Record>& buffer)
   buffer.clear();
   [[maybe_unused]] const auto lck = std::scoped_lock(_mtx);
   const auto fill_rate = static_cast<double>(_buff.size()) / static_cast<double>(_capacity);
-  if (_block_ids.size() != _buff.size() && fill_rate < 0.5) {
+  if (_block_ids.size() != _buff.size() && fill_rate < 0.5) {  // NOLINT(*-avoid-magic-numbers)
     // Queue is not full enough to be worth returning available items
     SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue(): not bothering dequeuing blocks "
                             "(queue is only {}% full)"),

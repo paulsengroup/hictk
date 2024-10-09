@@ -16,39 +16,41 @@
 namespace fmt {
 template <>
 struct formatter<hictk::Bin> {
-  enum Presentation { bed, raw, ucsc };
-  Presentation presentation{Presentation::raw};
+  enum Presentation : std::uint_fast8_t { bed, raw, ucsc };
+  Presentation presentation{raw};
 
   constexpr format_parse_context::iterator parse(format_parse_context &ctx) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
 
+    // NOLINTBEGIN(*-bounds-pointer-arithmetic)
     if (hictk::internal::starts_with(ctx, "bed")) {
-      presentation = Presentation::bed;
+      presentation = bed;
       it += std::string_view{"bed"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = Presentation::raw;
+      presentation = raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "ucsc")) {
-      presentation = Presentation::ucsc;
+      presentation = ucsc;
       it += std::string_view{"ucsc"}.size();  // NOLINT
     }
+    // NOLINTEND(*-bounds-pointer-arithmetic)
 
     if (it != end && *it != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
 
     return it;
   }
-  inline format_context::iterator format(const hictk::Bin &b, format_context &ctx) const {
-    if (presentation == Presentation::bed) {
-      return fmt::format_to(ctx.out(), FMT_STRING("{:bed}"), b.interval());
+  format_context::iterator format(const hictk::Bin &b, format_context &ctx) const {
+    if (presentation == bed) {
+      return format_to(ctx.out(), FMT_STRING("{:bed}"), b.interval());
     }
-    if (presentation == Presentation::raw) {
-      return fmt::format_to(ctx.out(), FMT_STRING("{}"), b.id());
+    if (presentation == raw) {
+      return format_to(ctx.out(), FMT_STRING("{}"), b.id());
     }
-    assert(presentation == Presentation::ucsc);
-    return fmt::format_to(ctx.out(), FMT_STRING("{:ucsc}"), b.interval());
+    assert(presentation == ucsc);
+    return format_to(ctx.out(), FMT_STRING("{:ucsc}"), b.interval());
   }
 };
 }  // namespace fmt

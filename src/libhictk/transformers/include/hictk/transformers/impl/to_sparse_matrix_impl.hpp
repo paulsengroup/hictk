@@ -53,7 +53,6 @@ inline auto ToSparseMatrix<N, PixelSelector>::operator()() -> MatrixT {
   const auto populate_upper_triangle =
       _span == QuerySpan::upper_triangle || _span == QuerySpan::full;
 
-  MatrixT matrix(num_rows(), num_cols());
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
     if (chrom1() == chrom2() && _sel->coord1() != _sel->coord2()) {
       auto coord3 = _sel->coord1();
@@ -274,6 +273,7 @@ inline bool ToSparseMatrix<N, PixelSelector>::interactions_can_be_transposed() c
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   bool res = selector_is_symmetric_upper && populate_lower_triangle &&
              !internal::has_coord1_member_fx<PixelSelector>;
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {
@@ -295,6 +295,7 @@ inline bool ToSparseMatrix<N, PixelSelector>::interactions_can_be_mirrored() con
   const auto populate_lower_triangle =
       _span == QuerySpan::lower_triangle || _span == QuerySpan::full;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   bool res = selector_is_symmetric_upper && populate_lower_triangle &&
              !internal::has_coord1_member_fx<PixelSelector>;
   if constexpr (internal::has_coord1_member_fx<PixelSelector>) {

@@ -62,7 +62,7 @@ inline bool File::check_sentinel_attr(const HighFive::Group &grp) {
 namespace internal {
 [[nodiscard]] inline std::vector<std::uint64_t> import_chrom_offsets(const Dataset &dset,
                                                                      std::size_t expected_size) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto offsets = dset.read_all<std::vector<std::uint64_t>>();
   try {
     if (offsets.size() != expected_size) {
@@ -86,11 +86,12 @@ namespace internal {
 }  // namespace internal
 
 inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights) const {
+  assert(_index);
   if (!weights) {
     weights = normalization_ptr(balancing::Method::NONE());
   }
 
-  return {_index,
+  return {*_index,
           dataset("pixels/bin1_id"),
           dataset("pixels/bin2_id"),
           dataset("pixels/count"),
@@ -118,7 +119,7 @@ inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t star
                std::move(weights));
 }
 
-inline PixelSelector File::fetch(PixelCoordinates coord,
+inline PixelSelector File::fetch(const PixelCoordinates &coord,
                                  std::shared_ptr<const balancing::Weights> weights) const {
   const auto &current_chrom = coord.bin1.chrom();
   const auto &next_chrom = chromosomes().at(
@@ -139,7 +140,7 @@ inline PixelSelector File::fetch(PixelCoordinates coord,
           dataset("pixels/bin1_id"),
           dataset("pixels/bin2_id"),
           dataset("pixels/count"),
-          std::move(coord),
+          coord,
           std::move(weights),
           _attrs.storage_mode == "symmetric-upper"};
 }
@@ -174,7 +175,7 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
   PixelCoordinates coord2{bins().at(chrom2, start2),
                           bins().at(chrom2, end2 - (std::min)(end2, 1U))};
 
-  return fetch(coord1, coord2, std::move(weights));
+  return fetch(std::move(coord1), std::move(coord2), std::move(weights));
 }
 inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
   return fetch(normalization_ptr(normalization_));
@@ -212,7 +213,7 @@ inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bi
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
-  return fetch(coord1, coord2, std::move(weights));
+  return fetch(std::move(coord1), std::move(coord2), std::move(weights));
 }
 
 inline PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
@@ -274,6 +275,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
   return normalization_ptr(normalization_, balancing::Weights::Type::INFER, rescale);
 }
 
+// NOLINTNEXTLINE(*-function-cognitive-complexity)
 inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale) const {
   if (!rescale) {
@@ -299,8 +301,8 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     return weights;
   }
 
-  const auto dset_path = fmt::format(FMT_STRING("{}/{}"), _groups.at("bins").group.getPath(),
-                                     normalization_.to_string());
+  const auto dset_path =
+      fmt::format(FMT_STRING("{}/{}"), _groups.at("bins")().getPath(), normalization_.to_string());
 
   if (!_root_group().exist(dset_path)) {
     throw std::runtime_error(
@@ -308,7 +310,7 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
                     normalization_.to_string(), dset_path));
   }
 
-  Dataset dset{
+  const Dataset dset{
       _root_group, dset_path,
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0)};
 
@@ -366,15 +368,15 @@ inline bool File::purge_weights(std::string_view name) {
   if (_weights.empty()) {
     return false;
   }
-  if (name == "") {
+  if (name.empty()) {
     _weights.clear();
     return true;
   }
-  return _weights.erase(std::string{name});
+  return _weights.erase(std::string{name}) != 0;
 }
 
 inline auto File::open_root_group(const HighFive::File &f, std::string_view uri) -> RootGroup {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   RootGroup grp{f.getGroup(parse_cooler_uri(uri).group_path)};
   if (File::check_sentinel_attr(grp())) {
     throw std::runtime_error("file was not properly closed");
@@ -383,7 +385,7 @@ inline auto File::open_root_group(const HighFive::File &f, std::string_view uri)
 }
 
 inline auto File::open_groups(const RootGroup &root_grp) -> GroupMap {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
   groups.emplace(root_grp.hdf5_path(), Group{root_grp, root_grp()});
 
@@ -413,7 +415,7 @@ inline auto File::open_datasets(const RootGroup &root_grp, std::size_t cache_siz
   const auto pixels_aprop = Dataset::init_access_props(
       DEFAULT_HDF5_CHUNK_SIZE, ((std::max)(read_once_cache_size, pixel_dataset_cache_size)), w0);
 
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto open_dataset = [&](const auto dataset_uri) {
     return std::make_pair(
         std::string{dataset_uri},
@@ -455,6 +457,7 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
 
   try {
     auto sumv = Attribute::read(root_grp(), key);
+    assert(!sumv.valueless_by_exception());
     const auto ok = std::visit(
         [&](auto sum) {
           using T = remove_cvref_t<decltype(sum)>;
@@ -491,7 +494,7 @@ HICTK_DISABLE_WARNING_UNREACHABLE_CODE
 inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initialize_missing)
     -> Attributes {
   auto attrs = initialize_missing ? Attributes::init(0) : Attributes::init_empty();
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
 
   auto read_or_throw = [&](const auto &key, auto &buff) {
     using T = remove_cvref_t<decltype(buff)>;
@@ -547,7 +550,7 @@ HICTK_DISABLE_WARNING_POP
 inline auto File::import_chroms(const Dataset &chrom_names, const Dataset &chrom_sizes,
                                 bool missing_ok) -> Reference {
   try {
-    [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+    [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
     std::vector<std::string> names;
     std::vector<std::uint32_t> sizes;
     chrom_names.read_all(names);
@@ -591,7 +594,7 @@ inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &b
   try {
     if (bin_offset_dset.empty()) {
       if (missing_ok) {
-        return Index{bin_table};
+        return Index{std::move(bin_table)};
       }
       throw std::runtime_error("index datasets are empty");
     }
@@ -623,7 +626,7 @@ inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &b
       chrom_offsets.push_back(bin1_offset);
     }
 
-    return Index{bin_table, chrom_offsets, expected_nnz, false};
+    return Index{std::move(bin_table), chrom_offsets, expected_nnz, false};
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Unable to initialize index for cooler at URI: \"{}\": {}"),

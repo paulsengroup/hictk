@@ -55,10 +55,13 @@ inline SCALE::SCALE(const File& f, Type type, const Params& params) {
 }
 
 template <typename PixelIt>
-inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, const Params& params)
-    : _biases(VC{first, last, bins}.get_weights().to_vector(balancing::Weights::Type::DIVISIVE)),
+inline SCALE::SCALE(PixelIt first, PixelIt last, const BinTable& bins, const Params& params)
+    // NOLINTBEGIN(*-avoid-magic-numbers)
+    : _biases(VC{first, last, bins}.get_weights().to_vector(Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
       _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
+  // NOLINTEND(*-avoid-magic-numbers)
+
   internal::check_bin_type(bins);
 
   if (first == last) {
@@ -81,6 +84,7 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const hictk::BinTable& bins, co
 }
 
 template <typename Matrix>
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& params) {
   assert(bins.type() == BinTable::Type::fixed);
   internal::VectorOfAtomicDecimals column(size());
@@ -93,10 +97,8 @@ inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& 
   auto dc = _biases;
   auto current = _biases;
 
-  std::vector<double> b_conv(size(), 0);
   std::vector<double> b0(size(), 0);
-  std::vector<bool> bad_conv(size(), false);
-  _ber_conv = 10.0;
+  _ber_conv = 10.0;  // NOLINT(*-avoid-magic-numbers)
 
   for (_iter = 0, _tot_iter = 0; _convergence_stats.error > params.tol &&
                                  _iter < params.max_iters && _tot_iter < _max_tot_iters;
@@ -116,7 +118,7 @@ inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& 
     current = _biases1;
 
     _error_queue_iter.push(_convergence_stats.error);
-    if (_error_queue_iter.size() == 7) {
+    if (_error_queue_iter.size() == 7) {  // NOLINT(*-avoid-magic-numbers)
       _error_queue_iter.pop();
     }
 
@@ -199,9 +201,9 @@ inline void SCALE::reset_iter() noexcept {
   }
 }
 
-inline balancing::Weights SCALE::get_weights(bool rescale) const {
+inline Weights SCALE::get_weights(bool rescale) const {
   if (!rescale) {
-    return {_biases, balancing::Weights::Type::DIVISIVE};
+    return {_biases, Weights::Type::DIVISIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -213,14 +215,13 @@ inline balancing::Weights SCALE::get_weights(bool rescale) const {
     biases[i] = _biases[i] * _scale[chrom_id];
   }
 
-  return {biases, balancing::Weights::Type::DIVISIVE};
+  return {biases, Weights::Type::DIVISIVE};
 }
 
 inline const std::vector<double>& SCALE::get_scale() const noexcept { return _scale; }
 
 template <typename File>
-inline auto SCALE::compute_cis(const File& f, const hictk::balancing::SCALE::Params& params)
-    -> Result {
+inline auto SCALE::compute_cis(const File& f, const Params& params) -> Result {
   std::vector<std::uint64_t> offsets{};
   std::vector<double> scales{};
   std::vector<double> weights{};
@@ -234,7 +235,7 @@ inline auto SCALE::compute_cis(const File& f, const hictk::balancing::SCALE::Par
 
     offsets.push_back(f.bins().subset(chrom).num_bin_prefix_sum().front());
 
-    const auto chrom_weights = scale.get_weights(false)(balancing::Weights::Type::DIVISIVE);
+    const auto chrom_weights = scale.get_weights(false)(Weights::Type::DIVISIVE);
     scales.push_back(scale.get_scale().front());
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
@@ -266,7 +267,7 @@ inline auto SCALE::compute_trans(const File& f, const Params& params) -> Result 
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -276,7 +277,7 @@ inline auto SCALE::compute_gw(const File& f, const Params& params) -> Result {
 
   return {{0, f.bins().size()},
           scale.get_scale(),
-          scale.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          scale.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 template <typename Matrix>
@@ -284,7 +285,7 @@ inline void SCALE::update_weights(internal::VectorOfAtomicDecimals& buffer,
                                   const std::vector<bool>& bad,
                                   internal::VectorOfAtomicDecimals& weights,
                                   const std::vector<double>& target, std::vector<double>& d_vector,
-                                  const Matrix& m, BS::thread_pool* tpool) noexcept {
+                                  const Matrix& m, BS::thread_pool* tpool) {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
@@ -324,7 +325,7 @@ inline std::pair<double, std::uint64_t> SCALE::compute_convergence_error(
     }
     const auto rel_err = std::abs((biases[i] - current[i]) / (biases[i] + current[i]));
     error = std::max(rel_err, error);
-    num_fail += rel_err > tolerance;
+    num_fail += static_cast<std::uint64_t>(rel_err > tolerance);
   }
 
   return std::make_pair(error, num_fail);
@@ -462,7 +463,7 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
     }
   }
 
-  _convergence_stats.error = 10.0;
+  _convergence_stats.error = 10.0;  // NOLINT(*-avoid-magic-numbers)
   reset_iter();
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
@@ -488,7 +489,7 @@ inline auto SCALE::handle_almost_converged(const Matrix& m, const std::vector<do
     }
   }
   _yes = false;
-  _convergence_stats.error = 10.0;
+  _convergence_stats.error = 10.0;  // NOLINT(*-avoid-magic-numbers)
   reset_iter();
   std::transform(_bad.begin(), _bad.end(), dr.begin(), [&](const auto b) { return !b; });
   dc = dr;
@@ -544,7 +545,7 @@ inline auto SCALE::handle_diverged(const Matrix& m, const std::vector<double>& b
     _bad[i] = _row_wise_nnz[i] < _low_cutoff;
     _one[i] = !_bad[i];
   }
-  _convergence_stats.error = 10.0;
+  _convergence_stats.error = 10.0;  // NOLINT(*-avoid-magic-numbers)
   reset_iter();
 
   dr = _one;

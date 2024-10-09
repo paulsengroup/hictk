@@ -120,6 +120,7 @@ inline void ExpectedValuesAggregator::init_possible_distances() {
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void ExpectedValuesAggregator::compute_density_cis() {
   // Re-implementation of the algorithm used by HiCTools:
   // https://github.com/aidenlab/HiCTools/blob/6b2fab8e78685deae199c33bbb167dcab1dbfbb3/src/hic/tools/utils/original/ExpectedValueCalculation.java#L184
@@ -173,13 +174,13 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
     auto expected_count = 0.0;
     for (std::size_t n = 0; n < num_chrom_bins; n++) {
       if (n < max_num_bins) {
-        double v = _weights[n];
-        expected_count += (double(num_chrom_bins) - double(n)) * v;
+        const double v = _weights[n];
+        expected_count += (static_cast<double>(num_chrom_bins) - static_cast<double>(n)) * v;
       }
     }
 
-    double observed_count = _cis_sum.at(chrom);
-    double f = expected_count / observed_count;
+    const double observed_count = _cis_sum.at(chrom);
+    const double f = expected_count / observed_count;
     _scaling_factors.emplace(chrom, f);
   }
 }

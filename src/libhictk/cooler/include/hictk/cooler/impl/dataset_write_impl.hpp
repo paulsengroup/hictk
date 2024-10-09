@@ -6,8 +6,6 @@
 
 #include <fmt/format.h>
 
-#include "hictk/cooler/dataset.hpp"
-
 #if __has_include(<hdf5/hdf5.h>)
 #include <hdf5/H5Dpublic.h>
 #include <hdf5/H5Ipublic.h>
@@ -45,7 +43,7 @@ inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::siz
   if (buff.empty()) {
     return offset;
   }
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset + buff.size() > size()) {
     if (allow_dataset_resize) {
       resize(offset + buff.size());
@@ -71,7 +69,7 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
   if (buff.empty()) {
     return offset;
   }
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset + buff.size() > size()) {
     if (allow_dataset_resize) {
       resize(offset + buff.size());
@@ -84,7 +82,7 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
   return size();
 }
 
-// NOLINT(*-convert-member-functions-to-static)
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};
@@ -140,7 +138,7 @@ inline std::size_t Dataset::append(InputIt first_value, InputIt last_value, Unar
 
 template <typename N, typename>
 inline std::size_t Dataset::write(N buff, std::size_t offset, bool allow_dataset_resize) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset >= size()) {
     if (allow_dataset_resize) {
       resize(offset + 1);
@@ -154,7 +152,7 @@ inline std::size_t Dataset::write(N buff, std::size_t offset, bool allow_dataset
 }
 
 inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool allow_dataset_resize) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset >= size()) {
     if (allow_dataset_resize) {
       resize(offset + 1);
@@ -173,7 +171,7 @@ inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool all
   return ++_dataset_size;
 }
 
-// NOLINT(*-convert-member-functions-to-static)
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
 inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,
                                   bool allow_dataset_resize) {
   std::size_t new_offset{};

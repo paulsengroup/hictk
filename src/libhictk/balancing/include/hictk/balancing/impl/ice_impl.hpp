@@ -283,7 +283,7 @@ template <typename File>
     tails.emplace_back(sel.template end<double>());
   }
 
-  transformers::PixelMerger<PixelIt> merger{heads, tails};
+  const transformers::PixelMerger<PixelIt> merger{heads, tails};
 
   internal::SparseMatrixChunked m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -404,7 +404,7 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
     tails.emplace_back(sel.template end<double>());
   }
 
-  transformers::PixelMerger<PixelIt> merger{heads, tails};
+  const transformers::PixelMerger<PixelIt> merger{heads, tails};
 
   internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -556,7 +556,7 @@ inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const dou
 
     for (auto i = istart; i < iend; ++i) {
       marg_sum_ += marg[i];
-      nnz_marg_ += marg[i] != 0;
+      nnz_marg_ += static_cast<std::size_t>(marg[i] != 0);
     }
 
     [[maybe_unused]] const std::scoped_lock lck(mtx);
@@ -564,12 +564,12 @@ inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const dou
     nnz_marg += nnz_marg_;
   };
 
-  if (marg.size() < 10'000 || !tpool) {
+  if (!process_in_parallel(marg, tpool)) {
     aggregate_marg_impl(0, marg.size());
     return std::make_pair(marg_sum, nnz_marg);
   }
 
-  tpool->detach_blocks(std::size_t(0), marg.size(), aggregate_marg_impl);
+  tpool->detach_blocks(std::size_t{0}, marg.size(), aggregate_marg_impl);
   tpool->wait();
 
   return std::make_pair(marg_sum, nnz_marg);
@@ -586,11 +586,12 @@ inline void ICE::update_biases(nonstd::span<const double> marg, nonstd::span<dou
     }
   };
 
-  if (marg.size() < 10'000 || !tpool) {
-    return update_biases_impl(0, marg.size());
+  if (!process_in_parallel(marg, tpool)) {
+    update_biases_impl(0, marg.size());
+    return;
   }
 
-  tpool->detach_blocks(std::size_t(0), marg.size(), update_biases_impl);
+  tpool->detach_blocks(std::size_t{0}, marg.size(), update_biases_impl);
   tpool->wait();
 }
 
@@ -611,12 +612,12 @@ inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double av
     ssq_nzmarg += ssq_nzmarg_;
   };
 
-  if (marg.size() < 10'000 || !tpool) {
+  if (!process_in_parallel(marg, tpool)) {
     compute_ssq_nzmarg_impl(0, marg.size());
     return ssq_nzmarg;
   }
 
-  tpool->detach_blocks(std::size_t(0), marg.size(), compute_ssq_nzmarg_impl);
+  tpool->detach_blocks(std::size_t{0}, marg.size(), compute_ssq_nzmarg_impl);
   tpool->wait();
   return ssq_nzmarg;
 }
@@ -701,5 +702,10 @@ inline balancing::Weights ICE::get_weights(bool rescale) const {
 
 inline std::vector<double> ICE::scale() const noexcept { return _scale; }
 inline std::vector<double> ICE::variance() const noexcept { return _variance; }
+
+template <typename Vector>
+inline bool ICE::process_in_parallel(const Vector& marg, const BS::thread_pool* tpool) noexcept {
+  return marg.size() > 10'000 && !!tpool;  // NOLINT(*-avoid-magic-numbers)
+}
 
 }  // namespace hictk::balancing

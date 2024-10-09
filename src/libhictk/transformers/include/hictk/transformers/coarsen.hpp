@@ -34,11 +34,11 @@ class CoarsenPixels {
   CoarsenPixels(PixelIt first_pixel, PixelIt last_pixel,
                 std::shared_ptr<const BinTable> source_bins, std::size_t factor);
 
-  auto begin() const -> iterator;
-  auto end() const -> iterator;
+  [[nodiscard]] auto begin() const -> iterator;
+  [[nodiscard]] auto end() const -> iterator;
 
-  auto cbegin() const -> iterator;
-  auto cend() const -> iterator;
+  [[nodiscard]] auto cbegin() const -> iterator;
+  [[nodiscard]] auto cend() const -> iterator;
 
   [[nodiscard]] const BinTable &src_bins() const noexcept;
   [[nodiscard]] const BinTable &dest_bins() const noexcept;

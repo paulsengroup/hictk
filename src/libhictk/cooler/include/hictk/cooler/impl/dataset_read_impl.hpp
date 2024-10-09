@@ -15,7 +15,6 @@
 
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
-#include "hictk/cooler/dataset.hpp"
 #include "hictk/generic_variant.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
@@ -25,7 +24,7 @@ namespace hictk::cooler {
 
 template <typename N, typename>
 inline std::size_t Dataset::read(std::vector<N> &buff, std::size_t num, std::size_t offset) const {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset + num > size()) {
     throw_out_of_range_excp(offset, num);
   }
@@ -104,7 +103,7 @@ inline BuffT Dataset::read_n(std::size_t num, std::size_t offset) const {
 
 template <typename BuffT, typename T, typename>
 inline std::size_t Dataset::read_all(BuffT &buff, std::size_t offset) const {
-  const auto num = offset > size() ? std::size_t(0) : size() - offset;
+  const auto num = offset > size() ? std::size_t{0} : size() - offset;
   return read(buff, num, offset);
 }
 
@@ -121,7 +120,7 @@ inline BuffT Dataset::read_all(std::size_t offset) const {
 
 template <typename N, typename>
 inline std::size_t Dataset::read(N &buff, std::size_t offset) const {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset >= size()) {
     throw_out_of_range_excp(offset);
   }
@@ -130,7 +129,7 @@ inline std::size_t Dataset::read(N &buff, std::size_t offset) const {
 }
 
 inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (offset >= size()) {
     throw_out_of_range_excp(offset);
   }

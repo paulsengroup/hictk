@@ -33,7 +33,8 @@ namespace hictk::hic {
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_, PixelCoordinates coords)
+                                    std::shared_ptr<const BinTable> bins_,
+                                    const PixelCoordinates &coords)
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
                     coords, coords) {}
 
@@ -62,7 +63,7 @@ inline PixelSelector::~PixelSelector() noexcept {
     if (_reader) {
       clear_cache();
     }
-  } catch (...) {
+  } catch (...) {  // NOLINT(bugprone-empty-catch)
   }
 }
 
@@ -159,8 +160,8 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCBlockReader> re
 
 inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
                                           PixelCoordinates coord2_) const {
-  return {_reader, _footer, std::make_shared<const PixelCoordinates>(coord1_),
-          std::make_shared<const PixelCoordinates>(coord2_)};
+  return {_reader, _footer, std::make_shared<const PixelCoordinates>(std::move(coord1_)),
+          std::make_shared<const PixelCoordinates>(std::move(coord2_))};
 }
 
 template <typename N>
@@ -445,9 +446,10 @@ template <typename N>
 inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
   assert(!!_reader);
   const auto bin_size = bins().resolution();
-  const auto num_bins = std::min(
-      static_cast<std::uint32_t>(_reader->index().block_bin_count()),
-      static_cast<std::uint32_t>(0.005 * double(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
+  const auto num_bins =
+      std::min(static_cast<std::uint32_t>(_reader->index().block_bin_count()),
+               static_cast<std::uint32_t>(
+                   0.005 * static_cast<double>(coord1().bin2.rel_id() - coord1().bin1.rel_id())));
 
   const auto end_pos = coord1().bin2.start();
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().resolution());
@@ -465,6 +467,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
 
   const auto is_intra = coord1().bin1.chrom() == coord2().bin1.chrom();
 
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
   if (_reader->index().version() > 8 && is_intra) {
     return read_next_chunk_v9_intra_sorted();
   }
@@ -495,10 +498,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
   const auto bin2_offset = bins().at(coord2().bin1.chrom()).id();
   auto blk = *_reader->read(coord1().bin1.chrom(), coord2().bin1.chrom(), *_block_it++, false);
   for (auto p : blk) {
-    if (static_cast<std::size_t>(p.bin1_id) < bin1_lb ||
-        static_cast<std::size_t>(p.bin1_id) > bin1_ub ||
-        static_cast<std::size_t>(p.bin2_id) < bin2_lb ||
-        static_cast<std::size_t>(p.bin2_id) > bin2_ub) {
+    if (p.bin1_id < bin1_lb || p.bin1_id > bin1_ub || p.bin2_id < bin2_lb || p.bin2_id > bin2_ub) {
       continue;
     }
 
@@ -594,13 +594,14 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
     bool block_overlaps_query = false;
     for (auto p : *_reader->read(coord1().bin1.chrom(), coord2().bin1.chrom(), blki)) {
       // Using bitwise operators gives a ~5% perf improvement on my machine
-      const auto pixel_overlaps_query = bool(int(static_cast<std::size_t>(p.bin1_id) >= bin1_lb) &
-                                             int(static_cast<std::size_t>(p.bin1_id) <= bin1_ub) &
-                                             int(static_cast<std::size_t>(p.bin2_id) >= bin2_lb) &
-                                             int(static_cast<std::size_t>(p.bin2_id) <= bin2_ub));
+      // NOLINTBEGIN(*-signed-bitwise)
+      using flag = std::uint_fast8_t;
+      const auto pixel_overlaps_query =
+          static_cast<bool>(flag(p.bin1_id >= bin1_lb) & flag(p.bin1_id <= bin1_ub) &
+                            flag(p.bin2_id >= bin2_lb) & flag(p.bin2_id <= bin2_ub));
+      // NOLINTEND(*-signed-bitwise)
 
-      const auto pixel_overlaps_chunk =
-          pixel_overlaps_query && static_cast<std::size_t>(p.bin1_id) <= bin1_id_last;
+      const auto pixel_overlaps_chunk = pixel_overlaps_query && p.bin1_id <= bin1_id_last;
 
       block_overlaps_query |= pixel_overlaps_query;
       if (!pixel_overlaps_chunk) {
@@ -900,7 +901,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
   }
 
   while (!_selectors->empty() && _selectors->front()->chrom1().id() == _chrom1_id) {
-    auto *sel = _selectors->front();
+    const auto *sel = _selectors->front();
     _selectors->pop();
     auto first = sel->begin<N>(_sorted);
     auto last = sel->end<N>();
@@ -913,6 +914,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
 
 template <typename N>
 inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
+  constexpr std::size_t chunk_size = 100'000;
   if (_selectors->empty() && _its->empty()) {
     _buff = nullptr;  // signal end
     return;
@@ -938,7 +940,7 @@ inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
   _i = 0;
 
   if (!_sorted) {
-    while (first != last && _buff->size() != 100'000) {
+    while (first != last && _buff->size() != chunk_size) {
       _buff->push_back(*first);
       ++first;
     }

@@ -29,12 +29,12 @@
 namespace hictk::hic::internal {
 
 template <typename N>
-inline void MatrixInteractionBlockFlat<N>::emplace_back(Pixel<N> &&p) {
+inline void MatrixInteractionBlockFlat<N>::emplace_back(Pixel<N> p) {
   emplace_back(p.to_thin());
 }
 
 template <typename N>
-inline void MatrixInteractionBlockFlat<N>::emplace_back(ThinPixel<N> &&p) {
+inline void MatrixInteractionBlockFlat<N>::emplace_back(const ThinPixel<N> &p) {
   bin1_ids.push_back(p.bin1_id);
   bin2_ids.push_back(p.bin2_id);
   counts.push_back(p.count);
@@ -65,11 +65,11 @@ inline std::string MatrixInteractionBlockFlat<N>::serialize(BinaryBuffer &buffer
   const auto buff_size = ZSTD_compressBound(buffer.get().size() * sizeof(char));
   compression_buffer.resize(buff_size);
 
-  std::size_t compressed_size = ZSTD_compressCCtx(
-      &compressor, reinterpret_cast<void *>(compression_buffer.data()),
-      compression_buffer.size() * sizeof(char), reinterpret_cast<const void *>(buffer.get().data()),
+  const std::size_t compressed_size = ZSTD_compressCCtx(
+      &compressor, static_cast<void *>(compression_buffer.data()),
+      compression_buffer.size() * sizeof(char), static_cast<const void *>(buffer.get().data()),
       buffer.get().size() * sizeof(char), compression_lvl);
-  if (ZSTD_isError(compressed_size)) {
+  if (ZSTD_isError(compressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
@@ -98,7 +98,7 @@ template <typename N>
       &decompressor, decompression_buffer.data(), decompression_buffer.size() * sizeof(char),
       compressed_buffer.data(), compressed_buffer.size() * sizeof(char));
 
-  if (ZSTD_isError(status)) {
+  if (ZSTD_isError(status) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(status));
   }
   buffer.clear();
@@ -161,7 +161,7 @@ inline HiCInteractionToBlockMapper::~HiCInteractionToBlockMapper() noexcept {
   try {
     _fs.close();
     std::filesystem::remove(_path);
-  } catch (...) {
+  } catch (...) {  // NOLINT(bugprone-empty-catch)
   }
 }
 
@@ -202,7 +202,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
           1000.0;
       SPDLOG_INFO(FMT_STRING("ingesting pixels at {:.0f} pixels/s..."),
-                  double(update_frequency) / delta);
+                  static_cast<double>(update_frequency) / delta);
       t0 = t1;
       i = 0;
     }
@@ -213,10 +213,9 @@ namespace internal {
 // I am declaring this as a freestanding funciton instead that as a lambda to work around a compiler
 // bug in MSVC
 template <typename PixelT>
-Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT &&pixel) {
-  using PixelT_ = remove_cvref_t<PixelT>;
-  static_assert(std::is_same_v<PixelT_, ThinPixel<float>> || std::is_same_v<PixelT_, Pixel<float>>);
-  constexpr bool is_thin_pixel = std::is_same_v<PixelT_, ThinPixel<float>>;
+Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT pixel) {
+  static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
+  constexpr bool is_thin_pixel = std::is_same_v<PixelT, ThinPixel<float>>;
 
   if constexpr (is_thin_pixel) {
     return Pixel(bin_table, pixel);
@@ -227,6 +226,7 @@ Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT &
 }  // namespace internal
 
 template <typename PixelIt, typename>
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
                                                        BS::thread_pool &tpool,
                                                        std::uint32_t update_frequency) {
@@ -237,6 +237,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
   SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks using 2 threads..."));
 
   std::atomic<bool> early_return = false;
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
   moodycamel::BlockingReaderWriterQueue<Pixel<float>> queue(10'000);
 
   auto writer = tpool.submit_task([&]() {
@@ -258,7 +259,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
                   std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
               1000.0;
           SPDLOG_INFO(FMT_STRING("ingesting pixels at {:.0f} pixels/s..."),
-                      double(update_frequency) / delta);
+                      static_cast<double>(update_frequency) / delta);
           t0 = t1;
           i = 0;
         }
@@ -319,8 +320,8 @@ inline auto HiCInteractionToBlockMapper::merge_blocks(const BlockID &bid, Binary
                                                       std::mutex &mtx)
     -> MatrixInteractionBlock<float> {
   MatrixInteractionBlock<float> blk{};
-  for (auto &&pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
-    blk.emplace_back(std::move(pixel));
+  for (const auto &pixel : fetch_pixels(bid, bbuffer, zstd_dctx, compression_buffer, mtx)) {
+    blk.emplace_back(pixel);
   }
   blk.finalize();
   return blk;
@@ -421,7 +422,7 @@ inline void HiCInteractionToBlockMapper::add_pixel(const ThinPixel<N> &p) {
 
 template <typename N>
 inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
-  auto bid = map(p);
+  const auto bid = map(p);
 
   const auto &chrom1 = p.coords.bin1.chrom();
   const auto &chrom2 = p.coords.bin2.chrom();
@@ -433,7 +434,7 @@ inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
     match1->second.emplace_back(p.to_thin());
   } else {
     _pixel_sums.emplace(chrom_pair, p.count);
-    auto [it, _] = _blocks.emplace(std::move(bid), MatrixInteractionBlockFlat<float>{});
+    auto [it, _] = _blocks.emplace(bid, MatrixInteractionBlockFlat<float>{});
     it->second.emplace_back(p.to_thin());
   }
 
@@ -461,16 +462,16 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(
     const auto &flat_pixels = match->second;
     pixels.reserve(flat_pixels.size());
     for (std::size_t i = 0; i < flat_pixels.size(); ++i) {
-      pixels.emplace_back(
-          Pixel(*_bin_table, ThinPixel<float>{flat_pixels.bin1_ids[i], flat_pixels.bin2_ids[i],
-                                              flat_pixels.counts[i]}));
+      pixels.emplace_back(*_bin_table,
+                          ThinPixel<float>{flat_pixels.bin1_ids[i], flat_pixels.bin2_ids[i],
+                                           flat_pixels.counts[i]});
     }
     return pixels;
   }
 
   for (const auto &[pos, size] : _block_index.at(bid)) {
     {
-      std::scoped_lock lck(mtx);
+      [[maybe_unused]] const std::scoped_lock lck(mtx);
       _fs.seekg(static_cast<std::streamoff>(pos));
       _fs.read(bbuffer.reset(), size);
     }
@@ -478,7 +479,7 @@ inline std::vector<Pixel<float>> HiCInteractionToBlockMapper::fetch_pixels(
         MatrixInteractionBlockFlat<float>::deserialize(bbuffer, zstd_dctx, compression_buffer);
     pixels.reserve(pixels.size() + flat_pixels.size());
     for (const auto &p : flat_pixels) {
-      pixels.emplace_back(Pixel(*_bin_table, p));
+      pixels.emplace_back(*_bin_table, p);
     }
   }
   return pixels;
@@ -515,7 +516,7 @@ inline std::size_t HiCInteractionToBlockMapper::compute_block_column_count(
 
   const auto max_sqrt =
       static_cast<std::size_t>(std::sqrt(std::numeric_limits<std::int32_t>::max()));
-  return std::clamp(num_columns, std::size_t(1), max_sqrt - 1);
+  return std::clamp(num_columns, std::size_t{1}, max_sqrt - 1);
 }
 
 inline std::size_t HiCInteractionToBlockMapper::compute_num_bins(const Chromosome &chrom1,
@@ -587,7 +588,7 @@ inline double HiCInteractionToBlockMapper::BlockMapperIntra::init_base(
   if (base_depth < 0) {
     return static_cast<double>(-base_depth);
   }
-  return std::log(2.0);
+  return std::log(2.0);  // NOLINT(*-avoid-magic-numbers)
 }
 
 }  // namespace hictk::hic::internal

@@ -206,7 +206,7 @@ static void enqueue_pixels(
           const auto bin1 = hf.bins().at(first->bin1_id);
           SPDLOG_INFO(
               FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-              hf.resolution(), bin1, double(update_frequency) / delta,
+              hf.resolution(), bin1, static_cast<double>(update_frequency) / delta,
               hf.block_cache_hit_rate() * 100);
           hf.reset_cache_stats();
           t0 = t1;

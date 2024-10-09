@@ -233,7 +233,7 @@ inline auto Reference::construct_chrom_buffer(ChromosomeIt first_chrom, Chromoso
   std::vector<std::uint32_t> chrom_sizes{};
 
   std::for_each(first_chrom, last_chrom, [&](const Chromosome& chrom) {
-    chrom_names.emplace_back(std::string{chrom.name()});
+    chrom_names.emplace_back(chrom.name());
     chrom_sizes.emplace_back(chrom.size());
   });
 

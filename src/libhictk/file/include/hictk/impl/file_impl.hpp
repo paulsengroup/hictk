@@ -55,6 +55,7 @@ inline auto PixelSelector::begin([[maybe_unused]] bool sorted) const -> iterator
 
 template <typename N>
 inline auto PixelSelector::end() const -> iterator<N> {
+  assert(!_sel.valueless_by_exception());
   return std::visit(
       [&](const auto& sel) { return iterator<N>{sel.template end<N>(), sel.template end<N>()}; },
       _sel);
@@ -72,10 +73,13 @@ inline auto PixelSelector::cend() const -> iterator<N> {
 
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
+  assert(!_sel.valueless_by_exception());
   return std::visit([&](const auto& sel) { return sel.template read_all<N>(); }, _sel);
 }
 
-inline const PixelCoordinates& PixelSelector::coord1() const {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline const PixelCoordinates& PixelSelector::coord1() const noexcept {
+  assert(!_sel.valueless_by_exception());
   return std::visit(
       [&](const auto& sel) -> const PixelCoordinates& {
         using T = std::decay_t<decltype(sel)>;
@@ -89,7 +93,9 @@ inline const PixelCoordinates& PixelSelector::coord1() const {
       _sel);
 }
 
-inline const PixelCoordinates& PixelSelector::coord2() const {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline const PixelCoordinates& PixelSelector::coord2() const noexcept {
+  assert(!_sel.valueless_by_exception());
   return std::visit(
       [&](const auto& sel) -> const PixelCoordinates& {
         using T = std::decay_t<decltype(sel)>;
@@ -103,17 +109,22 @@ inline const PixelCoordinates& PixelSelector::coord2() const {
       _sel);
 }
 
-inline const BinTable& PixelSelector::bins() const {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline const BinTable& PixelSelector::bins() const noexcept {
+  assert(!_sel.valueless_by_exception());
   return std::visit([&](const auto& sel) -> const BinTable& { return sel.bins(); }, _sel);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
+  assert(!_sel.valueless_by_exception());
   return std::visit(
       [&](const auto& sel) -> std::shared_ptr<const BinTable> { return sel.bins_ptr(); }, _sel);
 }
 
 inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
                                           PixelCoordinates coord2_) const {
+  assert(!_sel.valueless_by_exception());
   return std::visit(
       [&](const auto& sel) -> PixelSelector {
         using T = remove_cvref_t<decltype(sel)>;
@@ -134,12 +145,14 @@ inline const balancing::Weights& PixelSelector::weights() const noexcept {
 }
 
 template <typename PixelSelectorT>
-constexpr const PixelSelectorT& PixelSelector::get() const noexcept {
+constexpr const PixelSelectorT& PixelSelector::get() const {
+  assert(!_sel.valueless_by_exception());
   return std::get<PixelSelectorT>(_sel);
 }
 
 template <typename PixelSelectorT>
-constexpr PixelSelectorT& PixelSelector::get() noexcept {
+constexpr PixelSelectorT& PixelSelector::get() {
+  assert(!_sel.valueless_by_exception());
   return std::get<PixelSelectorT>(_sel);
 }
 
@@ -151,8 +164,9 @@ template <typename It>
 inline PixelSelector::iterator<N>::iterator(It it, It end)
     : _it(std::move(it)), _sentinel(std::move(end)) {}
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool PixelSelector::iterator<N>::operator==(const iterator& other) const noexcept {
+  assert(!_it.valueless_by_exception());
   return operator_eq(_it, other._it);
 }
 
@@ -163,16 +177,19 @@ inline bool PixelSelector::iterator<N>::operator!=(const iterator& other) const 
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
+  assert(!_it.valueless_by_exception());
   return std::visit([&](const auto& it) -> const_reference { return *it; }, _it);
 }
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator->() const -> const_pointer {
+  assert(!_it.valueless_by_exception());
   return std::visit([&](const auto& it) -> const_pointer { return &*it; }, _it);
 }
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator++() -> iterator& {
+  assert(!_it.valueless_by_exception());
   std::visit([&](auto& it) { ++it; }, _it);
   return *this;
 }
@@ -186,13 +203,13 @@ inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
 
 template <typename N>
 template <typename IteratorT>
-[[nodiscard]] constexpr const IteratorT& PixelSelector::iterator<N>::get() const noexcept {
+[[nodiscard]] constexpr const IteratorT& PixelSelector::iterator<N>::get() const {
   return std::get<IteratorT>(_it);
 }
 
 template <typename N>
 template <typename IteratorT>
-[[nodiscard]] constexpr IteratorT& PixelSelector::iterator<N>::get() noexcept {
+[[nodiscard]] constexpr IteratorT& PixelSelector::iterator<N>::get() {
   return std::get<IteratorT>(_it);
 }
 
@@ -200,14 +217,17 @@ template <typename N>
 constexpr auto PixelSelector::iterator<N>::get() const noexcept -> const IteratorVar& {
   return _it;
 }
+
 template <typename N>
 constexpr auto PixelSelector::iterator<N>::get() noexcept -> IteratorVar& {
   return _it;
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool PixelSelector::iterator<N>::operator_eq(const IteratorVar& itv1,
                                                     const IteratorVar& itv2) noexcept {
+  assert(!itv1.valueless_by_exception());
+  assert(!itv2.valueless_by_exception());
   return std::visit(
       [&](const auto& it1) {
         using T = std::decay_t<decltype(it1)>;
@@ -216,7 +236,8 @@ inline bool PixelSelector::iterator<N>::operator_eq(const IteratorVar& itv1,
       },
       itv1);
 }
-template <typename N>
+
+template <typename N>  // NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool PixelSelector::iterator<N>::operator_neq(const IteratorVar& itv1,
                                                      const IteratorVar& itv2) noexcept {
   return !(itv1 == itv2);
@@ -253,8 +274,10 @@ inline File::File(std::string uri, std::uint32_t resolution, hic::MatrixType typ
 }
 
 inline std::string File::uri() const {
+  assert(!_fp.valueless_by_exception());
+  // NOLINTBEGIN(bugprone-branch-clone)
   return std::visit(
-      [&](auto& fp) {
+      [&](const auto& fp) {
         using T = std::decay_t<decltype(fp)>;
         if constexpr (std::is_same_v<hic::File, T>) {
           return fp.path();
@@ -263,51 +286,54 @@ inline std::string File::uri() const {
         }
       },
       _fp);
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 inline std::string File::path() const {
-  return std::visit(
-      [&](auto& fp) {
-        using T = std::decay_t<decltype(fp)>;
-        if constexpr (std::is_same_v<hic::File, T>) {
-          return fp.path();
-        } else {
-          return fp.path();
-        }
-      },
-      _fp);
+  assert(!_fp.valueless_by_exception());
+  return std::visit([&](const auto& fp) { return fp.path(); }, _fp);
 }
 
-constexpr bool File::is_hic() const noexcept { return std::holds_alternative<hic::File>(_fp); }
+constexpr bool File::is_hic() const noexcept {
+  assert(!_fp.valueless_by_exception());
+  return std::holds_alternative<hic::File>(_fp);
+}
 
 constexpr bool File::is_cooler() const noexcept { return !is_hic(); }
 
 inline auto File::chromosomes() const -> const Reference& {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) -> const Reference& { return fp.chromosomes(); }, _fp);
 }
 
 inline auto File::bins() const -> const BinTable& {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) -> const BinTable& { return fp.bins(); }, _fp);
 }
 
 inline std::shared_ptr<const BinTable> File::bins_ptr() const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& f) -> std::shared_ptr<const BinTable> { return f.bins_ptr(); },
                     _fp);
 }
 
 inline std::uint32_t File::resolution() const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) { return fp.resolution(); }, _fp);
 }
 
 inline std::uint64_t File::nbins() const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) { return fp.nbins(); }, _fp);
 }
 
 inline std::uint64_t File::nchroms() const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) { return fp.nchroms(); }, _fp);
 }
 
 inline PixelSelector File::fetch(const balancing::Method& normalization) const {
+  assert(!_fp.valueless_by_exception());
   return std::visit(
       [&](const auto& fp) {
         return PixelSelector{fp.fetch(normalization), fp.normalization_ptr(normalization)};
@@ -317,6 +343,7 @@ inline PixelSelector File::fetch(const balancing::Method& normalization) const {
 
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method& normalization,
                                  hictk::File::QUERY_TYPE query_type) const {
+  assert(!_fp.valueless_by_exception());
   return fetch(range, range, normalization, query_type);
 }
 
@@ -327,7 +354,8 @@ inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t star
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
                                  const balancing::Method& normalization,
-                                 hictk::File::QUERY_TYPE query_type) const {
+                                 QUERY_TYPE query_type) const {
+  assert(!_fp.valueless_by_exception());
   return std::visit(
       [&](const auto& fp) {
         return PixelSelector{fp.fetch(range1, range2, normalization, query_type),
@@ -340,6 +368,7 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
                                  std::uint32_t end1, std::string_view chrom2_name,
                                  std::uint32_t start2, std::uint32_t end2,
                                  const balancing::Method& normalization) const {
+  assert(!_fp.valueless_by_exception());
   return std::visit(
       [&](const auto& fp) {
         return PixelSelector{
@@ -350,13 +379,16 @@ inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t sta
 }
 
 inline bool File::has_normalization(std::string_view normalization) const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([&](const auto& fp) { return fp.has_normalization(normalization); }, _fp);
 }
 inline std::vector<balancing::Method> File::avail_normalizations() const {
+  assert(!_fp.valueless_by_exception());
   return std::visit([](const auto& fp) { return fp.avail_normalizations(); }, _fp);
 }
 
 inline const balancing::Weights& File::normalization(std::string_view normalization_) const {
+  assert(!_fp.valueless_by_exception());
   if (std::holds_alternative<cooler::File>(_fp)) {
     return std::get<cooler::File>(_fp).normalization(normalization_);
   }
@@ -364,12 +396,12 @@ inline const balancing::Weights& File::normalization(std::string_view normalizat
 }
 
 template <typename FileT>
-constexpr const FileT& File::get() const noexcept {
+constexpr const FileT& File::get() const {
   return std::get<FileT>(_fp);
 }
 
 template <typename FileT>
-constexpr FileT& File::get() noexcept {
+constexpr FileT& File::get() {
   return std::get<FileT>(_fp);
 }
 

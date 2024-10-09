@@ -200,8 +200,7 @@ inline void CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass2(const ColumnMe
     }
   }
 
-  using PixelMerger = transformers::PixelMerger<RowIt>;
-  PixelMerger merger(heads, tails);
+  const PixelMerger<RowIt> merger{heads, tails};
   auto first = merger.begin();
   auto last = merger.end();
 
