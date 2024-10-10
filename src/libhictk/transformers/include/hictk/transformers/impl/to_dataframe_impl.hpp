@@ -145,7 +145,7 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
     fields.emplace_back(arrow::field("bin2_id", arrow::uint64(), false));
   }
 
-  auto chrom_dict = dictionary(arrow::uint32(), arrow::utf8(), true);
+  auto chrom_dict = dictionary(arrow::int32(), arrow::utf8());
 
   fields.emplace_back(arrow::field("chrom1", chrom_dict, false));
   fields.emplace_back(arrow::field("start1", arrow::uint32(), false));
@@ -368,6 +368,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_coo_table() {
   auto table = arrow::Table::Make(coo_schema(), {std::make_shared<arrow::ChunkedArray>(_bin1_id),
                                                  std::make_shared<arrow::ChunkedArray>(_bin2_id),
                                                  std::make_shared<arrow::ChunkedArray>(_count)});
+  assert(table->ValidateFull().ok());
 
   _bin1_id.clear();
   _bin2_id.clear();
@@ -426,6 +427,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
        std::make_shared<arrow::ChunkedArray>(_count)});
     // clang-format on
   }
+  assert(table->ValidateFull().ok());
 
   _bin1_id.clear();
   _bin2_id.clear();
@@ -454,6 +456,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
         throw std::runtime_error(result.status().ToString());
       }
       table = result.MoveValueUnsafe();
+      assert(table->ValidateFull().ok());
     }
   }
 
@@ -556,8 +559,10 @@ std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::sort_table(
   if constexpr (ndebug_not_defined()) {
     return arrow::compute::Take(vtable, *arg_sorter)->table();
   } else {
-    return arrow::compute::Take(vtable, *arg_sorter, arrow::compute::TakeOptions::NoBoundsCheck())
-        ->table();
+    table = arrow::compute::Take(vtable, *arg_sorter, arrow::compute::TakeOptions::NoBoundsCheck())
+                ->table();
+    assert(table->ValidateFull().ok());
+    return table;
   }
 }
 

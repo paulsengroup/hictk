@@ -54,7 +54,7 @@ To install and configure hictk using `FetchContent <https://cmake.org/cmake/help
 .. code-block:: cmake
 
   cmake_minimum_required(VERSION 3.25)
-  cmake_policy(VERSION 3.25...3.27)
+  cmake_policy(VERSION 3.25...3.30)
 
   project(myproject LANGUAGES C CXX)
 

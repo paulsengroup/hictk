@@ -61,8 +61,8 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.29.*', build_type: 'Debug', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.29.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.30.*', build_type: 'Debug', developer_mode: 'OFF'   })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
