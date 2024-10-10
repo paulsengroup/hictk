@@ -166,7 +166,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
       read_type2_block<float>(bin1Offset, bin2Offset, _bbuffer, _tmp_buffer);
       break;
     default:
-      HICTK_UNREACHABLE_CODE;
+      unreachable_code();
   }
 
   if (!cache_block) {

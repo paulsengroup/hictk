@@ -586,7 +586,7 @@ inline std::streampos FileStream<Mutex>::new_posg(std::streamoff offset, std::io
     case std::ios::end:
       return static_cast<std::streampos>(_file_size) - offset;
     default:
-      HICTK_UNREACHABLE_CODE;
+      unreachable_code();
   }
 }
 
@@ -616,7 +616,7 @@ inline std::streampos FileStream<Mutex>::new_posp(std::streamoff offset, std::io
     case std::ios::end:
       return static_cast<std::streampos>(_file_size) - offset;
     default:
-      HICTK_UNREACHABLE_CODE;
+      unreachable_code();
   }
 }
 template <typename Mutex>

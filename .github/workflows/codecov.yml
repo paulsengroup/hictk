@@ -124,7 +124,11 @@ jobs:
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
+                -DOPT_ENABLE_SANITIZER_LEAK=OFF               \
+                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF    \
+                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF   \
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
+                -DOPT_ENABLE_CPPCHECK=OFF                     \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                   \
                 -DHICTK_BUILD_EXAMPLES=OFF                    \
                 -DHICTK_ENABLE_TESTING=ON                     \
