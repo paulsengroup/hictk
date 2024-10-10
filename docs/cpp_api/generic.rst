@@ -134,8 +134,8 @@ File handle
 
   **Advanced**
 
-  .. cpp:function:: template <typename FileT> [[nodiscard]] constexpr const FileT &get() const noexcept;
-  .. cpp:function:: template <typename FileT> [[nodiscard]] constexpr FileT &get() noexcept;
+  .. cpp:function:: template <typename FileT> [[nodiscard]] constexpr const FileT &get() const;
+  .. cpp:function:: template <typename FileT> [[nodiscard]] constexpr FileT &get();
   .. cpp:function:: [[nodiscard]] constexpr auto get() const noexcept -> const FileVar &;
   .. cpp:function:: [[nodiscard]] constexpr auto get() noexcept -> FileVar &;
 
@@ -206,12 +206,12 @@ Pixel selector
 
   **Accessors**
 
-  .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord1() const;
-  .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord2() const;
+  .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
+  .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
   Return the genomic coordinates used to construct the :cpp:class:`PixelSelector`.
 
-  .. cpp:function:: [[nodiscard]] const BinTable &bins() const;
+  .. cpp:function:: [[nodiscard]] const BinTable &bins() const noexcept;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
 
   Return the :cpp:class:`BinTable` used to map :cpp:class:`Pixel`\s to genomic :cpp:class:`Bin`\s.
@@ -222,8 +222,8 @@ Pixel selector
 
   **Advanced**
 
-  .. cpp:function:: template <typename PixelSelectorT> [[nodiscard]] constexpr const PixelSelectorT &get() const noexcept;
-  .. cpp:function:: template <typename PixelSelectorT> [[nodiscard]] constexpr PixelSelectorT &get() noexcept;
+  .. cpp:function:: template <typename PixelSelectorT> [[nodiscard]] constexpr const PixelSelectorT &get() const;
+  .. cpp:function:: template <typename PixelSelectorT> [[nodiscard]] constexpr PixelSelectorT &get();
   .. cpp:function:: [[nodiscard]] constexpr auto get() const noexcept -> const PixelSelectorVar &;
   .. cpp:function:: [[nodiscard]] constexpr auto get() noexcept -> PixelSelectorVar &;
 

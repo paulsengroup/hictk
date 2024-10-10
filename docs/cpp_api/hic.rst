@@ -75,27 +75,27 @@ File handle
   .. cpp:function:: [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm, const Chromosome &chrom) const;
   .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm) const;
   .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(balancing::Method norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &norm, const Chromosome &chrom) const;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(balancing::Method norm) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &norm) const;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm) const;
 
   **Fetch methods (1D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelectorAll fetch(balancing::Method norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, balancing::Method norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, balancing::Method norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, balancing::Method norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelectorAll fetch(const balancing::Method &norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, const balancing::Method &norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, const balancing::Method &norm = balancing::Method::NONE()) const;
 
   **Fetch methods (2D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, balancing::Method norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, balancing::Method norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, balancing::Method norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, const balancing::Method &norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, const balancing::Method &norm = balancing::Method::NONE()) const;
 
   **Caching**
 

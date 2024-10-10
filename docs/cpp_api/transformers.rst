@@ -48,10 +48,10 @@ Coarsening pixels
 
   **Iteration**
 
-  .. cpp:function:: begin() const -> iterator;
-  .. cpp:function:: end() const -> iterator;
-  .. cpp:function:: cbegin() const -> iterator;
-  .. cpp:function:: cend() const -> iterator;
+  .. cpp:function:: [[nodiscard]] begin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] end() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cbegin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cend() const -> iterator;
 
   Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the coarsened pixels.
 
@@ -74,10 +74,10 @@ Transforming COO pixels to BG2 pixels
 
   **Iteration**
 
-  .. cpp:function:: begin() const -> iterator;
-  .. cpp:function:: end() const -> iterator;
-  .. cpp:function:: cbegin() const -> iterator;
-  .. cpp:function:: cend() const -> iterator;
+  .. cpp:function:: [[nodiscard]] begin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] end() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cbegin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cend() const -> iterator;
 
   Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the :cpp:class:`Pixel`\s.
 
@@ -106,8 +106,8 @@ Merging streams of pre-sorted pixels
 
   **Iteration**
 
-  .. cpp:function:: auto begin() const -> iterator;
-  .. cpp:function:: auto end() const noexcept -> iterator;
+  .. cpp:function:: [[nodiscard]] auto begin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] auto end() const noexcept -> iterator;
 
   Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the stream :cpp:class:`ThinPixel`\s after merging.
 
@@ -176,7 +176,7 @@ Converting streams of pixels to Eigen Sparse Matrices
 
   .. cpp:type:: MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
 
-  .. cpp:function:: ToSparseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::upper_triangle);
+  .. cpp:function:: ToSparseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false);
   .. cpp:function:: ToSparseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full);
 
   Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
@@ -184,6 +184,8 @@ Converting streams of pixels to Eigen Sparse Matrices
   The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
   Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
+
+  When ``minimize_memory_usage=true``, hictk will minimize memory usage by doing two passes over the queried pixels: one to calculate the exact number of entries to allocate for each row in the matrix, and the second pass to fill values in the matrix. This is usually slower than the default strategy, which traverses the data only once (but may overall require more memory than what is strictly needed). It should be noted that matrices are always compressed before being returned. Thus, the memory footprint of the matrices returned by :cpp:class:`ToSparseMatrix::operator()()`` will be the same regardless of the fill strategy.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
