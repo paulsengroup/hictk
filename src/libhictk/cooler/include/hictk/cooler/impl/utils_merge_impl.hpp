@@ -138,7 +138,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
                   std::uint32_t compression_lvl) {
   using N = remove_cvref_t<decltype(heads.front()->count)>;
 
-  hictk::transformers::PixelMerger merger{heads, tails};
+  const transformers::PixelMerger merger{heads, tails};
   std::vector<ThinPixel<N>> buffer(chunk_size);
   buffer.clear();
 
@@ -166,7 +166,7 @@ inline void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>&
               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()) /
           1000.0;
       SPDLOG_INFO(FMT_STRING("processing {:ucsc} {:ucsc} at {:.0f} pixels/s..."), bin1, bin2,
-                  double(update_frequency) / delta);
+                  static_cast<double>(update_frequency) / delta);
       t0 = t1;
       i = 0;
     }

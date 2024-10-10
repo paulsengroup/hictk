@@ -38,12 +38,13 @@ class PixelSelector {
 
  public:
   PixelSelector() = default;
+  PixelSelector(const Index &index, const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
+                const Dataset &pixels_count, std::shared_ptr<const balancing::Weights> weights,
+                bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_) noexcept;
-  PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
-                const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coords,
-                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_);
+                const PixelCoordinates &coords, std::shared_ptr<const balancing::Weights> weights,
+                bool symmetric_upper_);
 
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,

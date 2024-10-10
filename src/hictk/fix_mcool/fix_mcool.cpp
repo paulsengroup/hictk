@@ -117,7 +117,7 @@ static void run_hictk_balance(const FixMcoolConfig& c, std::uint32_t resolution)
   assert(ec == 0);
 }
 
-int fix_mcool_subcmd(const FixMcoolConfig& c) {
+int fix_mcool_subcmd(const FixMcoolConfig& c) {  // NOLINT(misc-use-internal-linkage)
   assert(cooler::utils::is_multires_file(c.path_to_input.string()));
 
   const auto t0 = std::chrono::system_clock::now();
@@ -142,8 +142,10 @@ int fix_mcool_subcmd(const FixMcoolConfig& c) {
   const auto t1 = std::chrono::system_clock::now();
   const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   SPDLOG_INFO(FMT_STRING("Restoration successfully completed! Elapsed time: {}s"),
               static_cast<double>(delta) / 1000.0);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   return 0;
 }

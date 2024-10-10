@@ -42,8 +42,8 @@ struct MatrixInteractionBlockFlat {
   std::vector<std::uint64_t> bin2_ids{};
   std::vector<N> counts{};
 
-  void emplace_back(ThinPixel<N>&& p);
-  void emplace_back(Pixel<N>&& p);
+  void emplace_back(const ThinPixel<N>& p);
+  void emplace_back(Pixel<N> p);
 
   [[nodiscard]] std::size_t size() const noexcept;
 
@@ -135,12 +135,14 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] bool empty(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+  void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel,
                      std::uint32_t update_frequency = 10'000'000);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,
                      std::uint32_t update_frequency = 10'000'000);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
   [[nodiscard]] auto chromosome_index() const noexcept -> const MatrixIndexMap&;
@@ -219,7 +221,7 @@ class HiCInteractionToBlockMapper {
 
 template <>
 struct std::hash<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
-  inline std::size_t operator()(
+  std::size_t operator()(
       hictk::hic::internal::HiCInteractionToBlockMapper::BlockID const& bid) const noexcept {
     return hictk::internal::hash_combine(0, bid.chrom1_id, bid.chrom2_id, bid.bid);
   }
@@ -228,18 +230,17 @@ struct std::hash<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
 namespace fmt {
 template <>
 struct formatter<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
-  constexpr format_parse_context::iterator parse(format_parse_context& ctx) {
+  static constexpr format_parse_context::iterator parse(const format_parse_context& ctx) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
 
     return ctx.end();
   }
 
-  inline format_context::iterator format(
-      const hictk::hic::internal::HiCInteractionToBlockMapper::BlockID& bid,
-      format_context& ctx) const {
-    return fmt::format_to(ctx.out(), FMT_STRING("{}"), bid.bid);
+  static format_context::iterator format(
+      const hictk::hic::internal::HiCInteractionToBlockMapper::BlockID& bid, format_context& ctx) {
+    return format_to(ctx.out(), FMT_STRING("{}"), bid.bid);
   }
 };
 

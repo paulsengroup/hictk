@@ -25,13 +25,13 @@ namespace hictk::tools {
 
 class CoolerFileValidator : public CLI::Validator {
  public:
-  inline CoolerFileValidator() : Validator("Cooler") {
+  CoolerFileValidator() : Validator("Cooler") {
     func_ = [](std::string& uri) -> std::string {
       if (!hictk::cooler::utils::is_cooler(uri)) {
-        if (hictk::cooler::utils::is_multires_file(uri)) {
+        if (cooler::utils::is_multires_file(uri)) {
           return "URI points to a .mcool file: " + uri;
         }
-        if (hictk::cooler::utils::is_scool_file(uri)) {
+        if (cooler::utils::is_scool_file(uri)) {
           return "URI points to a .scool file: " + uri;
         }
         const auto path = cooler::parse_cooler_uri(uri).file_path;
@@ -47,13 +47,13 @@ class CoolerFileValidator : public CLI::Validator {
 
 class MultiresCoolerFileValidator : public CLI::Validator {
  public:
-  inline MultiresCoolerFileValidator() : Validator("Multires-cooler") {
+  MultiresCoolerFileValidator() : Validator("Multires-cooler") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
         return "No such file: " + path;
       }
-      if (!hictk::cooler::utils::is_multires_file(uri)) {
+      if (!cooler::utils::is_multires_file(uri)) {
         return "Not a valid multi-resolution cooler: " + uri;
       }
       return "";
@@ -63,13 +63,13 @@ class MultiresCoolerFileValidator : public CLI::Validator {
 
 class SingleCellCoolerFileValidator : public CLI::Validator {
  public:
-  inline SingleCellCoolerFileValidator() : Validator("Single-cell-cooler") {
+  SingleCellCoolerFileValidator() : Validator("Single-cell-cooler") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
         return "No such file: " + path;
       }
-      if (!hictk::cooler::utils::is_scool_file(uri)) {
+      if (!cooler::utils::is_scool_file(uri)) {
         return "Not a valid single-cell cooler: " + uri;
       }
       return "";
@@ -79,13 +79,13 @@ class SingleCellCoolerFileValidator : public CLI::Validator {
 
 class HiCFileValidator : public CLI::Validator {
  public:
-  inline HiCFileValidator() : Validator("HiC") {
+  HiCFileValidator() : Validator("HiC") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
         return "No such file: " + path;
       }
-      if (!hictk::hic::utils::is_hic_file(path)) {
+      if (!hic::utils::is_hic_file(path)) {
         return "Not a valid .hic file: " + path;
       }
       return "";
@@ -103,13 +103,13 @@ class HiCFileValidator : public CLI::Validator {
 
 class Formatter : public CLI::Formatter {
   // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-  [[nodiscard]] inline std::string make_option_opts(const CLI::Option* opt) const override {
+  [[nodiscard]] std::string make_option_opts(const CLI::Option* opt) const override {
     if (!opt->get_option_text().empty()) {
       return opt->get_option_text();
     }
 
-    auto str_contains = [](const auto s, const auto query) {
-      return s.find(query) != decltype(s)::npos;
+    auto str_contains = [](const auto& s, const auto query) {
+      return s.find(query) != remove_cvref_t<decltype(s)>::npos;
     };
 
     std::string out;
@@ -181,23 +181,23 @@ inline const auto IsValidHiCFile = HiCFileValidator();                          
 // clang-format off
 // NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
-        std::map<std::string, hictk::hic::MatrixType>{
-                {"observed",  hictk::hic::MatrixType::observed},
-                {"oe",        hictk::hic::MatrixType::oe},
-                {"expected",  hictk::hic::MatrixType::expected}},
+        std::map<std::string, hic::MatrixType>{
+                {"observed",  hic::MatrixType::observed},
+                {"oe",        hic::MatrixType::oe},
+                {"expected",  hic::MatrixType::expected}},
         CLI::ignore_case);
 
 // NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
-        std::map<std::string, hictk::hic::MatrixUnit>{
-                {"BP",   hictk::hic::MatrixUnit::BP},
-                {"FRAG", hictk::hic::MatrixUnit::FRAG}},
+        std::map<std::string, hic::MatrixUnit>{
+                {"BP",   hic::MatrixUnit::BP},
+                {"FRAG", hic::MatrixUnit::FRAG}},
         CLI::ignore_case);
 // clang-format on
 
 class Cli {
  public:
-  enum subcommand {
+  enum class subcommand : std::uint_fast8_t {
     help,
     balance,
     convert,

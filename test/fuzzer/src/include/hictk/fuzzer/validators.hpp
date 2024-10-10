@@ -14,7 +14,7 @@ namespace hictk::fuzzer {
 
 namespace internal {
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(*-avoid-magic-numbers)
 [[nodiscard]] constexpr bool is_close(N n1, N n2, double rtol = 1.0e-6, double atol = 0) noexcept;
 
 }  // namespace internal

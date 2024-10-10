@@ -21,7 +21,8 @@
 
 namespace hictk::hic::test::utils {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
   SECTION("merge gw") {
     const auto src = datadir / "4DNFIZ1ZVXC8.hic9";
@@ -107,5 +108,7 @@ TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
                       Catch::Matchers::ContainsSubstring("use different reference genomes"));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::hic::test::utils

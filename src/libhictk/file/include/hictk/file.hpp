@@ -37,6 +37,8 @@ class PixelSelector {
   template <typename N>
   class iterator;
 
+  PixelSelector() = delete;
+
   template <typename PixelSelectorT>
   explicit PixelSelector(PixelSelectorT selector,
                          std::shared_ptr<const balancing::Weights> weights);
@@ -54,20 +56,22 @@ class PixelSelector {
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
-  [[nodiscard]] const PixelCoordinates &coord1() const;
-  [[nodiscard]] const PixelCoordinates &coord2() const;
+  // NOLINTBEGIN(bugprone-exception-escape)
+  [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
+  [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
-  [[nodiscard]] const BinTable &bins() const;
+  [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
+  // NOLINTEND(bugprone-exception-escape)
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1_, PixelCoordinates coord2_) const;
 
   [[nodiscard]] const balancing::Weights &weights() const noexcept;
 
   template <typename PixelSelectorT>
-  [[nodiscard]] constexpr const PixelSelectorT &get() const noexcept;
+  [[nodiscard]] constexpr const PixelSelectorT &get() const;
   template <typename PixelSelectorT>
-  [[nodiscard]] constexpr PixelSelectorT &get() noexcept;
+  [[nodiscard]] constexpr PixelSelectorT &get();
   [[nodiscard]] constexpr auto get() const noexcept -> const PixelSelectorVar &;
   [[nodiscard]] constexpr auto get() noexcept -> PixelSelectorVar &;
 
@@ -92,6 +96,7 @@ class PixelSelector {
     template <typename It>
     iterator(It it, It end);
 
+    // NOLINTBEGIN(bugprone-exception-escape)
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
     [[nodiscard]] bool operator!=(const iterator &other) const noexcept;
 
@@ -102,9 +107,9 @@ class PixelSelector {
     auto operator++(int) -> iterator;
 
     template <typename IteratorT>
-    [[nodiscard]] constexpr const IteratorT &get() const noexcept;
+    [[nodiscard]] constexpr const IteratorT &get() const;
     template <typename IteratorT>
-    [[nodiscard]] constexpr IteratorT &get() noexcept;
+    [[nodiscard]] constexpr IteratorT &get();
     [[nodiscard]] constexpr auto get() const noexcept -> const IteratorVar &;
     [[nodiscard]] constexpr auto get() noexcept -> IteratorVar &;
 
@@ -113,6 +118,7 @@ class PixelSelector {
                                           const IteratorVar &itv2) noexcept;
     [[nodiscard]] static bool operator_neq(const IteratorVar &itv1,
                                            const IteratorVar &itv2) noexcept;
+    // NOLINTEND(bugprone-exception-escape)
   };
 };
 
@@ -121,7 +127,7 @@ class File {
   FileVar _fp{cooler::File{}};
 
  public:
-  using QUERY_TYPE = hictk::GenomicInterval::Type;
+  using QUERY_TYPE = GenomicInterval::Type;
 
   explicit File(cooler::File clr);
   explicit File(hic::File hf);
@@ -168,14 +174,16 @@ class File {
       std::string_view normalization_) const;
 
   template <typename FileT>
-  [[nodiscard]] constexpr const FileT &get() const noexcept;
+  [[nodiscard]] constexpr const FileT &get() const;
   template <typename FileT>
-  [[nodiscard]] constexpr FileT &get() noexcept;
+  [[nodiscard]] constexpr FileT &get();
   [[nodiscard]] constexpr auto get() const noexcept -> const FileVar &;
   [[nodiscard]] constexpr auto get() noexcept -> FileVar &;
 };
 
 namespace utils {
+
+// NOLINTBEGIN(*-avoid-magic-numbers)
 
 /// Iterable of strings
 template <typename N, typename Str>
@@ -188,9 +196,11 @@ void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri, std::
 template <typename Str>
 void merge_to_hic(
     Str first_file, Str last_file, std::string_view dest_file, std::uint32_t resolution,
-    const std::filesystem::path &tmp_dir = hictk::internal::TmpDir::default_temp_directory_path(),
+    const std::filesystem::path &tmp_dir = internal::TmpDir::default_temp_directory_path(),
     bool overwrite_if_exists = false, std::size_t chunk_size = 500'000, std::size_t n_threads = 1,
     std::uint32_t compression_lvl = 11, bool skip_all_vs_all = false);
+
+// NOLINTEND(*-avoid-magic-numbers)
 
 }  // namespace utils
 

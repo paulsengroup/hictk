@@ -26,7 +26,7 @@ class StaticBinaryBuffer {
 
  public:
   StaticBinaryBuffer() = default;
-  inline explicit StaticBinaryBuffer(const Ts &...inputs) noexcept {
+  explicit StaticBinaryBuffer(const Ts &...inputs) noexcept {
     std::size_t i = 0;
     (
         [&] {
@@ -37,9 +37,10 @@ class StaticBinaryBuffer {
           // However, StaticBinaryBuffer should never be used to more than say a few dozens of bytes
           // worth of data, so even if the data copying ends up being slow, it shouldn't be a big
           // deal.
+          // NOLINTNEXTLINE(*-type-reinterpret-cast)
           const auto *src = reinterpret_cast<const char *>(&inputs);
           for (std::size_t j = 0; j < sizeof(inputs); ++j, ++i) {
-            _buff[i] = *(src + j);
+            _buff[i] = *(src + j);  // NOLINT(*-bounds-pointer-arithmetic)
           }
         }(),
         ...);

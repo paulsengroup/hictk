@@ -25,9 +25,9 @@ namespace hictk {
 inline GenomicInterval::GenomicInterval(const Chromosome &chrom_) noexcept
     : GenomicInterval(chrom_, 0, chrom_.size()) {}
 
-inline GenomicInterval::GenomicInterval(const Chromosome &chrom_, std::uint32_t start_,
+inline GenomicInterval::GenomicInterval(Chromosome chrom_, std::uint32_t start_,
                                         std::uint32_t end_) noexcept
-    : _chrom(chrom_), _start(start_), _end(end_) {
+    : _chrom(std::move(chrom_)), _start(start_), _end(end_) {
   assert(_start <= _end);
 }
 
@@ -98,7 +98,7 @@ constexpr std::uint32_t GenomicInterval::end() const noexcept { return _end; }
 constexpr std::uint32_t GenomicInterval::size() const noexcept { return _end - _start; }
 
 inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::parse(
-    std::string query, Type type) {
+    const std::string &query, Type type) {
   if (type == Type::UCSC) {
     return parse_ucsc(query);
   }
@@ -196,7 +196,7 @@ inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::pa
   return std::make_tuple(std::move(chrom_name), start_pos, end_pos);
 }
 
-inline GenomicInterval GenomicInterval::parse(const Reference &chroms, std::string query,
+inline GenomicInterval GenomicInterval::parse(const Reference &chroms, const std::string &query,
                                               Type type) {
   if (type == Type::UCSC) {
     return parse_ucsc(chroms, query);

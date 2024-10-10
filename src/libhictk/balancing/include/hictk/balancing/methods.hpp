@@ -57,20 +57,20 @@ template <>
 struct fmt::formatter<hictk::balancing::Method> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
     return ctx.end();
   }
 
   template <class FormatContext>
-  static auto format(const hictk::balancing::Method n, FormatContext &ctx) -> decltype(ctx.out()) {
+  static auto format(const hictk::balancing::Method &n, FormatContext &ctx) -> decltype(ctx.out()) {
     return fmt::format_to(ctx.out(), FMT_STRING("{}"), n.to_string());
   }
 };
 
 template <>
 struct std::hash<hictk::balancing::Method> {
-  inline std::size_t operator()(const hictk::balancing::Method &m) const noexcept {
+  std::size_t operator()(const hictk::balancing::Method &m) const noexcept {
     return std::hash<std::string_view>{}(m.to_string());
   }
 };

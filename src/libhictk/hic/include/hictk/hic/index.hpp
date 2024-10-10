@@ -122,7 +122,7 @@ class Index {
 
 template <>
 struct std::hash<hictk::hic::internal::BlockIndex> {
-  inline std::size_t operator()(hictk::hic::internal::BlockIndex const& b) const noexcept {
+  std::size_t operator()(hictk::hic::internal::BlockIndex const& b) const noexcept {
     return std::hash<std::size_t>{}(b.id());
   }
 };

@@ -15,18 +15,17 @@
 #include <string_view>
 #include <utility>
 
-#include "hictk/chromosome.hpp"
 #include "hictk/hash.hpp"
 
 namespace hictk {
 
 inline Chromosome::Chromosome(std::uint32_t id, std::string name_, std::uint32_t size_) noexcept
-    : _name(std::make_shared<std::string>(std::move(name_))), _id(id), _size(size_) {
+    : _name(std::make_shared<const std::string>(std::move(name_))), _id(id), _size(size_) {
   assert(_id != (std::numeric_limits<std::uint32_t>::max)());
   assert(_size != 0);
 }
 
-constexpr Chromosome::operator bool() const noexcept { return id() != Chromosome::null_id; }
+constexpr Chromosome::operator bool() const noexcept { return id() != null_id; }
 
 constexpr std::uint32_t Chromosome::id() const noexcept { return _id; }
 

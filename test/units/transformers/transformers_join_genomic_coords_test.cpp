@@ -21,7 +21,7 @@ namespace hictk::test::transformers {
 
 using namespace hictk::transformers;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): join genomic coords", "[transformers][short]") {
   const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
   const cooler::File clr(path.string());
@@ -44,7 +44,6 @@ TEST_CASE("Transformers (cooler): join genomic coords", "[transformers][short]")
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (hic): join genomic coords", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
@@ -59,5 +58,7 @@ TEST_CASE("Transformers (hic): join genomic coords", "[transformers][short]") {
     CHECK(pixels[i].coords.bin1.start() == expected[i]);
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers

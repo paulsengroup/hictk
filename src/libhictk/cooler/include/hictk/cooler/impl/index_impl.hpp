@@ -55,12 +55,12 @@ inline std::size_t Index::size(std::uint32_t chrom_id) const { return at(chrom_i
 
 inline bool Index::empty() const noexcept { return size() == 0; }
 
-inline bool Index::empty(std::uint32_t chrom_id) const noexcept {
+inline bool Index::empty(std::uint32_t chrom_id) const {
   const auto &idx = at(chrom_id);
   return idx.front() == idx.back();
 }
 
-inline bool Index::empty(std::string_view chrom_name) const noexcept {
+inline bool Index::empty(std::string_view chrom_name) const {
   return empty(chromosomes().at(chrom_name).id());
 }
 
@@ -209,7 +209,7 @@ inline void Index::compute_chrom_offsets(std::vector<std::uint64_t> &buff) const
   buff[0] = 0;
 
   std::transform(_idx.begin(), _idx.end(), buff.begin() + 1,
-                 [offset = std::uint64_t(0)](const auto &it) mutable {
+                 [offset = std::uint64_t{0}](const auto &it) mutable {
                    return offset += conditional_static_cast<std::uint64_t>(it.second.size());
                  });
 }
@@ -337,13 +337,14 @@ inline auto Index::iterator::make_end_iterator(const Index *idx) -> iterator {
 
 inline std::uint32_t Index::iterator::last_chrom_id() const noexcept {
   assert(_idx);
-  if (_idx->size() == 0) {
+  if (_idx->empty()) {
     return 0;
   }
 
   return static_cast<std::uint32_t>(_idx->chromosomes().size() - 1);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline auto Index::iterator::get_offsets() const noexcept -> const OffsetVect & {
   assert(_chrom_id < static_cast<std::uint32_t>(_idx->size()));
   return _idx->_idx.at(_chrom_id);

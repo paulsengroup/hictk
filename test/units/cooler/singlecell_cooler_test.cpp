@@ -18,7 +18,7 @@
 
 namespace hictk::cooler::test::singlecell_cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("SingleCellCooler: open read-only", "[cooler][short]") {
   const auto path = datadir / "single_cell_cooler_test_file.scool";
 
@@ -35,7 +35,6 @@ TEST_CASE("SingleCellCooler: open read-only", "[cooler][short]") {
   CHECK(utils::is_cooler(sclr.open(first_cell_name).uri()));
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
   const auto base_path = datadir / "cooler_test_file.cool";
   const File base_clr(base_path.string());
@@ -60,7 +59,6 @@ TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
   SECTION("std::int32_t") {
     const auto base_path = datadir / "cooler_test_file.cool";
@@ -112,5 +110,7 @@ TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
     CHECK_THAT(sum1, Catch::Matchers::WithinRel(2 * sum2));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::singlecell_cooler_file

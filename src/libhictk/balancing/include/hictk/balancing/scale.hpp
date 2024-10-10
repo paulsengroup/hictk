@@ -26,6 +26,7 @@ class SCALE {
     std::vector<double> weights{};
   };
 
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   struct ConvergenceStats {
     bool converged{false};
     bool diverged{false};
@@ -33,8 +34,9 @@ class SCALE {
     std::uint32_t low_divergence{0};
     double error{10.0};
   };
+  // NOLINTEND(*-avoid-magic-numbers)
 
-  enum class ControlFlow { break_loop, continue_loop };
+  enum class ControlFlow : std::uint_fast8_t { break_loop, continue_loop };
 
   // buffers to store final results
   std::vector<std::uint64_t> _chrom_offsets{};
@@ -67,8 +69,9 @@ class SCALE {
   std::unique_ptr<BS::thread_pool> _tpool{};
 
  public:
-  enum Type { cis, trans, gw };
+  enum class Type : std::uint_fast8_t { cis, trans, gw };
 
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   struct Params {
     double tol{1.0e-4};
     std::size_t max_iters{200};
@@ -81,16 +84,17 @@ class SCALE {
     std::size_t threads{1};
   };
 
-  // NOLINTNEXTLINE
+  // NOLINTNEXTLINE(cert-err58-cpp)
   inline static const Params DefaultParams{1.0e-4, 200, 10.0,       1.0e-5, 0.05,
                                            0.05,   "",  10'000'000, 1};
+  // NOLINTEND(*-avoid-magic-numbers)
 
   template <typename File>
   explicit SCALE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);
   template <typename PixelIt>
   SCALE(PixelIt first, PixelIt last, const BinTable& bins, const Params& params = DefaultParams);
 
-  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
+  [[nodiscard]] Weights get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;
 
  private:
@@ -110,13 +114,13 @@ class SCALE {
   static void update_weights(internal::VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
                              internal::VectorOfAtomicDecimals& weights,
                              const std::vector<double>& target, std::vector<double>& d_vector,
-                             const Matrix& m, BS::thread_pool* tpool) noexcept;
+                             const Matrix& m, BS::thread_pool* tpool);
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;
 
   [[nodiscard]] static std::pair<double, std::uint64_t> compute_convergence_error(
-      const std::vector<double>& calculated_vector_b, const std::vector<double>& current,
+      const std::vector<double>& biases, const std::vector<double>& current,
       const std::vector<bool>& bad, double tolerance) noexcept;
 
   [[nodiscard]] static double compute_final_error(const internal::VectorOfAtomicDecimals& col,

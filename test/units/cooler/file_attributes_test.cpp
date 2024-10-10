@@ -12,7 +12,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read attributes", "[cooler][short]") {
   auto path = datadir / "cooler_test_file.cool";
   const File f(path.string());
@@ -41,5 +41,7 @@ TEST_CASE("Cooler: read attributes", "[cooler][short]") {
     CHECK(!attrs.cis.has_value());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

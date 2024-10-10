@@ -34,8 +34,9 @@ class HiCBlockReader {
 
  public:
   HiCBlockReader() = default;
-  HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, const Index& master_index,
-                 std::shared_ptr<const BinTable> bins_, std::shared_ptr<BlockCache> block_cache_);
+  HiCBlockReader(std::shared_ptr<HiCFileReader> hfs, Index master_index,
+                 std::shared_ptr<const BinTable> bins_,
+                 std::shared_ptr<BlockCache> block_cache_) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
 

@@ -103,7 +103,7 @@ class VectorOfAtomicDecimals {
   [[nodiscard]] auto encode(double n) const noexcept -> I;
   [[nodiscard]] double decode(I n) const noexcept;
   [[nodiscard]] constexpr bool overflows(double n) const noexcept;
-  [[nodiscard]] double compute_max_value(std::uint8_t decimal_bits) const noexcept;
+  [[nodiscard]] static double compute_max_value(std::uint8_t decimal_bits) noexcept;
 };
 
 class SparseMatrix {
@@ -149,7 +149,8 @@ class SparseMatrixChunked {
   std::size_t _chunk_size{};
 
  public:
-  explicit SparseMatrixChunked(std::size_t chunk_size = 16 * 1024 * 1024);
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+  explicit SparseMatrixChunked(std::size_t chunk_size = 16UL << 20U);
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;

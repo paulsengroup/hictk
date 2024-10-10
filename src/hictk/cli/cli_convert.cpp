@@ -109,14 +109,14 @@ void Cli::make_convert_subcommand() {
       c.threads,
       "Maximum number of parallel threads to spawn.\n"
       "When converting from hic to cool, only two threads will be used.")
-      ->check(CLI::Range(std::uint32_t(2), std::thread::hardware_concurrency()))
+      ->check(CLI::Range(std::uint32_t{2}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-lvl",
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Range(1, 12))
+      ->check(CLI::Range(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "--skip-all-vs-all,!--no-skip-all-vs-all",
@@ -159,7 +159,8 @@ static void check_requested_resolutions_avail(const std::filesystem::path& path_
 
   std::vector<std::uint32_t> missing_resolutions;
   for (const auto res : requested_res) {
-    const auto it = std::find(available_res.begin(), available_res.end(), std::int32_t(res));
+    const auto it =
+        std::find(available_res.begin(), available_res.end(), static_cast<std::int32_t>(res));
     if (it == available_res.end()) {
       missing_resolutions.push_back(res);
     }
@@ -282,7 +283,8 @@ void Cli::transform_args_convert_subcommand() {
   c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+    c.compression_lvl =
+        c.output_format == "hic" ? DEFAULT_HIC_COMPRESSION_LEVEL : DEFAULT_COOL_COMPRESSION_LEVEL;
   }
 
   // validate transformed args

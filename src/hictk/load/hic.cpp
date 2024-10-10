@@ -50,7 +50,7 @@ namespace hictk::tools {
       t0 = t1;
 
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
-                  double(buffer.size()) / delta);
+                  static_cast<double>(buffer.size()) / delta);
       hf.add_pixels(resolution, buffer.begin(), buffer.end());
 
       if (buffer.size() != buffer.capacity()) {
@@ -90,7 +90,7 @@ namespace hictk::tools {
           1000.0;
       t0 = t1;
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
-                  double(buffer.size()) / delta);
+                  static_cast<double>(buffer.size()) / delta);
       hf.add_pixels(bins.resolution(), buffer.begin(), buffer.end());
       if (buffer.size() != buffer.capacity()) {
         break;

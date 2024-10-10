@@ -11,6 +11,7 @@
 
 namespace hictk::tools {
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 void merge_to_hic(const MergeConfig& c) {
   SPDLOG_INFO(FMT_STRING("begin merging {} files into one .{} file..."), c.input_files.size(),
               c.output_format);

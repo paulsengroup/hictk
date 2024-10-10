@@ -87,7 +87,8 @@ class MatrixBodyMetadataTank {
       -> const MatrixBodyMetadata&;
   [[nodiscard]] HiCSectionOffsets offset(const Chromosome& chrom1, const Chromosome& chrom2) const;
 
-  void insert(const Chromosome& chrom1, const Chromosome& chrom2, MatrixMetadata matrix_metadata,
+  void insert(const Chromosome& chrom1, const Chromosome& chrom2,
+              const MatrixMetadata& matrix_metadata,
               MatrixResolutionMetadata matrix_resolution_metadata);
   void update_offsets(const Chromosome& chrom1, const Chromosome& chrom2, std::streamoff position,
                       std::size_t size);
@@ -150,12 +151,14 @@ class HiCFileWriter {
  public:
   HiCFileWriter() = default;
   explicit HiCFileWriter(std::string_view path_, std::size_t n_threads = 1);
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   HiCFileWriter(
       std::string_view path_, Reference chromosomes_, std::vector<std::uint32_t> resolutions_,
       std::string_view assembly_ = "unknown", std::size_t n_threads = 1,
       std::size_t chunk_size = 10'000'000,
-      const std::filesystem::path& tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
+      std::filesystem::path tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
       std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -204,7 +207,7 @@ class HiCFileWriter {
   HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2);
   HiCSectionOffsets write_pixels(const Chromosome& chrom1, const Chromosome& chrom2,
                                  std::uint32_t resolution);
-  void write_all_matrix(std::uint32_t target_num_bins = 500);
+  void write_all_matrix(std::uint32_t target_num_bins = 500);  // NOLINT(*-avoid-magic-numbers)
 
   [[nodiscard]] HiCSectionOffsets write_interaction_block(
       std::streampos offset, std::uint64_t block_id, const Chromosome& chrom1,
@@ -237,11 +240,12 @@ class HiCFileWriter {
 
   void finalize(bool compute_expected_values = false);
 
-  [[nodiscard]] std::size_t compute_block_column_count(const Chromosome& chrom1,
-                                                       const Chromosome& chrom2,
-                                                       std::uint32_t resolution);
-  [[nodiscard]] std::size_t compute_num_bins(const Chromosome& chrom1, const Chromosome& chrom2,
-                                             std::uint32_t resolution);
+  [[nodiscard]] static std::size_t compute_block_column_count(const Chromosome& chrom1,
+                                                              const Chromosome& chrom2,
+                                                              std::uint32_t resolution);
+  [[nodiscard]] static std::size_t compute_num_bins(const Chromosome& chrom1,
+                                                    const Chromosome& chrom2,
+                                                    std::uint32_t resolution);
 
   [[nodiscard]] ExpectedValuesBlock compute_expected_values(std::uint32_t resolution);
   [[nodiscard]] NormalizedExpectedValuesBlock compute_normalized_expected_values(
@@ -274,7 +278,7 @@ class HiCFileWriter {
 
 template <>
 struct std::hash<hictk::hic::internal::MatrixBodyMetadataTank::Key> {
-  inline std::size_t operator()(
+  std::size_t operator()(
       hictk::hic::internal::MatrixBodyMetadataTank::Key const& k) const noexcept {
     return hictk::internal::hash_combine(0, k.chrom1, k.chrom2);
   }

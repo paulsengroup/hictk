@@ -40,14 +40,12 @@ HICTK_DISABLE_WARNING_POP
 
 namespace hictk::cooler {
 
-struct RootGroup;
-
 namespace internal {
 template <typename T>
 struct is_atomic_buffer
-    : public std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
-                              std::is_same<std::string, std::decay_t<T>>,
-                              std::is_arithmetic<std::decay_t<T>>> {};
+    : std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
+                       std::is_same<std::string, std::decay_t<T>>,
+                       std::is_arithmetic<std::decay_t<T>>> {};
 
 template <typename T>
 inline constexpr bool is_atomic_buffer_v = is_atomic_buffer<T>::value;
@@ -87,6 +85,7 @@ class Dataset {
   Dataset(RootGroup root_group, std::string_view path_to_dataset,
           const HighFive::DataSetAccessProps &aprops = default_access_props());
 
+  // NOLINTNEXTLINE(*-avoid-c-arrays)
   template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   Dataset(RootGroup root_group, std::string_view path_to_dataset, const T &type,
           std::size_t max_dim = HighFive::DataSpace::UNLIMITED,
@@ -170,13 +169,14 @@ class Dataset {
   template <typename InputIt, typename UnaryOperation = identity,
             typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int>
                 * = nullptr>
-  std::size_t write(InputIt first_value, InputIt last_value, std::size_t offset = 0,
+  std::size_t write(InputIt first_value, const InputIt &last_value, std::size_t offset = 0,
                     bool allow_dataset_resize = false, UnaryOperation op = identity());
 
   template <typename InputIt, typename UnaryOperation = identity,
             typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int>
                 * = nullptr>
-  std::size_t append(InputIt first_value, InputIt last_value, UnaryOperation op = identity());
+  std::size_t append(InputIt first_value, const InputIt &last_value,
+                     UnaryOperation op = identity());
 
   // Write single values
   template <typename N, typename = std::enable_if_t<std::is_arithmetic_v<N>>>
@@ -260,7 +260,12 @@ class Dataset {
     using reference = value_type &;
     using iterator_category = std::random_access_iterator_tag;
 
-    enum OverlapStatus { UPSTREAM, OVERLAPPING, DOWNSTEAM, UNINITIALIZED };
+    enum class OverlapStatus : std::uint_fast8_t {
+      UPSTREAM,
+      OVERLAPPING,
+      DOWNSTEAM,
+      UNINITIALIZED
+    };
 
     iterator() = default;
 

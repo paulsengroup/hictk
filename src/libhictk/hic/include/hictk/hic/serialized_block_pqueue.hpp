@@ -20,7 +20,7 @@ class SerializedBlockPQueue {
   std::vector<BlockID> _block_ids{};
   phmap::btree_map<BlockID, std::string> _buff{};
   mutable std::mutex _mtx{};
-  std::size_t _capacity{256};
+  std::size_t _capacity{256};  // NOLINT(*-avoid-magic-numbers)
   std::size_t _producers{1};
 
  public:
@@ -44,7 +44,7 @@ class SerializedBlockPQueue {
 
   [[nodiscard]] bool try_enqueue(const BlockID& block_id, const std::string& serialized_block,
                                  std::chrono::milliseconds timeout = std::chrono::seconds(1));
-  [[nodiscard]] auto dequeue_timed(
+  [[nodiscard]] auto dequeue_timed(  // NOLINTNEXTLINE(*-avoid-magic-numbers)
       std::chrono::milliseconds timeout = std::chrono::milliseconds(50)) -> Record;
   void dequeue(std::vector<Record>& buffer);
 

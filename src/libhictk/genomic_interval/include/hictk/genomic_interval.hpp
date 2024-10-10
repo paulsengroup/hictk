@@ -22,18 +22,18 @@ class GenomicInterval {
   std::uint32_t _end{};
 
  public:
-  enum class Type { BED, UCSC };
+  enum class Type : std::uint_fast8_t { BED, UCSC };
 
   constexpr GenomicInterval() = default;
   explicit GenomicInterval(const Chromosome &chrom_) noexcept;
-  GenomicInterval(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
+  GenomicInterval(Chromosome chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
   [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse(
-      std::string query, Type type = Type::UCSC);
+      const std::string &query, Type type = Type::UCSC);
   [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_ucsc(
       std::string buffer);
   [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_bed(
       std::string_view buffer, char sep = '\t');
-  [[nodiscard]] static GenomicInterval parse(const Reference &chroms, std::string query,
+  [[nodiscard]] static GenomicInterval parse(const Reference &chroms, const std::string &query,
                                              Type type = Type::UCSC);
   [[nodiscard]] static GenomicInterval parse_ucsc(const Reference &chroms, std::string buffer);
   [[nodiscard]] static GenomicInterval parse_bed(const Reference &chroms, std::string_view buffer,

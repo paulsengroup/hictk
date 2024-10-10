@@ -20,8 +20,7 @@ namespace hictk::tools {
 
 template <typename N>
 struct PixelCmp {
-  [[nodiscard]] inline bool operator()(const ThinPixel<N>& p1,
-                                       const ThinPixel<N>& p2) const noexcept {
+  [[nodiscard]] bool operator()(const ThinPixel<N>& p1, const ThinPixel<N>& p2) const noexcept {
     if (p1.bin1_id != p2.bin1_id) {
       return p1.bin1_id < p2.bin1_id;
     }
@@ -39,10 +38,10 @@ class PairsAggregator {
 
  public:
   PairsAggregator() = delete;
-  inline PairsAggregator(PixelQueue<N>& queue, const std::atomic<bool>& early_return)
+  PairsAggregator(PixelQueue<N>& queue, const std::atomic<bool>& early_return)
       : _queue(&queue), _early_return(&early_return) {}
 
-  inline bool read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
+  bool read_next_chunk(std::vector<ThinPixel<N>>& buffer) {
     assert(buffer.capacity() != 0);
     buffer.clear();
     read_next_batch(buffer.capacity());
@@ -53,8 +52,9 @@ class PairsAggregator {
   }
 
  private:
-  [[nodiscard]] inline ThinPixel<N> dequeue_pixel() {
+  [[nodiscard]] ThinPixel<N> dequeue_pixel() {
     ThinPixel<N> buff{};
+    // NOLINTNEXTLINE(*-braces-around-statements,*-avoid-magic-numbers)
     while (!(*_early_return) && !_queue->wait_dequeue_timed(buff, std::chrono::milliseconds(10)));
     if (*_early_return) {
       return {ThinPixel<N>::null_id, ThinPixel<N>::null_id, 0};
@@ -62,7 +62,7 @@ class PairsAggregator {
     return buff;
   }
 
-  inline ThinPixel<N> aggregate_pixel() {
+  ThinPixel<N> aggregate_pixel() {
     while (!(*_early_return)) {
       auto p = dequeue_pixel();
       if (!p) {
@@ -80,7 +80,7 @@ class PairsAggregator {
     return p;
   }
 
-  inline void insert_or_update(const ThinPixel<N>& pixel) {
+  void insert_or_update(const ThinPixel<N>& pixel) {
     auto node = _buffer.find(pixel);
     if (node != _buffer.end()) {
       node->count += pixel.count;
@@ -89,7 +89,7 @@ class PairsAggregator {
     }
   }
 
-  inline void read_next_batch(std::size_t batch_size) {
+  void read_next_batch(std::size_t batch_size) {
     assert(batch_size != 0);
     _buffer.clear();
 

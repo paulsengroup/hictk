@@ -16,7 +16,7 @@
 
 namespace hictk::cooler::test::dataset {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
   const auto path = testdir() / "test_dataset_accessors.cool";
   std::filesystem::remove(path);
@@ -44,5 +44,7 @@ TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
     CHECK_NOTHROW(dset().resize(std::vector<std::size_t>{20}));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

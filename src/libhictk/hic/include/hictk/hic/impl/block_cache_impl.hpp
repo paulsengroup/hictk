@@ -38,9 +38,9 @@ inline auto BlockCache::emplace(std::size_t chrom1_id, std::size_t chrom2_id, st
     pop_oldest();
   }
 
-  BlockID key{chrom1_id, chrom2_id, block_id};
+  const BlockID key{chrom1_id, chrom2_id, block_id};
   _queue.push(key);
-  _map.emplace(std::move(key), block);
+  _map.emplace(key, block);
   _size += block->size();
   return block;
 }
@@ -88,7 +88,7 @@ constexpr double BlockCache::hit_rate() const noexcept {
   if (_hits + _misses == 0) {
     return 0.0;
   }
-  return double(_hits) / double(_hits + _misses);
+  return static_cast<double>(_hits) / static_cast<double>(_hits + _misses);
 }
 
 constexpr void BlockCache::reset_stats() noexcept {

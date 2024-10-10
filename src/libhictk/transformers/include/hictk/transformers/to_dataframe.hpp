@@ -73,13 +73,13 @@ static arrow::DoubleBuilder map_cpp_type_to_arrow_builder() {
 }
 }  // namespace internal
 
-enum class DataFrameFormat { COO, BG2 };
+enum class DataFrameFormat : std::uint_fast8_t { COO, BG2 };
 
 template <typename PixelIt>
 class ToDataFrame {
   using PixelT = remove_cvref_t<decltype(*std::declval<PixelIt>())>;
   using N = decltype(std::declval<PixelIt>()->count);
-  static_assert(std::is_same_v<PixelT, hictk::ThinPixel<N>>);
+  static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
   PixelIt _first{};
   PixelIt _last{};
@@ -134,17 +134,19 @@ class ToDataFrame {
   std::int32_t _chrom_id_offset{};
 
  public:
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel,
               DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               bool mirror_pixels = true, std::size_t chunk_size = 256'000);
 
-  template <typename PixelSelector>
+  template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               std::size_t chunk_size = 256'000);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
@@ -152,11 +154,11 @@ class ToDataFrame {
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
   [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema(bool with_bin_ids = false) const;
 
-  void append_symmetric(Pixel<N>&& p);
-  void append_symmetric(ThinPixel<N>&& p);
+  void append_symmetric(Pixel<N> p);
+  void append_symmetric(ThinPixel<N> p);
 
-  void append_asymmetric(Pixel<N>&& p);
-  void append_asymmetric(ThinPixel<N>&& p);
+  void append_asymmetric(const Pixel<N>& p);
+  void append_asymmetric(ThinPixel<N> p);
 
   static void append(arrow::StringBuilder& builder, std::string_view data);
   template <typename ArrayBuilder, typename T>
@@ -170,8 +172,7 @@ class ToDataFrame {
   [[nodiscard]] std::shared_ptr<arrow::Table> make_coo_table();
   [[nodiscard]] std::shared_ptr<arrow::Table> make_bg2_table();
 
-  [[nodiscard]] static std::shared_ptr<arrow::Array> make_chrom_dict(
-      const hictk::Reference& chroms);
+  [[nodiscard]] static std::shared_ptr<arrow::Array> make_chrom_dict(const Reference& chroms);
 
   void write_thin_pixels();
   void write_pixels();

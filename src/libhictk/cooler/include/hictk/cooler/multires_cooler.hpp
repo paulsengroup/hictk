@@ -39,7 +39,7 @@ class MultiResFile {
   MultiResAttributes _attrs{};
   Reference _chroms{};
 
-  MultiResFile(HighFive::File fp, Reference chroms, std::vector<std::uint32_t> resolutions,
+  MultiResFile(const HighFive::File& fp, Reference chroms, std::vector<std::uint32_t> resolutions,
                MultiResAttributes attrs);
 
  public:

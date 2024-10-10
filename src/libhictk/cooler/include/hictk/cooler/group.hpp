@@ -18,33 +18,81 @@ HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5File.hpp>
 HICTK_DISABLE_WARNING_POP
 #include <highfive/H5Group.hpp>
+#include <optional>
 #include <string>
 
 namespace hictk::cooler {
 
-HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
-struct RootGroup {
-  HighFive::Group group{};
+class RootGroup {
+  std::optional<HighFive::Group> _group{};
 
-  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return group; };
-  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept { return group; };
+ public:
+  RootGroup() = default;
+  explicit RootGroup(HighFive::Group grp) noexcept : _group(std::move(grp)) {}
 
-  [[nodiscard]] inline std::string file_name() const { return group.getFile().getName(); }
-  [[nodiscard]] inline std::string hdf5_path() const { return group.getPath(); }
-  [[nodiscard]] inline std::string uri() const {
+  RootGroup(const RootGroup& other) = default;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  RootGroup(RootGroup&& other) noexcept : _group(std::move(other._group)) {}
+
+  ~RootGroup() noexcept = default;
+
+  RootGroup& operator=(const RootGroup& other) = default;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  RootGroup& operator=(RootGroup&& other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    _group = std::move(other._group);
+
+    return *this;
+  }
+
+  [[nodiscard]] constexpr HighFive::Group& operator()() {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    return _group.value();
+  }
+  [[nodiscard]] constexpr const HighFive::Group& operator()() const {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    return _group.value();
+  }
+
+  [[nodiscard]] std::string file_name() const {
+    if (!_group.has_value()) {
+      return "";
+    }
+    return _group->getFile().getName();
+  }
+  [[nodiscard]] std::string hdf5_path() const {
+    if (!_group.has_value()) {
+      return "";
+    }
+    return _group->getPath();
+  }
+  [[nodiscard]] std::string uri() const {
+    if (!_group.has_value()) {
+      return "";
+    }
     return fmt::format(FMT_STRING("{}::{}"), file_name(), hdf5_path());
   }
 };
 
-struct Group {
-  RootGroup root_group{};
-  HighFive::Group group{};
+class Group {
+  RootGroup _root_group{};
+  std::optional<HighFive::Group> _group{};
 
-  [[nodiscard]] constexpr HighFive::Group &operator()() noexcept { return group; };
-  [[nodiscard]] constexpr const HighFive::Group &operator()() const noexcept { return group; };
+ public:
+  Group() = default;
+  Group(RootGroup root_grp, HighFive::Group grp) noexcept
+      : _root_group(std::move(root_grp)), _group(std::move(grp)) {}
+  [[nodiscard]] constexpr HighFive::Group& operator()() {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    return _group.value();
+  }
+  [[nodiscard]] constexpr const HighFive::Group& operator()() const {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    return _group.value();
+  }
 };
-HICTK_DISABLE_WARNING_POP
 
 using GroupMap = phmap::flat_hash_map<std::string, Group>;
 

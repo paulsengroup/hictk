@@ -52,7 +52,7 @@ jobs:
     needs: build-conan-deps
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-18
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
     outputs:
@@ -73,6 +73,11 @@ jobs:
 
       - name: Print clang-tidy version
         run: clang-tidy --version
+
+      - name: Install Python headers
+        run: |
+          apt-get update
+          apt-get install -y python3.12-dev
 
       - name: Generate cache key
         id: cache-key
@@ -115,8 +120,10 @@ jobs:
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
                 -DOPT_ENABLE_CLANG_TIDY=ON                    \
+                -DHICTK_BUILD_BENCHMARKS=ON                   \
                 -DHICTK_BUILD_EXAMPLES=ON                     \
                 -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON               \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
                 -S .                                          \

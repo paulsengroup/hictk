@@ -12,7 +12,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: format checking", "[cooler][short]") {
   SECTION("test .cool") {
     const auto path = datadir / "cooler_test_file.cool";
@@ -127,5 +127,7 @@ TEST_CASE("Cooler: index validation", "[cooler][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

@@ -55,12 +55,12 @@ namespace internal {
 
 }  // namespace internal
 
-[[nodiscard]] inline std::string_view suffix() noexcept {
+[[nodiscard]] inline std::string_view suffix() {
   static const std::string buff{internal::generate_suffix()};
   return buff;
 }
 
-[[nodiscard]] inline std::string_view str() noexcept {
+[[nodiscard]] inline std::string_view str() {
   static const std::string buff =
       suffix().empty()
           ? fmt::format(FMT_STRING("{}.{}.{}"), major(), minor(), patch())
@@ -68,7 +68,7 @@ namespace internal {
   return buff;
 }
 
-[[nodiscard]] inline std::string_view str_long(std::string_view prefix = "hictk") noexcept {
+[[nodiscard]] inline std::string_view str_long(std::string_view prefix = "hictk") {
   assert(!prefix.empty());
   static const std::string buff{fmt::format(FMT_STRING("{}-v{}"), prefix, str())};
   return buff;

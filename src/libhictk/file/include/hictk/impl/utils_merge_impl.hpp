@@ -30,7 +30,7 @@ namespace merge::internal {
 inline void validate_bin_size(const std::vector<File>& files, bool variable_bin_sizes_ok = true) {
   assert(files.size() > 1);
   const auto& f1 = files.front();
-  const auto bin_table1 = f1.bins();
+  const auto& bin_table1 = f1.bins();
   if (!variable_bin_sizes_ok && f1.bins().type() == BinTable::Type::variable) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("file \"{}\" has a bin table with variable bin size"), f1.uri()));
@@ -139,7 +139,7 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
 
     const auto& [_, heads, tails] = merge::internal::init_iterators<N>(files);
 
-    transformers::PixelMerger merger{heads, tails};
+    const transformers::PixelMerger merger{heads, tails};
     std::vector<ThinPixel<N>> buffer(chunk_size);
     buffer.clear();
 
@@ -193,7 +193,7 @@ inline void merge_to_hic(Str first_file, Str last_file, std::string_view dest_fi
 
     const auto& [_, heads, tails] = merge::internal::init_iterators<float>(files);
 
-    transformers::PixelMerger merger{heads, tails};
+    const transformers::PixelMerger merger{heads, tails};
     std::vector<ThinPixel<float>> buffer(chunk_size);
     buffer.clear();
 

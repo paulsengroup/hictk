@@ -37,8 +37,8 @@ struct indexEntry {
 
 namespace hictk::hic {
 
-enum class MatrixType { observed, oe, expected };
-enum class MatrixUnit { BP, FRAG };
+enum class MatrixType : std::uint_fast8_t { observed, oe, expected };
+enum class MatrixUnit : std::uint_fast8_t { BP, FRAG };
 
 [[nodiscard]] inline MatrixType ParseMatrixTypeStr(const std::string &s) {
   if (s == "observed") {
@@ -71,7 +71,7 @@ template <>
 struct fmt::formatter<hictk::hic::MatrixType> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
     return ctx.end();
   }
@@ -94,7 +94,7 @@ template <>
 struct fmt::formatter<hictk::hic::MatrixUnit> {
   static constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
     return ctx.end();
   }

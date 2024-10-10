@@ -70,7 +70,7 @@ inline HighFive::DataSetAccessProps Dataset::init_access_props(std::size_t chunk
   assert(chunk_size != 0);
   assert(cache_size != 0);
 
-  const auto num_chunks = (std::max)(std::size_t(1), cache_size / chunk_size);
+  const auto num_chunks = (std::max)(std::size_t{1}, cache_size / chunk_size);
   const auto num_slots = internal::nearest_prime(100 * num_chunks);
 
   HighFive::DataSetAccessProps props{};

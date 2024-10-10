@@ -29,6 +29,8 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_writer {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::hic::internal;
 
 TEST_CASE("HiC: HiCInteractionToBlockMapper::BlockMapper", "[hic][v9][short]") {
@@ -96,7 +98,6 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
   CHECK(num_interactions == pixels1.size() + pixels2.size());
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
   using PQueue = SerializedBlockPQueue<std::uint64_t>;
   spdlog::set_level(spdlog::level::trace);
@@ -130,7 +131,9 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
     std::mt19937_64 rand_eng_(rd_());
 
     ++threads_started;
+    // clang-format off
     while (threads_started != num_threads);  // NOLINT
+    // clang-format on
 
     while (true) {
       const auto idx = i++;
@@ -144,7 +147,9 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
       std::this_thread::sleep_for(sleep_time);
 
       const auto& record = records[idx];
+      // clang-format off
       while (!queue.try_enqueue(record.bid, record.serialized_block));  // NOLINT
+      // clang-format on
     }
   };
 
@@ -183,14 +188,13 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
-static void compare_weights(const hictk::balancing::Weights& weights_,
-                            const hictk::balancing::Weights& expected_, double atol = 1.0e-5,
-                            double rtol = 1.0e-5) {
+static void compare_weights(const balancing::Weights& weights_, const balancing::Weights& expected_,
+                            // NOLINTNEXTLINE(*-avoid-magic-numbers)
+                            double atol = 1.0e-5, double rtol = 1.0e-5) {
   REQUIRE(weights_.size() == expected_.size());
 
-  const auto weights = weights_(hictk::balancing::Weights::Type::DIVISIVE);
-  const auto expected = expected_(hictk::balancing::Weights::Type::DIVISIVE);
+  const auto weights = weights_(balancing::Weights::Type::DIVISIVE);
+  const auto expected = expected_(balancing::Weights::Type::DIVISIVE);
 
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(expected[i])) {
@@ -211,7 +215,6 @@ static void compare_weights(const hictk::balancing::Weights& weights_,
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 [[maybe_unused]] static void hic_file_writer_compare_pixels(
     const std::vector<Pixel<float>>& expected, const std::vector<Pixel<float>>& found) {
   REQUIRE(expected.size() == found.size());
@@ -226,7 +229,6 @@ static void compare_weights(const hictk::balancing::Weights& weights_,
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 [[maybe_unused]] static void hic_file_writer_create_file_test(
     const std::string& path1, const std::string& path2,
     const std::vector<std::uint32_t>& resolutions, std::size_t num_threads,
@@ -235,7 +237,8 @@ static void compare_weights(const hictk::balancing::Weights& weights_,
     const auto chromosomes = hic::File(path1, resolutions.front()).chromosomes();
     const auto tmpdir = testdir() / (path1 + ".tmp");
     std::filesystem::create_directories(tmpdir);
-    std::filesystem::remove(path2);
+    std::filesystem::remove(path2);  // NOLINT
+
     HiCFileWriter w(path2, chromosomes, resolutions, "dm6", num_threads, 99'999, tmpdir, 1,
                     skip_all_vs_all_matrix);
     for (std::size_t i = 0; i < resolutions.size(); ++i) {
@@ -296,7 +299,6 @@ static void compare_weights(const hictk::balancing::Weights& weights_,
   return buff;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
@@ -321,7 +323,6 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_004.hic").string();
@@ -442,5 +443,7 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
                     balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::hic::test::file_writer

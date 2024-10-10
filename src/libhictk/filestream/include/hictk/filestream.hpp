@@ -21,9 +21,11 @@ namespace hictk::filestream {
 
 template <typename Mutex = std::mutex>
 class FileStream {
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   static_assert(sizeof(char) == 1, "char must be 1 byte wide!");
   static_assert(sizeof(float) == 4, "float must be 4 bytes wide!");
   static_assert(sizeof(double) == 8, "double must be 8 bytes wide!");
+  // NOLINTEND(*-avoid-magic-numbers)
 
   std::string _path{};
   mutable std::shared_ptr<Mutex> _mtx{};
@@ -31,8 +33,9 @@ class FileStream {
   mutable std::ofstream _ofs{};
   std::streamsize _file_size{};
 
-  static const std::ifstream::openmode _ifs_flags{std::ios::in | std::ios::binary};
-  static const std::ofstream::openmode _ofs_flags{std::ios::in | std::ios::out | std::ios::binary};
+  static constexpr std::ifstream::openmode _ifs_flags{std::ios::in | std::ios::binary};
+  static constexpr std::ofstream::openmode _ofs_flags{std::ios::in | std::ios::out |
+                                                      std::ios::binary};
 
  public:
   FileStream() = default;

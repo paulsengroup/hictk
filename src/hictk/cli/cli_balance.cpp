@@ -148,13 +148,13 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn.")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(0, 19))
+      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -266,13 +266,13 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn.")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(0, 19))
+      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -370,7 +370,7 @@ void Cli::validate_balance_subcommand() const {
         if (input_format == "hic") {
           const auto avail_resolutions = hic::utils::list_resolutions(c.path_to_input);
           const hic::File f(c.path_to_input.string(), avail_resolutions.back());
-          if (f.version() < 9) {
+          if (f.version() < 9) {  // NOLINT(*-avoid-magic-numbers)
             errors.emplace_back("balancing .hic files v8 and older is not currently supported.");
           }
         }
