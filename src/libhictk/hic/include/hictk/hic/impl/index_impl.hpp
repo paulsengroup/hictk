@@ -208,6 +208,7 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
 inline void Index::generate_block_list_intra_v9plus(
     std::size_t bin1, std::size_t bin2, std::size_t bin3, std::size_t bin4,
     phmap::flat_hash_set<BlockIndex> &buffer) const {
+  // NOLINTBEGIN(*-math-missing-parentheses)
   const auto translatedLowerPAD = (bin1 + bin3) / 2 / _block_bin_count;
   const auto translatedHigherPAD = (bin2 + bin4) / 2 / _block_bin_count + 1;
   const auto translatedNearerDepth = static_cast<std::size_t>(
@@ -216,6 +217,7 @@ inline void Index::generate_block_list_intra_v9plus(
   const auto translatedFurtherDepth = static_cast<std::size_t>(
       std::log2(1.0 + static_cast<double>(hictk::internal::abs_diff(bin2, bin3)) / std::sqrt(2.0) /
                           static_cast<double>(_block_bin_count)));
+  // NOLINTEND(*-math-missing-parentheses)
 
   const auto query_includes_diagonal = (bin1 > bin4 && bin2 < bin3) || (bin2 > bin3 && bin1 < bin4);
   const auto nearerDepth =

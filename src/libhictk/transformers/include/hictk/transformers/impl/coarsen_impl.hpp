@@ -105,7 +105,7 @@ inline auto CoarsenPixels<PixelIt>::iterator::at_end(PixelIt last,
     -> iterator {
   iterator it{};
   it._pixel_it = last;
-  it._pixel_last = last;
+  it._pixel_last = std::move(last);
   it._src_bins = std::move(src_bins);
   it._dest_bins = std::move(dest_bins);
   return it;

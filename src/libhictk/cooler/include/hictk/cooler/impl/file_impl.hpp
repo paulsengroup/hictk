@@ -139,8 +139,8 @@ template <typename PixelT>
 inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
                          bool overwrite_if_exists, Attributes attributes,
                          std::size_t cache_size_bytes, std::uint32_t compression_lvl) {
-  return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists, attributes,
-                              cache_size_bytes, compression_lvl);
+  return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists,
+                              std::move(attributes), cache_size_bytes, compression_lvl);
 }
 
 template <typename PixelT>
@@ -187,8 +187,8 @@ inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_
     }
 
     return create<PixelT>(
-        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), bins,
-        attributes, cache_size_bytes, compression_lvl);
+        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri),
+        std::move(bins), std::move(attributes), cache_size_bytes, compression_lvl);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
@@ -210,8 +210,8 @@ template <typename PixelT>
 inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size,
                          Attributes attributes, std::size_t cache_size_bytes,
                          std::uint32_t compression_lvl) {
-  return File::create<PixelT>(entrypoint, BinTable(chroms, bin_size), attributes, cache_size_bytes,
-                              compression_lvl);
+  return File::create<PixelT>(std::move(entrypoint), BinTable(chroms, bin_size),
+                              std::move(attributes), cache_size_bytes, compression_lvl);
 }
 
 template <typename PixelT>
@@ -225,8 +225,8 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
     if (utils::is_cooler(entrypoint())) {
       throw std::runtime_error("URI points to an already existing cooler.");
     }
-    return File(entrypoint, bins, PixelT(0), attributes, cache_size_bytes, compression_lvl,
-                DEFAULT_HDF5_CACHE_W0);
+    return File(entrypoint, std::move(bins), PixelT(0), attributes, cache_size_bytes,
+                compression_lvl, DEFAULT_HDF5_CACHE_W0);
 
   } catch (const std::exception &e) {
     throw std::runtime_error(

@@ -67,7 +67,7 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
   double sum = 0;
   double norm_sum = 0;
 
-  std::for_each(first, last, [&](const ThinPixel<N>& p) {
+  std::for_each(std::move(first), std::move(last), [&](const ThinPixel<N>& p) {
     sum += p.count;
     norm_sum += p.count / (_biases[p.bin1_id - offset] * _biases[p.bin2_id - offset]);
     if (p.bin1_id != p.bin2_id) {

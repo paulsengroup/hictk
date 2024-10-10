@@ -297,9 +297,9 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBloc
     -> iterator<N> {
   iterator it{};
 
-  it._reader = reader;
-  it._coord1 = coord1;
-  it._coord2 = coord2;
+  it._reader = std::move(reader);
+  it._coord1 = std::move(coord1);
+  it._coord2 = std::move(coord2);
   it._buffer = nullptr;  // end of queue
 
   return it;

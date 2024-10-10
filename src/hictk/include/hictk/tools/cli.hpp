@@ -108,8 +108,8 @@ class Formatter : public CLI::Formatter {
       return opt->get_option_text();
     }
 
-    auto str_contains = [](const auto s, const auto query) {
-      return s.find(query) != decltype(s)::npos;
+    auto str_contains = [](const auto& s, const auto query) {
+      return s.find(query) != remove_cvref_t<decltype(s)>::npos;
     };
 
     std::string out;

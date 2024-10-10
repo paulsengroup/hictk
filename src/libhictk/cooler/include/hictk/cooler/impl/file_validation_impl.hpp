@@ -82,7 +82,8 @@ inline void File::validate_bins(bool full) const {
 }
 
 template <typename PixelIt>
-inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const {
+inline void File::validate_pixels_before_append(const PixelIt &first_pixel,
+                                                const PixelIt &last_pixel) const {
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = decltype(std::declval<PixelT>().count);
   try {
@@ -162,8 +163,8 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
 }
 
 template <typename PixelIt>
-inline void File::validate_thin_pixels_before_append(PixelIt first_pixel,
-                                                     PixelIt last_pixel) const {
+inline void File::validate_thin_pixels_before_append(const PixelIt &first_pixel,
+                                                     const PixelIt &last_pixel) const {
   using T = decltype(first_pixel->count);
   try {
     std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &pixel) {

@@ -141,7 +141,7 @@ class ToDataFrame {
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               bool mirror_pixels = true, std::size_t chunk_size = 256'000);
 
-  template <typename PixelSelector>
+  template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,

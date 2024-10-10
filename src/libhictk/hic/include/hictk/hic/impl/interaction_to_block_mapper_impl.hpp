@@ -178,7 +178,8 @@ inline bool HiCInteractionToBlockMapper::empty(const Chromosome &chrom1,
 }
 
 template <typename PixelIt, typename>
-inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
+                                                       const PixelIt &last_pixel,
                                                        std::uint32_t update_frequency) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
@@ -372,7 +373,7 @@ inline void HiCInteractionToBlockMapper::init_block_mappers() {
       const auto num_columns = compute_block_column_count(
           chrom1, chrom2, _bin_table->resolution(),
           chrom1 == chrom2 ? DEFAULT_INTRA_CUTOFF : DEFAULT_INTER_CUTOFF);
-      const auto num_rows = num_bins / num_columns + 1;
+      const auto num_rows = (num_bins / num_columns) + 1;
 
       if (chrom1 == chrom2) {
         _mappers_intra.emplace(chrom1, BlockMapperIntra{num_rows, num_columns});
@@ -508,7 +509,7 @@ inline std::size_t HiCInteractionToBlockMapper::compute_block_column_count(
     const Chromosome &chrom1, const Chromosome &chrom2, std::uint32_t bin_size,
     std::uint32_t cutoff, std::size_t block_capacity) {
   const auto num_bins = compute_num_bins(chrom1, chrom2, bin_size);
-  auto num_columns = num_bins / block_capacity + 1;
+  auto num_columns = (num_bins / block_capacity) + 1;
   if (bin_size < cutoff) {
     const auto genome_size = num_bins * bin_size;
     num_columns = genome_size / (block_capacity * cutoff);
@@ -577,7 +578,7 @@ inline std::uint64_t HiCInteractionToBlockMapper::BlockMapperIntra::operator()(
   const auto depth = static_cast<std::uint64_t>(std::log(1.0 + n) / _base);
   const auto position_along_diagonal = (bin1_id + bin2_id) / 2 / block_bin_count();
 
-  return depth * block_column_count() + position_along_diagonal;
+  return (depth * block_column_count()) + position_along_diagonal;
 }
 
 inline double HiCInteractionToBlockMapper::BlockMapperIntra::init_base(

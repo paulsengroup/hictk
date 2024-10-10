@@ -357,7 +357,7 @@ inline void SingleCellFile::create_datasets(RootGroup& root_grp, const BinTable&
   const auto default_aprop =
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0);
 
-  auto create_dataset = [&](const auto& path, const auto& type, auto aprop) {
+  auto create_dataset = [&](const auto& path, const auto& type, const auto& aprop) {
     using T = remove_cvref_t<decltype(type)>;
     if constexpr (is_string_v<T>) {
       const auto& chrom_with_longest_name = bins.chromosomes().chromosome_with_longest_name();
@@ -393,7 +393,8 @@ inline void SingleCellFile::create_cell_datasets(RootGroup& root_grp, std::size_
 
   const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
 
-  auto create_dataset = [&](const auto& path, const auto& type, auto aprop, auto cprop) {
+  auto create_dataset = [&](const auto& path, const auto& type, const auto& aprop,
+                            const auto& cprop) {
     Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop, cprop};
   };
 

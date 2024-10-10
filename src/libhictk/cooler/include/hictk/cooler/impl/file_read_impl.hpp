@@ -459,7 +459,7 @@ bool read_sum_optional(const RootGroup &root_grp, std::string_view key, N &buff,
     auto sumv = Attribute::read(root_grp(), key);
     assert(!sumv.valueless_by_exception());
     const auto ok = std::visit(
-        [&](auto sum) {
+        [&](auto sum) {  // NOLINT(performance-unnecessary-value-param)
           using T = remove_cvref_t<decltype(sum)>;
           if constexpr (std::is_integral_v<T>) {
             buff = conditional_static_cast<std::int64_t>(sum);

@@ -350,16 +350,17 @@ class File {
   void read_index_chunk(std::initializer_list<Chromosome> chroms) const;
 
   template <typename PixelIt>
-  static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,
-                          PixelIt last_pixel);
+  static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, const PixelIt &first_pixel,
+                          const PixelIt &last_pixel);
   template <typename PixelIt, typename N>
   static void append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
                             PixelIt last_pixel, N &sum, N &cis_sum);
 
   template <typename PixelIt>
-  void validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
+  void validate_pixels_before_append(const PixelIt &first_pixel, const PixelIt &last_pixel) const;
   template <typename PixelIt>
-  void validate_thin_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
+  void validate_thin_pixels_before_append(const PixelIt &first_pixel,
+                                          const PixelIt &last_pixel) const;
 
   [[nodiscard]] static NumericVariant detect_pixel_type(const RootGroup &root_grp,
                                                         std::string_view path = "pixels/count");

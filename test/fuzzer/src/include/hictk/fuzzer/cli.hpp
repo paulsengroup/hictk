@@ -25,7 +25,7 @@ namespace hictk::fuzzer {
 
 class CoolerFileValidator : public CLI::Validator {
  public:
-  inline CoolerFileValidator() : Validator("Cooler") {
+  CoolerFileValidator() : Validator("Cooler") {
     func_ = [](std::string& uri) -> std::string {
       if (!hictk::cooler::utils::is_cooler(uri)) {
         if (hictk::cooler::utils::is_multires_file(uri)) {
@@ -47,7 +47,7 @@ class CoolerFileValidator : public CLI::Validator {
 
 class MultiresCoolerFileValidator : public CLI::Validator {
  public:
-  inline MultiresCoolerFileValidator() : Validator("Multires-cooler") {
+  MultiresCoolerFileValidator() : Validator("Multires-cooler") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
@@ -63,7 +63,7 @@ class MultiresCoolerFileValidator : public CLI::Validator {
 
 class HiCFileValidator : public CLI::Validator {
  public:
-  inline HiCFileValidator() : Validator("HiC") {
+  HiCFileValidator() : Validator("HiC") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
@@ -87,13 +87,13 @@ class HiCFileValidator : public CLI::Validator {
 
 class Formatter : public CLI::Formatter {
   // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-  [[nodiscard]] inline std::string make_option_opts(const CLI::Option* opt) const override {
+  [[nodiscard]] std::string make_option_opts(const CLI::Option* opt) const override {
     if (!opt->get_option_text().empty()) {
       return opt->get_option_text();
     }
 
-    auto str_contains = [](const auto s, const auto query) {
-      return s.find(query) != decltype(s)::npos;
+    auto str_contains = [](const auto& s, const auto query) {
+      return s.find(query) != remove_cvref_t<decltype(s)>::npos;
     };
 
     std::string out;

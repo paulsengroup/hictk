@@ -30,6 +30,7 @@ struct COODataFrame {
 
   NumpyArray<N> count{};
 
+  // NOLINTNEXTLINE(*-unnecessary-value-param)
   COODataFrame<N>& operator=(pybind11::object df);
 
   [[nodiscard]] std::size_t size() const noexcept;
@@ -51,6 +52,7 @@ struct BG2DataFrame {
 
   NumpyArray<N> count{};
 
+  // NOLINTNEXTLINE(*-unnecessary-value-param)
   BG2DataFrame<N>& operator=(pybind11::object df);
 
   [[nodiscard]] std::size_t size() const noexcept;
@@ -59,7 +61,7 @@ struct BG2DataFrame {
   void to_vector(const Reference& chroms, std::vector<Pixel<N>>& buffer) const;
 };
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 [[nodiscard]] EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj);
 
 class Cooler {

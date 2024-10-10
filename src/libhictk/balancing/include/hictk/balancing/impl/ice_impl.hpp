@@ -466,7 +466,7 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::uint64_t> chrom_offse
     return (n1 + n2) / 2;
   };
 
-  auto mad = [&](const auto vin) {
+  auto mad = [&](const auto& vin) {
     const auto median_ = median(vin);
     auto vout = vin;
 
@@ -507,7 +507,7 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::uint64_t> chrom_offse
   const auto median_log_nz_marg = median(log_nz_marg);
   const auto dev_log_nz_marg = mad(log_nz_marg);
 
-  const auto cutoff = std::exp(median_log_nz_marg - mad_max * dev_log_nz_marg);
+  const auto cutoff = std::exp(median_log_nz_marg - (mad_max * dev_log_nz_marg));
 
   for (std::size_t i = 0; i < marg.size(); ++i) {
     if (marg[i] < cutoff) {

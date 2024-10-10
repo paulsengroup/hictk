@@ -62,7 +62,7 @@ inline void BinaryBuffer::write(const char *data, std::size_t count, bool add_nu
   }
 }
 
-template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
+template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>  // NOLINT
 inline void BinaryBuffer::write(T data) {
   // NOLINTNEXTLINE(*-type-reinterpret-cast)
   write(reinterpret_cast<const char *>(&data), sizeof(T), false);

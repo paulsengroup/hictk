@@ -92,10 +92,11 @@ inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset
   return new_offset;
 }
 
-template <typename InputIt, typename UnaryOperation,
+template <typename InputIt, typename UnaryOperation,  // NOLINTNEXTLINE(*modernize-type-traits)
           typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int> *>
-inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::size_t offset,
-                                  bool allow_dataset_resize, UnaryOperation op) {
+inline std::size_t Dataset::write(InputIt first_value, const InputIt &last_value,
+                                  std::size_t offset, bool allow_dataset_resize,
+                                  UnaryOperation op) {
   if (first_value == last_value) {
     return offset;
   }
@@ -130,10 +131,11 @@ inline std::size_t Dataset::write(InputIt first_value, InputIt last_value, std::
   return offset;
 }
 
-template <typename InputIt, typename UnaryOperation,
+template <typename InputIt, typename UnaryOperation,  // NOLINTNEXTLINE(*modernize-type-traits)
           typename std::enable_if_t<is_unary_operation_on_iterator<UnaryOperation, InputIt>, int> *>
-inline std::size_t Dataset::append(InputIt first_value, InputIt last_value, UnaryOperation op) {
-  return write(first_value, last_value, size(), true, op);
+inline std::size_t Dataset::append(InputIt first_value, const InputIt &last_value,
+                                   UnaryOperation op) {
+  return write(std::move(first_value), last_value, size(), true, op);
 }
 
 template <typename N, typename>

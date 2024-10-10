@@ -137,7 +137,7 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] bool empty(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
   // NOLINTBEGIN(*-avoid-magic-numbers)
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+  void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel,
                      std::uint32_t update_frequency = 10'000'000);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,

@@ -316,7 +316,7 @@ inline void HiCBlockReader::read_type2_block(std::int32_t bin1Offset, std::int32
       continue;
     }
     const auto row = i / w;
-    const auto col = i - row * w;
+    const auto col = i - (row * w);
     const auto bin1 = static_cast<std::uint64_t>(bin1Offset) + static_cast<std::uint64_t>(col);
     const auto bin2 = static_cast<std::uint64_t>(bin2Offset) + static_cast<std::uint64_t>(row);
 

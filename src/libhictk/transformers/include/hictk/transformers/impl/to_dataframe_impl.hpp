@@ -94,7 +94,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
 }
 
 template <typename PixelIt>
-template <typename PixelSelector>
+template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
                                          DataFrameFormat format,
                                          std::shared_ptr<const BinTable> bins, QuerySpan span,

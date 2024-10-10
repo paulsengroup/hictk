@@ -18,7 +18,7 @@ template <typename T>
   return seed;
 }
 template <typename T, typename... Args>
-[[nodiscard]] inline std::size_t hash_combine(std::size_t seed, const T &v, Args... args) {
+[[nodiscard]] inline std::size_t hash_combine(std::size_t seed, const T &v, const Args &...args) {
   // NOLINTNEXTLINE(*-avoid-magic-numbers)
   seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6U) + (seed >> 2U);
   return hash_combine(seed, args...);

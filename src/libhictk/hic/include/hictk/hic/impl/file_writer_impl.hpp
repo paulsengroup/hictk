@@ -325,7 +325,8 @@ template <typename PixelIt, typename>
 inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
                                       PixelIt last_pixel) {
   try {
-    _block_mappers.at(resolution).append_pixels(first_pixel, last_pixel, _tpool);
+    _block_mappers.at(resolution)
+        .append_pixels(std::move(first_pixel), std::move(last_pixel), _tpool);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while adding pixels for resolution {} to file \"{}\": {}"),
@@ -393,7 +394,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
         HiCInteractionToBlockMapper::compute_num_bins(chrom, chrom, target_resolution_scaled);
     const auto num_columns = HiCInteractionToBlockMapper::compute_block_column_count(
         chrom, chrom, target_resolution_scaled, HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
-    const auto num_rows = num_bins / num_columns + 1;
+    const auto num_rows = (num_bins / num_columns) + 1;
 
     HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
 
@@ -572,7 +573,7 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
 
     const auto num_bins = compute_num_bins(chrom1, chrom2, resolution);
     const auto num_columns = compute_block_column_count(chrom1, chrom2, resolution);
-    const auto num_rows = num_bins / num_columns + 1;
+    const auto num_rows = (num_bins / num_columns) + 1;
 
     mrm.unit = unit;
     mrm.resIdx = static_cast<std::int32_t>(std::distance(

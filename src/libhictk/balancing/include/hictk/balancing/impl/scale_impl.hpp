@@ -77,8 +77,9 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const BinTable& bins, const Par
   _max_tot_iters = params.max_iters * 3;
 
   const auto offset = bins.num_bin_prefix_sum().front();
-  const auto matrix = mask_bins_and_init_buffers(first, last, offset, params.max_percentile,
-                                                 params.tmpfile, params.chunk_size);
+  const auto matrix =
+      mask_bins_and_init_buffers(std::move(first), std::move(last), offset, params.max_percentile,
+                                 params.tmpfile, params.chunk_size);
 
   std::visit([&](const auto& m) { balance(m, bins, params); }, matrix);
 }
@@ -345,7 +346,7 @@ inline double SCALE::compute_final_error(const internal::VectorOfAtomicDecimals&
     if (bad[i]) {
       continue;
     }
-    const auto err1 = std::abs(col[i] * scale[i] - target[i]);
+    const auto err1 = std::abs((col[i] * scale[i]) - target[i]);
     error = std::max(error, err1);
   }
 
