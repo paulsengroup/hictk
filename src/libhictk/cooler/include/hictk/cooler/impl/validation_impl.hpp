@@ -381,6 +381,8 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
                     "validating the index of Coolers with storage-mode=\"{}\" is not supported"),
                 storage_mode));
           }
+
+          return;
         }
 
         throw std::runtime_error(
