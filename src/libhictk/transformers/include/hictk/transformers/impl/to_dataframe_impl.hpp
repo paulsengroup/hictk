@@ -145,7 +145,7 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
     fields.emplace_back(arrow::field("bin2_id", arrow::uint64(), false));
   }
 
-  auto chrom_dict = dictionary(arrow::int32(), arrow::utf8(), true);
+  auto chrom_dict = dictionary(arrow::int32(), arrow::utf8());
 
   fields.emplace_back(arrow::field("chrom1", chrom_dict, false));
   fields.emplace_back(arrow::field("start1", arrow::uint32(), false));
