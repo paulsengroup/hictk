@@ -24,16 +24,17 @@ inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-
 }  // namespace hictk::test
 
 namespace hictk::cooler::test::utils {
-inline const auto& testdir = hictk::test::testdir;
-inline const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+static const auto& datadir = hictk::test::datadir;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   SECTION("merge int") {
     const auto src = datadir / "cooler_test_file.cool";
     const auto dest = testdir() / "cooler_merge_test_int.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
+
     cooler::utils::merge<std::int32_t>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
     const auto clr1 = File::open_read_once(src.string());
@@ -60,6 +61,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
     const auto dest = testdir() / "cooler_merge_test_float.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
+
     cooler::utils::merge<double>(sources.begin(), sources.end(), dest.string(), true, 1'000);
 
     const auto clr1 = File::open_read_once(src.string());
@@ -147,4 +149,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
         Catch::Matchers::ContainsSubstring("use different reference genomes"));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk::cooler::test::utils

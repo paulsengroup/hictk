@@ -102,12 +102,12 @@ struct Pixel {
 }  // namespace hictk
 
 template <typename N>
-struct std::hash<hictk::ThinPixel<N>> {
+struct std::hash<hictk::ThinPixel<N>> {  // NOLINT(cert-dcl58-cpp)
   std::size_t operator()(const hictk::ThinPixel<N> &p) const noexcept;
 };
 
 template <typename N>
-struct std::hash<hictk::Pixel<N>> {
+struct std::hash<hictk::Pixel<N>> {  // NOLINT(cert-dcl58-cpp)
   std::size_t operator()(const hictk::Pixel<N> &p) const noexcept;
 };
 

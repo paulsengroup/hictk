@@ -39,7 +39,7 @@ inline bool MultiResAttributes::operator!=(const MultiResAttributes& other) cons
   return !(*this == other);
 }
 
-inline MultiResFile::MultiResFile(HighFive::File fp, Reference chroms,
+inline MultiResFile::MultiResFile(const HighFive::File& fp, Reference chroms,
                                   std::vector<std::uint32_t> resolutions, MultiResAttributes attrs)
     : _root_grp(std::make_unique<RootGroup>(RootGroup{fp.getGroup("/")})),
       _resolutions(std::move(resolutions)),
@@ -67,12 +67,12 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
   }
   HighFive::File fp(path.string(), HighFive::File::Create);
 
-  MultiResAttributes attrs{};
+  const MultiResAttributes attrs{};
 
   Attribute::write(fp, "format", attrs.format);
-  Attribute::write(fp, "format-version", std::int64_t(attrs.format_version));
-  const std::string bin_type = attrs.bin_type == BinTable::Type::fixed ? "fixed" : "variable";
-  Attribute::write(fp, "bin-type", bin_type);
+  Attribute::write(fp, "format-version", std::int64_t{attrs.format_version});
+  assert(attrs.bin_type == BinTable::Type::fixed);
+  Attribute::write(fp, "bin-type", std::string{"fixed"});
 
   auto res_group = fp.createGroup("/resolutions");
 
@@ -103,7 +103,7 @@ inline MultiResFile MultiResFile::create(const std::filesystem::path& path, cons
       [&]([[maybe_unused]] auto count_type) {
         using PixelT = decltype(count_type);
 
-        std::vector<ThinPixel<PixelT>> buffer{500'000};
+        std::vector<ThinPixel<PixelT>> buffer{500'000};  // NOLINT(*-avoid-magic-numbers)
         for (std::size_t i = 1; i < resolutions_.size(); ++i) {
           const auto tgt_resolution = resolutions_[i];
           const auto base_resolution = compute_base_resolution(mclr._resolutions, tgt_resolution);
@@ -158,7 +158,7 @@ template <typename N>
 inline File MultiResFile::create_resolution(std::uint32_t resolution, Attributes attributes) {
   const auto base_resolution = compute_base_resolution(resolutions(), resolution);
 
-  std::vector<ThinPixel<N>> buffer{500'000};
+  std::vector<ThinPixel<N>> buffer{500'000};  // NOLINT(*-avoid-magic-numbers)
   auto base_clr = open(base_resolution);
   attributes.assembly = base_clr.attributes().assembly;
   attributes.bin_size = resolution;
@@ -200,9 +200,13 @@ inline auto MultiResFile::chromosomes() const noexcept -> const Reference& { ret
                        [&](const auto res) { return res <= target_res && target_res % res == 0; });
 }
 
-inline HighFive::File MultiResFile::file_handle() { return _root_grp->group.getFile(); }
+inline HighFive::File MultiResFile::file_handle() {
+  assert(_root_grp);
+  return (*_root_grp)().getFile();
+}
 inline const HighFive::File& MultiResFile::file_handle() const {
-  return _root_grp->group.getFile();
+  assert(_root_grp);
+  return (*_root_grp)().getFile();
 }
 
 template <typename N>
@@ -215,7 +219,7 @@ inline void MultiResFile::coarsen(const File& clr1, File& clr2, std::vector<Thin
                                           clr2.resolution() / clr1.resolution());
 
   const auto update_frequency =
-      std::max(std::size_t(1'000'000), (clr1.dataset("pixels/bin1_id").size() / 100));
+      std::max(std::size_t{1'000'000}, (clr1.dataset("pixels/bin1_id").size() / 100));
 
   auto first = sel2.begin();
   auto last = sel2.end();
@@ -236,7 +240,8 @@ inline void MultiResFile::coarsen(const File& clr1, File& clr2, std::vector<Thin
           1000.0;
       const auto bin1 = clr2.bins().at(first->bin1_id);
       SPDLOG_INFO(FMT_STRING("[{} -> {}] processing {:ucsc} at {:.0f} pixels/s..."),
-                  clr1.resolution(), clr2.resolution(), bin1, double(update_frequency) / delta);
+                  clr1.resolution(), clr2.resolution(), bin1,
+                  static_cast<double>(update_frequency) / delta);
       t0 = t1;
       j = 0;
     }

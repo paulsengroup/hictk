@@ -15,6 +15,7 @@
 
 namespace hictk::cooler::test::dataset {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset attributes", "[dataset][short]") {
   SECTION("read") {
     const auto path = datadir / "test_read_attrs.h5";
@@ -45,5 +46,7 @@ TEST_CASE("Cooler: dataset attributes", "[dataset][short]") {
     CHECK(dset.read_attribute<std::int32_t>("attr") == -1);
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

@@ -30,7 +30,7 @@ void dump_weights(const File& f, std::string_view range1, std::string_view range
 
 template <typename PixelIt>
 inline void print_pixels(PixelIt first, PixelIt last) {
-  std::for_each(first, last, [&](const auto& pixel) { print(pixel); });
+  std::for_each(std::move(first), std::move(last), [&](const auto& pixel) { print(pixel); });
 }
 
 }  // namespace hictk::tools

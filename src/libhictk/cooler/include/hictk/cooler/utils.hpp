@@ -17,6 +17,8 @@
 
 namespace hictk::cooler::utils {
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
+
 /// Iterable of strings
 template <typename N, typename Str>
 void merge(Str first_uri, Str last_uri, std::string_view dest_uri, bool overwrite_if_exists = false,
@@ -29,6 +31,8 @@ void merge(const std::vector<PixelIt>& heads, const std::vector<PixelIt>& tails,
            bool overwrite_if_exists = false, std::size_t chunk_size = 500'000,
            std::size_t update_frequency = 10'000'000,
            std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
+
+// NOLINTEND(*-avoid-magic-numbers)
 
 [[nodiscard]] bool equal(std::string_view uri1, std::string_view uri2,
                          bool ignore_attributes = true);
@@ -47,7 +51,7 @@ template <typename NameMap, typename = std::enable_if_t<is_map_v<NameMap>>>
 void rename_chromosomes(std::string_view uri, const NameMap& mappings);
 
 template <typename NameMap, typename = std::enable_if_t<is_map_v<NameMap>>>
-inline void rename_chromosomes(cooler::Dataset& chrom_dset, const NameMap& mappings);
+inline void rename_chromosomes(Dataset& chrom_dset, const NameMap& mappings);
 
 }  // namespace hictk::cooler::utils
 

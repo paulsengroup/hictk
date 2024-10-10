@@ -21,18 +21,20 @@ namespace hictk::test {
 inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
+namespace hictk::hic::test::file {
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 // NOLINTNEXTLINE(cert-err58-cpp)
 const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
 const auto path_binary = (hictk::test::datadir / "data.zip").string();
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
   CHECK(utils::is_hic_file(pathV8));
   CHECK_FALSE(utils::is_hic_file(path_binary));
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: file accessors", "[hic][short]") {
   File f(pathV8, 1'000);
 
@@ -62,7 +64,6 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: footer cache", "[hic][short]") {
   File f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP, 1);
 
@@ -92,7 +93,6 @@ TEST_CASE("HiC: footer cache", "[hic][short]") {
   CHECK(&sel1.metadata() != &sel3.metadata());
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: fetch", "[hic][short]") {
   const auto norm = hictk::balancing::Method::NONE();
   const File f(pathV8, 2'500'000, MatrixType::observed, MatrixUnit::BP);
@@ -145,3 +145,7 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
         File(pathV8, f.resolution(), MatrixType::observed, MatrixUnit::FRAG).fetch(chrom1, norm));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
+}  // namespace hictk::hic::test::file

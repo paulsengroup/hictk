@@ -66,40 +66,42 @@ class File {
   [[nodiscard]] constexpr auto matrix_type() const noexcept -> MatrixType;
   [[nodiscard]] constexpr auto matrix_unit() const noexcept -> MatrixUnit;
 
-  [[nodiscard]] PixelSelectorAll fetch(balancing::Method norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelectorAll fetch(
+      const balancing::Method &norm = balancing::Method::NONE()) const;
 
   [[nodiscard]] PixelSelector fetch(std::string_view range,
-                                    balancing::Method norm = balancing::Method::NONE(),
+                                    const balancing::Method &norm = balancing::Method::NONE(),
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
-                                    std::uint32_t end,
-                                    balancing::Method norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
+      const balancing::Method &norm = balancing::Method::NONE()) const;
   [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
-                                    balancing::Method norm = balancing::Method::NONE(),
+                                    const balancing::Method &norm = balancing::Method::NONE(),
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
-                                    std::uint32_t end1, std::string_view chrom2_name,
-                                    std::uint32_t start2, std::uint32_t end2,
-                                    balancing::Method norm = balancing::Method::NONE()) const;
-  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin,
-                                    balancing::Method norm = balancing::Method::NONE()) const;
-  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
-                                    std::uint64_t first_bin2, std::uint64_t last_bin2,
-                                    balancing::Method norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1,
+      std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
+      const balancing::Method &norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::uint64_t first_bin, std::uint64_t last_bin,
+      const balancing::Method &norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelector fetch(
+      std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
+      std::uint64_t last_bin2, const balancing::Method &norm = balancing::Method::NONE()) const;
 
-  [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm,
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm,
                                                         const Chromosome &chrom) const;
   [[nodiscard]] const balancing::Weights &normalization(std::string_view norm,
                                                         const Chromosome &chrom) const;
-  [[nodiscard]] const balancing::Weights &normalization(balancing::Method norm) const;
+  [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm) const;
   [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
 
   [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
-      balancing::Method norm, const Chromosome &chrom) const;
+      const balancing::Method &norm, const Chromosome &chrom) const;
   [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
       std::string_view norm, const Chromosome &chrom) const;
   [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
-      balancing::Method norm) const;
+      const balancing::Method &norm) const;
   [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
       std::string_view norm) const;
 
@@ -123,12 +125,12 @@ class File {
  private:
   [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
       const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
-      balancing::Method norm, MatrixUnit unit, std::uint32_t resolution) const;
+      const balancing::Method &norm, MatrixUnit unit, std::uint32_t resolution) const;
 
   [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome &chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    balancing::Method norm) const;
+                                    const balancing::Method &norm) const;
   [[nodiscard]] std::size_t estimate_cache_size_cis() const;
   [[nodiscard]] std::size_t estimate_cache_size_trans() const;
 };

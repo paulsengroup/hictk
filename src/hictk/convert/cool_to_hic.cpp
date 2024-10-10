@@ -100,7 +100,7 @@ static void copy_normalization_vectors(hic::internal::HiCFileWriter& w,
   w.write_norm_vectors_and_norm_expected_values();
 }
 
-void cool_to_hic(const ConvertConfig& c) {
+void cool_to_hic(const ConvertConfig& c) {  // NOLINT(*-use-internal-linkage)
   if (c.force && std::filesystem::exists(c.path_to_output)) {
     [[maybe_unused]] std::error_code ec{};
     std::filesystem::remove(c.path_to_output, ec);  // NOLINT
@@ -120,9 +120,9 @@ void cool_to_hic(const ConvertConfig& c) {
   const auto& resolutions = c.resolutions;
 
   const internal::TmpDir tmpdir{c.tmp_dir, true};
-  hictk::hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions,
-                                        c.genome, c.threads, c.chunk_size, tmpdir(),
-                                        c.compression_lvl, c.skip_all_vs_all_matrix);
+  hic::internal::HiCFileWriter w(c.path_to_output.string(), chromosomes, resolutions, c.genome,
+                                 c.threads, c.chunk_size, tmpdir(), c.compression_lvl,
+                                 c.skip_all_vs_all_matrix);
   copy_pixels(w, base_clr, c);
   w.serialize();
 

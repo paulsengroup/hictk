@@ -17,7 +17,7 @@ namespace hictk::test::balancing {
 
 using Weights = hictk::balancing::Weights;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Weights (vector)", "[balancing][weights][short]") {
   const std::vector<double> weights{1.0, 2.0, 3.0, 4.0, 5.0};
 
@@ -205,7 +205,6 @@ TEST_CASE("Weights (vector)", "[balancing][weights][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Weights (constant)", "[balancing][weights][short]") {
   SECTION("Ctors") {
     auto w = Weights(1.0, 5, Weights::Type::MULTIPLICATIVE);
@@ -378,5 +377,6 @@ TEST_CASE("Weights (constant)", "[balancing][weights][short]") {
     CHECK_THROWS(wm.cend(Weights::Type::UNKNOWN));
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::balancing

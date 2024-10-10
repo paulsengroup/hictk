@@ -78,13 +78,13 @@ void Cli::make_merge_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Bound(1, 12));
+      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL));
   sc.add_option(
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn.\n"
       "When merging interactions in Cooler format, only a single thread will be used.")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "--tmpdir",
@@ -172,7 +172,8 @@ void Cli::transform_args_merge_subcommand() {
   }
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+    c.compression_lvl =
+        c.output_format == "hic" ? DEFAULT_HIC_COMPRESSION_LEVEL : DEFAULT_COOL_COMPRESSION_LEVEL;
   }
 
   if (sc.get_option("--tmpdir")->empty()) {

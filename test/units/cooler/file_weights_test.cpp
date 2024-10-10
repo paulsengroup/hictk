@@ -13,6 +13,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read weights", "[cooler][short]") {
   const auto path1 = datadir / "cooler_test_file.cool";
   const auto path2 = datadir / "ENCFF993FGR.2500000.cool";
@@ -30,7 +31,6 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: write weights", "[cooler][short]") {
   const auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_write_weights1.cool";
@@ -91,5 +91,7 @@ TEST_CASE("Cooler: write weights", "[cooler][short]") {
     CHECK_THROWS(File(path2.string()).write_weights("weights", w.begin(), w.end()));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

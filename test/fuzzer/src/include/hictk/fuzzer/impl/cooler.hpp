@@ -25,7 +25,7 @@ inline std::size_t COODataFrame<N>::size() const noexcept {
   return static_cast<std::size_t>(count.size());
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 inline COODataFrame<N>& COODataFrame<N>::operator=(pybind11::object df) {
   bin1_id = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("bin1_id"));
   bin2_id = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("bin2_id"));
@@ -71,7 +71,7 @@ inline std::size_t BG2DataFrame<N>::size() const noexcept {
   return static_cast<std::size_t>(count.size());
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE*-unnecessary-value-param)
 inline BG2DataFrame<N>& BG2DataFrame<N>::operator=(pybind11::object df) {
   chrom1 = pybind11::cast<pybind11::list>(df.attr("__getitem__")("chrom1").attr("tolist")());
   start1 = pybind11::cast<NumpyArray<std::int64_t>>(df.attr("__getitem__")("start1"));
@@ -119,7 +119,7 @@ void BG2DataFrame<N>::to_vector(const Reference& chroms, std::vector<Pixel<N>>& 
   }
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 inline EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj) {
   const auto rows = pybind11::cast<NumpyArray<std::int64_t>>(obj.attr("row"));
   const auto cols = pybind11::cast<NumpyArray<std::int64_t>>(obj.attr("col"));

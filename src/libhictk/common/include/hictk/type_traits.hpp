@@ -28,6 +28,16 @@ struct is_string
 template <typename T>
 constexpr bool is_string_v = is_string<T>::value;
 
+// Note that this will not work for types with non-type template arguments (e.g. std::array)
+template <typename T, template <typename...> typename Template>
+struct is_specialization : std::false_type {};
+
+template <template <typename...> typename Template, typename... Args>
+struct is_specialization<Template<Args...>, Template> : std::true_type {};
+
+template <typename T, template <typename...> typename Template>
+constexpr bool is_specialization_v = is_specialization<T, Template>::value;
+
 template <typename T, typename Enabler = void>
 struct is_map : std::false_type {};
 

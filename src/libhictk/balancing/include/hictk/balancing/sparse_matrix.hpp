@@ -103,7 +103,7 @@ class VectorOfAtomicDecimals {
   [[nodiscard]] auto encode(double n) const noexcept -> I;
   [[nodiscard]] double decode(I n) const noexcept;
   [[nodiscard]] constexpr bool overflows(double n) const noexcept;
-  [[nodiscard]] double compute_max_value(std::uint8_t decimal_bits) const noexcept;
+  [[nodiscard]] static double compute_max_value(std::uint8_t decimal_bits) noexcept;
 };
 
 class SparseMatrix {
@@ -128,9 +128,9 @@ class SparseMatrix {
   void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
                  std::size_t bin_offset = 0);
 
-  void serialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
+  void serialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
                  int compression_lvl = 3) const;
-  void deserialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
+  void deserialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
 
   void marginalize(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
   void marginalize_nnz(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
@@ -149,7 +149,8 @@ class SparseMatrixChunked {
   std::size_t _chunk_size{};
 
  public:
-  explicit SparseMatrixChunked(std::size_t chunk_size = 16 * 1024 * 1024);
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+  explicit SparseMatrixChunked(std::size_t chunk_size = 16UL << 20U);
 
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
@@ -180,9 +181,9 @@ class FileBackedSparseMatrix {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
   std::filesystem::path _path{};
-  mutable filestream::FileStream _fs{};
+  mutable filestream::FileStream<> _fs{};
 
-  std::vector<std::size_t> _index{};
+  std::vector<std::streampos> _index{};
   std::size_t _size{};
   std::size_t _chunk_size{};
   int _compression_lvl{};

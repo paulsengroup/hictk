@@ -16,6 +16,7 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 struct Config {
   std::filesystem::path uri{};
   std::filesystem::path out_path{};
@@ -23,10 +24,12 @@ struct Config {
   std::size_t iterations{1};
   bool validate{true};
 };
+// NOLINTEND(*-avoid-magic-numbers)
 
 using PixelBuffer = std::vector<Pixel<std::uint32_t>>;
 
-[[nodiscard]] std::vector<PixelBuffer> chunk_pixels(const cooler::File &f, std::size_t chunk_size) {
+[[nodiscard]] static std::vector<PixelBuffer> chunk_pixels(const cooler::File &f,
+                                                           std::size_t chunk_size) {
   std::vector<PixelBuffer> buffer{};
   PixelBuffer chunk{};
 
@@ -47,6 +50,8 @@ using PixelBuffer = std::vector<Pixel<std::uint32_t>>;
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
+  const auto *argv0 = argv[0];  // NOLINT(*-pointer-arithmetic)
+
   CLI::App cli{};
   Config config{};
   cli.add_option("in-uri", config.uri, "URI to an input cooler file.")->required();
@@ -77,7 +82,7 @@ int main(int argc, char **argv) noexcept {
         }
       }
       const auto t1 = std::chrono::system_clock::now();
-      std::filesystem::remove(config.out_path);
+      std::filesystem::remove(config.out_path);  // NOLINT
 
       const auto delta = static_cast<std::uint64_t>(
           std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
@@ -91,17 +96,17 @@ int main(int argc, char **argv) noexcept {
     fmt::print(FMT_STRING("hictk::cooler::File::create throughput: {:.4} pixels/s\n"), throughput);
 
   } catch (const CLI::ParseError &e) {
+    assert(cli);
     return cli.exit(e);
   } catch (const std::exception &e) {
-    assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv0,
                e.what());
     return 1;
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error: Caught an "
                           "unhandled exception!\n"),
-               argv[0]);
+               argv0);
     return 1;
   }
   return 0;

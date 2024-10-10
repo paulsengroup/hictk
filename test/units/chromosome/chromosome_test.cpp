@@ -14,7 +14,7 @@
 
 namespace hictk::test::chromosome {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Chromosome", "[chromosome][short]") {
   const Chromosome chrom1{0, "chr1", 50001};
   const Chromosome chrom2{1, "chr2", 25017};
@@ -56,5 +56,7 @@ TEST_CASE("Chromosome", "[chromosome][short]") {
     CHECK(fmt::format(FMT_STRING("{:ucsc}"), chrom1) == "chr1:50001");
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::chromosome

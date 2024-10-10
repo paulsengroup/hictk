@@ -21,16 +21,18 @@ struct Config {
 
 template <typename PixelT>
 [[nodiscard]] static std::ptrdiff_t print_pixels(const std::vector<PixelT> &pixels) {
-  auto *dev_null = std::fopen("/dev/null", "w");
+  auto *dev_null = std::fopen("/dev/null", "w");  // NOLINT(cppcoreguidelines-owning-memory)
   std::for_each(pixels.begin(), pixels.end(),
                 [&](const auto &p) { fmt::print(dev_null, FMT_COMPILE("{}\n"), p); });
-  std::fclose(dev_null);
+  std::fclose(dev_null);  // NOLINT(cert-err33-c,cppcoreguidelines-owning-memory)
 
   return static_cast<std::ptrdiff_t>(pixels.size());
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
+  const auto *argv0 = argv[0];  // NOLINT(*-pointer-arithmetic)
+
   CLI::App cli{};
   Config config{};
   cli.add_option("uri", config.uri, "URI to a cooler file.");
@@ -74,17 +76,17 @@ int main(int argc, char **argv) noexcept {
                config.join ? "Pixel<std::uint32_t>" : "ThinPixel<std::uint32_t>", throughput);
 
   } catch (const CLI::ParseError &e) {
+    assert(cli);
     return cli.exit(e);
   } catch (const std::exception &e) {
-    assert(cli);
-    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv[0],
+    fmt::print(stderr, FMT_STRING("FAILURE! {} encountered the following error: {}.\n"), argv0,
                e.what());
     return 1;
   } catch (...) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error: Caught an "
                           "unhandled exception!\n"),
-               argv[0]);
+               argv0);
     return 1;
   }
   return 0;

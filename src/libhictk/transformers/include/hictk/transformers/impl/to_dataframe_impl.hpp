@@ -62,7 +62,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
 
   if (_format == DataFrameFormat::BG2) {
     assert(!!_bins);
-    _chrom_id_offset = _bins->chromosomes().at(0).is_all();
+    _chrom_id_offset = static_cast<std::int32_t>(_bins->chromosomes().at(0).is_all());
     const auto dict = make_chrom_dict(_bins->chromosomes());
 
     auto status = _chrom1_builder.InsertMemoValues(*dict);
@@ -94,7 +94,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
 }
 
 template <typename PixelIt>
-template <typename PixelSelector>
+template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
                                          DataFrameFormat format,
                                          std::shared_ptr<const BinTable> bins, QuerySpan span,
@@ -159,7 +159,7 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N> p) {
   assert(_mirror_pixels);
 
   if (_chrom1_id_buff.size() >= _chunk_size) {
@@ -208,7 +208,7 @@ inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N>&& p) {
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N> p) {
   assert(_mirror_pixels);
 
   if (_bin1_id_buff.size() >= _chunk_size) {
@@ -231,7 +231,7 @@ inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N>&& p) {
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append_asymmetric(Pixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_asymmetric(const Pixel<N>& p) {
   assert(!_mirror_pixels);
 
   if (_chrom1_id_buff.size() >= _chunk_size) {
@@ -286,7 +286,7 @@ inline void ToDataFrame<PixelIt>::append_asymmetric(Pixel<N>&& p) {
 }
 
 template <typename PixelIt>
-inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N>&& p) {
+inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N> p) {
   assert(!_mirror_pixels);
 
   if (_bin1_id_buff.size() >= _chunk_size) {
@@ -465,7 +465,7 @@ inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::make_bg2_table() {
 
 template <typename PixelIt>
 inline std::shared_ptr<arrow::Array> ToDataFrame<PixelIt>::make_chrom_dict(
-    const hictk::Reference& chroms) {
+    const Reference& chroms) {
   arrow::StringBuilder builder{};
   for (const auto& chrom : chroms) {
     if (!chrom.is_all()) {
@@ -549,7 +549,7 @@ std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::sort_table(
       {arrow::compute::SortKey{"bin1_id", arrow::compute::SortOrder::Ascending},
        arrow::compute::SortKey{"bin2_id", arrow::compute::SortOrder::Ascending}}};
 
-  arrow::Datum vtable{std::move(table)};
+  const arrow::Datum vtable{std::move(table)};
 
   const auto arg_sorter = arrow::compute::SortIndices(vtable, opts);
   if (!arg_sorter.ok()) {

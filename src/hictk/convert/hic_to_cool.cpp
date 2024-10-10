@@ -169,10 +169,10 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
 }
 
 template <typename N>
-static void enqueue_pixels(hic::File& hf,
-                           moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
-                           std::atomic<bool>& early_return,
-                           std::size_t update_frequency = 10'000'000) {
+static void enqueue_pixels(
+    hic::File& hf, moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
+    std::atomic<bool>& early_return,  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+    std::size_t update_frequency = 10'000'000) {
   try {
     std::size_t i = 0;
     auto t0 = std::chrono::steady_clock::now();
@@ -206,7 +206,7 @@ static void enqueue_pixels(hic::File& hf,
           const auto bin1 = hf.bins().at(first->bin1_id);
           SPDLOG_INFO(
               FMT_STRING("[{}] processing {:ucsc} at {:.0f} pixels/s (cache hit rate {:.2f}%)..."),
-              hf.resolution(), bin1, double(update_frequency) / delta,
+              hf.resolution(), bin1, static_cast<double>(update_frequency) / delta,
               hf.block_cache_hit_rate() * 100);
           hf.reset_cache_stats();
           t0 = t1;
@@ -222,10 +222,10 @@ static void enqueue_pixels(hic::File& hf,
 }
 
 template <typename N>
-static std::size_t append_pixels(cooler::File& clr,
-                                 moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
-                                 std::atomic<bool>& early_return,
-                                 std::size_t buffer_capacity = 100'000) {
+static std::size_t append_pixels(
+    cooler::File& clr, moodycamel::BlockingReaderWriterQueue<ThinPixel<N>>& queue,
+    std::atomic<bool>& early_return,
+    std::size_t buffer_capacity = 100'000) {  // NOLINT(*-avoid-magic-numbers)
   try {
     std::vector<ThinPixel<N>> buffer{buffer_capacity};
     buffer.clear();
@@ -275,7 +275,7 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
 
   SPDLOG_INFO(FMT_STRING("[{}] begin processing {}bp matrix..."), hf.resolution(), hf.resolution());
 
-  std::atomic<bool> early_return = false;
+  std::atomic<bool> early_return = false;  // NOLINTNEXTLINE(*-avoid-magic-numbers)
   moodycamel::BlockingReaderWriterQueue<ThinPixel<N>> queue{1'000'000};
 
   auto producer_fx = [&]() { return enqueue_pixels<N>(hf, queue, early_return); };
@@ -316,7 +316,8 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
 }
 
 [[nodiscard]] static std::variant<std::int32_t, float> infer_count_type(
-    const std::filesystem::path& p, std::size_t max_sample_size = 1'000'000) {
+    const std::filesystem::path& p,
+    std::size_t max_sample_size = 1'000'000) {  // NOLINT(*-avoid-magic-numbers)
   const auto base_resolution = hic::utils::list_resolutions(p, true).front();
   const hic::File f(p.string(), base_resolution);
   const auto sel = f.fetch();
@@ -334,7 +335,7 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
   return {std::int32_t{}};
 }
 
-void hic_to_cool(const ConvertConfig& c) {
+void hic_to_cool(const ConvertConfig& c) {  // NOLINT(misc-use-internal-linkage)
   assert(!c.resolutions.empty());
 
   std::variant<std::int32_t, float> count_type{std::int32_t{}};

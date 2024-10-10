@@ -24,7 +24,7 @@
 
 namespace hictk::tools {
 
-int zoomify_subcmd(const ZoomifyConfig& c) {
+int zoomify_subcmd(const ZoomifyConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto output_is_multires = c.copy_base_resolution || c.resolutions.size() > 2;
   const auto t0 = std::chrono::system_clock::now();
   if (c.output_format == "hic") {

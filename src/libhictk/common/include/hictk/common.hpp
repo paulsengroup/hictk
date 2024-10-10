@@ -14,8 +14,10 @@ namespace hictk {
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
+// NOLINTBEGIN(cert-err58-cpp)
 inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
 inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::str_long()};
+// NOLINTEND(cert-err58-cpp)
 
 [[nodiscard]] constexpr bool ndebug_defined() noexcept {
 #ifdef NDEBUG
@@ -43,8 +45,8 @@ inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::
 }
 
 #if defined(__GNUC__)
-#define HICTK_LIKELY(x)   __builtin_expect(!!(x), 1)
-#define HICTK_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define HICTK_LIKELY(x)   __builtin_expect(!!(x), 1)  // NOLINT(*-simplify-boolean-expr)
+#define HICTK_UNLIKELY(x) __builtin_expect(!!(x), 0)  // NOLINT(*-simplify-boolean-expr)
 #else
 #define HICTK_LIKELY(x)   x
 #define HICTK_UNLIKELY(x) x

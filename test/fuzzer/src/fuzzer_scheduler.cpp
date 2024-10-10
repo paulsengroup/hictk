@@ -76,7 +76,7 @@ namespace hictk::fuzzer {
   }
 
   [[maybe_unused]] const auto lck = std::scoped_lock(mtx);
-  for (std::size_t i = 0; i < 10; ++i) {
+  for (std::size_t i = 0; i < 10; ++i) {  // NOLINT(*-avoid-magic-numbers)
     boost::process::v2::process proc(ctx, c.exec.string(),
                                      config_to_cli_args(c, static_cast<std::uint16_t>(id), seed),
                                      boost::process::v2::process_stdio{nullptr, {}, {}});
@@ -113,8 +113,10 @@ int fuzz_subcommand(const Config& c) {
     for (std::size_t i = 0; i < seeds.size(); ++i) {
       futures[i] = tpool.submit_task([&, id = i + 1, seed = seeds[i]]() {
         try {
+          // NONLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
           auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
           return proc.wait();
+          // NONLINTEND(clang-analyzer-unix.BlockInCriticalSection)
         } catch (const std::exception& e) {
           SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
           return 1;

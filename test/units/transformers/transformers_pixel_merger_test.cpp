@@ -24,6 +24,8 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 template <typename It>
 using PixelMerger = ::hictk::transformers::PixelMerger<It>;
 
@@ -62,7 +64,6 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
   return map;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): pixel merger", "[transformers][short]") {
   const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
 
@@ -134,7 +135,6 @@ TEST_CASE("Transformers (cooler): pixel merger", "[transformers][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (hic): pixel merger", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
@@ -161,5 +161,7 @@ TEST_CASE("Transformers (hic): pixel merger", "[transformers][short]") {
     CHECK(expected_pixels.at({p.bin1_id, p.bin2_id}) == p.count);
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers

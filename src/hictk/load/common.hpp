@@ -37,7 +37,7 @@ struct Stats {
   std::uint64_t nnz{};
 
   template <typename N>
-  inline Stats(N sum_, std::uint64_t nnz_) : nnz(nnz_) {
+  Stats(N sum_, std::uint64_t nnz_) : nnz(nnz_) {
     if constexpr (std::is_floating_point_v<N>) {
       sum = conditional_static_cast<double>(sum_);
     } else {
@@ -59,7 +59,7 @@ template <typename N>
   Stats stats{N{}, 0};
   ThinPixel<N> pixel{};
 
-  while (!early_return) {
+  while (!early_return) {  // NOLINTNEXTLINE(*-avoid-magic-numbers)
     if (!queue.wait_dequeue_timed(pixel, std::chrono::milliseconds(10))) {
       continue;
     }

@@ -16,7 +16,7 @@
 
 namespace hictk::cooler::test::attribute {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: attribute read", "[cooler][short]") {
   const auto path = datadir / "test_read_attrs.h5";
 
@@ -147,5 +147,7 @@ TEST_CASE("Cooler: attribute read", "[cooler][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::attribute

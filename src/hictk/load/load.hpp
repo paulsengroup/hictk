@@ -31,12 +31,6 @@
 
 namespace hictk::tools {
 
-[[nodiscard]] PixelParser init_pixel_parser(Format format,
-                                            const std::filesystem::path& path_to_interactions,
-                                            const std::filesystem::path& path_to_chrom_sizes,
-                                            const std::filesystem::path& path_to_bins,
-                                            std::uint32_t resolution, std::string_view assembly);
-
 template <bool transpose_pixels = true, typename N>
 inline void parse_pixels(PixelParser& parser, std::int64_t offset, PixelQueue<N>& queue,
                          std::atomic<bool>& early_return) {
@@ -53,6 +47,7 @@ inline void parse_pixels(PixelParser& parser, std::int64_t offset, PixelQueue<N>
     }
 
     while (!queue.try_enqueue(buffer) && !early_return) {
+      // NOLINTNEXTLINE(*-avoid-magic-numbers)
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
   }
@@ -62,6 +57,7 @@ inline void parse_pixels(PixelParser& parser, std::int64_t offset, PixelQueue<N>
     buffer.bin2_id = ThinPixel<N>::null_id;
     buffer.count = 0;
     while (!queue.try_enqueue(buffer) && !early_return) {
+      // NOLINTNEXTLINE(*-avoid-magic-numbers)
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
   }

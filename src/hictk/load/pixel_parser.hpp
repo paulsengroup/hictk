@@ -48,14 +48,14 @@ class PixelParser {
   [[nodiscard]] const BinTable& bins() const noexcept;
 
   template <typename N>
-  [[nodiscard]] inline ThinPixel<N> next_pixel(std::int64_t offset) {
+  [[nodiscard]] ThinPixel<N> next_pixel(std::int64_t offset) {
     ThinPixel<N> p{};
     std::ignore = next_pixel(p, offset);
     return p;
   }
 
   template <typename N>
-  [[nodiscard]] inline bool next_pixel(ThinPixel<N>& buff, std::int64_t offset) {
+  [[nodiscard]] bool next_pixel(ThinPixel<N>& buff, std::int64_t offset) {
     if (_strbuff.empty()) {  // EOF
       buff.bin1_id = ThinPixel<N>::null_id;
       buff.bin2_id = ThinPixel<N>::null_id;
@@ -101,5 +101,11 @@ class PixelParser {
 
   [[nodiscard]] Header parse_header(Format format_);
 };
+
+[[nodiscard]] PixelParser init_pixel_parser(Format format,
+                                            const std::filesystem::path& path_to_interactions,
+                                            const std::filesystem::path& path_to_chrom_sizes,
+                                            const std::filesystem::path& path_to_bins,
+                                            std::uint32_t resolution, std::string_view assembly);
 
 }  // namespace hictk::tools

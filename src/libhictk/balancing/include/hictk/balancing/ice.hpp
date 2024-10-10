@@ -31,8 +31,9 @@ class ICE {
   };
 
  public:
-  enum Type { cis, trans, gw };
+  enum class Type : std::uint_fast8_t { cis, trans, gw };
 
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   struct Params {
     double tol{1.0e-5};
     std::size_t max_iters{200};
@@ -45,8 +46,9 @@ class ICE {
     std::size_t threads{1};
   };
 
-  // NOLINTNEXTLINE
+  // NOLINTNEXTLINE(cert-err58-cpp)
   inline static const Params DefaultParams{1.0e-5, 200, 2, 10, 0, 5.0, "", 10'000'000, 1};
+  // NOLINTEND(*-avoid-magic-numbers)
 
   template <typename File>
   explicit ICE(const File& f, Type type = Type::gw, const Params& params = DefaultParams);
@@ -160,6 +162,10 @@ class ICE {
 
   [[nodiscard]] static std::vector<double> compute_weights_from_chromosome_sizes(
       const BinTable& bins, nonstd::span<std::uint64_t> chrom_bin_offsets);
+
+  template <typename Vector>
+  [[nodiscard]] static bool process_in_parallel(const Vector& marg,
+                                                const BS::thread_pool* tpool) noexcept;
 };
 
 }  // namespace hictk::balancing

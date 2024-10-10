@@ -14,7 +14,7 @@
 
 namespace hictk::tools {
 
-int balance_subcmd(const BalanceVCConfig& c) {
+int balance_subcmd(const BalanceVCConfig& c) {  // NOLINT(misc-use-internal-linkage)
   SPDLOG_INFO(FMT_STRING("balancing using VC ({})"), c.name);
   if (hic::utils::is_hic_file(c.path_to_input.string())) {
     return balance_hic<balancing::VC>(c, "");

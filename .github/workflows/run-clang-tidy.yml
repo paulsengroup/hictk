@@ -74,6 +74,11 @@ jobs:
       - name: Print clang-tidy version
         run: clang-tidy --version
 
+      - name: Install Python headers
+        run: |
+          apt-get update
+          apt-get install -y python3.12-dev
+
       - name: Generate cache key
         id: cache-key
         run: |
@@ -119,8 +124,10 @@ jobs:
                 -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
                 -DOPT_ENABLE_CPPCHECK=OFF                     \
                 -DOPT_ENABLE_CLANG_TIDY=ON                    \
+                -DHICTK_BUILD_BENCHMARKS=ON                   \
                 -DHICTK_BUILD_EXAMPLES=ON                     \
                 -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON               \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
                 -S .                                          \

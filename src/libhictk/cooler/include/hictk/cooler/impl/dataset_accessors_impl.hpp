@@ -36,7 +36,7 @@ inline std::string Dataset::file_name() const { return _root_group().getFile().g
 inline std::string Dataset::hdf5_path() const { return _dataset.getPath(); }
 
 inline std::string Dataset::name() const {
-  const auto path = hdf5_path();
+  auto path = hdf5_path();
   const auto last_slash_pos = path.rfind('/');
   if (last_slash_pos == std::string::npos) {
     return path;
@@ -56,7 +56,7 @@ inline bool Dataset::empty() const { return size() == 0; }
 inline std::size_t Dataset::get_chunk_size() const noexcept { return _chunk_size; }
 
 inline std::size_t Dataset::get_chunk_size(const HighFive::DataSet &dset) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   hsize_t size{};
   const auto dims = H5Pget_chunk(dset.getCreatePropertyList().getId(), 1, &size);
   if (dims != 1) {
@@ -75,7 +75,7 @@ inline bool Dataset::has_attribute(std::string_view key) const {
 }
 
 inline HighFive::DataType Dataset::get_h5type() const {
-  const auto h5type = _dataset.getDataType();
+  auto h5type = _dataset.getDataType();
   if (h5type.isFixedLenStr()) {
     return h5type;
   }
@@ -100,13 +100,13 @@ inline HighFive::DataType Dataset::get_h5type() const {
   };
 
   switch (h5type.getSize()) {
-    case 1:
+    case sizeof(std::uint8_t):
       return create_dtype(std::uint8_t{}, std::int8_t{});
-    case 2:
+    case sizeof(std::uint16_t):
       return create_dtype(std::uint16_t{}, std::int16_t{});
-    case 4:
+    case sizeof(std::uint32_t):
       return create_dtype(std::uint32_t{}, std::int32_t{});
-    case 8:
+    case sizeof(std::uint64_t):
       return create_dtype(std::uint64_t{}, std::int64_t{});
     default:
       unreachable_code();

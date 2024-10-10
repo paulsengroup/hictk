@@ -16,6 +16,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::dataset {
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
   const auto path = testdir() / "test_dataset_large_rw.h5";
 
@@ -53,5 +55,6 @@ TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
 #endif
                 });
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

@@ -71,6 +71,6 @@ inline auto FooterCache::find(const HiCFooterMetadata &m) -> const_iterator {
   return _footers.find(m);
 }
 inline std::size_t FooterCache::size() const noexcept { return _footers.size(); }
-inline void FooterCache::clear() { return _footers.clear(); }
+inline void FooterCache::clear() { _footers.clear(); }
 
 }  // namespace hictk::hic::internal

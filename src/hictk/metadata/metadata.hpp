@@ -33,6 +33,7 @@ void emplace_if_valid(std::string_view key, const std::string& value, toml::tabl
 
 void emplace_if_valid(std::string_view key, const toml::array& values, toml::table& buff);
 
+// NOLINTNEXTLINE(*-avoid-c-arrays)
 template <typename T, typename std::enable_if_t<std::is_integral_v<T>>* = nullptr>
 inline void emplace_if_valid(std::string_view key, const T& value, toml::table& buff) {
   if (key.empty()) {
@@ -48,6 +49,7 @@ inline void emplace_if_valid(std::string_view key, const T& value, toml::table& 
   HICTK_DISABLE_WARNING_POP
 }
 
+// NOLINTNEXTLINE(*-avoid-c-arrays)
 template <typename T, typename std::enable_if_t<std::is_floating_point_v<T>>* = nullptr>
 inline void emplace_if_valid(std::string_view key, const T& value, toml::table& buff) {
   if (!key.empty()) {
