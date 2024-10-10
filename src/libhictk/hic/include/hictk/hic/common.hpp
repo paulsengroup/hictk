@@ -86,7 +86,7 @@ struct fmt::formatter<hictk::hic::MatrixType> {
       case hictk::hic::MatrixType::expected:
         return fmt::format_to(ctx.out(), FMT_STRING("expected"));
     }
-    HICTK_UNREACHABLE_CODE;
+    hictk::unreachable_code();
   }
 };
 
@@ -107,7 +107,7 @@ struct fmt::formatter<hictk::hic::MatrixUnit> {
       case hictk::hic::MatrixUnit::FRAG:
         return fmt::format_to(ctx.out(), FMT_STRING("FRAG"));
     }
-    HICTK_UNREACHABLE_CODE;
+    hictk::unreachable_code();
   }
 };
 
