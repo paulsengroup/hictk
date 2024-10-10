@@ -31,13 +31,21 @@ class RootGroup {
   explicit RootGroup(HighFive::Group grp) noexcept : _group(std::move(grp)) {}
 
   RootGroup(const RootGroup& other) = default;
-  RootGroup(RootGroup&& other) noexcept = default;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  RootGroup(RootGroup&& other) noexcept : _group(std::move(other._group)) {}
 
   ~RootGroup() noexcept = default;
 
   RootGroup& operator=(const RootGroup& other) = default;
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  RootGroup& operator=(RootGroup&& other) noexcept = default;
+  RootGroup& operator=(RootGroup&& other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    _group = std::move(other._group);
+
+    return *this;
+  }
 
   [[nodiscard]] constexpr HighFive::Group& operator()() {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
