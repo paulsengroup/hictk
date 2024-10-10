@@ -18,14 +18,14 @@ namespace hictk::tools {
 
 // NOLINTBEGIN(*-avoid-magic-numbers)
 
-static constexpr std::uint8_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
-static constexpr std::uint8_t MAX_COOL_COMPRESSION_LEVEL = 9;
+static constexpr std::int16_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
+static constexpr std::int16_t MAX_COOL_COMPRESSION_LEVEL = 9;
 
-static constexpr std::uint8_t DEFAULT_HIC_COMPRESSION_LEVEL = 10;
-static constexpr std::uint8_t MAX_HIC_COMPRESSION_LEVEL = 12;
+static constexpr std::int16_t DEFAULT_HIC_COMPRESSION_LEVEL = 10;
+static constexpr std::int16_t MAX_HIC_COMPRESSION_LEVEL = 12;
 
-static constexpr std::uint8_t DEFAULT_ZSTD_COMPRESSION_LEVEL = 3;
-static constexpr std::uint8_t MAX_ZSTD_COMPRESSION_LEVEL = 19;
+static constexpr std::int16_t DEFAULT_ZSTD_COMPRESSION_LEVEL = 3;
+static constexpr std::int16_t MAX_ZSTD_COMPRESSION_LEVEL = 19;
 
 struct BalanceICEConfig {
   std::filesystem::path path_to_input{};

@@ -88,7 +88,7 @@ void Cli::make_fix_mcool_subcommand() {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",

@@ -85,7 +85,7 @@ void Cli::make_zoomify_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .mcool and .hic files, respectively.")
-      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL))
+      ->check(CLI::Bound(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL))
       ->capture_default_str();
 
   sc.add_option(

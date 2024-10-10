@@ -163,7 +163,7 @@ void Cli::make_load_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL));
+      ->check(CLI::Bound(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL));
 
   sc.add_option(
       "-t,--threads",

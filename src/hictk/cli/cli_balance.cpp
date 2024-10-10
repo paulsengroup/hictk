@@ -154,7 +154,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -272,7 +272,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
