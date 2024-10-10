@@ -18,9 +18,10 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::transformers;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   SECTION("simple") {
     const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
@@ -94,7 +95,6 @@ TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (hic): coarsen", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
@@ -113,5 +113,7 @@ TEST_CASE("Transformers (hic): coarsen", "[transformers][short]") {
     CHECK(v1[i] == v2[i].to_thin());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers

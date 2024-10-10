@@ -22,7 +22,7 @@
 
 namespace hictk::test::bin_table {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   constexpr std::uint32_t bin_size = 5000;
   // clang-format off
@@ -213,7 +213,6 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
   const Chromosome chrom1{0, "chr1", 32};
   const Chromosome chrom2{1, "chr2", 32};
@@ -447,5 +446,7 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::bin_table

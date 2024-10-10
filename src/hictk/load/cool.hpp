@@ -52,6 +52,8 @@ template <typename N>
 
   clr.flush();
   const auto nnz = clr.nnz();
+  assert(clr.attributes().sum.has_value());
+  // NOLINTNEXTLINE(*-unchecked-optional-access)
   const auto sum = clr.attributes().sum.value();
 
   if (clr.has_float_pixels()) {
@@ -207,6 +209,8 @@ template <typename N>
 
   const cooler::File clr(uri);
   const auto nnz = clr.nnz();
+  assert(clr.attributes().sum.has_value());
+  // NOLINTNEXTLINE(*-unchecked-optional-access)
   const auto sum = clr.attributes().sum.value();
 
   if (clr.has_float_pixels()) {

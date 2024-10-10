@@ -108,6 +108,7 @@ inline bool compare_pixels([[maybe_unused]] std::uint16_t task_id, std::string_v
 
   std::size_t num_mismatches{};
   for (std::int64_t i = 0; i < expected.size(); ++i) {
+    // NOLINTNEXTLINE(*-bounds-pointer-arithmetic)
     num_mismatches += !internal::is_close(*(expected.data() + i), *(found.data() + i));
   }
 

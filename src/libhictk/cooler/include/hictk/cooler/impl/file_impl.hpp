@@ -80,8 +80,8 @@ inline File::File(RootGroup entrypoint, BinTable bins, [[maybe_unused]] PixelT p
     _attrs.sum = 0.0;
     _attrs.cis = 0.0;
   } else {
-    _attrs.sum = std::int64_t(0);
-    _attrs.cis = std::int64_t(0);
+    _attrs.sum = std::int64_t{0};
+    _attrs.cis = std::int64_t{0};
   }
 
   write_sentinel_attr();
@@ -102,8 +102,8 @@ inline File::File(RootGroup entrypoint, [[maybe_unused]] PixelT pixel, Attribute
     _attrs.sum = 0.0;
     _attrs.cis = 0.0;
   } else {
-    _attrs.sum = std::int64_t(0);
-    _attrs.cis = std::int64_t(0);
+    _attrs.sum = std::int64_t{0};
+    _attrs.cis = std::int64_t{0};
   }
 
   _bins = std::make_shared<BinTable>(init_bin_table(_datasets, _attrs.bin_type, _attrs.bin_size));
@@ -132,15 +132,15 @@ inline File File::open_random_access(std::string_view uri, std::size_t cache_siz
 
 inline File File::open_read_once(std::string_view uri, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File(open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
-              HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return {open_or_create_root_group(open_file(uri, HighFive::File::ReadOnly, validate), uri),
+          HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate};
 }
 template <typename PixelT>
 inline File File::create(std::string_view uri, const Reference &chroms, std::uint32_t bin_size,
                          bool overwrite_if_exists, Attributes attributes,
                          std::size_t cache_size_bytes, std::uint32_t compression_lvl) {
-  return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists, attributes,
-                              cache_size_bytes, compression_lvl);
+  return File::create<PixelT>(uri, BinTable(chroms, bin_size), overwrite_if_exists,
+                              std::move(attributes), cache_size_bytes, compression_lvl);
 }
 
 template <typename PixelT>
@@ -187,8 +187,8 @@ inline File File::create(std::string_view uri, BinTable bins, bool overwrite_if_
     }
 
     return create<PixelT>(
-        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri), bins,
-        attributes, cache_size_bytes, compression_lvl);
+        open_or_create_root_group(open_file(uri, HighFive::File::ReadWrite, false), uri),
+        std::move(bins), std::move(attributes), cache_size_bytes, compression_lvl);
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
@@ -203,15 +203,15 @@ inline File File::open_random_access(RootGroup entrypoint, std::size_t cache_siz
 
 inline File File::open_read_once(RootGroup entrypoint, std::size_t cache_size_bytes,
                                  bool validate) {
-  return File(std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate);
+  return {std::move(entrypoint), HighFive::File::ReadOnly, cache_size_bytes, 1.0, validate};
 }
 
 template <typename PixelT>
 inline File File::create(RootGroup entrypoint, const Reference &chroms, std::uint32_t bin_size,
                          Attributes attributes, std::size_t cache_size_bytes,
                          std::uint32_t compression_lvl) {
-  return File::create<PixelT>(entrypoint, BinTable(chroms, bin_size), attributes, cache_size_bytes,
-                              compression_lvl);
+  return File::create<PixelT>(std::move(entrypoint), BinTable(chroms, bin_size),
+                              std::move(attributes), cache_size_bytes, compression_lvl);
 }
 
 template <typename PixelT>
@@ -225,14 +225,31 @@ inline File File::create(RootGroup entrypoint, BinTable bins, Attributes attribu
     if (utils::is_cooler(entrypoint())) {
       throw std::runtime_error("URI points to an already existing cooler.");
     }
-    return File(entrypoint, bins, PixelT(0), attributes, cache_size_bytes, compression_lvl,
-                DEFAULT_HDF5_CACHE_W0);
+    return File(entrypoint, std::move(bins), PixelT(0), attributes, cache_size_bytes,
+                compression_lvl, DEFAULT_HDF5_CACHE_W0);
 
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Cannot create cooler at the following URI: \"{}\". Reason: {}"),
                     entrypoint.uri(), e.what()));
   }
+}
+
+// We need to explicitly define the move ctor because older compilers are not able to automatically
+// generate it
+inline File::File(File &&other) noexcept
+    : _mode(other._mode),
+      _root_group(std::move(other._root_group)),
+      _groups(std::move(other._groups)),
+      _datasets(std::move(other._datasets)),
+      _weights(std::move(other._weights)),
+      _weights_scaled(std::move(other._weights_scaled)),
+      _attrs(std::move(other._attrs)),
+      _pixel_variant(other._pixel_variant),
+      _bins(std::move(other._bins)),
+      _index(std::move(other._index)),
+      _finalize(other._finalize) {
+  other._finalize = false;
 }
 
 // NOLINTNEXTLINE(*-exception-escape)
@@ -247,6 +264,44 @@ inline File::~File() noexcept {
                           "corrupted or incomplete."),
                path());
   }
+}
+
+// We need to explicitly define the move ctor because older compilers are not able to automatically
+// generate it
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline File &File::operator=(File &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+
+  if (_finalize) {
+    try {
+      finalize();
+    } catch (const std::exception &e) {
+      fmt::print(stderr, FMT_STRING("{}\n"), e.what());
+    } catch (...) {
+      fmt::print(stderr,
+                 FMT_STRING("An unknown error occurred while finalizing file {}. File is likely "
+                            "corrupted or incomplete."),
+                 path());
+    }
+  }
+
+  _mode = other._mode;
+  _root_group = std::move(other._root_group);
+  _groups = std::move(other._groups);
+  _datasets = std::move(other._datasets);
+  _weights = std::move(other._weights);
+  _weights_scaled = std::move(other._weights_scaled);
+  _attrs = std::move(other._attrs);
+  _pixel_variant = other._pixel_variant;
+  _bins = std::move(other._bins);
+  _index = std::move(other._index);
+  _finalize = other._finalize;
+
+  other._finalize = false;
+
+  return *this;
 }
 
 inline File::operator bool() const noexcept { return !!_bins; }
@@ -333,7 +388,7 @@ HICTK_DISABLE_WARNING_POP
 
 inline hictk::internal::NumericVariant File::detect_pixel_type(const RootGroup &root_grp,
                                                                std::string_view path) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto dset = root_grp().getDataSet(std::string{path});
   return internal::read_pixel_variant<hictk::internal::NumericVariant>(dset);
 }

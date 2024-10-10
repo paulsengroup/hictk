@@ -15,7 +15,7 @@
 
 namespace hictk::tools {
 
-int merge_subcmd(const MergeConfig& c) {
+int merge_subcmd(const MergeConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto t0 = std::chrono::system_clock::now();
   if (c.output_format == "cool") {
     merge_to_cool(c);
@@ -30,8 +30,10 @@ int merge_subcmd(const MergeConfig& c) {
       1000.0;
 
   SPDLOG_INFO(FMT_STRING("DONE! Merging {} files took {:.2f}s!"), c.input_files.size(), delta);
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   SPDLOG_INFO(FMT_STRING("{} size: {:.2f} MB"), c.output_file,
               static_cast<double>(std::filesystem::file_size(c.output_file)) / 1.0e6);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   return 0;
 }

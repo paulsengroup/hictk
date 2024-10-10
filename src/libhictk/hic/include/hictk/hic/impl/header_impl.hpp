@@ -30,7 +30,7 @@ inline bool HiCHeader::operator!=(const HiCHeader &other) const noexcept {
 }
 
 inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (version != 9) {
+  if (version != 9) {  // NOLINT(*-avoid-magic-numbers)
     throw std::runtime_error("serializing header for file version other than v9 is not supported.");
   }
   if (chromosomes.empty()) {
@@ -98,7 +98,7 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
   HiCHeader header{fs.path()};
 
   fs.unsafe_read(header.version);
-  if (header.version < 6) {
+  if (header.version < 6) {  // NOLINT(*-avoid-magic-numbers)
     throw std::runtime_error(fmt::format(
         FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
         header.version));
@@ -117,7 +117,7 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
     header.genomeID = "unknown";
   }
 
-  if (header.version > 8) {
+  if (header.version > 8) {  // NOLINT(*-avoid-magic-numbers)
     fs.unsafe_read(header.normVectorIndexPosition);
     fs.unsafe_read(header.normVectorIndexLength);
   }
@@ -140,7 +140,7 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
   for (std::size_t i = 0; i < chrom_names.size(); ++i) {
     fs.unsafe_getline(chrom_names[i], '\0');
     chrom_sizes[i] = static_cast<std::uint32_t>(
-        header.version > 8 ? fs.unsafe_read<std::int64_t>()
+        header.version > 8 ? fs.unsafe_read<std::int64_t>()  // NOLINT(*-avoid-magic-numbers)
                            : static_cast<std::int64_t>(fs.unsafe_read<std::int32_t>()));
   }
 
@@ -173,7 +173,7 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
 
 template <>
 struct std::hash<hictk::hic::internal::HiCHeader> {
-  inline std::size_t operator()(hictk::hic::internal::HiCHeader const &h) const noexcept {
+  std::size_t operator()(hictk::hic::internal::HiCHeader const &h) const noexcept {
     return hictk::internal::hash_combine(0, h.url, h.footerPosition);
   }
 };

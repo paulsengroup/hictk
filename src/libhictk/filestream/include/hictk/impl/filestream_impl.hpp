@@ -41,7 +41,8 @@ inline FileStream<Mutex>::FileStream(std::string path, std::shared_ptr<Mutex> mt
     : _path(std::move(path)),
       _mtx(std::move(mtx)),
       _ifs(open_file_read(_path, _ifs_flags | std::ios::ate)),
-      _ofs(mode & std::ios::out ? open_file_write(_path, _ofs_flags) : std::ofstream{}),
+      _ofs(static_cast<bool>(mode & std::ios::out) ? open_file_write(_path, _ofs_flags)
+                                                   : std::ofstream{}),
       _file_size(unsafe_tellg()) {
   unsafe_seekg(0);
 }
@@ -270,6 +271,7 @@ inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::seek_and_rea
   const auto offset1 = unsafe_tellg();
   unsafe_seekg(offset, way);
   unsafe_read(buffer, count);
+  // NOLINTNEXTLINE(*-bounds-pointer-arithmetic)
   return std::make_pair(offset1, offset + static_cast<std::streamoff>(count));
 }
 
@@ -307,6 +309,7 @@ inline void FileStream<Mutex>::read_append(std::string &buffer, std::size_t coun
 
     [[maybe_unused]] const auto lck = lock();
     const auto offset1 = unsafe_tellg();
+    // NOLINTNEXTLINE(*-bounds-pointer-arithmetic)
     _ifs.read(&(*buffer.begin()) + buff_size, static_cast<std::streamsize>(count));
     const auto bytes_read = static_cast<std::size_t>(unsafe_tellg() - offset1);
     validate_read<char>(bytes_read, count, "FileStream::read_append(std::string &)");
@@ -402,6 +405,7 @@ inline double FileStream<Mutex>::read_as_double() {
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void FileStream<Mutex>::unsafe_read(T &buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   unsafe_read(reinterpret_cast<char *>(&buffer), sizeof(T));
 }
 
@@ -416,6 +420,7 @@ inline T FileStream<Mutex>::unsafe_read() {
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void FileStream<Mutex>::read(std::vector<T> &buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   read(reinterpret_cast<char *>(&(*buffer.begin())), buffer.size() * sizeof(T));
 }
 
@@ -442,6 +447,7 @@ inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::seek_and_rea
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void FileStream<Mutex>::unsafe_read(std::vector<T> &buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   unsafe_read(reinterpret_cast<char *>(&(*buffer.begin())), buffer.size() * sizeof(T));
 }
 
@@ -505,12 +511,14 @@ inline void FileStream<Mutex>::write(T buffer) {
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void FileStream<Mutex>::unsafe_write(T buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return unsafe_write(reinterpret_cast<const char *>(&buffer), sizeof(T));
 }
 
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 std::pair<std::streampos, std::streampos> FileStream<Mutex>::append(T buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return append(reinterpret_cast<const char *>(&buffer), sizeof(T));
 }
 
@@ -518,12 +526,14 @@ template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::seek_and_write(
     std::streamoff offset, T buffer, std::ios::seekdir way) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return seek_and_write(offset, reinterpret_cast<const char *>(&buffer), sizeof(T), way);
 }
 
 template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline void FileStream<Mutex>::write(const std::vector<T> &buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return write(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(T));
 }
 
@@ -531,6 +541,7 @@ template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::seek_and_write(
     std::streamoff offset, const std::vector<T> &buffer, std::ios::seekdir way) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return seek_and_write(offset, reinterpret_cast<const char *>(buffer.data()),
                         buffer.size() * sizeof(T), way);
 }
@@ -539,6 +550,7 @@ template <typename Mutex>
 template <typename T, typename std::enable_if_t<std::is_arithmetic_v<T>> *>
 inline std::pair<std::streampos, std::streampos> FileStream<Mutex>::append(
     const std::vector<T> &buffer) {
+  // NOLINTNEXTLINE(*-type-reinterpret-cast)
   return append(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(T));
 }
 
@@ -647,7 +659,7 @@ inline std::string FileStream<Mutex>::get_underlying_os_error() {
 
 template <typename Mutex>
 inline std::string FileStream<Mutex>::get_underlying_os_error(int errno_) {
-  std::string buffer(256, '\0');
+  std::string buffer(256, '\0');  // NOLINT(*-avoid-magic-numbers)
   get_underlying_os_error(errno_, buffer);
   return buffer;
 }

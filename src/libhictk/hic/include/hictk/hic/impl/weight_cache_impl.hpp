@@ -16,7 +16,7 @@
 namespace hictk::hic::internal {
 
 inline auto WeightCache::get_or_init(std::uint32_t chrom_id, balancing::Method norm) -> Value {
-  auto key = std::make_pair(chrom_id, norm);
+  auto key = std::make_pair(chrom_id, std::move(norm));
   auto it = _weights.find(key);
   if (it != _weights.end()) {
     return it->second;
@@ -26,15 +26,15 @@ inline auto WeightCache::get_or_init(std::uint32_t chrom_id, balancing::Method n
 }
 
 inline auto WeightCache::get_or_init(const Chromosome &chrom, balancing::Method norm) -> Value {
-  return get_or_init(chrom.id(), norm);
+  return get_or_init(chrom.id(), std::move(norm));
 }
 
 inline auto WeightCache::at(std::uint32_t chrom_id, balancing::Method norm) const -> Value {
-  return _weights.at(std::make_pair(chrom_id, norm));
+  return _weights.at(std::make_pair(chrom_id, std::move(norm)));
 }
 
 inline auto WeightCache::at(const Chromosome &chrom, balancing::Method norm) const -> Value {
-  return at(chrom.id(), norm);
+  return at(chrom.id(), std::move(norm));
 }
 
 inline void WeightCache::clear() noexcept { _weights.clear(); }

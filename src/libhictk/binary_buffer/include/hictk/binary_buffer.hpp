@@ -14,9 +14,11 @@
 namespace hictk {
 
 class BinaryBuffer {
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   static_assert(sizeof(char) == 1);
   static_assert(sizeof(float) == 4);
   static_assert(sizeof(double) == 8);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   std::string _buffer{};
   std::size_t _i{};

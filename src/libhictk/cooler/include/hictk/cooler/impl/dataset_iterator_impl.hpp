@@ -34,8 +34,8 @@ inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset, std::
 #endif
 // clang-format on
 {
-  if (_chunk_size == 0) {
-    _chunk_size = std::max(std::size_t(2048), _dset->get_chunk_size() / 3);
+  if (_chunk_size == 0) {  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+    _chunk_size = std::max(std::size_t{2048}, _dset->get_chunk_size() / 3);
   }
   if (init) {
     read_chunk_at_offset(_h5_chunk_start);
@@ -72,15 +72,15 @@ constexpr bool Dataset::iterator<T>::operator>=(const iterator &other) const noe
 template <typename T>
 inline auto Dataset::iterator<T>::operator*() const -> value_type {
   switch (underlying_buff_status()) {
-    case OVERLAPPING:
+    case OverlapStatus::OVERLAPPING:
       break;
-    case UNINITIALIZED:
+    case OverlapStatus::UNINITIALIZED:
       [[fallthrough]];
-    case DOWNSTEAM:
+    case OverlapStatus::DOWNSTEAM:
       // Read first chunk
       read_chunk_at_offset(_h5_offset);
       break;
-    case UPSTREAM:
+    case OverlapStatus::UPSTREAM:
       // Iterator was decremented one or more times since the last dereference, thus we assume the
       // iterator is being used to traverse the dataset backward
       _h5_chunk_start = _h5_offset - (std::min)(_buff->size() - 1, _h5_offset);
@@ -246,23 +246,23 @@ constexpr std::size_t Dataset::iterator<T>::upper_bound() const noexcept {
 template <typename T>
 constexpr auto Dataset::iterator<T>::underlying_buff_status() const noexcept -> OverlapStatus {
   if (!_buff) {
-    return UNINITIALIZED;
+    return OverlapStatus::UNINITIALIZED;
   }
 
   if (_h5_offset >= upper_bound()) {
-    return DOWNSTEAM;
+    return OverlapStatus::DOWNSTEAM;
   }
 
   if (_h5_offset - lower_bound() >= _buff->size()) {
-    return UPSTREAM;
+    return OverlapStatus::UPSTREAM;
   }
 
-  return OVERLAPPING;
+  return OverlapStatus::OVERLAPPING;
 }
 
 template <typename T>
 constexpr std::size_t Dataset::iterator<T>::underlying_buff_num_available_rev() const noexcept {
-  if (underlying_buff_status() != OVERLAPPING) {
+  if (underlying_buff_status() != OverlapStatus::OVERLAPPING) {
     return 0;
   }
   return _h5_offset - lower_bound();
@@ -270,7 +270,7 @@ constexpr std::size_t Dataset::iterator<T>::underlying_buff_num_available_rev() 
 
 template <typename T>
 constexpr std::size_t Dataset::iterator<T>::underlying_buff_num_available_fwd() const noexcept {
-  if (underlying_buff_status() != OVERLAPPING) {
+  if (underlying_buff_status() != OverlapStatus::OVERLAPPING) {
     return 0;
   }
   return upper_bound() - _h5_offset;
@@ -319,8 +319,8 @@ inline auto Dataset::iterator<T>::make_end_iterator(std::shared_ptr<const Datase
   it._buff = nullptr;
   it._dset = std::move(dset);
   it._h5_offset = it._dset->size();
-  it._chunk_size =
-      chunk_size == 0 ? std::max(std::size_t(2048), it._dset->get_chunk_size() / 3) : chunk_size;
+  it._chunk_size =  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+      chunk_size == 0 ? std::max(std::size_t{2048}, it._dset->get_chunk_size() / 3) : chunk_size;
 #ifndef NDEBUG
   it._h5_size = it._h5_offset;
 #endif

@@ -16,6 +16,17 @@
 
 namespace hictk::tools {
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
+
+static constexpr std::uint8_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
+static constexpr std::uint8_t MAX_COOL_COMPRESSION_LEVEL = 9;
+
+static constexpr std::uint8_t DEFAULT_HIC_COMPRESSION_LEVEL = 10;
+static constexpr std::uint8_t MAX_HIC_COMPRESSION_LEVEL = 12;
+
+static constexpr std::uint8_t DEFAULT_ZSTD_COMPRESSION_LEVEL = 3;
+static constexpr std::uint8_t MAX_ZSTD_COMPRESSION_LEVEL = 19;
+
 struct BalanceICEConfig {
   std::filesystem::path path_to_input{};
   std::filesystem::path tmp_dir{};
@@ -32,7 +43,7 @@ struct BalanceICEConfig {
   bool in_memory{false};
   bool symlink_to_weight{true};
   bool stdout_{false};
-  std::uint8_t zstd_compression_lvl{3};
+  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
@@ -54,7 +65,7 @@ struct BalanceSCALEConfig {
   bool in_memory{false};
   bool symlink_to_weight{true};
   bool stdout_{false};
-  std::uint8_t zstd_compression_lvl{3};
+  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
@@ -91,7 +102,7 @@ struct ConvertConfig {
   bool fail_if_normalization_method_is_not_avaliable{false};
   bool skip_all_vs_all_matrix{false};
 
-  std::uint32_t compression_lvl{6};
+  std::uint32_t compression_lvl{DEFAULT_COOL_COMPRESSION_LEVEL};
   std::size_t threads{2};
   std::size_t chunk_size{10'000'000};
 
@@ -131,7 +142,7 @@ struct FixMcoolConfig {
   bool check_base_resolution{false};
 
   bool in_memory{false};
-  std::uint8_t zstd_compression_lvl{3};
+  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t chunk_size{10'000'000};
 
   std::size_t threads{1};
@@ -163,7 +174,7 @@ struct LoadConfig {
   std::string output_format{"auto"};
 
   std::size_t threads{2};
-  std::uint32_t compression_lvl{9};
+  std::uint32_t compression_lvl{DEFAULT_COOL_COMPRESSION_LEVEL};
 
   std::uint8_t verbosity{3};
   std::size_t batch_size{10'000'000};
@@ -178,7 +189,7 @@ struct MergeConfig {
   std::filesystem::path tmp_dir{};
 
   std::size_t chunk_size{10'000'000};
-  std::uint32_t compression_lvl{9};
+  std::uint32_t compression_lvl{DEFAULT_COOL_COMPRESSION_LEVEL};
   std::size_t threads{1};
   bool skip_all_vs_all_matrix{true};
   std::string count_type{"int"};
@@ -226,7 +237,7 @@ struct ZoomifyConfig {
   bool copy_base_resolution{true};
   bool nice_resolution_steps{true};
 
-  std::uint32_t compression_lvl{6};
+  std::uint32_t compression_lvl{DEFAULT_COOL_COMPRESSION_LEVEL};
   std::uint32_t threads{1};
   std::size_t batch_size{10'000'000};
   bool skip_all_vs_all_matrix{false};
@@ -234,6 +245,8 @@ struct ZoomifyConfig {
   bool force{false};
   std::uint8_t verbosity{3};
 };
+
+// NOLINTEND(*-avoid-magic-numbers)
 
 // clang-format off
 using Config = std::variant<std::monostate,

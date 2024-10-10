@@ -10,7 +10,6 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
 #include <limits>
 #include <memory>
 
@@ -18,14 +17,9 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}
-
 namespace hictk::cooler::test::index {
-const auto& datadir = hictk::test::datadir;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index ctor", "[index][short]") {
   constexpr std::uint32_t bin_size = 100;
   const auto bins = std::make_shared<const BinTable>(
@@ -47,7 +41,6 @@ TEST_CASE("Cooler: index ctor", "[index][short]") {
   CHECK_THROWS(idx.size(99));
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
   constexpr std::uint32_t bin_size = 10;
   const Chromosome chrom1{0, "chr1", 100};
@@ -102,7 +95,6 @@ TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index iterator", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
@@ -136,7 +128,6 @@ TEST_CASE("Cooler: index iterator", "[index][short]") {
   CHECK(first_offset == last_offset);
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index validation", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
@@ -174,7 +165,6 @@ TEST_CASE("Cooler: index validation", "[index][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: index compute chromosome offsets", "[index][short]") {
   constexpr std::uint32_t bin_size = 1000;
   const auto bins = std::make_shared<const BinTable>(
@@ -201,5 +191,6 @@ TEST_CASE("Cooler: index compute chromosome offsets", "[index][short]") {
   CHECK(chrom_offsets[1] == chr1_offsets.size());
   CHECK(chrom_offsets[2] == chr1_offsets.size() + chr2_offsets.size());
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::index

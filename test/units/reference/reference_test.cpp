@@ -18,7 +18,7 @@
 
 namespace hictk::test::reference {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Reference", "[reference][short]") {
   // clang-format off
     const std::array<Chromosome, 3> expected{
@@ -131,4 +131,7 @@ TEST_CASE("Reference", "[reference][short]") {
     CHECK(prefix_sum[3] == 1006);
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk::test::reference

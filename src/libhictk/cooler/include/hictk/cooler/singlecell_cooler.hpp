@@ -61,7 +61,7 @@ class SingleCellFile {
   SingleCellAttributes _attrs{SingleCellAttributes::init_empty()};
   std::shared_ptr<const BinTable> _bins{};
 
-  SingleCellFile(HighFive::File fp, BinTable bins, SingleCellAttributes attrs);
+  SingleCellFile(const HighFive::File& fp, BinTable bins, SingleCellAttributes attrs);
 
  public:
   explicit SingleCellFile(const std::filesystem::path& path,
@@ -90,10 +90,12 @@ class SingleCellFile {
   [[nodiscard]] HighFive::File file_handle();
   [[nodiscard]] const HighFive::File& file_handle() const;
 
+  // NOLINTBEGIN(modernize-use-nodiscard,*-avoid-magic-numbers)
   template <typename N>
   File aggregate(std::string_view uri, bool overwrite_if_exists = false,
                  std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL,
                  std::size_t chunk_size = 500'000, std::size_t update_frequency = 10'000'000) const;
+  // NOLINTEND(modernize-use-nodiscard,*-avoid-magic-numbers)
 
  private:
   [[nodiscard]] static SingleCellAttributes read_standard_attributes(const HighFive::File& f,

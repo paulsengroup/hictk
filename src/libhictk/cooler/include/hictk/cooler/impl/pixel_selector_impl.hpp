@@ -25,9 +25,22 @@
 
 namespace hictk::cooler {
 
+inline PixelSelector::PixelSelector(const Index &index, const Dataset &pixels_bin1_id,
+                                    const Dataset &pixels_bin2_id, const Dataset &pixels_count,
+                                    std::shared_ptr<const balancing::Weights> weights,
+                                    bool symmetric_upper_) noexcept
+    : _bins(index.bins_ptr()),
+      _pixels_bin1_id(&pixels_bin1_id),
+      _pixels_bin2_id(&pixels_bin2_id),
+      _pixels_count(&pixels_count),
+      _weights(std::move(weights)),
+      _symmetric_upper(symmetric_upper_) {
+  assert(_weights);
+}
+
 inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
                                     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                                    const Dataset &pixels_count, PixelCoordinates coords,
+                                    const Dataset &pixels_count, const PixelCoordinates &coords,
                                     std::shared_ptr<const balancing::Weights> weights,
                                     bool symmetric_upper_)
     : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords, coords,
@@ -63,20 +76,6 @@ inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
         _coord1.bin1.chrom().name(), _coord1.bin1.start(), _coord1.bin2.end(),
         _coord2.bin1.chrom().name(), _coord2.bin1.start(), _coord2.bin2.end()));
   }
-}
-
-inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
-                                    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                                    const Dataset &pixels_count,
-                                    std::shared_ptr<const balancing::Weights> weights,
-                                    bool symmetric_upper_) noexcept
-    : _bins(index->bins_ptr()),
-      _pixels_bin1_id(&pixels_bin1_id),
-      _pixels_bin2_id(&pixels_bin2_id),
-      _pixels_count(&pixels_count),
-      _weights(std::move(weights)),
-      _symmetric_upper(symmetric_upper_) {
-  assert(_weights);
 }
 
 inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
@@ -199,7 +198,7 @@ inline PixelSelector::iterator<N>::iterator(
   assert(_coord2.bin1.id() <= _coord2.bin2.id());
   assert(_weights);
 
-  if (_index->empty(coord1.bin1.chrom().id())) {
+  if (_index->empty(_coord1.bin1.chrom().id())) {
     *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count,
                    std::move(_weights));
     return;

@@ -12,6 +12,7 @@
 
 namespace hictk::fuzzer {
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 struct Config {
   std::uint16_t task_id{};
   std::filesystem::path exec{};
@@ -30,5 +31,6 @@ struct Config {
   std::size_t nproc{1};
   bool suppress_python_warnings{true};
 };
+// NOLINTEND(*-avoid-magic-numbers)
 
 }  // namespace hictk::fuzzer

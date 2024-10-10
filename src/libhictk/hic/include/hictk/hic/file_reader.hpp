@@ -44,7 +44,7 @@ class HiCFileReader {
   // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
   // resolution.
   [[nodiscard]] HiCFooter read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
-                                      MatrixType matrix_type, balancing::Method wanted_norm,
+                                      MatrixType matrix_type, const balancing::Method &wanted_norm,
                                       MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
                                       std::shared_ptr<balancing::Weights> &weights1,
                                       std::shared_ptr<balancing::Weights> &weights2);
@@ -52,12 +52,14 @@ class HiCFileReader {
   [[nodiscard]] std::int64_t read_footer_file_offset(std::string_view key);
   [[nodiscard]] std::vector<double> read_footer_expected_values(
       const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
-      balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+      const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
+      std::uint32_t wanted_resolution);
   [[nodiscard]] std::vector<double> read_footer_expected_values_norm(
       const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
-      balancing::Method wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);
+      const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
+      std::uint32_t wanted_resolution);
   void read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
-                        balancing::Method wanted_norm, MatrixUnit wanted_unit,
+                        const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
                         std::uint32_t wanted_resolution,
                         std::shared_ptr<balancing::Weights> &weights1,
                         std::shared_ptr<balancing::Weights> &weights2);
@@ -86,8 +88,8 @@ class HiCFileReader {
 
   [[nodiscard]] std::vector<double> readExpectedVector(std::int64_t nValues);
   [[nodiscard]] std::vector<double> readNormalizationFactors(std::uint32_t wantedChrom);
-  void applyNormalizationFactors(std::vector<double> &expectedValues,
-                                 const std::vector<double> &normFactors);
+  static void applyNormalizationFactors(std::vector<double> &expectedValues,
+                                        const std::vector<double> &normFactors);
   [[nodiscard]] std::vector<double> readNormalizationVector(indexEntry cNormEntry,
                                                             std::size_t numValuesExpected);
 

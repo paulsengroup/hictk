@@ -20,7 +20,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::dataset {
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset write", "[dataset][short]") {
   const auto path = testdir() / "test_dataset_write.cool";
   const RootGroup grp{HighFive::File(path.string(), HighFive::File::Truncate).getGroup("/")};
@@ -128,5 +129,6 @@ TEST_CASE("Cooler: dataset write", "[dataset][short]") {
                           Catch::Matchers::ContainsSubstring("past the end"));
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

@@ -21,7 +21,7 @@ using namespace hictk;
 namespace hictk::test::expected_values_aggregator {
 inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("ExpectedValuesAggregator", "[file][short]") {
   const std::uint32_t resolution = 1'000'000;
   const auto path_hic = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
@@ -57,5 +57,7 @@ TEST_CASE("ExpectedValuesAggregator", "[file][short]") {
     CHECK(aggr1.weights().empty());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::expected_values_aggregator

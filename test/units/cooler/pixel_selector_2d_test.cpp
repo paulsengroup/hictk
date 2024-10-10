@@ -12,7 +12,7 @@
 
 namespace hictk::cooler::test::pixel_selector {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
   using T = std::uint32_t;
   const auto path = datadir / "cooler_test_file.cool";
@@ -96,5 +96,7 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::pixel_selector

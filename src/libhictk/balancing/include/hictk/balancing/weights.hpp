@@ -46,6 +46,7 @@ class Weights {
   [[nodiscard]] bool is_constant() const noexcept;
   [[nodiscard]] bool is_vector_of_ones() const noexcept;
 
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] double operator[](std::size_t i) const noexcept;
 
   [[nodiscard]] double at(std::size_t i) const;
@@ -66,12 +67,13 @@ class Weights {
 
   [[nodiscard]] Weights operator()(Type type_) const;
   [[nodiscard]] constexpr auto type() const noexcept -> Type;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
   [[nodiscard]] static auto infer_type(std::string_view name) noexcept -> Type;
 
-  void rescale(double scaling_factor) noexcept;
+  void rescale(double scaling_factor);
   void rescale(const std::vector<double> &scaling_factors,
                const std::vector<std::uint64_t> &offsets);
 
@@ -82,6 +84,7 @@ class Weights {
       const ConstWeight *value{};
       std::ptrdiff_t i{};
 
+      // NOLINTNEXTLINE(bugprone-exception-escape)
       [[nodiscard]] constexpr bool operator==(const ConstIt &other) const noexcept;
       [[nodiscard]] constexpr bool operator!=(const ConstIt &other) const noexcept;
       [[nodiscard]] constexpr bool operator<(const ConstIt &other) const noexcept;

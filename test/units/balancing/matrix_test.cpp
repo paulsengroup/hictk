@@ -31,7 +31,7 @@
 
 namespace hictk::test::balancing {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Balancing: AtomicBitSet", "[balancing][short]") {
   using AtomicBitSet = hictk::balancing::internal::AtomicBitSet;
 
@@ -105,7 +105,9 @@ TEST_CASE("Balancing: AtomicBitSet", "[balancing][short]") {
         std::mt19937_64 rand_gen{rd()};
 
         ++threads_started;
+        // clang-format off
         while (threads_started != num_threads);  // NOLINT
+        // clang-format on
         for (std::size_t i = 0; i < iters; ++i) {
           const auto x = std::bernoulli_distribution{}(rand_gen);
           b.atomic_set(0, x);
@@ -138,7 +140,9 @@ TEST_CASE("Balancing: AtomicBitSet", "[balancing][short]") {
         std::mt19937_64 rand_gen{rd()};
 
         ++threads_started;
+        // clang-format off
         while (threads_started != num_threads);  // NOLINT
+        // clang-format on
         for (std::size_t i = 0; i < iters; ++i) {
           const auto j = std::uniform_int_distribution<std::size_t>{0, b.size() - 1}(rand_gen);
           const auto x = std::bernoulli_distribution{}(rand_gen);
@@ -166,7 +170,6 @@ TEST_CASE("Balancing: AtomicBitSet", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
   using VectorOfAtomicDecimals = hictk::balancing::internal::VectorOfAtomicDecimals;
 
@@ -381,7 +384,9 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         double tot = 0.0;
 
         ++threads_started;
+        // clang-format off
         while (threads_started != num_threads);  // NOLINT
+        // clang-format on
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, 10}(rand_gen);
           v.atomic_add(0, n);
@@ -423,7 +428,9 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
         double tot = 0.0;
 
         ++threads_started;
+        // clang-format off
         while (threads_started != num_threads);  // NOLINT
+        // clang-format on
 
         for (std::size_t i = 0; i < iters; ++i) {
           const auto n = std::uniform_real_distribution<double>{0, ub}(rand_gen);
@@ -498,7 +505,6 @@ TEST_CASE("Balancing: VectorOfAtomicDecimals", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SparseMatrix", "[balancing][short]") {
   using SparseMatrix = hictk::balancing::internal::SparseMatrix;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
@@ -568,7 +574,6 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SparseMatrixChunked", "[balancing][short]") {
   using SparseMatrixChunked = hictk::balancing::internal::SparseMatrixChunked;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
@@ -600,7 +605,6 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: FileBackedSparseMatrix", "[balancing][short]") {
   using FileBackedSparseMatrix = hictk::balancing::internal::FileBackedSparseMatrix;
   const BinTable bins{Reference{Chromosome{0, "chr0", 50}, Chromosome{1, "chr1", 100},
@@ -625,4 +629,7 @@ const std::vector<ThinPixel<std::int32_t>> pixels{
     CHECK(m.size() == pixels.size());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk::test::balancing

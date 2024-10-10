@@ -83,13 +83,14 @@ int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
 int Cli::exit() const noexcept { return _exit_code; }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
+  using sc = subcommand;
   switch (s) {
-    case fuzz:
+    case sc::fuzz:
       return "fuzz";
-    case launch_worker:
+    case sc::launch_worker:
       return "launch-worker";
     default:
-      assert(s == help);
+      assert(s == sc::help);
       return "--help";
   }
 }
@@ -166,8 +167,8 @@ void Cli::make_cli() {
   make_launch_worker_subcommand();
 }
 
-void validate_resolution(const std::filesystem::path& uri, std::uint32_t expected_resolution,
-                         std::vector<std::string>& errors) {
+static void validate_resolution(const std::filesystem::path& uri, std::uint32_t expected_resolution,
+                                std::vector<std::string>& errors) {
   if (expected_resolution != 0) {
     if (hictk::cooler::utils::is_cooler(uri.string())) {
       const auto found_resolution = cooler::File(uri.string()).resolution();
@@ -212,7 +213,7 @@ static void validate_normalization(const std::filesystem::path& uri, std::uint32
   }
 }
 
-void validate_common_args(const Config& c) {
+static void validate_common_args(const Config& c) {
   std::vector<std::string> errors;
 
   validate_resolution(c.test_uri, c.resolution, errors);
@@ -236,14 +237,15 @@ void Cli::validate_fuzz_subcommand() const { validate_common_args(_config); }
 void Cli::validate_launch_worker_subcommand() const { validate_common_args(_config); }
 
 void Cli::validate_args() const {
+  using sc = subcommand;
   switch (_subcommand) {
-    case fuzz:
+    case sc::fuzz:
       validate_fuzz_subcommand();
       break;
-    case launch_worker:
+    case sc::launch_worker:
       validate_launch_worker_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }
@@ -277,8 +279,9 @@ void Cli::transform_args_fuzz_subcommand() {
 
   if (!_config.seed.has_value()) {
     _config.seed = 0;
+    // NOLINTNEXTLINE(*-reinterpret-cast)
     auto* ptr = reinterpret_cast<std::uint32_t*>(&_config.seed.value());
-    *ptr++ = std::random_device{}();
+    *ptr++ = std::random_device{}();  // NOLINT(*-pointer-arithmetic)
     *ptr = std::random_device{}();
   }
 }
@@ -286,14 +289,15 @@ void Cli::transform_args_fuzz_subcommand() {
 void Cli::transform_args_launch_worker_subcommand() {}
 
 void Cli::transform_args() {
+  using sc = subcommand;
   switch (_subcommand) {
-    case fuzz:
+    case sc::fuzz:
       transform_args_fuzz_subcommand();
       break;
-    case launch_worker:
+    case sc::launch_worker:
       transform_args_launch_worker_subcommand();
       break;
-    case help:
+    case sc::help:
       break;
   }
 }

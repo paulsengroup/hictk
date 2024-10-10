@@ -41,10 +41,12 @@ class BinTable {
   BinTable(Reference chroms, const std::vector<I> &start_pos, const std::vector<I> &end_pos,
            I bin_offset = 0);
 
-  [[nodiscard]] std::size_t size() const noexcept;
-  [[nodiscard]] bool empty() const noexcept;
-  [[nodiscard]] std::size_t num_chromosomes() const;
+  [[nodiscard]] std::size_t size() const noexcept;             // NOLINT(bugprone-exception-escape)
+  [[nodiscard]] bool empty() const noexcept;                   // NOLINT(bugprone-exception-escape)
+  [[nodiscard]] std::size_t num_chromosomes() const noexcept;  // NOLINT(bugprone-exception-escape)
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
   // clang-format off
   [[deprecated("superseded by BinTable::type() == BinTable::Type::fixed")]]
@@ -52,6 +54,7 @@ class BinTable {
   // clang-format on
   [[nodiscard]] constexpr auto type() const noexcept -> Type;
 
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 
   [[nodiscard]] auto begin() const -> iterator;
@@ -64,16 +67,13 @@ class BinTable {
   [[nodiscard]] BinTable subset(std::uint32_t chrom_id) const;
 
   [[nodiscard]] auto find_overlap(const GenomicInterval &query) const
-      -> std::pair<BinTable::iterator, BinTable::iterator>;
+      -> std::pair<iterator, iterator>;
   [[nodiscard]] auto find_overlap(const Chromosome &chrom, std::uint32_t start,
-                                  std::uint32_t end) const
-      -> std::pair<BinTable::iterator, BinTable::iterator>;
+                                  std::uint32_t end) const -> std::pair<iterator, iterator>;
   [[nodiscard]] auto find_overlap(std::string_view chrom_name, std::uint32_t start,
-                                  std::uint32_t end) const
-      -> std::pair<BinTable::iterator, BinTable::iterator>;
+                                  std::uint32_t end) const -> std::pair<iterator, iterator>;
   [[nodiscard]] auto find_overlap(std::uint32_t chrom_id, std::uint32_t start,
-                                  std::uint32_t end) const
-      -> std::pair<BinTable::iterator, BinTable::iterator>;
+                                  std::uint32_t end) const -> std::pair<iterator, iterator>;
 
   // Map bin_id to Bin
   [[nodiscard]] Bin at(std::uint64_t bin_id) const;

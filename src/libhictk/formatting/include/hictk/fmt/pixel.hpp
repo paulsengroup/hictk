@@ -15,23 +15,23 @@
 
 template <>
 struct fmt::formatter<hictk::PixelCoordinates> {
-  enum Presentation { bg2, raw };
-  Presentation presentation{Presentation::bg2};
+  enum Presentation : std::uint_fast8_t { bg2, raw };
+  Presentation presentation{bg2};
 
   constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      presentation = Presentation::bg2;
+      presentation = bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = Presentation::raw;
+      presentation = raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
     if (it != end && *it != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
 
     return it;
@@ -39,57 +39,57 @@ struct fmt::formatter<hictk::PixelCoordinates> {
 
   template <typename FormatContext>
   auto format(const hictk::PixelCoordinates &c, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (presentation == Presentation::bg2) {
+    if (presentation == bg2) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:bed}\t{:bed}"), c.bin1, c.bin2);
     }
 
-    assert(presentation == Presentation::raw);
+    assert(presentation == raw);
     return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{:raw}"), c.bin1, c.bin2);
   }
 };
 
 template <typename N>
 struct fmt::formatter<hictk::Pixel<N>> {
-  enum Presentation { bg2, raw };
-  Presentation presentation{Presentation::bg2};
+  enum Presentation : std::uint_fast8_t { bg2, raw };
+  Presentation presentation{bg2};
 
   constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      presentation = Presentation::bg2;
+      presentation = bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = Presentation::raw;
+      presentation = raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
     if (it != end && *it != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
 
     return it;
   }
 
   template <typename FormatContext>
-  inline auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (presentation == Presentation::raw) {
+  auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
+    if (presentation == raw) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{}"), p.coords, p.count);
     }
 
-    assert(presentation == Presentation::bg2);
+    assert(presentation == bg2);
     return fmt::format_to(ctx.out(), FMT_STRING("{:bg2}\t{}"), p.coords, p.count);
   }
 };
 
 template <typename N>
 struct fmt::formatter<hictk::ThinPixel<N>> {
-  constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
+  static constexpr auto parse(const format_parse_context &ctx) -> decltype(ctx.begin()) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
     if (it != end && *it != '}') {
-      throw fmt::format_error("invalid format");
+      throw format_error("invalid format");
     }
 
     return it;

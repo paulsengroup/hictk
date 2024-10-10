@@ -136,7 +136,7 @@ inline double MatrixInteractionBlock<N>::sum() const noexcept {
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::emplace_back(hictk::Pixel<N> &&p,
+inline void MatrixInteractionBlock<N>::emplace_back(const hictk::Pixel<N> &p,
                                                     std::uint32_t bin_id_offset) {
   try {
     _sum += conditional_static_cast<double>(p.count);
@@ -247,7 +247,9 @@ inline std::size_t MatrixInteractionBlock<N>::compute_dense_width() const noexce
 
   const auto width = _max_col - _min_col;
 
-  return static_cast<std::size_t>(std::max(height, width) + 1);
+  assert(height >= 0);
+  assert(width >= 0);
+  return static_cast<std::size_t>(std::max(height, width)) + 1;
 }
 
 template <typename N>
@@ -820,7 +822,7 @@ inline std::int32_t NormalizationVectorIndex::nNormVectors() const noexcept {
   return static_cast<std::int32_t>(_norm_vect_idx.size());
 }
 
-inline const std::vector<NormalizationVectorIndexBlock>
+inline const std::vector<NormalizationVectorIndexBlock> &
 NormalizationVectorIndex::normalizationVectorIndex() const noexcept {
   return _norm_vect_idx;
 }

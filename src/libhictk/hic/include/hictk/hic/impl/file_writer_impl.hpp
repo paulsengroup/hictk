@@ -131,18 +131,18 @@ inline HiCSectionOffsets MatrixBodyMetadataTank::offset(const Chromosome &chrom1
 }
 
 inline void MatrixBodyMetadataTank::insert(const Chromosome &chrom1, const Chromosome &chrom2,
-                                           MatrixMetadata matrix_metadata,
+                                           const MatrixMetadata &matrix_metadata,
                                            MatrixResolutionMetadata matrix_resolution_metadata) {
   try {
     auto match = _tank.find(Key{chrom1, chrom2});
     if (match != _tank.end()) {
-      match->second.matrixMetadata = std::move(matrix_metadata);
+      match->second.matrixMetadata = matrix_metadata;
       match->second.resolutionMetadata.emplace(std::move(matrix_resolution_metadata));
     } else {
-      _tank.emplace(Key{chrom1, chrom2},
-                    MatrixBodyMetadata{std::move(matrix_metadata),
-                                       phmap::btree_set<MatrixResolutionMetadata>{
-                                           std::move(matrix_resolution_metadata)}});
+      _tank.emplace(
+          Key{chrom1, chrom2},
+          MatrixBodyMetadata{matrix_metadata, phmap::btree_set<MatrixResolutionMetadata>{
+                                                  std::move(matrix_resolution_metadata)}});
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(
@@ -199,10 +199,10 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, std::size_t n_thread
 inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosomes_,
                                     std::vector<std::uint32_t> resolutions_,
                                     std::string_view assembly_, std::size_t n_threads,
-                                    std::size_t chunk_size, const std::filesystem::path &tmpdir,
+                                    std::size_t chunk_size, std::filesystem::path tmpdir,
                                     std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
     : _fs(filestream::FileStream<>::create(std::string{path_}, std::make_shared<std::mutex>())),
-      _tmpdir(tmpdir),
+      _tmpdir(std::move(tmpdir)),
       _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
                           skip_all_vs_all_matrix)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
@@ -325,7 +325,8 @@ template <typename PixelIt, typename>
 inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
                                       PixelIt last_pixel) {
   try {
-    _block_mappers.at(resolution).append_pixels(first_pixel, last_pixel, _tpool);
+    _block_mappers.at(resolution)
+        .append_pixels(std::move(first_pixel), std::move(last_pixel), _tpool);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while adding pixels for resolution {} to file \"{}\": {}"),
@@ -366,7 +367,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
     const auto base_resolution = resolutions().back();
     auto target_resolution =
         static_cast<std::uint32_t>((genome_size + target_num_bins - 1) / target_num_bins);
-    const auto factor = std::max(std::uint32_t(1), target_resolution / base_resolution);
+    const auto factor = std::max(std::uint32_t{1}, target_resolution / base_resolution);
     target_resolution = factor * base_resolution;
     const auto target_resolution_scaled =
         std::max(std::uint32_t{1}, target_resolution / DEFAULT_CHROM_ALL_SCALE_FACTOR);
@@ -393,7 +394,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
         HiCInteractionToBlockMapper::compute_num_bins(chrom, chrom, target_resolution_scaled);
     const auto num_columns = HiCInteractionToBlockMapper::compute_block_column_count(
         chrom, chrom, target_resolution_scaled, HiCInteractionToBlockMapper::DEFAULT_INTER_CUTOFF);
-    const auto num_rows = num_bins / num_columns + 1;
+    const auto num_rows = (num_bins / num_columns) + 1;
 
     HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
 
@@ -410,14 +411,14 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
       // multiples of the bin size. This turns out to be correct as long as chromosome sizes are not
       // multiples of the bin size (which should happen extremely rarely), in which case the result
       // is off by one.
-      Pixel<float> coarsened_pixel(
+      const Pixel<float> coarsened_pixel(
           *bin_table_ALL, (p.bin1_id - (pixel.coords.bin1.chrom().id() - 1)) / factor,
           (p.bin2_id - (pixel.coords.bin2.chrom().id() - 1)) / factor, p.count);
 
       const auto bid =
           mapper(coarsened_pixel.coords.bin1.rel_id(), coarsened_pixel.coords.bin2.rel_id());
       auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-      it->second.emplace_back(std::move(coarsened_pixel));
+      it->second.emplace_back(coarsened_pixel);
     });
 
     const auto section_start = _data_block_section.end();
@@ -572,7 +573,7 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
 
     const auto num_bins = compute_num_bins(chrom1, chrom2, resolution);
     const auto num_columns = compute_block_column_count(chrom1, chrom2, resolution);
-    const auto num_rows = num_bins / num_columns + 1;
+    const auto num_rows = (num_bins / num_columns) + 1;
 
     mrm.unit = unit;
     mrm.resIdx = static_cast<std::int32_t>(std::distance(
@@ -669,7 +670,7 @@ inline void HiCFileWriter::write_norm_vectors_and_norm_expected_values() {
 }
 
 inline HiCSectionOffsets HiCFileWriter::write_empty_expected_values() {
-  ExpectedValues ev{};
+  const ExpectedValues ev{};
 
   try {
     const auto offset = _fs.tellp();
@@ -694,7 +695,7 @@ inline HiCSectionOffsets HiCFileWriter::write_empty_normalized_expected_values()
   try {
     HICTK_DISABLE_WARNING_PUSH
     HICTK_DISABLE_WARNING_USELESS_CAST
-    const auto new_offset = _fs.seek_and_write(offset, std::int32_t(0)).second;  // NOLINT
+    const auto new_offset = _fs.seek_and_write(offset, std::int32_t{0}).second;  // NOLINT
     HICTK_DISABLE_WARNING_POP
     _expected_values_norm_section = {offset, new_offset - offset};
     return _expected_values_norm_section;
@@ -1064,6 +1065,7 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
   } else {
     chromosomes = chromosomes.add_ALL(DEFAULT_CHROM_ALL_SCALE_FACTOR);
   }
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   return {
       std::string{path},      // url
       9,                      // version
@@ -1075,6 +1077,7 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
       std::move(resolutions),                                   // resolutions
       {{"software", std::string{config::version::str_long()}}}  // attributes
   };
+  // NOLINTEND(*-avoid-magic-numbers)
 }
 
 inline auto HiCFileWriter::init_bin_tables(const Reference &chromosomes,
@@ -1103,7 +1106,7 @@ inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem:
 
 inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
   return BS::thread_pool{
-      conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t(1) : n_threads)};
+      conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t{1} : n_threads)};
 }
 
 inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
@@ -1164,7 +1167,8 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
     std::atomic<bool> early_return = false;
 
     std::atomic first_bid{block_ids.data()};
-    auto *last_bid = block_ids.data() + block_ids.size();
+    // NOLINTNEXTLINE(*-bounds-pointer-arithmetic)
+    const auto *last_bid = block_ids.data() + block_ids.size();
 
     std::vector<std::future<Stats>> workers(
         conditional_static_cast<std::size_t>(_tpool.get_thread_count()));
@@ -1203,16 +1207,16 @@ inline auto HiCFileWriter::write_interaction_block(std::streampos offset, std::u
                _compression_buffer.size());
   const auto new_offset = _fs.seek_and_write(offset, _compression_buffer).second;
 
-  MatrixBlockMetadata mm{static_cast<std::int32_t>(block_id),
-                         conditional_static_cast<std::int64_t>(offset),
-                         static_cast<std::int32_t>(new_offset - offset)};
+  const MatrixBlockMetadata mm{static_cast<std::int32_t>(block_id),
+                               conditional_static_cast<std::int64_t>(offset),
+                               static_cast<std::int32_t>(new_offset - offset)};
 
   const BlockIndexKey key{chrom1, chrom2, resolution};
   auto idx = _block_index.find(key);
   if (idx != _block_index.end()) {
-    idx->second.emplace(std::move(mm));
+    idx->second.emplace(mm);
   } else {
-    _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
+    _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{mm});
   }
   return {offset, new_offset - offset};
 }
@@ -1398,7 +1402,7 @@ inline auto HiCFileWriter::merge_and_compress_blocks_thr(
     };
 
     for ([[maybe_unused]] std::size_t blocks_processed = 0; !early_return; ++blocks_processed) {
-      auto *block_idx = first_bid++;
+      const auto *block_idx = first_bid++;
       if (block_idx >= last_bid) {
         try_dequeue_and_write_blocks();
         SPDLOG_DEBUG(FMT_STRING("merge_and_compress_blocks [tid={}]: no more blocks to be "
@@ -1472,15 +1476,15 @@ inline void HiCFileWriter::write_compressed_blocks(
     buffer.clear();
     buffer.shrink_to_fit();
 
-    MatrixBlockMetadata mm{static_cast<std::int32_t>(bid.bid), file_offset, buffer_size};
+    const MatrixBlockMetadata mm{static_cast<std::int32_t>(bid.bid), file_offset, buffer_size};
     const BlockIndexKey key{chrom1, chrom2, resolution};
 
     [[maybe_unused]] const std::scoped_lock lck2(_block_index_mtx);
     auto idx = _block_index.find(key);
     if (idx != _block_index.end()) {
-      idx->second.emplace(std::move(mm));
+      idx->second.emplace(mm);
     } else {
-      _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{std::move(mm)});
+      _block_index.emplace(key, phmap::btree_set<MatrixBlockMetadata>{mm});
     }
 
     SPDLOG_DEBUG(FMT_STRING("wrote block #{} for {}:{}:{} at {}:{}"), bid, chrom1.name(),

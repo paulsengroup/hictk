@@ -45,7 +45,7 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coords);
+                const PixelCoordinates &coords);
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
@@ -97,6 +97,7 @@ class PixelSelector {
   [[nodiscard]] bool is_intra() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
   [[nodiscard]] std::size_t estimate_optimal_cache_size(std::size_t num_samples = 500) const;
   void clear_cache() const;
 

@@ -82,13 +82,13 @@ void Cli::make_fix_mcool_subcommand() {
       "-t,--threads",
       c.threads,
       "Maximum number of parallel threads to spawn (only applies to the balancing stage).")
-      ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+      ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).")
-      ->check(CLI::Range(0, 19))
+      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -154,7 +154,7 @@ void Cli::transform_args_fix_mcool_subcommand() {
   const auto& sc = *_cli.get_subcommand("fix-mcool");
 
   if (sc.get_option("--tmpdir")->empty()) {
-    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
+    c.tmp_dir = internal::TmpDir::default_temp_directory_path();
   }
 
   // in spdlog, high numbers correspond to low log levels

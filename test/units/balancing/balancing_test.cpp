@@ -21,6 +21,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::test {
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-cpp)
 }  // namespace hictk::test
 
@@ -41,7 +43,6 @@ namespace hictk::test::balancing {
   return {buffer, type};
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -64,7 +65,7 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -91,7 +92,6 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -114,7 +114,7 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
       }
 
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -142,7 +142,6 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -165,7 +164,7 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
       }
 
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::ICE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -192,7 +191,6 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -225,7 +223,6 @@ TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -258,7 +255,6 @@ TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -291,7 +287,6 @@ TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -313,7 +308,7 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
         compare_weights(weights, expected_weights);
       }
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -341,7 +336,6 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -364,7 +358,7 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -392,7 +386,6 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
       std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
@@ -415,7 +408,7 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
       }
 
       SECTION("chunked") {
-        std::filesystem::remove(tmpfile);
+        std::filesystem::remove(tmpfile);  // NOLINT
         auto params = hictk::balancing::SCALE::DefaultParams;
         params.tmpfile = tmpfile;
         params.chunk_size = 1000;
@@ -460,5 +453,6 @@ TEST_CASE("Balancing: SCALE (edge cases)", "[balancing][medium]") {
     compare_weights(weights, expected_weights);
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::balancing

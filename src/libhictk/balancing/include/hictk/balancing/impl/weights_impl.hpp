@@ -64,7 +64,9 @@ inline Weights::Weights(std::variant<ConstWeight, WeightVectPtr> weights, Type t
 
 inline Weights::operator bool() const noexcept { return !empty(); }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline double Weights::operator[](std::size_t i) const noexcept {
+  assert(!_weights.valueless_by_exception());
   if (is_constant()) {
     return std::get<ConstWeight>(_weights).w;
   }
@@ -74,6 +76,7 @@ inline double Weights::operator[](std::size_t i) const noexcept {
 }
 
 inline double Weights::at(std::size_t i) const {
+  assert(!_weights.valueless_by_exception());
   if (is_constant()) {
     const auto& [w, size] = std::get<ConstWeight>(_weights);
 
@@ -114,6 +117,7 @@ inline auto Weights::end(Type type_) const -> iterator {
 }
 
 inline auto Weights::cbegin(Type type_) const -> iterator {
+  assert(!_weights.valueless_by_exception());
   if (type_ == Type::UNKNOWN) {
     throw std::logic_error("Weights::cbegin(): type cannot be UNKNOWN");
   }
@@ -132,6 +136,7 @@ inline auto Weights::cbegin(Type type_) const -> iterator {
 }
 
 inline auto Weights::cend(Type type_) const -> iterator {
+  assert(!_weights.valueless_by_exception());
   if (type_ == Type::UNKNOWN) {
     throw std::logic_error("Weights::cend(): type cannot be UNKNOWN");
   }
@@ -180,6 +185,7 @@ inline N1 Weights::balance(std::uint64_t bin1_id, std::uint64_t bin2_id, N2 coun
 }
 
 inline Weights Weights::operator()(Type type_) const {
+  assert(!_weights.valueless_by_exception());
   if (HICTK_UNLIKELY(type_ != Type::MULTIPLICATIVE && type_ != Type::DIVISIVE)) {
     throw std::logic_error("Type should be Type::MULTIPLICATIVE or Type::DIVISIVE");
   }
@@ -205,7 +211,9 @@ inline Weights Weights::operator()(Type type_) const {
 
 constexpr auto Weights::type() const noexcept -> Type { return _type; }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline std::size_t Weights::size() const noexcept {
+  assert(!_weights.valueless_by_exception());
   if (is_constant()) {
     return std::get<ConstWeight>(_weights).size;
   }
@@ -235,15 +243,17 @@ inline auto Weights::infer_type(std::string_view name) noexcept -> Type {
        {"GW_ICE", Type::MULTIPLICATIVE},
        {"weight", Type::MULTIPLICATIVE}}};
 
-  auto it = std::find_if(mappings.begin(), mappings.end(),
-                         [&](const auto& p) { return p.first == name; });
+  // NOLINTNEXTLINE(*-qualified-auto)
+  const auto it = std::find_if(mappings.begin(), mappings.end(),
+                               [&](const auto& p) { return p.first == name; });
   if (it == mappings.end()) {
     return Weights::Type::UNKNOWN;
   }
   return it->second;
 }
 
-inline void Weights::rescale(double scaling_factor) noexcept {
+inline void Weights::rescale(double scaling_factor) {
+  assert(!_weights.valueless_by_exception());
   if (is_constant()) {
     auto& w = std::get<ConstWeight>(_weights).w;
     w *= std::sqrt(scaling_factor);
@@ -260,6 +270,7 @@ inline void Weights::rescale(double scaling_factor) noexcept {
 
 inline void Weights::rescale(const std::vector<double>& scaling_factors,
                              const std::vector<std::uint64_t>& offsets) {
+  assert(!_weights.valueless_by_exception());
   if (scaling_factors.empty()) {
     throw std::runtime_error("scaling_factors cannot be empty");
   }
@@ -310,6 +321,7 @@ inline void Weights::rescale(const std::vector<double>& scaling_factors,
 }
 
 inline std::vector<double> Weights::to_vector(Type type_) const {
+  assert(!_weights.valueless_by_exception());
   assert(type_ != Type::UNKNOWN);
   if (type_ == Type::INFER) {
     type_ = type();
@@ -327,10 +339,13 @@ inline std::vector<double> Weights::to_vector(Type type_) const {
 }
 
 inline bool Weights::is_constant() const noexcept {
+  assert(!_weights.valueless_by_exception());
   return std::holds_alternative<ConstWeight>(_weights);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool Weights::is_vector_of_ones() const noexcept {
+  assert(!_weights.valueless_by_exception());
   return is_constant() && std::get<ConstWeight>(_weights).w == 1.0;
 }
 
@@ -455,7 +470,7 @@ constexpr void Weights::iterator::ConstIt::bound_check([[maybe_unused]] std::ptr
 }
 
 inline Weights::iterator::iterator(std::vector<double>::const_iterator it, bool reciprocal)
-    : _it(std::move(it)), _reciprocal(reciprocal) {}
+    : _it(it), _reciprocal(reciprocal) {}
 
 inline Weights::iterator::iterator(const ConstWeight& weight, std::size_t offset, bool reciprocal)
     : _it(ConstIt{&weight, static_cast<std::ptrdiff_t>(offset)}), _reciprocal(reciprocal) {
@@ -463,13 +478,16 @@ inline Weights::iterator::iterator(const ConstWeight& weight, std::size_t offset
 }
 
 inline Weights::iterator::iterator(ConstIt it, bool reciprocal) noexcept
-    : _it(std::move(it)), _reciprocal(reciprocal) {}
+    : _it(it), _reciprocal(reciprocal) {}
 
 inline bool Weights::iterator::is_constant() const noexcept {
   return std::holds_alternative<ConstIt>(_it);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool Weights::iterator::operator==(const iterator& other) const noexcept {
+  assert(!_it.valueless_by_exception());
+  assert(!other._it.valueless_by_exception());
   if (_reciprocal != other._reciprocal) {
     return false;
   }
@@ -478,6 +496,7 @@ inline bool Weights::iterator::operator==(const iterator& other) const noexcept 
     return std::visit(
         [&](const auto& it1) {
           using T = remove_cvref_t<decltype(it1)>;
+          assert(std::holds_alternative<T>(other._it));
           const auto& it2 = std::get<T>(other._it);
           return it1 == it2;
         },

@@ -30,12 +30,14 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::transformers;
 
 namespace internal {
 
 template <typename N>
-[[nodiscard]] N get_scalar(const std::shared_ptr<arrow::ChunkedArray>& col, std::int64_t i) {
+[[nodiscard]] static N get_scalar(const std::shared_ptr<arrow::ChunkedArray>& col, std::int64_t i) {
   assert(!!col);
   auto res = col->GetScalar(i);
   if (!res.ok()) {
@@ -83,7 +85,7 @@ static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Thin
   CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
 }
 
-template <std::int64_t i, typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+template <std::int64_t i, typename N>
 static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Pixel<N>& p) {
   assert(!!table);
 
@@ -105,7 +107,7 @@ static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Pixe
 }
 
 namespace internal {
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
 [[nodiscard]] static std::vector<ThinPixel<std::uint8_t>> arrow_table_to_coo_vector(
     const std::shared_ptr<arrow::Table>& data) {
   assert(!!data);
@@ -122,7 +124,6 @@ namespace internal {
   return buff;
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 [[nodiscard]] static std::vector<Pixel<std::uint8_t>> arrow_table_to_bg2_vector(
     const Reference& chroms, const std::shared_ptr<arrow::Table>& data) {
   assert(!!data);
@@ -151,7 +152,7 @@ namespace internal {
 }  // namespace internal
 
 template <DataFrameFormat format, QuerySpan span>
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
 static void validate_format(const Reference& chroms, const std::shared_ptr<arrow::Table>& table) {
   if constexpr (format == DataFrameFormat::COO) {
     const auto pixels = internal::arrow_table_to_coo_vector(table);
@@ -548,7 +549,6 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
   auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
@@ -637,6 +637,8 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers
 

@@ -39,6 +39,7 @@ struct MatrixBlockMetadata {
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#resolution-zoom-level-metadata
+// NOLINTBEGIN(*-non-private-member-variables-in-classes)
 struct MatrixResolutionMetadata {
   std::string unit{};
   std::int32_t resIdx{};
@@ -60,6 +61,7 @@ struct MatrixResolutionMetadata {
  private:
   std::vector<MatrixBlockMetadata> _block_metadata{};
 };
+// NOLINTEND(*-non-private-member-variables-in-classes)
 
 struct MatrixBodyMetadata {
   MatrixMetadata matrixMetadata;
@@ -69,6 +71,7 @@ struct MatrixBodyMetadata {
 };
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#blocks
+// NOLINTBEGIN(*-non-private-member-variables-in-classes)
 template <typename N = float>
 struct MatrixInteractionBlock {
  private:
@@ -95,7 +98,7 @@ struct MatrixInteractionBlock {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] double sum() const noexcept;
 
-  void emplace_back(hictk::Pixel<N>&& p, std::uint32_t bin_id_offset = 0);
+  void emplace_back(const hictk::Pixel<N>& p, std::uint32_t bin_id_offset = 0);
   void finalize();
 
   [[nodiscard]] auto operator()() const noexcept -> const phmap::btree_map<RowID, Row>&;
@@ -123,6 +126,7 @@ struct MatrixInteractionBlock {
   static void compress(const std::string& buffer_in, std::string& buffer_out,
                        libdeflate_compressor& compressor);
 };
+// NOLINTEND(*-non-private-member-variables-in-classes)
 
 // https://github.com/aidenlab/hic-format/blob/master/HiCFormatV9.md#master-index
 struct FooterMasterIndex {
@@ -220,8 +224,6 @@ struct NormalizationVectorIndexBlock {
   std::int64_t position{};
   std::int64_t nBytes{};
 
- private:
- public:
   NormalizationVectorIndexBlock() = default;
   NormalizationVectorIndexBlock(std::string type_, std::uint32_t chrom_idx, std::string unit_,
                                 std::uint32_t bin_size, std::size_t position_, std::size_t n_bytes);
@@ -241,7 +243,7 @@ class NormalizationVectorIndex {
 
  public:
   [[nodiscard]] std::int32_t nNormVectors() const noexcept;
-  [[nodiscard]] const std::vector<NormalizationVectorIndexBlock> normalizationVectorIndex()
+  [[nodiscard]] const std::vector<NormalizationVectorIndexBlock>& normalizationVectorIndex()
       const noexcept;
   void emplace_back(NormalizationVectorIndexBlock blk);
 

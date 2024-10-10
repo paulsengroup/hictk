@@ -32,7 +32,7 @@ struct BlockID {
 
 template <>
 struct std::hash<hictk::hic::internal::BlockID> {
-  inline std::size_t operator()(hictk::hic::internal::BlockID const& bid) const noexcept {
+  std::size_t operator()(hictk::hic::internal::BlockID const& bid) const noexcept {
     return hictk::internal::hash_combine(0, bid.chrom1_id, bid.chrom2_id, bid.id);
   }
 };

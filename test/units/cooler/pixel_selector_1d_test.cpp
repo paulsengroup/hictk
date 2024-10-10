@@ -22,6 +22,8 @@
 
 namespace hictk::cooler::test::pixel_selector {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 template <typename N>
 static std::pair<std::ptrdiff_t, N> generate_test_data(const std::filesystem::path& path,
                                                        const Reference& chroms,
@@ -44,7 +46,6 @@ static std::pair<std::ptrdiff_t, N> generate_test_data(const std::filesystem::pa
   return std::make_pair(static_cast<std::ptrdiff_t>(pixels.size()), sum);
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector][short]") {
   const auto path1 = testdir() / "pixel_selector_devel.cool";
 
@@ -229,7 +230,6 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selector][short]") {
   const auto path1 = datadir / "cooler_variable_bins_test_file.cool";
   using T = std::uint32_t;
@@ -318,7 +318,6 @@ TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selec
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_selector][short]") {
   const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
   using T = std::uint32_t;
@@ -328,7 +327,7 @@ TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_sel
   SECTION("valid queries") {
     const auto sel = f.fetch();
     const auto sum = std::accumulate(
-        sel.template begin<T>(), sel.template end<T>(), std::uint64_t(0),
+        sel.template begin<T>(), sel.template end<T>(), std::uint64_t{0},
         [&](std::uint64_t accumulator, const auto& p) { return accumulator + p.count; });
     const auto nnz =
         static_cast<std::size_t>(std::distance(sel.template begin<T>(), sel.template end<T>()));
@@ -341,5 +340,7 @@ TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_sel
     CHECK_THROWS(f.fetch("chr1", "chr2"));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::pixel_selector

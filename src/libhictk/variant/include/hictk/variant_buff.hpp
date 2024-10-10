@@ -87,7 +87,7 @@ class VariantBuffer {
 
   void clear() noexcept;  // NOLINT(bugprone-exception-escape)
   template <typename T>
-  void clear() noexcept;
+  void clear();
 
   template <typename T>
   [[nodiscard]] T &at(std::size_t i);

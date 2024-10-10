@@ -32,9 +32,10 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::transformers;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
   spdlog::set_level(spdlog::level::trace);
 
@@ -210,7 +211,6 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
   const auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
 
@@ -248,6 +248,8 @@ TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
     CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers
 

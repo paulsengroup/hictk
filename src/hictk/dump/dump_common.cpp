@@ -256,6 +256,7 @@ void dump_resolutions(std::string_view uri, std::string_view format, std::uint32
   }
 }
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 std::pair<std::string, std::string> parse_bedpe(std::string_view line) {
   if (line.empty()) {
     throw std::runtime_error("found an empty line");
