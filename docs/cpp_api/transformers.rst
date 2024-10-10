@@ -185,7 +185,7 @@ Converting streams of pixels to Eigen Sparse Matrices
   Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
-  When ``minimize_memory_usage=true``, hictk will minimize memory usage by doing two passes over the queried pixels: one to calculate the exact number of entries to allocate for each row in the matrix, and the second pass to fill values in the matrix. This is usually slower than the default strategy, which traverses the data only once (but may overall require more memory than what is strictly needed). It should be noted that matrices are always compressed before being returned. Thus, the memory footprint of the matrices returned by :cpp:class:`ToSparseMatrix::operator()()`` will be the same regardless of the fill strategy.
+  When ``minimize_memory_usage=true``, hictk will minimize memory usage by doing two passes over the queried pixels: one to calculate the exact number of entries to allocate for each row in the matrix, and the second pass to fill values in the matrix. This is usually slower than the default strategy, which traverses the data only once (but may overall require more memory than what is strictly needed). It should be noted that matrices are always compressed before being returned. Thus, the memory footprint of the matrices returned by :cpp:func:`ToSparseMatrix::operator()()` will be the same regardless of the fill strategy.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
