@@ -185,14 +185,16 @@ inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
                 {"observed",  hic::MatrixType::observed},
                 {"oe",        hic::MatrixType::oe},
                 {"expected",  hic::MatrixType::expected}},
-        CLI::ignore_case);
+        CLI::ignore_case)
+    .description("");
 
 // NOLINTNEXTLINE(cert-err58-cpp)
 inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
         std::map<std::string, hic::MatrixUnit>{
                 {"BP",   hic::MatrixUnit::BP},
                 {"FRAG", hic::MatrixUnit::FRAG}},
-        CLI::ignore_case);
+        CLI::ignore_case)
+    .description("");
 // clang-format on
 
 class Cli {

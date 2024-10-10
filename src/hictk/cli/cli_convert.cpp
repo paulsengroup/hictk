@@ -33,7 +33,7 @@
 namespace hictk::tools {
 
 void Cli::make_convert_subcommand() {
-  auto& sc = *_cli.add_subcommand("convert", "Convert Hi-C matrices to a different format.")
+  auto& sc = *_cli.add_subcommand("convert", "Convert Hi-C files between different formats.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -116,7 +116,7 @@ void Cli::make_convert_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Range(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "--skip-all-vs-all,!--no-skip-all-vs-all",

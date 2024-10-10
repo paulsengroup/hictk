@@ -23,7 +23,7 @@ hictk is a blazing fast toolkit to work with .hic and .cool files.
 
 This repository hosts `hictk`: a set of CLI tools to work with Cooler, as well as `libhictk`: the C++ library underlying `hictk`.
 
-Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy).
+Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy), while R bindings are published at [paulsengroup/hictkR](https://github.com/paulsengroup/hictkR).
 
 hictk is capable of reading files in `.cool`, `.mcool`, `.scool` and `.hic` format (including hic v9) as well as writing `.hic`, `.cool` and `.mcool` files.
 
@@ -31,33 +31,34 @@ hictk is capable of reading files in `.cool`, `.mcool`, `.scool` and `.hic` form
 
 hictk is developed on Linux and tested on Linux, MacOS and Windows.
 
-hictk can be installed using containers, bioconda or directly from source. Refer to [Installation](https://hictk.readthedocs.io/en/latest/installation.html) for more information.
+hictk can be installed using containers, bioconda or directly from source. Refer to [Installation](https://hictk.readthedocs.io/en/stable/installation.html) for more information.
 
 ## Running hictk
 
 hictk provides the following subcommands:
 
-| subcommand             | description                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| **balance**            | Balance HiC matrices using ICE, SCALE or VC.                                       |
-| **convert**            | Convert matrices to a different format.                                            |
-| **dump**               | Dump data from .hic and Cooler files to stdout.                                    |
-| **fix-mcool**          | Fix corrupted .mcool files.                                                        |
-| **load**               | Build .cool and .hic files from interactions in various text formats.              |
-| **merge**              | Merge multiple Cooler or .hic files into a single file.                            |
-| **rename-chromosomes** | Rename chromosomes found in a Cooler file.                                         |
-| **validate**           | Validate .hic and Cooler files.                                                    |
-| **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening. |
+| subcommand             | description                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| **balance**            | Balance Hi-C files using ICE, SCALE, or VC.                                                    |
+| **convert**            | Convert Hi-C files between different formats.                                                  |
+| **dump**               | Read interactions and other kinds of data from .hic and Cooler files and write them to stdout. |
+| **fix-mcool**          | Fix corrupted .mcool files.                                                                    |
+| **load**               | Build .cool and .hic files from interactions in various text formats.                          |
+| **merge**              | Merge multiple Cooler or .hic files into a single file.                                        |
+| **metadata**           | Print file metadata to stdout.                                                                 |
+| **rename-chromosomes** | Rename chromosomes found in a Cooler file.                                                     |
+| **validate**           | Validate .hic and Cooler files.                                                                |
+| **zoomify**            | Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.             |
 
-Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/latest/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/latest/cli_reference.html) for more details.
+Refer to [Quickstart (CLI)](https://hictk.readthedocs.io/en/stable/quickstart_cli.html) and [CLI Reference](https://hictk.readthedocs.io/en/stable/cli_reference.html) for more details.
 
 ## Using libhictk
 
-libhictk can be installed in various way, including with Conan and CMake FetchContent. Section [Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) of hictk documentation contains further details on how this can be accomplished.
+libhictk can be installed in various way, including with Conan and CMake FetchContent. Section [Quickstart (API)](https://hictk.readthedocs.io/en/stable/quickstart_api.html) of hictk documentation contains further details on how this can be accomplished.
 
-[Quickstart (API)](https://hictk.readthedocs.io/en/latest/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](./examples/) folder as well as to the [source code](./src/hictk/) of hictk.
+[Quickstart (API)](https://hictk.readthedocs.io/en/stable/quickstart_api.html) also showcases the basic functionality offered by libhictk. For more complex examples refer to the sample programs under the [examples/](./examples/) folder as well as to the [source code](./src/hictk/) of hictk.
 
-The public C++ API of hictk is documented in the [C++ API Reference](https://hictk.readthedocs.io/en/latest/cpp_api/index.html) section of hictk documentation.
+The public C++ API of hictk is documented in the [C++ API Reference](https://hictk.readthedocs.io/en/stable/cpp_api/index.html) section of hictk documentation.
 
 ## Citing
 

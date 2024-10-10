@@ -23,7 +23,9 @@
 namespace hictk::tools {
 
 void Cli::make_dump_subcommand() {
-  auto& sc = *_cli.add_subcommand("dump", "Dump data from .hic and Cooler files to stdout.")
+  auto& sc = *_cli.add_subcommand("dump",
+                                  "Read interactions and other kinds of data from .hic and Cooler "
+                                  "files and write them to stdout.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -55,6 +57,7 @@ void Cli::make_dump_subcommand() {
       c.matrix_type,
       "Matrix type (ignored when file is not in .hic format).")
       ->transform(ParseHiCMatrixType)
+      ->check(CLI::IsMember{{"observed", "oe", "expected"}})
       ->default_str("observed");
 
   sc.add_option(
@@ -62,6 +65,7 @@ void Cli::make_dump_subcommand() {
       c.matrix_unit,
       "Matrix unit (ignored when file is not in .hic format).")
       ->transform(ParseHiCMatrixUnit)
+      ->check(CLI::IsMember{{"BP", "FRAG"}})
       ->default_str("BP");
 
   sc.add_option(

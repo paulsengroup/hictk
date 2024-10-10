@@ -61,7 +61,7 @@ Download from the `Release <https://github.com/paulsengroup/hictk/releases>`_ pa
 .. code-block:: bash
 
   mkdir /tmp/hictk
-  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v1.0.0.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
+  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v2.0.0.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
 
 
 Using git.
@@ -71,7 +71,7 @@ Using git.
   git clone https://github.com/paulsengroup/hictk.git /tmp/hictk
 
   cd /tmp/hictk
-  git checkout v1.0.0  # Skip this step if you want to build the latest commit from main
+  git checkout v2.0.0  # Skip this step if you want to build the latest commit from main
 
 Compiling hictk
 ---------------
@@ -95,12 +95,14 @@ Compiling hictk
                 --output-folder=./build/ \
                 .
 
-  # This may take a while, as CMake will run Conan to build hictk dependencies.
   # Do not pass -G Ninja if you want CMake to use make instead of ninja
   cmake -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH="$PWD/build" \
         -DHICTK_ENABLE_TESTING=ON \
+        -DHICTK_ENABLE_FUZZY_TESTING=ON \
         -DHICTK_BUILD_TOOLS=ON \
+        -DHICTK_BUILD_BENCHMARKS=OFF \
+        -DHICTK_BUILD_EXAMPLES=OFF \
         -G Ninja \
         -S /tmp/hictk \
         -B /tmp/hictk/build
@@ -138,18 +140,20 @@ A successful run of the test suite will produce an output like the following:
 
   user@dev:/tmp/hictk$ ctest --test-dir build/ ...
   ...
-  63/70 Test #21: Cooler: init files - SHORT .......................................   Passed    0.02 sec
-  64/70 Test #57: HiC: pixel selector fetch (observed NONE BP 10000) - LONG ........   Passed    1.53 sec
-  65/70 Test  #5: Cooler: index validation - SHORT .................................   Passed    3.83 sec
-  66/70 Test #17: Cooler: index validation - SHORT .................................   Passed    3.62 sec
-  67/70 Test #37: Cooler: utils merge - LONG .......................................   Passed    4.35 sec
-  68/70 Test #67: Transformers (cooler) - SHORT ....................................   Passed    4.11 sec
-  69/70 Test #36: Cooler: dataset random iteration - MEDIUM ........................   Passed    5.50 sec
-  70/70 Test #40: Cooler: dataset large read/write - LONG ..........................   Passed   11.47 sec
+   96/106 Test  #62: Cooler: dataset linear iteration - LONG ...........................   Passed    2.26 sec
+   97/106 Test #104: Transformers (hic) - SHORT ........................................   Passed    2.81 sec
+   98/106 Test   #7: Balancing: SCALE (gw) - SHORT .....................................   Passed    2.49 sec
+   99/106 Test  #17: Balancing: SCALE (edge cases) - MEDIUM ............................   Passed    2.78 sec
+  100/106 Test  #15: Balancing: ICE (inter) - MEDIUM ...................................   Passed    3.17 sec
+  101/106 Test   #6: Balancing: SCALE (inter) - SHORT ..................................   Passed    3.06 sec
+  102/106 Test   #8: Balancing: AtomicBitSet - SHORT ...................................   Passed    3.52 sec
+  103/106 Test  #66: Cooler: utils merge - LONG ........................................   Passed    3.88 sec
+  104/106 Test  #61: Cooler: dataset random iteration - MEDIUM .........................   Passed   10.41 sec
+  105/106 Test  #63: Cooler: dataset large read/write - LONG ...........................   Passed   12.10 sec
+  106/106 Test  #92: HiC: HiCFileWriter - LONG .........................................   Passed   13.03 sec
+  100% tests passed, 0 tests failed out of 106
 
-  100% tests passed, 0 tests failed out of 70
-
-  Total Test time (real) =  12.03 sec
+  Total Test time (real) = 101.97 sec
 
 **All tests are expected to pass. Do not ignore test failures!**
 
@@ -166,7 +170,7 @@ If one or more tests fail, try the following troubleshooting steps before reachi
 #. Before running :code:`ctest`, create a temporary folder where your user has read-write permissions and where there are at least 100-200MB of space available.
    Then set variable :code:`TMPDIR` to that folder and re-run `ctest`.
 #. Checksum the test dataset located under :code:`test/data/` by running :code:`sha256sum -c checksums.sha256`.
-   If the checksumming fails or the folder doesn't exist, download and extract the :code:`.tar.xz` file listed in file :code:`cmake/FetchTestDataset.cmake`. Make sure you run :code:`tar -xf` from the root of the repository (:code:`/tmp/hictk` if you are following the instructions).
+   If the checksumming fails or the folder doesn't exist, download and extract the :code:`.tar.zst` file listed in file :code:`cmake/FetchTestDataset.cmake`. Make sure you run :code:`tar -xf` from the root of the repository (:code:`/tmp/hictk` if you are following the instructions).
 
 Example:
 
@@ -178,7 +182,7 @@ Example:
   cd /tmp/hictk
 
   # Make sure this is the URL listed in file cmake/FetchTestDataset.cmake
-  curl -L 'https://zenodo.org/records/10522583/files/hictk_test_data.tar.xz?download=1' | tar -xJf -
+  curl -L 'https://zenodo.org/records/13849053/files/hictk_test_data.tar.zst?download=1' | zstdcat | tar -xf -
 
   # This should print "OK" if the check is successful
   (cd test/data && sha256sum --quiet -c checksums.sha256 && 2>&1 echo OK)
@@ -205,21 +209,19 @@ If after trying the above steps the tests are still failing, feel free to start 
 Integration tests
 -----------------
 
-The integration test scripts depend on the following tools:
+The integration test suite is implemented in Python, requires 3.11 or newer, and can be installed using pip:
 
-* cooler>=0.9
-* java
-* `juicer_tools <https://github.com/aidenlab/Juicebox/releases/latest>`_ or `hic_tools <https://github.com/aidenlab/HiCTools/releases/latest>`_
-* xz
-* common UNIX shell commands
-
-cooler can be installed using pip:
 
 .. code-block:: bash
 
-  /tmp/venv/bin/pip3 install 'cooler>=0.10.0' 'pyyaml'
+  # Activate venv
+  . /tmp/venv/bin/activate
 
-If not already installed, :code:`xz` can usually be installed with your system package manager (on some Linux distributions the relevant package is called :code:`xz-utils`).
+  pip install test/integration
+
+  hictk_integration_suite --help
+
+Once installed, the full integration suite can be run as follows:
 
 .. code-block:: bash
 
@@ -228,57 +230,15 @@ If not already installed, :code:`xz` can usually be installed with your system p
 
   cd /tmp/hictk
 
-  # hictk balance
-  test/scripts/hictk_balance_ice.sh build/src/hictk/hictk
-  test/scripts/hictk_balance_scale.sh build/src/hictk/hictk
-  test/scripts/hictk_balance_vc.sh build/src/hictk/hictk
+  hictk_integration_suite \
+     build/src/hictk/hictk \
+     test/integration/config.toml \
+     --data-dir test/data \
+     --threads 8 \
+     --result-file results.json
 
-  # hictk convert
-  test/scripts/hictk_convert_cool2hic.sh build/src/hictk/hictk
-  test/scripts/hictk_convert_hic2cool.sh build/src/hictk/hictk
+  # To run specific parts of the integration suite, pass e.g. --suites=metadata,validate
 
-  # hictk dump tables
-  test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_resolutions.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_normalizations.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_cells.sh build/src/hictk/hictk
-
-  # hictk dump pixels
-  test/scripts/hictk_dump_balanced.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_bins.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_chroms.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_cis.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_gw.sh build/src/hictk/hictk
-  test/scripts/hictk_dump_trans.sh build/src/hictk/hictk
-
-  # hictk fix-mcool
-  test/scripts/hictk_fix_mcool.sh build/src/hictk/hictk
-
-  # hictk load (sorted)
-  test/scripts/hictk_load_4dn.sh build/src/hictk/hictk sorted
-  test/scripts/hictk_load_bg2.sh build/src/hictk/hictk sorted
-  test/scripts/hictk_load_coo.sh build/src/hictk/hictk sorted
-
-  # hictk load (unsorted)
-  test/scripts/hictk_load_4dn.sh build/src/hictk/hictk unsorted
-  test/scripts/hictk_load_bg2.sh build/src/hictk/hictk unsorted
-  test/scripts/hictk_load_coo.sh build/src/hictk/hictk unsorted
-
-  # hictk merge
-  test/scripts/hictk_merge.sh build/src/hictk/hictk
-
-  # hictk metadata
-  test/scripts/hictk_metadata.sh build/src/hictk/hictk
-
-  # hictk rename-chromosomes
-  test/scripts/hictk_rename_chromosomes.sh build/src/hictk/hictk
-
-  # hictk validate
-  test/scripts/hictk_validate.sh build/src/hictk/hictk
-
-  # hictk zoomify
-  test/scripts/hictk_zoomify.sh build/src/hictk/hictk
 
 Installation
 ============
@@ -294,17 +254,27 @@ Once all tests have passed, :code:`hictk` can be installed as follows:
   user@dev:/tmp$ cmake --install /tmp/hictk/build
   -- Install configuration: "Release"
   -- Installing: /usr/local/bin/hictk
-  -- Set runtime path of "/usr/local/bin/hictk" to ""
-  -- Up-to-date: /usr/local/share/licenses/hictk/LICENSE
+  -- Set non-toolchain portion of runtime path of "/usr/local/bin/hictk" to ""
+  -- Installing: /usr/local/share/licenses/hictk/LICENSE
+  -- Installing: /usr/local/include/hictk
   ...
 
   # Alternatively, install to custom path
   user@dev:/tmp$ cmake --install /tmp/hictk/build --prefix "$HOME/.local/"
   -- Install configuration: "Release"
   -- Installing: /home/user/.local/bin/hictk
-  -- Set runtime path of "/home/user/.local/bin/hictk" to ""
-  -- Up-to-date: /home/user/.local/share/licenses/hictk/LICENSE
+  -- Set non-toolchain portion of runtime path of "/home/user/.local/bin/hictk" to ""
+  -- Installing: /home/user/.local/share/licenses/hictk/LICENSE
+  -- Installing: /home/user/.local/include/hictk
   ...
+
+  # Install the hictk binary only (i.e. without the header files required for development)
+  user@dev:/tmp$ cmake --install /tmp/hictk/build --component Runtime
+  -- Install configuration: "Release"
+  -- Installing: /usr/local/bin/hictk
+  -- Set non-toolchain portion of runtime path of "/usr/local/bin/hictk" to ""
+  -- Installing: /usr/local/share/licenses/hictk/LICENSE
+
 
 Cleaning build artifacts
 ========================
@@ -314,4 +284,4 @@ After successfully compiling hictk the following folders safely be removed:
 * Python virtualenv: :code:`/tmp/venv`
 * hictk source tree: :code:`/tmp/hictk`
 
-If you are not using Conan in any other project feel free to also delete Conan's folder :code:`~/.conan2/`
+If you are not using Conan in any other project feel free to also delete Conan's folder :code:`~/.conan2/`.

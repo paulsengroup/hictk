@@ -11,12 +11,12 @@ TLDR
 .. code-block:: console
 
     # Important! --bin-size should be the same resolution as matrix.cool
-    user@dev:/tmp hictk load --format=bg2 \
-                             --bin-size=1000 \
-                             <(hictk dump --table=chroms matrix.cool |
-                               sort -k2,2nr) \
+    user@dev:/tmp hictk load <(hictk dump --join matrix.cool) \
                              output.cool \
-                             < <(hictk dump --join matrix.cool)
+                             --chrom-sizes=<(hictk dump --table=chroms matrix.cool | sort -k2,2nr) \
+                             --format=bg2 \
+                             --bin-size=1000 \
+                             --transpose-lower-triangular-pixels
 
 
 Why is this needed?
@@ -31,21 +31,21 @@ The same procedure can be applied to .hic files.
 Walkthrough
 -----------
 
-For this tutorial, we will use file ``4DNFIZ1ZVXC8.mcool`` as an example, which can be downloaded from `here <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/1cf3518f-839a-42b9-b2c7-7f81ad5935c3/4DNFIZ1ZVXC8.mcool>`__.
+For this tutorial, we will use file ``4DNFIOTPSS3L.hic`` as an example, which can be downloaded from `here <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/7386f953-8da9-47b0-acb2-931cba810544/4DNFIOTPSS3L.hic>`__.
 
 First, we extract the list of chromosomes from the input file:
 
 .. code-block:: console
 
-    user@dev:/tmp hictk dump 4DNFIZ1ZVXC8.mcool --table=chroms | tee chrom.sizes
+    user@dev:/tmp hictk dump 4DNFIOTPSS3L.hic --table=chroms | tee chrom.sizes
 
-    chr2L	23513712
-    chr2R	25286936
-    chr3L	28110227
-    chr3R	32079331
-    chr4	1348131
-    chrX	23542271
-    chrY	3667352
+    2L	23513712
+    2R	25286936
+    3L	28110227
+    3R	32079331
+    4	1348131
+    X	23542271
+    Y	3667352
 
 Second, we re-order chromosomes:
 
@@ -53,78 +53,75 @@ Second, we re-order chromosomes:
 
     user@dev:/tmp sort -k2,2nr chrom.sizes | tee chrom.sizes.sorted
 
-    chr3R	32079331
-    chr3L	28110227
-    chr2R	25286936
-    chrX	23542271
-    chr2L	23513712
-    chrY	3667352
-    chr4	1348131
+    3R	32079331
+    3L	28110227
+    2R	25286936
+    X	23542271
+    2L	23513712
+    Y	3667352
+    4	1348131
 
 Next, we dump pixels in bedGraph2 format (see below for how to make this step more efficient):
 
 .. code-block:: console
 
-    user@dev:/tmp hictk dump 4DNFIZ1ZVXC8.mcool --join --resolution=1000 > pixels.bg2
+    user@dev:/tmp hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000 > pixels.bg2
 
     user@dev:/tmp head pixels.bg2
 
-    chr2L	5000	6000	chr2L	5000	6000	127
-    chr2L	5000	6000	chr2L	6000	7000	129
-    chr2L	5000	6000	chr2L	7000	8000	60
-    chr2L	5000	6000	chr2L	8000	9000	77
-    chr2L	5000	6000	chr2L	9000	10000	97
-    chr2L	5000	6000	chr2L	10000	11000	3
-    chr2L	5000	6000	chr2L	11000	12000	1
-    chr2L	5000	6000	chr2L	12000	13000	66
-    chr2L	5000	6000	chr2L	13000	14000	116
-    chr2L	5000	6000	chr2L	14000	15000	64
+    2L	5000	6000	2L	5000	6000	41
+    2L	5000	6000	2L	6000	7000	126
+    2L	5000	6000	2L	7000	8000	60
+    2L	5000	6000	2L	8000	9000	77
+    2L	5000	6000	2L	9000	10000	97
+    2L	5000	6000	2L	10000	11000	3
+    2L	5000	6000	2L	11000	12000	1
+    2L	5000	6000	2L	12000	13000	66
+    2L	5000	6000	2L	13000	14000	116
+    2L	5000	6000	2L	14000	15000	64
 
-Finally, we load pixels into a new .cool file
+Finally, we load pixels into a new .hic file
 
 .. code-block:: console
 
-    user@dev:/tmp hictk load --format=bg2 \
-                             --bin-size=1000 \
-                             chrom.sizes.sorted \
-                             output.cool < pixels.bg2
+    user@dev:/tmp hictk load pixels.bg2 \
+                             output.hic \
+                             --chrom-sizes=chrom.sizes.sorted \
+                             --transpose-lower-triangular-pixels \
+                             --format=bg2 \
+                             --bin-size=1000
 
-    [2024-03-21 12:27:16.998] [info]: Running hictk v0.0.10-1c2bafd
-    [2024-03-21 12:27:16.998] [info]: begin loading unsorted pixels into a .cool file...
-    [2024-03-21 12:27:17.077] [info]: writing chunk #1 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:20.945] [info]: done writing chunk #1 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:20.945] [info]: writing chunk #2 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:24.890] [info]: done writing chunk #2 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:24.890] [info]: writing chunk #3 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:28.823] [info]: done writing chunk #3 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:28.823] [info]: writing chunk #4 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:32.668] [info]: done writing chunk #4 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:32.668] [info]: writing chunk #5 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:36.070] [info]: done writing chunk #5 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:36.070] [info]: writing chunk #6 to intermediate file "/tmp/output.cool.tmp/output.cool.tmp"...
-    [2024-03-21 12:27:36.079] [info]: done writing chunk #6 to tmp file "/tmp/output.cool.tmp/output.cool.tmp".
-    [2024-03-21 12:27:36.080] [info]: merging 6 chunks into "output.cool"...
-    [2024-03-21 12:27:38.572] [info]: processing chr3R:20786000-20787000 chr3R:20808000-20809000 at 4091653 pixels/s...
-    [2024-03-21 12:27:41.443] [info]: processing chr3L:7391000-7392000 chr3L:7417000-7418000 at 3484321 pixels/s...
-    [2024-03-21 12:27:44.292] [info]: processing chr2R:9278000-9279000 chrX:5993000-5994000 at 3510004 pixels/s...
-    [2024-03-21 12:27:47.062] [info]: processing chrX:14217000-14218000 chrX:17476000-17477000 at 3611412 pixels/s...
-    [2024-03-21 12:27:49.901] [info]: ingested 119208613 interactions (48469783 nnz) in 32.902465965s!
-
+    [2024-09-27 19:00:40.344] [info]: Running hictk v1.0.0-fbdcb591
+    [2024-09-27 19:00:40.353] [info]: begin loading pixels into a .hic file...
+    [2024-09-27 19:00:42.504] [info]: preprocessing chunk #1 at 4847310 pixels/s...
+    [2024-09-27 19:00:45.244] [info]: preprocessing chunk #2 at 3649635 pixels/s...
+    [2024-09-27 19:00:48.180] [info]: preprocessing chunk #3 at 3407155 pixels/s...
+    [2024-09-27 19:00:50.616] [info]: preprocessing chunk #4 at 4105090 pixels/s...
+    [2024-09-27 19:00:53.251] [info]: preprocessing chunk #5 at 3203434 pixels/s...
+    [2024-09-27 19:00:54.358] [info]: writing header at offset 0
+    [2024-09-27 19:00:54.358] [info]: begin writing interaction blocks to file "output.hic"...
+    [2024-09-27 19:00:54.358] [info]: [1000 bp] writing pixels for 3R:3R matrix at offset 171...
+    [2024-09-27 19:01:01.039] [info]: [1000 bp] written 9571521 pixels for 3R:3R matrix
+    ...
+    [2024-09-27 19:01:26.831] [info]: [1000 bp] initializing expected value vector
+    [2024-09-27 19:01:32.649] [info]: [1000 bp] computing expected vector density
+    [2024-09-27 19:01:32.649] [info]: writing 1 expected value vectors at offset 93720080...
+    [2024-09-27 19:01:32.649] [info]: writing 0 normalized expected value vectors at offset 93848475...
+    [2024-09-27 19:01:32.682] [info]: ingested 114355295 interactions (48437845 nnz) in 52.337885908s!
 
 Lastly, we check that chromosomes are properly sorted:
 
 .. code-block:: console
 
-    user@dev:/tmp hictk dump 4DNFIZ1ZVXC8.mcool --table=chroms
+    user@dev:/tmp hictk dump output.hic --table=chroms
 
-    chr3R	32079331
-    chr3L	28110227
-    chr2R	25286936
-    chrX	23542271
-    chr2L	23513712
-    chrY	3667352
-    chr4	1348131
-
+    3R	32079331
+    3L	28110227
+    2R	25286936
+    X	23542271
+    2L	23513712
+    Y	3667352
+    4	1348131
 
 Tips and tricks
 ---------------
@@ -134,22 +131,25 @@ Luckily, we can completely avoid generating this file by using output redirectio
 
 .. code-block:: console
 
-    user@dev:/tmp hictk load --format=bg2 \
-                             --bin-size=1000 \
-                             chrom.sizes.sorted \
-                             output.cool \
-                             < <(hictk dump 4DNFIZ1ZVXC8.mcool --join --resolution=1000)
+    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000) \
+                             output.hic \
+                             --chrom-sizes=chrom.sizes.sorted \
+                             --transpose-lower-triangular-pixels \
+                             --format=bg2 \
+                             --bin-size=1000
+
 
 Note that hictk still needs to generate some temporary file to load interactions into a new .cool or .hic file.
 When processing large files, it is a good idea to specify custom folder where to create temporary files through the ``--tmpdir`` flag:
 
 .. code-block:: console
 
-    user@dev:/tmp hictk load --format=bg2 \
+    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000) \
+                             output.hic \
+                             --chrom-sizes=chrom.sizes.sorted \
+                             --transpose-lower-triangular-pixels \
+                             --format=bg2 \
                              --bin-size=1000 \
-                             --tmpdir=/var/tmp/ \
-                             chrom.sizes.sorted \
-                             output.cool \
-                             < <(hictk dump 4DNFIZ1ZVXC8.mcool --join --resolution=1000)
+                             --tmpdir=/var/tmp/
 
 Another option you may want to consider when working with .hic files, is the ``--threads`` option, which can significantly reduce the time required to load interactions into .hic files.

@@ -13,7 +13,7 @@ After downloading the data, move to a folder with at least ~1 GB of free space a
   :class: no-copybutton
 
   user@dev:/tmp$ mkdir data/
-  user@dev:/tmp$ tar -xf hictk_test_data.tar.xz                     \
+  user@dev:/tmp$ tar -xf hictk_test_data.tar.zst                    \
                      -C data --strip-components=3                   \
                      test/data/hic/4DNFIZ1ZVXC8.hic9                \
                      test/data/integration_tests/4DNFIZ1ZVXC8.mcool \
@@ -23,5 +23,6 @@ After downloading the data, move to a folder with at least ~1 GB of free space a
   total 261M
   drwx------  2 dev dev   80 Sep 29 17:00 .
   drwxrwxrwt 26 dev dev  960 Sep 29 17:00 ..
-  -rw-------  1 dev dev 128M Jun  8 19:42 4DNFIZ1ZVXC8.hic9
-  -rw-------  1 dev dev 133M Jul  7 16:29 4DNFIZ1ZVXC8.mcool
+  -rw-------  1 dev dev 125M Jun 26  2023 4DNFIKNWM36K.subset.pairs.xz
+  -rw-------  1 dev dev 128M Jun  8  2023 4DNFIZ1ZVXC8.hic9
+  -rw-------  1 dev dev 133M Jul  7  2023 4DNFIZ1ZVXC8.mcool

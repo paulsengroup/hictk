@@ -108,6 +108,9 @@ Dump tables other than pixels:
   ...
 
 
+See hictk dump help message for the complete list of supported tables.
+
+
 Dump cis or trans interactions only:
 
 .. code-block:: console

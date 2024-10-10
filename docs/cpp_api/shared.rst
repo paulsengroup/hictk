@@ -97,9 +97,13 @@ Genomic intervals
 
   **Factory methods**
 
-  .. cpp:function:: [[nodiscard]] static GenomicInterval parse(const Reference &chroms, std::string query, Type type = Type::UCSC);
+  .. cpp:function:: [[nodiscard]] static GenomicInterval parse(const Reference &chroms, const std::string& query, Type type = Type::UCSC);
   .. cpp:function:: [[nodiscard]] static GenomicInterval parse_ucsc(const Reference &chroms, std::string query);
   .. cpp:function:: [[nodiscard]] static GenomicInterval parse_bed(const Reference &chroms, std::string_view query, char sep = '\t');
+
+  .. cpp:function:: [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse(const std::string& query, Type type = Type::UCSC);
+  .. cpp:function:: [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_ucsc(std::string buffer);
+  .. cpp:function:: [[nodiscard]] static std::tuple<std::string, std::uint32_t, std::uint32_t> parse_bed(std::string_view buffer, char sep = '\t');
 
   **Operators**
 
@@ -255,6 +259,15 @@ Bin Table
   * Decoupling of :cpp:class:`BinTable` resolution and memory requirements
   * Lookups in constant or linear time complexity with performance independent of resolution.
 
+  **Bin Type enum**
+
+  .. cpp:enum-class:: Type
+
+    .. cpp:enumerator:: fixed
+
+    .. cpp:enumerator:: variable
+
+
   **Constructors**
 
   .. cpp:function:: BinTable() = default;
@@ -271,9 +284,10 @@ Bin Table
 
   .. cpp:function:: [[nodiscard]] std::size_t size() const noexcept;
   .. cpp:function:: [[nodiscard]] bool empty() const noexcept;
-  .. cpp:function:: [[nodiscard]] std::size_t num_chromosomes() const;
+  .. cpp:function:: [[nodiscard]] std::size_t num_chromosomes() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr std::uint32_t resolution() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr const Reference &chromosomes() const noexcept;
+  .. cpp:function:: [[nodiscard]] constexpr auto type() const noexcept -> Type;
   .. cpp:function:: [[nodiscard]] constexpr const std::vector<std::uint64_t> &num_bin_prefix_sum() const noexcept;
 
   **Iteration**
@@ -342,6 +356,7 @@ Pixels
   **Operators**
 
   .. cpp:function:: [[nodiscard]] explicit operator bool() const noexcept;
+  .. cpp:function:: [[nodiscard]] bool empty() const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator==(const ThinPixel &other) const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator!=(const ThinPixel &other) const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator<(const ThinPixel &other) const noexcept;
@@ -369,6 +384,7 @@ Pixels
   **Operators**
 
   .. cpp:function:: [[nodiscard]] explicit operator bool() const noexcept;
+  .. cpp:function:: [[nodiscard]] bool empty() const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator==(const PixelCoordinates &other) const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator!=(const PixelCoordinates &other) const noexcept;
   .. cpp:function:: [[nodiscard]] bool operator<(const PixelCoordinates &other) const noexcept;
