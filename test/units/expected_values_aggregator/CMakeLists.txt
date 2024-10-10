@@ -10,19 +10,28 @@ include(Catch)
 
 add_executable(hictk_expected_values_aggregator_tests)
 
-target_sources(hictk_expected_values_aggregator_tests
-               PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/expected_values_aggregator_test.cpp)
+target_sources(
+  hictk_expected_values_aggregator_tests
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/expected_values_aggregator_test.cpp
+)
 
 target_link_libraries(
   hictk_expected_values_aggregator_tests
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::expected_values_aggregator hictk::hic)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::expected_values_aggregator
+    hictk::hic
+)
 
 target_link_system_libraries(
   hictk_expected_values_aggregator_tests
   PUBLIC
   Catch2::Catch2WithMain
-  std::filesystem)
+  std::filesystem
+)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Testing/)
 
@@ -40,7 +49,8 @@ catch_discover_tests(
   ${CMAKE_CURRENT_BINARY_DIR}/Testing/
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_expected_values_aggregator_tests
@@ -52,7 +62,8 @@ catch_discover_tests(
   ${PROJECT_SOURCE_DIR}
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_expected_values_aggregator_tests
@@ -64,4 +75,5 @@ catch_discover_tests(
   ${PROJECT_SOURCE_DIR}
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)

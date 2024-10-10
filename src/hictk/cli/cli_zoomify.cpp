@@ -85,7 +85,7 @@ void Cli::make_zoomify_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .mcool and .hic files, respectively.")
-      ->check(CLI::Bound(1, 12))
+      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL))
       ->capture_default_str();
 
   sc.add_option(
@@ -93,7 +93,7 @@ void Cli::make_zoomify_subcommand() {
       c.threads,
       "Maximum number of parallel threads to spawn.\n"
       "When zoomifying interactions from a .cool file, only a single thread will be used.")
-            ->check(CLI::Range(std::uint32_t(1), std::thread::hardware_concurrency()))
+            ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
             ->capture_default_str();
 
   sc.add_option(
@@ -244,7 +244,8 @@ void Cli::validate_zoomify_subcommand() const {
   }
 }
 
-static std::vector<std::uint32_t> generate_resolutions_pow2(
+static std::vector<std::uint32_t>
+generate_resolutions_pow2(  // NOLINTNEXTLINE(*-avoid-magic-numbers)
     std::uint32_t base_resolution, std::uint32_t upper_bound = 10'000'000) {
   assert(base_resolution != 0);
   std::vector<std::uint32_t> resolutions{base_resolution};
@@ -256,11 +257,13 @@ static std::vector<std::uint32_t> generate_resolutions_pow2(
   return resolutions;
 }
 
-static std::vector<std::uint32_t> generate_resolutions_nice(
+static std::vector<std::uint32_t>
+generate_resolutions_nice(  // NOLINTNEXTLINE(*-avoid-magic-numbers)
     std::uint32_t base_resolution, std::uint32_t upper_bound = 10'000'000) {
   assert(base_resolution != 0);
   std::vector<std::uint32_t> resolutions{base_resolution};
 
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   while (resolutions.back() * 2 <= upper_bound) {
     const auto res = resolutions.back();
 
@@ -279,6 +282,7 @@ static std::vector<std::uint32_t> generate_resolutions_nice(
     }
     resolutions.push_back(res * 10);
   }
+  // NOLINTEND(*-avoid-magic-numbers)
 
   return resolutions;
 }
@@ -308,7 +312,8 @@ void Cli::transform_args_zoomify_subcommand() {
   }
 
   if (sc.get_option("--compression-lvl")->empty()) {
-    c.compression_lvl = c.output_format == "hic" ? 10 : 6;
+    c.compression_lvl =
+        c.output_format == "hic" ? DEFAULT_HIC_COMPRESSION_LEVEL : DEFAULT_COOL_COMPRESSION_LEVEL;
   }
 
   if (sc.get_option("--tmpdir")->empty()) {

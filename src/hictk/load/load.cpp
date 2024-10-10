@@ -21,7 +21,7 @@
 
 namespace hictk::tools {
 
-[[nodiscard]] static Stats load_hic(const LoadConfig& c,
+[[nodiscard]] static Stats load_hic(const LoadConfig& c,  // NOLINTNEXTLINE(*-avoid-magic-numbers)
                                     std::size_t queue_capacity_bytes = 64'000'000) {
   assert(c.output_format == "hic");
 
@@ -56,8 +56,9 @@ namespace hictk::tools {
   }
 }
 
-[[nodiscard]] static Stats load_cool_float(const LoadConfig& c,
-                                           std::size_t queue_capacity_bytes = 64'000'000) {
+[[nodiscard]] static Stats load_cool_float(
+    const LoadConfig& c,  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+    std::size_t queue_capacity_bytes = 64'000'000) {
   assert(c.count_as_float);
   assert(c.output_format == "cool");
 
@@ -88,8 +89,9 @@ namespace hictk::tools {
   }
 }
 
-[[nodiscard]] static Stats load_cool_int(const LoadConfig& c,
-                                         std::size_t queue_capacity_bytes = 64'000'000) {
+[[nodiscard]] static Stats load_cool_int(
+    const LoadConfig& c,  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+    std::size_t queue_capacity_bytes = 64'000'000) {
   assert(!c.count_as_float);
   assert(c.output_format == "cool");
 
@@ -120,7 +122,7 @@ namespace hictk::tools {
   }
 }
 
-int load_subcmd(const LoadConfig& c) {
+int load_subcmd(const LoadConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto t0 = std::chrono::system_clock::now();
 
   const auto stats = [&]() {
@@ -140,7 +142,7 @@ int load_subcmd(const LoadConfig& c) {
   std::visit(
       [&](const auto& sum) {
         SPDLOG_INFO(FMT_STRING("ingested {} interactions ({} nnz) in {}s!"), sum, stats.nnz,
-                    static_cast<double>(delta) / 1.0e9);
+                    static_cast<double>(delta) / 1.0e9);  // NOLINT(*-avoid-magic-numbers)
       },
       stats.sum);
 

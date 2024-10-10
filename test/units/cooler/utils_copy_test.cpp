@@ -18,10 +18,10 @@ inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-
 }  // namespace hictk::test
 
 namespace hictk::cooler::test::utils {
-inline const auto& testdir = hictk::test::testdir;
-inline const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+static const auto& datadir = hictk::test::datadir;
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils copy", "[copy][utils][short]") {
   SECTION("cooler -> cooler") {
     const auto src = datadir / "cooler_test_file.cool";
@@ -53,5 +53,7 @@ TEST_CASE("Cooler: utils copy", "[copy][utils][short]") {
     CHECK(cooler::utils::equal(src.string(), dest.string()));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::utils

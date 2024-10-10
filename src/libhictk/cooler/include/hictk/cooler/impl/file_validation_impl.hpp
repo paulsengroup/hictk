@@ -43,9 +43,11 @@ inline void File::validate_bins(bool full) const {
           fmt::format(FMT_STRING("Expected {} bins, found {}"), bins().size(), nchroms));
     }
 
+    // NOLINTBEGIN(*-avoid-magic-numbers)
     auto chrom_it = dataset("bins/chrom").begin<std::uint32_t>(64'000);
     auto start_it = dataset("bins/start").begin<std::uint32_t>(64'000);
     auto end_it = dataset("bins/end").begin<std::uint32_t>(64'000);
+    // NOLINTEND(*-avoid-magic-numbers)
 
     auto last_chrom = dataset("bins/chrom").end<std::uint32_t>(0);
     auto last_start = dataset("bins/start").end<std::uint32_t>(0);
@@ -80,7 +82,8 @@ inline void File::validate_bins(bool full) const {
 }
 
 template <typename PixelIt>
-inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const {
+inline void File::validate_pixels_before_append(const PixelIt &first_pixel,
+                                                const PixelIt &last_pixel) const {
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = decltype(std::declval<PixelT>().count);
   try {
@@ -160,8 +163,8 @@ inline void File::validate_pixels_before_append(PixelIt first_pixel, PixelIt las
 }
 
 template <typename PixelIt>
-inline void File::validate_thin_pixels_before_append(PixelIt first_pixel,
-                                                     PixelIt last_pixel) const {
+inline void File::validate_thin_pixels_before_append(const PixelIt &first_pixel,
+                                                     const PixelIt &last_pixel) const {
   using T = decltype(first_pixel->count);
   try {
     std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &pixel) {

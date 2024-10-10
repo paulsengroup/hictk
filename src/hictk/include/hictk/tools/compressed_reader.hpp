@@ -22,8 +22,9 @@ class CompressedReader {
 
  public:
   CompressedReader() = default;
-  explicit CompressedReader(const std::filesystem::path& path,
-                            std::size_t buff_capacity = 512 * 1024);
+  explicit CompressedReader(
+      const std::filesystem::path& path,  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+      std::size_t buff_capacity = 512UL << 10U);
 
   bool getline(std::string& buff, char sep = '\n');
   [[nodiscard]] std::string_view getline(char sep = '\n');

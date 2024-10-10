@@ -68,13 +68,14 @@ struct Attributes {
   std::optional<std::int32_t> nchroms{0};
   std::optional<std::int64_t> nnz{0};
   using SumVar = std::variant<double, std::int64_t>;
-  std::optional<SumVar> sum{std::int64_t(0)};
-  std::optional<SumVar> cis{std::int64_t(0)};
+  std::optional<SumVar> sum{std::int64_t{0}};
+  std::optional<SumVar> cis{std::int64_t{0}};
 
   template <typename PixelT = DefaultPixelT,
             typename = std::enable_if_t<std::is_arithmetic_v<PixelT>>>
   [[nodiscard]] static Attributes init(std::uint32_t bin_size_);
   [[nodiscard]] static Attributes init_empty() noexcept;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] bool operator==(const Attributes &other) const noexcept;
   [[nodiscard]] bool operator!=(const Attributes &other) const noexcept;
   [[nodiscard]] static std::string generate_creation_date();
@@ -114,16 +115,9 @@ class File {
        double w0);
 
  public:
-  using QUERY_TYPE = hictk::GenomicInterval::Type;
+  using QUERY_TYPE = GenomicInterval::Type;
 
   File() = default;
-  File(const File &other) = delete;
-
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ > 7
-  File(File &&other) noexcept = default;
-#else
-  File(File &&other) = default;
-#endif
 
   // Simple constructor. Open file in read-only mode. Automatically detects pixel count type
   explicit File(std::string_view uri, std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
@@ -172,16 +166,15 @@ class File {
                                    std::size_t cache_size_bytes = DEFAULT_HDF5_CACHE_SIZE * 4,
                                    std::uint32_t compression_lvl = DEFAULT_COMPRESSION_LEVEL);
 
+  File(const File &other) = delete;
+  File(File &&other) noexcept;
+
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~File() noexcept;
 
   File &operator=(const File &other) = delete;
-#if defined(__GNUC__) && defined(__clang__) && __clang_major__ > 8
-  File &operator=(File &&other) noexcept = default;
-#elif defined(__GNUC__) && __GNUC__ > 9
-  File &operator=(File &&other) noexcept = default;
-#else
-  File &operator=(File &&other) = default;
-#endif
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  File &operator=(File &&other) noexcept;
 
   [[nodiscard]] explicit operator bool() const noexcept;
 
@@ -357,16 +350,17 @@ class File {
   void read_index_chunk(std::initializer_list<Chromosome> chroms) const;
 
   template <typename PixelIt>
-  static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,
-                          PixelIt last_pixel);
+  static void append_bins(Dataset &bin1_dset, Dataset &bin2_dset, const PixelIt &first_pixel,
+                          const PixelIt &last_pixel);
   template <typename PixelIt, typename N>
   static void append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
                             PixelIt last_pixel, N &sum, N &cis_sum);
 
   template <typename PixelIt>
-  void validate_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
+  void validate_pixels_before_append(const PixelIt &first_pixel, const PixelIt &last_pixel) const;
   template <typename PixelIt>
-  void validate_thin_pixels_before_append(PixelIt first_pixel, PixelIt last_pixel) const;
+  void validate_thin_pixels_before_append(const PixelIt &first_pixel,
+                                          const PixelIt &last_pixel) const;
 
   [[nodiscard]] static NumericVariant detect_pixel_type(const RootGroup &root_grp,
                                                         std::string_view path = "pixels/count");
@@ -403,7 +397,7 @@ class File {
   void validate_pixel_type() const noexcept;
 
   // IMPORTANT: the private fetch() methods interpret queries as open-open
-  [[nodiscard]] PixelSelector fetch(PixelCoordinates coord,
+  [[nodiscard]] PixelSelector fetch(const PixelCoordinates &coord,
                                     std::shared_ptr<const balancing::Weights> weights) const;
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2,
                                     std::shared_ptr<const balancing::Weights> weights) const;

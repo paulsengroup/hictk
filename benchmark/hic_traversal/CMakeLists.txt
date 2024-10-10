@@ -9,11 +9,16 @@ add_executable(hictk_hic_traversal_bench hic_traversal.cpp)
 
 target_link_libraries(
   hictk_hic_traversal_bench
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::hic)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::hic
+)
 
 target_link_system_libraries(
   hictk_hic_traversal_bench
   PUBLIC
   CLI11::CLI11
-  std::filesystem)
+  std::filesystem
+)

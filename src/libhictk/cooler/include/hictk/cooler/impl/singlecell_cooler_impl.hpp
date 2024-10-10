@@ -76,7 +76,8 @@ inline bool SingleCellAttributes::operator!=(const SingleCellAttributes& other) 
   return !(*this == other);
 }
 
-inline SingleCellFile::SingleCellFile(HighFive::File fp, BinTable bins, SingleCellAttributes attrs)
+inline SingleCellFile::SingleCellFile(const HighFive::File& fp, BinTable bins,
+                                      SingleCellAttributes attrs)
     : _root_grp(std::make_unique<RootGroup>(RootGroup{fp.getGroup("/")})),
       _cells(read_cells(fp)),
       _attrs(std::move(attrs)),
@@ -109,7 +110,7 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
     std::filesystem::remove(path);
   }
 
-  HighFive::File fp(path.string(), HighFive::File::Create);
+  const HighFive::File fp(path.string(), HighFive::File::Create);
   RootGroup root_grp{fp.getGroup("/")};
 
   attributes.bin_size = bins.resolution();
@@ -130,7 +131,7 @@ inline SingleCellFile SingleCellFile::create(const std::filesystem::path& path, 
   attributes.nbins = bins.size();
 
   write_standard_attributes(root_grp, attributes);
-  return {fp, bins, attributes};
+  return {fp, std::move(bins), attributes};
 }
 
 constexpr const phmap::btree_set<std::string>& SingleCellFile::cells() const noexcept {
@@ -139,23 +140,25 @@ constexpr const phmap::btree_set<std::string>& SingleCellFile::cells() const noe
 constexpr const SingleCellAttributes& SingleCellFile::attributes() const noexcept { return _attrs; }
 
 inline File SingleCellFile::open(std::string_view cell) const {
+  assert(_root_grp);
   if (!_cells.contains(cell)) {
     throw std::out_of_range(
         fmt::format(FMT_STRING("unable to find cell \"{}\" in file {}"), cell, path()));
   }
-  return File(RootGroup{_root_grp->group.getGroup(fmt::format(FMT_STRING("cells/{}"), cell))});
+  return File(RootGroup{(*_root_grp)().getGroup(fmt::format(FMT_STRING("cells/{}"), cell))});
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename N>
 inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs,
                                         std::size_t cache_size_bytes,
                                         std::uint32_t compression_lvl) {
+  assert(_root_grp);
   if (_cells.contains(cell)) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("failed to create cell \"{}\" in file {}: cell already exists"), cell, path()));
   }
 
-  auto sclr_attrs = read_standard_attributes(_root_grp->group.getFile(), true);
+  auto sclr_attrs = read_standard_attributes((*_root_grp)().getFile(), true);
 
   attrs.bin_size = sclr_attrs.bin_size;
   attrs.bin_type = sclr_attrs.bin_type;
@@ -171,14 +174,14 @@ inline File SingleCellFile::create_cell(std::string_view cell, Attributes attrs,
   attrs.storage_mode = sclr_attrs.storage_mode;
 
   _cells.emplace(cell);
-  Attribute::write(_root_grp->group, "ncells", static_cast<std::int64_t>(_cells.size()), true);
+  Attribute::write((*_root_grp)(), "ncells", static_cast<std::int64_t>(_cells.size()), true);
 
   RootGroup entrypoint{
-      _root_grp->group.createGroup(fmt::format(FMT_STRING("cells/{}"), std::string{cell}))};
+      (*_root_grp)().createGroup(fmt::format(FMT_STRING("cells/{}"), std::string{cell}))};
 
   std::ignore =
-      File::create_groups(entrypoint, Group{*_root_grp, _root_grp->group.getGroup("/chroms")},
-                          Group{*_root_grp, _root_grp->group.getGroup("/bins")});
+      File::create_groups(entrypoint, Group{*_root_grp, (*_root_grp)().getGroup("/chroms")},
+                          Group{*_root_grp, (*_root_grp)().getGroup("/bins")});
 
   create_cell_datasets<N>(entrypoint, cache_size_bytes, compression_lvl, DEFAULT_HDF5_CACHE_W0);
 
@@ -195,9 +198,13 @@ inline auto SingleCellFile::chromosomes() const noexcept -> const Reference& {
   return bins().chromosomes();
 }
 
-inline HighFive::File SingleCellFile::file_handle() { return _root_grp->group.getFile(); }
+inline HighFive::File SingleCellFile::file_handle() {
+  assert(_root_grp);
+  return (*_root_grp)().getFile();
+}
 inline const HighFive::File& SingleCellFile::file_handle() const {
-  return _root_grp->group.getFile();
+  assert(_root_grp);
+  return (*_root_grp)().getFile();
 }
 
 template <typename N>
@@ -224,8 +231,8 @@ inline File SingleCellFile::aggregate(std::string_view uri, bool overwrite_if_ex
       tails.emplace_back(std::move(last));
     }
   });
-  utils::merge(heads, tails, bins(), uri,
-               attributes().assembly.has_value() ? *attributes().assembly : "unknown",
+
+  utils::merge(heads, tails, bins(), uri, attributes().assembly.value_or("unknown"),
                overwrite_if_exists, chunk_size, update_frequency, compression_lvl);
 
   return File(uri);
@@ -236,7 +243,7 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
   const RootGroup root_grp{f.getGroup("/")};
   auto attrs =
       initialize_missing ? SingleCellAttributes::init(0) : SingleCellAttributes::init_empty();
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
 
   auto read_or_throw = [&](const auto& key, auto& buff) {
     using T = remove_cvref_t<decltype(buff)>;
@@ -280,11 +287,11 @@ SingleCellFile::read_standard_attributes(const HighFive::File& f, bool initializ
 HICTK_DISABLE_WARNING_POP
 
 inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   const RootGroup root_grp{f.getGroup("/")};
   auto chroms = File::import_chroms(Dataset(root_grp, f.getDataSet("/chroms/name")),
                                     Dataset(root_grp, f.getDataSet("/chroms/length")), false);
-  const std::string bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
+  const auto bin_type = Attribute::read<std::string>(root_grp(), "bin-type");
   if (bin_type == "fixed") {
     const auto bin_size = Attribute::read<std::uint32_t>(root_grp(), "bin-size");
 
@@ -298,7 +305,7 @@ inline BinTable SingleCellFile::init_bin_table(const HighFive::File& f) {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::File& f) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   phmap::btree_set<std::string> cells{};
   auto buffer = f.getGroup("/cells").listObjectNames();
   std::move(buffer.begin(), buffer.end(), std::inserter(cells, cells.begin()));
@@ -306,7 +313,7 @@ inline phmap::btree_set<std::string> SingleCellFile::read_cells(const HighFive::
 }
 
 inline void SingleCellFile::create_groups(RootGroup& root_grp) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto bins_group = root_grp().createGroup("/bins");
   auto chroms_group = root_grp().createGroup("/chroms");
   auto res_group = root_grp().createGroup("/cells");
@@ -314,7 +321,7 @@ inline void SingleCellFile::create_groups(RootGroup& root_grp) {
 
 inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
                                                       const SingleCellAttributes& attrs) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   Attribute::write(root_grp(), "assembly",
                    attrs.assembly.has_value() ? *attrs.assembly : "unknown");
   Attribute::write(root_grp(), "bin-size", attrs.bin_size);
@@ -327,15 +334,19 @@ inline void SingleCellFile::write_standard_attributes(RootGroup& root_grp,
   if (attrs.format_url.has_value()) {
     Attribute::write(root_grp(), "format-url", *attrs.format_url);
   }
-  Attribute::write(root_grp(), "format-version", std::int64_t(attrs.format_version));
+  Attribute::write(root_grp(), "format-version", static_cast<std::int64_t>(attrs.format_version));
   if (attrs.generated_by.has_value()) {
     Attribute::write(root_grp(), "generated-by", *attrs.generated_by);
   }
   if (attrs.metadata.has_value()) {
     Attribute::write(root_grp(), "metadata", *attrs.metadata);
   }
+  assert(attrs.nbins.has_value());
+  assert(attrs.nchroms.has_value());
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   Attribute::write(root_grp(), "nbins", *attrs.nbins);
   Attribute::write(root_grp(), "ncells", 0);
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   Attribute::write(root_grp(), "nchroms", *attrs.nchroms);
   if (attrs.storage_mode.has_value()) {
     Attribute::write(root_grp(), "storage-mode", *attrs.storage_mode);
@@ -346,7 +357,7 @@ inline void SingleCellFile::create_datasets(RootGroup& root_grp, const BinTable&
   const auto default_aprop =
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0);
 
-  auto create_dataset = [&](const auto& path, const auto& type, auto aprop) {
+  auto create_dataset = [&](const auto& path, const auto& type, const auto& aprop) {
     using T = remove_cvref_t<decltype(type)>;
     if constexpr (is_string_v<T>) {
       const auto& chrom_with_longest_name = bins.chromosomes().chromosome_with_longest_name();
@@ -382,7 +393,8 @@ inline void SingleCellFile::create_cell_datasets(RootGroup& root_grp, std::size_
 
   const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
 
-  auto create_dataset = [&](const auto& path, const auto& type, auto aprop, auto cprop) {
+  auto create_dataset = [&](const auto& path, const auto& type, const auto& aprop,
+                            const auto& cprop) {
     Dataset{root_grp, path, type, HighFive::DataSpace::UNLIMITED, aprop, cprop};
   };
 

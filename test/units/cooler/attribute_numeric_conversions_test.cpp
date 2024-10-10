@@ -17,7 +17,7 @@
 
 namespace hictk::cooler::test::attribute {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]") {
   const auto path = testdir() / "test_read_attrs_numeric_conversion.cool";
 
@@ -80,11 +80,12 @@ TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]"
   SECTION("str to float lossy") {
     Attribute::write(f, "float_s",
                      std::string{"2.333333333333333481363069950020872056484222412109375"});
+
     CHECK(Attribute::read<float>(f, "float_s") == Catch::Approx(2.333333));
   }
 
   SECTION("double to int lossless") {
-    CHECK(Attribute::read<std::int8_t>(f, "double") == std::int8_t(dbl));
+    CHECK(Attribute::read<std::int8_t>(f, "double") == static_cast<std::int8_t>(dbl));
   }
 
   SECTION("double to int lossy") {
@@ -94,5 +95,7 @@ TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]"
                           Catch::Matchers::ContainsSubstring("without information loss"));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::attribute

@@ -21,7 +21,7 @@ class VC {
   };
 
  public:
-  enum Type { cis, trans, gw };
+  enum class Type : std::uint_fast8_t { cis, trans, gw };
 
   struct Params {};
 
@@ -30,7 +30,7 @@ class VC {
   template <typename PixelIt>
   VC(PixelIt first, PixelIt last, const BinTable& bins, const Params& params = {});
 
-  [[nodiscard]] balancing::Weights get_weights(bool rescale = true) const;
+  [[nodiscard]] Weights get_weights(bool rescale = true) const;
   [[nodiscard]] const std::vector<double>& get_scale() const noexcept;
 
  private:

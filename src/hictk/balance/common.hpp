@@ -39,9 +39,9 @@
 namespace hictk::tools {
 
 template <typename BalanceConfig>
-inline void write_weights_hic(
-    hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
-    const phmap::flat_hash_map<std::uint32_t, balancing::Weights>& weights, bool force_overwrite) {
+void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
+                       const phmap::flat_hash_map<std::uint32_t, balancing::Weights>& weights,
+                       bool force_overwrite) {
   for (const auto& [resolution, weights_] : weights) {
     hfw.add_norm_vector(c.name, "BP", resolution, weights_, force_overwrite);
   }
@@ -49,10 +49,9 @@ inline void write_weights_hic(
 }
 
 template <typename BalanceConfig>
-inline void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                                 const balancing::Weights& weights,
-                                 const std::vector<double>& variance,
-                                 const std::vector<double>& scale) {
+void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
+                          const balancing::Weights& weights, const std::vector<double>& variance,
+                          const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
   const auto path = fmt::format(FMT_STRING("{}/bins/{}"), grp, c.name);
   const auto link_path = fmt::format(FMT_STRING("{}/bins/weight"), grp);
@@ -76,10 +75,10 @@ inline void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   dset.write_attribute("cis_only", c.mode == "cis");
   dset.write_attribute("divisive_weights", weights.type() == balancing::Weights::Type::DIVISIVE);
   if constexpr (std::is_same_v<BalanceICEConfig, BalanceConfig>) {
-    dset.write_attribute("ignore_diags", std::int64_t(c.masked_diags));
-    dset.write_attribute("mad_max", std::int64_t(c.mad_max));
-    dset.write_attribute("min_count", std::int64_t(c.min_count));
-    dset.write_attribute("min_nnz", std::int64_t(c.min_nnz));
+    dset.write_attribute("ignore_diags", static_cast<std::int64_t>(c.masked_diags));
+    dset.write_attribute("mad_max", static_cast<std::int64_t>(c.mad_max));
+    dset.write_attribute("min_count", static_cast<std::int64_t>(c.min_count));
+    dset.write_attribute("min_nnz", static_cast<std::int64_t>(c.min_nnz));
     dset.write_attribute("tol", c.tolerance);
 
     if (c.mode != "cis") {
@@ -113,13 +112,13 @@ inline void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename BalanceConfig>
-inline void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                                 const balancing::Weights& weights) {
+void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
+                          const balancing::Weights& weights) {
   return write_weights_cooler(uri, c, weights, {-1}, {-1});
 }
 
 template <typename Balancer, typename BalanceConfig>
-inline auto init_params(const BalanceConfig& c, const std::filesystem::path& tmpfile) ->
+auto init_params(const BalanceConfig& c, const std::filesystem::path& tmpfile) ->
     typename Balancer::Params {
   if constexpr (std::is_same_v<Balancer, balancing::ICE>) {
     return {c.tolerance, c.max_iters, c.masked_diags, c.min_nnz, c.min_count,
@@ -127,6 +126,7 @@ inline auto init_params(const BalanceConfig& c, const std::filesystem::path& tmp
   }
 
   if constexpr (std::is_same_v<Balancer, balancing::SCALE>) {
+    // NOLINTNEXTLINE(*-avoid-magic-numbers)
     return {c.tolerance, c.max_iters, 10.0, 1.0e-5, 0.05, 0.05, tmpfile, c.chunk_size, c.threads};
   }
 
@@ -134,8 +134,7 @@ inline auto init_params(const BalanceConfig& c, const std::filesystem::path& tmp
 }
 
 template <typename Balancer, typename BalanceConfig>
-inline int balance_cooler(cooler::File& f, const BalanceConfig& c,
-                          const std::filesystem::path& tmp_dir) {
+int balance_cooler(cooler::File& f, const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   if (!c.force && !c.stdout_ && f.has_normalization(c.name)) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Normalization weights for \"{}\" already exist in file {}. Pass "
@@ -179,7 +178,7 @@ inline int balance_cooler(cooler::File& f, const BalanceConfig& c,
 }
 
 template <typename Balancer, typename BalanceConfig>
-inline int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
+int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   const auto resolutions = hic::utils::list_resolutions(c.path_to_input);
   for (const auto& res : resolutions) {
     const hic::File f(c.path_to_input.string(), res);
@@ -192,7 +191,9 @@ inline int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_
   }
 
   const auto tmpfile =
-      tmp_dir / (std::filesystem::path{c.path_to_input}.filename().string() + ".tmp");
+      tmp_dir.empty()
+          ? ""
+          : tmp_dir / (std::filesystem::path{c.path_to_input}.filename().string() + ".tmp");
 
   const auto params = init_params<Balancer>(c, tmpfile);
   typename Balancer::Type mode{};
@@ -228,7 +229,7 @@ inline int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_
 }
 
 template <typename Balancer, typename BalanceConfig>
-inline int balance_multires_cooler(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
+int balance_multires_cooler(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   const auto resolutions = cooler::utils::list_resolutions(c.path_to_input.string());
 
   for (const auto& res : resolutions) {

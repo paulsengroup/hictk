@@ -54,13 +54,14 @@ static void to_vector(std::vector<ThinPixel<N>>& buff, const std::shared_ptr<arr
       assert(bin2_ids);
       assert(counts);
       for (std::int64_t i = 0; i < size; ++i) {
+        // NOLINTNEXTLINE(*-pointer-arithmetic)
         buff.emplace_back(ThinPixel<N>{*(bin1_ids + i), *(bin2_ids + i), *(counts + i)});
       }
     }
   }
 }
 
-template <typename N>
+template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 static void to_vector(const Reference& chroms, std::vector<Pixel<N>>& buff,
                       const std::shared_ptr<arrow::Table>& data) {
   buff.clear();
@@ -104,9 +105,11 @@ static void to_vector(const Reference& chroms, std::vector<Pixel<N>>& buff,
       assert(end2);
       assert(counts);
       for (std::int64_t i = 0; i < size; ++i) {
+        // NOLINTBEGIN(*-pointer-arithmetic)
         buff.emplace_back(Pixel{chroms.at(*(chrom1_id + i)), *(start1 + i), *(end1 + i),
                                 chroms.at(*(chrom2_id + i)), *(start2 + i), *(end2 + i),
                                 *(counts + i)});
+        // NOLINTEND(*-pointer-arithmetic)
       }
     }
   }
@@ -164,7 +167,7 @@ struct Query {
   return std::make_pair(q1, q2);
 }
 
-[[nodiscard]] std::discrete_distribution<std::uint32_t> init_chrom_sampler(
+[[nodiscard]] static std::discrete_distribution<std::uint32_t> init_chrom_sampler(
     const hictk::Reference& chroms) {
   std::uint64_t genome_size{};
   std::vector<double> weights(chroms.size());
@@ -260,7 +263,7 @@ fetch_pixels_sparse(cooler::Cooler& clr, std::string_view range1, std::string_vi
   return {clr.fetch_sparse<double>(range1, range2, normalization)};
 }
 
-[[nodiscard]] PixelBuffer init_pixel_buffer(const Config& c) {
+[[nodiscard]] static PixelBuffer init_pixel_buffer(const Config& c) {
   const auto int_count = c.normalization.empty() || c.normalization == "NONE";
   const auto thin_pixel = !c.join;
 
@@ -396,8 +399,11 @@ int launch_worker_subcommand(const Config& c) {
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    assert(c.seed.has_value());
     SPDLOG_INFO(FMT_STRING("[{}] seed: {}"), c.task_id, *c.seed);
     std::mt19937_64 rand_eng{*c.seed};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     const hictk::File tgt(c.reference_uri, c.resolution);
     cooler::Cooler ref(

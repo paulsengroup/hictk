@@ -114,7 +114,7 @@ inline bool AtomicBitSet::atomic_test(const std::vector<std::atomic<I>>& buff,
   const auto bit_offset = i - uint_offset;
 
   const auto byte = buff[uint_offset].load();
-  return byte & (1U << bit_offset);
+  return static_cast<bool>(byte & (1U << bit_offset));
 }
 
 inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(std::size_t size_, std::uint64_t decimal_bits)
@@ -125,7 +125,7 @@ inline VectorOfAtomicDecimals::VectorOfAtomicDecimals(std::size_t size_, std::ui
       _cfxi(2ULL << (decimal_bits - 1)),
       _cfxd(static_cast<double>(_cfxi)),
       _max_value(compute_max_value(static_cast<std::uint8_t>(decimal_bits))) {
-  if (decimal_bits == 0 || decimal_bits > 63) {
+  if (decimal_bits == 0 || decimal_bits > 63) {  // NOLINT(*-avoid-magic-numbers)
     throw std::invalid_argument("decimal bits should be between 1 and 64");
   }
 
@@ -316,7 +316,7 @@ inline double VectorOfAtomicDecimals::decode(I n) const noexcept {
 
 constexpr bool VectorOfAtomicDecimals::overflows(double n) const noexcept { return n > _max_value; }
 
-inline double VectorOfAtomicDecimals::compute_max_value(std::uint8_t decimal_bits) const noexcept {
+inline double VectorOfAtomicDecimals::compute_max_value(std::uint8_t decimal_bits) noexcept {
   assert(decimal_bits < 64);
   return std::nextafter(static_cast<double>(std::numeric_limits<I>::max() >> decimal_bits), 0.0);
 }
@@ -365,81 +365,82 @@ inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id
   _counts.push_back(count);
 }
 
-inline void SparseMatrix::serialize(filestream::FileStream& fs, std::string& tmpbuff,
+inline void SparseMatrix::serialize(filestream::FileStream<>& fs, std::string& tmpbuff,
                                     ZSTD_CCtx& ctx, int compression_lvl) const {
-  fs.write(size());
+  fs.unsafe_write(size());
 
   const auto tmpbuff_size = ZSTD_compressBound(size() * sizeof(std::uint64_t));
   tmpbuff.resize(tmpbuff_size);
 
-  std::size_t compressed_size = ZSTD_compressCCtx(&ctx, reinterpret_cast<void*>(tmpbuff.data()),
-                                                  tmpbuff.size() * sizeof(char),
-                                                  reinterpret_cast<const void*>(_bin1_ids.data()),
-                                                  size() * sizeof(std::uint64_t), compression_lvl);
-  if (ZSTD_isError(compressed_size)) {
+  std::size_t compressed_size = ZSTD_compressCCtx(
+      &ctx, static_cast<void*>(tmpbuff.data()), tmpbuff.size() * sizeof(char),
+      static_cast<const void*>(_bin1_ids.data()), size() * sizeof(std::uint64_t), compression_lvl);
+  if (ZSTD_isError(compressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
-  fs.write(compressed_size);
-  fs.write(tmpbuff.data(), compressed_size);
-
-  compressed_size = ZSTD_compressCCtx(&ctx, reinterpret_cast<void*>(tmpbuff.data()),
-                                      tmpbuff.size() * sizeof(char),
-                                      reinterpret_cast<const void*>(_bin2_ids.data()),
-                                      size() * sizeof(std::uint64_t), compression_lvl);
-  if (ZSTD_isError(compressed_size)) {
-    throw std::runtime_error(ZSTD_getErrorName(compressed_size));
-  }
-
-  fs.write(compressed_size);
-  fs.write(tmpbuff.data(), compressed_size);
+  fs.unsafe_write(compressed_size);
+  fs.unsafe_write(tmpbuff.data(), compressed_size);
 
   compressed_size = ZSTD_compressCCtx(
-      &ctx, reinterpret_cast<void*>(tmpbuff.data()), tmpbuff.size() * sizeof(char),
-      reinterpret_cast<const void*>(_counts.data()), size() * sizeof(double), compression_lvl);
-  if (ZSTD_isError(compressed_size)) {
+      &ctx, static_cast<void*>(tmpbuff.data()), tmpbuff.size() * sizeof(char),
+      static_cast<const void*>(_bin2_ids.data()), size() * sizeof(std::uint64_t), compression_lvl);
+  if (ZSTD_isError(compressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(compressed_size));
   }
 
-  fs.write(compressed_size);
-  fs.write(tmpbuff.data(), compressed_size);
+  fs.unsafe_write(compressed_size);
+  fs.unsafe_write(tmpbuff.data(), compressed_size);
 
-  fs.flush();
+  compressed_size = ZSTD_compressCCtx(
+      &ctx, static_cast<void*>(tmpbuff.data()), tmpbuff.size() * sizeof(char),
+      static_cast<const void*>(_counts.data()), size() * sizeof(double), compression_lvl);
+  if (ZSTD_isError(compressed_size) != 0) {
+    throw std::runtime_error(ZSTD_getErrorName(compressed_size));
+  }
+
+  fs.unsafe_write(compressed_size);
+  fs.unsafe_write(tmpbuff.data(), compressed_size);
+
+  fs.unsafe_flush();
 }
 
-inline void SparseMatrix::deserialize(filestream::FileStream& fs, std::string& tmpbuff,
+inline void SparseMatrix::deserialize(filestream::FileStream<>& fs, std::string& tmpbuff,
                                       ZSTD_DCtx& ctx) {
-  const auto size_ = fs.read<std::size_t>();
+  const auto size_ = fs.unsafe_read<std::size_t>();
 
   _bin1_ids.resize(size_);
   _bin2_ids.resize(size_);
   _counts.resize(size_);
 
-  auto compressed_size = fs.read<std::size_t>();
+  auto compressed_size = fs.unsafe_read<std::size_t>();
 
-  fs.read(tmpbuff, compressed_size);
+  tmpbuff.resize(compressed_size);
+  fs.unsafe_read(tmpbuff.data(), tmpbuff.size());
   std::size_t decompressed_size = ZSTD_decompressDCtx(
-      &ctx, reinterpret_cast<char*>(_bin1_ids.data()), _bin1_ids.size() * sizeof(std::uint64_t),
+      &ctx, static_cast<void*>(_bin1_ids.data()), _bin1_ids.size() * sizeof(std::uint64_t),
       tmpbuff.data(), tmpbuff.size() * sizeof(char));
-  if (ZSTD_isError(decompressed_size)) {
+  if (ZSTD_isError(decompressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(decompressed_size));
   }
 
-  fs.read(compressed_size);
-  fs.read(tmpbuff, compressed_size);
-  decompressed_size = ZSTD_decompressDCtx(&ctx, reinterpret_cast<char*>(_bin2_ids.data()),
+  fs.unsafe_read(compressed_size);
+  tmpbuff.resize(compressed_size);
+  fs.unsafe_read(tmpbuff.data(), tmpbuff.size());
+  decompressed_size = ZSTD_decompressDCtx(&ctx, static_cast<void*>(_bin2_ids.data()),
                                           _bin2_ids.size() * sizeof(std::uint64_t), tmpbuff.data(),
                                           tmpbuff.size() * sizeof(char));
-  if (ZSTD_isError(decompressed_size)) {
+  if (ZSTD_isError(decompressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(decompressed_size));
   }
 
-  fs.read(compressed_size);
-  fs.read(tmpbuff, compressed_size);
-  decompressed_size = ZSTD_decompressDCtx(&ctx, reinterpret_cast<char*>(_counts.data()),
-                                          _counts.size() * sizeof(double), tmpbuff.data(),
-                                          tmpbuff.size() * sizeof(char));
-  if (ZSTD_isError(decompressed_size)) {
+  fs.unsafe_read(compressed_size);
+  tmpbuff.resize(compressed_size);
+  fs.unsafe_read(tmpbuff.data(), tmpbuff.size());
+  decompressed_size =
+      ZSTD_decompressDCtx(&ctx, static_cast<void*>(_counts.data()), _counts.size() * sizeof(double),
+                          tmpbuff.data(), tmpbuff.size() * sizeof(char));
+  if (ZSTD_isError(decompressed_size) != 0) {
     throw std::runtime_error(ZSTD_getErrorName(decompressed_size));
   }
 }
@@ -471,8 +472,8 @@ inline void SparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg, bool ini
     const auto i2 = _bin2_ids[i];
 
     if (_counts[i] != 0) {
-      marg.atomic_add(i1, _counts[i] != 0);
-      marg.atomic_add(i2, _counts[i] != 0);
+      marg.atomic_add(i1, static_cast<double>(_counts[i] != 0));
+      marg.atomic_add(i2, static_cast<double>(_counts[i] != 0));
     }
   }
 }
@@ -585,7 +586,7 @@ inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t 
                                            double count, std::size_t bin_offset) {
   assert(!_chunks.empty());
   if (HICTK_UNLIKELY(_chunks.back().size() == _chunk_size)) {
-    auto& chunk = _chunks.emplace_back(SparseMatrix{});
+    auto& chunk = _chunks.emplace_back();
     chunk.reserve(_chunk_size);
   }
 
@@ -613,7 +614,7 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), num_chunks(), marginalize_impl);
+  tpool->detach_blocks(std::size_t{0}, num_chunks(), marginalize_impl);
   tpool->wait();
 }
 
@@ -635,7 +636,7 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), num_chunks(), marginalize_nnz_impl);
+  tpool->detach_blocks(std::size_t{0}, num_chunks(), marginalize_nnz_impl);
   tpool->wait();
 }
 
@@ -661,7 +662,7 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), num_chunks(), times_outer_product_marg_impl);
+  tpool->detach_blocks(std::size_t{0}, num_chunks(), times_outer_product_marg_impl);
   tpool->wait();
 }
 
@@ -684,7 +685,7 @@ inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
     return;
   }
 
-  tpool->detach_blocks(std::size_t(0), num_chunks(), multiply_impl);
+  tpool->detach_blocks(std::size_t{0}, num_chunks(), multiply_impl);
   tpool->wait();
 }
 
@@ -720,7 +721,7 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
 inline FileBackedSparseMatrix::FileBackedSparseMatrix(std::filesystem::path tmp_file,
                                                       std::size_t chunk_size, int compression_lvl)
     : _path(std::move(tmp_file)),
-      _fs(filestream::FileStream::create(_path.string())),
+      _fs(filestream::FileStream<>::create(_path.string(), nullptr)),  // creating wo/ locking is ok
       _chunk_size(chunk_size),
       _compression_lvl(compression_lvl),
       _zstd_cctx(ZSTD_createCCtx()),
@@ -762,18 +763,18 @@ inline void FileBackedSparseMatrix::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs = filestream::FileStream(_path.string());
+  _fs = filestream::FileStream<>(_path.string(), nullptr);  // opening wo/ locking is ok
 }
 
 inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
                                                 BS::thread_pool* tpool, bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path.string());
+    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(static_cast<std::streamoff>(offset));
+      fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize(marg, false);
     }
@@ -805,11 +806,11 @@ inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg
                                                     bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path.string());
+    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(static_cast<std::streamoff>(offset));
+      fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize_nnz(marg, false);
     }
@@ -842,11 +843,11 @@ inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecim
                                                              bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path.string());
+    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(static_cast<std::streamoff>(offset));
+      fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.times_outer_product_marg(marg, biases, weights, false);
     }
@@ -879,11 +880,11 @@ inline void FileBackedSparseMatrix::multiply(VectorOfAtomicDecimals& buffer,
                                              bool init_buffer) const {
   auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream fs(_path.string());
+    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
-      fs.seekg(static_cast<std::streamoff>(offset));
+      fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.multiply(buffer, cfx, false);
     }
@@ -920,11 +921,11 @@ inline double FileBackedSparseMatrix::compute_scaling_factor_for_scale(
   double norm_sum = 0.0;
 
   std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-  filestream::FileStream fs(_path.string());
+  filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
   std::string buff{};
 
   for (const auto& offset : _index) {
-    fs.seekg(static_cast<std::streamoff>(offset));
+    fs.unsafe_seekg(static_cast<std::streampos>(offset));
     _matrix.deserialize(fs, buff, *zstd_dctx);
     for (std::size_t i = 0; i < _matrix.size(); ++i) {
       const auto bin1_id = _matrix.bin1_ids()[i];
@@ -947,7 +948,7 @@ inline double FileBackedSparseMatrix::compute_scaling_factor_for_scale(
 
 inline void FileBackedSparseMatrix::write_chunk() {
   assert(!_matrix.empty());
-  _index.push_back(_fs.tellp());
+  _index.push_back(_fs.unsafe_tellp());
   _matrix.finalize();
   _matrix.serialize(_fs, _buff, *_zstd_cctx, _compression_lvl);
   _matrix.clear();

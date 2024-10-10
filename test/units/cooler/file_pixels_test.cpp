@@ -17,7 +17,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
   auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_read_write_pixels.cool";
@@ -99,16 +99,16 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
     CHECK(f1.attributes().nbins == f2.attributes().nbins);
     CHECK(f1.attributes().nnz == f2.attributes().nnz);
     CHECK(f1.attributes().sum == f2.attributes().sum);
-    CHECK(f2.attributes().cis == Attributes::SumVar(std::int64_t(329276)));
+    CHECK(f2.attributes().cis == Attributes::SumVar(std::int64_t{329276}));
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: validate pixels before read_append", "[cooler][long]") {
   auto path1 = datadir / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_validate_before_append.cool";
 
   const File clr1(path1.string());
+
   auto clr2 = cooler::File::create(path2.string(), clr1.chromosomes(), 1000, true);
 
   SECTION("pixel wo/ interactions") {
@@ -141,5 +141,7 @@ TEST_CASE("Cooler: validate pixels before read_append", "[cooler][long]") {
     CHECK_THROWS(clr2.append_pixels(buff4.begin(), buff4.end(), true));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

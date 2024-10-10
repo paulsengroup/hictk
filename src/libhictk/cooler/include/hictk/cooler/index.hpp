@@ -65,8 +65,8 @@ class Index {
   [[nodiscard]] std::size_t size(std::uint32_t chrom_id) const;
 
   [[nodiscard]] bool empty() const noexcept;
-  [[nodiscard]] bool empty(std::string_view chrom_name) const noexcept;
-  [[nodiscard]] bool empty(std::uint32_t chrom_id) const noexcept;
+  [[nodiscard]] bool empty(std::string_view chrom_name) const;
+  [[nodiscard]] bool empty(std::uint32_t chrom_id) const;
 
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
@@ -145,6 +145,7 @@ class Index {
 
    private:
     [[nodiscard]] std::uint32_t last_chrom_id() const noexcept;
+    // NOLINTNEXTLINE(bugprone-exception-escape)
     [[nodiscard]] auto get_offsets() const noexcept -> const OffsetVect&;
     [[nodiscard]] static auto make_end_iterator(const Index* idx) -> iterator;
   };

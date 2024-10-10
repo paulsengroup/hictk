@@ -14,9 +14,7 @@ if(HICTK_WITH_EIGEN)
   find_package(Eigen3 QUIET REQUIRED)
 endif()
 
-set(HICTK_CXX_BYTE_ORDER
-    "${CMAKE_CXX_BYTE_ORDER}"
-    CACHE STRING "Specify the CPU architecture endianness")
+set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
 
 if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
   message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
@@ -26,7 +24,7 @@ elseif(HICTK_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
 else()
   message(
     FATAL_ERROR
-      "Unable to detect the CPU architecture endiannes.\nPlease specify the endianness of the target architecture with -DHICTK_CXX_BYTE_ORDER=*_ENDIAN.\nSee https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_BYTE_ORDER.html for more details."
+    "Unable to detect the CPU architecture endiannes.\nPlease specify the endianness of the target architecture with -DHICTK_CXX_BYTE_ORDER=*_ENDIAN.\nSee https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_BYTE_ORDER.html for more details."
   )
 endif()
 
@@ -35,24 +33,30 @@ add_library(hictk::hic ALIAS hic)
 
 target_sources(
   hic
-  INTERFACE FILE_SET
-            HEADERS
-            BASE_DIRS
-            "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  INTERFACE
+    FILE_SET HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
 
-target_include_directories(hic INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                         "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  hic
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>"
+)
 target_link_libraries(
   hic
-  INTERFACE hictk::balancing
-            hictk::common
-            hictk::binary_buffer
-            hictk::chromosome
-            hictk::expected_values_aggregator
-            hictk::filestream
-            hictk::pixel
-            hictk::reference
-            hictk::transformers)
+  INTERFACE
+    hictk::balancing
+    hictk::common
+    hictk::binary_buffer
+    hictk::chromosome
+    hictk::expected_values_aggregator
+    hictk::filestream
+    hictk::pixel
+    hictk::reference
+    hictk::transformers
+)
 
 target_link_system_libraries(
   hic
@@ -64,4 +68,5 @@ target_link_system_libraries(
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
   phmap
   readerwriterqueue::readerwriterqueue
-  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>")
+  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+)

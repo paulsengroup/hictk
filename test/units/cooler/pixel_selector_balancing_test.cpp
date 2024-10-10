@@ -14,7 +14,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
   auto path = datadir / "ENCFF993FGR.2500000.cool";
   File clr(path.string());
@@ -73,5 +74,7 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
     CHECK_THROWS(selector.read_all<std::int32_t>());
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::pixel_selector

@@ -15,14 +15,28 @@ add_executable(hictk_fuzzer)
 
 target_sources(
   hictk_fuzzer
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/cli.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/cooler.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/fuzzer_scheduler.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/fuzzer_worker.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/cli.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cooler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/fuzzer_scheduler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/fuzzer_worker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+)
 
 target_include_directories(hictk_fuzzer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(hictk_fuzzer PRIVATE hictk_fuzzer_project_options hictk_fuzzer_project_warnings hictk::libhictk)
+set_target_properties(
+  hictk_fuzzer
+  PROPERTIES
+    CXX_VISIBILITY_PRESET
+      hidden
+)
+target_link_libraries(
+  hictk_fuzzer
+  PRIVATE
+    hictk_fuzzer_project_options
+    hictk_fuzzer_project_warnings
+    hictk::libhictk
+)
 
 target_link_system_libraries(
   hictk_fuzzer
@@ -34,4 +48,5 @@ target_link_system_libraries(
   std::filesystem
   PRIVATE
   pybind11::embed
-  Threads::Threads)
+  Threads::Threads
+)

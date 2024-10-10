@@ -17,7 +17,8 @@
 #include "tmpdir.hpp"
 
 namespace hictk::cooler::test::dataset {
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset linear iteration", "[dataset][long]") {
   const auto path = datadir / "cooler_test_file.cool";
 
@@ -55,7 +56,6 @@ TEST_CASE("Cooler: dataset linear iteration", "[dataset][long]") {
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
   const auto path = testdir() / "dataset_iterator_random.h5";
 
@@ -131,5 +131,7 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::dataset

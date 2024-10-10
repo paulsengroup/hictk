@@ -12,45 +12,52 @@ add_executable(hictk_cooler_tests)
 
 target_sources(
   hictk_cooler_tests
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/attribute_numeric_conversions_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_attributes_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_iteration_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_large_rw_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_read_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/dataset_write_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_attributes_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_chromosomes_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_ctors_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_pixels_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/multires_cooler_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/singlecell_cooler_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/utils_copy_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/utils_rename_chromosomes_test.cpp"
-          "${CMAKE_CURRENT_SOURCE_DIR}/utils_validation_test.cpp")
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/attribute_numeric_conversions_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/attribute_read_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/attribute_write_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_accessors_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_attributes_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_iteration_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_large_rw_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_read_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dataset_write_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_accessors_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_attributes_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_bins_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_chromosomes_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_ctors_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_pixels_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_sentinel_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_weights_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/index_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/multires_cooler_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/singlecell_cooler_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_1d_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_2d_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector_balancing_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils_copy_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils_equal_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils_merge_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils_rename_chromosomes_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils_validation_test.cpp"
+)
 
 target_link_libraries(
   hictk_cooler_tests
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::cooler)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::cooler
+)
 
 target_link_system_libraries(
   hictk_cooler_tests
   PUBLIC
   Catch2::Catch2WithMain
-  std::filesystem)
+  std::filesystem
+)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 
@@ -68,7 +75,8 @@ catch_discover_tests(
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_cooler_tests
@@ -80,7 +88,8 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_cooler_tests
@@ -92,4 +101,5 @@ catch_discover_tests(
   "${PROJECT_SOURCE_DIR}"
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)

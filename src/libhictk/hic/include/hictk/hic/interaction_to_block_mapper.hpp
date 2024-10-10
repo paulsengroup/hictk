@@ -13,6 +13,7 @@
 #else
 #include <readerwriterqueue/readerwriterqueue.h>
 #endif
+#include <fmt/format.h>
 #include <zstd.h>
 
 #include <BS_thread_pool.hpp>
@@ -41,8 +42,8 @@ struct MatrixInteractionBlockFlat {
   std::vector<std::uint64_t> bin2_ids{};
   std::vector<N> counts{};
 
-  void emplace_back(ThinPixel<N>&& p);
-  void emplace_back(Pixel<N>&& p);
+  void emplace_back(const ThinPixel<N>& p);
+  void emplace_back(Pixel<N> p);
 
   [[nodiscard]] std::size_t size() const noexcept;
 
@@ -69,6 +70,7 @@ class HiCInteractionToBlockMapper {
     std::uint64_t bid;
 
     [[nodiscard]] bool operator<(const BlockID& other) const noexcept;
+    [[nodiscard]] bool operator>(const BlockID& other) const noexcept;
     [[nodiscard]] bool operator==(const BlockID& other) const noexcept;
   };
 
@@ -77,16 +79,18 @@ class HiCInteractionToBlockMapper {
     std::uint32_t size;
   };
 
+  using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;
+
  private:
   std::filesystem::path _path{};
-  filestream::FileStream _fs{};
+  filestream::FileStream<> _fs{};
   std::shared_ptr<const BinTable> _bin_table{};
 
-  using BlockIndexMap = phmap::btree_map<BlockID, std::vector<BlockIndex>>;
-  using ChromosomeIndexMap =
+  using MatrixIndexMap =
       phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, phmap::btree_set<BlockID>>;
+
   BlockIndexMap _block_index{};
-  ChromosomeIndexMap _chromosome_index{};
+  MatrixIndexMap _chromosome_index{};
 
   phmap::btree_map<BlockID, MatrixInteractionBlockFlat<float>> _blocks{};
   phmap::flat_hash_map<std::pair<Chromosome, Chromosome>, float> _pixel_sums{};
@@ -131,15 +135,17 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] bool empty(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
+  // NOLINTBEGIN(*-avoid-magic-numbers)
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel,
+  void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel,
                      std::uint32_t update_frequency = 10'000'000);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
   void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,
                      std::uint32_t update_frequency = 10'000'000);
+  // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
-  [[nodiscard]] auto chromosome_index() const noexcept -> const ChromosomeIndexMap&;
+  [[nodiscard]] auto chromosome_index() const noexcept -> const MatrixIndexMap&;
   [[nodiscard]] auto merge_blocks(const BlockID& bid) -> MatrixInteractionBlock<float>;
   [[nodiscard]] auto merge_blocks(const BlockID& bid, BinaryBuffer& bbuffer, ZSTD_DCtx_s& zstd_dctx,
                                   std::string& compression_buffer, std::mutex& mtx)
@@ -215,10 +221,29 @@ class HiCInteractionToBlockMapper {
 
 template <>
 struct std::hash<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
-  inline std::size_t operator()(
+  std::size_t operator()(
       hictk::hic::internal::HiCInteractionToBlockMapper::BlockID const& bid) const noexcept {
     return hictk::internal::hash_combine(0, bid.chrom1_id, bid.chrom2_id, bid.bid);
   }
 };
+
+namespace fmt {
+template <>
+struct formatter<hictk::hic::internal::HiCInteractionToBlockMapper::BlockID> {
+  static constexpr format_parse_context::iterator parse(const format_parse_context& ctx) {
+    if (ctx.begin() != ctx.end() && *ctx.begin() != '}') {
+      throw format_error("invalid format");
+    }
+
+    return ctx.end();
+  }
+
+  static format_context::iterator format(
+      const hictk::hic::internal::HiCInteractionToBlockMapper::BlockID& bid, format_context& ctx) {
+    return format_to(ctx.out(), FMT_STRING("{}"), bid.bid);
+  }
+};
+
+}  // namespace fmt
 
 #include "./impl/interaction_to_block_mapper_impl.hpp"  // NOLINT

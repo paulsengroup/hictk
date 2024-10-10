@@ -20,6 +20,8 @@ inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-c
 
 namespace hictk::test::transformers {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 using namespace hictk::transformers;
 
 TEST_CASE("Transformers (cooler): stats", "[transformers][short]") {
@@ -65,5 +67,7 @@ TEST_CASE("Transformers (hic): stats", "[transformers][short]") {
     CHECK(sum(last, last) == 0);
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::test::transformers

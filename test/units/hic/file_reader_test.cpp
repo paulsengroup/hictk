@@ -22,6 +22,8 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_reader {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 // NOLINTNEXTLINE(cert-err58-cpp)
 const auto pathV8 = (datadir / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
@@ -34,7 +36,6 @@ const auto pathV9 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
   CHECK_THAT(*weights.begin(), Catch::Matchers::WithinRel(value));
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
   constexpr std::array<std::uint32_t, 10> resolutions{
       1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
@@ -56,7 +57,6 @@ TEST_CASE("HiC: read header (v8)", "[hic][v8][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
   constexpr std::array<std::uint32_t, 10> resolutions{
       1'000, 5'000, 10'000, 25'000, 50'000, 100'000, 250'000, 500'000, 1'000'000, 2'500'000};
@@ -79,7 +79,6 @@ TEST_CASE("HiC: read header (v9)", "[hic][v9][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   internal::HiCFileReader s(pathV8);
   const auto chr2L = s.header().chromosomes.at("chr2L");
@@ -215,7 +214,6 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   internal::HiCFileReader s(pathV9);
   const auto chr2L = s.header().chromosomes.at("chr2L");
@@ -333,5 +331,7 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::hic::test::file_reader

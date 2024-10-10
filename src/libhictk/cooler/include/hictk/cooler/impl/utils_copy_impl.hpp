@@ -29,39 +29,39 @@
 namespace hictk::cooler::utils {
 
 inline void copy(std::string_view uri1, std::string_view uri2) {
-  const auto [path2, grp2] = cooler::parse_cooler_uri(uri2);
-  if (std::filesystem::exists(uri2) && utils::is_cooler(uri2)) {
+  const auto uri = parse_cooler_uri(uri2);
+  if (std::filesystem::exists(uri2) && is_cooler(uri2)) {
     throw std::runtime_error("destination already contains a Cooler");
   }
-  const HighFive::File dest(path2, HighFive::File::OpenOrCreate);
-  return copy(uri1, RootGroup{dest.getGroup(grp2)});
+  const HighFive::File dest(uri.file_path, HighFive::File::OpenOrCreate);
+  copy(uri1, RootGroup{dest.getGroup(uri.group_path)});
 }
 
 inline void copy(std::string_view uri1, RootGroup dest) {
   try {
-    if (!utils::is_cooler(uri1)) {
+    if (!is_cooler(uri1)) {
       throw std::runtime_error("input is not a valid Cooler");
     }
 
-    /* Attempt to open an existing HDF5 file first. Need to open the dst file
-         before the src file just in case that the dst and src are the same file
-    */
-    const auto [path1, grp1] = cooler::parse_cooler_uri(uri1);
-    const HighFive::File fin(path1, HighFive::File::ReadOnly);
+    // Attempt to open an existing HDF5 file first.
+    // Need to open the dst file before the src file just in case that the dst and src are the same
+    // file
+    const auto uri = parse_cooler_uri(uri1);
+    const HighFive::File fin(uri.file_path, HighFive::File::ReadOnly);
 
-    /* create property to pass copy options */
+    // create property to pass copy options
     auto ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
     if (ocpl_id < 0) {
       throw std::runtime_error("H5Pcreate failed");
     }
 
-    /* Create link creation property list */
+    // Create link creation property list
     auto lcpl_id = H5Pcreate(H5P_LINK_CREATE);
     if (lcpl_id < 0) {
       throw std::runtime_error("Could not create link creation property list: H5Pcreate failed");
     }
 
-    /* Set the intermediate group creation property */
+    // Set the intermediate group creation property
     if (H5Pset_create_intermediate_group(lcpl_id, 1) < 0) {
       throw std::runtime_error(
           "Could not set property for creating parent groups: H5Pset_create_intermediate_group "
@@ -69,12 +69,12 @@ inline void copy(std::string_view uri1, RootGroup dest) {
     }
 
     auto copy_h5_object = [&](const auto &src, const auto &dest_, const auto &obj) {
-      if (H5Ocopy(src.getId(),    /* Source file or group identifier */
-                  obj.data(),     /* Name of the source object to be copied */
-                  dest_.getId(),  /* Destination file or group identifier  */
-                  obj.data(),     /* Name of the destination object  */
-                  ocpl_id,        /* Object copy property list */
-                  lcpl_id) < 0) { /* Link creation property list */
+      if (H5Ocopy(src.getId(),     // Source file or group identifier
+                  obj.data(),      // Name of the source object to be copied
+                  dest_.getId(),   // Destination file or group identifier
+                  obj.data(),      // Name of the destination object
+                  ocpl_id,         // Object copy property list
+                  lcpl_id) < 0) {  // Link creation property list
         throw std::runtime_error(
             fmt::format(FMT_STRING("H5Ocopy failed for {}::/{} failed"), src.getPath(), obj));
       }
@@ -96,15 +96,15 @@ inline void copy(std::string_view uri1, RootGroup dest) {
       }
     };
 
-    for (const auto &obj : fin.getGroup(grp1).listObjectNames()) {
-      copy_h5_object(fin.getGroup(grp1), dest(), obj);
+    for (const auto &obj : fin.getGroup(uri.group_path).listObjectNames()) {
+      copy_h5_object(fin.getGroup(uri.group_path), dest(), obj);
     }
 
-    for (const auto &attr : fin.getGroup(grp1).listAttributeNames()) {
-      copy_h5_attribute(fin.getGroup(grp1), dest(), std::string{attr});
+    for (const auto &attr : fin.getGroup(uri.group_path).listAttributeNames()) {
+      copy_h5_attribute(fin.getGroup(uri.group_path), dest(), std::string{attr});
     }
 
-    /* close propertis */
+    // close properties
     if (H5Pclose(ocpl_id) < 0) {
       throw std::runtime_error("H5Pclose failed");
     }

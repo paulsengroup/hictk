@@ -33,7 +33,7 @@ void zoomify_once_cooler(const cooler::File& clr1, cooler::RootGroup entrypoint2
             std::move(entrypoint2), clr1.chromosomes(), resolution, attrs,
             cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 
-        std::vector<ThinPixel<PixelT>> buffer{500'000};
+        std::vector<ThinPixel<PixelT>> buffer{500'000};  // NOLINT(*-avoid-magic-numbers)
         cooler::MultiResFile::coarsen(clr1, clr2, buffer);
       },
       clr1.pixel_variant());

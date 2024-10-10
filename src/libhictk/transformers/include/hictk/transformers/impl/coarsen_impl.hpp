@@ -105,7 +105,7 @@ inline auto CoarsenPixels<PixelIt>::iterator::at_end(PixelIt last,
     -> iterator {
   iterator it{};
   it._pixel_it = last;
-  it._pixel_last = last;
+  it._pixel_last = std::move(last);
   it._src_bins = std::move(src_bins);
   it._dest_bins = std::move(dest_bins);
   return it;
@@ -200,8 +200,7 @@ inline void CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass2(const ColumnMe
     }
   }
 
-  using PixelMerger = transformers::PixelMerger<RowIt>;
-  PixelMerger merger(heads, tails);
+  const PixelMerger<RowIt> merger{heads, tails};
   auto first = merger.begin();
   auto last = merger.end();
 

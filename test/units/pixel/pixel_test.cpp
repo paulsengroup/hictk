@@ -20,7 +20,7 @@
 
 namespace hictk {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Pixel", "[pixel][short]") {
   const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
                          Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
@@ -126,7 +126,6 @@ TEST_CASE("Pixel", "[pixel][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
   const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
                          Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
@@ -159,7 +158,6 @@ TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Pixel: parsers", "[pixel][short]") {
   const Reference chroms{Chromosome{0, "chr1", 248'956'422}, Chromosome{1, "chr2", 242'193'529},
                          Chromosome{2, "chr3", 198'295'559}, Chromosome{3, "chr4", 190'214'555},
@@ -232,4 +230,7 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk

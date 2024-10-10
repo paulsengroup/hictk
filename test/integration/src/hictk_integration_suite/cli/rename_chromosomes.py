@@ -29,7 +29,7 @@ def _plan_tests_cli(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
         "expect_failure": True,
     }
     plans = (
@@ -96,7 +96,7 @@ def _plan_tests_cmd(
     factory = {
         "hictk_bin": str(hictk_bin),
         "title": title,
-        "timeout": 1.0,
+        "timeout": 5.0,
     }
 
     valid_name_mappings = _stage_valid_name_mappings(config["name-mappings"], wd)

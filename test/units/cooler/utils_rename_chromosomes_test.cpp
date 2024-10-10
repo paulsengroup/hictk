@@ -13,7 +13,7 @@
 
 namespace hictk::cooler::test::cooler_file {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils rename chromosomes", "[cooler][short]") {
   const Reference ref2{{0, "1", 10}, {1, "2", 10}};
   const Reference ref3{{0, "chr1", 10}, {1, "2", 10}};
@@ -44,5 +44,7 @@ TEST_CASE("Cooler: utils rename chromosomes", "[cooler][short]") {
     CHECK(chroms.contains("abc12345"));
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::cooler_file

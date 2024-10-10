@@ -15,6 +15,7 @@
 
 namespace hictk::cooler::test::attribute {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename H5Obj, typename T>
 static void compare_attribute(H5Obj& obj, std::string_view key, const T& expected) {
   static_assert(std::is_same_v<T, std::string> || std::is_fundamental_v<T>);
@@ -34,7 +35,6 @@ static void compare_attribute(H5Obj& obj, std::string_view key, const std::vecto
   }
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_CASE("Cooler: attribute write", "[cooler][short]") {
   const auto path = testdir() / "test_write_attrs.cool";
 
@@ -294,5 +294,7 @@ TEST_CASE("Cooler: attribute write", "[cooler][short]") {
     }
   }
 }
+
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::cooler::test::attribute

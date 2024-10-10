@@ -37,8 +37,8 @@
 namespace hictk::cooler {
 
 template <typename PixelIt>
-void File::append_bins(Dataset &bin1_dset, Dataset &bin2_dset, PixelIt first_pixel,
-                       PixelIt last_pixel) {
+void File::append_bins(Dataset &bin1_dset, Dataset &bin2_dset, const PixelIt &first_pixel,
+                       const PixelIt &last_pixel) {
   using PixelT = std::decay_t<decltype(*first_pixel)>;
   using T = remove_cvref_t<decltype(first_pixel->count)>;
 
@@ -66,16 +66,18 @@ PixelCoordinates pixel_to_coords(const PixelT &pixel, const BinTable &bins) {
 }
 }  // namespace internal
 
+// NOLINTBEGIN(*-unnecessary-value-param)
 template <typename PixelIt, typename N>
 void File::append_counts(Dataset &dset, const BinTable &bins, PixelIt first_pixel,
                          PixelIt last_pixel, N &sum, N &cis_sum) {
+  // NOLINTEND(*-unnecessary-value-param)
   using PixelT = typename std::iterator_traits<PixelIt>::value_type;
   using T = remove_cvref_t<decltype(first_pixel->count)>;
 
   sum = 0;
   cis_sum = 0;
 
-  dset.append(first_pixel, last_pixel, [&](const auto &pixel) {
+  dset.append(std::move(first_pixel), std::move(last_pixel), [&](const auto &pixel) {
     if (pixel.count == 0) {
       // Defining pixel_to_coords as a lambda and calling fmt::format to format the error message
       // causes a compiler segfault when using conda-forge's compiler toolchain
@@ -126,8 +128,8 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
     sumv = 0.0;
     cis_sumv = 0.0;
   } else {
-    sumv = std::int64_t(0);
-    cis_sumv = std::int64_t(0);
+    sumv = std::int64_t{0};
+    cis_sumv = std::int64_t{0};
   }
 
   // NOLINTEND(*-avoid-non-const-global-variables)
@@ -136,7 +138,8 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
         using N = remove_cvref_t<decltype(sum)>;
         auto &cis_sum = std::get<N>(cis_sumv);
 
-        File::append_counts(dataset("pixels/count"), bins(), first_pixel, last_pixel, sum, cis_sum);
+        File::append_counts(dataset("pixels/count"), bins(), std::move(first_pixel),
+                            std::move(last_pixel), sum, cis_sum);
         _attrs.nnz = dataset("pixels/bin1_id").size();
 
         update_pixel_sum(sum);
@@ -184,7 +187,7 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     throw std::runtime_error(fmt::format(FMT_STRING("dataset \"{}\" already exists"), path));
   }
 
-  typename std::iterator_traits<It>::value_type buff{};
+  const typename std::iterator_traits<It>::value_type buff{};
   auto dset = existing ? Dataset(_root_group, _root_group().getDataSet(path))
                        : Dataset(_root_group, path, buff, HighFive::DataSpace::UNLIMITED);
 
@@ -193,23 +196,23 @@ inline void File::write_weights(std::string_view name, It first_weight, It last_
     dset.write(first_weight, last_weight);
   }
 
-  dset.write_attribute("divisive_weights", std::uint8_t(divisive), overwrite_if_exists);
+  dset.write_attribute("divisive_weights", std::uint8_t{divisive}, overwrite_if_exists);
 }
 
 inline auto File::create_root_group(HighFive::File &f, std::string_view uri,
                                     bool write_sentinel_attr) -> RootGroup {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   auto grp = f.createGroup(parse_cooler_uri(uri).group_path);
   if (write_sentinel_attr) {
     Attribute::write(grp, internal::SENTINEL_ATTR_NAME, internal::SENTINEL_ATTR_VALUE);
     f.flush();
   }
 
-  return {grp};
+  return RootGroup{grp};
 }
 
 inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
   groups.emplace(root_grp.hdf5_path(), Group{root_grp, root_grp()});
 
@@ -224,7 +227,7 @@ inline auto File::create_groups(RootGroup &root_grp) -> GroupMap {
 }
 
 inline auto File::create_groups(RootGroup &root_grp, Group chroms_grp, Group bins_grp) -> GroupMap {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   GroupMap groups(MANDATORY_GROUP_NAMES.size() + 1);
   root_grp().createHardLink("chroms", chroms_grp());
   root_grp().createHardLink("bins", bins_grp());
@@ -259,7 +262,8 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
 
   const auto default_cprop = Dataset::init_create_props(compression_lvl, DEFAULT_HDF5_CHUNK_SIZE);
 
-  auto create_dataset = [&](const auto &path, const auto &type, auto aprop, auto cprop) {
+  auto create_dataset = [&](const auto &path, const auto &type, const auto &aprop,
+                            const auto &cprop) {
     using T = remove_cvref_t<decltype(type)>;
     if constexpr (is_string_v<T>) {
       const auto &chrom_with_longest_name = chroms.chromosome_with_longest_name();
@@ -292,7 +296,7 @@ inline auto File::create_datasets(RootGroup &root_grp, const Reference &chroms,
 
 inline void File::write_standard_attributes(RootGroup &root_grp, const Attributes &attributes,
                                             bool skip_sentinel_attr) {
-  [[maybe_unused]] HighFive::SilenceHDF5 silencer{};  // NOLINT
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   if (attributes.assembly) {
     Attribute::write(root_grp(), "assembly", *attributes.assembly);
   }
@@ -413,11 +417,12 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
     return;
   }
 
+  assert(_attrs.nnz.has_value());  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   auto nnz = static_cast<std::uint64_t>(*_attrs.nnz);
   PixelCoordinates first_pixel_in_row(get_last_bin_written());
 
   if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
-    std::for_each(first_pixel, last_pixel, [&](const Pixel<T> &p) {
+    std::for_each(std::move(first_pixel), std::move(last_pixel), [&](const Pixel<T> &p) {
       if (first_pixel_in_row.bin1 != p.coords.bin1) {
         first_pixel_in_row = p.coords;
         index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);
@@ -425,7 +430,7 @@ inline void File::update_indexes(PixelIt first_pixel, PixelIt last_pixel) {
       nnz++;
     });
   } else {
-    std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &p) {
+    std::for_each(std::move(first_pixel), std::move(last_pixel), [&](const ThinPixel<T> &p) {
       if (first_pixel_in_row.bin1.id() != p.bin1_id) {
         first_pixel_in_row = {bins().at(p.bin1_id), bins().at(p.bin2_id)};
         index().set_offset_by_bin_id(first_pixel_in_row.bin1.id(), nnz);

@@ -39,44 +39,58 @@ inline BinTable::BinTable(Reference chroms, const std::vector<I> &start_pos,
                           const std::vector<I> &end_pos, I bin_offset)
     : BinTable(BinTableVariable(std::move(chroms), start_pos, end_pos, bin_offset)) {}
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline std::size_t BinTable::size() const noexcept {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.size(); }, _table);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline bool BinTable::empty() const noexcept { return size() == 0; }
 
-inline std::size_t BinTable::num_chromosomes() const {
+// NOLINTNEXTLINE(bugprone-exception-escape)
+inline std::size_t BinTable::num_chromosomes() const noexcept {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.num_chromosomes(); }, _table);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 constexpr std::uint32_t BinTable::resolution() const noexcept {
-  if (type() == BinTable::Type::fixed) {
+  assert(!_table.valueless_by_exception());
+  if (type() == Type::fixed) {
     return std::get<BinTableFixed>(_table).resolution();
   }
   return 0;
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 constexpr const Reference &BinTable::chromosomes() const noexcept {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) -> const Reference & { return t.chromosomes(); }, _table);
 }
 
 constexpr bool BinTable::has_fixed_resolution() const noexcept { return type() == Type::fixed; }
 
 constexpr auto BinTable::type() const noexcept -> Type {
+  assert(!_table.valueless_by_exception());
   return std::holds_alternative<BinTableFixed>(_table) ? Type::fixed : Type::variable;
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 constexpr const std::vector<std::uint64_t> &BinTable::num_bin_prefix_sum() const noexcept {
+  assert(!_table.valueless_by_exception());
   return std::visit(
       [&](const auto &t) -> const std::vector<std::uint64_t> & { return t.num_bin_prefix_sum(); },
       _table);
 }
 
 inline auto BinTable::begin() const -> iterator {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return iterator{t.begin()}; }, _table);
 }
 
 inline auto BinTable::end() const -> iterator {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return iterator{t.end()}; }, _table);
 }
 
@@ -85,6 +99,7 @@ inline auto BinTable::cbegin() const -> iterator { return begin(); }
 inline auto BinTable::cend() const -> iterator { return end(); }
 
 inline BinTable BinTable::subset(const Chromosome &chrom) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return BinTable{t.subset(chrom)}; }, _table);
 }
 
@@ -97,7 +112,8 @@ inline BinTable BinTable::subset(std::uint32_t chrom_id) const {
 }
 
 inline auto BinTable::find_overlap(const GenomicInterval &query) const
-    -> std::pair<BinTable::iterator, BinTable::iterator> {
+    -> std::pair<iterator, iterator> {
+  assert(!_table.valueless_by_exception());
   return std::visit(
       [&](const auto &t) {
         auto its = t.find_overlap(query);
@@ -110,67 +126,75 @@ inline auto BinTable::find_overlap(const GenomicInterval &query) const
 }
 
 inline auto BinTable::find_overlap(const Chromosome &chrom, std::uint32_t start,
-                                   std::uint32_t end) const
-    -> std::pair<BinTable::iterator, BinTable::iterator> {
+                                   std::uint32_t end) const -> std::pair<iterator, iterator> {
   return find_overlap(GenomicInterval{chrom, start, end});
 }
 
 inline auto BinTable::find_overlap(std::string_view chrom_name, std::uint32_t start,
-                                   std::uint32_t end) const
-    -> std::pair<BinTable::iterator, BinTable::iterator> {
+                                   std::uint32_t end) const -> std::pair<iterator, iterator> {
   return find_overlap(chromosomes().at(chrom_name), start, end);
 }
 
 inline auto BinTable::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
-                                   std::uint32_t end) const
-    -> std::pair<BinTable::iterator, BinTable::iterator> {
+                                   std::uint32_t end) const -> std::pair<iterator, iterator> {
   return find_overlap(chromosomes().at(chrom_id), start, end);
 }
 
 // Map bin_id to Bin
 inline Bin BinTable::at(std::uint64_t bin_id) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at(bin_id); }, _table);
 }
 
 inline std::pair<Bin, Bin> BinTable::at(const GenomicInterval &gi) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at(gi); }, _table);
 }
 
 inline Bin BinTable::at(const Chromosome &chrom, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at(chrom, pos); }, _table);
 }
 
 inline Bin BinTable::at(std::string_view chrom_name, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at(chrom_name, pos); }, _table);
 }
 
 inline Bin BinTable::at(std::uint32_t chrom_id, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at(chrom_id, pos); }, _table);
 }
 
 inline Bin BinTable::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.at_hint(bin_id, chrom); }, _table);
 }
 
 // Map genomic coords to bin_id
 inline std::pair<std::uint64_t, std::uint64_t> BinTable::map_to_bin_ids(
     const GenomicInterval &gi) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.map_to_bin_ids(gi); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(const Chromosome &chrom, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom, pos); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(std::string_view chrom_name, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom_name, pos); }, _table);
 }
 
 inline std::uint64_t BinTable::map_to_bin_id(std::uint32_t chrom_id, std::uint32_t pos) const {
+  assert(!_table.valueless_by_exception());
   return std::visit([&](const auto &t) { return t.map_to_bin_id(chrom_id, pos); }, _table);
 }
 
 inline bool BinTable::operator==(const BinTable &other) const {
+  assert(!_table.valueless_by_exception());
   return std::visit(
       [&](const auto &t1) {
         try {
@@ -204,6 +228,7 @@ template <typename It>
 inline BinTable::iterator::iterator(It it) noexcept : _it(it) {}
 
 constexpr bool BinTable::iterator::operator==(const iterator &other) const {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
@@ -217,6 +242,7 @@ constexpr bool BinTable::iterator::operator!=(const iterator &other) const {
 }
 
 constexpr bool BinTable::iterator::operator<(const iterator &other) const {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
@@ -226,6 +252,7 @@ constexpr bool BinTable::iterator::operator<(const iterator &other) const {
 }
 
 constexpr bool BinTable::iterator::operator<=(const iterator &other) const {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
@@ -235,6 +262,7 @@ constexpr bool BinTable::iterator::operator<=(const iterator &other) const {
 }
 
 constexpr bool BinTable::iterator::operator>(const iterator &other) const {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
@@ -244,6 +272,7 @@ constexpr bool BinTable::iterator::operator>(const iterator &other) const {
 }
 
 constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);
@@ -253,57 +282,68 @@ constexpr bool BinTable::iterator::operator>=(const iterator &other) const {
 }
 
 inline auto BinTable::iterator::operator*() const -> value_type {
+  assert(!_it.valueless_by_exception());
   return std::visit([&](const auto &it) { return *it; }, _it);
 }
 inline auto BinTable::iterator::operator[](difference_type i) const -> value_type {
+  assert(!_it.valueless_by_exception());
   return std::visit([&](const auto &it) { return it[i]; }, _it);
 }
 
 inline auto BinTable::iterator::operator++() -> iterator & {
+  assert(!_it.valueless_by_exception());
   std::visit([&](auto &it) { std::ignore = ++it; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator++(int) -> iterator {
+  assert(!_it.valueless_by_exception());
   auto old_it = *this;
   std::visit([&](auto &it) { std::ignore = ++it; }, _it);
   return old_it;
 }
 
 inline auto BinTable::iterator::operator+=(difference_type i) -> iterator & {
+  assert(!_it.valueless_by_exception());
   std::visit([&](auto &it) { std::ignore = it += i; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator+(difference_type i) const -> iterator {
+  assert(!_it.valueless_by_exception());
   auto it = *this;
   it += i;
   return it;
 }
 
 inline auto BinTable::iterator::operator--() -> iterator & {
+  assert(!_it.valueless_by_exception());
   std::visit([&](auto &it) { std::ignore = --it; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator--(int) -> iterator {
+  assert(!_it.valueless_by_exception());
   auto old_it = *this;
   std::visit([&](auto &it) { std::ignore = --it; }, _it);
   return old_it;
 }
 
 inline auto BinTable::iterator::operator-=(difference_type i) -> iterator & {
+  assert(!_it.valueless_by_exception());
   std::visit([&](auto &it) { std::ignore = it -= i; }, _it);
   return *this;
 }
 
 inline auto BinTable::iterator::operator-(difference_type i) const -> iterator {
+  assert(!_it.valueless_by_exception());
   auto it = *this;
   it -= i;
   return it;
 }
 
 inline auto BinTable::iterator::operator-(const iterator &other) const -> difference_type {
+  assert(!_it.valueless_by_exception());
   return std::visit(
       [&](const auto &it1) {
         const auto &it2 = std::get<remove_cvref_t<decltype(it1)>>(other._it);

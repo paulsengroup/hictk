@@ -13,7 +13,7 @@
 
 namespace hictk::test::bin_table {
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Bin", "[bin][short]") {
   const Chromosome chrom1{0, "chr1", 50};
   const Chromosome chrom2{1, "chr2", 10};
@@ -102,4 +102,6 @@ TEST_CASE("Bin", "[bin][short]") {
     CHECK(fmt::format(FMT_STRING("{:raw}"), bin2) == "123");
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+
 }  // namespace hictk::test::bin_table

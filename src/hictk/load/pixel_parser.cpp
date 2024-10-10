@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "./common.hpp"
+#include "./init_bin_table.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/string_utils.hpp"
@@ -191,6 +192,33 @@ Header PixelParser::parse_header(Format format_) {
   }
 
   return {*assembly, Reference{chrom_names.begin(), chrom_names.end(), chrom_sizes.begin()}};
+}
+
+PixelParser init_pixel_parser(Format format, const std::filesystem::path& path_to_interactions,
+                              const std::filesystem::path& path_to_chrom_sizes,
+                              const std::filesystem::path& path_to_bins, std::uint32_t resolution,
+                              std::string_view assembly) {
+  assert(format == Format::_4DN || !path_to_chrom_sizes.empty() || !path_to_bins.empty());
+  BinTable bins{};
+
+  if (!path_to_bins.empty()) {
+    bins = init_bin_table(path_to_chrom_sizes, path_to_bins, resolution);
+  } else if (!path_to_chrom_sizes.empty()) {
+    bins = BinTable{Reference::from_chrom_sizes(path_to_chrom_sizes), resolution};
+  }
+
+  switch (format) {
+    case Format::_4DN: {
+      if (bins.empty()) {
+        assert(resolution != 0);
+        return {path_to_interactions, resolution, format, assembly};
+      }
+      return {path_to_interactions, std::move(bins), format, assembly};
+    }
+    default:
+      return {path_to_interactions, std::move(bins), format, assembly};
+  }
+  unreachable_code();
 }
 
 }  // namespace hictk::tools

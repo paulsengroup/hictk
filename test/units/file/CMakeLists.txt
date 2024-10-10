@@ -10,19 +10,28 @@ include(Catch)
 
 add_executable(hictk_file_tests)
 
-target_sources(hictk_file_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp
-                                        ${CMAKE_CURRENT_SOURCE_DIR}/multires_file_test.cpp)
+target_sources(
+  hictk_file_tests
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/file_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/multires_file_test.cpp
+)
 
 target_link_libraries(
   hictk_file_tests
-  PRIVATE hictk_project_warnings hictk_project_options
-  PUBLIC hictk::file)
+  PRIVATE
+    hictk_project_warnings
+    hictk_project_options
+  PUBLIC
+    hictk::file
+)
 
 target_link_system_libraries(
   hictk_file_tests
   PUBLIC
   Catch2::Catch2WithMain
-  std::filesystem)
+  std::filesystem
+)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Testing/)
 
@@ -40,7 +49,8 @@ catch_discover_tests(
   ${CMAKE_CURRENT_BINARY_DIR}/Testing/
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_file_tests
@@ -52,7 +62,8 @@ catch_discover_tests(
   ${PROJECT_SOURCE_DIR}
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
 
 catch_discover_tests(
   hictk_file_tests
@@ -64,4 +75,5 @@ catch_discover_tests(
   ${PROJECT_SOURCE_DIR}
   EXTRA_ARGS
   --success
-  --skip-benchmarks)
+  --skip-benchmarks
+)
