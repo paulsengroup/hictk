@@ -85,7 +85,7 @@ void Cli::make_zoomify_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .mcool and .hic files, respectively.")
-      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL))
+      ->check(CLI::Bound(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL))
       ->capture_default_str();
 
   sc.add_option(
@@ -292,8 +292,8 @@ void Cli::transform_args_zoomify_subcommand() {
   const auto& sc = *_cli.get_subcommand("zoomify");
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 
   c.input_format = infer_input_format(c.path_to_input);
   c.output_format = infer_output_format(c.path_to_output);

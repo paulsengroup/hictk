@@ -4,7 +4,15 @@
 
 
 import os
-import re
+
+# Define the canonical URL if you are using a custom domain on Read the Docs
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+
+# Tell Jinja2 templates the build is running on Read the Docs
+if os.environ.get("READTHEDOCS", "") == "True":
+    if "html_context" not in globals():
+        html_context = {}
+    html_context["READTHEDOCS"] = True
 
 # -- General configuration ------------------------------------------------
 
@@ -16,7 +24,6 @@ import re
 # ones.
 extensions = [
     "sphinx_copybutton",
-    "sphinxcontrib.rsvgconverter",
     "sphinxcontrib.moderncmakedomain",
     "sphinx.ext.intersphinx",
 ]
@@ -211,13 +218,6 @@ latex_elements = {
     "papersize": "a4paper",
     "pointsize": "10pt",
     "classoptions": ",openany,oneside",
-    "preamble": r"""
-\usepackage{MnSymbol}
-\DeclareUnicodeCharacter{25CB}{\ensuremath{\circ}}
-\DeclareUnicodeCharacter{25CF}{\ensuremath{\bullet}}
-\DeclareUnicodeCharacter{21B5}{\ensuremath{\rhookswarrow}}
-\DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}
-""",
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -246,6 +246,11 @@ latex_documents = [
 
 # If false, no module index is generated.
 # latex_domain_indices = True
+
+linkcheck_ignore = [
+    r"https://github\.com/4dn-dcic/pairix/blob/master/pairs_format_specification\.md.*",
+    r"https://hictk.*.org\.readthedocs\.build/.*",
+]
 
 primary_domain = "cpp"
 highlight_language = "cpp"

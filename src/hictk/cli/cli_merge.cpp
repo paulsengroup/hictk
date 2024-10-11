@@ -78,7 +78,7 @@ void Cli::make_merge_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL));
+      ->check(CLI::Bound(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL));
   sc.add_option(
       "-t,--threads",
       c.threads,
@@ -181,8 +181,8 @@ void Cli::transform_args_merge_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

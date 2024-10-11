@@ -88,7 +88,7 @@ void Cli::make_fix_mcool_subcommand() {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -158,8 +158,8 @@ void Cli::transform_args_fix_mcool_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

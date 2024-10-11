@@ -40,7 +40,7 @@ void Cli::make_load_subcommand() {
       "interactions",
       c.input_path,
       "Path to a file with the interactions to be loaded.\n"
-      "Common compression formats are supported (namely, gzip, bzip2, lz4, lzo, and zstd).\n"
+      "Common compression formats are supported (namely, bzip2, gzip, lz4, lzo, xz, and zstd).\n"
       "Pass \"-\" to indicate that interactions should be read from stdin.")
       ->check(CLI::ExistingFile | CLI::IsMember({"-"}))
       ->required();
@@ -163,7 +163,7 @@ void Cli::make_load_subcommand() {
       c.compression_lvl,
       "Compression level used to compress interactions.\n"
       "Defaults to 6 and 10 for .cool and .hic files, respectively.")
-      ->check(CLI::Bound(std::uint8_t{1}, MAX_HIC_COMPRESSION_LEVEL));
+      ->check(CLI::Bound(std::int16_t{1}, MAX_HIC_COMPRESSION_LEVEL));
 
   sc.add_option(
       "-t,--threads",
@@ -272,8 +272,8 @@ void Cli::transform_args_load_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

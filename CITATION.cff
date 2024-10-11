@@ -15,8 +15,19 @@ abstract: 'Blazing fast toolkit to work with .hic and .cool files.'
 doi: '10.5281/zenodo.8214220'
 url: 'https://github.com/paulsengroup/hictk'
 repository-code: 'https://github.com/paulsengroup/hictk'
+repository-artifact: 'https://github.com/paulsengroup/hictk/pkgs/container/hictk'
 type: software
 license: MIT
+keywords:
+  - bioinformatics
+  - cxx
+  - conversion
+  - cooler
+  - cli-application
+  - hic
+  - cxx17
+  - cxx-library
+  - hictk
 preferred-citation:
   type: article
   authors:
@@ -30,10 +41,22 @@ preferred-citation:
     orcid: 'https://orcid.org/0000-0002-7918-5495'
     email: jonas.paulsen@ibv.uio.no
     affiliation: 'Department of Biosciences, University of Oslo'
-  doi: '10.1101/2023.11.26.568707'
-  url: 'https://doi.org/10.1101/2023.11.26.568707'
-  journal: 'Cold Spring Harbor Laboratory'
-  year: 2023
-  month: 11
+  doi: '10.1093/bioinformatics/btae408'
+  url: 'https://academic.oup.com/bioinformatics/article/40/7/btae408/7698028'
+  journal: 'Bioinformatics'
+  year: 2024
+  month: 06
   title: 'hictk: blazing fast toolkit to work with .hic and .cool files'
-  abstract: 'We developed hictk, a toolkit that can transparently operate on .hic and .cool files with excellent performance. The toolkit is written in C++ and consists of a C++ library with Python bindings as well as CLI tools to perform common operations directly from the shell, including converting between .hic and .mcool formats. We benchmark the performance of hictk and compare it with other popular tools and libraries. We conclude that hictk significantly outperforms existing tools while providing the flexibility of natively working with both file formats without code duplication.'
+  abstract: >
+    Hi-C is gaining prominence as a method for mapping genome organization.
+    With declining sequencing costs and a growing demand for higher-resolution data, efficient tools for processing Hi-C datasets at different resolutions are crucial.
+    Over the past decade, the .hic and Cooler file formats have become the de-facto standard to store interaction matrices produced by Hi-C experiments in binary format.
+    Interoperability issues make it unnecessarily difficult to convert between the two formats and to develop applications that can process each format natively.
+
+    We developed hictk, a toolkit that can transparently operate on .hic and .cool files with excellent performance.
+    The toolkit is written in C++ and consists of a C++ library with Python and R bindings as well as CLI tools to perform common operations directly from the shell, including converting between .hic and .mcool formats. We benchmark the performance of hictk and compare it with other popular tools and libraries.
+    We conclude that hictk significantly outperforms existing tools while providing the flexibility of natively working with both file formats without code duplication.
+
+    The hictk library, Python bindings and CLI tools are released under the MIT license as a multi-platform application available at github.com/paulsengroup/hictk.
+    Pre-built binaries for Linux and macOS are available on bioconda.
+    Python bindings for hictk are available on GitHub at github.com/paulsengroup/hictkpy, while R bindings are available on GitHub at github.com/paulsengroup/hictkR.

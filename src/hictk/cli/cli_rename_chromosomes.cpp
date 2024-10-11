@@ -13,13 +13,12 @@
 
 namespace hictk::tools {
 void Cli::make_rename_chromosomes_subcommand() {
-  auto& sc =
-      *_cli.add_subcommand("rename-chromosomes", "Rename chromosomes found in a Cooler file.")
-           ->fallthrough()
-           ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
-             assert(_config.index() == 0);
-             _config = RenameChromosomesConfig{};
-           });
+  auto& sc = *_cli.add_subcommand("rename-chromosomes", "Rename chromosomes found in Cooler files.")
+                  ->fallthrough()
+                  ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
+                    assert(_config.index() == 0);
+                    _config = RenameChromosomesConfig{};
+                  });
 
   _config = RenameChromosomesConfig{};
   auto& c = std::get<RenameChromosomesConfig>(_config);
@@ -100,8 +99,8 @@ void Cli::transform_args_rename_chromosomes_subcommand() {
   auto& c = std::get<RenameChromosomesConfig>(_config);
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

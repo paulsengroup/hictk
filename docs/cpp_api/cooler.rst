@@ -121,13 +121,16 @@ Single-resolution Cooler (.cool)
   **Normalization**
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> read_normalization(std::string_view normalization, bool rescale = false) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(std::string_view normalization, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization, bool rescale = false) const;
-  .. cpp:function:: std::shared_ptr<const balancing::Weights> normalization(const balancing::Method &normalization, balancing::Weights::Type type, bool rescale = false) const;
-
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale = false) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
   .. cpp:function:: bool purge_weights(std::string_view name = "");
@@ -179,7 +182,7 @@ Multi-resolution Cooler (.mcool)
   **Others**
 
   .. cpp:function:: [[nodiscard]] static std::uint32_t compute_base_resolution(const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res);
-  .. cpp:function:: static void coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<std::int32_t>>& buffer);
+  .. cpp:function:: template <typename N = std::int32_t> static void coarsen(const File& clr1, File& clr2, std::vector<ThinPixel<N>>& buffer);
 
 Single-cell Cooler (.scool)
 ---------------------------

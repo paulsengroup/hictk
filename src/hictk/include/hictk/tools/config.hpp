@@ -18,14 +18,14 @@ namespace hictk::tools {
 
 // NOLINTBEGIN(*-avoid-magic-numbers)
 
-static constexpr std::uint8_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
-static constexpr std::uint8_t MAX_COOL_COMPRESSION_LEVEL = 9;
+static constexpr std::int16_t DEFAULT_COOL_COMPRESSION_LEVEL = 6;
+static constexpr std::int16_t MAX_COOL_COMPRESSION_LEVEL = 9;
 
-static constexpr std::uint8_t DEFAULT_HIC_COMPRESSION_LEVEL = 10;
-static constexpr std::uint8_t MAX_HIC_COMPRESSION_LEVEL = 12;
+static constexpr std::int16_t DEFAULT_HIC_COMPRESSION_LEVEL = 10;
+static constexpr std::int16_t MAX_HIC_COMPRESSION_LEVEL = 12;
 
-static constexpr std::uint8_t DEFAULT_ZSTD_COMPRESSION_LEVEL = 3;
-static constexpr std::uint8_t MAX_ZSTD_COMPRESSION_LEVEL = 19;
+static constexpr std::int16_t DEFAULT_ZSTD_COMPRESSION_LEVEL = 3;
+static constexpr std::int16_t MAX_ZSTD_COMPRESSION_LEVEL = 19;
 
 struct BalanceICEConfig {
   std::filesystem::path path_to_input{};
@@ -43,11 +43,11 @@ struct BalanceICEConfig {
   bool in_memory{false};
   bool symlink_to_weight{true};
   bool stdout_{false};
-  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
+  std::int16_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   bool force{false};
 };
 
@@ -65,11 +65,11 @@ struct BalanceSCALEConfig {
   bool in_memory{false};
   bool symlink_to_weight{true};
   bool stdout_{false};
-  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
+  std::int16_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t threads{1};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   bool force{false};
 };
 
@@ -83,7 +83,7 @@ struct BalanceVCConfig {
   bool symlink_to_weight{true};
   bool stdout_{false};
 
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   bool force{false};
 };
 
@@ -106,7 +106,7 @@ struct ConvertConfig {
   std::size_t threads{2};
   std::size_t chunk_size{10'000'000};
 
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   bool force{false};
 };
 
@@ -129,7 +129,7 @@ struct DumpConfig {
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
   std::uint32_t resolution{};
-  std::uint8_t verbosity{2};
+  std::int16_t verbosity{2};
   bool force{false};
 };
 
@@ -142,11 +142,11 @@ struct FixMcoolConfig {
   bool check_base_resolution{false};
 
   bool in_memory{false};
-  std::uint8_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
+  std::int16_t zstd_compression_lvl{DEFAULT_ZSTD_COMPRESSION_LEVEL};
   std::size_t chunk_size{10'000'000};
 
   std::size_t threads{1};
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   bool force{false};
 };
 
@@ -176,7 +176,7 @@ struct LoadConfig {
   std::size_t threads{2};
   std::uint32_t compression_lvl{DEFAULT_COOL_COMPRESSION_LEVEL};
 
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
   std::size_t batch_size{10'000'000};
 };
 
@@ -195,7 +195,7 @@ struct MergeConfig {
   std::string count_type{"int"};
 
   bool force{false};
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
 };
 
 struct MetadataConfig {
@@ -205,7 +205,7 @@ struct MetadataConfig {
   bool include_file_path{false};
   bool recursive{false};
 
-  std::uint8_t verbosity{2};
+  std::int16_t verbosity{2};
 };
 
 struct RenameChromosomesConfig {
@@ -213,7 +213,7 @@ struct RenameChromosomesConfig {
   std::filesystem::path path_to_name_mappings{};
   bool add_chr_prefix{false};
   bool remove_chr_prefix{false};
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
 };
 
 struct ValidateConfig {
@@ -223,7 +223,7 @@ struct ValidateConfig {
   bool include_file_path{true};
   bool exhaustive{true};
   bool quiet{false};
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
 };
 
 struct ZoomifyConfig {
@@ -243,7 +243,7 @@ struct ZoomifyConfig {
   bool skip_all_vs_all_matrix{false};
 
   bool force{false};
-  std::uint8_t verbosity{3};
+  std::int16_t verbosity{3};
 };
 
 // NOLINTEND(*-avoid-magic-numbers)

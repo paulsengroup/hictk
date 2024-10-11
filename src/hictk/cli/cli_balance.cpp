@@ -25,8 +25,8 @@
 namespace hictk::tools {
 
 void Cli::make_balance_subcommand() {
-  auto& sc = *_cli.add_subcommand("balance", "Balance Hi-C matrices using ICE, SCALE, or VC.")
-                  ->fallthrough();
+  auto& sc =
+      *_cli.add_subcommand("balance", "Balance Hi-C files using ICE, SCALE, or VC.")->fallthrough();
 
   sc.require_subcommand(1);
 
@@ -36,7 +36,7 @@ void Cli::make_balance_subcommand() {
 }
 
 void Cli::make_ice_balance_subcommand(CLI::App& app) {
-  auto& sc = *app.add_subcommand("ice", "Balance Hi-C matrices using ICE.")
+  auto& sc = *app.add_subcommand("ice", "Balance Hi-C files using ICE.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -154,7 +154,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -167,7 +167,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
 }
 
 void Cli::make_scale_balance_subcommand(CLI::App& app) {
-  auto& sc = *app.add_subcommand("scale", "Balance Hi-C matrices using SCALE.")
+  auto& sc = *app.add_subcommand("scale", "Balance Hi-C files using SCALE.")
                   ->fallthrough()
                   ->preparse_callback([this]([[maybe_unused]] std::size_t i) {
                     assert(_config.index() == 0);
@@ -272,7 +272,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
       "Compression level used to compress temporary files using ZSTD.")
-      ->check(CLI::Range(std::uint8_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
+      ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(
       "-f,--force",
@@ -423,8 +423,8 @@ void Cli::transform_args_ice_balance_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 void Cli::transform_args_scale_balance_subcommand() {
@@ -453,8 +453,8 @@ void Cli::transform_args_scale_balance_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 void Cli::transform_args_vc_balance_subcommand() {
@@ -478,8 +478,8 @@ void Cli::transform_args_vc_balance_subcommand() {
   }
 
   // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);
-  c.verbosity = static_cast<std::uint8_t>(spdlog::level::critical) - c.verbosity;
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 }
 
 }  // namespace hictk::tools

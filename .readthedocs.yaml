@@ -5,18 +5,19 @@
 version: 2
 
 build:
-  os: ubuntu-22.04
-  apt_packages:
-    - librsvg2-bin
+  os: ubuntu-24.04
   tools:
-    python: "3.11"
+    python: "3.12"
 
-sphinx:
-  configuration: docs/conf.py
-
-python:
-  install:
-    - requirements: docs/requirements.txt
+  commands:
+    - pip install -r docs/requirements.txt
+    - docs/update_index_links.py --root-dir "$PWD" --inplace
+    - make -C docs linkcheck
+    - make -C docs html
+    - make -C docs latexpdf
+    - mkdir -p "$READTHEDOCS_OUTPUT/pdf"
+    - cp -r docs/_build/html "$READTHEDOCS_OUTPUT/"
+    - cp docs/_build/latex/hictk.pdf "$READTHEDOCS_OUTPUT/pdf/"
 
 formats:
   - pdf
