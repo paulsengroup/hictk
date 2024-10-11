@@ -66,7 +66,14 @@ target_sources(
     ${CMAKE_CURRENT_SOURCE_DIR}/zoomify/zoomify.cpp
 )
 
-target_compile_definitions(hictk PRIVATE SPDLOG_ACTIVE_LEVEL=$<IF:$<CONFIG:Debug>,SPDLOG_LEVEL_DEBUG,SPDLOG_LEVEL_INFO>)
+target_compile_definitions(
+  hictk
+  PRIVATE
+    SPDLOG_ACTIVE_LEVEL=$<IF:$<CONFIG:Debug>,SPDLOG_LEVEL_DEBUG,SPDLOG_LEVEL_INFO>
+    SPDLOG_CLOCK_COARSE
+    SPDLOG_NO_THREAD_ID
+    SPDLOG_DISABLE_DEFAULT_LOGGER
+)
 target_include_directories(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(
   hictk
