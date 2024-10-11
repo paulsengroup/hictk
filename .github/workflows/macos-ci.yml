@@ -71,8 +71,10 @@ jobs:
             includes.push({ compiler_name: 'apple-clang', compiler_version: '14', os: 'macos-12', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -168,7 +170,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore Conan cache (arm64)
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-14' || matrix.os == 'macos-15'
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-arm64.outputs.conan-key }}
@@ -192,7 +194,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore CMake configs (arm64; Debug)
-        if: matrix.build_type == 'Debug' && matrix.os == 'macos-14'
+        if: matrix.build_type == 'Debug' && (matrix.os == 'macos-14' || matrix.os == 'macos-15')
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-arm64.outputs.cmake-prefix-debug-key }}
@@ -200,7 +202,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore CMake configs (arm64; Release)
-        if: matrix.build_type == 'Release' && matrix.os == 'macos-14'
+        if: matrix.build_type == 'Release' && (matrix.os == 'macos-14' || matrix.os == 'macos-15')
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-arm64.outputs.cmake-prefix-release-key }}
