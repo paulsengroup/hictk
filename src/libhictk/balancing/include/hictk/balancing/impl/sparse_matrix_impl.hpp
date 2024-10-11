@@ -773,7 +773,7 @@ inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
-    for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
+    for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize(marg, false);
@@ -809,7 +809,7 @@ inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
-    for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
+    for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.marginalize_nnz(marg, false);
@@ -846,7 +846,7 @@ inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecim
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
-    for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
+    for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.times_outer_product_marg(marg, biases, weights, false);
@@ -883,7 +883,7 @@ inline void FileBackedSparseMatrix::multiply(VectorOfAtomicDecimals& buffer,
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
-    for (const auto offset : nonstd::span(_index).subspan(istart, iend - istart)) {
+    for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
       fs.unsafe_seekg(static_cast<std::streampos>(offset));
       matrix.deserialize(fs, buff, *zstd_dctx);
       matrix.multiply(buffer, cfx, false);
