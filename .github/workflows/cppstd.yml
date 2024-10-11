@@ -207,6 +207,12 @@ jobs:
     needs: [build-project]
     uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
     name: Clean stale Ccache cache
+    strategy:
+      fail-fast: false
+      matrix:
+        cppstd:
+          - 20
+          - 23
     permissions:
       actions: write
     if: needs.build-project.outputs.ccache-old-cache-key != ''

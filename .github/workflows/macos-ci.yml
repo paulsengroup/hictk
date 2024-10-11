@@ -303,9 +303,12 @@ jobs:
           ZSTD_CLEVEL: 1
 
   clean-stale-cache:
-    needs: [build-project]
+    needs: [matrix-factory, build-project]
     uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
     name: Clean stale Ccache cache
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
     permissions:
       actions: write
     if: needs.build-project.outputs.ccache-old-cache-key != ''
