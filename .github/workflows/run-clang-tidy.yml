@@ -173,15 +173,49 @@ jobs:
         env:
           ZSTD_CLEVEL: 1
 
+      - name: Generate list of stale cache entries
+        id: stale-cache
+        if: steps.cache-ccache.outputs.cache-matched-key != ''
+        run: |
+          fname='stale-cache-run-clang-tidy.txt'
+          echo '${{ steps.cache-ccache.outputs.cache-matched-key }}' > "$fname"
+
+          echo "name=$fname" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Upload stale cache entries
+        if: steps.cache-ccache.outputs.cache-matched-key != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.stale-cache.outputs.name }}
+          path: "${{ steps.stale-cache.outputs.name }}"
+          if-no-files-found: error
+          retention-days: 1
+
   clean-stale-cache:
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/evict-gha-cache.yml@main
-    name: Clean stale Ccache cache
+    name: Evict stale cache entries
+    runs-on: ubuntu-latest
     permissions:
       actions: write
-    if: needs.build-project.outputs.ccache-old-cache-key != ''
-    with:
-      cache-key: "${{ needs.build-project.outputs.ccache-old-cache-key }}"
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: stale-cache-*
+          merge-multiple: true
+
+      - name: Evict cache entries
+        continue-on-error: true
+        run: |
+          while read entry; do
+            if ! grep -q '/heads/main' <(echo "$entry"); then
+              gh cache delete --repo '${{ github.repository }}' "$entry"
+            fi
+          done < <(cat stale-cache*.txt)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   clang-tidy-status-check:
     name: Status Check (clang-tidy)
