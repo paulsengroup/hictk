@@ -9,7 +9,6 @@ on:
     paths:
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cppstd.yml"
-      - ".github/workflows/evict-gha-cache.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"
@@ -22,7 +21,6 @@ on:
     paths:
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cppstd.yml"
-      - ".github/workflows/evict-gha-cache.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"

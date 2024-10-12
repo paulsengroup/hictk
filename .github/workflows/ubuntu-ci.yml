@@ -9,7 +9,6 @@ on:
     paths:
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cache-test-dataset.yml"
-      - ".github/workflows/evict-gha-cache.yml"
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
       - "examples/**"
@@ -23,7 +22,6 @@ on:
     paths:
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cache-test-dataset.yml"
-      - ".github/workflows/evict-gha-cache.yml"
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
       - "examples/**"
