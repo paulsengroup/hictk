@@ -55,9 +55,6 @@ jobs:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       options: "--user=root"
 
-    outputs:
-      ccache-old-cache-key: ${{ steps.cache-ccache.outputs.cache-matched-key }}
-
     env:
       CCACHE_DIR: "/opt/ccache-cache"
       CCACHE_COMPRESSLEVEL: "1"
@@ -209,11 +206,12 @@ jobs:
       - name: Evict cache entries
         continue-on-error: true
         run: |
+          set -x
           while read entry; do
             if ! grep -q '/heads/main' <(echo "$entry"); then
               gh cache delete --repo '${{ github.repository }}' "$entry"
             fi
-          done < <(cat stale-cache*.txt)
+          done < <(cat stale-cache*.txt | grep -v '^$')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
