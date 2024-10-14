@@ -47,7 +47,7 @@ class HictkConan(ConanFile):
         self.requires("fmt/11.0.2#5c7438ef4d5d69ab106a41e460ce11f3", force=True)
         self.requires("hdf5/1.14.4.3#df1467d7374938c231edbe10e83f2bb4", force=True)
         self.requires("highfive/2.10.0#3d1bd25944a57fa1bc30a0a22923d528")
-        self.requires("libarchive/3.7.6#f45e4a7fca516510284cecb8cf5fab81")
+        self.requires("libarchive/3.7.6#11e70b88b334f684eb9f6b65f287c81e")
         self.requires("libdeflate/1.22#f95aebe763153ccbc4cc76c023e42e5a")
         self.requires("lz4/1.10.0#68a01ece147a441b463d8cefea68d555", force=True)
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
