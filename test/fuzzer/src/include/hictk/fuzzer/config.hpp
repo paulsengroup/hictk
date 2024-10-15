@@ -30,6 +30,7 @@ struct Config {
   std::optional<std::uint64_t> seed{};
   std::size_t nproc{1};
   bool suppress_python_warnings{true};
+  std::int16_t verbosity{3};
 };
 // NOLINTEND(*-avoid-magic-numbers)
 

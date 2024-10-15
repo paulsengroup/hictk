@@ -43,7 +43,10 @@ namespace hictk::fuzzer {
                                 "--normalization",
                                 c.normalization,
                                 "--seed",
-                                fmt::to_string(seed)};
+                                fmt::to_string(seed),
+                                "--verbosity",
+                                fmt::to_string(c.verbosity)};
+
   if (c.resolution != 0) {
     args.emplace_back("--resolution");
     args.emplace_back(fmt::to_string(c.resolution));

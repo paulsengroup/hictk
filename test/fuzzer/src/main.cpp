@@ -36,12 +36,13 @@ static void setup_logger_console() {
 }
 
 static void setup_logger_console(int verbosity_lvl, bool print_version) {
+  spdlog::set_level(spdlog::level::level_enum(verbosity_lvl));
   for (auto& sink : spdlog::default_logger()->sinks()) {
     sink->set_level(spdlog::level::level_enum(verbosity_lvl));
   }
 
   if (print_version) {
-    SPDLOG_INFO(FMT_STRING("[executor] Testing hictk v{}"), hictk::config::version::str());
+    SPDLOG_INFO(FMT_STRING("[executor] Fuzzying hictk v{}"), hictk::config::version::str());
   }
 }
 
@@ -49,7 +50,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
   try {
     auto config = cli.parse_arguments();
     const auto subcmd = cli.get_subcommand();
-    setup_logger_console(spdlog::level::info, subcmd == Cli::subcommand::fuzz);
+    setup_logger_console(config.verbosity, subcmd == Cli::subcommand::fuzz);
     return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
