@@ -43,7 +43,10 @@ namespace hictk::fuzzer {
                                 "--normalization",
                                 c.normalization,
                                 "--seed",
-                                fmt::to_string(seed)};
+                                fmt::to_string(seed),
+                                "--verbosity",
+                                fmt::to_string(c.verbosity)};
+
   if (c.resolution != 0) {
     args.emplace_back("--resolution");
     args.emplace_back(fmt::to_string(c.resolution));
@@ -97,6 +100,7 @@ namespace hictk::fuzzer {
 }
 
 int fuzz_subcommand(const Config& c) {
+  assert(c.task_id == 0);
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
   try {
     SPDLOG_INFO(FMT_STRING("[executor] cooler version: {}"), cooler::version());
@@ -113,10 +117,10 @@ int fuzz_subcommand(const Config& c) {
     for (std::size_t i = 0; i < seeds.size(); ++i) {
       futures[i] = tpool.submit_task([&, id = i + 1, seed = seeds[i]]() {
         try {
-          // NONLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
+          // NOLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
           auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
           return proc.wait();
-          // NONLINTEND(clang-analyzer-unix.BlockInCriticalSection)
+          // NOLINTEND(clang-analyzer-unix.BlockInCriticalSection)
         } catch (const std::exception& e) {
           SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
           return 1;

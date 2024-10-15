@@ -22,6 +22,7 @@ from concurrent.futures import ProcessPoolExecutor as Pool
 from typing import Dict, List, Tuple, Union
 
 import cooler
+import h5py
 import hic2cool
 import pandas as pd
 
@@ -520,9 +521,12 @@ def copy_hic_norms(
         hic2cool.hic2cool_extractnorms(str(path_to_hic), str(path_to_cooler), silent=True)
 
     columns = cooler.Cooler(str(path_to_cooler)).bins().columns.tolist()
-    for norm in normalization_methods:
-        if norm not in columns:
-            raise RuntimeError(f'failed to copy "{norm}" normalization to Cooler file "{path_to_cooler}"')
+    with h5py.File(path_to_cooler, "a") as h5:
+        for norm in normalization_methods:
+            if norm not in columns:
+                raise RuntimeError(f'failed to copy "{norm}" normalization to Cooler file "{path_to_cooler}"')
+            h5_path = f"/bins/{norm}"
+            h5[h5_path].attrs["divisive_weights"] = True
     t1 = time.time()
 
     logging.info(f"DONE! Copying weights from {path_to_hic} to {path_to_cooler}. Copying took {t1 - t0}s.")
@@ -543,7 +547,7 @@ def main():
     force = args["force"]
 
     with (
-        tempfile.TemporaryDirectory(prefix=str(args["tmpdir"] / "hictk-")) as tmpdir,
+        tempfile.TemporaryDirectory(dir=str(args["tmpdir"]), prefix="hictk-") as tmpdir,
         Pool(max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)) as pool,
     ):
 

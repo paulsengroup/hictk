@@ -318,6 +318,11 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
           const auto range1 = q1.to_string();
           const auto range2 = q2.to_string();
 
+          SPDLOG_DEBUG(
+              FMT_STRING(
+                  "[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
+              c.task_id, num_tests, range1, range2, c.normalization);
+
           fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, expected);
           fetch_pixels(tgt, range1, range2, c.normalization, found);
 
@@ -345,6 +350,10 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
         generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
+
+    SPDLOG_DEBUG(
+        FMT_STRING("[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
+        c.task_id, num_tests, range1, range2, c.normalization);
 
     const auto expected_var = fetch_pixels_dense(ref, range1, range2, c.normalization);
     const auto found_var = fetch_pixels_dense(tgt, range1, range2, c.normalization);
@@ -378,6 +387,10 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
+    SPDLOG_DEBUG(
+        FMT_STRING("[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
+        c.task_id, num_tests, range1, range2, c.normalization);
+
     const auto expected_var = fetch_pixels_sparse(ref, range1, range2, c.normalization);
     const auto found_var = fetch_pixels_sparse(tgt, range1, range2, c.normalization);
 
@@ -396,6 +409,7 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
 }
 
 int launch_worker_subcommand(const Config& c) {
+  assert(c.task_id > 0);
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
@@ -405,7 +419,7 @@ int launch_worker_subcommand(const Config& c) {
     std::mt19937_64 rand_eng{*c.seed};
     // NOLINTEND(bugprone-unchecked-optional-access)
 
-    const hictk::File tgt(c.reference_uri, c.resolution);
+    const hictk::File tgt(c.test_uri, c.resolution);
     cooler::Cooler ref(
         hictk::cooler::utils::is_multires_file(c.reference_uri.string())
             ? fmt::format(FMT_STRING("{}::/resolutions/{}"), c.reference_uri.string(), c.resolution)

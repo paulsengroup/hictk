@@ -1,0 +1,14 @@
+# Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: hictk_fuzzer
+
+dependencies:
+  - python>=3.9
+  - cmake>=3.25
+  - conan>=2.0.5
+  - cooler>=0.10
+  - hic2cool>=1
+  - numpy<2
+  - openjdk>=11
+  - pandas

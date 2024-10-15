@@ -33,7 +33,7 @@ class Weights {
   using WeightVectPtr = std::shared_ptr<WeightVect>;
 
   std::variant<ConstWeight, WeightVectPtr> _weights{ConstWeight{}};
-  Type _type{};
+  Type _type{Type::UNKNOWN};
 
  public:
   Weights() = default;

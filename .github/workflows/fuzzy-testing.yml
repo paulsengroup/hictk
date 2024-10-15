@@ -112,12 +112,6 @@ jobs:
           - {
               dataset: "4DNFIYECESRC",
               format: "hic9",
-              normalization: "SCALE",
-              bin-type: "fixed",
-            }
-          - {
-              dataset: "4DNFIYECESRC",
-              format: "hic9",
               normalization: "VC",
               bin-type: "fixed",
             }

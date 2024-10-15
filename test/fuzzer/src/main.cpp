@@ -36,12 +36,13 @@ static void setup_logger_console() {
 }
 
 static void setup_logger_console(int verbosity_lvl, bool print_version) {
+  spdlog::set_level(spdlog::level::level_enum(verbosity_lvl));
   for (auto& sink : spdlog::default_logger()->sinks()) {
     sink->set_level(spdlog::level::level_enum(verbosity_lvl));
   }
 
   if (print_version) {
-    SPDLOG_INFO(FMT_STRING("[executor] Testing hictk v{}"), hictk::config::version::str());
+    SPDLOG_INFO(FMT_STRING("[executor] Fuzzing hictk v{}"), hictk::config::version::str());
   }
 }
 
@@ -49,7 +50,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
   try {
     auto config = cli.parse_arguments();
     const auto subcmd = cli.get_subcommand();
-    setup_logger_console(spdlog::level::info, subcmd == Cli::subcommand::fuzz);
+    setup_logger_console(config.verbosity, subcmd == Cli::subcommand::fuzz);
     return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
@@ -68,9 +69,17 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
   }
 }
 
+[[nodiscard]] static std::string task_id_to_str(std::uint16_t task_id) {
+  if (task_id == 0) {
+    return "executor";
+  }
+  return fmt::to_string(task_id);
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
+  auto proc_name = task_id_to_str(0);
 
   try {
     setup_logger_console();
@@ -79,6 +88,8 @@ int main(int argc, char** argv) noexcept {
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
     }
+
+    proc_name = task_id_to_str(config.task_id);
     using sc = Cli::subcommand;
     switch (subcmd) {
       case sc::fuzz:
@@ -101,19 +112,20 @@ int main(int argc, char** argv) noexcept {
   } catch (const std::exception& e) {
     if (cli) {
       fmt::print(stderr,
-                 FMT_STRING("FAILURE! hictk_fuzzer {} encountered the following error: {}\n"),
-                 cli->get_printable_subcommand(), e.what());
+                 FMT_STRING("FAILURE! hictk_fuzzer {} [{}] encountered the following error: {}\n"),
+                 cli->get_printable_subcommand(), proc_name, e.what());
     } else {
       fmt::print(stderr, FMT_STRING("FAILURE! hictk_fuzzer encountered the following error: {}\n"),
                  e.what());
     }
     return 1;
   } catch (...) {
-    fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk_fuzzer {} encountered the following error: Caught an "
-                          "unhandled exception! "
-                          "If you see this message, please file an issue on GitHub.\n"),
-               cli->get_printable_subcommand());
+    fmt::print(
+        stderr,
+        FMT_STRING("FAILURE! hictk_fuzzer {} [{}] encountered the following error: Caught an "
+                   "unhandled exception! "
+                   "If you see this message, please file an issue on GitHub.\n"),
+        cli->get_printable_subcommand(), proc_name);
     return 1;
   }
   return 0;
