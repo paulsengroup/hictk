@@ -7,7 +7,6 @@
 
 import argparse
 import hashlib
-import itertools
 import json
 import logging
 import multiprocessing as mp
