@@ -22,7 +22,6 @@ from typing import Dict, List, Tuple, Union
 import cooler
 import h5py
 import hictkpy
-import packaging
 import pandas as pd
 
 
@@ -148,7 +147,9 @@ def make_cli() -> argparse.ArgumentParser:
 
 
 def validate_hictkpy_version():
-    if packaging.Version(hictkpy.__version__) < packaging.Version("0.0.6"):
+    from packaging.version import Version
+
+    if Version(hictkpy.__version__) <= Version("0.0.5"):
         raise ImportError(
             f"The installed version of hictkpy is too old ({hictkpy.__version__}). Please install hictkpy v0.0.6 or newer."
         )
@@ -527,7 +528,7 @@ def copy_hic_norms(
         for norm in normalization_methods:
             h5_path = f"/bins/{norm}"
             h5.create_dataset(h5_path, data=hf.weights(norm, divisive=True), compression="gzip")
-            h5[h5_path].attr["divisive_weights"] = True
+            h5[h5_path].attrs["divisive_weights"] = True
     t1 = time.time()
 
     logging.info(f"DONE! Copying weights from {path_to_hic} to {path_to_cooler}. Copying took {t1 - t0}s.")
@@ -550,7 +551,7 @@ def main():
     force = args["force"]
 
     with (
-        tempfile.TemporaryDirectory(prefix=str(args["tmpdir"] / "hictk-")) as tmpdir,
+        tempfile.TemporaryDirectory(dir=str(args["tmpdir"]), prefix="hictk-") as tmpdir,
         Pool(max_workers=nproc, initializer=setup_logger, initargs=(args["verbosity"],)) as pool,
     ):
 
