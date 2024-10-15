@@ -100,6 +100,7 @@ namespace hictk::fuzzer {
 }
 
 int fuzz_subcommand(const Config& c) {
+  assert(c.task_id == 0);
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
   try {
     SPDLOG_INFO(FMT_STRING("[executor] cooler version: {}"), cooler::version());

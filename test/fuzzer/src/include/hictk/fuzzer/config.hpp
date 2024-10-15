@@ -14,7 +14,7 @@ namespace hictk::fuzzer {
 
 // NOLINTBEGIN(*-avoid-magic-numbers)
 struct Config {
-  std::uint16_t task_id{};
+  std::uint16_t task_id{0};
   std::filesystem::path exec{};
   std::filesystem::path test_uri{};
   std::filesystem::path reference_uri{};

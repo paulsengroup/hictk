@@ -69,9 +69,17 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli& 
   }
 }
 
+[[nodiscard]] static std::string task_id_to_str(std::uint16_t task_id) {
+  if (task_id == 0) {
+    return "executor";
+  }
+  return fmt::to_string(task_id);
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char** argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
+  auto proc_name = task_id_to_str(0);
 
   try {
     setup_logger_console();
@@ -80,6 +88,8 @@ int main(int argc, char** argv) noexcept {
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       return ec;
     }
+
+    proc_name = task_id_to_str(config.task_id);
     using sc = Cli::subcommand;
     switch (subcmd) {
       case sc::fuzz:
@@ -102,19 +112,20 @@ int main(int argc, char** argv) noexcept {
   } catch (const std::exception& e) {
     if (cli) {
       fmt::print(stderr,
-                 FMT_STRING("FAILURE! hictk_fuzzer {} encountered the following error: {}\n"),
-                 cli->get_printable_subcommand(), e.what());
+                 FMT_STRING("FAILURE! hictk_fuzzer {} [{}] encountered the following error: {}\n"),
+                 cli->get_printable_subcommand(), proc_name, e.what());
     } else {
       fmt::print(stderr, FMT_STRING("FAILURE! hictk_fuzzer encountered the following error: {}\n"),
                  e.what());
     }
     return 1;
   } catch (...) {
-    fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk_fuzzer {} encountered the following error: Caught an "
-                          "unhandled exception! "
-                          "If you see this message, please file an issue on GitHub.\n"),
-               cli->get_printable_subcommand());
+    fmt::print(
+        stderr,
+        FMT_STRING("FAILURE! hictk_fuzzer {} [{}] encountered the following error: Caught an "
+                   "unhandled exception! "
+                   "If you see this message, please file an issue on GitHub.\n"),
+        cli->get_printable_subcommand(), proc_name);
     return 1;
   }
   return 0;

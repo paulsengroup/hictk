@@ -409,6 +409,7 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
 }
 
 int launch_worker_subcommand(const Config& c) {
+  assert(c.task_id > 0);
   [[maybe_unused]] const pybind11::scoped_interpreter guard{};
 
   try {
