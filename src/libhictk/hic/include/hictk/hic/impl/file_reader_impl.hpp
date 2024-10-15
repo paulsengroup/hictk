@@ -450,7 +450,7 @@ inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chro
     *weights1 = default_initialize_weight_vector(chrom1, wanted_norm, wanted_resolution);
   }
   if (weights2->empty()) {
-    *weights2 = default_initialize_weight_vector(chrom1, wanted_norm, wanted_resolution);
+    *weights2 = default_initialize_weight_vector(chrom2, wanted_norm, wanted_resolution);
   }
 }
 
