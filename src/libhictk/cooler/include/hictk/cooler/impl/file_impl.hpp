@@ -308,7 +308,15 @@ inline File::operator bool() const noexcept { return !!_bins; }
 
 inline void File::close() {
   finalize();
-  *this = File{};
+  _datasets.clear();
+  _groups.clear();
+  _weights.clear();
+  _weights_scaled.clear();
+  _pixel_variant = std::int32_t{};
+  _bins.reset();
+  _index.reset();
+  _finalize = false;
+  _root_group = RootGroup{};
 }
 
 inline void File::finalize() {
@@ -327,10 +335,11 @@ inline void File::finalize() {
 
   } catch (const std::exception &e) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("The following error occurred while closing file {}: {}\n"
+        fmt::format(FMT_STRING("The following error occurred while finalizing file {}: {}\n"
                                "File is likely corrupted or incomplete"),
                     path(), e.what()));
   }
+  _finalize = false;
 }
 
 inline HighFive::File File::open_file(std::string_view uri, unsigned int mode, bool validate) {
