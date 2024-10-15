@@ -117,10 +117,10 @@ int fuzz_subcommand(const Config& c) {
     for (std::size_t i = 0; i < seeds.size(); ++i) {
       futures[i] = tpool.submit_task([&, id = i + 1, seed = seeds[i]]() {
         try {
-          // NONLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
+          // NOLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
           auto proc = spawn_worker_process(c, id, seed, ctx, ctx_mtx);
           return proc.wait();
-          // NONLINTEND(clang-analyzer-unix.BlockInCriticalSection)
+          // NOLINTEND(clang-analyzer-unix.BlockInCriticalSection)
         } catch (const std::exception& e) {
           SPDLOG_ERROR(FMT_STRING("[{}] error occurred in worker process: {}"), id, e.what());
           return 1;

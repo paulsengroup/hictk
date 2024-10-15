@@ -42,7 +42,7 @@ static void setup_logger_console(int verbosity_lvl, bool print_version) {
   }
 
   if (print_version) {
-    SPDLOG_INFO(FMT_STRING("[executor] Fuzzying hictk v{}"), hictk::config::version::str());
+    SPDLOG_INFO(FMT_STRING("[executor] Fuzzing hictk v{}"), hictk::config::version::str());
   }
 }
 
