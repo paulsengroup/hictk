@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import contextlib
 import gzip
 import logging
 import multiprocessing as mp
@@ -16,12 +17,13 @@ import subprocess as sp
 import sys
 import tempfile
 import time
+import warnings
 from concurrent.futures import ProcessPoolExecutor as Pool
 from typing import Dict, List, Tuple, Union
 
 import cooler
 import h5py
-import hictkpy
+import hic2cool
 import pandas as pd
 
 
@@ -144,15 +146,6 @@ def make_cli() -> argparse.ArgumentParser:
     )
 
     return cli
-
-
-def validate_hictkpy_version():
-    from packaging.version import Version
-
-    if Version(hictkpy.__version__) <= Version("0.0.5"):
-        raise ImportError(
-            f"The installed version of hictkpy is too old ({hictkpy.__version__}). Please install hictkpy v0.0.6 or newer."
-        )
 
 
 def setup_logger(level):
@@ -523,11 +516,16 @@ def copy_hic_norms(
     logging.info(f"copying weights from {path_to_hic} to {path_to_cooler}...")
 
     t0 = time.time()
-    hf = hictkpy.File(str(path_to_hic), hictkpy.File(str(path_to_cooler)).resolution())
+    with contextlib.redirect_stdout(None), warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        hic2cool.hic2cool_extractnorms(str(path_to_hic), str(path_to_cooler), silent=True)
+
+    columns = cooler.Cooler(str(path_to_cooler)).bins().columns.tolist()
     with h5py.File(path_to_cooler, "a") as h5:
         for norm in normalization_methods:
+            if norm not in columns:
+                raise RuntimeError(f'failed to copy "{norm}" normalization to Cooler file "{path_to_cooler}"')
             h5_path = f"/bins/{norm}"
-            h5.create_dataset(h5_path, data=hf.weights(norm, divisive=True), compression="gzip")
             h5[h5_path].attrs["divisive_weights"] = True
     t1 = time.time()
 
@@ -537,8 +535,6 @@ def copy_hic_norms(
 def main():
     args = vars(make_cli().parse_args())
     setup_logger(args["verbosity"])
-
-    validate_hictkpy_version()
 
     out_prefix = args["output-prefix"]
     pairs = args["pairs"]
