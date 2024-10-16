@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -58,12 +60,24 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
   }
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline PixelSelector::~PixelSelector() noexcept {
   try {
     if (_reader) {
       clear_cache();
     }
-  } catch (...) {  // NOLINT(bugprone-empty-catch)
+  } catch (const std::exception &e) {
+    SPDLOG_WARN(
+        FMT_STRING("failed to clear the PixelSelector interaction cache of file \"{}\". "
+                   "Applications are not affected. However, if this happens repeatedly the system "
+                   "may run out of available memory. Reason: {}"),
+        _footer->path(), e.what());
+  } catch (...) {
+    SPDLOG_WARN(
+        FMT_STRING("failed to clear the PixelSelector interaction cache of file \"{}\". "
+                   "Applications are not affected. However, if this happens repeatedly the system "
+                   "may run out of available memory."),
+        _footer->path());
   }
 }
 
