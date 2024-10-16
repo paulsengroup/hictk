@@ -14,10 +14,12 @@
 
 #include <fmt/format.h>
 #include <fmt/std.h>
+#include <spdlog/spdlog.h>
 
 #include <atomic>
 #include <cstdlib>
 #include <filesystem>
+#include <stdexcept>
 #include <utility>
 
 namespace hictk::internal {
@@ -31,7 +33,7 @@ class TmpDir {
 
   void delete_at_exit() {
     if (_delete_on_destruction) {
-      std::filesystem::remove_all(_path);
+      std::filesystem::remove_all(_path);  // NOLINT
     }
   }
 
@@ -71,15 +73,20 @@ class TmpDir {
   TmpDir(const TmpDir& other) = delete;
   TmpDir(TmpDir&& other) = delete;
 
-  ~TmpDir() {
-    if (get_delete_on_destruction()) {
-      std::filesystem::remove_all(_path);
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  ~TmpDir() noexcept {
+    try {
+      delete_at_exit();
+    } catch (std::exception& e) {
+      SPDLOG_WARN(FMT_STRING("failed to delete temporary folder \"{}\": {}"), _path, e.what());
+    } catch (...) {
+      SPDLOG_WARN(FMT_STRING("failed to delete temporary folder \"{}\""), _path);
     }
   }
 
   [[nodiscard]] const std::filesystem::path& operator()() const noexcept { return _path; }
   [[maybe_unused]] [[nodiscard]] bool get_delete_on_destruction() const noexcept {
-    return _delete_on_destruction;
+    return _delete_on_destruction.load();
   }
 
   [[maybe_unused]] void set_delete_on_destruction(const bool flag) noexcept {
