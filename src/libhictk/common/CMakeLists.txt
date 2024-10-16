@@ -4,6 +4,7 @@
 
 find_package(FMT REQUIRED)
 find_package(libdeflate REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(zstd REQUIRED)
 
 add_library(common INTERFACE)
@@ -29,5 +30,6 @@ target_link_libraries(
   INTERFACE
     fmt::fmt-header-only
     "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+    spdlog::spdlog_header_only
     "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )
