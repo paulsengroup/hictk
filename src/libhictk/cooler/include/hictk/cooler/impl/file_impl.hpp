@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <cstddef>
@@ -252,17 +253,18 @@ inline File::File(File &&other) noexcept
   other._finalize = false;
 }
 
-// NOLINTNEXTLINE(*-exception-escape)
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline File::~File() noexcept {
   try {
     finalize();
   } catch (const std::exception &e) {
-    fmt::print(stderr, FMT_STRING("{}\n"), e.what());
+    SPDLOG_ERROR(FMT_STRING("an error occurred while closing file \"{}\". File is likely "
+                            "corrupted or incomplete. Reason: {}"),
+                 path(), e.what());
   } catch (...) {
-    fmt::print(stderr,
-               FMT_STRING("An unknown error occurred while closing file {}. File is likely "
-                          "corrupted or incomplete."),
-               path());
+    SPDLOG_ERROR(FMT_STRING("an unknown error occurred while closing file \"{}\". File is likely "
+                            "corrupted or incomplete."),
+                 path());
   }
 }
 
@@ -278,12 +280,13 @@ inline File &File::operator=(File &&other) noexcept {
     try {
       finalize();
     } catch (const std::exception &e) {
-      fmt::print(stderr, FMT_STRING("{}\n"), e.what());
+      SPDLOG_ERROR(FMT_STRING("an error occurred while closing file {}. File is likely "
+                              "corrupted or incomplete. Reason: {}"),
+                   path(), e.what());
     } catch (...) {
-      fmt::print(stderr,
-                 FMT_STRING("An unknown error occurred while finalizing file {}. File is likely "
-                            "corrupted or incomplete."),
-                 path());
+      SPDLOG_ERROR(FMT_STRING("an unknown error occurred while closing file {}. File is likely "
+                              "corrupted or incomplete."),
+                   path());
     }
   }
 

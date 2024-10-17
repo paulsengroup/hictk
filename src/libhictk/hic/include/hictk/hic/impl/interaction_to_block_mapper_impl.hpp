@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <fmt/std.h>
 #include <parallel_hashmap/btree.h>
 #include <spdlog/spdlog.h>
 #include <zstd.h>
@@ -157,11 +158,15 @@ inline HiCInteractionToBlockMapper::HiCInteractionToBlockMapper(
   init_block_mappers();
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline HiCInteractionToBlockMapper::~HiCInteractionToBlockMapper() noexcept {
   try {
     _fs.close();
     std::filesystem::remove(_path);
-  } catch (...) {  // NOLINT(bugprone-empty-catch)
+  } catch (const std::exception &e) {
+    SPDLOG_WARN(FMT_STRING("failed to remove temporary file \"{}\": {}"), _path, e.what());
+  } catch (...) {
+    SPDLOG_WARN(FMT_STRING("failed to remove temporary file \"{}\""), _path);
   }
 }
 

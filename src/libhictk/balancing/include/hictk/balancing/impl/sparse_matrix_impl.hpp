@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <fmt/std.h>
+#include <spdlog/spdlog.h>
 #include <zstd.h>
 
 #include <BS_thread_pool.hpp>
@@ -727,14 +729,17 @@ inline FileBackedSparseMatrix::FileBackedSparseMatrix(std::filesystem::path tmp_
       _zstd_cctx(ZSTD_createCCtx()),
       _zstd_dctx(ZSTD_createDCtx()) {}
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 inline FileBackedSparseMatrix::~FileBackedSparseMatrix() noexcept {
   try {
     if (!_path.empty() && std::filesystem::exists(_path)) {
-      _fs = filestream::FileStream{};
-      std::filesystem::remove(_path);
+      _fs.close();
+      std::filesystem::remove(_path);  // NOLINT
     }
-    // NOLINTNEXTLINE
+  } catch (const std::exception& e) {
+    SPDLOG_WARN(FMT_STRING("failed to remove temporary file \"{}\": {}"), _path, e.what());
   } catch (...) {
+    SPDLOG_WARN(FMT_STRING("failed to remove temporary file \"{}\""), _path);
   }
 }
 
