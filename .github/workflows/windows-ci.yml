@@ -72,7 +72,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: robomics/gha-devel/.github/workflows/build-conan-deps.yml@main
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
     with:
       os: windows-2019
 
