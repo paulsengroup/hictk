@@ -89,7 +89,12 @@ inline std::shared_ptr<const BinTable> File::bins_ptr() const noexcept { return 
 
 inline std::uint32_t File::resolution() const noexcept { return bins().resolution(); }
 inline std::uint64_t File::nbins() const { return bins().size(); }
-inline std::uint64_t File::nchroms() const { return chromosomes().size(); }
+inline std::uint64_t File::nchroms(bool include_ALL) const {
+  if (include_ALL) {
+    return chromosomes().size();
+  }
+  return chromosomes().remove_ALL().size();
+}
 
 inline const Reference& File::chromosomes() const noexcept { return bins().chromosomes(); }
 
