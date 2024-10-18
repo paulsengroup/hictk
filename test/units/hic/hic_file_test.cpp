@@ -42,6 +42,9 @@ TEST_CASE("HiC: file accessors", "[hic][short]") {
   CHECK(f.name() == pathV8);
   CHECK(f.version() == 8);
   CHECK(f.chromosomes().size() == 9);
+  CHECK(f.nchroms(true) == 9);
+  CHECK(f.nchroms() == 8);
+  CHECK(f.nbins() == 137572);
   CHECK(f.assembly() == "dm6");
   CHECK(f.attributes().at("software") == "Juicer Tools Version 1.22.01");
 

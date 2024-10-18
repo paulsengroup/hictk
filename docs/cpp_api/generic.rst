@@ -65,7 +65,7 @@ File handle
 
   .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const;
   .. cpp:function:: [[nodiscard]] std::uint64_t nbins() const;
-  .. cpp:function:: [[nodiscard]] std::uint64_t nchroms() const;
+  .. cpp:function:: [[nodiscard]] std::uint64_t nchroms(bool include_ALL = false) const;
 
   Accessors for common attributes.
   Calling any of these accessors does not involve any computation.

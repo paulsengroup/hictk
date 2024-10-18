@@ -147,7 +147,7 @@ class File {
 
   [[nodiscard]] std::uint32_t resolution() const;
   [[nodiscard]] std::uint64_t nbins() const;
-  [[nodiscard]] std::uint64_t nchroms() const;
+  [[nodiscard]] std::uint64_t nchroms(bool include_ALL = false) const;
 
   [[nodiscard]] PixelSelector fetch(
       const balancing::Method &normalization = balancing::Method::NONE()) const;

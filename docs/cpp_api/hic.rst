@@ -70,7 +70,7 @@ File handle
 
   .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const noexcept;
   .. cpp:function:: [[nodiscard]] std::uint64_t nbins() const;
-  .. cpp:function:: [[nodiscard]] std::uint64_t nchroms() const;
+  .. cpp:function:: [[nodiscard]] std::uint64_t nchroms(bool include_ALL = false) const;
   .. cpp:function:: [[nodiscard]] const std::string &assembly() const noexcept;
   .. cpp:function:: [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;

@@ -327,9 +327,19 @@ inline std::uint64_t File::nbins() const {
   return std::visit([&](const auto& fp) { return fp.nbins(); }, _fp);
 }
 
-inline std::uint64_t File::nchroms() const {
+inline std::uint64_t File::nchroms(bool include_ALL) const {
   assert(!_fp.valueless_by_exception());
-  return std::visit([&](const auto& fp) { return fp.nchroms(); }, _fp);
+
+  return std::visit(
+      [&](const auto& fp) {
+        using T = remove_cvref_t<decltype(fp)>;
+        if constexpr (std::is_same_v<hic::File, T>) {
+          return fp.nchroms(include_ALL);
+        } else {
+          return fp.nchroms();
+        }
+      },
+      _fp);
 }
 
 inline PixelSelector File::fetch(const balancing::Method& normalization) const {

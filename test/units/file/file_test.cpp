@@ -57,6 +57,7 @@ TEST_CASE("File", "[file][short]") {
       CHECK(hf.resolution() == ref_hic.resolution());
       CHECK(hf.nbins() == ref_hic.nbins());
       CHECK(hf.nchroms() == ref_hic.nchroms());
+      CHECK(hf.nchroms(true) == ref_hic.nchroms(true));
     }
 
     SECTION("cooler") {
@@ -72,6 +73,7 @@ TEST_CASE("File", "[file][short]") {
       CHECK(clr.resolution() == ref.resolution());
       CHECK(clr.nbins() == ref.nbins());
       CHECK(clr.nchroms() == ref.nchroms());
+      CHECK(clr.nchroms(true) == ref.nchroms());
     }
   }
 
