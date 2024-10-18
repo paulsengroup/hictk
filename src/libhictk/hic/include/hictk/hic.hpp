@@ -56,7 +56,7 @@ class File {
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   [[nodiscard]] std::uint64_t nbins() const;
-  [[nodiscard]] std::uint64_t nchroms() const;
+  [[nodiscard]] std::uint64_t nchroms(bool include_ALL = false) const;
   [[nodiscard]] const std::string &assembly() const noexcept;
   [[nodiscard]] const phmap::flat_hash_map<std::string, std::string> &attributes() const noexcept;
   [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
