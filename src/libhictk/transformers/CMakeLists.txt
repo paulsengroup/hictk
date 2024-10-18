@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 if(HICTK_WITH_ARROW)
-  find_package(Arrow REQUIRED QUIET)
+  if(HICTK_WITH_PYARROW_UNSAFE)
+    find_package(Pyarrow REQUIRED QUIET)
+  else()
+    find_package(Arrow REQUIRED QUIET)
+  endif()
 endif()
 
 find_package(spdlog REQUIRED QUIET)
@@ -33,8 +37,12 @@ target_link_libraries(
 
 target_link_system_libraries(transformers INTERFACE spdlog::spdlog_header_only)
 
-if(HICTK_WITH_ARROW_SHARED)
-  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")
+if(HICTK_WITH_PYARROW_UNSAFE)
+  target_link_system_libraries(transformers INTERFACE Arrow::python)
 else()
-  target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>")
+  if(HICTK_WITH_ARROW_SHARED)
+    target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")
+  else()
+    target_link_system_libraries(transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>")
+  endif()
 endif()
