@@ -249,8 +249,8 @@ latex_documents = [
 
 linkcheck_ignore = [
     r"https://github\.com/4dn-dcic/pairix/blob/master/pairs_format_specification\.md.*",
-    r"https://hictk.*\.org\.readthedocs\.build/.*",
-    r"https://hictk.*\.org/_/downloads/en/.*/pdf/",
+    r"https://hictk.*\.readthedocs\.build.*",
+    r"https://hictk.*readthedocs.*/_/downloads/en/.*/pdf/",
 ]
 
 primary_domain = "cpp"
