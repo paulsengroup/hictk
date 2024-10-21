@@ -211,6 +211,7 @@ Single-cell Cooler (.scool)
   .. cpp:function:: [[nodiscard]] std::string path() const;
   .. cpp:function:: [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
   .. cpp:function:: [[nodiscard]] auto bins() const noexcept -> const BinTable&;
+  .. cpp:function:: [[nodiscard]] auto bins_ptr() const noexcept -> std::shared_ptr<const BinTable>;
   .. cpp:function:: [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   .. cpp:function:: [[nodiscard]] constexpr const phmap::btree_set<std::string>& cells() const noexcept;
