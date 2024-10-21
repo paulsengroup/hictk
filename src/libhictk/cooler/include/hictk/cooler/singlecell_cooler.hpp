@@ -85,6 +85,7 @@ class SingleCellFile {
   [[nodiscard]] std::string path() const;
   [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
   [[nodiscard]] auto bins() const noexcept -> const BinTable&;
+  [[nodiscard]] auto bins_ptr() const noexcept -> std::shared_ptr<const BinTable>;
   [[nodiscard]] std::uint32_t resolution() const noexcept;
 
   [[nodiscard]] HighFive::File file_handle();
