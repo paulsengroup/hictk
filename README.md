@@ -62,7 +62,7 @@ The public C++ API of hictk is documented in the [C++ API Reference](https://hic
 
 ## Citing
 
-If you use hictk in you reaserch, please cite the following publication:
+If you use hictk in you research, please cite the following publication:
 
 Roberto Rossini, Jonas Paulsen, hictk: blazing fast toolkit to work with .hic and .cool files
 _Bioinformatics_, Volume 40, Issue 7, July 2024, btae408, [https://doi.org/10.1093/bioinformatics/btae408](https://doi.org/10.1093/bioinformatics/btae408)
