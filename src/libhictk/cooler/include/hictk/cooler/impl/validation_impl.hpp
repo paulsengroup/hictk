@@ -7,6 +7,7 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <fmt/std.h>
 
 #include <algorithm>
 #include <array>
