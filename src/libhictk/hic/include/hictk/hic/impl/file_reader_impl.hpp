@@ -4,10 +4,17 @@
 
 #pragma once
 
+// clang-format off
+#include "hictk/suppress_warnings.hpp"
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
+#include <parallel_hashmap/phmap.h>
+HICTK_DISABLE_WARNING_POP
+// clang-format on
+
 #include <fmt/compile.h>
 #include <fmt/format.h>
 #include <libdeflate.h>
-#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
 #include <cassert>

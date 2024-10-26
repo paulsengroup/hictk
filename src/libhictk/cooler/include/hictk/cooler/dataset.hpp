@@ -8,16 +8,19 @@
 
 // clang-format off
 #include "hictk/suppress_warnings.hpp"
-// clang-format on
-
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include <parallel_hashmap/phmap.h>
+HICTK_DISABLE_WARNING_POP
 
-#include <cstddef>
-#include <cstdint>
 HICTK_DISABLE_WARNING_PUSH
 HICTK_DISABLE_WARNING_NULL_DEREFERENCE
 #include <highfive/H5DataSet.hpp>
 HICTK_DISABLE_WARNING_POP
+// clang-format on
+
+#include <cstddef>
+#include <cstdint>
 #include <highfive/H5DataSpace.hpp>
 #include <highfive/H5DataType.hpp>
 #include <highfive/H5PropertyList.hpp>
