@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 add_subdirectory(bin_table)
+add_subdirectory(bins)
 add_subdirectory(cooler_creation)
 add_subdirectory(cooler_traversal)
 add_subdirectory(fetch_and_sum)
