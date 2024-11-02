@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/file.hpp"
-
 #include <fmt/format.h>
 
 #include <catch2/benchmark/catch_benchmark.hpp>
@@ -16,6 +14,7 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
+#include "hictk/file.hpp"
 
 using namespace hictk;
 
@@ -28,24 +27,18 @@ static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  2500
 static auto w = balancing::Method::KR();
 
 static const std::vector<Params> params_uint{
-    {"cis; small; normalization=NONE; symmetric", true, 100e3, 100e3, 25e3, 25e3},
-    {"cis; medium; normalization=NONE; symmetric", true},
-    {"cis; large; normalization=NONE; symmetric", true, 5e6, 5e6, 500e3, 500e3},
     {"trans; small; normalization=NONE; symmetric", false, 100e3, 100e3, 25e3, 25e3},
     {"trans; medium; normalization=NONE; symmetric", false},
     {"trans; large; normalization=NONE; symmetric", false, 5e6, 5e6, 500e3, 500e3},
 };
 
 static const std::vector<Params> params_fp{
-    {"cis; small; normalization=weight; symmetric", true, 100e3, 100e3, 25e3, 25e3, 1, w},
-    {"cis; medium; normalization=weight; symmetric", true, 1.0e6, 1.0e6, 250e3, 250e3, 1, w},
-    {"cis; large; normalization=weight; symmetric", true, 5e6, 5e6, 500e3, 500e3, 1, w},
     {"trans; small; normalization=weight; symmetric", false, 100e3, 100e3, 25e3, 25e3, 1, w},
     {"trans; medium; normalization=weight; symmetric", false, 1.0e6, 1.0e6, 250e3, 250e3, 1, w},
     {"trans; large; normalization=weight; symmetric", false, 5e6, 5e6, 500e3, 500e3, 1, w},
 };
 
-TEST_CASE("File::fetch (uint32)") {
+TEST_CASE("File::fetch (trans; uint32)") {
   const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                                test_file1.string(), resolutions.back()))
                           .chromosomes();
@@ -77,7 +70,7 @@ TEST_CASE("File::fetch (uint32)") {
   }
 }
 
-TEST_CASE("File::fetch (double)") {
+TEST_CASE("File::fetch (trans; double)") {
   const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                                test_file1.string(), resolutions.back()))
                           .chromosomes();

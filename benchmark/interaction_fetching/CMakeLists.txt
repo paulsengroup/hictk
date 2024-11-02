@@ -14,9 +14,12 @@ add_dependencies(hictk_benchmarks hictk_interaction_fetching_bench)
 target_sources(
   hictk_interaction_fetching_bench
   PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/cooler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/hic.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/file.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cooler_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cooler_trans_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_trans_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hic_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hic_trans_queries.cpp"
 )
 
 target_link_libraries(
