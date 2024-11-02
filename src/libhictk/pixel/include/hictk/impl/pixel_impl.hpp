@@ -230,7 +230,7 @@ inline bool PixelCoordinates::operator>=(const PixelCoordinates &other) const no
 inline bool PixelCoordinates::is_intra() const noexcept { return bin1.chrom() == bin2.chrom(); }
 
 template <typename N>
-inline Pixel<N>::Pixel(Bin bin, N count_) noexcept : Pixel(bin, std::move(bin), count_) {}
+inline Pixel<N>::Pixel(const Bin &bin, N count_) noexcept : Pixel(bin, bin, count_) {}
 
 template <typename N>
 inline Pixel<N>::Pixel(Bin bin1_, Bin bin2_, N count_) noexcept
