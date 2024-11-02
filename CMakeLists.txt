@@ -132,6 +132,7 @@ target_compile_definitions(
   INTERFACE
     FMT_HEADER_ONLY
     FMT_ENFORCE_COMPILE_STRING
+    FMT_USE_FULL_CACHE_DRAGONBOX
 )
 # Tweak spdlog
 target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
