@@ -16,6 +16,7 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 TEST_CASE("BinTable::at(bin_id)") {
   const std::vector<std::uint32_t> resolutions{10, 100, 1'000, 10'000, 100'000, 1'000'000};
 
@@ -57,3 +58,4 @@ TEST_CASE("BinTableVariable::at(bin_id)") {
     };
   }
 }
+// NOLINTEND(*-avoid-magic-numbers)

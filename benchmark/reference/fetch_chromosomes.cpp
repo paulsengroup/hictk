@@ -16,6 +16,7 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 [[nodiscard]] static Reference generate_reference(std::size_t num_chroms) {
   std::random_device rd{};
   std::mt19937_64 rand_eng(rd());
@@ -87,3 +88,4 @@ TEST_CASE("Reference::at(id)") {
     };
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)

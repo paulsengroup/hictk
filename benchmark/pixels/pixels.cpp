@@ -23,6 +23,7 @@ using namespace hictk;
 
 using N = std::uint32_t;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 [[nodiscard]] static std::pair<Bin, Bin> sample_bin_pair(const BinTableFixed& bin_table,
                                                          std::mt19937_64& rand_eng, bool cis_pair) {
   const auto chrom1 = bin_table.chromosomes().at(std::uniform_int_distribution<std::uint32_t>{
@@ -275,3 +276,4 @@ TEST_CASE("ThinPixel") {
     });
   };
 }
+// NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)

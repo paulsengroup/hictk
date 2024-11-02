@@ -20,6 +20,7 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 [[nodiscard]] static std::vector<Bin> generate_bins(std::size_t size, bool erase_ids) {
   std::random_device rd{};
   std::mt19937_64 rand_eng(rd());
@@ -95,3 +96,4 @@ TEST_CASE("Bin") {
     });
   };
 }
+// NOLINTEND(*-avoid-magic-numbers)

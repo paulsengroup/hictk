@@ -18,13 +18,14 @@
 
 using namespace hictk;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)
 static const std::filesystem::path test_file1{"test/data/integration_tests/4DNFIZ1ZVXC8.mcool"};
 static const std::filesystem::path test_file2{"test/data/hic/4DNFIZ1ZVXC8.hic8"};
 static const std::filesystem::path test_file3{"test/data/hic/4DNFIZ1ZVXC8.hic9"};
 static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  25000,   50000,
                                                     100000, 250000, 500000, 1000000, 2500000};
 
-static auto w = balancing::Method::KR();
+static const auto w = balancing::Method::KR();
 
 static const std::vector<Params> params_uint{
     {"trans; small; normalization=NONE; symmetric", false, 100e3, 100e3, 25e3, 25e3},
@@ -101,3 +102,4 @@ TEST_CASE("File::fetch (trans; double)") {
     }
   }
 }
+// NOLINTEND(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)

@@ -21,6 +21,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/reference.hpp"
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 struct Params {
   std::string_view label{};
   bool cis{};
@@ -33,6 +34,7 @@ struct Params {
   hictk::balancing::Method normalization{hictk::balancing::Method::NONE()};
   std::uint64_t seed{123456789};
 };
+// NOLINTEND(*-avoid-magic-numbers)
 
 [[nodiscard]] inline std::pair<std::string, std::string> generate_query(
     std::mt19937_64& rand_eng, const hictk::Chromosome& chrom1, const hictk::Chromosome& chrom2,
