@@ -62,7 +62,7 @@ template <typename BinTable>
   std::random_device rd{};
   std::mt19937_64 rand_eng(rd());
 
-  using Coord = std::pair<std::string_view, std::uint32_t>;
+  using Coord = std::pair<std::uint32_t, std::uint32_t>;
   std::vector<Coord> buff(size);
   std::generate(buff.begin(), buff.end(), [&]() {
     const auto bin_id = std::uniform_int_distribution<std::uint64_t>{0, bins.size() - 1}(rand_eng);
@@ -70,7 +70,7 @@ template <typename BinTable>
     const auto chrom = bins.at(bin_id).chrom();
     const auto pos = std::uniform_int_distribution<std::uint32_t>{0, chrom.size() - 1}(rand_eng);
 
-    return std::make_pair(chrom.name(), pos);
+    return std::make_pair(chrom.id(), pos);
   });
 
   return buff;
