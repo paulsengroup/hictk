@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_bin_table_bench)
+add_dependencies(hictk_benchmarks hictk_bin_table_bench)
 
 target_sources(
   hictk_bin_table_bench

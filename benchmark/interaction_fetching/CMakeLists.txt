@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_interaction_fetching_bench)
+add_dependencies(hictk_benchmarks hictk_interaction_fetching_bench)
 
 target_sources(
   hictk_interaction_fetching_bench

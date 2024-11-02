@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_reference_bench)
+add_dependencies(hictk_benchmarks hictk_reference_bench)
 
 target_sources(hictk_reference_bench PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/fetch_chromosomes.cpp")
 

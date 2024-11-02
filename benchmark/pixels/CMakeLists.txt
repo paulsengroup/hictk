@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_pixels_bench)
+add_dependencies(hictk_benchmarks hictk_pixels_bench)
 
 target_sources(hictk_pixels_bench PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pixels.cpp")
 

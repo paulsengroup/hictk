@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+add_custom_target(hictk_benchmarks)
+
 add_subdirectory(bin_table)
 add_subdirectory(bins)
 add_subdirectory(cooler_creation)

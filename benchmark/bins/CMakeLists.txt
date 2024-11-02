@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_bins_bench)
+add_dependencies(hictk_benchmarks hictk_bins_bench)
 
 target_sources(hictk_bins_bench PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/bins.cpp")
 

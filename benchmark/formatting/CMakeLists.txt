@@ -9,6 +9,7 @@ include(CTest)
 include(Catch)
 
 add_executable(hictk_formatting_bench)
+add_dependencies(hictk_benchmarks hictk_formatting_bench)
 
 target_sources(hictk_formatting_bench PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/formatting.cpp")
 
