@@ -9,9 +9,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <hictk/reference.hpp>
 #include <random>
 #include <vector>
+
+#include "hictk/reference.hpp"
 
 using namespace hictk;
 
