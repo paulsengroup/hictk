@@ -28,37 +28,34 @@ static constexpr std::string_view range_small{"chr2L:5,000,000-5,100,000"};
 static constexpr std::string_view range_medium{"chr2L:6,000,000-7,000,000"};
 static constexpr std::string_view range_large{"chr2L:10,000,000-15,000,000"};
 
-TEST_CASE("hic::File::fetch (cis; uint32)") {
-  const auto chroms = hic::File(test_file1.string(), resolutions.back()).chromosomes();
-
-  for (const auto& path : {test_file1, test_file2}) {
-    for (const auto& res : resolutions) {
-      for (const auto& range : {range_small, range_medium, range_large}) {
-        BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), range, res))
-        (Catch::Benchmark::Chronometer meter) {
-          const hic::File hf(path.string(), res);
-          meter.measure([&hf, &range]() {
-            return count_nnz<std::uint32_t>(hf, range, range, balancing::Method::NONE());
-          });
-        };
+template <typename N, bool sorted>
+static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
+                          std::string_view range, const balancing::Method& normalization) {
+  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp; {}; {}"), range, resolution,
+                                 sorted ? "sorted" : "unsorted",
+                                 std::is_integral_v<N> ? "int" : "fp"))
+  (Catch::Benchmark::Chronometer meter) {
+    const hic::File hf(path.string(), resolution);
+    meter.measure([&hf, &range, &normalization]() {
+      if constexpr (sorted) {
+        return count_nnz<N>(hf, range, range, normalization);
+      } else {
+        return count_nnz_unsorted<N>(hf, range, range, normalization);
       }
-    }
-  }
+    });
+  };
 }
 
-TEST_CASE("hic::File::fetch (cis; double)") {
+TEST_CASE("hic::File::fetch (cis)") {
   const auto chroms = hic::File(test_file1.string(), resolutions.back()).chromosomes();
 
   for (const auto& path : {test_file1, test_file2}) {
     for (const auto& res : resolutions) {
       for (const auto& range : {range_small, range_medium, range_large}) {
-        BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), range, res))
-        (Catch::Benchmark::Chronometer meter) {
-          const hic::File hf(path.string(), res);
-          meter.measure([&hf, &range]() {
-            return count_nnz<double>(hf, range, range, balancing::Method::KR());
-          });
-        };
+        run_benchmark<std::uint32_t, true>(path, res, range, balancing::Method::NONE());
+        run_benchmark<std::uint32_t, false>(path, res, range, balancing::Method::NONE());
+        run_benchmark<double, true>(path, res, range, balancing::Method::KR());
+        run_benchmark<double, false>(path, res, range, balancing::Method::KR());
       }
     }
   }

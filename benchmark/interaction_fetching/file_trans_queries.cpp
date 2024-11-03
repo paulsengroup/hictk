@@ -35,27 +35,21 @@ static constexpr std::pair<std::string_view, std::string_view> range_medium{
 static constexpr std::pair<std::string_view, std::string_view> range_large{
     "chr2L:15,000,000-20,000,000", "chrX:15,000,000-20,000,000"};
 
-TEST_CASE("File::fetch (trans; uint32)") {
-  const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
-                                               test_file1.string(), resolutions.back()))
-                          .chromosomes();
-
-  for (const auto& path : {test_file1, test_file2, test_file3}) {
-    for (const auto& res : resolutions) {
-      for (const auto& query : {range_small, range_medium, range_large}) {
-        BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}; {}bp"), query.first, query.second, res))
-        (Catch::Benchmark::Chronometer meter) {
-          const File f(path.string(), res);
-          meter.measure([&f, range1 = query.first, range2 = query.second]() {
-            return count_nnz<std::uint32_t>(f, range1, range2, balancing::Method::NONE());
-          });
-        };
-      }
-    }
-  }
+template <typename N>
+static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
+                          std::string_view range1, std::string_view range2,
+                          const balancing::Method& normalization) {
+  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}; {}; {}bp; {}"), path.extension(), range1,
+                                 range2, resolution, std::is_integral_v<N> ? "int" : "fp"))
+  (Catch::Benchmark::Chronometer meter) {
+    const File f(path.string(), resolution);
+    meter.measure([&f, &range1, &range2, &normalization]() {
+      return count_nnz<N>(f, range1, range2, normalization);
+    });
+  };
 }
 
-TEST_CASE("File::fetch (trans; double)") {
+TEST_CASE("File::fetch (trans)") {
   const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                                test_file1.string(), resolutions.back()))
                           .chromosomes();
@@ -63,13 +57,9 @@ TEST_CASE("File::fetch (trans; double)") {
   for (const auto& path : {test_file1, test_file2, test_file3}) {
     for (const auto& res : resolutions) {
       for (const auto& query : {range_small, range_medium, range_large}) {
-        BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}; {}bp"), query.first, query.second, res))
-        (Catch::Benchmark::Chronometer meter) {
-          const File f(path.string(), res);
-          meter.measure([&f, range1 = query.first, range2 = query.second]() {
-            return count_nnz<double>(f, range1, range2, balancing::Method::KR());
-          });
-        };
+        run_benchmark<std::uint32_t>(path, res, query.first, query.second,
+                                     balancing::Method::NONE());
+        run_benchmark<double>(path, res, query.first, query.second, balancing::Method::KR());
       }
     }
   }

@@ -22,33 +22,33 @@ static const std::filesystem::path test_file2{"test/data/hic/4DNFIZ1ZVXC8.hic9"}
 static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  25000,   50000,
                                                     100000, 250000, 500000, 1000000, 2500000};
 
-TEST_CASE("hic::File::fetch (gw; uint32)") {
-  const auto chroms = hic::File(test_file1.string(), resolutions.back()).chromosomes();
-
-  for (const auto& path : {test_file1, test_file2}) {
-    for (const auto& res : resolutions) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}bp"), res))
-      (Catch::Benchmark::Chronometer meter) {
-        const hic::File hf(path.string(), res);
-        meter.measure([&hf]() {
-          return count_nnz<std::uint32_t>(hf, 10'000'000, balancing::Method::NONE());
-        });
-      };
-    }
-  }
+template <typename N, bool sorted>
+static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
+                          const balancing::Method& normalization) {
+  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}bp; {}; {}"), resolution,
+                                 sorted ? "sorted" : "unsorted",
+                                 std::is_integral_v<N> ? "int" : "fp"))
+  (Catch::Benchmark::Chronometer meter) {
+    const hic::File hf(path.string(), resolution);
+    meter.measure([&hf, &normalization]() {
+      if constexpr (sorted) {
+        return count_nnz<N>(hf, 10'000'000, normalization);
+      } else {
+        return count_nnz_unsorted<N>(hf, 10'000'000, normalization);
+      }
+    });
+  };
 }
 
-TEST_CASE("hic::File::fetch (gw; double)") {
+TEST_CASE("hic::File::fetch (gw)") {
   const auto chroms = hic::File(test_file1.string(), resolutions.back()).chromosomes();
 
   for (const auto& path : {test_file1, test_file2}) {
     for (const auto& res : resolutions) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}bp"), res))
-      (Catch::Benchmark::Chronometer meter) {
-        const hic::File hf(path.string(), res);
-        meter.measure(
-            [&hf]() { return count_nnz<std::uint32_t>(hf, 10'000'000, balancing::Method::KR()); });
-      };
+      run_benchmark<std::uint32_t, true>(path, res, balancing::Method::NONE());
+      run_benchmark<std::uint32_t, false>(path, res, balancing::Method::NONE());
+      run_benchmark<double, true>(path, res, balancing::Method::KR());
+      run_benchmark<double, false>(path, res, balancing::Method::KR());
     }
   }
 }

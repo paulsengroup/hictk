@@ -24,36 +24,26 @@ static const std::filesystem::path test_file3{"test/data/hic/4DNFIZ1ZVXC8.hic9"}
 static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  25000,   50000,
                                                     100000, 250000, 500000, 1000000, 2500000};
 
-TEST_CASE("File::fetch (gw; uint32)") {
-  const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
-                                               test_file1.string(), resolutions.back()))
-                          .chromosomes();
-
-  for (const auto& path : {test_file1, test_file2, test_file3}) {
-    for (const auto& res : resolutions) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), path.extension(), res))
-      (Catch::Benchmark::Chronometer meter) {
-        const File f(path.string(), res);
-        meter.measure(
-            [&f]() { return count_nnz<std::uint32_t>(f, 10'000'000, balancing::Method::NONE()); });
-      };
-    }
-  }
+template <typename N>
+static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
+                          const balancing::Method& normalization) {
+  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp; {}"), path.extension(), resolution,
+                                 std::is_integral_v<N> ? "int" : "fp"))
+  (Catch::Benchmark::Chronometer meter) {
+    const File f(path.string(), resolution);
+    meter.measure([&f, &normalization]() { return count_nnz<N>(f, 10'000'000, normalization); });
+  };
 }
 
-TEST_CASE("File::fetch (gw; double)") {
+TEST_CASE("File::fetch (gw)") {
   const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                                test_file1.string(), resolutions.back()))
                           .chromosomes();
 
   for (const auto& path : {test_file1, test_file2, test_file3}) {
     for (const auto& res : resolutions) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), path.extension(), res))
-      (Catch::Benchmark::Chronometer meter) {
-        const File f(path.string(), res);
-        meter.measure(
-            [&f]() { return count_nnz<std::uint32_t>(f, 10'000'000, balancing::Method::KR()); });
-      };
+      run_benchmark<std::uint32_t>(path, res, balancing::Method::NONE());
+      run_benchmark<double>(path, res, balancing::Method::KR());
     }
   }
 }

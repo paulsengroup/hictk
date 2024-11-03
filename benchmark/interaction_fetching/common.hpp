@@ -21,21 +21,6 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/reference.hpp"
 
-// NOLINTBEGIN(*-avoid-magic-numbers)
-struct Params {
-  std::string_view label{};
-  bool cis{};
-
-  double avg_height{1.0e6};
-  double avg_width{1.0e6};
-  double height_std{250.0e3};
-  double width_std{250.0e3};
-  std::size_t num_queries{1};
-  hictk::balancing::Method normalization{hictk::balancing::Method::NONE()};
-  std::uint64_t seed{123456789};
-};
-// NOLINTEND(*-avoid-magic-numbers)
-
 [[nodiscard]] inline std::pair<std::string, std::string> generate_query(
     std::mt19937_64& rand_eng, const hictk::Chromosome& chrom1, const hictk::Chromosome& chrom2,
     double avg_height, double avg_width, double height_std, double width_std) {
@@ -150,6 +135,29 @@ template <typename N, typename File>
                                               const hictk::balancing::Method& normalization) {
   const auto sel = file.fetch(normalization);
   auto first = sel.template begin<N>();
+  auto last = sel.template end<N>();
+
+  std::ptrdiff_t i{};
+  // clang-format off
+  while (++first != last && ++i != static_cast<std::ptrdiff_t>(max_num_pixels));  // NOLINT
+  // clang-format on
+  return i;
+}
+
+template <typename N, typename File>
+[[nodiscard]] inline std::ptrdiff_t count_nnz_unsorted(
+    const File& file, std::string_view range1, std::string_view range2,
+    const hictk::balancing::Method& normalization) {
+  const auto sel = file.fetch(range1, range2, normalization);
+
+  return std::distance(sel.template begin<N>(false), sel.template end<N>());
+}
+
+template <typename N, typename File>
+[[nodiscard]] inline std::ptrdiff_t count_nnz_unsorted(
+    const File& file, std::size_t max_num_pixels, const hictk::balancing::Method& normalization) {
+  const auto sel = file.fetch(normalization);
+  auto first = sel.template begin<N>(false);
   auto last = sel.template end<N>();
 
   std::ptrdiff_t i{};

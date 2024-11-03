@@ -27,38 +27,28 @@ static constexpr std::string_view range_small{"chr2L:5,000,000-5,100,000"};
 static constexpr std::string_view range_medium{"chr2L:6,000,000-7,000,000"};
 static constexpr std::string_view range_large{"chr2L:10,000,000-15,000,000"};
 
-TEST_CASE("cooler::File::fetch (cis; uint32)") {
-  const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
-                                               test_file.string(), resolutions.back()))
-                          .chromosomes();
-  for (const auto& res : resolutions) {
-    for (const auto& range : {range_small, range_medium, range_large}) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), range, res))
-      (Catch::Benchmark::Chronometer meter) {
-        const cooler::File clr(
-            fmt::format(FMT_STRING("{}::/resolutions/{}"), test_file.string(), res));
-        meter.measure([&clr, &range]() {
-          return count_nnz<std::uint32_t>(clr, range, range, balancing::Method::NONE());
-        });
-      };
-    }
-  }
+template <typename N>
+static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
+                          std::string_view range, const balancing::Method& normalization) {
+  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp; {}"), range, resolution,
+                                 std::is_integral_v<N> ? "int" : "fp"))
+  (Catch::Benchmark::Chronometer meter) {
+    const cooler::File clr(
+        fmt::format(FMT_STRING("{}::/resolutions/{}"), path.string(), resolution));
+    meter.measure([&clr, &range, &normalization]() {
+      return count_nnz<N>(clr, range, range, normalization);
+    });
+  };
 }
 
-TEST_CASE("cooler::File::fetch (cis; double)") {
+TEST_CASE("cooler::File::fetch (cis)") {
   const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                                test_file.string(), resolutions.back()))
                           .chromosomes();
   for (const auto& res : resolutions) {
     for (const auto& range : {range_small, range_medium, range_large}) {
-      BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp"), range, res))
-      (Catch::Benchmark::Chronometer meter) {
-        const cooler::File clr(
-            fmt::format(FMT_STRING("{}::/resolutions/{}"), test_file.string(), res));
-        meter.measure([&clr, &range]() {
-          return count_nnz<double>(clr, range, range, balancing::Method::KR());
-        });
-      };
+      run_benchmark<std::uint32_t>(test_file, res, range, balancing::Method::NONE());
+      run_benchmark<double>(test_file, res, range, balancing::Method::KR());
     }
   }
 }
