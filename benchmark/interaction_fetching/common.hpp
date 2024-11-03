@@ -144,3 +144,17 @@ template <typename N, typename File>
 
   return std::distance(sel.template begin<N>(), sel.template end<N>());
 }
+
+template <typename N, typename File>
+[[nodiscard]] inline std::ptrdiff_t count_nnz(const File& file, std::size_t max_num_pixels,
+                                              const hictk::balancing::Method& normalization) {
+  const auto sel = file.fetch(normalization);
+  auto first = sel.template begin<N>();
+  auto last = sel.template end<N>();
+
+  std::ptrdiff_t i{};
+  // clang-format off
+  while (++first != last && ++i != static_cast<std::ptrdiff_t>(max_num_pixels));  // NOLINT
+  // clang-format on
+  return i;
+}

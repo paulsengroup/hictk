@@ -15,10 +15,13 @@ target_sources(
   hictk_interaction_fetching_bench
   PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/cooler_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cooler_gw_queries.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/cooler_trans_queries.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/file_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_gw_queries.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/file_trans_queries.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/hic_cis_queries.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hic_gw_queries.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/hic_trans_queries.cpp"
 )
 
