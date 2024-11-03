@@ -13,7 +13,6 @@
 #include "./common.hpp"
 #include "hictk/balancing/methods.hpp"
 #include "hictk/cooler/cooler.hpp"
-#include "hictk/cooler/validation.hpp"
 #include "hictk/file.hpp"
 
 using namespace hictk;
