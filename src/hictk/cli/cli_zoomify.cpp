@@ -175,7 +175,6 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
 void Cli::validate_zoomify_subcommand() const {
   assert(_cli.get_subcommand("zoomify")->parsed());
 
-  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<ZoomifyConfig>(_config);
 
@@ -206,7 +205,7 @@ void Cli::validate_zoomify_subcommand() const {
 
   if (base_resolution == 0) {  // Variable bin size
     errors.clear();
-    warnings.clear();
+    _warnings.clear();
     errors.emplace_back("Zoomifying files with variable bin size is currently not supported.");
   } else {
     if (const auto dupl = detect_duplicate_resolutions(c.resolutions); !dupl.empty()) {
@@ -226,14 +225,10 @@ void Cli::validate_zoomify_subcommand() const {
     const auto nice_or_pow2_steps_parsed =
         !sc->get_option("--nice-steps")->empty() || !sc->get_option("--pow2-steps")->empty();
     if (!c.resolutions.empty() && nice_or_pow2_steps_parsed) {
-      warnings.emplace_back(
+      _warnings.emplace_back(
           "--nice-steps and --pow2-steps are ignored when resolutions are explicitly set with "
           "--resolutions.");
     }
-  }
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {

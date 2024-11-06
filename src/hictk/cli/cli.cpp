@@ -5,6 +5,7 @@
 #include "hictk/tools/cli.hpp"
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <cassert>
@@ -23,6 +24,13 @@ Cli::Cli(int argc, char** argv) : _argc(argc), _argv(argv), _exec_name(*argv) { 
 Cli::subcommand Cli::get_subcommand() const noexcept { return _subcommand; }
 std::string_view Cli::get_printable_subcommand() const noexcept {
   return Cli::subcommand_to_str(get_subcommand());
+}
+
+void Cli::log_warnings() const noexcept {
+  for (const auto& w : _warnings) {
+    SPDLOG_WARN(FMT_STRING("{}"), w);
+  }
+  _warnings.clear();
 }
 
 auto Cli::parse_arguments() -> Config {
