@@ -4,6 +4,14 @@
 
 #pragma once
 
+// clang-format off
+#include "hictk/suppress_warnings.hpp"
+HICTK_DISABLE_WARNING_PUSH
+HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
+#include <parallel_hashmap/phmap.h>
+HICTK_DISABLE_WARNING_POP
+// clang-format on
+
 #if __has_include(<blockingconcurrentqueue.h>)
 #include <blockingconcurrentqueue.h>
 #else
@@ -12,7 +20,6 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 #include <libdeflate.h>
-#include <parallel_hashmap/phmap.h>
 #if __has_include(<readerwriterqueue.h>)
 #include <readerwriterqueue.h>
 #else
