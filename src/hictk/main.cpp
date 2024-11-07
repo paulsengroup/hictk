@@ -15,6 +15,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -28,8 +29,8 @@ using namespace hictk::tools;
 
 template <std::size_t CAPACITY>
 class GlobalLogger {
-  //                                                 [2021-08-12 17:49:34.581] [info]: my log msg
-  static constexpr auto *_msg_pattern{"[%Y-%m-%d %T.%e] %^[%l]%$: %v"};
+  //                                              [2021-08-12 17:49:34.581] [info]: my log msg
+  static constexpr std::string_view _msg_pattern{"[%Y-%m-%d %T.%e] %^[%l]%$: %v"};
   using HictkLogMsg = std::pair<spdlog::level::level_enum, std::string>;
   std::deque<HictkLogMsg> _msg_buffer{};
 
@@ -39,7 +40,7 @@ class GlobalLogger {
 
   [[nodiscard]] static std::shared_ptr<spdlog::sinks::stderr_color_sink_mt> init_stderr_sink() {
     auto stderr_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    stderr_sink->set_pattern(_msg_pattern);
+    stderr_sink->set_pattern(std::string{_msg_pattern});
     stderr_sink->set_level(spdlog::level::debug);
 
     return stderr_sink;
@@ -49,7 +50,7 @@ class GlobalLogger {
     if constexpr (CAPACITY != 0 && SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_WARN) {
       auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>(
           [this](const spdlog::details::log_msg &msg) noexcept { enqueue_msg(msg); });
-      callback_sink->set_pattern(_msg_pattern);
+      callback_sink->set_pattern(std::string{_msg_pattern});
       callback_sink->set_level(spdlog::level::warn);
 
       return callback_sink;
@@ -68,7 +69,7 @@ class GlobalLogger {
   }
 
   void enqueue_msg(const spdlog::details::log_msg &msg) noexcept {
-    if (msg.level < spdlog::level::warn) [[likely]] {
+    if (msg.level < spdlog::level::warn) {
       return;
     }
 
@@ -76,7 +77,7 @@ class GlobalLogger {
 
     try {
       [[maybe_unused]] const std::scoped_lock lck(_mtx);
-      if (_msg_buffer.size() == CAPACITY) [[unlikely]] {
+      if (_msg_buffer.size() == CAPACITY) {
         _msg_buffer.pop_front();
       }
       _msg_buffer.emplace_back(msg.level, std::string{msg.payload.begin(), msg.payload.end()});
@@ -108,6 +109,14 @@ class GlobalLogger {
     _msg_buffer.clear();
   }
 
+  static void reset_logger() noexcept {
+    try {
+      spdlog::set_default_logger(
+          std::make_shared<spdlog::logger>("main_logger", init_stderr_sink()));
+    } catch (...) {  // NOLINT
+    }
+  }
+
  public:
   GlobalLogger() noexcept {
     try {
@@ -122,13 +131,34 @@ class GlobalLogger {
   }
 
   GlobalLogger(const GlobalLogger &other) = delete;
-  GlobalLogger(GlobalLogger &&other) noexcept = default;
+  GlobalLogger(GlobalLogger &&other) noexcept
+      : _msg_buffer(std::move(other._msg_buffer)),
+        _num_msg_enqueued(other._num_msg_enqueued.load()),
+        _ok(other._ok.load()) {
+    other._num_msg_enqueued = 0;
+    other._ok = false;
+  }
 
   GlobalLogger &operator=(const GlobalLogger &other) = delete;
-  GlobalLogger &operator=(GlobalLogger &&other) noexcept = default;
+  GlobalLogger &operator=(GlobalLogger &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+
+    [[maybe_unused]] const auto lck = std::scoped_lock(other._mtx);
+    _msg_buffer = std::move(other._msg_buffer);
+    _num_msg_enqueued = other._num_msg_enqueued.load();
+    _ok = other._ok.load();
+
+    other._num_msg_enqueued = 0;
+    other._ok = false;
+
+    return *this;
+  }
 
   ~GlobalLogger() noexcept {
     if (!_ok) {
+      reset_logger();
       return;
     }
 
@@ -139,6 +169,7 @@ class GlobalLogger {
     } catch (...) {
       print_noexcept(FMT_STRING("FAILURE! Failed to replay hictk warnings: unknown error"));
     }
+    reset_logger();
   }
 
   static void set_level(int lvl) {
@@ -166,12 +197,14 @@ class GlobalLogger {
   }
 };
 
-// NOLINTNEXTLINE(*-err58-cpp, *-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(*-err58-cpp, *-avoid-non-const-global-variables, *-avoid-magic-numbers)
 static auto global_logger = std::make_unique<GlobalLogger<256>>();
 
 static auto acquire_global_logger() noexcept { return std::move(global_logger); }
 
-static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &cli) {
+template <typename Logger>
+static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &cli,
+                                                                           Logger &logger) {
   try {
     auto config = cli.parse_arguments();
     const auto subcmd = cli.get_subcommand();
@@ -179,10 +212,10 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
         [&](const auto &config_) {
           using T = hictk::remove_cvref_t<decltype(config_)>;
           if constexpr (!std::is_same_v<T, std::monostate>) {
-            if (global_logger && global_logger->ok()) {
-              global_logger->set_level(config_.verbosity);  // NOLINT
+            if (logger.ok()) {
+              logger.set_level(config_.verbosity);  // NOLINT
               if (subcmd != Cli::subcommand::help && subcmd != Cli::subcommand::dump) {
-                global_logger->print_welcome_msg();
+                logger.print_welcome_msg();
               }
             }
           }
@@ -217,7 +250,7 @@ int main(int argc, char **argv) noexcept {
 
     auto local_logger = acquire_global_logger();
     cli = std::make_unique<Cli>(argc, argv);
-    const auto [ec, subcmd, config] = parse_cli_and_setup_logger(*cli);
+    const auto [ec, subcmd, config] = parse_cli_and_setup_logger(*cli, *local_logger);
     if (ec != 0 || subcmd == Cli::subcommand::help) {
       local_logger->clear();
       return ec;
@@ -265,23 +298,26 @@ int main(int argc, char **argv) noexcept {
     assert(cli);
     return cli->exit(e);  //  This takes care of formatting and printing error messages (if any)
   } catch (const std::bad_alloc &err) {
-    fmt::print(stderr, FMT_STRING("FAILURE! Unable to allocate enough memory: {}\n"), err.what());
+    SPDLOG_CRITICAL(FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), err.what());
+    return 1;
+  } catch (const spdlog::spdlog_ex &e) {
+    fmt::print(stderr,
+               FMT_STRING("FAILURE! hictk encountered the following error while logging: {}\n"),
+               e.what());
     return 1;
   } catch (const std::exception &e) {
     if (cli) {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk {} encountered the following error: {}\n"),
-                 cli->get_printable_subcommand(), e.what());
+      SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk {} encountered the following error: {}"),
+                      cli->get_printable_subcommand(), e.what());
     } else {
-      fmt::print(stderr, FMT_STRING("FAILURE! hictk encountered the following error: {}\n"),
-                 e.what());
+      SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk encountered the following error: {}"), e.what());
     }
     return 1;
   } catch (...) {
-    fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
-                          "unhandled exception! "
-                          "If you see this message, please file an issue on GitHub.\n"),
-               cli->get_printable_subcommand());
+    SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
+                               "unhandled exception! "
+                               "If you see this message, please file an issue on GitHub."),
+                    cli->get_printable_subcommand());
     return 1;
   }
   return 0;
