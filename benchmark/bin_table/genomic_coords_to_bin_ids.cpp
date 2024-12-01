@@ -13,8 +13,9 @@
 #include <vector>
 
 #include "./common.hpp"
+#include "hictk/benchmark/hg38.hpp"
 
-using namespace hictk;
+namespace hictk::benchmark {
 
 // NOLINTBEGIN(*-avoid-magic-numbers)
 TEST_CASE("BinTable::at(chrom, pos)") {
@@ -68,3 +69,5 @@ TEST_CASE("BinTableVariable::at(chrom, pos)") {
   }
 }
 // NOLINTEND(*-avoid-magic-numbers)
+
+}  // namespace hictk::benchmark

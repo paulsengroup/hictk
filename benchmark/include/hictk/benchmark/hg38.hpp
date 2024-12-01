@@ -8,6 +8,8 @@
 
 #include "hictk/chromosome.hpp"
 
+namespace hictk::benchmark {
+
 // clang-format off
 // NOLINTNEXTLINE(cert-err58-cpp)
 inline const std::vector hg38{
@@ -37,3 +39,5 @@ inline const std::vector hg38{
         hictk::Chromosome{23, "chrY",  57227415}
 };
 // clang-format on
+
+}  // namespace hictk::benchmark

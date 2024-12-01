@@ -13,12 +13,12 @@
 #include <random>
 #include <vector>
 
-#include "./common.hpp"
+#include "hictk/benchmark/hg38.hpp"
 #include "hictk/bin.hpp"
 #include "hictk/bin_table_fixed.hpp"
 #include "hictk/chromosome.hpp"
 
-using namespace hictk;
+namespace hictk::benchmark {
 
 // NOLINTBEGIN(*-avoid-magic-numbers)
 [[nodiscard]] static std::vector<Bin> generate_bins(std::size_t size, bool erase_ids) {
@@ -97,3 +97,5 @@ TEST_CASE("Bin") {
   };
 }
 // NOLINTEND(*-avoid-magic-numbers)
+
+}  // namespace hictk::benchmark
