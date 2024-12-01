@@ -21,7 +21,7 @@ SPDX-License-Identifier: MIT
 
 hictk is a blazing fast toolkit to work with .hic and .cool files.
 
-This repository hosts `hictk`: a set of CLI tools to work with Cooler, as well as `libhictk`: the C++ library underlying `hictk`.
+This repository hosts `hictk`: a set of CLI tools to work with Cooler and .hic files, as well as `libhictk`: the C++ library underlying `hictk`.
 
 Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy), while R bindings are published at [paulsengroup/hictkR](https://github.com/paulsengroup/hictkR).
 
