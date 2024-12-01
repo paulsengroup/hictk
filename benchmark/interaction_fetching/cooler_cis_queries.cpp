@@ -4,52 +4,53 @@
 
 #include <fmt/format.h>
 
+#include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cstddef>
 #include <cstdint>
-#include <filesystem>
 #include <string_view>
-#include <utility>
-#include <vector>
 
 #include "./common.hpp"
 #include "hictk/balancing/methods.hpp"
+#include "hictk/benchmark/benchmark_installers.hpp"
 #include "hictk/cooler/cooler.hpp"
 
-using namespace hictk;
+namespace hictk::benchmark {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)
-static const std::filesystem::path test_file{"test/data/integration_tests/4DNFIZ1ZVXC8.mcool"};
-static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  25000,   50000,
-                                                    100000, 250000, 500000, 1000000, 2500000};
+// NOLINTBEGIN(*-avoid-magic-numbers, cert-err58-cpp)
+static const TestCaseGenerator test_generator{
+    "cooler::File::fetch (cis)",
+    std::array<std::string_view, 1>{"test/data/integration_tests/4DNFIZ1ZVXC8.mcool"},
+    std::array<std::uint32_t, 4>{1000, 10000, 100000, 1000000},
+    std::array<std::string_view, 3>{"chr2L:5,000,000-5,100,000", "chr2L:6,000,000-7,000,000",
+                                    "chr2L:10,000,000-15,000,000"},
+    std::array<std::string_view, 3>{"chr2L:5,000,000-5,100,000", "chr2L:6,000,000-7,000,000",
+                                    "chr2L:10,000,000-15,000,000"},
+    std::array<balancing::Method, 2>{balancing::Method::NONE(), balancing::Method::VC()}};
+// NOLINTEND(*-avoid-magic-numbers, cert-err58-cpp)
 
-static constexpr std::string_view range_small{"chr2L:5,000,000-5,100,000"};
-static constexpr std::string_view range_medium{"chr2L:6,000,000-7,000,000"};
-static constexpr std::string_view range_large{"chr2L:10,000,000-15,000,000"};
-
-template <typename N>
-static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
-                          std::string_view range, const balancing::Method& normalization) {
-  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}; {}bp; {}"), range, resolution,
-                                 std::is_integral_v<N> ? "int" : "fp"))
+template <std::size_t I>
+static void run_benchmark() {
+  BENCHMARK_ADVANCED("benchmark")
   (Catch::Benchmark::Chronometer meter) {
+    const auto& params = test_generator[I];
     const cooler::File clr(
-        fmt::format(FMT_STRING("{}::/resolutions/{}"), path.string(), resolution));
-    meter.measure([&clr, &range, &normalization]() {
-      return count_nnz<N>(clr, range, range, normalization);
-    });
+        fmt::format(FMT_STRING("{}::/resolutions/{}"), params.path.string(), params.resolution));
+    if (params.normalization == balancing::Method::NONE()) {
+      meter.measure([&]() {
+        return count_nnz<std::uint32_t>(clr, params.range1, params.range1, params.normalization);
+      });
+    } else {
+      meter.measure([&]() {
+        return count_nnz<double>(clr, params.range1, params.range1, params.normalization);
+      });
+    }
   };
 }
 
-TEST_CASE("cooler::File::fetch (cis)") {
-  const auto chroms = cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"),
-                                               test_file.string(), resolutions.back()))
-                          .chromosomes();
-  for (const auto& res : resolutions) {
-    for (const auto& range : {range_small, range_medium, range_large}) {
-      run_benchmark<std::uint32_t>(test_file, res, range, balancing::Method::NONE());
-      run_benchmark<double>(test_file, res, range, balancing::Method::KR());
-    }
-  }
-}
-// NOLINTEND(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)
+HICTK_REGISTER_BENCHMARKS(test_generator, run_benchmark)
+
+void register_cooler_cis_queries_benchmarks() { register_benchmarks(); }
+
+}  // namespace hictk::benchmark

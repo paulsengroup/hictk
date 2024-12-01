@@ -2,54 +2,51 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <fmt/format.h>
-
+#include <array>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cstddef>
 #include <cstdint>
-#include <filesystem>
-#include <vector>
+#include <string_view>
 
 #include "./common.hpp"
 #include "hictk/balancing/methods.hpp"
+#include "hictk/benchmark/benchmark_installers.hpp"
 #include "hictk/hic.hpp"
 
-using namespace hictk;
+namespace hictk::benchmark {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)
-static const std::filesystem::path test_file1{"test/data/hic/4DNFIZ1ZVXC8.hic8"};
-static const std::filesystem::path test_file2{"test/data/hic/4DNFIZ1ZVXC8.hic9"};
-static const std::vector<std::uint32_t> resolutions{1000,   5000,   10000,  25000,   50000,
-                                                    100000, 250000, 500000, 1000000, 2500000};
+// NOLINTBEGIN(*-avoid-magic-numbers, cert-err58-cpp)
+static const TestCaseGenerator test_generator{
+    "hic::File::fetch (gw)",
+    std::array<std::string_view, 2>{"test/data/hic/4DNFIZ1ZVXC8.hic8",
+                                    "test/data/hic/4DNFIZ1ZVXC8.hic9"},
+    std::array<std::uint32_t, 4>{1000, 10000, 100000, 1000000},
+    std::array<std::string_view, 1>{"GW"},
+    std::array<std::string_view, 1>{"GW"},
+    std::array<balancing::Method, 2>{balancing::Method::NONE(), balancing::Method::VC()}};
+// NOLINTEND(*-avoid-magic-numbers, cert-err58-cpp)
 
-template <typename N, bool sorted>
-static void run_benchmark(const std::filesystem::path& path, std::uint32_t resolution,
-                          const balancing::Method& normalization) {
-  BENCHMARK_ADVANCED(fmt::format(FMT_STRING("{}bp; {}; {}"), resolution,
-                                 sorted ? "sorted" : "unsorted",
-                                 std::is_integral_v<N> ? "int" : "fp"))
+template <std::size_t I>
+static void run_benchmark() {
+  BENCHMARK_ADVANCED("benchmark")
   (Catch::Benchmark::Chronometer meter) {
-    const hic::File hf(path.string(), resolution);
-    meter.measure([&hf, &normalization]() {
-      if constexpr (sorted) {
-        return count_nnz<N>(hf, 10'000'000, normalization);
-      } else {
-        return count_nnz_unsorted<N>(hf, 10'000'000, normalization);
-      }
-    });
+    const auto& params = test_generator[I];
+    const hic::File f(params.path.string(), params.resolution);
+    if (params.normalization == balancing::Method::NONE()) {
+      meter.measure([&]() {
+        return count_nnz<std::uint32_t>(f, params.range1, params.range1, params.normalization);
+      });
+    } else {
+      meter.measure([&]() {
+        return count_nnz<double>(f, params.range1, params.range1, params.normalization);
+      });
+    }
   };
 }
 
-TEST_CASE("hic::File::fetch (gw)") {
-  const auto chroms = hic::File(test_file1.string(), resolutions.back()).chromosomes();
+HICTK_REGISTER_BENCHMARKS(test_generator, run_benchmark)
 
-  for (const auto& path : {test_file1, test_file2}) {
-    for (const auto& res : resolutions) {
-      run_benchmark<std::uint32_t, true>(path, res, balancing::Method::NONE());
-      run_benchmark<std::uint32_t, false>(path, res, balancing::Method::NONE());
-      run_benchmark<double, true>(path, res, balancing::Method::KR());
-      run_benchmark<double, false>(path, res, balancing::Method::KR());
-    }
-  }
-}
-// NOLINTEND(*-avoid-magic-numbers, cert-err58-cpp, readability-function-cognitive-complexity)
+void register_hic_gw_queries_benchmarks() { register_benchmarks(); }
+
+}  // namespace hictk::benchmark
