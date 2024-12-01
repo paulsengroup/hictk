@@ -69,7 +69,7 @@ struct Pixel {
   N count{};                  // NOLINT
 
   Pixel() = default;
-  explicit Pixel(Bin bin, N count_ = 0) noexcept;
+  explicit Pixel(const Bin &bin, N count_ = 0) noexcept;
   Pixel(Bin bin1_, Bin bin2_, N count_ = 0) noexcept;
   explicit Pixel(PixelCoordinates coords_, N count_ = 0) noexcept;
   Pixel(const Chromosome &chrom, std::uint32_t start, std::uint32_t end, N count_ = 0) noexcept;
