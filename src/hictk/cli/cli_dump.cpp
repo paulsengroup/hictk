@@ -145,7 +145,6 @@ void Cli::make_dump_subcommand() {
 void Cli::validate_dump_subcommand() const {
   assert(_cli.get_subcommand("dump")->parsed());
 
-  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<DumpConfig>(_config);
 
@@ -164,26 +163,26 @@ void Cli::validate_dump_subcommand() const {
   const auto resolution_parsed = !subcmd.get_option("--resolution")->empty();
 
   if ((is_cooler || is_scool) && resolution_parsed) {
-    warnings.emplace_back("--resolution is ignored when file is in .[s]cool format.");
+    _warnings.emplace_back("--resolution is ignored when file is in .[s]cool format.");
   }
 
   const auto range_parsed = !subcmd.get_option("--range")->empty();
   if (range_parsed && c.table != "chroms" && c.table != "bins" && c.table != "pixels" &&
       c.table != "weights") {
-    warnings.emplace_back(
+    _warnings.emplace_back(
         "--range and --range2 are ignored when --table is not bins, chroms, pixels, or weights");
   }
 
   const auto query_file_parsed = !subcmd.get_option("--query-file")->empty();
   if (query_file_parsed && c.table != "bins" && c.table != "pixels") {
-    warnings.emplace_back("--query-file is ignored when --table is not bins or pixels");
+    _warnings.emplace_back("--query-file is ignored when --table is not bins or pixels");
   }
 
   const auto matrix_type_parsed = !subcmd.get_option("--matrix-type")->empty();
   const auto matrix_unit_parsed = !subcmd.get_option("--matrix-unit")->empty();
 
   if (!is_hic && (matrix_type_parsed || matrix_unit_parsed)) {
-    warnings.emplace_back(
+    _warnings.emplace_back(
         "--matrix-type and --matrix-unit are ignored when input file is not in .hic format.");
   }
 
@@ -203,10 +202,6 @@ void Cli::validate_dump_subcommand() const {
   const auto balance_parsed = !subcmd.get_option("--balance")->empty();
   if (balance_parsed && c.table != "pixels") {
     errors.emplace_back("--balance requires --table=pixels.");
-  }
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {

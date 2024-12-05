@@ -103,7 +103,6 @@ void Cli::make_fix_mcool_subcommand() {
 void Cli::validate_fix_mcool_subcommand() const {
   const auto& c = std::get<FixMcoolConfig>(_config);
   std::vector<std::string> errors;
-  std::vector<std::string> warnings{};
 
   if (!c.force && std::filesystem::exists(c.path_to_output)) {
     errors.emplace_back(fmt::format(
@@ -113,20 +112,20 @@ void Cli::validate_fix_mcool_subcommand() const {
   if (c.skip_balancing) {
     const auto* sc = _cli.get_subcommand("fix-mcool");
     if (!sc->get_option("--tmpdir")->empty()) {
-      warnings.emplace_back("option --tmpdir is ignored when --skip-balancing is provided.");
+      _warnings.emplace_back("option --tmpdir is ignored when --skip-balancing is provided.");
     }
     if (!sc->get_option("--in-memory")->empty()) {
-      warnings.emplace_back("option --in-memory is ignored when --skip-balancing is provided.");
+      _warnings.emplace_back("option --in-memory is ignored when --skip-balancing is provided.");
     }
     if (!sc->get_option("--compression-lvl")->empty()) {
-      warnings.emplace_back(
+      _warnings.emplace_back(
           "option --compression-lvl is ignored when --skip-balancing is provided.");
     }
     if (!sc->get_option("--chunk-size")->empty()) {
-      warnings.emplace_back("option --chunk-size is ignored when --skip-balancing is provided.");
+      _warnings.emplace_back("option --chunk-size is ignored when --skip-balancing is provided.");
     }
     if (!sc->get_option("--threads")->empty()) {
-      warnings.emplace_back("option --threads is ignored when --skip-balancing is provided.");
+      _warnings.emplace_back("option --threads is ignored when --skip-balancing is provided.");
     }
   }
 
@@ -135,10 +134,6 @@ void Cli::validate_fix_mcool_subcommand() const {
   if (storage_mode.has_value() && storage_mode != "symmetric-upper") {
     errors.emplace_back(fmt::format(
         FMT_STRING("fixing .mcool with storage-mode=\"{}\" is not supported"), *storage_mode));
-  }
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {
