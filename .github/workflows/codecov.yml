@@ -314,7 +314,7 @@ jobs:
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: "tests | unittests"
           fail_ci_if_error: true
@@ -547,7 +547,7 @@ jobs:
             build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: "tests | integration"
           fail_ci_if_error: true
