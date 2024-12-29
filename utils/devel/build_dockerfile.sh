@@ -9,6 +9,13 @@ set -u
 set -o pipefail
 
 IMAGE_NAME='hictk'
+
+if [ "$(uname)" == "Darwin" ]; then
+  BUILD_USER="$USER"
+else
+  BUILD_USER='root'
+fi
+
 COMPILER_NAME='clang'
 COMPILER_VERSION='19'
 C_COMPILER="$COMPILER_NAME-$COMPILER_VERSION"
@@ -21,7 +28,7 @@ fi
 GIT_HASH="$(git rev-parse HEAD)"
 GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
 GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)"  --points-at HEAD)"
-CREATION_DATE="$(date --iso-8601)"
+CREATION_DATE="$(date -I)"
 
 if [[ $(git status --porcelain -uno) ]]; then
   GIT_IS_DIRTY=1
@@ -36,20 +43,19 @@ fi
 
 if [ -z "$GIT_TAG" ]; then
   GIT_TAG="sha-$GIT_SHORT_HASH"
-else
-  GIT_TAG="$GIT_TAG"
 fi
 
 2>&1 echo "Building \"$IMAGE_NAME:$IMAGE_TAG\"..."
 
-sudo docker pull docker.io/library/ubuntu:24.04
-FINAL_BASE_IMAGE_DIGEST="$(sudo docker inspect --format='{{index .RepoDigests 0}}' docker.io/library/ubuntu:24.04 | grep -o '[[:alnum:]:]\+$')"
+sudo -u "$BUILD_USER" docker pull docker.io/library/ubuntu:24.04
+FINAL_BASE_IMAGE_DIGEST="$(sudo -u "$BUILD_USER" docker inspect --format='{{index .RepoDigests 0}}' docker.io/library/ubuntu:24.04 | grep -o '[[:alnum:]:]\+$')"
 
 BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-$C_COMPILER:latest"
 
-sudo docker pull "$BUILD_BASE_IMAGE"
+sudo -u "$BUILD_USER" docker pull "$BUILD_BASE_IMAGE"
 
-sudo docker buildx build --platform linux/amd64 --load \
+# sudo -u "$BUILD_USER" docker buildx build --platform linux/amd64,linux/arm64 \
+sudo -u "$BUILD_USER" docker buildx build --platform linux/arm64 \
   --build-arg "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" \
   --build-arg "FINAL_BASE_IMAGE=docker.io/library/ubuntu" \
   --build-arg "FINAL_BASE_IMAGE_TAG=24.04" \
