@@ -275,6 +275,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -q -y --no-install-recommends \
+            curl \
             gpg \
             gpg-agent \
             sudo \
@@ -372,6 +373,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -q -y --no-install-recommends \
+            curl \
             gpg \
             gpg-agent \
             sudo \
