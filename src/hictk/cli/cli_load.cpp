@@ -197,7 +197,6 @@ void Cli::make_load_subcommand() {
 void Cli::validate_load_subcommand() const {
   assert(_cli.get_subcommand("load")->parsed());
 
-  std::vector<std::string> warnings;
   std::vector<std::string> errors;
   const auto& c = std::get<LoadConfig>(_config);
   const auto& sc = *_cli.get_subcommand("load");
@@ -230,12 +229,8 @@ void Cli::validate_load_subcommand() const {
   }
 
   if (c.format == "4dn" && c.format == "validpairs" && c.assume_sorted) {
-    warnings.emplace_back(
+    _warnings.emplace_back(
         "--assume-sorted has no effect when ingesting interactions in 4dn or validpairs format.");
-  }
-
-  for (const auto& w : warnings) {
-    SPDLOG_WARN(FMT_STRING("{}"), w);
   }
 
   if (!errors.empty()) {
