@@ -23,6 +23,7 @@ venv/
 
 # Ignored files
 *.bak
+benchmarks*.xml
 gmon.out
 perf.*
 compile_commands.json
