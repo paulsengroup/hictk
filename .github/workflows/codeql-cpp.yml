@@ -1,25 +1,21 @@
 # Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
 # SPDX-License-Identifier: MIT
 
-name: Run CodeQL analysis
+name: Run CodeQL analysis (C++)
 
 on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/*.yml"
+      - ".github/workflows/codeql-cpp.yml"
       - "cmake/**"
-      - "docs/*.py"
       - "examples/**"
       - "src/**"
-      - "test/fuzzer/scripts/*.py"
       - "test/integration/**"
       - "test/units/**"
-      - "utils/devel/*.py"
       - "CMakeLists.txt"
-      - "conanfile.py"
-    schedule:
-      - cron: "0 5 1 * *" # run monthly at 05:00
+  schedule:
+    - cron: "0 5 1 * *" # run monthly at 05:00
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -37,16 +33,9 @@ jobs:
       os: ubuntu-20.04
 
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze (C++)
     runs-on: ubuntu-24.04
     needs: [build-conan-deps]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { language: actions, build-mode: none }
-          - { language: c-cpp, build-mode: manual }
-          - { language: python, build-mode: none }
     permissions:
       contents: read
       security-events: write
@@ -60,13 +49,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Symlink Conan home
-        if: matrix.language == 'c-cpp'
         run: |
           mkdir -p /home/runner/opt/conan
           ln -s /home/runner/opt/conan/ /opt/conan
 
       - name: Restore Conan cache
-        if: matrix.language == 'c-cpp'
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}
@@ -74,7 +61,6 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore CMake configs
-        if: matrix.language == 'c-cpp'
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
@@ -82,7 +68,6 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Extract CMake configs
-        if: matrix.language == 'c-cpp'
         run: |
           mkdir conan-env
           tar -xf /home/runner/tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
@@ -90,11 +75,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          languages: c-cpp
+          build-mode: manual
 
       - name: Configure project
-        if: matrix.language == 'c-cpp'
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug                \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"    \
@@ -108,10 +92,9 @@ jobs:
                 -B build
 
       - name: Build project
-        if: matrix.language == 'c-cpp'
         run: cmake --build build -j $(nproc)
 
       - name: Run Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:c-cpp"
