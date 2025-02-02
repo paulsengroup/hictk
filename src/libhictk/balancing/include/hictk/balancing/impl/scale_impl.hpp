@@ -59,7 +59,8 @@ inline SCALE::SCALE(PixelIt first, PixelIt last, const BinTable& bins, const Par
     // NOLINTBEGIN(*-avoid-magic-numbers)
     : _biases(VC{first, last, bins}.get_weights().to_vector(Weights::Type::DIVISIVE)),
       _convergence_stats(ConvergenceStats{false, false, 1000, 0, 10.0 * (1.0 + params.tol)}),
-      _tpool(params.threads > 1 ? std::make_unique<BS::thread_pool>(params.threads) : nullptr) {
+      _tpool(params.threads > 1 ? std::make_unique<BS::light_thread_pool>(params.threads)
+                                : nullptr) {
   // NOLINTEND(*-avoid-magic-numbers)
 
   internal::check_bin_type(bins);
@@ -286,7 +287,7 @@ inline void SCALE::update_weights(internal::VectorOfAtomicDecimals& buffer,
                                   const std::vector<bool>& bad,
                                   internal::VectorOfAtomicDecimals& weights,
                                   const std::vector<double>& target, std::vector<double>& d_vector,
-                                  const Matrix& m, BS::thread_pool* tpool) {
+                                  const Matrix& m, BS::light_thread_pool* tpool) {
   assert(buffer.size() == bad.size());
   assert(buffer.size() == weights.size());
   assert(buffer.size() == target.size());
