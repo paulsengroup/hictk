@@ -102,8 +102,7 @@ include(GNUInstallDirs)
 install(
   TARGETS
     hictk
-    COMPONENT
-    Runtime
+  COMPONENT Runtime
   LIBRARY
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE
