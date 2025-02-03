@@ -24,6 +24,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   lint-cff:
     runs-on: ubuntu-latest

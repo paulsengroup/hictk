@@ -42,6 +42,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   cache-test-dataset:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
@@ -52,8 +55,8 @@ jobs:
     needs: cache-test-dataset
     runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      packages: "write"
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

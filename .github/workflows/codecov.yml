@@ -44,6 +44,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   cache-test-dataset:
     name: Cache test dataset

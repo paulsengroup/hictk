@@ -52,6 +52,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   build-conan-deps:
     name: Build Conan deps
