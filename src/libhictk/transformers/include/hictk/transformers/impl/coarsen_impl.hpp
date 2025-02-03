@@ -132,7 +132,9 @@ inline auto CoarsenPixels<PixelIt>::iterator::coarsen_chunk_pass1() -> ColumnMer
 
   // Compute the first and last bins mapping to chunk we are processing
   const auto factor = _dest_bins->resolution() / _src_bins->resolution();
-  _bin1_id_chunk_start = (_src_bins->at(_pixel_it->bin1_id).rel_id() / factor) * factor;
+  // The static cast is unnecessary: it's here just to make CodeQL happy
+  _bin1_id_chunk_start =
+      static_cast<std::uint64_t>(_src_bins->at(_pixel_it->bin1_id).rel_id() / factor) * factor;
   _bin1_id_chunk_end = _bin1_id_chunk_start + factor;
 
   // Init one empty buffer for each row in the current chunk
