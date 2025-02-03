@@ -41,14 +41,14 @@ defaults:
 jobs:
   build-conan-deps-cpp20:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
     with:
       os: ubuntu-24.04
       cppstd: 20
 
   build-conan-deps-cpp23:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
     with:
       os: ubuntu-24.04
       cppstd: 23

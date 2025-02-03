@@ -47,11 +47,11 @@ defaults:
 jobs:
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@main
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@main
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
     with:
       os: ubuntu-20.04
 
@@ -315,7 +315,7 @@ jobs:
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
         with:
           flags: "tests | unittests"
           fail_ci_if_error: true
@@ -549,7 +549,7 @@ jobs:
             build/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
         with:
           flags: "tests | integration"
           fail_ci_if_error: true
