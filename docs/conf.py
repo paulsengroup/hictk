@@ -249,6 +249,7 @@ latex_documents = [
 
 linkcheck_ignore = [
     r"https://github\.com/4dn-dcic/pairix/blob/master/pairs_format_specification\.md.*",
+    r".*hgdownload\.cse\.ucsc\.edu.*",
     r"https://hictk.*\.readthedocs\.build.*",
     r"https://hictk.*readthedocs.*/_/downloads/en/.*/pdf/",
 ]
