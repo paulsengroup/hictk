@@ -144,7 +144,7 @@ inline void ExpectedValuesAggregator::compute_density_cis() {
         num_sum += _actual_distances[bound2];
         den_sum += _possible_distances[bound2];
       }
-    } else if (num_sum >= shot_noise_minimum && bound2 - bound1 > 0) {
+    } else if (num_sum >= shot_noise_minimum && bound2 > bound1) {
       while (bound2 > bound1 && bound2 < _num_bins_gw && bound1 < _num_bins_gw &&
              num_sum - _actual_distances[bound1] - _actual_distances[bound2] >=
                  shot_noise_minimum) {
