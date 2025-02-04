@@ -80,17 +80,17 @@ jobs:
 
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@6cafe03af1c1473f3d1a5b4f56c2413c8b5a6e6f
 
   build-conan-deps-x86:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@6cafe03af1c1473f3d1a5b4f56c2413c8b5a6e6f
     with:
       os: macos-13
 
   build-conan-deps-arm64:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@6cafe03af1c1473f3d1a5b4f56c2413c8b5a6e6f
     with:
       os: macos-14
 
