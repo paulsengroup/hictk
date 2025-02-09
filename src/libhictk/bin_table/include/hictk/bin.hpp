@@ -24,8 +24,8 @@ class Bin {
 
  public:
   constexpr Bin() = default;
-  Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
-  Bin(std::uint64_t id_, std::uint32_t rel_id_, const Chromosome &chrom_, std::uint32_t start_,
+  Bin(Chromosome chrom_, std::uint32_t start_, std::uint32_t end) noexcept;
+  Bin(std::uint64_t id_, std::uint32_t rel_id_, Chromosome chrom_, std::uint32_t start_,
       std::uint32_t end_) noexcept;
   explicit Bin(GenomicInterval interval) noexcept;
   Bin(std::uint64_t id_, std::uint32_t rel_id_, GenomicInterval interval) noexcept;
