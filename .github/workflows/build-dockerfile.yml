@@ -53,10 +53,16 @@ jobs:
   build-dockerfile:
     name: Build Dockerfile
     needs: cache-test-dataset
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: "linux/amd64", runner: "ubuntu-24.04" }
+          - { platform: "linux/arm64", runner: "ubuntu-24.04-arm" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,12 +101,13 @@ jobs:
           GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)"  --points-at HEAD)"
           if [ -z "$GIT_TAG" ]; then
             VERSION="sha-$GIT_SHORT_HASH"
-          GIT_TAG=unknown
+            GIT_TAG=unknown
           else
             VERSION="$GIT_TAG"
           fi
 
-          CACHE_REGISTRY='ghcr.io/${{ github.repository }}:buildcache'
+          PLATFORM="$(echo '${{ matrix.platform }}' | cut -d '/' -f 2)"
+          CACHE_REGISTRY="ghcr.io/${{ github.repository }}:buildcache-$PLATFORM"
 
           echo "C_COMPILER=$C_COMPILER" | tee -a "$GITHUB_OUTPUT"
           echo "CXX_COMPILER=$CXX_COMPILER" | tee -a "$GITHUB_OUTPUT"
@@ -114,16 +121,14 @@ jobs:
           echo "CREATION_DATE=$CREATION_DATE" | tee -a "$GITHUB_OUTPUT"
           echo "GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
           echo "VERSION=$VERSION" | tee -a "$GITHUB_OUTPUT"
-          echo "CACHE_REGISTRY_X86=$CACHE_REGISTRY-x86" | tee -a "$GITHUB_OUTPUT"
-          echo "CACHE_REGISTRY_ARM64=$CACHE_REGISTRY-arm64" | tee -a "$GITHUB_OUTPUT"
+          echo "CACHE_REGISTRY=$CACHE_REGISTRY" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ github.repository }},ghcr.io/${{ github.repository }}
-          flavor: |
-            latest=true
+          flavor: latest=true
           tags: |
             type=semver,priority=1000,pattern={{version}}
             type=sha,priority=900
@@ -145,26 +150,18 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
-        with:
-          platforms: linux/amd64,linux/arm64
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
 
-      - name: Set up QEMU
-        if: github.event_name != 'pull_request'
-        uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
-        with:
-          platforms: arm64
-
-      - name: Build Docker image (x86)
+      - name: Build Docker image (${{ matrix.platform }})
         uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
         with:
           context: ${{ github.workspace }}
           load: true
           push: false
-          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }}
-          cache-to: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }},mode=max,compression=zstd
-          tags: hictk:x86
-          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY }}
+          cache-to: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY }},mode=max,compression=zstd
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ matrix.platform }}
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
             CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
@@ -180,33 +177,8 @@ jobs:
             GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
-      - name: Test Docker image (x86)
-        run: utils/devel/test_docker_image.sh hictk:x86
-
-      - name: Build Docker image (arm64)
-        if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
-        with:
-          context: ${{ github.workspace }}
-          push: false
-          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }}
-          cache-to: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }},mode=max,compression=zstd
-          tags: hictk:arm64
-          platforms: linux/arm64
-          build-args: |
-            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
-            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
-            BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
-            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
-            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
-            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
-            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
-            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
-            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
-            CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
-            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
-            GIT_IS_DIRTY=false
-            VERSION=${{ steps.build-args.outputs.VERSION }}
+      - name: Test Docker image
+        run: utils/devel/test_docker_image.sh '${{ github.repository }}:latest'
 
       - name: Push image to registries
         if: github.event_name != 'pull_request'
@@ -214,11 +186,10 @@ jobs:
         with:
           context: ${{ github.workspace }}
           push: true
-          cache-from: |
-            type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_X86 }}
-            type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY_ARM64 }}
-          tags: ${{ steps.meta.outputs.tags }}
-          platforms: linux/amd64,linux/arm64
+          cache-from: type=registry,ref=${{ steps.build-args.outputs.CACHE_REGISTRY }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,"name=${{ github.repository }},ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
           build-args: |
             C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
             CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
@@ -234,14 +205,108 @@ jobs:
             GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.push-image.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Generate artifact name
+        if: github.event_name != 'pull_request'
+        id: generate-artifact-name
+        run: |
+          echo 'name=${{ matrix.platform }}' |
+            sed 's|[^[:alnum:]=-]\+|-|g' |
+            tee -a $GITHUB_OUTPUT
+
+      - name: Upload digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ steps.generate-artifact-name.outputs.name }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-images:
+    name: Merge images
+    runs-on: ubuntu-latest
+    needs: [build-dockerfile]
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+        with:
+          images: ${{ github.repository }},ghcr.io/${{ github.repository }}
+          flavor: latest=true
+          tags: |
+            type=semver,priority=1000,pattern={{version}}
+            type=sha,priority=900
+            type=ref,priority=700,event=branch
+            type=ref,priority=600,event=pr
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+
+      - name: Create manifest list and push (DockerHub)
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '  ${{ github.repository }}@sha256:%s ' *)
+
+      - name: Inspect image (DockerHub)
+        run: docker buildx imagetools inspect ${{ github.repository }}
+
+      - name: Create manifest list and push (GHRC.io)
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '  ghcr.io/${{ github.repository }}@sha256:%s ' *)
+
+      - name: Inspect image (GHCR.io)
+        run: docker buildx imagetools inspect ghcr.io/${{ github.repository }}
+
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
       - build-dockerfile
+      - merge-images
 
     steps:
       - name: Collect job results
-        if: needs.build-dockerfile.result != 'success'
+        if: |
+          needs.build-dockerfile.result != 'success' ||
+          (
+           needs.merge-images.result != 'success'    &&
+           needs.merge-images.result != 'skipped'
+          )
         run: exit 1
