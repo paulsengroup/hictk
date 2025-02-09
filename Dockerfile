@@ -120,7 +120,7 @@ RUN hictk --version
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.authors='Roberto Rossini <roberros@uio.no>'
 LABEL org.opencontainers.image.url='https://github.com/paulsengroup/hictk'
-LABEL org.opencontainers.image.documentation='https://hictk.readthedocs.io/en/latest/'
+LABEL org.opencontainers.image.documentation='https://hictk.readthedocs.io/en/stable/'
 LABEL org.opencontainers.image.source='https://github.com/paulsengroup/hictk'
 LABEL org.opencontainers.image.licenses='MIT'
 LABEL org.opencontainers.image.title='hictk'
