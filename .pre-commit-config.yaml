@@ -51,4 +51,4 @@ repos:
         types_or: [c, c++]
         language: python
         args: ["-i"]
-        additional_dependencies: ["clang-format==19.1.1"]
+        additional_dependencies: ["clang-format==19.1.7"]
