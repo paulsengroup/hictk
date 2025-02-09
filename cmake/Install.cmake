@@ -38,8 +38,7 @@ install(
     transformers
     variant
   EXPORT libhictk-targets
-  COMPONENT
-  Libraries
+  COMPONENT Libraries
   FILE_SET
   HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
