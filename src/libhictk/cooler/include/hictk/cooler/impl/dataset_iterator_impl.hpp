@@ -356,7 +356,7 @@ inline auto Dataset::iterator<T>::seek(I offset) -> iterator & {
 }
 
 template <typename T>
-constexpr std::uint64_t Dataset::iterator<T>::h5_offset() const noexcept {
+constexpr std::size_t Dataset::iterator<T>::h5_offset() const noexcept {
   return _h5_offset;
 }
 

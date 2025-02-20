@@ -331,7 +331,7 @@ class Dataset {
 
     template <typename I>
     auto seek(I offset) -> iterator &;
-    [[nodiscard]] constexpr std::uint64_t h5_offset() const noexcept;
+    [[nodiscard]] constexpr std::size_t h5_offset() const noexcept;
     [[nodiscard]] auto buffer() const -> const internal::COWChunk<T> &;
 
     constexpr const Dataset &dataset() const noexcept;
