@@ -9,7 +9,7 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 

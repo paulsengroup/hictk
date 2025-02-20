@@ -13,7 +13,7 @@
 
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk::hic;
 
