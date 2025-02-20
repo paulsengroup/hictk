@@ -17,7 +17,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
 #include "hictk/reference.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::multires_cooler_file {
 

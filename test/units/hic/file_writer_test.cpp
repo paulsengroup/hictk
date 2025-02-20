@@ -22,8 +22,8 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/join_genomic_coords.hpp"
-#include "tmpdir.hpp"
 
 using namespace hictk::hic;
 

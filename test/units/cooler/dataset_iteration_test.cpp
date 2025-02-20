@@ -14,7 +14,7 @@
 
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/group.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::dataset {
 
