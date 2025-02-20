@@ -259,7 +259,7 @@ template <typename T>
   return pivot;
 }
 
-template <typename T>
+template <typename T>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline Dataset::iterator<T> lower_bound_impl(Dataset::iterator<T> first, Dataset::iterator<T> last,
                                              const T &value, bool assume_uniform_distribution,
                                              std::size_t recursion_lvl = 0) {
