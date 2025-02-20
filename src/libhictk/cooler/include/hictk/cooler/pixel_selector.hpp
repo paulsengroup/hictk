@@ -98,6 +98,11 @@ class PixelSelector {
 
     std::shared_ptr<const balancing::Weights> _weights{};
     std::uint64_t _h5_end_offset{};
+    // this is an offset used to speed up trans queries by skipping over values that are unlikely to
+    // overlap with the query range.
+    // This optimization works most of the time, and can significantly speed up calls to
+    // jump_to_col().
+    std::uint64_t _row_head_h5_offset{};
 
     explicit iterator(const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                       const Dataset &pixels_count,
