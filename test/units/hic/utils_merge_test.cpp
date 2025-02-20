@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-#include "./tmpdir.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/tmpdir.hpp"
 
 namespace hictk::hic::test::utils {

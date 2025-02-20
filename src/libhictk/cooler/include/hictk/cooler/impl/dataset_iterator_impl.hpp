@@ -9,11 +9,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "hictk/suppress_warnings.hpp"
+#include "hictk/common.hpp"
 
 namespace hictk::cooler {
 

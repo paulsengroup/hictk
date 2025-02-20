@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataType.hpp>
+#include <optional>
 #include <string>
 #include <string_view>
 

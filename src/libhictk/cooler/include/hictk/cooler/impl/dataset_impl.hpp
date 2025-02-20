@@ -15,6 +15,8 @@
 #include <highfive/H5DataSpace.hpp>
 #include <highfive/H5PropertyList.hpp>
 #include <highfive/H5Selection.hpp>
+#include <iterator>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
