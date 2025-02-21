@@ -256,16 +256,17 @@ inline auto Dataset::iterator<T>::operator[](std::size_t i) const -> value_type 
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator++() -> iterator & {
-  return (*this) += 1;
+  *this += 1;
+  if (_h5_offset >= _buffer.end()) {
+    read_chunk_at_offset(_h5_offset, true);
+  }
+  return *this;
 }
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
-  if (_h5_offset >= _buffer.end()) {
-    read_chunk_at_offset(_h5_offset, true);
-  }
   return it;
 }
 
@@ -299,16 +300,17 @@ inline auto Dataset::iterator<T>::operator+(difference_type i) const -> iterator
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator--() -> iterator & {
-  return (*this) -= 1;
+  *this -= 1;
+  if (_h5_offset < _buffer.start()) {
+    read_chunk_at_offset(_h5_offset, false);
+  }
+  return *this;
 }
 
 template <typename T>
 inline auto Dataset::iterator<T>::operator--(int) -> iterator {
   auto it = *this;
   std::ignore = --(*this);
-  if (_h5_offset < _buffer.start()) {
-    read_chunk_at_offset(_h5_offset, false);
-  }
   return it;
 }
 
