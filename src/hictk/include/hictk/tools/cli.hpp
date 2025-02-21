@@ -4,10 +4,14 @@
 
 #pragma once
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <filesystem>
-#include <map>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -20,6 +24,57 @@
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/string_utils.hpp"
+
+namespace hictk::hic {
+
+inline bool lexical_cast(const std::string& input, MatrixType& v) {
+  if (input == "observed") {
+    v = MatrixType::observed;
+    return true;
+  }
+  if (input == "oe") {
+    v = MatrixType::oe;
+    return true;
+  }
+
+  if (input == "expected") {
+    v = MatrixType::expected;
+    return true;
+  }
+
+  std::string input_lower{input};
+  std::transform(input_lower.begin(), input_lower.end(), input_lower.begin(),
+                 [](auto c) { return std::tolower(c); });
+
+  if (input_lower != input) {
+    return lexical_cast(input_lower, v);
+  }
+
+  return false;
+}
+
+inline bool lexical_cast(const std::string& input, MatrixUnit& v) {
+  if (input == "BP") {
+    v = MatrixUnit::BP;
+    return true;
+  }
+  if (input == "FRAG") {
+    v = MatrixUnit::FRAG;
+    return true;
+  }
+
+  std::string input_upper{input};
+  std::transform(input_upper.begin(), input_upper.end(), input_upper.begin(),
+                 [](auto c) { return std::toupper(c); });
+
+  if (input_upper != input) {
+    return lexical_cast(input_upper, v);
+  }
+
+  return false;
+}
+
+}  // namespace hictk::hic
 
 namespace hictk::tools {
 
@@ -171,6 +226,45 @@ class Formatter : public CLI::Formatter {
   }
 };
 
+template <typename Enum>
+class StringToEnumChecked : public CLI::Validator {
+  static_assert(std::is_enum_v<Enum>);
+  [[nodiscard]] static std::string to_lower(std::string_view s) {
+    std::string s_lower{s};
+    std::transform(s_lower.begin(), s_lower.end(), s_lower.begin(),
+                   [](auto c) { return std::tolower(c); });
+    return s_lower;
+  }
+
+ public:
+  explicit StringToEnumChecked(std::vector<std::pair<std::string, Enum>> mappings) {
+    assert(!mappings.empty());
+
+    auto description_formatter = [mappings]() {
+      std::vector<std::string> keys(mappings.size());
+      std::transform(mappings.begin(), mappings.end(), keys.begin(),
+                     [](const auto& kv) { return kv.first; });
+      return fmt::format(FMT_STRING("{{{}}}"), fmt::join(keys, ","));
+    };
+
+    desc_function_ = description_formatter;
+
+    func_ = [mappings, description_formatter](std::string& input) -> std::string {
+      const auto input_lower = to_lower(input);
+
+      const auto match = std::find_if(mappings.begin(), mappings.end(), [&](const auto& kv) {
+        return to_lower(kv.first) == input_lower;
+      });
+
+      if (match != mappings.end()) {
+        return "";
+      }
+
+      return fmt::format(FMT_STRING("{} not in {}"), input, description_formatter());
+    };
+  }
+};
+
 // clang-format off
 inline const auto IsValidCoolerFile = CoolerFileValidator();                      // NOLINT(cert-err58-cpp)
 inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();      // NOLINT(cert-err58-cpp)
@@ -180,21 +274,23 @@ inline const auto IsValidHiCFile = HiCFileValidator();                          
 
 // clang-format off
 // NOLINTNEXTLINE(cert-err58-cpp)
-inline const auto ParseHiCMatrixType = CLI::CheckedTransformer(
-        std::map<std::string, hic::MatrixType>{
-                {"observed",  hic::MatrixType::observed},
-                {"oe",        hic::MatrixType::oe},
-                {"expected",  hic::MatrixType::expected}},
-        CLI::ignore_case)
-    .description("");
+inline const auto ParseHiCMatrixType =
+  StringToEnumChecked{
+    std::vector<std::pair<std::string, hic::MatrixType>>{
+      {"observed", hic::MatrixType::observed},
+      {"oe", hic::MatrixType::oe},
+      {"expected", hic::MatrixType::expected}
+    }
+  }.description("");
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-inline const auto ParseHiCMatrixUnit = CLI::CheckedTransformer(
-        std::map<std::string, hic::MatrixUnit>{
-                {"BP",   hic::MatrixUnit::BP},
-                {"FRAG", hic::MatrixUnit::FRAG}},
-        CLI::ignore_case)
-    .description("");
+inline const auto ParseHiCMatrixUnit =
+  StringToEnumChecked{
+    std::vector<std::pair<std::string, hic::MatrixUnit>>{
+      {"BP", hic::MatrixUnit::BP},
+      {"FRAG", hic::MatrixUnit::FRAG}
+    }
+  }.description("");
 // clang-format on
 
 class Cli {
