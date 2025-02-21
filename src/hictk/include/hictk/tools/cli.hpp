@@ -237,6 +237,7 @@ class StringToEnumChecked : public CLI::Validator {
   }
 
  public:
+  // NOLINTNEXTLINE(*-unnecessary-value-param)
   explicit StringToEnumChecked(std::vector<std::pair<std::string, Enum>> mappings) {
     assert(!mappings.empty());
 
