@@ -20,6 +20,7 @@
 #include <highfive/H5Utility.hpp>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -401,24 +402,52 @@ inline ValidationStatusScool is_scool_file(const HighFive::File &fp, bool valida
   const cooler::Dataset bin1_dset{RootGroup{root_grp}, root_grp.getDataSet("indexes/bin1_offset")};
   const cooler::Dataset bin2_dset{RootGroup{root_grp}, root_grp.getDataSet("pixels/bin2_id")};
 
+  auto is_sorted = [&](auto &first, const auto &last) {
+    // we use this instead of std::is_sorted for performance reasons.
+    // Basically, we want to pass iterators by reference such that when advancing first, we never
+    // need to read a chunk more than once
+    assert(first < last);
+
+    auto x1 = *first;
+    std::ignore = ++first;
+    while (first != last) {
+      const auto x2 = *first;
+      if (x1 > x2) {
+        return false;
+      }
+      x1 = x2;
+      std::ignore = ++first;
+    }
+
+    return true;
+  };
+
+  auto first = bin2_dset.begin<std::uint64_t>();
   const auto bin1_offset = bin1_dset.read_all<std::vector<std::uint64_t>>();
   assert(!bin1_offset.empty());
   for (std::size_t i1 = 1; i1 < bin1_offset.size() - 1; ++i1) {
     const auto i0 = i1 - 1;
 
-    // NOLINTBEGIN(*-avoid-magic-numbers)
-    auto first = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i0], 64'000);
-    auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(bin1_offset[i1], 64'000);
-    // NOLINTEND(*-avoid-magic-numbers)
+    const auto j0 = bin1_offset[i0];
+    const auto j1 = bin1_offset[i1];
 
-    if (!std::is_sorted(first, last)) {
-      error_buffer = fmt::format(
-          FMT_STRING("pixels between {}-{} are not sorted in ascending order (and very likely "
-                     "contain duplicate entries)"),
-          bin1_offset[i0], bin1_offset[i1]);
+    if (j0 + 1 >= j1) {
+      // no point in checking empty rows or rows with only 1 pixel
+      continue;
+    }
+
+    first.seek(j0);
+    const auto last = bin2_dset.make_iterator_at_offset<std::uint64_t>(j1, 0);
+
+    if (!is_sorted(first, last)) {
+      error_buffer = fmt::format(FMT_STRING("pixels between {}-{} (bin1_id={}) are not sorted in "
+                                            "ascending order (and very likely "
+                                            "contain duplicate entries)"),
+                                 bin1_offset[i0], bin1_offset[i1], i0);
       return false;
     }
   }
+
   return true;
 }
 
