@@ -14,7 +14,7 @@
 #include "hictk/cooler/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::singlecell_cooler_file {
 

@@ -8,7 +8,7 @@
 #include <filesystem>
 
 #include "hictk/cooler/validation.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 

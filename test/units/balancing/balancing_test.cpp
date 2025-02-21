@@ -18,7 +18,7 @@
 #include "hictk/balancing/scale.hpp"
 #include "hictk/balancing/vc.hpp"
 #include "hictk/file.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::test {
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
