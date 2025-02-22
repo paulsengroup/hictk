@@ -40,9 +40,9 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
   internal::check_storage_mode(f);
   internal::check_bin_type(f.bins());
 
-  std::unique_ptr<BS::thread_pool> tpool{};
+  std::unique_ptr<BS::light_thread_pool> tpool{};
   if (params.threads != 1) {
-    tpool = std::make_unique<BS::thread_pool>(params.threads);
+    tpool = std::make_unique<BS::light_thread_pool>(params.threads);
   }
   if (params.tmpfile.empty()) {
     balance_in_memory(f, type, params.tol, params.max_iters, params.num_masked_diags,
@@ -57,7 +57,8 @@ inline ICE::ICE(const File& f, Type type, const Params& params)
 template <typename File>
 inline void ICE::balance_in_memory(const File& f, Type type, double tol, std::size_t max_iters,
                                    std::size_t num_masked_diags, std::size_t min_nnz,
-                                   std::size_t min_count, double mad_max, BS::thread_pool* tpool) {
+                                   std::size_t min_count, double mad_max,
+                                   BS::light_thread_pool* tpool) {
   assert(f.bins().type() == BinTable::Type::fixed);
   auto matrix = construct_sparse_matrix(f, type, num_masked_diags);
 
@@ -90,7 +91,7 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
                                  std::size_t num_masked_diags, std::size_t min_nnz,
                                  std::size_t min_count, double mad_max,
                                  const std::filesystem::path& tmpfile, std::size_t chunk_size,
-                                 BS::thread_pool* tpool) {
+                                 BS::light_thread_pool* tpool) {
   assert(f.bins().type() == BinTable::Type::fixed);
   auto matrix = construct_sparse_matrix_chunked(f, type, num_masked_diags, tmpfile, chunk_size);
 
@@ -122,7 +123,7 @@ inline void ICE::balance_chunked(const File& f, Type type, double tol, std::size
 
 template <typename MatrixT>
 inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double tol,
-                            BS::thread_pool* tpool) {
+                            BS::light_thread_pool* tpool) {
   _variance.resize(1, 0);
   _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
 
@@ -140,7 +141,7 @@ inline void ICE::balance_gw(const MatrixT& matrix, std::size_t max_iters, double
 
 template <typename MatrixT>
 inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters,
-                               double tol, BS::thread_pool* tpool) {
+                               double tol, BS::light_thread_pool* tpool) {
   assert(bins.type() == BinTable::Type::fixed);
   _variance.resize(1, 0);
   _scale.resize(1, std::numeric_limits<double>::quiet_NaN());
@@ -160,7 +161,7 @@ inline void ICE::balance_trans(const MatrixT& matrix, const BinTable& bins, std:
 
 template <typename MatrixT>
 inline void ICE::balance_cis(const MatrixT& matrix, const Chromosome& chrom, std::size_t max_iters,
-                             double tol, BS::thread_pool* tpool) {
+                             double tol, BS::light_thread_pool* tpool) {
   const auto i0 = _chrom_offsets[chrom.id()];
   const auto i1 = _chrom_offsets[chrom.id() + 1];
   auto biases_ = nonstd::span(_biases).subspan(i0, i1 - i0);
@@ -423,7 +424,7 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
 template <typename MatrixT>
 inline void ICE::min_nnz_filtering(internal::VectorOfAtomicDecimals& marg, const MatrixT& matrix,
                                    nonstd::span<double> biases, std::size_t min_nnz,
-                                   BS::thread_pool* tpool) {
+                                   BS::light_thread_pool* tpool) {
   matrix.marginalize_nnz(marg, tpool);
   const auto marg_ = marg();
   for (std::size_t i = 0; i < biases.size(); ++i) {
@@ -519,7 +520,8 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::uint64_t> chrom_offse
 template <typename MatrixT>
 inline auto ICE::inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
                             internal::VectorOfAtomicDecimals& marg,
-                            nonstd::span<const double> weights, BS::thread_pool* tpool) -> Result {
+                            nonstd::span<const double> weights, BS::light_thread_pool* tpool)
+    -> Result {
   if (matrix.empty()) {
     std::fill(biases.begin(), biases.end(), std::numeric_limits<double>::quiet_NaN());
     return {std::numeric_limits<double>::quiet_NaN(), 0.0};
@@ -544,7 +546,7 @@ inline auto ICE::inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
 }
 
 inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const double> marg,
-                                                          BS::thread_pool* tpool) {
+                                                          BS::light_thread_pool* tpool) {
   double marg_sum = 0.0;
   std::size_t nnz_marg{};
 
@@ -576,7 +578,7 @@ inline std::pair<double, std::size_t> ICE::aggregate_marg(nonstd::span<const dou
 }
 
 inline void ICE::update_biases(nonstd::span<const double> marg, nonstd::span<double> biases,
-                               double avg_nzmarg, BS::thread_pool* tpool) {
+                               double avg_nzmarg, BS::light_thread_pool* tpool) {
   auto update_biases_impl = [&](std::size_t istart, std::size_t iend) {
     for (auto i = istart; i < iend; ++i) {
       const auto n = marg[i] / avg_nzmarg;
@@ -596,7 +598,7 @@ inline void ICE::update_biases(nonstd::span<const double> marg, nonstd::span<dou
 }
 
 inline double ICE::compute_ssq_nzmarg(nonstd::span<const double> marg, double avg_nzmarg,
-                                      BS::thread_pool* tpool) {
+                                      BS::light_thread_pool* tpool) {
   std::mutex mtx{};
   double ssq_nzmarg = 0;
 
@@ -626,7 +628,7 @@ template <typename MatrixT>
 inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> biases,
                                    nonstd::span<const std::uint64_t> chrom_bin_offsets,
                                    std::size_t min_nnz, std::size_t min_count, double mad_max,
-                                   BS::thread_pool* tpool) {
+                                   BS::light_thread_pool* tpool) {
   if (min_nnz == 0 && min_count == 0 && mad_max == 0) {
     return;
   }
@@ -704,7 +706,8 @@ inline std::vector<double> ICE::scale() const noexcept { return _scale; }
 inline std::vector<double> ICE::variance() const noexcept { return _variance; }
 
 template <typename Vector>
-inline bool ICE::process_in_parallel(const Vector& marg, const BS::thread_pool* tpool) noexcept {
+inline bool ICE::process_in_parallel(const Vector& marg,
+                                     const BS::light_thread_pool* tpool) noexcept {
   return marg.size() > 10'000 && !!tpool;  // NOLINT(*-avoid-magic-numbers)
 }
 

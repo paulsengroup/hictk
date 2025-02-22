@@ -105,7 +105,7 @@ int fuzz_subcommand(const Config& c) {
   try {
     SPDLOG_INFO(FMT_STRING("[executor] cooler version: {}"), cooler::version());
 
-    BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(c.nproc));
+    BS::light_thread_pool tpool(c.nproc);
 
     assert(!c.exec.empty());
     assert(c.seed.has_value());

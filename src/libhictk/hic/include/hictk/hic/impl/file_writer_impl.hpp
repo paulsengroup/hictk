@@ -1111,9 +1111,8 @@ inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem:
   return mappers;
 }
 
-inline BS::thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
-  return BS::thread_pool{
-      conditional_static_cast<BS::concurrency_t>(n_threads < 2 ? std::size_t{1} : n_threads)};
+inline BS::light_thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
+  return BS::light_thread_pool{n_threads < 2 ? std::size_t{1} : n_threads};
 }
 
 inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,

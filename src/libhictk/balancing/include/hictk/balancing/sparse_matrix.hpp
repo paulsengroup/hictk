@@ -163,16 +163,17 @@ class SparseMatrixChunked {
                  std::size_t bin_offset = 0);
   void finalize();
 
-  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::light_thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::light_thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
   void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
-                                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+                                BS::light_thread_pool* tpool = nullptr,
+                                bool init_buffer = true) const;
 
   void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
-                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+                BS::light_thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
   [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 };
@@ -224,16 +225,17 @@ class FileBackedSparseMatrix {
                  std::size_t bin_offset = 0);
   void finalize();
 
-  void marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize(VectorOfAtomicDecimals& marg, BS::light_thread_pool* tpool = nullptr,
                    bool init_buffer = true) const;
-  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool = nullptr,
+  void marginalize_nnz(VectorOfAtomicDecimals& marg, BS::light_thread_pool* tpool = nullptr,
                        bool init_buffer = true) const;
   void times_outer_product_marg(VectorOfAtomicDecimals& marg, nonstd::span<const double> biases,
                                 nonstd::span<const double> weights,
-                                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+                                BS::light_thread_pool* tpool = nullptr,
+                                bool init_buffer = true) const;
 
   void multiply(VectorOfAtomicDecimals& buffer, nonstd::span<const double> cfx,
-                BS::thread_pool* tpool = nullptr, bool init_buffer = true) const;
+                BS::light_thread_pool* tpool = nullptr, bool init_buffer = true) const;
 
   [[nodiscard]] double compute_scaling_factor_for_scale(const std::vector<double>& weights) const;
 
