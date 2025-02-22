@@ -234,7 +234,7 @@ Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT p
 template <typename PixelIt, typename>
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
-                                                       BS::thread_pool &tpool,
+                                                       BS::light_thread_pool &tpool,
                                                        std::uint32_t update_frequency) {
   if (tpool.get_thread_count() < 2) {
     return append_pixels(first_pixel, last_pixel);

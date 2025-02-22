@@ -23,16 +23,16 @@ dependencies = [
   "click>=8",
   "cooler==0.10.*",
   "h5py!=3.12",  # this version is broken on Windows
-  "hictkpy==0.0.5",
+  "hictkpy[pandas]==1.1.*",
   "immutabledict==4.*",
-  "numpy==1.26.*",
+  "numpy",
   "pandas==2.2.*",
   "PyYAML",
-  "pywin32>=306; platform_system == 'Windows'",
+  "pywin32>=308; platform_system == 'Windows'",
 ]
 
 optional-dependencies.test = [
-  "pytest>=7.0"
+  "pytest>=8.0"
 ]
 
 optional-dependencies.dev = [
@@ -46,7 +46,7 @@ optional-dependencies.dev = [
 hictk_integration_suite = "hictk_integration_suite:main"
 
 [tool.pytest.ini_options]
-minversion = "7.0"
+minversion = "8.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
@@ -71,4 +71,4 @@ test = "pytest test"
 features = ["dev"]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.11", "3.12"]
+python = ["3.11", "3.12", "3.13"]

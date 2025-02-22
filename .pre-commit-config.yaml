@@ -33,7 +33,7 @@ repos:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
   - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.18.2
+    rev: 0.19.1
     hooks:
       - id: gersemi
         exclude: ^cmake/modules/

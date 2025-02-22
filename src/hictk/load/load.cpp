@@ -25,7 +25,7 @@ namespace hictk::tools {
                                     std::size_t queue_capacity_bytes = 64'000'000) {
   assert(c.output_format == "hic");
 
-  BS::thread_pool tpool(2);
+  BS::light_thread_pool tpool(2);
   std::atomic<bool> early_return{false};
 
   const auto format = format_from_string(c.format);
@@ -62,7 +62,7 @@ namespace hictk::tools {
   assert(c.count_as_float);
   assert(c.output_format == "cool");
 
-  BS::thread_pool tpool(2);
+  BS::light_thread_pool tpool(2);
   std::atomic<bool> early_return{false};
 
   const auto format = format_from_string(c.format);
@@ -95,7 +95,7 @@ namespace hictk::tools {
   assert(!c.count_as_float);
   assert(c.output_format == "cool");
 
-  BS::thread_pool tpool(2);
+  BS::light_thread_pool tpool(2);
   std::atomic<bool> early_return{false};
 
   const auto format = format_from_string(c.format);
