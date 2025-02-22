@@ -69,12 +69,12 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.30.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.30.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.31.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.31.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.31.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '3.31.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '3.31.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '3.31.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             return { include: includes }
 
