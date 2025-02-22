@@ -1,0 +1,100 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Run CodeQL analysis (C++)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/codeql-cpp.yml"
+      - "cmake/**"
+      - "examples/**"
+      - "src/**"
+      - "test/integration/**"
+      - "test/units/**"
+      - "CMakeLists.txt"
+  schedule:
+    - cron: "0 5 1 * *" # run monthly at 05:00
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-conan-deps:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
+    with:
+      os: ubuntu-20.04
+
+  analyze:
+    name: Analyze (C++)
+    runs-on: ubuntu-24.04
+    needs: [build-conan-deps]
+    permissions:
+      contents: read
+      security-events: write
+
+    env:
+      CCACHE_DISABLE: "1"
+      CONAN_HOME: "/opt/conan/"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Symlink Conan home
+        run: |
+          mkdir -p /home/runner/opt/conan
+          ln -s /home/runner/opt/conan/ /opt/conan
+
+      - name: Restore Conan cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
+
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
+          path: /tmp/cmake-prefix-dbg.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /home/runner/tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@dd746615b3b9d728a6a37ca2045b68ca76d4841a # v3.28.8
+        with:
+          languages: c-cpp
+          build-mode: manual
+
+      - name: Configure project
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug                \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"    \
+                -DENABLE_DEVELOPER_MODE=OFF             \
+                -DHICTK_ENABLE_TESTING=ON               \
+                -DHICTK_BUILD_EXAMPLES=ON               \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF       \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF \
+                -DCMAKE_INSTALL_PREFIX=dest             \
+                -S .                                    \
+                -B build
+
+      - name: Build project
+        run: cmake --build build -j $(nproc)
+
+      - name: Run Analysis
+        uses: github/codeql-action/analyze@dd746615b3b9d728a6a37ca2045b68ca76d4841a # v3.28.8
+        with:
+          category: "/language:c-cpp"

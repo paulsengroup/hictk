@@ -21,7 +21,7 @@ on:
 
     inputs:
       conan-version:
-        default: "2.7.*"
+        default: "2.11.*"
         type: string
         required: false
         description: "Conan version to be installed with pip."
@@ -38,6 +38,9 @@ on:
 defaults:
   run:
     shell: bash
+
+permissions:
+  contents: read
 
 jobs:
   build-deps-ubuntu:
@@ -454,7 +457,7 @@ jobs:
           rm -rf hictk-workflow hictk-conanfile
 
       - name: Add devtools to PATH
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
 
       - name: Generate cache key
         id: generate-cache-key

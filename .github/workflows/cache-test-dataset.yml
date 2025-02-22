@@ -14,6 +14,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 env:
   FETCH_TEST_DATASET_CMAKE: cmake/FetchTestDataset.cmake
   TEST_DATASET_PATH: test/data/hictk_test_data.tar.zst
