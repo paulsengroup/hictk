@@ -42,7 +42,7 @@ inline void BinaryBuffer::read(std::string &buff, std::size_t n) {
 inline void BinaryBuffer::read(char *buff, std::size_t n) {
   static_assert(sizeof(char) == 1);
   const auto size = n * sizeof(char);
-  assert(_i + size < _buffer.size());
+  assert(_i + size <= _buffer.size());
   // NOLINTNEXTLINE(*-pointer-arithmetic)
   std::memcpy(static_cast<void *>(buff), _buffer.data() + _i, size);
   _i += size;

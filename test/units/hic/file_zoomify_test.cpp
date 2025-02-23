@@ -23,7 +23,7 @@ namespace hictk::hic::test::file_writer {
 
 using namespace hictk::hic::internal;
 
-TEST_CASE("HiC: HiCFileZoomify") {
+TEST_CASE("HiC: HiCFileZoomify", "[hic][v9][zoomify][long]") {
   const std::vector<std::uint32_t> resolutions{100'000, 400'000, 1'000'000};
 
   const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();

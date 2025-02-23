@@ -9,7 +9,7 @@
 namespace hictk::binary_buffer::test {
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-TEST_CASE("BinaryBuffer") {
+TEST_CASE("BinaryBuffer", "[binarybuffer][short]") {
   const std::vector<std::uint32_t> ibuff{1, 2, 3};
   // NOLINTNEXTLINE
   const std::string sibuff{reinterpret_cast<const char*>(ibuff.data()),
