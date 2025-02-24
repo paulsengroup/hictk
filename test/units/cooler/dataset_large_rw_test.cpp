@@ -45,14 +45,7 @@ TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
   std::for_each(dset.begin<std::uint8_t>(256'000), dset.end<std::uint8_t>(256'000),
                 [&](const auto& n1) {
                   const auto n2 = static_cast<std::uint8_t>(rand_eng());
-#ifdef _MSC_VER
-                  // The CHECK macros appear to be too slow under MSVC
-                  if (n1 != n2) {
-                    CHECK(n1 == n2);
-                  }
-#else
-                    CHECK(n1 == n2);
-#endif
+                  CHECK(n1 == n2);
                 });
 }
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)

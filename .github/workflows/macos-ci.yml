@@ -400,8 +400,7 @@ jobs:
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 400 2>&1 |
-          head -n 1000
+                --timeout 240
 
   run-integration-tests:
     name: Run integration tests
