@@ -5,3 +5,6 @@ ignore:
   - "benchmarks/"
   - "examples/"
   - "test/"
+
+fixes:
+  - "/__w/hictk/hictk::"
