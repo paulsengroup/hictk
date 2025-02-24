@@ -234,34 +234,13 @@ jobs:
       - name: Install test dependencies
         run: pip install -r requirements.txt
 
-      - name: Run unit tests (Debug)
-        if: matrix.build_type == 'Debug'
-        run: |
-          skip_labels=(
-            '.*dataset large read\/write.*'
-            '.*HiCFileWriter.*'
-            '.*VectorOfAtomicDecimals.*'
-          )
-
-          pattern="$(IFS='|' ; echo "${skip_labels[*]}")"
-
-          ctest --test-dir build    \
-                --schedule-random   \
-                --output-on-failure \
-                --no-tests=error    \
-                --timeout 360       \
-                --exclude-regex "$pattern" |&
-          tail -n 1000
-
-      - name: Run unit tests (Release)
-        if: matrix.build_type == 'Release'
+      - name: Run unit tests
         run: |
           ctest --test-dir build    \
                 --schedule-random   \
                 --output-on-failure \
                 --no-tests=error    \
-                --timeout 120       |&
-          tail -n 1000
+                --timeout 240
 
   run-integration-tests:
     name: Run integration tests

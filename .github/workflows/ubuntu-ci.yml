@@ -444,9 +444,8 @@ jobs:
                 --schedule-random           \
                 --output-on-failure         \
                 --no-tests=error            \
-                --timeout 360               \
-                -j $(nproc) |&
-          head -n 1000
+                --timeout 240               \
+                -j $(nproc)
 
   run-integration-tests:
     name: Run integration tests
