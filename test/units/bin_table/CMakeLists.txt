@@ -45,6 +45,5 @@ catch_discover_tests(
   OUTPUT_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
-  --success
   --skip-benchmarks
 )
