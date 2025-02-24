@@ -5,3 +5,19 @@ ignore:
   - "benchmarks/"
   - "examples/"
   - "test/"
+
+fixes:
+  - "/__w/hictk/hictk::"
+
+coverage:
+  status:
+    project:
+      default: false
+      source:
+        paths:
+          - "src/"
+        target: 75%
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
