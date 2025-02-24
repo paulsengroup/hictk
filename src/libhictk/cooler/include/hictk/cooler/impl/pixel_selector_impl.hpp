@@ -395,7 +395,7 @@ inline void PixelSelector::iterator<N>::jump_to_col(std::uint64_t bin_id) {
   _bin1_id_it.seek(_bin2_id_it.h5_offset());
   _count_it.seek(_bin2_id_it.h5_offset());
 
-  if (_coord1.bin1.chrom() != _coord2.bin2.chrom()) {
+  if (_coord1 != _coord2) {
     _row_head_h5_offset = h5_offset() - row_start_offset;
 
     // try to reduce the offset by 5% of the row length to increase the likelihood that
