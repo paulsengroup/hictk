@@ -66,7 +66,7 @@ class SCALE {
   std::size_t _tot_iter{};
   std::size_t _max_tot_iters{};
 
-  std::unique_ptr<BS::thread_pool> _tpool{};
+  std::unique_ptr<BS::light_thread_pool> _tpool{};
 
  public:
   enum class Type : std::uint_fast8_t { cis, trans, gw };
@@ -114,7 +114,7 @@ class SCALE {
   static void update_weights(internal::VectorOfAtomicDecimals& buffer, const std::vector<bool>& bad,
                              internal::VectorOfAtomicDecimals& weights,
                              const std::vector<double>& target, std::vector<double>& d_vector,
-                             const Matrix& m, BS::thread_pool* tpool);
+                             const Matrix& m, BS::light_thread_pool* tpool);
 
   static void geometric_mean(const std::vector<double>& v1, const std::vector<double>& v2,
                              std::vector<double>& vout) noexcept;

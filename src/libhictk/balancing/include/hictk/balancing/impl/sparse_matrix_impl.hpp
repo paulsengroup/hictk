@@ -598,8 +598,8 @@ inline void SparseMatrixChunked::push_back(std::uint64_t bin1_id, std::uint64_t 
 
 inline void SparseMatrixChunked::finalize() { shrink_to_fit(); }
 
-inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::thread_pool* tpool,
-                                             bool init_buffer) const {
+inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg,
+                                             BS::light_thread_pool* tpool, bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     for (std::size_t i = istart; i < iend; ++i) {
       _chunks[i].marginalize(marg, false);
@@ -621,7 +621,8 @@ inline void SparseMatrixChunked::marginalize(VectorOfAtomicDecimals& marg, BS::t
 }
 
 inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
-                                                 BS::thread_pool* tpool, bool init_buffer) const {
+                                                 BS::light_thread_pool* tpool,
+                                                 bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     for (std::size_t i = istart; i < iend; ++i) {
       _chunks[i].marginalize_nnz(marg, false);
@@ -645,7 +646,7 @@ inline void SparseMatrixChunked::marginalize_nnz(VectorOfAtomicDecimals& marg,
 inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals& marg,
                                                           nonstd::span<const double> biases,
                                                           nonstd::span<const double> weights,
-                                                          BS::thread_pool* tpool,
+                                                          BS::light_thread_pool* tpool,
                                                           bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     for (std::size_t i = istart; i < iend; ++i) {
@@ -669,8 +670,8 @@ inline void SparseMatrixChunked::times_outer_product_marg(VectorOfAtomicDecimals
 }
 
 inline void SparseMatrixChunked::multiply(VectorOfAtomicDecimals& buffer,
-                                          nonstd::span<const double> cfx, BS::thread_pool* tpool,
-                                          bool init_buffer) const {
+                                          nonstd::span<const double> cfx,
+                                          BS::light_thread_pool* tpool, bool init_buffer) const {
   auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
     for (std::size_t i = istart; i < iend; ++i) {
       _chunks[i].multiply(buffer, cfx, false);
@@ -772,7 +773,8 @@ inline void FileBackedSparseMatrix::finalize() {
 }
 
 inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
-                                                BS::thread_pool* tpool, bool init_buffer) const {
+                                                BS::light_thread_pool* tpool,
+                                                bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
@@ -807,7 +809,7 @@ inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
 }
 
 inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg,
-                                                    BS::thread_pool* tpool,
+                                                    BS::light_thread_pool* tpool,
                                                     bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
@@ -844,7 +846,7 @@ inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg
 inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecimals& marg,
                                                              nonstd::span<const double> biases,
                                                              nonstd::span<const double> weights,
-                                                             BS::thread_pool* tpool,
+                                                             BS::light_thread_pool* tpool,
                                                              bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
@@ -881,8 +883,8 @@ inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecim
 }
 
 inline void FileBackedSparseMatrix::multiply(VectorOfAtomicDecimals& buffer,
-                                             nonstd::span<const double> cfx, BS::thread_pool* tpool,
-                                             bool init_buffer) const {
+                                             nonstd::span<const double> cfx,
+                                             BS::light_thread_pool* tpool, bool init_buffer) const {
   auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
     filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok

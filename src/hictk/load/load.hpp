@@ -134,8 +134,9 @@ template <typename N>
 }
 
 template <typename N>
-[[nodiscard]] inline std::future<void> spawn_producer(BS::thread_pool& tpool, PixelParser& parser,
-                                                      PixelQueue<N>& queue, std::int64_t offset,
+[[nodiscard]] inline std::future<void> spawn_producer(BS::light_thread_pool& tpool,
+                                                      PixelParser& parser, PixelQueue<N>& queue,
+                                                      std::int64_t offset,
                                                       std::atomic<bool>& early_return,
                                                       bool transpose_lower_triangular_pixels) {
   return tpool.submit_task([&parser, &queue, offset, &early_return,
@@ -155,8 +156,8 @@ template <typename N>
 }
 
 template <typename N>
-[[nodiscard]] inline std::future<Stats> spawn_consumer(BS::thread_pool& tpool, const LoadConfig& c,
-                                                       const BinTable& bins,
+[[nodiscard]] inline std::future<Stats> spawn_consumer(BS::light_thread_pool& tpool,
+                                                       const LoadConfig& c, const BinTable& bins,
                                                        std::string_view assembly, Format format,
                                                        PixelQueue<N>& queue,
                                                        std::atomic<bool>& early_return) {
