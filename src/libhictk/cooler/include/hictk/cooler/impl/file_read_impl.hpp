@@ -522,6 +522,10 @@ inline auto File::read_standard_attributes(const RootGroup &root_grp, bool initi
     read_or_throw("bin-size", attrs.bin_size);
   }
   internal::read_optional(root_grp, "storage-mode", attrs.storage_mode, missing_ok);
+  if (!attrs.storage_mode.has_value()) {
+    assert(attrs.format_version < 3);
+    attrs.storage_mode = "symmetric-upper";
+  }
 
   // Try to read reserved attributes
   missing_ok = true;
