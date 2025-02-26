@@ -54,9 +54,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
-    with:
-      os: ubuntu-20.04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@cfbd2b52e429d24accc346458e9fff84c5b6af93
 
   build-project:
     name: Build project
