@@ -17,18 +17,6 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
 
-  pull_request:
-    paths:
-      - ".github/workflows/build-conan-deps.yml"
-      - ".github/workflows/cppstd.yml"
-      - "cmake/**"
-      - "examples/**"
-      - "src/**"
-      - "test/scripts/**"
-      - "test/units/**"
-      - "CMakeLists.txt"
-      - "conanfile.py"
-
 # https://stackoverflow.com/a/72408109
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
