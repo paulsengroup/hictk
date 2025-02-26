@@ -31,6 +31,17 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
 
+  workflow_dispatch:
+    inputs:
+      ci-type:
+        description: "CI type"
+        required: true
+        default: "short"
+        type: choice
+        options:
+          - short
+          - full
+
 # https://stackoverflow.com/a/72408109
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -60,7 +71,9 @@ jobs:
       - name: Detect CI type
         id: ci-type
         run: |
-          if git log --format=%B -n 1 ${{ github.event.after }} | grep -qF '[ci full]'; then
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            echo "type=${{ inputs.ci-type }}" | tee -a "$GITHUB_OUTPUT"
+          elif git log --format=%B -n 1 ${{ github.event.after }} | grep -qF '[ci full]'; then
             echo "type=full" | tee -a "$GITHUB_OUTPUT"
           else
             echo "type=short" | tee -a "$GITHUB_OUTPUT"
