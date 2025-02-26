@@ -23,9 +23,9 @@ namespace internal {
 template <typename T>
 inline COWChunk<T>::COWChunk(std::size_t start_, SharedBufferT data_,
                              std::size_t capacity_) noexcept
-    : _buff(std::move(data_)),
-      _start(start_),
-      _capacity(!!_buff ? std::max(capacity_, _buff->capacity()) : capacity_) {}
+    : _buff(std::move(data_)), _start(start_) {
+  reserve(capacity_);
+}
 
 template <typename T>
 inline COWChunk<T>::COWChunk(std::size_t start_, BufferT data_, std::size_t capacity_)
@@ -52,16 +52,13 @@ inline std::size_t COWChunk<T>::COWChunk::end() const noexcept {
 }
 
 template <typename T>
-constexpr std::size_t COWChunk<T>::COWChunk::capacity() const noexcept {
-  return _capacity;
+inline std::size_t COWChunk<T>::COWChunk::capacity() const noexcept {
+  return !_buff ? 0 : _buff->capacity();
 }
 
 template <typename T>
 inline std::size_t COWChunk<T>::COWChunk::size() const noexcept {
-  if (!!_buff) {
-    return _buff->size();
-  }
-  return 0;
+  return !_buff ? 0 : _buff->size();
 }
 
 template <typename T>
@@ -113,69 +110,73 @@ inline void COWChunk<T>::update(std::size_t start_) noexcept {
 }
 
 template <typename T>
-inline void COWChunk<T>::update(std::size_t start_, SharedBufferT data_) noexcept {
+inline void COWChunk<T>::update(std::size_t start_, SharedBufferT data_) {
+  if (data_ && data_->capacity() != capacity()) {
+    throw std::runtime_error(
+        "COWChunk<T>::update(): incoming data has a different size then the current buffer! "
+        "Hint: call resize() or reserve() before calling update()");
+  }
   update(start_);
   _buff = std::move(data_);
-
-  if (!!_buff && _buff->capacity() > capacity()) {
-    _capacity = _buff->capacity();
-  }
 }
 
 template <typename T>
 inline void COWChunk<T>::update(std::size_t start_, BufferT data_) {
   update(start_);
   if (data_.empty()) {
-    _buff = nullptr;
+    reset_buffer();
     return;
   }
 
-  if (use_count() < 2) {
-    *_buff = std::move(data_);
+  if (data_.size() > capacity()) {
+    throw std::runtime_error(
+        "COWChunk<T>::update(): incoming data is larger than the available space! "
+        "Hint: call resize() or reserve() before calling update()");
+  }
+
+  if (!_buff || use_count() > 1) {
+    data_.reserve(capacity());
+    update(start_, std::make_shared<BufferT>(std::move(data_)));
     return;
   }
 
-  update(start_, std::make_shared<BufferT>(std::move(data_)));
+  _buff->resize(data_.size());
+  std::move(data_.begin(), data_.end(), _buff->begin());
 }
 
 template <typename T>
 inline void COWChunk<T>::resize(std::size_t new_size, bool shrink_to_fit) {
-  if (new_size == size()) {
+  if (new_size == size() && !shrink_to_fit) {
     return;
   }
+  if (new_size == 0) {
+    _buff = nullptr;
+  }
+
   if (!_buff) {
+    // need to allocate a new buffer
     _buff = std::make_shared<BufferT>(new_size);
   } else if (use_count() > 1) {
+    // need to allocate a new buffer and copy the old data
     auto new_buff = std::make_shared<BufferT>(new_size);
-    const auto avail_data = static_cast<std::ptrdiff_t>(std::min(_buff->size(), new_buff->size()));
-    std::copy(_buff->begin(), _buff->begin() + avail_data, new_buff->begin());
+    const auto end_offset = static_cast<std::ptrdiff_t>(std::min(_buff->size(), new_buff->size()));
+    std::move(_buff->begin(), _buff->begin() + end_offset, new_buff->begin());
     _buff = std::move(new_buff);
   } else {
+    // we can resize the current buffer
     _buff->resize(new_size);
     if (shrink_to_fit) {
       _buff->shrink_to_fit();
     }
-  }
-
-  if (shrink_to_fit) {
-    _capacity = _buff->size();
-  } else {
-    _capacity = std::max(_capacity, new_size);
   }
 }
 
 template <typename T>
 inline void COWChunk<T>::reserve(std::size_t new_capacity) {
   if (!_buff) {
-    _buff = std::make_shared<BufferT>(new_capacity);
-    _buff->clear();
-  } else {
-    _buff->reserve(new_capacity);
+    _buff = std::make_shared<BufferT>();
   }
-
-  if (new_capacity > capacity()) {
-    _capacity = new_capacity;
-  }
+  _buff->reserve(new_capacity);
 }
 
 template <typename T>
@@ -195,16 +196,14 @@ inline Dataset::iterator<T>::iterator(std::shared_ptr<const Dataset> dset,
                                       std::optional<std::ptrdiff_t> chunk_size_,
                                       std::size_t h5_offset, bool init)
 
-    : _buffer(h5_offset, nullptr, compute_chunk_size(dset, chunk_size_)),
+    : _buffer(h5_offset, nullptr),
       _dset(std::move(dset)),
+      _chunk_size(compute_chunk_size(_dset, chunk_size_)),
       _h5_offset(h5_offset),
       _h5_size(!!_dset ? _dset->size() : 0) {
-  if (!chunk_size_.has_value()) {
-    chunk_size_ = static_cast<std::ptrdiff_t>(_buffer.capacity());
-  }
-
   if (init) {
-    read_chunk_at_offset(_h5_offset, chunk_size_ >= 0);
+    const auto read_forward = chunk_size_.value_or(0) >= 0;
+    read_chunk_at_offset(_h5_offset, read_forward);
     assert(_h5_offset >= _buffer.start());
     assert(_buffer.empty() || _h5_offset <= _buffer.end());
   }
@@ -291,7 +290,7 @@ inline auto Dataset::iterator<T>::operator+(difference_type i) const -> iterator
   const auto new_offset = _h5_offset + static_cast<std::size_t>(i);
 
   if (!_buffer.empty() && _buffer.end() < new_offset) {
-    return iterator{*_dset, _buffer.capacity(), new_offset};
+    return iterator{*_dset, static_cast<std::ptrdiff_t>(_chunk_size), new_offset};
   }
 
   auto it = *this;
@@ -338,7 +337,7 @@ inline auto Dataset::iterator<T>::operator-(difference_type i) const -> iterator
     return it -= i;
   }
 
-  return iterator{*_dset, _buffer.capacity(), new_offset};
+  return iterator{*_dset, static_cast<std::ptrdiff_t>(_chunk_size), new_offset};
 }
 
 template <typename T>
@@ -364,7 +363,7 @@ constexpr std::size_t Dataset::iterator<T>::h5_offset() const noexcept {
 
 template <typename T>
 inline auto Dataset::iterator<T>::buffer() const -> const internal::COWChunk<T> & {
-  if (HICTK_UNLIKELY(_buffer.empty() && _buffer.capacity() != 0)) {
+  if (HICTK_UNLIKELY(_buffer.empty() && _chunk_size != 0)) {
     read_chunk_at_offset(_buffer.start(), true);
   } else if (HICTK_UNLIKELY(_h5_offset < _buffer.start())) {
     read_chunk_at_offset(_h5_offset, false);
@@ -372,6 +371,11 @@ inline auto Dataset::iterator<T>::buffer() const -> const internal::COWChunk<T> 
     read_chunk_at_offset(_h5_offset, true);
   }
   return _buffer;
+}
+
+template <typename T>
+constexpr std::size_t Dataset::iterator<T>::chunk_size() const noexcept {
+  return static_cast<std::size_t>(_chunk_size);
 }
 
 template <typename T>
@@ -384,7 +388,7 @@ template <typename T>
 inline void Dataset::iterator<T>::read_chunk_at_offset(std::size_t new_offset, bool forward) const {
   assert(!!_dset);
 
-  if (_buffer.capacity() == 0) {
+  if (_chunk_size == 0) {
     _buffer.update(new_offset, nullptr);
     return;
   }
@@ -395,11 +399,12 @@ inline void Dataset::iterator<T>::read_chunk_at_offset(std::size_t new_offset, b
     return;
   }
 
-  const auto start_offset = (new_offset / _buffer.capacity()) * _buffer.capacity();
+  assert(_chunk_size != 0);
+  const auto start_offset = (new_offset / _chunk_size) * _chunk_size;
 
   std::size_t size = 0;
   if (start_offset < _h5_size) {
-    size = std::min(_buffer.capacity(), _h5_size - start_offset);
+    size = std::min(static_cast<std::size_t>(_chunk_size), _h5_size - start_offset);
   }
 
   assert(new_offset >= start_offset);
@@ -458,14 +463,15 @@ inline auto Dataset::iterator<T>::make_end_iterator(std::shared_ptr<const Datase
 }
 
 template <typename T>
-inline std::size_t Dataset::iterator<T>::compute_chunk_size(
+inline std::uint32_t Dataset::iterator<T>::compute_chunk_size(
     const std::shared_ptr<const Dataset> &dset, std::optional<std::ptrdiff_t> chunk_size_) {
   if (!dset) {
     return 0;
   }
 
   const auto size = chunk_size_.value_or(static_cast<std::ptrdiff_t>(dset->get_chunk_size()));
-  return static_cast<std::size_t>(std::abs(size));
+  constexpr auto max_size = static_cast<std::ptrdiff_t>(std::numeric_limits<std::uint32_t>::max());
+  return static_cast<std::uint32_t>(std::min(std::abs(size), max_size));
 }
 
 template <typename T>

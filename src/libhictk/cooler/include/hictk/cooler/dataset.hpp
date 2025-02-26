@@ -58,7 +58,6 @@ class COWChunk {
   using SharedBufferT = std::shared_ptr<BufferT>;
   SharedBufferT _buff{};
   std::size_t _start{};
-  std::size_t _capacity{};
 
   static inline const std::vector<T> _empty_buffer{};
 
@@ -71,7 +70,7 @@ class COWChunk {
   [[nodiscard]] constexpr std::size_t start() const noexcept;
   [[nodiscard]] std::size_t end() const noexcept;
 
-  [[nodiscard]] constexpr std::size_t capacity() const noexcept;
+  [[nodiscard]] std::size_t capacity() const noexcept;
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
   [[nodiscard]] std::size_t use_count() const noexcept;
@@ -83,7 +82,7 @@ class COWChunk {
   [[nodiscard]] auto operator[](std::size_t i) const noexcept -> T;
 
   void update(std::size_t start_) noexcept;
-  void update(std::size_t start_, SharedBufferT data_) noexcept;
+  void update(std::size_t start_, SharedBufferT data_);
   void update(std::size_t start_, BufferT data_);
   void resize(std::size_t new_size, bool shrink_to_fit = false);
   void reserve(std::size_t new_capacity);
@@ -288,6 +287,7 @@ class Dataset {
     friend Dataset;
     mutable internal::COWChunk<T> _buffer{};
     std::shared_ptr<const Dataset> _dset{};
+    std::uint32_t _chunk_size{};
     std::size_t _h5_offset{};
     std::size_t _h5_size{};
 
@@ -334,7 +334,8 @@ class Dataset {
     [[nodiscard]] constexpr std::size_t h5_offset() const noexcept;
     [[nodiscard]] auto buffer() const -> const internal::COWChunk<T> &;
 
-    constexpr const Dataset &dataset() const noexcept;
+    [[nodiscard]] constexpr std::size_t chunk_size() const noexcept;
+    [[nodiscard]] constexpr const Dataset &dataset() const noexcept;
 
    private:
     void read_chunk_at_offset(std::size_t new_offset, bool forward = true) const;
@@ -346,8 +347,8 @@ class Dataset {
     [[nodiscard]] static auto make_end_iterator(std::shared_ptr<const Dataset> dset,
                                                 std::optional<std::ptrdiff_t> chunk_size_ = {})
         -> iterator;
-    [[nodiscard]] static std::size_t compute_chunk_size(const std::shared_ptr<const Dataset> &dset,
-                                                        std::optional<std::ptrdiff_t> chunk_size_);
+    [[nodiscard]] static std::uint32_t compute_chunk_size(
+        const std::shared_ptr<const Dataset> &dset, std::optional<std::ptrdiff_t> chunk_size_);
     void bound_check(std::ptrdiff_t i = 0, bool close_interval = false) const noexcept;
   };
 };

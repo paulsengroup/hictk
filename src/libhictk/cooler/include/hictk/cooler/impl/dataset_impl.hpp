@@ -263,8 +263,8 @@ template <typename T>  // NOLINTNEXTLINE(readability-function-cognitive-complexi
 inline Dataset::iterator<T> lower_bound_impl(Dataset::iterator<T> first, Dataset::iterator<T> last,
                                              const T &value, bool assume_uniform_distribution,
                                              std::size_t recursion_lvl = 0) {
-  assert(first.buffer().capacity() != 0);
-  assert(first.buffer().capacity() == last.buffer().capacity());
+  assert(first.chunk_size() != 0);
+  assert(first.chunk_size() == last.chunk_size());
   assert(first < last);
 
   const auto first_h5_offset = first.h5_offset();
