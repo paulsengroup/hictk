@@ -33,7 +33,7 @@ on:
       image:
         default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-19
         type: string
-        required: true
+        required: false
         description: "Docker image used to build Conan deps."
 
 defaults:
