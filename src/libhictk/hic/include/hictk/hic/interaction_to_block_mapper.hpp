@@ -147,7 +147,7 @@ class HiCInteractionToBlockMapper {
   void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel,
                      std::uint32_t update_frequency = 10'000'000);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::thread_pool& tpool,
+  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::light_thread_pool& tpool,
                      std::uint32_t update_frequency = 10'000'000);
   // NOLINTEND(*-avoid-magic-numbers)
 

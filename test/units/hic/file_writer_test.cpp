@@ -124,7 +124,7 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
   std::atomic<std::size_t> i{};
   std::atomic<std::size_t> threads_started{};
 
-  BS::thread_pool tpool(conditional_static_cast<BS::concurrency_t>(num_threads));
+  BS::light_thread_pool tpool(num_threads);
 
   auto producer = [&]() {
     std::random_device rd_;

@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/codecov.yml"
+      - ".github/.codecov.yml"
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
@@ -22,7 +22,7 @@ on:
 
   pull_request:
     paths:
-      - ".github/codecov.yml"
+      - ".github/.codecov.yml"
       - ".github/workflows/build-conan-deps.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"

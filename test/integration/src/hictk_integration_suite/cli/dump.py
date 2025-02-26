@@ -97,7 +97,9 @@ def _plan_tests_cli(
         factory | {"args": tuple(("dump", "not-a-file"))},
         factory | {"args": tuple(("dump", str(uri), "foobar"))},
         factory | {"args": tuple(("dump", str(uri), "--foobar"))},
-        factory | {"args": tuple(("dump", str(uri), "--foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--matrix-type", "foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--matrix-unit", "foobar"))},
+        factory | {"args": tuple(("dump", str(uri), "--table", "foobar"))},
     )
 
     plans = list(set(immutabledict(p) for p in plans))

@@ -61,24 +61,25 @@ class ICE {
   template <typename File>
   void balance_in_memory(const File& f, Type type, double tol, std::size_t max_iters,
                          std::size_t num_masked_diags, std::size_t min_nnz, std::size_t min_count,
-                         double mad_max, BS::thread_pool* tpool);
+                         double mad_max, BS::light_thread_pool* tpool);
 
   template <typename File>
   void balance_chunked(const File& f, Type type, double tol, std::size_t max_iters,
                        std::size_t num_masked_diags, std::size_t min_nnz, std::size_t min_count,
                        double mad_max, const std::filesystem::path& tmpfile, std::size_t chunk_size,
-                       BS::thread_pool* tpool);
+                       BS::light_thread_pool* tpool);
 
   template <typename MatrixT>
-  void balance_gw(const MatrixT& matrix, std::size_t max_iters, double tol, BS::thread_pool* tpool);
+  void balance_gw(const MatrixT& matrix, std::size_t max_iters, double tol,
+                  BS::light_thread_pool* tpool);
 
   template <typename MatrixT>
   void balance_cis(const MatrixT& matrix, const Chromosome& chrom, std::size_t max_iters,
-                   double tol, BS::thread_pool* tpool);
+                   double tol, BS::light_thread_pool* tpool);
 
   template <typename MatrixT>
   void balance_trans(const MatrixT& matrix, const BinTable& bins, std::size_t max_iters, double tol,
-                     BS::thread_pool* tpool);
+                     BS::light_thread_pool* tpool);
 
   template <typename File>
   [[nodiscard]] static auto construct_sparse_matrix(const File& f, Type type,
@@ -132,20 +133,20 @@ class ICE {
   [[nodiscard]] static auto inner_loop(const MatrixT& matrix, nonstd::span<double> biases,
                                        internal::VectorOfAtomicDecimals& marg,
                                        nonstd::span<const double> weights = {},
-                                       BS::thread_pool* tpool = nullptr) -> Result;
+                                       BS::light_thread_pool* tpool = nullptr) -> Result;
   [[nodiscard]] static std::pair<double, std::size_t> aggregate_marg(
-      nonstd::span<const double> marg, BS::thread_pool* tpool);
+      nonstd::span<const double> marg, BS::light_thread_pool* tpool);
 
   static void update_biases(nonstd::span<const double> marg, nonstd::span<double> biases,
-                            double avg_nzmarg, BS::thread_pool* tpool);
+                            double avg_nzmarg, BS::light_thread_pool* tpool);
 
   [[nodiscard]] static double compute_ssq_nzmarg(nonstd::span<const double> marg, double avg_nzmarg,
-                                                 BS::thread_pool* tpool);
+                                                 BS::light_thread_pool* tpool);
 
   template <typename MatrixT>
   static void min_nnz_filtering(internal::VectorOfAtomicDecimals& marg, const MatrixT& matrix,
                                 nonstd::span<double> biases, std::size_t min_nnz,
-                                BS::thread_pool* tpool);
+                                BS::light_thread_pool* tpool);
 
   static void min_count_filtering(nonstd::span<double> biases, std::size_t min_count,
                                   nonstd::span<const double> marg);
@@ -158,14 +159,14 @@ class ICE {
   static void initialize_biases(const MatrixT& matrix, nonstd::span<double> biases,
                                 nonstd::span<const std::uint64_t> chrom_bin_offsets,
                                 std::size_t min_nnz, std::size_t min_count, double mad_max,
-                                BS::thread_pool* tpool);
+                                BS::light_thread_pool* tpool);
 
   [[nodiscard]] static std::vector<double> compute_weights_from_chromosome_sizes(
       const BinTable& bins, nonstd::span<std::uint64_t> chrom_bin_offsets);
 
   template <typename Vector>
   [[nodiscard]] static bool process_in_parallel(const Vector& marg,
-                                                const BS::thread_pool* tpool) noexcept;
+                                                const BS::light_thread_pool* tpool) noexcept;
 };
 
 }  // namespace hictk::balancing

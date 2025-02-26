@@ -30,45 +30,12 @@ target_link_system_libraries(
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")
 
-# automatically discover tests that are defined in catch based test files you can modify the unittests. TEST_PREFIX to
-# whatever you want, or use different for different binaries
 catch_discover_tests(
   hictk_binary_buffer_tests
-  TEST_SPEC
-  "[short]"
-  TEST_SUFFIX
-  " - SHORT"
   WORKING_DIRECTORY
   "${PROJECT_SOURCE_DIR}"
   OUTPUT_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/"
   EXTRA_ARGS
-  --success
-  --skip-benchmarks
-)
-
-catch_discover_tests(
-  hictk_binary_buffer_tests
-  TEST_SPEC
-  "[medium]"
-  TEST_SUFFIX
-  " - MEDIUM"
-  WORKING_DIRECTORY
-  "${PROJECT_SOURCE_DIR}"
-  EXTRA_ARGS
-  --success
-  --skip-benchmarks
-)
-
-catch_discover_tests(
-  hictk_binary_buffer_tests
-  TEST_SPEC
-  "[long]"
-  TEST_SUFFIX
-  " - LONG"
-  WORKING_DIRECTORY
-  "${PROJECT_SOURCE_DIR}"
-  EXTRA_ARGS
-  --success
   --skip-benchmarks
 )
