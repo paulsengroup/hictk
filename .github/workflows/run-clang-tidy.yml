@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"
@@ -19,7 +19,7 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"

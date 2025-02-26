@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
@@ -23,7 +23,7 @@ on:
   pull_request:
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"

@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/codeql-cpp.yml"
       - "cmake/**"
       - "examples/**"
