@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"
@@ -19,7 +19,7 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/build-project.yml"
       - "cmake/**"
       - "examples/**"
@@ -44,9 +44,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
-    with:
-      os: ubuntu-20.04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@f096fa7f1729144b8539c364e2db203bcba72cfe
 
   build-project:
     name: Build project
