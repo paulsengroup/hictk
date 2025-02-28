@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataType.hpp>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -114,22 +115,22 @@ inline HighFive::DataType Dataset::get_h5type() const {
 }
 
 template <typename T>
-inline auto Dataset::cbegin(std::size_t chunk_size) const -> iterator<T> {
+inline auto Dataset::cbegin(std::optional<std::ptrdiff_t> chunk_size) const -> iterator<T> {
   return iterator<T>(*this, chunk_size);
 }
 
 template <typename T>
-inline auto Dataset::cend(std::size_t chunk_size) const -> iterator<T> {
+inline auto Dataset::cend(std::optional<std::ptrdiff_t> chunk_size) const -> iterator<T> {
   return iterator<T>::make_end_iterator(*this, chunk_size);
 }
 
 template <typename T>
-inline auto Dataset::begin(std::size_t chunk_size) const -> iterator<T> {
+inline auto Dataset::begin(std::optional<std::ptrdiff_t> chunk_size) const -> iterator<T> {
   return cbegin<T>(chunk_size);
 }
 
 template <typename T>
-inline auto Dataset::end(std::size_t chunk_size) const -> iterator<T> {
+inline auto Dataset::end(std::optional<std::ptrdiff_t> chunk_size) const -> iterator<T> {
   return cend<T>(chunk_size);
 }
 

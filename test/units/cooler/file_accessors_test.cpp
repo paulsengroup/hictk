@@ -13,8 +13,8 @@
 
 #include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/version.hpp"
-#include "tmpdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 

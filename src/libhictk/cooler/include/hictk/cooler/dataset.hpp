@@ -42,16 +42,53 @@ HICTK_DISABLE_WARNING_POP
 #include "hictk/variant_buff.hpp"
 
 namespace hictk::cooler {
-
 namespace internal {
 template <typename T>
-struct is_atomic_buffer
+struct is_scalar_buffer
     : std::disjunction<std::is_same<hictk::internal::GenericVariant, std::decay_t<T>>,
                        std::is_same<std::string, std::decay_t<T>>,
                        std::is_arithmetic<std::decay_t<T>>> {};
 
 template <typename T>
-inline constexpr bool is_atomic_buffer_v = is_atomic_buffer<T>::value;
+inline constexpr bool is_scalar_buffer_v = is_scalar_buffer<T>::value;
+
+template <typename T>
+class COWChunk {
+  using BufferT = std::vector<T>;
+  using SharedBufferT = std::shared_ptr<BufferT>;
+  SharedBufferT _buff{};
+  std::size_t _start{};
+
+  static inline const std::vector<T> _empty_buffer{};
+
+ public:
+  COWChunk() noexcept = default;
+  COWChunk(std::size_t start_, SharedBufferT data_, std::size_t capacity_ = 0) noexcept;
+  COWChunk(std::size_t start_, BufferT data_, std::size_t capacity_ = 0);
+
+  [[nodiscard]] constexpr std::size_t id() const noexcept;
+  [[nodiscard]] constexpr std::size_t start() const noexcept;
+  [[nodiscard]] std::size_t end() const noexcept;
+
+  [[nodiscard]] std::size_t capacity() const noexcept;
+  [[nodiscard]] std::size_t size() const noexcept;
+  [[nodiscard]] bool empty() const noexcept;
+  [[nodiscard]] std::size_t use_count() const noexcept;
+
+  [[nodiscard]] auto operator()() const noexcept -> const BufferT &;
+  [[nodiscard]] auto operator()() noexcept -> BufferT &;
+  // The indices refer to the whole sequence, not just values in the chunk itself
+  [[nodiscard]] auto operator()(std::size_t i) const noexcept -> std::optional<T>;
+  [[nodiscard]] auto operator[](std::size_t i) const noexcept -> T;
+
+  void update(std::size_t start_) noexcept;
+  void update(std::size_t start_, SharedBufferT data_);
+  void update(std::size_t start_, BufferT data_);
+  void resize(std::size_t new_size, bool shrink_to_fit = false);
+  void reserve(std::size_t new_capacity);
+  void reset_buffer() noexcept;
+};
+
 }  // namespace internal
 
 HICTK_DISABLE_WARNING_PUSH
@@ -75,8 +112,8 @@ class Dataset {
   using const_iterator = iterator<T>;
 
   [[nodiscard]] static HighFive::DataSetCreateProps init_create_props(std::uint32_t compression_lvl,
-                                                                      std::size_t chunk_size);
-  [[nodiscard]] static HighFive::DataSetAccessProps init_access_props(std::size_t chunk_size,
+                                                                      std::size_t chunk_size_);
+  [[nodiscard]] static HighFive::DataSetAccessProps init_access_props(std::size_t chunk_size_,
                                                                       std::size_t cache_size,
                                                                       double w0);
 
@@ -130,16 +167,16 @@ class Dataset {
   std::size_t read(VariantBuffer &vbuff, std::size_t num, std::size_t offset = 0) const;
 
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
-            typename = std::enable_if_t<!internal::is_atomic_buffer_v<T>>>
+            typename = std::enable_if_t<!internal::is_scalar_buffer_v<T>>>
   BuffT read_n(std::size_t num, std::size_t offset = 0) const;
 
   // Read all values
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
-            typename = std::enable_if_t<!internal::is_atomic_buffer_v<T>>>
+            typename = std::enable_if_t<!internal::is_scalar_buffer_v<T>>>
   std::size_t read_all(BuffT &buff, std::size_t offset = 0) const;
 
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
-            typename = std::enable_if_t<!internal::is_atomic_buffer_v<T>>>
+            typename = std::enable_if_t<!internal::is_scalar_buffer_v<T>>>
   BuffT read_all(std::size_t offset = 0) const;
 
   VariantBuffer read_all(std::size_t offset = 0) const;
@@ -152,7 +189,7 @@ class Dataset {
   std::size_t read(GenericVariant &vbuff, std::size_t offset) const;
 
   template <typename BuffT, typename T = remove_cvref_t<BuffT>,
-            typename = std::enable_if_t<internal::is_atomic_buffer_v<T>>>
+            typename = std::enable_if_t<internal::is_scalar_buffer_v<T>>>
   BuffT read(std::size_t offset) const;
   GenericVariant read(std::size_t offset) const;
 
@@ -207,20 +244,25 @@ class Dataset {
   [[nodiscard]] bool has_attribute(std::string_view key) const;
 
   template <typename T>
-  [[nodiscard]] auto begin(std::size_t chunk_size = 0) const -> iterator<T>;
+  [[nodiscard]] auto begin(std::optional<std::ptrdiff_t> chunk_size_ = {}) const -> iterator<T>;
   template <typename T>
-  [[nodiscard]] auto end(std::size_t chunk_size = 0) const -> iterator<T>;
+  [[nodiscard]] auto end(std::optional<std::ptrdiff_t> chunk_size_ = {}) const -> iterator<T>;
 
   template <typename T>
-  [[nodiscard]] auto cbegin(std::size_t chunk_size = 0) const -> iterator<T>;
+  [[nodiscard]] auto cbegin(std::optional<std::ptrdiff_t> chunk_size_ = {}) const -> iterator<T>;
   template <typename T>
-  [[nodiscard]] auto cend(std::size_t chunk_size = 0) const -> iterator<T>;
+  [[nodiscard]] auto cend(std::optional<std::ptrdiff_t> chunk_size_ = {}) const -> iterator<T>;
 
   template <typename T>
-  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset, std::size_t chunk_size = 0) const
+  [[nodiscard]] auto make_iterator_at_offset(std::size_t offset,
+                                             std::optional<std::ptrdiff_t> chunk_size_ = {}) const
       -> iterator<T>;
 
   [[nodiscard]] static std::pair<std::string, std::string> parse_uri(std::string_view uri);
+
+  template <typename T>
+  [[nodiscard]] static auto lower_bound(iterator<T> first, iterator<T> last, const T &value,
+                                        bool assume_uniform_distribution = false) -> iterator<T>;
 
  private:
   [[nodiscard]] const HighFive::Selection &select(std::size_t offset, std::size_t count = 1) const;
@@ -243,18 +285,17 @@ class Dataset {
   template <typename T>
   class iterator {
     friend Dataset;
-    mutable std::shared_ptr<std::vector<T>> _buff{};
+    mutable internal::COWChunk<T> _buffer{};
     std::shared_ptr<const Dataset> _dset{};
-    mutable std::size_t _h5_chunk_start{};
+    std::uint32_t _chunk_size{};
     std::size_t _h5_offset{};
-    std::size_t _chunk_size{};
-#ifndef NDEBUG
     std::size_t _h5_size{};
-#endif
 
-    iterator(Dataset dset, std::size_t chunk_size, std::size_t h5_offset = 0, bool init = true);
-    iterator(std::shared_ptr<const Dataset> dset, std::size_t chunk_size, std::size_t h5_offset = 0,
-             bool init = true);
+    explicit iterator(Dataset dset, std::optional<std::ptrdiff_t> chunk_size_ = {},
+                      std::size_t h5_offset = 0, bool init = true);
+    explicit iterator(std::shared_ptr<const Dataset> dset,
+                      std::optional<std::ptrdiff_t> chunk_size_ = {}, std::size_t h5_offset = 0,
+                      bool init = true);
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -262,13 +303,6 @@ class Dataset {
     using pointer = value_type *;
     using reference = value_type &;
     using iterator_category = std::random_access_iterator_tag;
-
-    enum class OverlapStatus : std::uint_fast8_t {
-      UPSTREAM,
-      OVERLAPPING,
-      DOWNSTEAM,
-      UNINITIALIZED
-    };
 
     iterator() = default;
 
@@ -295,25 +329,27 @@ class Dataset {
     [[nodiscard]] auto operator-(difference_type i) const -> iterator;
     [[nodiscard]] auto operator-(const iterator &other) const -> difference_type;
 
-    auto seek(std::size_t offset) -> iterator &;
-    [[nodiscard]] constexpr std::uint64_t h5_offset() const noexcept;
-    [[nodiscard]] constexpr std::size_t underlying_buff_capacity() const noexcept;
+    template <typename I>
+    auto seek(I offset) -> iterator &;
+    [[nodiscard]] constexpr std::size_t h5_offset() const noexcept;
+    [[nodiscard]] auto buffer() const -> const internal::COWChunk<T> &;
 
-    [[nodiscard]] constexpr std::size_t lower_bound() const noexcept;
-    [[nodiscard]] constexpr std::size_t upper_bound() const noexcept;
-
-    [[nodiscard]] constexpr auto underlying_buff_status() const noexcept -> OverlapStatus;
-    [[nodiscard]] constexpr std::size_t underlying_buff_num_available_rev() const noexcept;
-    [[nodiscard]] constexpr std::size_t underlying_buff_num_available_fwd() const noexcept;
-
-    constexpr const Dataset &dataset() const noexcept;
+    [[nodiscard]] constexpr std::size_t chunk_size() const noexcept;
+    [[nodiscard]] constexpr const Dataset &dataset() const noexcept;
 
    private:
-    void read_chunk_at_offset(std::size_t new_offset) const;
+    void read_chunk_at_offset(std::size_t new_offset, bool forward = true) const;
+    [[nodiscard]] bool buffer_is_outdated() const noexcept;
 
-    [[nodiscard]] static auto make_end_iterator(Dataset dset, std::size_t chunk_size) -> iterator;
+    [[nodiscard]] static auto make_end_iterator(Dataset dset,
+                                                std::optional<std::ptrdiff_t> chunk_size_ = {})
+        -> iterator;
     [[nodiscard]] static auto make_end_iterator(std::shared_ptr<const Dataset> dset,
-                                                std::size_t chunk_size) -> iterator;
+                                                std::optional<std::ptrdiff_t> chunk_size_ = {})
+        -> iterator;
+    [[nodiscard]] static std::uint32_t compute_chunk_size(
+        const std::shared_ptr<const Dataset> &dset, std::optional<std::ptrdiff_t> chunk_size_);
+    void bound_check(std::ptrdiff_t i = 0, bool close_interval = false) const noexcept;
   };
 };
 HICTK_DISABLE_WARNING_POP

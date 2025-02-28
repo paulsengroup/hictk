@@ -12,7 +12,7 @@
 
 #include "hictk/common.hpp"
 #include "hictk/cooler/attribute.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::attribute {
 

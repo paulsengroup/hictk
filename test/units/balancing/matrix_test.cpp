@@ -27,7 +27,7 @@
 #include "hictk/filestream.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::test::balancing {
 

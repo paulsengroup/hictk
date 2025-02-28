@@ -317,7 +317,7 @@ inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
 
 template <typename N>
 inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
-  if (_bin1_id_it.underlying_buff_num_available_fwd() <= 1) {
+  if (_bin1_id_it.h5_offset() + 1 >= _bin1_id_it.buffer().end()) {
     refresh();
   }
   auto it = *this;
@@ -373,21 +373,41 @@ inline void PixelSelector::iterator<N>::jump_to_col(std::uint64_t bin_id) {
     return;  // Row is empty
   }
 
-  const auto chunk_size = row_end_offset - row_start_offset;
-  const auto offset = _bin2_id_it.h5_offset() - (current_offset - row_start_offset);
-  auto last = _bin2_id_it.seek(offset + chunk_size);
-  if (*last <= bin_id) {
-    // Avoid doing a binary search when the last bin_id is smaller than the query
-    // This improves performance for chromosomes without interactions,
-    // which are usually placed on the right-hand side of the contact matrix
-    _bin2_id_it = last;
+  assert(row_end_offset != 0);
+  const auto row_size = row_end_offset - row_start_offset;
+  const auto offset = row_start_offset;
+
+  const auto optimistic_offset =
+      std::clamp(offset + _row_head_h5_offset, row_start_offset, row_end_offset - 1);
+  auto first = _bin2_id_it.seek(optimistic_offset);
+  if (HICTK_LIKELY(_coord1 == _coord2 && *first >= bin_id)) {
+    // this is mostly an optimization for symmetric cis queries
+    assert(optimistic_offset == offset);
+    _bin2_id_it = std::move(first);
+  } else if (HICTK_LIKELY(*first <= bin_id)) {
+    // optimistic first is at/upstream of the bin_id
+    auto &last = _bin2_id_it.seek(offset + row_size);
+    _bin2_id_it = Dataset::lower_bound(std::move(first), std::move(last), bin_id, true);
   } else {
-    auto first = _bin2_id_it.seek(offset);
-    _bin2_id_it = std::lower_bound(first, last, bin_id);
+    // optimistic first is downstream of the bin_id: need to search through the entire row
+    if (optimistic_offset != offset) {
+      first.seek(offset);
+    }
+    auto &last = _bin2_id_it.seek(offset + row_size);
+    _bin2_id_it = Dataset::lower_bound(std::move(first), std::move(last), bin_id, true);
   }
 
   _bin1_id_it.seek(_bin2_id_it.h5_offset());
   _count_it.seek(_bin2_id_it.h5_offset());
+
+  if (_coord1 != _coord2) {
+    _row_head_h5_offset = h5_offset() - row_start_offset;
+
+    // try to reduce the offset by 5% of the row length to increase the likelihood that
+    // row_start_offset + _row_head_h5_offset is upstream of the given bin_id
+    const auto left_shift_offset = (5 * row_size) / 100;
+    _row_head_h5_offset -= std::min(_row_head_h5_offset, left_shift_offset);
+  }
 
   assert(*_bin1_id_it == current_row);
 }
@@ -440,7 +460,6 @@ inline void PixelSelector::iterator<N>::jump_to_next_overlap() {
 
   if (is_at_end()) {
     jump_at_end();
-    return;
   }
 }
 
@@ -468,9 +487,12 @@ inline void PixelSelector::iterator<N>::refresh() {
   const auto &bin2_dset = _bin2_id_it.dataset();
   const auto &count_dset = _count_it.dataset();
 
-  _bin1_id_it = bin1_dset.template make_iterator_at_offset<BinIDT>(h5_offset);
-  _bin2_id_it = bin2_dset.template make_iterator_at_offset<BinIDT>(h5_offset);
-  _count_it = count_dset.template make_iterator_at_offset<N>(h5_offset);
+  _bin1_id_it = bin1_dset.template make_iterator_at_offset<BinIDT>(h5_offset,
+                                                                   _bin1_id_it.buffer().capacity());
+  _bin2_id_it = bin2_dset.template make_iterator_at_offset<BinIDT>(h5_offset,
+                                                                   _bin2_id_it.buffer().capacity());
+  _count_it =
+      count_dset.template make_iterator_at_offset<N>(h5_offset, _count_it.buffer().capacity());
 }
 
 template <typename N>

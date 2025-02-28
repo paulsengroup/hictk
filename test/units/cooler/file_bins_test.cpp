@@ -10,7 +10,7 @@
 #include "hictk/chromosome.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/reference.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 

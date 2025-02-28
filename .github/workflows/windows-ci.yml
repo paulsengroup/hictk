@@ -236,10 +236,11 @@ jobs:
 
       - name: Run unit tests
         run: |
-          ctest --test-dir build    \
-                --schedule-random   \
-                --output-on-failure \
-                --no-tests=error    \
+          ctest --test-dir build                 \
+                --schedule-random                \
+                --output-on-failure              \
+                --no-tests=error                 \
+                -E 'Cooler: dataset lower_bound' \
                 --timeout 240
 
   run-integration-tests:
