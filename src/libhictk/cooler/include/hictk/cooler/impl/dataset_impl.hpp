@@ -385,10 +385,11 @@ inline auto Dataset::lower_bound(iterator<T> first, iterator<T> last, const T &v
   }
 
   // ensure iterators are using the same chunk size
-  const auto chunk_size = std::max(first.buffer().capacity(), last.buffer().capacity());
-  if (last.buffer().capacity() != chunk_size) {
-    last =
-        iterator<T>{last._dset, -static_cast<std::ptrdiff_t>(chunk_size), last.h5_offset(), true};
+  const auto chunk_size = std::max(first.chunk_size(), last.chunk_size());
+  assert(chunk_size != 0);
+  if (last.chunk_size() != chunk_size) {
+    last = iterator<T>{std::move(last._dset), -static_cast<std::ptrdiff_t>(chunk_size),
+                       last.h5_offset(), true};
   }
 
   if (*(last - 1) < value) {
@@ -396,8 +397,8 @@ inline auto Dataset::lower_bound(iterator<T> first, iterator<T> last, const T &v
     return last;
   }
 
-  if (first.buffer().capacity() != chunk_size) {
-    first = iterator<T>{first._dset, chunk_size, first.h5_offset(), true};
+  if (first.chunk_size() != chunk_size) {
+    first = iterator<T>{std::move(first._dset), chunk_size, first.h5_offset(), true};
   }
 
   return internal::lower_bound_impl(std::move(first), std::move(last), value,
