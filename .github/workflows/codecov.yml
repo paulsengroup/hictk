@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
@@ -23,7 +23,7 @@ on:
   pull_request:
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps.yml"
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
@@ -54,9 +54,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
-    with:
-      os: ubuntu-20.04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8466ff7f594aec8d01ddbd61589a10bc863005ca
 
   build-project:
     name: Build project

@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/codeql-cpp.yml"
       - "cmake/**"
       - "examples/**"
@@ -28,9 +29,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
-    with:
-      os: ubuntu-20.04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8466ff7f594aec8d01ddbd61589a10bc863005ca
 
   analyze:
     name: Analyze (C++)
