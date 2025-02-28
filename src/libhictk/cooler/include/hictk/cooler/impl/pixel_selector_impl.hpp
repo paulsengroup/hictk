@@ -380,15 +380,20 @@ inline void PixelSelector::iterator<N>::jump_to_col(std::uint64_t bin_id) {
   const auto optimistic_offset =
       std::clamp(offset + _row_head_h5_offset, row_start_offset, row_end_offset - 1);
   auto first = _bin2_id_it.seek(optimistic_offset);
-  auto last = _bin2_id_it.seek(offset + row_size);
-  if (HICTK_LIKELY(*first <= bin_id)) {
+  if (HICTK_LIKELY(_coord1 == _coord2 && *first >= bin_id)) {
+    // this is mostly an optimization for symmetric cis queries
+    assert(optimistic_offset == offset);
+    _bin2_id_it = std::move(first);
+  } else if (HICTK_LIKELY(*first <= bin_id)) {
     // optimistic first is at/upstream of the bin_id
+    auto &last = _bin2_id_it.seek(offset + row_size);
     _bin2_id_it = Dataset::lower_bound(std::move(first), std::move(last), bin_id, true);
   } else {
     // optimistic first is downstream of the bin_id: need to search through the entire row
     if (optimistic_offset != offset) {
       first.seek(offset);
     }
+    auto &last = _bin2_id_it.seek(offset + row_size);
     _bin2_id_it = Dataset::lower_bound(std::move(first), std::move(last), bin_id, true);
   }
 
