@@ -38,7 +38,7 @@ constexpr std::size_t COWChunk<T>::COWChunk::id() const noexcept {
     return 0;
   }
 
-  return _start / capacity();
+  return _start / capacity();  // NOLINT(clang-analyzer-core.DivideZero)
 }
 
 template <typename T>
