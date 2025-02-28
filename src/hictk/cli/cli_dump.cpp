@@ -56,16 +56,16 @@ void Cli::make_dump_subcommand() {
       "--matrix-type",
       c.matrix_type,
       "Matrix type (ignored when file is not in .hic format).")
+      ->check(CLI::IsMember{{"observed", "oe", "expected"}, CLI::ignore_case})
       ->transform(ParseHiCMatrixType)
-      ->check(CLI::IsMember{{"observed", "oe", "expected"}})
       ->default_str("observed");
 
   sc.add_option(
       "--matrix-unit",
       c.matrix_unit,
       "Matrix unit (ignored when file is not in .hic format).")
+      ->check(CLI::IsMember{{"BP", "FRAG"}, CLI::ignore_case})
       ->transform(ParseHiCMatrixUnit)
-      ->check(CLI::IsMember{{"BP", "FRAG"}})
       ->default_str("BP");
 
   sc.add_option(

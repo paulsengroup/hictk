@@ -123,7 +123,7 @@ class HictkpyDump:
         if self._is_multi_res_file() or self._f is None:
             return None
 
-        return filter_bins(self._f.bins(), self._f.chromosomes(), range1, range2)
+        return filter_bins(self._f.bins().to_df(), self._f.chromosomes(), range1, range2)
 
     def _fetch_chroms(self, range1: str | None = None, range2: str | None = None) -> Dict[str, int] | None:
         if self._f is None:

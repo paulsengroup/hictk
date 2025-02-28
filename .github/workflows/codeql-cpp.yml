@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/codeql-cpp.yml"
       - "cmake/**"
       - "examples/**"
@@ -28,9 +29,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps.yml@3636252c3c9013922e6569d66ec7e27201cd921d
-    with:
-      os: ubuntu-20.04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8466ff7f594aec8d01ddbd61589a10bc863005ca
 
   analyze:
     name: Analyze (C++)
@@ -73,7 +72,7 @@ jobs:
           tar -xf /home/runner/tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@dd746615b3b9d728a6a37ca2045b68ca76d4841a # v3.28.8
+        uses: github/codeql-action/init@b56ba49b26e50535fa1e7f7db0f4f7b4bf65d80d # v3.28.10
         with:
           languages: c-cpp
           build-mode: manual
@@ -95,6 +94,6 @@ jobs:
         run: cmake --build build -j $(nproc)
 
       - name: Run Analysis
-        uses: github/codeql-action/analyze@dd746615b3b9d728a6a37ca2045b68ca76d4841a # v3.28.8
+        uses: github/codeql-action/analyze@b56ba49b26e50535fa1e7f7db0f4f7b4bf65d80d # v3.28.10
         with:
           category: "/language:c-cpp"
