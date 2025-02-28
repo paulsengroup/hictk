@@ -17,6 +17,7 @@
 
 namespace hictk::cooler::test::dataset {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename T>
 static void validate_chunk(const internal::COWChunk<T>& chunk, const std::vector<T>& data) {
   REQUIRE(chunk.size() == data.size());
@@ -42,7 +43,6 @@ static void validate_chunk(const internal::COWChunk<T>& chunk, const std::vector
   return v.capacity() == v.size();
 }
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset COWChunk", "[dataset][short]") {
   using COWChunk = internal::COWChunk<std::uint64_t>;
   SECTION("ctors") {
@@ -83,7 +83,7 @@ TEST_CASE("Cooler: dataset COWChunk", "[dataset][short]") {
       const COWChunk chunk1{0, vec};
       CHECK(chunk1.use_count() == 1);
       {
-        const auto chunk2 = chunk1;
+        const auto chunk2 = chunk1;  // NOLINT
         CHECK(chunk1.use_count() == 2);
         CHECK(&chunk1() == &chunk2());
       }

@@ -155,7 +155,7 @@ TEST_CASE("Cooler: dataset lower_bound", "[dataset][medium]") {
     }
 
     REQUIRE(i != buff.size());
-    const std::int16_t value = buff[i - 1] + 1;
+    const std::int16_t value = buff[i - 1] + 1;  // NOLINT(*-narrowing-conversions)
     const auto next_value = buff[i];
 
     auto first = dset.begin<std::int16_t>(chunk_size);
@@ -167,7 +167,7 @@ TEST_CASE("Cooler: dataset lower_bound", "[dataset][medium]") {
   }
 
   SECTION("upstream") {
-    const std::int16_t value = buff.front() - 1;
+    const std::int16_t value = buff.front() - 1;  // NOLINT(*-narrowing-conversions)
     auto first = dset.begin<std::int16_t>(chunk_size);
     auto last = dset.end<std::int16_t>(0);
 
@@ -175,7 +175,7 @@ TEST_CASE("Cooler: dataset lower_bound", "[dataset][medium]") {
   }
 
   SECTION("downstream") {
-    const std::int16_t value = buff.back() + 1;
+    const std::int16_t value = buff.back() + 1;  // NOLINT(*-narrowing-conversions)
     auto first = dset.begin<std::int16_t>(chunk_size);
     auto last = dset.end<std::int16_t>(0);
 
