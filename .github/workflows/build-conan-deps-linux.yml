@@ -63,24 +63,8 @@ jobs:
       cmake-rwdi-key: ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }}
 
     steps:
-      - name: Checkout workflow
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: hictk-workflow
-
       - name: Checkout conanfile.py
         uses: actions/checkout@v4
-        with:
-          path: hictk-conanfile
-
-      - name: Stage input files
-        run: |
-          # This is required because sparse cloning does not seem to work reliably
-          mkdir -p .github/workflows/
-          mv hictk-workflow/.github/workflows/build-conan-deps-linux.yml .github/workflows/
-          mv hictk-conanfile/conanfile.py .
-          rm -rf hictk-workflow hictk-conanfile
 
       - name: Update build deps
         run: pip install "conan==${{ inputs.conan-version }}"
@@ -91,7 +75,7 @@ jobs:
           set -u
           set -e
 
-          hash="${{ hashFiles('.github/workflows/build-conan-deps-linux.yml', 'conanfile.py') }}"
+          hash="${{ hashFiles('conanfile.py') }}"
 
           compiler="$(cc --version | head -n 1 | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
 

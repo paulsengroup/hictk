@@ -56,24 +56,8 @@ jobs:
       cmake-rel-key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
 
     steps:
-      - name: Checkout workflow
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: hictk-workflow
-
       - name: Checkout conanfile.py
         uses: actions/checkout@v4
-        with:
-          path: hictk-conanfile
-
-      - name: Stage input files
-        run: |
-          # This is required because sparse cloning does not seem to work reliably
-          mkdir -p .github/workflows/
-          mv hictk-workflow/.github/workflows/build-conan-deps-windows.yml .github/workflows/
-          mv hictk-conanfile/conanfile.py .
-          rm -rf hictk-workflow hictk-conanfile
 
       - name: Add devtools to PATH
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -84,7 +68,7 @@ jobs:
           set -u
           set -e
 
-          hash="${{ hashFiles('.github/workflows/build-conan-deps-windows.yml', 'conanfile.py') }}"
+          hash="${{ hashFiles('conanfile.py') }}"
 
           cl.exe 1> /dev/null 2> version.txt
           compiler="msvc-$(head -n 1 version.txt | grep -o '[[:digit:].]\+' | head -n 1)"
