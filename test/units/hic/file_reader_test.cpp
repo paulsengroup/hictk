@@ -16,7 +16,7 @@
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/hic/common.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk::hic;
 

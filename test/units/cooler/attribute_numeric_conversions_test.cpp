@@ -13,7 +13,7 @@
 
 #include "hictk/cooler/attribute.hpp"
 #include "hictk/suppress_warnings.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::attribute {
 

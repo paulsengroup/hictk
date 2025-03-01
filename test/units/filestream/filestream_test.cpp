@@ -19,8 +19,8 @@
 #include <vector>
 
 #include "hictk/suppress_warnings.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/type_traits.hpp"
-#include "tmpdir.hpp"
 
 namespace hictk::filestream::test {
 

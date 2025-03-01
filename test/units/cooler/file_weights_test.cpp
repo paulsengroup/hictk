@@ -9,7 +9,7 @@
 
 #include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/cooler.hpp"
-#include "tmpdir.hpp"
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 

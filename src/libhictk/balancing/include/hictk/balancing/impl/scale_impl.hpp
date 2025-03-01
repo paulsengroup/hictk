@@ -264,7 +264,7 @@ inline auto SCALE::compute_trans(const File& f, const Params& params) -> Result 
     }
   }
 
-  const auto sel = transformers::PixelMerger(heads, tails);
+  const auto sel = transformers::PixelMerger(std::move(heads), std::move(tails));
   const SCALE scale{sel.begin(), sel.end(), f.bins(), params};
 
   return {{0, f.bins().size()},
