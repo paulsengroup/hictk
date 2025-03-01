@@ -86,7 +86,7 @@ def _plan_tests_cmd(
         title = f"hictk-balance-{algorithm}"
 
     plans = []
-    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 90.0}
+    factory = {"hictk_bin": str(hictk_bin), "title": title, "timeout": 120.0}
     for c in config["test-cases"]:
         cwd = wd.mkdtemp(wd.name / title)
         tmpdir = wd.mkdir(cwd / "tmp")
