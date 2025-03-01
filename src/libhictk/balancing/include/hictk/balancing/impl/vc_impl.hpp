@@ -148,7 +148,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
     }
   }
 
-  const auto sel = transformers::PixelMerger(heads, tails);
+  const auto sel = transformers::PixelMerger(std::move(heads), std::move(tails));
   const VC vc{sel.begin(), sel.end(), f.bins()};
 
   return {{0, f.bins().size()},

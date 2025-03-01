@@ -269,12 +269,6 @@ template <typename File>
 
       selectors.emplace_back(f.fetch(chrom1.name(), chrom2.name()));
     }
-    std::vector<PixelIt> heads{};
-    std::vector<PixelIt> tails{};
-    for (const auto& sel : selectors) {
-      heads.emplace_back(sel.template begin<double>());
-      tails.emplace_back(sel.template end<double>());
-    }
   }
 
   std::vector<PixelIt> heads{};
@@ -284,7 +278,7 @@ template <typename File>
     tails.emplace_back(sel.template end<double>());
   }
 
-  const transformers::PixelMerger<PixelIt> merger{heads, tails};
+  const transformers::PixelMerger<PixelIt> merger{std::move(heads), std::move(tails)};
 
   internal::SparseMatrixChunked m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
