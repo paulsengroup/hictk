@@ -57,24 +57,8 @@ jobs:
       cmake-rel-key: ${{ steps.generate-cache-key.outputs.cmake-rel-key }}
 
     steps:
-      - name: Checkout workflow
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: hictk-workflow
-
       - name: Checkout conanfile.py
         uses: actions/checkout@v4
-        with:
-          path: hictk-conanfile
-
-      - name: Stage input files
-        run: |
-          # This is required because sparse cloning does not seem to work reliably
-          mkdir -p .github/workflows/
-          mv hictk-workflow/.github/workflows/build-conan-deps-macos.yml .github/workflows/
-          mv hictk-conanfile/conanfile.py .
-          rm -rf hictk-workflow hictk-conanfile
 
       - name: Generate cache key
         id: generate-cache-key
@@ -82,7 +66,7 @@ jobs:
           set -u
           set -e
 
-          hash="${{ hashFiles('.github/workflows/build-conan-deps-macos.yml', 'conanfile.py') }}"
+          hash="${{ hashFiles('conanfile.py') }}"
 
           compiler="$(cc --version | head -n 1 | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
 
