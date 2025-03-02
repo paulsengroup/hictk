@@ -147,6 +147,7 @@ class PixelSelector {
     void jump_to_row(std::uint64_t bin_id);
     void jump_to_col(std::uint64_t bin_id);
     void jump(std::uint64_t bin1_id, std::uint64_t bin2_id);
+    void jump_to_next_row();
     void jump_to_next_overlap();
 
     [[nodiscard]] std::size_t h5_offset() const noexcept;

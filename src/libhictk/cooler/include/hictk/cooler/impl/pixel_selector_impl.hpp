@@ -423,6 +423,33 @@ inline void PixelSelector::iterator<N>::jump(std::uint64_t bin1_id, std::uint64_
 }
 
 template <typename N>
+inline void PixelSelector::iterator<N>::jump_to_next_row() {
+  do {
+    // We're at/past end: return immediately
+    if (is_at_end()) {
+      jump_at_end();
+      return;
+    }
+
+    const auto row = *_bin1_id_it;
+    const auto next_row = row + 1;
+
+    // There's no more data to be read, as we're past the last column overlapping the query,
+    // and the next row does not overlap the query
+    if (!!_coord1 && next_row > _coord1.bin2.id()) {
+      jump_at_end();
+      return;
+    }
+
+    jump(next_row, next_row);
+  } while (discard());
+
+  if (is_at_end()) {
+    jump_at_end();
+  }
+}
+
+template <typename N>
 inline void PixelSelector::iterator<N>::jump_to_next_overlap() {
   assert(discard());
   assert(_coord1);
