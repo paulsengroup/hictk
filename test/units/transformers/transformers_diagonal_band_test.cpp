@@ -62,7 +62,13 @@ TEST_CASE("Transformers (cooler): diagonal band", "[transformers][short]") {
   SECTION("gw") {
     constexpr std::uint64_t num_bins = 50;
 
-    const auto sel = clr.fetch();
+    {  // index is not available
+      const cooler::File clr_((datadir / "cooler" / "cooler_test_file.cool").string());
+      const auto sel = clr_.fetch(balancing::Method::NONE(), false);
+      CHECK_THROWS(DiagonalBand{sel.begin<std::int32_t>(), sel.end<std::int32_t>(), num_bins});
+    }
+
+    const auto sel = clr.fetch(balancing::Method::NONE(), true);
     const DiagonalBand band_sel{sel.begin<std::int32_t>(), sel.end<std::int32_t>(), num_bins};
 
     const auto expected = fetch_pixels<std::int32_t>(sel, num_bins);

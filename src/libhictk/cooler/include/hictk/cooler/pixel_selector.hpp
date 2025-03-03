@@ -41,6 +41,9 @@ class PixelSelector {
   PixelSelector(const Index &index, const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                 const Dataset &pixels_count, std::shared_ptr<const balancing::Weights> weights,
                 bool symmetric_upper_) noexcept;
+  PixelSelector(std::shared_ptr<const BinTable> bins, const Dataset &pixels_bin1_id,
+                const Dataset &pixels_bin2_id, const Dataset &pixels_count,
+                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                 const PixelCoordinates &coords, std::shared_ptr<const balancing::Weights> weights,
@@ -106,7 +109,8 @@ class PixelSelector {
 
     explicit iterator(const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                       const Dataset &pixels_count,
-                      std::shared_ptr<const balancing::Weights> weights);
+                      std::shared_ptr<const balancing::Weights> weights,
+                      std::shared_ptr<const Index> index = {});
 
     explicit iterator(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                       const Dataset &pixels_bin2_id, const Dataset &pixels_count,
@@ -143,11 +147,13 @@ class PixelSelector {
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
 
+    void jump_to_next_row();
+    [[nodiscard]] bool is_indexed() const noexcept;
+
    private:
     void jump_to_row(std::uint64_t bin_id);
     void jump_to_col(std::uint64_t bin_id);
     void jump(std::uint64_t bin1_id, std::uint64_t bin2_id);
-    void jump_to_next_row();
     void jump_to_next_overlap();
 
     [[nodiscard]] std::size_t h5_offset() const noexcept;

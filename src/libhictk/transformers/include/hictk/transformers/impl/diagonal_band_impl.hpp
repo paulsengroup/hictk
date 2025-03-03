@@ -30,14 +30,28 @@ template <typename T>
 inline constexpr bool
     has_jump_to_next_row_member_fx<T, std::void_t<decltype(std::declval<T>().jump_to_next_row())>> =
         true;
+
+template <typename T, typename = std::void_t<>>
+inline constexpr bool has_is_indexed_member_fx = false;
+
+template <typename T>
+inline constexpr bool
+    has_is_indexed_member_fx<T, std::void_t<decltype(std::declval<T>().is_indexed())>> = true;
 }  // namespace internal
 
 template <typename PixelIt>
-inline DiagonalBand<PixelIt>::DiagonalBand(PixelIt first, PixelIt last,
-                                           std::uint64_t num_bins) noexcept
+inline DiagonalBand<PixelIt>::DiagonalBand(PixelIt first, PixelIt last, std::uint64_t num_bins)
     : _first(std::move(first)), _last(std::move(last)), _num_bins(num_bins) {
   if (num_bins == 0) {
     _first = _last;
+    return;
+  }
+  if constexpr (internal::has_is_indexed_member_fx<PixelIt>) {
+    if (!_first.is_indexed()) {
+      throw std::runtime_error(
+          "DiagonalBand<PixelIt>(): file index not loaded! Make sure to load "
+          "the file index when calling fetch().");
+    }
   }
 }
 
@@ -72,7 +86,7 @@ inline auto DiagonalBand<PixelIt>::read_all() const -> std::vector<Pixel> {
 
 template <typename PixelIt>
 inline DiagonalBand<PixelIt>::iterator::iterator(PixelIt first, PixelIt last,
-                                                 std::uint64_t num_bins) noexcept
+                                                 std::uint64_t num_bins)
     : _it(std::move(first)), _last(std::move(last)), _num_bins(num_bins) {}
 
 template <typename PixelIt>
@@ -98,6 +112,7 @@ inline auto DiagonalBand<PixelIt>::iterator::operator*() const -> const_referenc
 
 template <typename PixelIt>
 inline auto DiagonalBand<PixelIt>::iterator::operator->() const -> const_pointer {
+  assert(_it != _last);
   return _it.operator->();
 }
 
@@ -107,21 +122,15 @@ inline auto DiagonalBand<PixelIt>::iterator::operator++() -> iterator & {
     return *this;
   }
 
-  const auto p = *_it;
-
-  if constexpr (internal::has_bin1_id_member<Pixel>) {
-    if (p.bin2_id - p.bin1_id < _num_bins) {
-      return *this;
-    }
-  } else {
-    if (p.bin2.id() - p.bin1.id() < _num_bins) {
-      return *this;
-    }
+  if (!discard(*_it)) {
+    return *this;
   }
 
   if constexpr (internal::has_jump_to_next_row_member_fx<PixelIt>) {
-    _it->jump_to_next_row();
-    return *this;
+    _it.jump_to_next_row();
+    if (_it == _last || !discard(*_it)) {
+      return *this;
+    }
   }
   return ++(*this);
 }
@@ -131,6 +140,15 @@ inline auto DiagonalBand<PixelIt>::iterator::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
+}
+
+template <typename PixelIt>
+inline bool DiagonalBand<PixelIt>::iterator::discard(const Pixel &p) const noexcept {
+  if constexpr (internal::has_bin1_id_member<Pixel>) {
+    return p.bin2_id - p.bin1_id >= _num_bins;
+  } else {
+    return p.bin2.id() - p.bin1.id() >= _num_bins;
+  }
 }
 
 }  // namespace hictk::transformers

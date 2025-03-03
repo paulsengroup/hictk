@@ -24,7 +24,7 @@ class DiagonalBand {
  public:
   class iterator;
 
-  DiagonalBand(PixelIt first, PixelIt last, std::uint64_t num_bins) noexcept;
+  DiagonalBand(PixelIt first, PixelIt last, std::uint64_t num_bins);
 
   [[nodiscard]] auto begin() const -> iterator;
   [[nodiscard]] auto end() const -> iterator;
@@ -49,7 +49,7 @@ class DiagonalBand {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    iterator(PixelIt first, PixelIt last, std::uint64_t num_bins) noexcept;
+    iterator(PixelIt first, PixelIt last, std::uint64_t num_bins);
     static auto at_end(const PixelIt &it) noexcept -> iterator;
 
     [[nodiscard]] bool operator==(const iterator &other) const noexcept;
@@ -60,6 +60,9 @@ class DiagonalBand {
 
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
+
+   private:
+    [[nodiscard]] bool discard(const Pixel &p) const noexcept;
   };
 };
 
