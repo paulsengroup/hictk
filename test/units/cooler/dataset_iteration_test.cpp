@@ -83,7 +83,9 @@ TEST_CASE("Cooler: dataset random iteration", "[dataset][medium]") {
       auto ju = static_cast<std::size_t>(js);
 
       CHECK(*(first + js) == buff[ju]);
-      CHECK(*(last - js) == buff[N - ju]);
+      if (js != 0) {
+        CHECK(*(last - js) == buff[N - ju]);
+      }
 
       js = std::uniform_int_distribution<std::ptrdiff_t>{-(M - 1), M - 1}(rand_eng);
       const auto ju1 = static_cast<std::size_t>(M + js);
