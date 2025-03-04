@@ -148,7 +148,8 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
     return generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
   }
 
-  const auto step_size = std::min(*diagonal_band_width, _block_bin_count / 2);
+  const auto step_size =
+      std::min(conditional_static_cast<std::size_t>(*diagonal_band_width), _block_bin_count / 2);
   phmap::flat_hash_set<BlockIndex> buffer{};
 
   for (auto bin1 = bin1_id; bin1 < bin2_id; bin1 = std::min(bin2_id, bin1 + step_size)) {
