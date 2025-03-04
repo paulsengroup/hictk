@@ -15,6 +15,7 @@
 #include <string>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/test/testdir.hpp"
 
@@ -83,6 +84,7 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   internal::HiCFileReader s(pathV8);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");
+  const BinTable bins(s.header().chromosomes, 5000);
   // first 5 expected values
   constexpr std::array<double, 5> expected1{864.6735714977542, 620.9907283534235, 311.1254999778368,
                                             203.9822974509631, 147.9273228359822};
@@ -93,8 +95,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("observed NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::observed,
-                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::observed,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == "NONE");
@@ -110,8 +112,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
 
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed, hictk::balancing::Method::VC(),
-                                 MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::VC(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == "VC");
@@ -126,8 +128,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   SECTION("observed VC_SQRT BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed,
-                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::VC_SQRT());
@@ -142,8 +144,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   SECTION("observed KR BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed, hictk::balancing::Method::KR(),
-                                 MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::KR(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::KR());
@@ -158,8 +160,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   SECTION("observed SCALE BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed,
-                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::SCALE());
@@ -173,8 +175,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("oe NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::oe, hictk::balancing::Method::NONE(),
-                                 MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::oe,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::oe);
     CHECK(f.normalization() == "NONE");
@@ -194,8 +196,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
 
   SECTION("expected NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::expected,
-                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::expected,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::expected);
     CHECK(f.normalization() == "NONE");
@@ -218,6 +220,7 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   internal::HiCFileReader s(pathV9);
   const auto chr2L = s.header().chromosomes.at("chr2L");
   const auto chr2R = s.header().chromosomes.at("chr2R");
+  const BinTable bins(s.header().chromosomes, 5000);
   // first 5 expected values
   constexpr std::array<double, 5> expected1{864.6735708339686, 620.990715491172, 311.1255023627755,
                                             203.9822882714327, 147.9273192507429};
@@ -228,8 +231,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("observed NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::observed,
-                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::observed,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == "NONE");
@@ -244,8 +247,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   SECTION("observed VC BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed, hictk::balancing::Method::VC(),
-                                 MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::VC(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::VC());
@@ -260,8 +263,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   SECTION("observed VC_SQRT BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed,
-                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::VC_SQRT());
@@ -276,8 +279,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   SECTION("observed SCALE BP 5000") {
     auto w1 = std::make_shared<balancing::Weights>();
     auto w2 = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2R, MatrixType::observed,
-                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, 5000, w1, w2);
+    const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
+                                 hictk::balancing::Method::SCALE(), MatrixUnit::BP, w1, w2);
 
     CHECK(f.matrix_type() == MatrixType::observed);
     CHECK(f.normalization() == hictk::balancing::Method::SCALE());
@@ -291,8 +294,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("oe NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::oe, hictk::balancing::Method::NONE(),
-                                 MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::oe,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::oe);
     CHECK(f.normalization() == "NONE");
@@ -312,8 +315,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
 
   SECTION("expected NONE BP 5000") {
     auto w = std::make_shared<balancing::Weights>();
-    const auto f = s.read_footer(chr2L, chr2L, MatrixType::expected,
-                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, 5000, w, w);
+    const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::expected,
+                                 hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
     CHECK(f.matrix_type() == MatrixType::expected);
     CHECK(f.normalization() == "NONE");
