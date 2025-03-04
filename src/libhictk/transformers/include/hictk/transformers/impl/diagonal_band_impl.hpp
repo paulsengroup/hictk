@@ -42,7 +42,7 @@ inline constexpr bool
 template <typename PixelIt>
 inline DiagonalBand<PixelIt>::DiagonalBand(PixelIt first, PixelIt last, std::uint64_t num_bins)
     : _first(std::move(first)), _last(std::move(last)), _num_bins(num_bins) {
-  if (num_bins == 0) {
+  if (_num_bins == 0) {
     _first = _last;
     return;
   }

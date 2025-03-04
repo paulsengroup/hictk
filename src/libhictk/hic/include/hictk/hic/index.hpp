@@ -18,8 +18,10 @@ HICTK_DISABLE_WARNING_POP
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/pixel.hpp"
 
@@ -81,12 +83,14 @@ class Index {
   std::uint32_t _resolution{};
   Chromosome _chrom1{};
   Chromosome _chrom2{};
+  std::uint64_t _chrom1_bin_offset{};
+  std::uint64_t _chrom2_bin_offset{};
 
  public:
   static constexpr auto npos = (std::numeric_limits<std::size_t>::max)();
 
   Index() = default;
-  Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_, std::uint32_t resolution_,
+  Index(Chromosome chrom1_, Chromosome chrom2_, const BinTable& bins, MatrixUnit unit_,
         std::int32_t version_, std::size_t block_bin_count_, std::size_t block_column_count_,
         double sum_count_, BlkIdxBuffer blocks_);
 
@@ -108,8 +112,9 @@ class Index {
   [[nodiscard]] std::size_t size() const noexcept;
   [[nodiscard]] bool empty() const noexcept;
 
-  [[nodiscard]] auto find_overlaps(const PixelCoordinates& coords1,
-                                   const PixelCoordinates& coords2) const -> Overlap;
+  [[nodiscard]] auto find_overlaps(const PixelCoordinates& coords1, const PixelCoordinates& coords2,
+                                   std::optional<std::uint64_t> diagonal_band_width = {}) const
+      -> Overlap;
 
   [[nodiscard]] const BlockIndex& at(std::size_t row, std::size_t col) const;
 
