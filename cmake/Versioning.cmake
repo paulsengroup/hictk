@@ -20,7 +20,6 @@ endif()
 function(ConfigureVersioning input_config_folder output_config_folder)
   set(PRE_CONFIGURE_FILE "${input_config_folder}/git.hpp.in")
   set(POST_CONFIGURE_FILE "${output_config_folder}/git.hpp")
-  file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION TIMEOUT 10)
 
   if(HICTK_ENABLE_GIT_VERSION_TRACKING)
     include(FetchContent)
@@ -72,13 +71,18 @@ function(ConfigureVersioning input_config_folder output_config_folder)
       set(GIT_TAG "unknown")
     endif()
 
+    if(NOT WIN32)
+      file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION)
+    endif()
     configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
   endif()
 
   set(PRE_CONFIGURE_FILE "${input_config_folder}/version.hpp.in")
   set(POST_CONFIGURE_FILE "${output_config_folder}/version.hpp")
-  file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION TIMEOUT 10)
 
+  if(NOT WIN32)
+    file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION)
+  endif()
   configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
 endfunction()
 

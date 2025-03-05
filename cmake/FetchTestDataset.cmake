@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/test/data/")
-file(LOCK "${PROJECT_SOURCE_DIR}/test/data/" DIRECTORY GUARD FILE)
+if(NOT WIN32)
+  file(LOCK "${PROJECT_SOURCE_DIR}/test/data/" DIRECTORY GUARD FILE)
+endif()
 
 # gersemi: off
 file(
