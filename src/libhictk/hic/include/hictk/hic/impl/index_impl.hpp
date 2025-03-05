@@ -121,6 +121,7 @@ inline std::size_t Index::size() const noexcept { return _buffer.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline auto Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
                                  std::optional<std::uint64_t> diagonal_band_width) const
     -> Overlap {
@@ -135,9 +136,9 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
   assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
 
   const auto bin1_id = static_cast<std::size_t>(coords1.bin1.rel_id());
-  const auto bin2_id = static_cast<std::size_t>(coords1.bin2.rel_id() + 1);
+  const auto bin2_id = static_cast<std::size_t>(coords1.bin2.rel_id()) + 1;
   const auto bin3_id = static_cast<std::size_t>(coords2.bin1.rel_id());
-  const auto bin4_id = static_cast<std::size_t>(coords2.bin2.rel_id() + 1);
+  const auto bin4_id = static_cast<std::size_t>(coords2.bin2.rel_id()) + 1;
 
   const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
 
