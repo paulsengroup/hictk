@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
+if(NOT WIN32)
+  file(LOCK "${PROJECT_SOURCE_DIR}/test/data/" DIRECTORY GUARD FILE)
+endif()
+
 # gersemi: off
 file(
   DOWNLOAD https://zenodo.org/records/13851354/files/hictk_test_data.tar.zst?download=1
