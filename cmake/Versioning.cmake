@@ -20,7 +20,7 @@ endif()
 function(ConfigureVersioning input_config_folder output_config_folder)
   set(PRE_CONFIGURE_FILE "${input_config_folder}/git.hpp.in")
   set(POST_CONFIGURE_FILE "${output_config_folder}/git.hpp")
-  file(TOUCH ${POST_CONFIGURE_FILE})
+  file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION TIMEOUT 10)
 
   if(HICTK_ENABLE_GIT_VERSION_TRACKING)
     include(FetchContent)
@@ -77,8 +77,8 @@ function(ConfigureVersioning input_config_folder output_config_folder)
 
   set(PRE_CONFIGURE_FILE "${input_config_folder}/version.hpp.in")
   set(POST_CONFIGURE_FILE "${output_config_folder}/version.hpp")
+  file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION TIMEOUT 10)
 
-  file(TOUCH "${POST_CONFIGURE_FILE}")
   configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
 endfunction()
 
