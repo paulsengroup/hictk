@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/test/data/")
+file(LOCK "${PROJECT_SOURCE_DIR}/test/data/" DIRECTORY GUARD FILE)
+
 # gersemi: off
 file(
   DOWNLOAD https://zenodo.org/records/13851354/files/hictk_test_data.tar.zst?download=1
