@@ -31,6 +31,7 @@ HICTK_DISABLE_WARNING_POP
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
@@ -190,8 +191,9 @@ inline auto HiCFileReader::init_decompressor() -> Decompressor {
 }
 
 inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
-                                       const Chromosome &chrom2, MatrixUnit wantedUnit,
-                                       std::int64_t wantedResolution) {
+                                       const Chromosome &chrom2, const BinTable &bins,
+                                       MatrixUnit wantedUnit) {
+  const auto wantedResolution = bins.resolution();
   _fs->seekg(fileOffset);
 
   [[maybe_unused]] const auto c1i = _fs->read<std::int32_t>();
@@ -227,10 +229,14 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
         }
       }
 
-      return {chrom1,           chrom2,
-              wantedUnit,       static_cast<std::uint32_t>(wantedResolution),
-              version(),        blockBinCount,
-              blockColumnCount, static_cast<double>(sumCount),
+      return {chrom1,
+              chrom2,
+              bins,
+              wantedUnit,
+              version(),
+              blockBinCount,
+              blockColumnCount,
+              static_cast<double>(sumCount),
               std::move(buffer)};
     }
 
@@ -463,13 +469,13 @@ inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chro
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
-                                            MatrixType matrix_type,
+                                            const BinTable &bins, MatrixType matrix_type,
                                             const balancing::Method &wanted_norm,
-                                            MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
+                                            MatrixUnit wanted_unit,
                                             std::shared_ptr<balancing::Weights> &weights1,
                                             std::shared_ptr<balancing::Weights> &weights2) {
   assert(chrom1 <= chrom2);
-  assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), wanted_resolution) !=
+  assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), bins.resolution()) !=
          _header->resolutions.end());
   assert(!!weights1);
   assert(!!weights2);
@@ -478,6 +484,8 @@ inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chro
   } else {
     assert(weights1 != weights2);
   }
+
+  const auto wanted_resolution = bins.resolution();
 
   using MT = MatrixType;
   using NM = balancing::Method;
@@ -515,8 +523,8 @@ inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chro
 
   const auto file_offset = _fs->tellg();
   // NOTE: we read then move index to workaround assertion failures when compiling under MSVC
-  auto index = read_index(metadata.matrixMetadataOffset, metadata.chrom1, metadata.chrom2,
-                          metadata.unit, metadata.resolution);
+  auto index = read_index(metadata.matrixMetadataOffset, metadata.chrom1, metadata.chrom2, bins,
+                          metadata.unit);
   _fs->seekg(static_cast<std::int64_t>(file_offset));
 
   if ((matrix_type == MT::observed && wanted_norm == NM::NONE()) ||

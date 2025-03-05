@@ -14,6 +14,7 @@ target_sources(
   hictk_transformers_tests
   PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/transformers_coarsen_pixels_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/transformers_diagonal_band_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/transformers_join_genomic_coords_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/transformers_pixel_merger_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/transformers_stats_test.cpp"

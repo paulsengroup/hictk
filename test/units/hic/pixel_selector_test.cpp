@@ -120,6 +120,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       SECTION("intra-chromosomal") {
         constexpr std::size_t expected_size = 1433133;
         constexpr std::int32_t expected_sum = 19968156;
+        constexpr std::int32_t expected_diag_band_sum = 17107568;
 
         constexpr std::size_t N = 5;
         constexpr std::array<std::int32_t, N> head_expected{1745, 2844, 409, 195, 195};
@@ -149,11 +150,34 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           }
 
           SECTION("unsorted") {
-            CHECK(std::accumulate(
-                      sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
-                      [&](std::int32_t accumulator, const hictk::ThinPixel<std::int32_t>& tp) {
-                        return accumulator + tp.count;
-                      }) == expected_sum);
+            const auto sum =
+                std::accumulate(sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
+                                [&](std::int32_t accumulator, const ThinPixel<std::int32_t>& tp) {
+                                  return accumulator + tp.count;
+                                });
+            CHECK(sum == expected_sum);
+          }
+
+          SECTION("diagonal band (sorted)") {
+            sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP)
+                      .fetch("chr2L", balancing::Method::NONE(), File::QUERY_TYPE::UCSC, 100);
+            const auto sum =
+                std::accumulate(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), 0,
+                                [&](std::int32_t accumulator, const ThinPixel<std::int32_t>& tp) {
+                                  return accumulator + tp.count;
+                                });
+            CHECK(sum == expected_diag_band_sum);
+          }
+
+          SECTION("diagonal band (unsorted)") {
+            sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP)
+                      .fetch("chr2L", balancing::Method::NONE(), File::QUERY_TYPE::UCSC, 100);
+            const auto sum =
+                std::accumulate(sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
+                                [&](std::int32_t accumulator, const ThinPixel<std::int32_t>& tp) {
+                                  return accumulator + tp.count;
+                                });
+            CHECK(sum == expected_diag_band_sum);
           }
         }
 
@@ -212,6 +236,34 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
         compareContactRecord(buffer[38], hictk::ThinPixel<float>{7500000, 12500000, 16512});
         CHECK(std::is_sorted(buffer.begin(), buffer.end()));
+      }
+
+      SECTION("diagonal band (sorted)") {
+        auto sel =
+            File(path, 10'000, MatrixType::observed, MatrixUnit::BP)
+                .fetch("chr2L", "chr2R", balancing::Method::NONE(), File::QUERY_TYPE::UCSC, 3'000);
+        const auto sum =
+            std::accumulate(sel.begin<std::int32_t>(), sel.end<std::int32_t>(), 0,
+                            [&](std::int32_t accumulator, const ThinPixel<std::int32_t>& tp) {
+                              return accumulator + tp.count;
+                            });
+
+        constexpr std::int32_t expected_diag_band_sum = 1020809;
+        CHECK(sum == expected_diag_band_sum);
+      }
+
+      SECTION("diagonal band (unsorted)") {
+        auto sel =
+            File(path, 10'000, MatrixType::observed, MatrixUnit::BP)
+                .fetch("chr2L", "chr2R", balancing::Method::NONE(), File::QUERY_TYPE::UCSC, 3'000);
+        const auto sum =
+            std::accumulate(sel.begin<std::int32_t>(false), sel.end<std::int32_t>(), 0,
+                            [&](std::int32_t accumulator, const ThinPixel<std::int32_t>& tp) {
+                              return accumulator + tp.count;
+                            });
+
+        constexpr std::int32_t expected_diag_band_sum = 1020809;
+        CHECK(sum == expected_diag_band_sum);
       }
 
       SECTION("sub-chromosomal queries") {

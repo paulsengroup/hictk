@@ -85,13 +85,25 @@ namespace internal {
 }
 }  // namespace internal
 
-inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights) const {
-  assert(_index);
+inline PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights,
+                                 bool load_index) const {
   if (!weights) {
     weights = normalization_ptr(balancing::Method::NONE());
   }
 
-  return {*_index,
+  if (load_index) {
+    read_index_chunk(chromosomes().begin(), chromosomes().end());
+
+    return {std::const_pointer_cast<const Index>(_index),
+            dataset("pixels/bin1_id"),
+            dataset("pixels/bin2_id"),
+            dataset("pixels/count"),
+            PixelCoordinates{},
+            std::move(weights),
+            _attrs.storage_mode == "symmetric-upper"};
+  }
+
+  return {_bins,
           dataset("pixels/bin1_id"),
           dataset("pixels/bin2_id"),
           dataset("pixels/count"),
@@ -177,8 +189,8 @@ inline PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, 
 
   return fetch(std::move(coord1), std::move(coord2), std::move(weights));
 }
-inline PixelSelector File::fetch(const balancing::Method &normalization_) const {
-  return fetch(normalization_ptr(normalization_));
+inline PixelSelector File::fetch(const balancing::Method &normalization_, bool load_index) const {
+  return fetch(normalization_ptr(normalization_), load_index);
 }
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method &normalization_,
                                  QUERY_TYPE query_type) const {
@@ -638,12 +650,13 @@ inline Index File::init_index(const Dataset &chrom_offset_dset, const Dataset &b
   }
 }
 
-inline void File::read_index_chunk(std::initializer_list<Chromosome> chroms) const {
+template <typename ChromIt>
+void File::read_index_chunk(ChromIt first_chrom, ChromIt last_chrom) const {
   assert(_index);
   try {
-    for (const auto &chrom : chroms) {
+    std::for_each(first_chrom, last_chrom, [&](const Chromosome &chrom) {
       if (_index->size(chrom.id()) != 1) {
-        continue;
+        return;
       }
 
       auto chrom_offset_dset = dataset("indexes/chrom_offset");
@@ -662,12 +675,17 @@ inline void File::read_index_chunk(std::initializer_list<Chromosome> chroms) con
       } catch (const std::exception &e) {
         throw std::runtime_error(fmt::format(FMT_STRING("index validation failed: {}"), e.what()));
       }
-    }
+    });
+
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("Unable to import indexes for cooler at URI: \"{}\": {}"),
                     dataset("indexes/bin1_offset").get_parent().uri(), e.what()));
   }
+}
+
+inline void File::read_index_chunk(std::initializer_list<Chromosome> chroms) const {
+  read_index_chunk(chroms.begin(), chroms.end());
 }
 
 inline bool File::check_sentinel_attr() { return File::check_sentinel_attr(_root_group()); }

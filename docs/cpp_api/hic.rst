@@ -86,16 +86,16 @@ File handle
 
   **Fetch methods (1D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelectorAll fetch(const balancing::Method &norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, const balancing::Method &norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, const balancing::Method &norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelectorAll fetch(const balancing::Method &norm = balancing::Method::NONE(), std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC, std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, const balancing::Method &norm = balancing::Method::NONE(), std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, const balancing::Method &norm = balancing::Method::NONE(), std::optional<std::uint64_t> diagonal_band_width = {}) const;
 
   **Fetch methods (2D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, const balancing::Method &norm = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, const balancing::Method &norm = balancing::Method::NONE()) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, const balancing::Method &norm = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC, std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, const balancing::Method &norm = balancing::Method::NONE(), std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, const balancing::Method &norm = balancing::Method::NONE(), std::optional<std::uint64_t> diagonal_band_width = {}) const;
 
   **Caching**
 

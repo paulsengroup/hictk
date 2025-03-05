@@ -227,7 +227,8 @@ class File {
   [[nodiscard]] typename PixelSelector::iterator<N> cend(
       std::string_view weight_name = "NONE") const;
 
-  [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights) const;
+  [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights,
+                                    bool load_index = false) const;
   [[nodiscard]] PixelSelector fetch(std::string_view range,
                                     std::shared_ptr<const balancing::Weights> weights,
                                     QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
@@ -244,7 +245,8 @@ class File {
                                     std::shared_ptr<const balancing::Weights> weights) const;
 
   [[nodiscard]] PixelSelector fetch(
-      const balancing::Method &normalization = balancing::Method::NONE()) const;
+      const balancing::Method &normalization = balancing::Method::NONE(),
+      bool load_index = false) const;
   [[nodiscard]] PixelSelector fetch(
       std::string_view range, const balancing::Method &normalization = balancing::Method::NONE(),
       QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
@@ -347,6 +349,8 @@ class File {
                                         const Dataset &bin_offset_dset,
                                         std::shared_ptr<const BinTable> bin_table,
                                         std::uint64_t expected_nnz, bool missing_ok);
+  template <typename ChromIt>
+  void read_index_chunk(ChromIt first_chrom, ChromIt last_chrom) const;
   void read_index_chunk(std::initializer_list<Chromosome> chroms) const;
 
   template <typename PixelIt>

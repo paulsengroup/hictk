@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -66,28 +67,33 @@ class File {
   [[nodiscard]] constexpr auto matrix_type() const noexcept -> MatrixType;
   [[nodiscard]] constexpr auto matrix_unit() const noexcept -> MatrixUnit;
 
-  [[nodiscard]] PixelSelectorAll fetch(
-      const balancing::Method &norm = balancing::Method::NONE()) const;
+  [[nodiscard]] PixelSelectorAll fetch(const balancing::Method &norm = balancing::Method::NONE(),
+                                       std::optional<std::uint64_t> diagonal_band_width = {}) const;
 
   [[nodiscard]] PixelSelector fetch(std::string_view range,
                                     const balancing::Method &norm = balancing::Method::NONE(),
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  [[nodiscard]] PixelSelector fetch(
-      std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
-      const balancing::Method &norm = balancing::Method::NONE()) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start,
+                                    std::uint32_t end,
+                                    const balancing::Method &norm = balancing::Method::NONE(),
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
   [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2,
                                     const balancing::Method &norm = balancing::Method::NONE(),
-                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  [[nodiscard]] PixelSelector fetch(
-      std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1,
-      std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2,
-      const balancing::Method &norm = balancing::Method::NONE()) const;
-  [[nodiscard]] PixelSelector fetch(
-      std::uint64_t first_bin, std::uint64_t last_bin,
-      const balancing::Method &norm = balancing::Method::NONE()) const;
-  [[nodiscard]] PixelSelector fetch(
-      std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2,
-      std::uint64_t last_bin2, const balancing::Method &norm = balancing::Method::NONE()) const;
+                                    QUERY_TYPE query_type = QUERY_TYPE::UCSC,
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1,
+                                    std::uint32_t end1, std::string_view chrom2_name,
+                                    std::uint32_t start2, std::uint32_t end2,
+                                    const balancing::Method &norm = balancing::Method::NONE(),
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin,
+                                    const balancing::Method &norm = balancing::Method::NONE(),
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
+  [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
+                                    std::uint64_t first_bin2, std::uint64_t last_bin2,
+                                    const balancing::Method &norm = balancing::Method::NONE(),
+                                    std::optional<std::uint64_t> diagonal_band_width = {}) const;
 
   [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm,
                                                         const Chromosome &chrom) const;
@@ -123,14 +129,17 @@ class File {
   [[nodiscard]] std::size_t cache_capacity() const noexcept;
 
  private:
-  [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(
-      const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
-      const balancing::Method &norm, MatrixUnit unit, std::uint32_t resolution) const;
+  [[nodiscard]] std::shared_ptr<const internal::HiCFooter> get_footer(const Chromosome &chrom1,
+                                                                      const Chromosome &chrom2,
+                                                                      MatrixType matrix_type,
+                                                                      const balancing::Method &norm,
+                                                                      MatrixUnit unit) const;
 
   [[nodiscard]] PixelSelector fetch(const Chromosome &chrom1, std::uint32_t start1,
                                     std::uint32_t end1, const Chromosome &chrom2,
                                     std::uint32_t start2, std::uint32_t end2,
-                                    const balancing::Method &norm) const;
+                                    const balancing::Method &norm,
+                                    std::optional<std::uint64_t> diagonal_band_width) const;
   [[nodiscard]] std::size_t estimate_cache_size_cis() const;
   [[nodiscard]] std::size_t estimate_cache_size_trans() const;
 };

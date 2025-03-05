@@ -120,11 +120,13 @@ inline std::vector<balancing::Method> File::avail_normalizations() const {
   return _fs->list_avail_normalizations(_type, _unit, _bins->resolution());
 }
 
-inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
-    const Chromosome& chrom1, const Chromosome& chrom2, MatrixType matrix_type,
-    const balancing::Method& norm, MatrixUnit unit, std::uint32_t resolution) const {
-  const internal::HiCFooterMetadata metadata{path(),     matrix_type, norm,  unit,
-                                             resolution, chrom1,      chrom2};
+inline std::shared_ptr<const internal::HiCFooter> File::get_footer(const Chromosome& chrom1,
+                                                                   const Chromosome& chrom2,
+                                                                   MatrixType matrix_type,
+                                                                   const balancing::Method& norm,
+                                                                   MatrixUnit unit) const {
+  const internal::HiCFooterMetadata metadata{path(),       matrix_type, norm,  unit,
+                                             resolution(), chrom1,      chrom2};
   auto it = _footers.find(metadata);
   if (it != _footers.end()) {
     return *it;
@@ -134,7 +136,7 @@ inline std::shared_ptr<const internal::HiCFooter> File::get_footer(
   auto weights2 = _weight_cache->get_or_init(chrom2, norm);
 
   auto [node, _] = _footers.emplace(
-      _fs->read_footer(chrom1, chrom2, matrix_type, norm, unit, resolution, weights1, weights2));
+      _fs->read_footer(chrom1, chrom2, *_bins, matrix_type, norm, unit, weights1, weights2));
 
   return *node;
 }
@@ -143,7 +145,8 @@ constexpr auto File::matrix_type() const noexcept -> MatrixType { return _type; 
 
 constexpr auto File::matrix_unit() const noexcept -> MatrixUnit { return _unit; }
 
-inline PixelSelectorAll File::fetch(const balancing::Method& norm) const {
+inline PixelSelectorAll File::fetch(const balancing::Method& norm,
+                                    std::optional<std::uint64_t> diagonal_band_width) const {
   std::vector<PixelSelector> selectors;
 
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
@@ -157,7 +160,7 @@ inline PixelSelectorAll File::fetch(const balancing::Method& norm) const {
         continue;
       }
       try {
-        auto sel = fetch(chrom1.name(), chrom2.name(), norm);
+        auto sel = fetch(chrom1.name(), chrom2.name(), norm, QUERY_TYPE::UCSC, diagonal_band_width);
         if (!sel.empty()) {
           selectors.emplace_back(std::move(sel));
         }
@@ -182,21 +185,25 @@ inline PixelSelectorAll File::fetch(const balancing::Method& norm) const {
 }
 
 inline PixelSelector File::fetch(std::string_view range, const balancing::Method& norm,
-                                 QUERY_TYPE query_type) const {
+                                 QUERY_TYPE query_type,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(chromosomes(), range)
                       : GenomicInterval::parse_ucsc(chromosomes(), std::string{range});
 
-  return fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm);
+  return fetch(gi.chrom(), gi.start(), gi.end(), gi.chrom(), gi.start(), gi.end(), norm,
+               diagonal_band_width);
 }
 
 inline PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start,
-                                 std::uint32_t end, const balancing::Method& norm) const {
-  return fetch(chrom_name, start, end, chrom_name, start, end, norm);
+                                 std::uint32_t end, const balancing::Method& norm,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
+  return fetch(chrom_name, start, end, chrom_name, start, end, norm, diagonal_band_width);
 }
 
 inline PixelSelector File::fetch(std::string_view range1, std::string_view range2,
-                                 const balancing::Method& norm, QUERY_TYPE query_type) const {
+                                 const balancing::Method& norm, QUERY_TYPE query_type,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
   const auto gi1 = query_type == QUERY_TYPE::BED
                        ? GenomicInterval::parse_bed(chromosomes(), range1)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range1});
@@ -205,20 +212,23 @@ inline PixelSelector File::fetch(std::string_view range1, std::string_view range
                        ? GenomicInterval::parse_bed(chromosomes(), range2)
                        : GenomicInterval::parse_ucsc(chromosomes(), std::string{range2});
 
-  return fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(), norm);
+  return fetch(gi1.chrom(), gi1.start(), gi1.end(), gi2.chrom(), gi2.start(), gi2.end(), norm,
+               diagonal_band_width);
 }
 
 inline PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1,
                                  std::uint32_t end1, std::string_view chrom2_name,
                                  std::uint32_t start2, std::uint32_t end2,
-                                 const balancing::Method& norm) const {
+                                 const balancing::Method& norm,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
   return fetch(chromosomes().at(chrom1_name), start1, end1, chromosomes().at(chrom2_name), start2,
-               end2, norm);
+               end2, norm, diagonal_band_width);
 }
 
 inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1, std::uint32_t end1,
                                  const Chromosome& chrom2, std::uint32_t start2, std::uint32_t end2,
-                                 const balancing::Method& norm) const {
+                                 const balancing::Method& norm,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
   if (chrom1 > chrom2) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
@@ -228,24 +238,31 @@ inline PixelSelector File::fetch(const Chromosome& chrom1, std::uint32_t start1,
   const PixelCoordinates coord1 = {_bins->at(chrom1, start1), _bins->at(chrom1, end1 - 1)};
   const PixelCoordinates coord2 = {_bins->at(chrom2, start2), _bins->at(chrom2, end2 - 1)};
 
-  return {_fs,          get_footer(chrom1, chrom2, _type, norm, _unit, resolution()),
-          _block_cache, _bins,
-          coord1,       coord2};
+  return {_fs,
+          get_footer(chrom1, chrom2, _type, norm, _unit),
+          _block_cache,
+          _bins,
+          coord1,
+          coord2,
+          diagonal_band_width};
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
-                                 const balancing::Method& norm) const {
-  return fetch(first_bin, last_bin, first_bin, last_bin, norm);
+                                 const balancing::Method& norm,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
+  return fetch(first_bin, last_bin, first_bin, last_bin, norm, diagonal_band_width);
 }
 
 inline PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
                                  std::uint64_t first_bin2, std::uint64_t last_bin2,
-                                 const balancing::Method& norm) const {
+                                 const balancing::Method& norm,
+                                 std::optional<std::uint64_t> diagonal_band_width) const {
   const PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1 - 1)};
   const PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2 - 1)};
 
   return fetch(coord1.bin1.chrom().name(), coord1.bin1.start(), coord1.bin2.end() - 1,
-               coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1, norm);
+               coord2.bin1.chrom().name(), coord2.bin1.start(), coord2.bin2.end() - 1, norm,
+               diagonal_band_width);
 }
 
 inline const balancing::Weights& File::normalization(const balancing::Method& norm,
