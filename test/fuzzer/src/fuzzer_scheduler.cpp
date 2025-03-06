@@ -52,6 +52,11 @@ namespace hictk::fuzzer {
     args.emplace_back(fmt::to_string(c.resolution));
   }
 
+  if (c.diagonal_band_width) {
+    args.emplace_back("--diagonal-band-width");
+    args.emplace_back(fmt::to_string(*c.diagonal_band_width));
+  }
+
   return args;
 }
 

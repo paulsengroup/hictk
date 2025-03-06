@@ -16,6 +16,7 @@
 #endif
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <array>
@@ -131,6 +132,8 @@ static void add_common_args(CLI::App& sc, Config& c) {
               "Fetch pixels in BG2 format.\n"
               "Ignored when --format is not df.")
       ->capture_default_str();
+  sc.add_option("--diagonal-band-width", c.diagonal_band_width, "Diagonal band width.")
+      ->capture_default_str();
   sc.add_option("--seed", c.seed, "Seed used for PRNG.")->capture_default_str();
   sc.add_option("-v,--verbosity", c.verbosity, "Set verbosity of output to the console.")
       ->check(CLI::Range(1, 4))
@@ -235,7 +238,25 @@ static void validate_common_args(const Config& c) {
   }
 }
 
-void Cli::validate_fuzz_subcommand() const { validate_common_args(_config); }
+void Cli::validate_fuzz_subcommand() const {
+  const auto& c = _config;
+
+  validate_common_args(c);
+
+  std::vector<std::string> warnings;
+
+  if (c.diagonal_band_width.has_value() && c.query_format != "df") {
+    warnings.emplace_back("--diagonal-band-width is ignored when --format is not \"df\"");
+  }
+
+  if (c.join && c.query_format != "df") {
+    warnings.emplace_back("--join is ignored when --format is not \"df\"");
+  }
+
+  for (const auto& w : warnings) {
+    SPDLOG_WARN(w);
+  }
+}
 
 void Cli::validate_launch_worker_subcommand() const { validate_common_args(_config); }
 

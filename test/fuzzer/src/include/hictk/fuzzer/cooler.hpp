@@ -76,10 +76,12 @@ class Cooler {
 
   template <typename N>
   void fetch_df(COODataFrame<N>& buff, std::string_view range1, std::string_view range2 = "",
-                std::string_view normalization = "NONE");
+                std::string_view normalization = "NONE",
+                std::optional<std::uint64_t> diagonal_band_width = {});
   template <typename N>
   void fetch_df(BG2DataFrame<N>& buff, std::string_view range1, std::string_view range2 = "",
-                std::string_view normalization = "NONE");
+                std::string_view normalization = "NONE",
+                std::optional<std::uint64_t> diagonal_band_width = {});
   template <typename N>
   [[nodiscard]] Eigen2DDense<N> fetch_dense(std::string_view range1, std::string_view range2 = "",
                                             std::string_view normalization = "NONE");

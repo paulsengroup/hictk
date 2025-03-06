@@ -24,6 +24,7 @@ struct Config {
   double duration{60.0};
   double query_length_avg{1.0e6};
   double query_length_std{250.0e3};
+  std::optional<std::uint64_t> diagonal_band_width{};
   std::string query_format{"df"};
   bool join{false};
   std::string normalization{"NONE"};

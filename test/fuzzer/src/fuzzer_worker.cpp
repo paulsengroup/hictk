@@ -21,6 +21,7 @@
 #include "hictk/fuzzer/validators.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/transformers/diagonal_band.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
 #include "hictk/transformers/to_sparse_matrix.hpp"
@@ -191,40 +192,70 @@ struct Query {
 template <typename PixelT>
 static void fetch_pixels(const Reference& chroms, cooler::Cooler& clr, std::string_view range1,
                          std::string_view range2, std::string_view normalization,
+                         std::optional<std::uint64_t> diagonal_band_width,
                          std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
   if constexpr (std::is_same_v<remove_cvref_t<PixelT>, Pixel<N>>) {
     cooler::BG2DataFrame<N> df{};
-    clr.fetch_df(df, range1, range2, normalization);
+    clr.fetch_df(df, range1, range2, normalization, diagonal_band_width);
     df.to_vector(chroms, buffer);
   } else {
     cooler::COODataFrame<N> df{};
-    clr.fetch_df(df, range1, range2, normalization);
+    clr.fetch_df(df, range1, range2, normalization, diagonal_band_width);
     df.to_vector(buffer);
   }
   assert(std::is_sorted(buffer.begin(), buffer.end()));
 }
 
-template <typename PixelT>
-static void fetch_pixels(const hictk::File& f, std::string_view range1, std::string_view range2,
-                         std::string_view normalization, std::vector<PixelT>& buffer) {
+template <typename PixelIt, typename PixelT>
+static void fetch_pixels(PixelIt first, PixelIt last,
+                         const std::shared_ptr<const hictk::BinTable>& bins,
+                         std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
-  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
-
   if constexpr (std::is_same_v<remove_cvref_t<PixelT>, ThinPixel<N>>) {
-    to_vector(buffer, transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
+    to_vector(buffer, transformers::ToDataFrame(std::move(first), std::move(last),
                                                 transformers::DataFrameFormat::COO)());
   } else {
-    to_vector(f.chromosomes(), buffer,
-              transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
-                                        transformers::DataFrameFormat::BG2, f.bins_ptr())());
+    assert(bins);
+    to_vector(bins->chromosomes(), buffer,
+              transformers::ToDataFrame(std::move(first), std::move(last),
+                                        transformers::DataFrameFormat::BG2, bins)());
   }
 }
 
+template <typename PixelT>
+static void fetch_pixels(const hictk::cooler::File& f, std::string_view range1,
+                         std::string_view range2, std::string_view normalization,
+                         std::optional<std::uint64_t> diagonal_band_width,
+                         std::vector<PixelT>& buffer) {
+  using N = decltype(std::declval<PixelT>().count);
+
+  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
+  if (diagonal_band_width.has_value()) {
+    const transformers::DiagonalBand band_sel{sel.begin<N>(), sel.end<N>(), *diagonal_band_width};
+    return fetch_pixels(band_sel.begin(), band_sel.end(), f.bins_ptr(), buffer);
+  }
+
+  fetch_pixels(sel.begin<N>(), sel.end<N>(), f.bins_ptr(), buffer);
+}
+
+template <typename PixelT>
+static void fetch_pixels(const hictk::hic::File& f, std::string_view range1,
+                         std::string_view range2, std::string_view normalization,
+                         [[maybe_unused]] std::optional<std::uint64_t> diagonal_band_width,
+                         std::vector<PixelT>& buffer) {
+  using N = decltype(std::declval<PixelT>().count);
+
+  const auto sel = f.fetch(range1, range2, balancing::Method{normalization},
+                           hictk::hic::File::QUERY_TYPE::UCSC, diagonal_band_width);
+  fetch_pixels(sel.begin<N>(), sel.end<N>(), f.bins_ptr(), buffer);
+}
+
+template <typename File>
 [[nodiscard]] static std::variant<Eigen2DDense<std::int32_t>, Eigen2DDense<double>>
-fetch_pixels_dense(const hictk::File& f, std::string_view range1, std::string_view range2,
+fetch_pixels_dense(const File& f, std::string_view range1, std::string_view range2,
                    std::string_view normalization) {
   if (normalization == "NONE") {
     return {transformers::ToDenseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
@@ -243,8 +274,9 @@ fetch_pixels_dense(cooler::Cooler& clr, std::string_view range1, std::string_vie
   return {clr.fetch_dense<double>(range1, range2, normalization)};
 }
 
+template <typename File>
 [[nodiscard]] static std::variant<EigenSparse<std::int32_t>, EigenSparse<double>>
-fetch_pixels_sparse(const hictk::File& f, std::string_view range1, std::string_view range2,
+fetch_pixels_sparse(const File& f, std::string_view range1, std::string_view range2,
                     std::string_view normalization) {
   if (normalization == "NONE") {
     return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
@@ -294,7 +326,8 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   }
 }
 
-[[nodiscard]] static int fuzzy_pixels_dfs(const hictk::File& tgt, cooler::Cooler& ref,
+template <typename File>
+[[nodiscard]] static int fuzzy_pixels_dfs(const File& tgt, cooler::Cooler& ref,
                                           const Reference& chroms, std::mt19937_64& rand_eng,
                                           std::discrete_distribution<std::uint32_t>& chrom_sampler,
                                           const Config& c) {
@@ -323,8 +356,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
                   "[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
               c.task_id, num_tests, range1, range2, c.normalization);
 
-          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, expected);
-          fetch_pixels(tgt, range1, range2, c.normalization, found);
+          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization,
+                       c.diagonal_band_width, expected);
+          fetch_pixels(tgt, range1, range2, c.normalization, c.diagonal_band_width, found);
 
           ++num_tests;
           num_failures += !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
@@ -336,8 +370,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
       expected_buffer);
 }
 
+template <typename File>
 [[nodiscard]] static int fuzzy_pixels_dense(
-    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    const File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
     std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
   const auto t0 = std::chrono::system_clock::now();
   const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
@@ -372,8 +407,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   return num_failures != 0;  // NOLINT
 }
 
+template <typename File>
 [[nodiscard]] static int fuzzy_pixels_sparse(
-    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    const File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
     std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
   const auto t0 = std::chrono::system_clock::now();
   const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
@@ -435,18 +471,22 @@ int launch_worker_subcommand(const Config& c) {
     const auto chroms = tgt.chromosomes().remove_ALL();
     auto chrom_sampler = init_chrom_sampler(chroms);
 
-    if (c.query_format == "df") {
-      return fuzzy_pixels_dfs(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
-    if (c.query_format == "dense") {
-      return fuzzy_pixels_dense(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
-    if (c.query_format == "sparse") {
-      return fuzzy_pixels_sparse(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
+    return std::visit(
+        [&](const auto& tgt_) {
+          if (c.query_format == "df") {
+            return fuzzy_pixels_dfs(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
+          if (c.query_format == "dense") {
+            return fuzzy_pixels_dense(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
+          if (c.query_format == "sparse") {
+            return fuzzy_pixels_sparse(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
 
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("unknown query-format=\"{}\""), c.query_format));
+          throw std::runtime_error(
+              fmt::format(FMT_STRING("unknown query-format=\"{}\""), c.query_format));
+        },
+        tgt.get());
 
   } catch (const std::exception& e) {
     // wrap python exceptions while we still hold the scoped_interpreter guard

@@ -144,7 +144,8 @@ inline EigenSparse<N> scipy_coo_to_eigen(pybind11::object obj) {
 
 template <typename N>
 inline void Cooler::fetch_df(COODataFrame<N>& buff, std::string_view range1,
-                             std::string_view range2, std::string_view normalization) {
+                             std::string_view range2, std::string_view normalization,
+                             std::optional<std::uint64_t> diagonal_band_width) {
   if (!_clr) {
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
@@ -161,12 +162,24 @@ inline void Cooler::fetch_df(COODataFrame<N>& buff, std::string_view range1,
     range2 = range1;
   }
 
-  buff = selector.attr("fetch")(range1, range2);
+  const auto df = selector.attr("fetch")(range1, range2);
+
+  if (diagonal_band_width.has_value()) {
+    const auto bin1_id = df.attr("__getitem__")("bin1_id");
+    const auto bin2_id = df.attr("__getitem__")("bin2_id");
+    const auto diff = bin2_id.attr("__sub__")(bin1_id);
+    const auto mask = diff.attr("__lt__")(*diagonal_band_width);
+
+    buff = df.attr("__getitem__")(mask);
+  } else {
+    buff = df;
+  }
 }
 
 template <typename N>
 inline void Cooler::fetch_df(BG2DataFrame<N>& buff, std::string_view range1,
-                             std::string_view range2, std::string_view normalization) {
+                             std::string_view range2, std::string_view normalization,
+                             std::optional<std::uint64_t> diagonal_band_width) {
   if (!_clr) {
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
@@ -183,7 +196,18 @@ inline void Cooler::fetch_df(BG2DataFrame<N>& buff, std::string_view range1,
     range2 = range1;
   }
 
-  buff = selector.attr("fetch")(range1, range2);
+  const auto df = selector.attr("fetch")(range1, range2);
+
+  if (diagonal_band_width.has_value()) {
+    const auto start1 = df.attr("__getitem__")("start1");
+    const auto start2 = df.attr("__getitem__")("start2");
+    const auto diff = start2.attr("__sub__")(start1);
+    const auto mask = diff.attr("__lt__")(*diagonal_band_width * resolution());
+
+    buff = df.attr("__getitem__")(mask);
+  } else {
+    buff = df;
+  }
 }
 
 template <typename N>
