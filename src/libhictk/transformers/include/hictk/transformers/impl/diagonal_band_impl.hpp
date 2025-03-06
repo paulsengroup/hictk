@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -46,12 +47,21 @@ inline DiagonalBand<PixelIt>::DiagonalBand(PixelIt first, PixelIt last, std::uin
     _first = _last;
     return;
   }
+
   if constexpr (internal::has_is_indexed_member_fx<PixelIt>) {
     if (!_first.is_indexed()) {
       throw std::runtime_error(
           "DiagonalBand<PixelIt>(): file index not loaded! Make sure to load "
-          "the file index when calling fetch().");
+          "the file index when calling fetch() on cooler::File objects.");
     }
+  }
+
+  while (_first != _last) {
+    const auto p = *_first;
+    if (p.bin2_id - p.bin1_id < _num_bins) {
+      break;
+    }
+    std::ignore = ++_first;
   }
 }
 
@@ -132,6 +142,7 @@ inline auto DiagonalBand<PixelIt>::iterator::operator++() -> iterator & {
       return *this;
     }
   }
+
   return ++(*this);
 }
 

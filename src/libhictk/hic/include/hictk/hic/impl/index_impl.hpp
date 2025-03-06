@@ -159,7 +159,7 @@ inline auto Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoo
       const auto bin4 = std::min(bin4_id, bin3 + step_size);
 
       if (is_intra) {
-        if (bin4 - bin2 > diagonal_band_width) {
+        if (bin3 - bin2 > diagonal_band_width) {
           continue;
         }
       } else {
