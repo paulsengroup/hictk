@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 furo==2024.8.6
-sphinx==8.0.2
+sphinx==8.2.3
 sphinx-copybutton==0.5.2
 sphinxcontrib-moderncmakedomain==3.29.0
