@@ -168,6 +168,18 @@ struct Query {
   return std::make_pair(q1, q2);
 }
 
+[[nodiscard]] static std::pair<Query, Query> generate_query(
+    const hictk::Reference& chroms, std::mt19937_64& rand_eng,
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
+    double stddev_length, double _1d_to_2d_query_ratio) {
+  if (std::bernoulli_distribution{_1d_to_2d_query_ratio}(rand_eng)) {
+    auto q = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+    return std::make_pair(q, q);
+  }
+
+  return generate_query_2d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+}
+
 [[nodiscard]] static std::discrete_distribution<std::uint32_t> init_chrom_sampler(
     const hictk::Reference& chroms) {
   std::uint64_t genome_size{};
@@ -346,8 +358,8 @@ template <typename File>
         auto& found = std::get<BufferT>(found_buffer);
 
         while (compute_elapsed_time(t0) < duration) {
-          const auto [q1, q2] = generate_query_2d(chroms, rand_eng, chrom_sampler,
-                                                  c.query_length_avg, c.query_length_std);
+          const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
+                                               c.query_length_std, c._1d_to_2d_query_ratio);
           const auto range1 = q1.to_string();
           const auto range2 = q2.to_string();
 
@@ -381,8 +393,8 @@ template <typename File>
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] =
-        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
+                                         c.query_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
@@ -418,8 +430,8 @@ template <typename File>
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] =
-        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
+                                         c.query_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
