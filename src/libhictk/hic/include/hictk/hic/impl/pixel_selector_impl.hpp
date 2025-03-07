@@ -293,15 +293,14 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorte
       _coord1(sel._coord1),
       _coord2(sel._coord2),
       _footer(sel._footer),
-      _block_idx(std::make_shared<const internal::Index::Overlap>(
-          _reader->index().find_overlaps(coord1(), coord2(), diagonal_band_width))),
+      _block_idx(preload_block_index(sel, diagonal_band_width, sorted)),
       _block_blacklist(std::make_shared<BlockBlacklist>()),
-      _block_it(_block_idx->begin()),
+      _block_it(!!_block_idx ? _block_idx->begin() : internal::Index::Overlap::const_iterator{}),
       _buffer(std::make_shared<BufferT>()),
       _bin1_id(coord1().bin1.rel_id()),
       _diagonal_band_width(diagonal_band_width.value_or(std::numeric_limits<std::uint64_t>::max())),
       _sorted(sorted) {
-  if (_block_idx->empty()) {
+  if (!!_block_idx && _block_idx->empty()) {
     *this = at_end(_reader, _coord1, _coord2);
     return;
   }
@@ -315,7 +314,7 @@ template <typename N>
 inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBlockReader> reader,
                                                std::shared_ptr<const PixelCoordinates> coord1,
                                                std::shared_ptr<const PixelCoordinates> coord2)
-    -> iterator<N> {
+    -> iterator {
   iterator it{};
 
   it._reader = std::move(reader);
@@ -719,6 +718,21 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
   pixel.count /= expected_count;
 
   return return_pixel();
+}
+
+template <typename N>
+inline std::shared_ptr<const internal::Index::Overlap>
+PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
+                                                std::optional<std::uint64_t> diagonal_band_width,
+                                                bool sorted) {
+  const auto &idx = sel._reader->index();
+  const auto is_intra = sel.coord1().bin1.chrom() == sel.coord2().bin2.chrom();
+  if (sorted && is_intra && idx.version() > 8) {
+    return nullptr;
+  }
+
+  return std::make_shared<const internal::Index::Overlap>(
+      idx.find_overlaps(sel.coord1(), sel.coord2(), diagonal_band_width));
 }
 
 inline PixelSelectorAll::PixelSelectorAll(

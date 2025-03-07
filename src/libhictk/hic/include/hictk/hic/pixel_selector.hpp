@@ -188,6 +188,8 @@ class PixelSelector {
     void read_next_chunk_sorted();
     void read_next_chunk_v9_intra_sorted();
     [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
+    [[nodiscard]] static std::shared_ptr<const internal::Index::Overlap> preload_block_index(
+        const PixelSelector &sel, std::optional<std::uint64_t> diagonal_band_width, bool sorted);
   };
 };
 

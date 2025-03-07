@@ -120,13 +120,20 @@ class Index {
 
  private:
   [[nodiscard]] auto generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                         std::size_t bin4) const -> Overlap;
+                                         std::size_t bin4, bool sorted) const -> Overlap;
   [[nodiscard]] auto generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2,
                                                       std::size_t bin3, std::size_t bin4) const
       -> Overlap;
   void generate_block_list_intra_v9plus(std::size_t bin1, std::size_t bin2, std::size_t bin3,
                                         std::size_t bin4,
                                         phmap::flat_hash_set<BlockIndex>& buffer) const;
+  static void sort_interaction_block_index(Overlap& blocks);
+
+  [[nodiscard]] auto find_overlaps_impl(const PixelCoordinates& coords1,
+                                        const PixelCoordinates& coords2) const -> Overlap;
+  [[nodiscard]] auto find_overlaps_impl(const PixelCoordinates& coords1,
+                                        const PixelCoordinates& coords2,
+                                        std::uint64_t diagonal_band_width) const -> Overlap;
 };
 
 }  // namespace hictk::hic::internal
