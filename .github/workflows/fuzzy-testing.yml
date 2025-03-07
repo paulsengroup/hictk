@@ -214,11 +214,16 @@ jobs:
             resolution=0
           fi
 
-          2>&1 echo "Duration: ${duration}"
-          2>&1 echo "Resolution: ${resolution}"
+          # Generate a random 64 bit uint
+          seed="$(od -An -vtu8 -N8 < /dev/random)"
 
-          echo "duration=$duration" | tee -a "$GITHUB_OUTPUT"
-          echo "resolution=$resolution" | tee -a "$GITHUB_OUTPUT"
+          2>&1 echo "Duration: $duration"
+          2>&1 echo "Resolution: $resolution"
+          2>&1 echo "Seed: $seed"
+
+          echo "duration=$duration" >> "$GITHUB_OUTPUT"
+          echo "resolution=$resolution" >> "$GITHUB_OUTPUT"
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
 
       - name: Download test datasets
         run: |
@@ -236,6 +241,7 @@ jobs:
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
+            --seed ${{ steps.test-params.outputs.seed }} \
             --nproc $(nproc) \
             --format df \
             *".${{ matrix.format }}" \
@@ -247,6 +253,7 @@ jobs:
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
+            --seed ${{ steps.test-params.outputs.seed }} \
             --nproc $(nproc) \
             --format dense \
             *".${{ matrix.format }}" \
@@ -258,6 +265,7 @@ jobs:
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
+            --seed ${{ steps.test-params.outputs.seed }} \
             --nproc $(nproc) \
             --format sparse \
             *".${{ matrix.format }}" \
