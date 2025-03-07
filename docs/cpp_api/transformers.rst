@@ -59,6 +59,34 @@ Coarsening pixels
 
   .. cpp:function:: [[nodiscard]] auto read_all() const -> std::vector<ThinPixel<N>>;
 
+Selecting pixels overlapping with a band around the matrix diagonal
+-------------------------------------------------------------------
+
+.. cpp:class:: template <typename PixelIt> DiagonalBand
+
+  Class used to select pixels overlapping with a band around the matrix diagonal.
+
+  .. cpp:function:: DiagonalBand(PixelIt first_pixel, PixelIt last_pixel, std::uint64_t num_bins);
+
+   Constructor for :cpp:class:`DiagonalBand` class.
+   ``first_pixel`` and ``last_pixels`` should be a pair of iterators pointing to the stream of pixels to be processed.
+   ``num_bins`` should correspond to the width of the band around the matrix diagonal.
+   As all filtering operations are performed based on bin IDs, this transformer is unsuitable for processing pixels
+   originating from files with bin tables of non-uniform size.
+
+  **Iteration**
+
+  .. cpp:function:: [[nodiscard]] begin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] end() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cbegin() const -> iterator;
+  .. cpp:function:: [[nodiscard]] cend() const -> iterator;
+
+  Return an `InputIterator <https://en.cppreference.com/w/cpp/named_req/InputIterator>`_ to traverse the pixels after filtering.
+
+  **Others***
+
+  .. cpp:function:: [[nodiscard]] auto read_all() const -> std::vector<Pixel<N>>;
+
 Transforming COO pixels to BG2 pixels
 -------------------------------------
 
