@@ -727,7 +727,7 @@ PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
                                                 bool sorted) {
   const auto &idx = sel._reader->index();
   const auto is_intra = sel.coord1().bin1.chrom() == sel.coord2().bin2.chrom();
-  if (sorted && is_intra && idx.version() > 8) {
+  if (sorted && is_intra && idx.version() > 8) {  // NOLINT(*-avoid-magic-numbers)
     return nullptr;
   }
 

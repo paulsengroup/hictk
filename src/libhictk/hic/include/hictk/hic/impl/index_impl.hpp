@@ -261,6 +261,7 @@ inline auto Index::find_overlaps_impl(const PixelCoordinates &coords1,
              : generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id, true);
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline auto Index::find_overlaps_impl(const PixelCoordinates &coords1,
                                       const PixelCoordinates &coords2,
                                       std::uint64_t diagonal_band_width) const -> Overlap {
@@ -321,7 +322,7 @@ inline auto Index::find_overlaps_impl(const PixelCoordinates &coords1,
   Overlap out_buffer{buffer.size()};
   std::copy(buffer.begin(), buffer.end(), out_buffer.begin());
 
-  if (!is_intra || _version < 9) {
+  if (!is_intra || _version < 9) {  // NOLINT(*-avoid-magic-numbers)
     sort_interaction_block_index(out_buffer);
   }
   return out_buffer;
