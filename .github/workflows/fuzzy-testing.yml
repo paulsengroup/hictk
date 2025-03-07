@@ -191,7 +191,7 @@ jobs:
       - name: Prepare for test
         id: test-params
         run: |
-          duration=120
+          duration=300
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
             duration='${{ inputs.duration }}'
           elif [[ '${{ steps.ci-type.outputs.type }}' == 'full' ]]; then
