@@ -272,6 +272,7 @@ jobs:
             *.cool
 
       - name: Run test (diagonal band; 1D queries)
+        if: matrix.bin-type == 'fixed'
         run: |
           _100_mbps=100000000
           build/test/fuzzer/src/hictk_fuzzer fuzz \
@@ -287,6 +288,7 @@ jobs:
             *.cool
 
       - name: Run test (diagonal band; 2D queries)
+        if: matrix.bin-type == 'fixed'
         run: |
           _1_gbp=1000000000
           build/test/fuzzer/src/hictk_fuzzer fuzz \

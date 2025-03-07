@@ -119,6 +119,14 @@ TEST_CASE("Transformers (cooler): diagonal band", "[transformers][short]") {
 
     CHECK(found.empty());
   }
+
+  SECTION("variable bin size") {
+    const cooler::File var_clr(
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
+    REQUIRE(var_clr.bins().type() == BinTable::Type::variable);
+
+    CHECK_THROWS(DiagonalBand{var_clr.begin<std::int32_t>(), var_clr.end<std::int32_t>(), 1});
+  }
 }
 
 TEST_CASE("Transformers (hic): diagonal band", "[transformers][short]") {

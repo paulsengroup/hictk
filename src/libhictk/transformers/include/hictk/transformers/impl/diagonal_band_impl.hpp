@@ -38,6 +38,13 @@ inline constexpr bool has_is_indexed_member_fx = false;
 template <typename T>
 inline constexpr bool
     has_is_indexed_member_fx<T, std::void_t<decltype(std::declval<T>().is_indexed())>> = true;
+
+template <typename T, typename = std::void_t<>>
+inline constexpr bool has_is_fixed_bin_size_member_fx = false;
+
+template <typename T>
+inline constexpr bool has_is_fixed_bin_size_member_fx<
+    T, std::void_t<decltype(std::declval<T>().is_fixed_bin_size())>> = true;
 }  // namespace internal
 
 template <typename PixelIt>
@@ -53,6 +60,14 @@ inline DiagonalBand<PixelIt>::DiagonalBand(PixelIt first, PixelIt last, std::uin
       throw std::runtime_error(
           "DiagonalBand<PixelIt>(): file index not loaded! Make sure to load "
           "the file index when calling fetch() on cooler::File objects.");
+    }
+  }
+
+  if constexpr (internal::has_is_fixed_bin_size_member_fx<PixelIt>) {
+    if (!_first.is_fixed_bin_size()) {
+      throw std::runtime_error(
+          "DiagonalBand<PixelIt>(): processing interactions from Cooler files with variable bin "
+          "sizes is not supported");
     }
   }
 
