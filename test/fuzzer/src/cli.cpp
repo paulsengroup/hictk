@@ -132,7 +132,7 @@ static void add_common_args(CLI::App& sc, Config& c) {
               "Fetch pixels in BG2 format.\n"
               "Ignored when --format is not df.")
       ->capture_default_str();
-  sc.add_option("--diagonal-band-width", c.diagonal_band_width, "Diagonal band width.")
+  sc.add_option("--diagonal-band-width", c.diagonal_band_width, "Diagonal band width (bp).")
       ->capture_default_str();
   sc.add_option("--seed", c.seed, "Seed used for PRNG.")->capture_default_str();
   sc.add_option("-v,--verbosity", c.verbosity, "Set verbosity of output to the console.")

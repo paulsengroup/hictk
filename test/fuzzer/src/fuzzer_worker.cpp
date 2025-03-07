@@ -352,6 +352,11 @@ template <typename File>
   std::size_t num_tests{};
   std::size_t num_failures{};
 
+  auto diagonal_band_width = c.diagonal_band_width;
+  if (diagonal_band_width.has_value()) {
+    diagonal_band_width = *diagonal_band_width / tgt.resolution();
+  }
+
   return std::visit(
       [&](auto& expected) -> int {
         using BufferT = remove_cvref_t<decltype(expected)>;
@@ -368,9 +373,9 @@ template <typename File>
                   "[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
               c.task_id, num_tests, range1, range2, c.normalization);
 
-          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization,
-                       c.diagonal_band_width, expected);
-          fetch_pixels(tgt, range1, range2, c.normalization, c.diagonal_band_width, found);
+          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, diagonal_band_width,
+                       expected);
+          fetch_pixels(tgt, range1, range2, c.normalization, diagonal_band_width, found);
 
           ++num_tests;
           num_failures += !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
