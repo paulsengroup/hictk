@@ -128,23 +128,26 @@ struct Query {
 
 [[nodiscard]] static Query generate_query_1d(
     const hictk::Reference& chroms, std::mt19937_64& rand_eng,
-    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
-    double stddev_length) {
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length) {
   assert(!chroms.empty());
-  const auto query_length = std::normal_distribution<double>{mean_length, stddev_length}(rand_eng);
-
-  if (query_length <= 0) {
-    return generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
-  }
-
   const auto& chrom = chroms[chrom_sampler(rand_eng)];
+
+  const auto mean_length = mean_relative_length * static_cast<double>(chrom.size());
+  const auto stddev_length = mean_length * stddev_relative_length;
+
+  const auto query_length =
+      std::clamp(std::normal_distribution<double>{mean_length, stddev_length}(rand_eng),
+                 static_cast<double>(min_query_length), static_cast<double>(max_query_length));
+
   const auto center_pos =
       std::uniform_real_distribution<double>{0.0, static_cast<double>(chrom.size())}(rand_eng);
   const auto start_pos = std::max(0.0, center_pos - (query_length / 2));
   const auto end_pos = std::min(static_cast<double>(chrom.size()), start_pos + query_length);
 
   if (static_cast<std::int64_t>(start_pos) == static_cast<std::int64_t>(end_pos)) {
-    return generate_query_1d(chroms, rand_eng, chrom_sampler, query_length, stddev_length);
+    return generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                             mean_length, stddev_length);
   }
 
   return {chrom, start_pos, end_pos};
@@ -152,10 +155,12 @@ struct Query {
 
 [[nodiscard]] static std::pair<Query, Query> generate_query_2d(
     const hictk::Reference& chroms, std::mt19937_64& rand_eng,
-    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
-    double stddev_length) {
-  auto q1 = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
-  auto q2 = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length) {
+  auto q1 = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                              mean_relative_length, stddev_relative_length);
+  auto q2 = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                              mean_relative_length, stddev_relative_length);
 
   if (q1.chrom.id() > q2.chrom.id()) {
     std::swap(q1, q2);
@@ -170,14 +175,17 @@ struct Query {
 
 [[nodiscard]] static std::pair<Query, Query> generate_query(
     const hictk::Reference& chroms, std::mt19937_64& rand_eng,
-    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
-    double stddev_length, double _1d_to_2d_query_ratio) {
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length,
+    double _1d_to_2d_query_ratio) {
   if (std::bernoulli_distribution{_1d_to_2d_query_ratio}(rand_eng)) {
-    auto q = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+    auto q = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                               mean_relative_length, stddev_relative_length);
     return std::make_pair(q, q);
   }
 
-  return generate_query_2d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+  return generate_query_2d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                           mean_relative_length, stddev_relative_length);
 }
 
 [[nodiscard]] static std::discrete_distribution<std::uint32_t> init_chrom_sampler(
@@ -363,8 +371,9 @@ template <typename File>
         auto& found = std::get<BufferT>(found_buffer);
 
         while (compute_elapsed_time(t0) < duration) {
-          const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
-                                               c.query_length_std, c._1d_to_2d_query_ratio);
+          const auto [q1, q2] = generate_query(
+              chroms, rand_eng, chrom_sampler, c.min_query_length, c.max_query_length,
+              c.query_relative_length_avg, c.query_relative_length_std, c._1d_to_2d_query_ratio);
           const auto range1 = q1.to_string();
           const auto range2 = q2.to_string();
 
@@ -398,8 +407,9 @@ template <typename File>
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
-                                         c.query_length_std, c._1d_to_2d_query_ratio);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.min_query_length,
+                                         c.max_query_length, c.query_relative_length_avg,
+                                         c.query_relative_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
@@ -435,8 +445,9 @@ template <typename File>
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.query_length_avg,
-                                         c.query_length_std, c._1d_to_2d_query_ratio);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.min_query_length,
+                                         c.max_query_length, c.query_relative_length_avg,
+                                         c.query_relative_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 

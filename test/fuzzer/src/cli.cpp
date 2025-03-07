@@ -120,10 +120,18 @@ static void add_common_args(CLI::App& sc, Config& c) {
   sc.add_option("--format", c.query_format, "Format used to fetch pixels.")
       ->check(CLI::IsMember{{"dense", "df", "sparse"}})
       ->capture_default_str();
-  sc.add_option("--query-length-avg", c.query_length_avg, "Average query size.")
+  sc.add_option("--query-length-avg", c.query_relative_length_avg,
+                "Average query size expressed as a fraction of chromosome size")
+      ->check(CLI::Bound(0.0, 1.0))
+      ->capture_default_str();
+  sc.add_option("--query-length-std", c.query_relative_length_std,
+                "Query size standard deviation expressed as a fraction of --query-length-avg.")
+      ->check(CLI::Bound(0.0, 1.0))
+      ->capture_default_str();
+  sc.add_option("--min-query-length", c.min_query_length, "Minimum query length (bp).")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
-  sc.add_option("--query-length-std", c.query_length_std, "Query size standard deviation.")
+  sc.add_option("--max-query-length", c.max_query_length, "Maximum query length (bp).")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
   sc.add_option("--normalization", c.normalization, "Name of the dataset to use for balancing.")
@@ -228,6 +236,10 @@ static void validate_common_args(const Config& c) {
   if (errors.empty()) {
     validate_normalization(c.test_uri, c.resolution, c.normalization, errors);
     validate_normalization(c.reference_uri, c.resolution, c.normalization, errors);
+
+    if (c.min_query_length > c.max_query_length) {
+      errors.emplace_back("--min-query-length should be less or equal to --max-query-length");
+    }
   }
 
   if (!errors.empty()) {

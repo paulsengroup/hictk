@@ -22,8 +22,10 @@ struct Config {
   std::uint32_t resolution{};
   double _1d_to_2d_query_ratio{0.33};
   double duration{60.0};
-  double query_length_avg{1.0e6};
-  double query_length_std{250.0e3};
+  double query_relative_length_avg{0.03};
+  double query_relative_length_std{0.5};
+  std::uint64_t min_query_length{500'000};
+  std::uint64_t max_query_length{10'000'000};
   std::optional<std::uint64_t> diagonal_band_width{};
   std::string query_format{"df"};
   bool join{false};
