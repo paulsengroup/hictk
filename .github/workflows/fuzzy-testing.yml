@@ -271,6 +271,36 @@ jobs:
             *".${{ matrix.format }}" \
             *.cool
 
+      - name: Run test (diagonal band; 1D queries)
+        run: |
+          _100_mbps=100000000
+          build/test/fuzzer/src/hictk_fuzzer fuzz \
+            --resolution ${{ steps.test-params.outputs.resolution }} \
+            --duration '${{ steps.test-params.outputs.duration }}' \
+            --normalization ${{ matrix.normalization }} \
+            --seed ${{ steps.test-params.outputs.seed }} \
+            --nproc $(nproc) \
+            --format df \
+            --1d-to-2d-query-ratio 1 \
+            --diagonal-band-width "$_100_mbps" \
+            *".${{ matrix.format }}" \
+            *.cool
+
+      - name: Run test (diagonal band; 2D queries)
+        run: |
+          _1_gbp=1000000000
+          build/test/fuzzer/src/hictk_fuzzer fuzz \
+            --resolution ${{ steps.test-params.outputs.resolution }} \
+            --duration '${{ steps.test-params.outputs.duration }}' \
+            --normalization ${{ matrix.normalization }} \
+            --seed ${{ steps.test-params.outputs.seed }} \
+            --nproc $(nproc) \
+            --format df \
+            --1d-to-2d-query-ratio=0 \
+            --diagonal-band-width "$_1_gbp" \
+            *".${{ matrix.format }}" \
+            *.cool
+
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
     if: ${{ always() }}
