@@ -25,12 +25,11 @@ inline constexpr bool has_bin1_id_member<T, std::void_t<decltype(std::declval<T>
     true;
 
 template <typename T, typename = std::void_t<>>
-inline constexpr bool has_jump_to_next_row_member_fx = false;
+inline constexpr bool has_jump_to_next_overlap_member_fx = false;
 
 template <typename T>
-inline constexpr bool
-    has_jump_to_next_row_member_fx<T, std::void_t<decltype(std::declval<T>().jump_to_next_row())>> =
-        true;
+inline constexpr bool has_jump_to_next_overlap_member_fx<
+    T, std::void_t<decltype(std::declval<T>().jump_to_next_overlap())>> = true;
 
 template <typename T, typename = std::void_t<>>
 inline constexpr bool has_is_indexed_member_fx = false;
@@ -151,8 +150,8 @@ inline auto DiagonalBand<PixelIt>::iterator::operator++() -> iterator & {
     return *this;
   }
 
-  if constexpr (internal::has_jump_to_next_row_member_fx<PixelIt>) {
-    _it.jump_to_next_row();
+  if constexpr (internal::has_jump_to_next_overlap_member_fx<PixelIt>) {
+    _it.jump_to_next_overlap();
     if (_it == _last || !discard(*_it)) {
       return *this;
     }

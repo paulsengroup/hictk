@@ -149,7 +149,7 @@ class PixelSelector {
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
 
-    void jump_to_next_row();
+    void jump_to_next_overlap();
     [[nodiscard]] bool is_indexed() const noexcept;
     [[nodiscard]] constexpr bool is_fixed_bin_size() const noexcept;
 
@@ -157,7 +157,6 @@ class PixelSelector {
     void jump_to_row(std::uint64_t bin_id);
     void jump_to_col(std::uint64_t bin_id);
     void jump(std::uint64_t bin1_id, std::uint64_t bin2_id);
-    void jump_to_next_overlap();
 
     [[nodiscard]] std::size_t h5_offset() const noexcept;
     void jump_at_end();
