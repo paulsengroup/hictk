@@ -64,17 +64,6 @@ inline double HiCBlockReader::avg() const {
   return sum() / static_cast<double>(num_bins1 * num_bins2);
 }
 
-inline Index HiCBlockReader::read_index(HiCFileReader &hfs, const HiCFooter &footer,
-                                        const BinTable &bins) {
-  if (footer.fileOffset() == -1) {
-    // Footer does not exist. However, query may be valid
-    return {};
-  }
-
-  assert(footer.resolution() == bins.resolution());
-  return hfs.read_index(footer.fileOffset(), footer.chrom1(), footer.chrom2(), bins, footer.unit());
-}
-
 inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read_v6(const Chromosome &chrom1,
                                                                        const Chromosome &chrom2,
                                                                        const BlockIndex &idx,
