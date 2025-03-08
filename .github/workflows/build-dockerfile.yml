@@ -116,10 +116,10 @@ jobs:
           echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
           echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
           echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" | tee -a "$GITHUB_OUTPUT"
-          echo "GIT_HASH=$GIT_HASH" | tee -a "$GITHUB_OUTPUT"
-          echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "HICTK_GIT_HASH=$GIT_HASH" | tee -a "$GITHUB_OUTPUT"
+          echo "HICTK_GIT_SHORT_HASH=$GIT_SHORT_HASH" | tee -a "$GITHUB_OUTPUT"
           echo "CREATION_DATE=$CREATION_DATE" | tee -a "$GITHUB_OUTPUT"
-          echo "GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
+          echo "HICTK_GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
           echo "VERSION=$VERSION" | tee -a "$GITHUB_OUTPUT"
           echo "CACHE_REGISTRY=$CACHE_REGISTRY" | tee -a "$GITHUB_OUTPUT"
 
@@ -170,11 +170,11 @@ jobs:
             FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
             FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
             FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
-            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
-            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
+            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
             CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
-            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
-            GIT_IS_DIRTY=false
+            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
+            HICTK_GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
       - name: Test Docker image
@@ -199,11 +199,11 @@ jobs:
             FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
             FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
             FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
-            GIT_HASH=${{ steps.build-args.outputs.GIT_HASH }}
-            GIT_SHORT_HASH=${{ steps.build-args.outputs.GIT_SHORT_HASH }}
+            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
+            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
             CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
-            GIT_TAG=${{ steps.build-args.outputs.GIT_TAG }}
-            GIT_IS_DIRTY=false
+            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
+            HICTK_GIT_IS_DIRTY=false
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
       - name: Export digest
