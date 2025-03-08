@@ -152,7 +152,6 @@ namespace internal {
 }  // namespace internal
 
 template <DataFrameFormat format, QuerySpan span>
-
 static void validate_format(const Reference& chroms, const std::shared_ptr<arrow::Table>& table) {
   if constexpr (format == DataFrameFormat::COO) {
     const auto pixels = internal::arrow_table_to_coo_vector(table);
@@ -179,6 +178,41 @@ static void validate_format(const Reference& chroms, const std::shared_ptr<arrow
   } else if constexpr (span == QuerySpan::lower_triangle) {
     for (const auto& pixel : pixels) {
       CHECK(pixel.coords.bin1 >= pixel.coords.bin2);
+    }
+  } else {
+    throw std::logic_error("not implemented");
+  }
+}
+
+template <DataFrameFormat format, QuerySpan span>
+static void validate_diagonal_band(const Reference& chroms,
+                                   const std::shared_ptr<arrow::Table>& table,
+                                   std::uint64_t diagonal_band_width) {
+  if constexpr (format == DataFrameFormat::COO) {
+    const auto pixels = internal::arrow_table_to_coo_vector(table);
+    if constexpr (span == QuerySpan::upper_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin2_id - pixel.bin1_id < diagonal_band_width);
+      }
+    } else if constexpr (span == QuerySpan::lower_triangle) {
+      for (const auto& pixel : pixels) {
+        CHECK(pixel.bin1_id - pixel.bin2_id < diagonal_band_width);
+      }
+    } else {
+      throw std::logic_error("not implemented");
+    }
+    return;
+  }
+
+  assert(format == DataFrameFormat::BG2);
+  const auto pixels = internal::arrow_table_to_bg2_vector(chroms, table);
+  if constexpr (span == QuerySpan::upper_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin2.id() - pixel.coords.bin1.id() < diagonal_band_width);
+    }
+  } else if constexpr (span == QuerySpan::lower_triangle) {
+    for (const auto& pixel : pixels) {
+      CHECK(pixel.coords.bin1.id() - pixel.coords.bin2.id() < diagonal_band_width);
     }
   } else {
     throw std::logic_error("not implemented");
@@ -541,6 +575,52 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
         table, Pixel<N>{bins_square.at("chr10", 296'000), bins_square.at("chr10", 288'000), 7251});
     compare_pixel<96132>(
         table, Pixel<N>{bins_square.at("chr10", 296'000), bins_square.at("chr10", 296'000), 3534});
+  }
+
+  SECTION("COO<int> upper_triangle w/ diagonal_band_width") {
+    constexpr auto format = DataFrameFormat::COO;
+    constexpr auto span = QuerySpan::upper_triangle;
+    constexpr std::uint64_t diagonal_band_width{10};
+
+    auto first_fp = sel.begin<std::int32_t>();
+    auto last_fp = sel.end<std::int32_t>();
+    const auto table = ToDataFrame(first_fp, last_fp, format, nullptr, span, false, true, 256'000,
+                                   diagonal_band_width)();
+
+    CHECK(table->num_columns() == 3);
+    CHECK(table->num_rows() == 856);
+    CHECK(*table->column(2)->type() == *arrow::int32());
+
+    // check head
+    compare_pixel<0>(table, ThinPixel<std::int32_t>{0, 0, 266106});
+    compare_pixel<1>(table, ThinPixel<std::int32_t>{0, 1, 32868});
+    compare_pixel<2>(table, ThinPixel<std::int32_t>{0, 2, 13241});
+
+    // check tail
+    compare_pixel<853>(table, ThinPixel<std::int32_t>{98, 98, 1001844});
+    compare_pixel<854>(table, ThinPixel<std::int32_t>{98, 99, 68621});
+    compare_pixel<855>(table, ThinPixel<std::int32_t>{99, 99, 571144});
+
+    validate_format<format, span>(clr.chromosomes(), table);
+    validate_diagonal_band<format, span>(clr.chromosomes(), table, diagonal_band_width);
+  }
+
+  SECTION("BG2<int> upper_triangle w/ diagonal_band_width") {
+    constexpr auto format = DataFrameFormat::BG2;
+    constexpr auto span = QuerySpan::upper_triangle;
+    constexpr std::uint64_t diagonal_band_width{10};
+
+    auto first_fp = sel.begin<std::int32_t>();
+    auto last_fp = sel.end<std::int32_t>();
+    const auto table = ToDataFrame(first_fp, last_fp, format, clr.bins_ptr(), span, false, true,
+                                   256'000, diagonal_band_width)();
+
+    CHECK(table->num_columns() == 7);
+    CHECK(table->num_rows() == 856);
+    CHECK(*table->column(6)->type() == *arrow::int32());
+
+    validate_format<format, span>(clr.chromosomes(), table);
+    validate_diagonal_band<format, span>(clr.chromosomes(), table, diagonal_band_width);
   }
 
   SECTION("empty range") {
