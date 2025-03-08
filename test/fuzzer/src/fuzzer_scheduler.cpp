@@ -140,8 +140,7 @@ int fuzz_subcommand(const Config& c) {
     }
 
     if (exit_code != 0) {
-      SPDLOG_ERROR(
-          FMT_STRING("[executor] one or more worker process returned with non-zero exit code"));
+      SPDLOG_ERROR("[executor] one or more worker process returned with non-zero exit code");
     }
 
     return exit_code;

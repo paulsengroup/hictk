@@ -263,7 +263,7 @@ inline void HiCFileWriter::write_header() {
   assert(!chromosomes().empty());
 
   try {
-    SPDLOG_INFO(FMT_STRING("writing header at offset 0"));
+    SPDLOG_INFO("writing header at offset 0");
     const auto section_end = _fs.seek_and_write(0, _header.serialize(_bbuffer)).second;
 
     _header_section = {0, section_end};

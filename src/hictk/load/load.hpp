@@ -139,20 +139,19 @@ template <typename N>
                                                       std::int64_t offset,
                                                       std::atomic<bool>& early_return,
                                                       bool transpose_lower_triangular_pixels) {
-  return tpool.submit_task([&parser, &queue, offset, &early_return,
-                            transpose_lower_triangular_pixels]() {
-    try {
-      if (transpose_lower_triangular_pixels) {
-        return parse_pixels<true>(parser, offset, queue, early_return);
-      }
-      return parse_pixels<false>(parser, offset, queue, early_return);
-    } catch (...) {
-      SPDLOG_WARN(
-          FMT_STRING("exception caught in thread parsing interactions: returning immediately!"));
-      early_return = true;
-      throw;
-    }
-  });
+  return tpool.submit_task(
+      [&parser, &queue, offset, &early_return, transpose_lower_triangular_pixels]() {
+        try {
+          if (transpose_lower_triangular_pixels) {
+            return parse_pixels<true>(parser, offset, queue, early_return);
+          }
+          return parse_pixels<false>(parser, offset, queue, early_return);
+        } catch (...) {
+          SPDLOG_WARN("exception caught in thread parsing interactions: returning immediately!");
+          early_return = true;
+          throw;
+        }
+      });
 }
 
 template <typename N>
