@@ -21,6 +21,7 @@ HICTK_DISABLE_WARNING_POP
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -30,6 +31,7 @@ HICTK_DISABLE_WARNING_POP
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/transformers/common.hpp"
+#include "hictk/transformers/diagonal_band.hpp"
 
 namespace hictk::transformers {
 
@@ -37,7 +39,8 @@ template <typename PixelIt>
 inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameFormat format,
                                          std::shared_ptr<const BinTable> bins, QuerySpan span,
                                          bool include_bin_ids, bool mirror_pixels,
-                                         std::size_t chunk_size)
+                                         std::size_t chunk_size,
+                                         std::optional<std::uint64_t> diagonal_band_width)
     : _first(std::move(first)),
       _last(std::move(last)),
       _bins(std::move(bins)),
@@ -45,6 +48,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
       _span(span),
       _drop_bin_ids(!include_bin_ids),
       _mirror_pixels(mirror_pixels),
+      _diagonal_band_width(diagonal_band_width),
       _chunk_size(chunk_size) {
   assert(chunk_size != 0);
 
@@ -98,26 +102,33 @@ template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
 inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
                                          DataFrameFormat format,
                                          std::shared_ptr<const BinTable> bins, QuerySpan span,
-                                         bool include_bin_ids, std::size_t chunk_size)
+                                         bool include_bin_ids, std::size_t chunk_size,
+                                         std::optional<std::uint64_t> diagonal_band_width)
     : ToDataFrame(sel.template begin<N>(), sel.template end<N>(), format, std::move(bins), span,
-                  include_bin_ids, pixel_selector_is_symmetric_upper(sel), chunk_size) {}
+                  include_bin_ids, pixel_selector_is_symmetric_upper(sel), chunk_size,
+                  diagonal_band_width) {}
 
 template <typename PixelIt>
 inline std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::operator()() {
-  if (HICTK_LIKELY(_mirror_pixels)) {
-    if (_format == DataFrameFormat::BG2) {
-      assert(_bins);
-      std::for_each(_first, _last, [&](const auto& p) { append_symmetric(Pixel<N>(*_bins, p)); });
-    } else {
-      std::for_each(_first, _last, [&](auto p) { append_symmetric(std::move(p)); });
+  if (_diagonal_band_width.has_value()) {
+    try {
+      const DiagonalBand band_sel{_first, _last, *_diagonal_band_width};
+      read_pixels(band_sel.begin(), band_sel.end());
+    } catch (const std::runtime_error& e) {
+      constexpr std::string_view prefix{"DiagonalBand<PixelIt>(): "};
+      std::string_view msg{e.what()};
+      if (msg.find(prefix) != 0) {
+        throw;
+      }
+
+      msg.remove_prefix(prefix.size());
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("ToDataFrame<PixelIt>(): {}. This only applies when diagonal_band_width is "
+                     "specified when constructing a ToDataFrame instance."),
+          msg));
     }
   } else {
-    if (_format == DataFrameFormat::BG2) {
-      assert(_bins);
-      std::for_each(_first, _last, [&](const auto& p) { append_asymmetric(Pixel<N>(*_bins, p)); });
-    } else {
-      std::for_each(_first, _last, [&](auto p) { append_asymmetric(std::move(p)); });
-    }
+    read_pixels(_first, _last);
   }
 
   if (_format == DataFrameFormat::COO) {
@@ -156,6 +167,31 @@ inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with
   fields.emplace_back(arrow::field("count", _count_builder.type(), false));
 
   return arrow::schema(fields);
+}
+
+template <typename PixelIt>
+template <typename PixelIt_>
+inline void ToDataFrame<PixelIt>::read_pixels(PixelIt_ first, PixelIt_ last) {
+  if (HICTK_LIKELY(_mirror_pixels)) {
+    if (_format == DataFrameFormat::BG2) {
+      assert(_bins);
+      std::for_each(std::move(first), std::move(last),
+                    [&](const auto& p) { append_symmetric(Pixel<N>(*_bins, p)); });
+    } else {
+      std::for_each(std::move(first), std::move(last),
+                    [&](auto p) { append_symmetric(std::move(p)); });
+    }
+    return;
+  }
+
+  if (_format == DataFrameFormat::BG2) {
+    assert(_bins);
+    std::for_each(std::move(first), std::move(last),
+                  [&](const auto& p) { append_asymmetric(Pixel<N>(*_bins, p)); });
+  } else {
+    std::for_each(std::move(first), std::move(last),
+                  [&](auto p) { append_asymmetric(std::move(p)); });
+  }
 }
 
 template <typename PixelIt>
