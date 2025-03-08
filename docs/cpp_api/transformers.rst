@@ -163,14 +163,16 @@ Converting streams of pixels to Arrow Tables
 
 .. cpp:class:: template <typename PixelIt> ToDataFrame
 
-  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, bool mirror_pixels = true, std::size_t chunk_size = 256'000);
-  .. cpp:function:: template <typename PixelSelector> ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, std::size_t chunk_size = 256'000);
+  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, bool mirror_pixels = true, std::size_t chunk_size = 256'000, std::optional<std::uint64_t> diagonal_band_width = {});
+  .. cpp:function:: template <typename PixelSelector> ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, std::size_t chunk_size = 256'000, std::optional<std::uint64_t> diagonal_band_width = {});
 
   Construct an instance of a :cpp:class:`ToDataFrame` converter given a stream of pixels delimited by ``first_pixel`` and ``last_pixel``, a DataFrame ``format`` and a :cpp:class:`BinTable`.
   The underlying sequence of pixels are expected to be sorted by their genomic coordinates.
 
   The optional argument ``span`` determines whether the resulting :cpp:class:`arrow::Table` should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
   It should be noted that queries spanning the the full-matrix or the lower-triangle are always more expensive because they involve an additional step where pixels are sorted by their genomic coordinates.
+
+  When provided, the ``diagonal_band_width`` argument has the same semantics as the ``num_bins`` argument from the :cpp:class:`DiagonalBand` constructor.
 
   .. cpp:function:: [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
@@ -184,14 +186,16 @@ Converting streams of pixels to Eigen Dense Matrices
 
   .. cpp:type:: MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-  .. cpp:function:: ToDenseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::full);
-  .. cpp:function:: ToDenseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full);
+  .. cpp:function:: ToDenseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::full, std::optional<std::uint64_t> diagonal_band_width = {});
+  .. cpp:function:: ToDenseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full, std::optional<std::uint64_t> diagonal_band_width = {});
 
   Construct an instance of a :cpp:class:`ToDenseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
   The optional argument ``span`` determines whether the resulting matrix should contain interactions spanning the upper/lower-triangle or all interactions (regardless of whether they are located above or below the genome-wide matrix diagonal).
   Note that attempting to fetch trans-interactions with ``span=QuerySpan::lower_triangle`` will result in an exception being thrown.
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
+
+  When provided, the ``diagonal_band_width`` argument has the same semantics as the ``num_bins`` argument from the :cpp:class:`DiagonalBand` constructor.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
@@ -204,8 +208,8 @@ Converting streams of pixels to Eigen Sparse Matrices
 
   .. cpp:type:: MatrixT = Eigen::SparseMatrix<N, Eigen::RowMajor>;
 
-  .. cpp:function:: ToSparseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false);
-  .. cpp:function:: ToSparseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full);
+  .. cpp:function:: ToSparseMatrix(PixelSelector sel, N n, QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false, std::optional<std::uint64_t> diagonal_band_width = {});
+  .. cpp:function:: ToSparseMatrix(std::shared_ptr<const PixelSelector> sel, N n, QuerySpan span = QuerySpan::full, bool minimize_memory_usage = false, std::optional<std::uint64_t> diagonal_band_width = {});
 
   Construct an instance of a :cpp:class:`ToSparseMatrix` converter given a :cpp:class:`PixelSelector` object and a count type ``n``.
 
@@ -214,6 +218,8 @@ Converting streams of pixels to Eigen Sparse Matrices
   If you need to fetch trans-interactions from the lower-triangle, consider exchanging the range arguments used to fetch interactions, then transpose the resulting matrix.
 
   When ``minimize_memory_usage=true``, hictk will minimize memory usage by doing two passes over the queried pixels: one to calculate the exact number of entries to allocate for each row in the matrix, and the second pass to fill values in the matrix. This is usually slower than the default strategy, which traverses the data only once (but may overall require more memory than what is strictly needed). It should be noted that matrices are always compressed before being returned. Thus, the memory footprint of the matrices returned by :cpp:func:`ToSparseMatrix::operator()()` will be the same regardless of the fill strategy.
+
+  When provided, the ``diagonal_band_width`` argument has the same semantics as the ``num_bins`` argument from the :cpp:class:`DiagonalBand` constructor.
 
   .. cpp:function:: [[nodiscard]] auto operator()() -> MatrixT;
 
