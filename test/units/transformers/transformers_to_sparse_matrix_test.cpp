@@ -201,6 +201,18 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
       CHECK(matrix.sum() == 257'471'326);
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
+
+    SECTION(fmt::format(FMT_STRING("gw full (diagonal band=10; {})"), suffix)) {
+      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      constexpr std::uint64_t diagonal_band_width{10};
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch(balancing::Method::NONE(), true), std::uint32_t{},
+                         QuerySpan::full, low_mem, diagonal_band_width)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'539'111'295);
+    }
   }
   SECTION("invalid queries") {
     const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
