@@ -91,30 +91,30 @@ class ToDataFrame {
   bool _mirror_pixels{true};
 
   std::size_t _chunk_size{};
-  arrow::UInt64Builder _bin1_id_builder{};
-  arrow::UInt64Builder _bin2_id_builder{};
+  arrow::Int64Builder _bin1_id_builder{};
+  arrow::Int64Builder _bin2_id_builder{};
 
   arrow::StringDictionary32Builder _chrom1_builder{};
-  arrow::UInt32Builder _start1_builder{};
-  arrow::UInt32Builder _end1_builder{};
+  arrow::Int32Builder _start1_builder{};
+  arrow::Int32Builder _end1_builder{};
 
   arrow::StringDictionary32Builder _chrom2_builder{};
-  arrow::UInt32Builder _start2_builder{};
-  arrow::UInt32Builder _end2_builder{};
+  arrow::Int32Builder _start2_builder{};
+  arrow::Int32Builder _end2_builder{};
 
   using NBuilder = decltype(internal::map_cpp_type_to_arrow_builder<N>());
   NBuilder _count_builder{};
 
-  std::vector<std::uint64_t> _bin1_id_buff{};
-  std::vector<std::uint64_t> _bin2_id_buff{};
+  std::vector<std::int64_t> _bin1_id_buff{};
+  std::vector<std::int64_t> _bin2_id_buff{};
 
   std::vector<std::int32_t> _chrom1_id_buff{};
-  std::vector<std::uint32_t> _start1_buff{};
-  std::vector<std::uint32_t> _end1_buff{};
+  std::vector<std::int32_t> _start1_buff{};
+  std::vector<std::int32_t> _end1_buff{};
 
   std::vector<std::int32_t> _chrom2_id_buff{};
-  std::vector<std::uint32_t> _start2_buff{};
-  std::vector<std::uint32_t> _end2_buff{};
+  std::vector<std::int32_t> _start2_buff{};
+  std::vector<std::int32_t> _end2_buff{};
 
   std::vector<N> _count_buff{};
 
