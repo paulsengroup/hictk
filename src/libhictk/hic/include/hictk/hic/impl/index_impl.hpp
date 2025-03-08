@@ -19,6 +19,7 @@ HICTK_DISABLE_WARNING_POP
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -83,8 +84,8 @@ constexpr bool BlockIndex::operator==(std::size_t id_) const noexcept { return _
 
 constexpr bool BlockIndex::operator!=(std::size_t id_) const noexcept { return !(*this == id_); }
 
-inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
-                    std::uint32_t resolution_, std::int32_t version_, std::size_t block_bin_count_,
+inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, const BinTable &bins, MatrixUnit unit_,
+                    std::int32_t version_, std::size_t block_bin_count_,
                     std::size_t block_column_count_, double sum_count_, BlkIdxBuffer blocks_)
     : _buffer(std::move(blocks_)),
       _version(version_),
@@ -92,9 +93,11 @@ inline Index::Index(Chromosome chrom1_, Chromosome chrom2_, MatrixUnit unit_,
       _block_column_count(block_column_count_),
       _sum_count(sum_count_),
       _unit(unit_),
-      _resolution(resolution_),
+      _resolution(bins.resolution()),
       _chrom1(std::move(chrom1_)),
-      _chrom2(std::move(chrom2_)) {}
+      _chrom2(std::move(chrom2_)),
+      _chrom1_bin_offset(bins.at(_chrom1).id()),
+      _chrom2_bin_offset(bins.at(_chrom2).id()) {}
 
 inline std::int32_t Index::version() const noexcept { return _version; }
 inline MatrixUnit Index::unit() const noexcept { return _unit; }
@@ -118,29 +121,13 @@ inline std::size_t Index::size() const noexcept { return _buffer.size(); }
 
 inline bool Index::empty() const noexcept { return size() == 0; }  // NOLINT
 
-inline auto Index::find_overlaps(const PixelCoordinates &coords1,
-                                 const PixelCoordinates &coords2) const -> Overlap {
-  assert(coords1.is_intra());
-  assert(coords2.is_intra());
-
-  if (empty()) {
-    return {};
+inline auto Index::find_overlaps(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
+                                 std::optional<std::uint64_t> diagonal_band_width) const
+    -> Overlap {
+  if (diagonal_band_width.has_value()) {
+    return find_overlaps_impl(coords1, coords2, *diagonal_band_width);
   }
-
-  assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
-  assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
-
-  auto bin1_id = coords1.bin1.rel_id();
-  auto bin2_id = coords1.bin2.rel_id() + 1;
-  auto bin3_id = coords2.bin1.rel_id();
-  auto bin4_id = coords2.bin2.rel_id() + 1;
-
-  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
-
-  if (_version > 8 && is_intra) {  // NOLINT(*-avoid-magic-numbers)
-    return generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id);
-  }
-  return generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id);
+  return find_overlaps_impl(coords1, coords2);
 }
 
 inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
@@ -156,7 +143,7 @@ inline const BlockIndex &Index::at(std::size_t row, std::size_t col) const {
 }
 
 inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::size_t bin3,
-                                       std::size_t bin4) const -> Overlap {
+                                       std::size_t bin4, bool sorted) const -> Overlap {
   const auto col1 = bin1 / _block_bin_count;
   const auto col2 = (bin2 + 1) / _block_bin_count;
   const auto row1 = bin3 / _block_bin_count;
@@ -173,14 +160,11 @@ inline auto Index::generate_block_list(std::size_t bin1, std::size_t bin2, std::
     }
   }
 
-  std::vector<BlockIndex> flat_buffer(buffer.begin(), buffer.end());
-  // Sort first by row, then by column
-  std::sort(flat_buffer.begin(), flat_buffer.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
-    if (b1.coords().i1 != b2.coords().i1) {
-      return b1.coords().i1 < b2.coords().i1;
-    }
-    return b1.coords().i2 < b2.coords().i2;
-  });
+  Overlap flat_buffer(buffer.begin(), buffer.end());
+
+  if (sorted) {
+    sort_interaction_block_index(flat_buffer);
+  }
   return flat_buffer;
 }
 
@@ -199,10 +183,10 @@ inline auto Index::generate_block_list_intra_v9plus(std::size_t bin1, std::size_
   phmap::flat_hash_set<BlockIndex> buffer{};
 
   for (auto bin1_ = bin1; bin1_ < bin2; bin1_ = std::min(bin2, bin1_ + step_size)) {
-    for (auto bin3_ = bin3; bin3_ < bin4; bin3_ = std::min(bin4, bin3_ + step_size)) {
-      const auto bin2_ = std::min(bin2, bin1_ + step_size);
+    const auto bin2_ = std::min(bin2, bin1_ + step_size);
+    for (auto bin3_ = std::max(bin1_, bin3); bin3_ < bin4;
+         bin3_ = std::min(bin4, bin3_ + step_size)) {
       const auto bin4_ = std::min(bin4, bin3_ + step_size);
-
       generate_block_list_intra_v9plus(bin1_, bin2_, bin3_, bin4_, buffer);
     }
   }
@@ -240,6 +224,108 @@ inline void Index::generate_block_list_intra_v9plus(
       }
     }
   }
+}
+
+inline void Index::sort_interaction_block_index(Overlap &blocks) {
+  // Sort first by row, then by column
+  std::sort(blocks.begin(), blocks.end(), [](const BlockIndex &b1, const BlockIndex &b2) {
+    if (b1.coords().i1 != b2.coords().i1) {
+      return b1.coords().i1 < b2.coords().i1;
+    }
+    return b1.coords().i2 < b2.coords().i2;
+  });
+}
+
+inline auto Index::find_overlaps_impl(const PixelCoordinates &coords1,
+                                      const PixelCoordinates &coords2) const -> Overlap {
+  assert(coords1.is_intra());
+  assert(coords2.is_intra());
+
+  if (empty()) {
+    return {};
+  }
+
+  assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
+  assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
+
+  const auto bin1_id = static_cast<std::size_t>(coords1.bin1.rel_id());
+  const auto bin2_id = static_cast<std::size_t>(coords1.bin2.rel_id()) + 1;
+  const auto bin3_id = static_cast<std::size_t>(coords2.bin1.rel_id());
+  const auto bin4_id = static_cast<std::size_t>(coords2.bin2.rel_id()) + 1;
+
+  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
+
+  // NOLINTNEXTLINE(*-avoid-magic-numbers)
+  return _version > 8 && is_intra
+             ? generate_block_list_intra_v9plus(bin1_id, bin2_id, bin3_id, bin4_id)
+             : generate_block_list(bin1_id, bin2_id, bin3_id, bin4_id, true);
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+inline auto Index::find_overlaps_impl(const PixelCoordinates &coords1,
+                                      const PixelCoordinates &coords2,
+                                      std::uint64_t diagonal_band_width) const -> Overlap {
+  assert(coords1.is_intra());
+  assert(coords2.is_intra());
+
+  if (empty() || diagonal_band_width == 0) {
+    return {};
+  }
+
+  assert(coords1.bin1.chrom() == _chrom1 || coords1.bin1.chrom() == _chrom2);
+  assert(coords2.bin1.chrom() == _chrom1 || coords2.bin1.chrom() == _chrom2);
+
+  const auto bin1_id = static_cast<std::size_t>(coords1.bin1.rel_id());
+  const auto bin2_id = static_cast<std::size_t>(coords1.bin2.rel_id()) + 1;
+  const auto bin3_id = static_cast<std::size_t>(coords2.bin1.rel_id());
+  const auto bin4_id = static_cast<std::size_t>(coords2.bin2.rel_id()) + 1;
+
+  {
+    const auto abs_bin2 = _chrom1_bin_offset + bin2_id;
+    const auto abs_bin3 = _chrom2_bin_offset + bin3_id;
+    if (abs_bin3 >= abs_bin2 && abs_bin3 - abs_bin2 < diagonal_band_width) {
+      return find_overlaps_impl(coords1, coords2);
+    }
+  }
+
+  const auto is_intra = coords1.bin1.chrom() == coords2.bin1.chrom();
+
+  const auto step_size = _block_bin_count / 2;
+  phmap::flat_hash_set<BlockIndex> buffer{};
+
+  for (auto bin1 = bin1_id; bin1 < bin2_id; bin1 = std::min(bin2_id, bin1 + step_size)) {
+    const auto bin2 = std::min(bin2_id, bin1 + step_size);
+    auto bin3 = is_intra ? std::max(bin1, bin3_id) : bin3_id;
+    for (; bin3 < bin4_id; bin3 = std::min(bin4_id, bin3 + step_size)) {
+      const auto bin4 = std::min(bin4_id, bin3 + step_size);
+      if (is_intra) {
+        if (bin3 >= bin2 && bin3 - bin2 > diagonal_band_width) {
+          break;
+        }
+      } else {
+        const auto abs_bin2 = _chrom1_bin_offset + bin2;
+        const auto abs_bin3 = _chrom2_bin_offset + bin3;
+        assert(abs_bin3 >= abs_bin2);
+        if (abs_bin3 - abs_bin2 > diagonal_band_width) {
+          break;
+        }
+      }
+
+      // NOLINTNEXTLINE(*-avoid-magic-numbers)
+      const auto chunk = _version > 8 && is_intra
+                             ? generate_block_list_intra_v9plus(bin1, bin2, bin3, bin4)
+                             : generate_block_list(bin1, bin2, bin3, bin4, false);
+      std::copy(chunk.begin(), chunk.end(), std::inserter(buffer, buffer.begin()));
+    }
+  }
+
+  Overlap out_buffer{buffer.size()};
+  std::copy(buffer.begin(), buffer.end(), out_buffer.begin());
+
+  if (!is_intra || _version < 9) {  // NOLINT(*-avoid-magic-numbers)
+    sort_interaction_block_index(out_buffer);
+  }
+  return out_buffer;
 }
 
 }  // namespace hictk::hic::internal

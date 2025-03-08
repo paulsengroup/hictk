@@ -29,12 +29,21 @@ inline PixelSelector::PixelSelector(const Index &index, const Dataset &pixels_bi
                                     const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                                     std::shared_ptr<const balancing::Weights> weights,
                                     bool symmetric_upper_) noexcept
-    : _bins(index.bins_ptr()),
+    : PixelSelector(index.bins_ptr(), pixels_bin1_id, pixels_bin2_id, pixels_count,
+                    std::move(weights), symmetric_upper_) {}
+
+inline PixelSelector::PixelSelector(std::shared_ptr<const BinTable> bins,
+                                    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
+                                    const Dataset &pixels_count,
+                                    std::shared_ptr<const balancing::Weights> weights,
+                                    bool symmetric_upper_) noexcept
+    : _bins(std::move(bins)),
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
       _pixels_count(&pixels_count),
       _weights(std::move(weights)),
       _symmetric_upper(symmetric_upper_) {
+  assert(_bins);
   assert(_weights);
 }
 
@@ -112,13 +121,16 @@ inline auto PixelSelector::cbegin() const -> iterator<N> {
     }
   }
 
+  const auto fixed_bins = _bins->type() == BinTable::Type::fixed;
+
   if (!_coord1) {
     assert(!_coord2);
-    return iterator<N>{*_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count, _weights};
+    return iterator<N>{*_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count,
+                       _weights,         fixed_bins,       _index};
   }
 
   return iterator<N>{_index,  *_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count,
-                     _coord1, _coord2,          _weights};
+                     _coord1, _coord2,          _weights,         fixed_bins};
 }
 
 template <typename N>
@@ -131,7 +143,11 @@ inline auto PixelSelector::cend() const -> iterator<N> {
           "matrices.");
     }
   }
-  return iterator<N>::at_end(_index, *_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count, _weights);
+
+  const auto fixed_bins = _bins->type() == BinTable::Type::fixed;
+
+  return iterator<N>::at_end(_index, *_pixels_bin1_id, *_pixels_bin2_id, *_pixels_count, _weights,
+                             fixed_bins);
 }
 
 inline bool PixelSelector::empty() const { return begin<double>() == end<double>(); }
@@ -170,13 +186,18 @@ inline bool PixelSelector::is_symmetric_upper() const noexcept { return _symmetr
 
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
+    // NOLINTBEGIN(*-unnecessary-value-param)
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-    std::shared_ptr<const balancing::Weights> weights)  // NOLINT(*-unnecessary-value-param)
+    std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size,
+    std::shared_ptr<const Index> index)
+    // NOLINTEND(*-unnecessary-value-param)
     : _bin1_id_it(pixels_bin1_id.begin<BinIDT>()),
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
       _count_it(pixels_count.begin<N>()),
+      _index(std::move(index)),
       _weights(std::move(weights)),
-      _h5_end_offset(pixels_bin2_id.size()) {
+      _h5_end_offset(pixels_bin2_id.size()),
+      _fixed_bin_size(fixed_bin_size) {
   assert(_weights);
 }
 
@@ -185,13 +206,14 @@ inline PixelSelector::iterator<N>::iterator(
     // NOLINTBEGIN(*-unnecessary-value-param)
     std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
     const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-    PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights)
+    PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size)
     // NOLINTEND(*-unnecessary-value-param)
     : _index(std::move(index)),
       _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
       _weights(std::move(weights)),
-      _h5_end_offset(pixels_bin2_id.size()) {
+      _h5_end_offset(pixels_bin2_id.size()),
+      _fixed_bin_size(fixed_bin_size) {
   assert(_coord1);
   assert(_coord2);
   assert(_coord1.bin1.id() <= _coord1.bin2.id());
@@ -200,7 +222,7 @@ inline PixelSelector::iterator<N>::iterator(
 
   if (_index->empty(_coord1.bin1.chrom().id())) {
     *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count,
-                   std::move(_weights));
+                   std::move(_weights), _fixed_bin_size);
     return;
   }
 
@@ -219,7 +241,8 @@ inline PixelSelector::iterator<N>::iterator(
   }
 
   if (is_at_end()) {
-    *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count, _weights);
+    *this = at_end(std::move(_index), pixels_bin1_id, pixels_bin2_id, pixels_count, _weights,
+                   _fixed_bin_size);
   }
 }
 
@@ -228,8 +251,8 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> inde
                                                const Dataset &pixels_bin1_id,
                                                const Dataset &pixels_bin2_id,
                                                const Dataset &pixels_count,
-                                               std::shared_ptr<const balancing::Weights> weights)
-    -> iterator {
+                                               std::shared_ptr<const balancing::Weights> weights,
+                                               bool fixed_bin_size) -> iterator {
   iterator it{};
   it._index = std::move(index);
   it._bin1_id_it = pixels_bin1_id.end<BinIDT>(0);
@@ -237,6 +260,7 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> inde
   it._count_it = pixels_count.end<N>(0);
   it._weights = std::move(weights);
   it._h5_end_offset = pixels_bin2_id.size();
+  it._fixed_bin_size = fixed_bin_size;
 
   return it;
 }
@@ -423,10 +447,22 @@ inline void PixelSelector::iterator<N>::jump(std::uint64_t bin1_id, std::uint64_
 }
 
 template <typename N>
+inline bool PixelSelector::iterator<N>::is_indexed() const noexcept {
+  return !!_index;
+}
+
+template <typename N>
+constexpr bool PixelSelector::iterator<N>::is_fixed_bin_size() const noexcept {
+  return _fixed_bin_size;
+}
+
+template <typename N>
 inline void PixelSelector::iterator<N>::jump_to_next_overlap() {
-  assert(discard());
-  assert(_coord1);
-  assert(_coord2);
+  if (!_coord1) {
+    assert(!_coord2);
+    return;
+  }
+
   do {
     // We're at/past end: return immediately
     if (is_at_end()) {
@@ -475,7 +511,7 @@ template <typename N>
 inline void PixelSelector::iterator<N>::jump_at_end() {
   if (_h5_end_offset != _bin2_id_it.h5_offset()) {
     *this = at_end(std::move(_index), _bin1_id_it.dataset(), _bin2_id_it.dataset(),
-                   _count_it.dataset(), _weights);
+                   _count_it.dataset(), _weights, _fixed_bin_size);
   }
 }
 

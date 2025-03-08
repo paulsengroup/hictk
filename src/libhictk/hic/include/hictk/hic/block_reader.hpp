@@ -66,7 +66,6 @@ class HiCBlockReader {
   [[nodiscard]] std::size_t cache_size() const noexcept;
 
  private:
-  [[nodiscard]] static Index read_index(HiCFileReader& hfs, const HiCFooter& footer);
   static void read_dispatcher_type1_block(bool i16Bin1, bool i16Bin2, bool i16Counts,
                                           std::int32_t bin1Offset, std::int32_t bin2Offset,
                                           BinaryBuffer& src,

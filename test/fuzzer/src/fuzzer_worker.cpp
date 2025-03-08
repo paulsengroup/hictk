@@ -21,6 +21,7 @@
 #include "hictk/fuzzer/validators.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/transformers/diagonal_band.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
 #include "hictk/transformers/to_sparse_matrix.hpp"
@@ -127,23 +128,26 @@ struct Query {
 
 [[nodiscard]] static Query generate_query_1d(
     const hictk::Reference& chroms, std::mt19937_64& rand_eng,
-    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
-    double stddev_length) {
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length) {
   assert(!chroms.empty());
-  const auto query_length = std::normal_distribution<double>{mean_length, stddev_length}(rand_eng);
-
-  if (query_length <= 0) {
-    return generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
-  }
-
   const auto& chrom = chroms[chrom_sampler(rand_eng)];
+
+  const auto mean_length = mean_relative_length * static_cast<double>(chrom.size());
+  const auto stddev_length = mean_length * stddev_relative_length;
+
+  const auto query_length =
+      std::clamp(std::normal_distribution<double>{mean_length, stddev_length}(rand_eng),
+                 static_cast<double>(min_query_length), static_cast<double>(max_query_length));
+
   const auto center_pos =
       std::uniform_real_distribution<double>{0.0, static_cast<double>(chrom.size())}(rand_eng);
   const auto start_pos = std::max(0.0, center_pos - (query_length / 2));
   const auto end_pos = std::min(static_cast<double>(chrom.size()), start_pos + query_length);
 
   if (static_cast<std::int64_t>(start_pos) == static_cast<std::int64_t>(end_pos)) {
-    return generate_query_1d(chroms, rand_eng, chrom_sampler, query_length, stddev_length);
+    return generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                             mean_length, stddev_length);
   }
 
   return {chrom, start_pos, end_pos};
@@ -151,10 +155,12 @@ struct Query {
 
 [[nodiscard]] static std::pair<Query, Query> generate_query_2d(
     const hictk::Reference& chroms, std::mt19937_64& rand_eng,
-    std::discrete_distribution<std::uint32_t>& chrom_sampler, double mean_length,
-    double stddev_length) {
-  auto q1 = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
-  auto q2 = generate_query_1d(chroms, rand_eng, chrom_sampler, mean_length, stddev_length);
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length) {
+  auto q1 = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                              mean_relative_length, stddev_relative_length);
+  auto q2 = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                              mean_relative_length, stddev_relative_length);
 
   if (q1.chrom.id() > q2.chrom.id()) {
     std::swap(q1, q2);
@@ -165,6 +171,21 @@ struct Query {
   }
 
   return std::make_pair(q1, q2);
+}
+
+[[nodiscard]] static std::pair<Query, Query> generate_query(
+    const hictk::Reference& chroms, std::mt19937_64& rand_eng,
+    std::discrete_distribution<std::uint32_t>& chrom_sampler, std::uint64_t min_query_length,
+    std::uint64_t max_query_length, double mean_relative_length, double stddev_relative_length,
+    double _1d_to_2d_query_ratio) {
+  if (std::bernoulli_distribution{_1d_to_2d_query_ratio}(rand_eng)) {
+    auto q = generate_query_1d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                               mean_relative_length, stddev_relative_length);
+    return std::make_pair(q, q);
+  }
+
+  return generate_query_2d(chroms, rand_eng, chrom_sampler, min_query_length, max_query_length,
+                           mean_relative_length, stddev_relative_length);
 }
 
 [[nodiscard]] static std::discrete_distribution<std::uint32_t> init_chrom_sampler(
@@ -191,40 +212,70 @@ struct Query {
 template <typename PixelT>
 static void fetch_pixels(const Reference& chroms, cooler::Cooler& clr, std::string_view range1,
                          std::string_view range2, std::string_view normalization,
+                         std::optional<std::uint64_t> diagonal_band_width,
                          std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
   if constexpr (std::is_same_v<remove_cvref_t<PixelT>, Pixel<N>>) {
     cooler::BG2DataFrame<N> df{};
-    clr.fetch_df(df, range1, range2, normalization);
+    clr.fetch_df(df, range1, range2, normalization, diagonal_band_width);
     df.to_vector(chroms, buffer);
   } else {
     cooler::COODataFrame<N> df{};
-    clr.fetch_df(df, range1, range2, normalization);
+    clr.fetch_df(df, range1, range2, normalization, diagonal_band_width);
     df.to_vector(buffer);
   }
   assert(std::is_sorted(buffer.begin(), buffer.end()));
 }
 
-template <typename PixelT>
-static void fetch_pixels(const hictk::File& f, std::string_view range1, std::string_view range2,
-                         std::string_view normalization, std::vector<PixelT>& buffer) {
+template <typename PixelIt, typename PixelT>
+static void fetch_pixels(PixelIt first, PixelIt last,
+                         const std::shared_ptr<const hictk::BinTable>& bins,
+                         std::vector<PixelT>& buffer) {
   using N = decltype(std::declval<PixelT>().count);
 
-  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
-
   if constexpr (std::is_same_v<remove_cvref_t<PixelT>, ThinPixel<N>>) {
-    to_vector(buffer, transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
+    to_vector(buffer, transformers::ToDataFrame(std::move(first), std::move(last),
                                                 transformers::DataFrameFormat::COO)());
   } else {
-    to_vector(f.chromosomes(), buffer,
-              transformers::ToDataFrame(sel.begin<N>(), sel.end<N>(),
-                                        transformers::DataFrameFormat::BG2, f.bins_ptr())());
+    assert(bins);
+    to_vector(bins->chromosomes(), buffer,
+              transformers::ToDataFrame(std::move(first), std::move(last),
+                                        transformers::DataFrameFormat::BG2, bins)());
   }
 }
 
+template <typename PixelT>
+static void fetch_pixels(const hictk::cooler::File& f, std::string_view range1,
+                         std::string_view range2, std::string_view normalization,
+                         std::optional<std::uint64_t> diagonal_band_width,
+                         std::vector<PixelT>& buffer) {
+  using N = decltype(std::declval<PixelT>().count);
+
+  const auto sel = f.fetch(range1, range2, balancing::Method{normalization});
+  if (diagonal_band_width.has_value()) {
+    const transformers::DiagonalBand band_sel{sel.begin<N>(), sel.end<N>(), *diagonal_band_width};
+    return fetch_pixels(band_sel.begin(), band_sel.end(), f.bins_ptr(), buffer);
+  }
+
+  fetch_pixels(sel.begin<N>(), sel.end<N>(), f.bins_ptr(), buffer);
+}
+
+template <typename PixelT>
+static void fetch_pixels(const hictk::hic::File& f, std::string_view range1,
+                         std::string_view range2, std::string_view normalization,
+                         [[maybe_unused]] std::optional<std::uint64_t> diagonal_band_width,
+                         std::vector<PixelT>& buffer) {
+  using N = decltype(std::declval<PixelT>().count);
+
+  const auto sel = f.fetch(range1, range2, balancing::Method{normalization},
+                           hictk::hic::File::QUERY_TYPE::UCSC, diagonal_band_width);
+  fetch_pixels(sel.begin<N>(), sel.end<N>(), f.bins_ptr(), buffer);
+}
+
+template <typename File>
 [[nodiscard]] static std::variant<Eigen2DDense<std::int32_t>, Eigen2DDense<double>>
-fetch_pixels_dense(const hictk::File& f, std::string_view range1, std::string_view range2,
+fetch_pixels_dense(const File& f, std::string_view range1, std::string_view range2,
                    std::string_view normalization) {
   if (normalization == "NONE") {
     return {transformers::ToDenseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
@@ -243,8 +294,9 @@ fetch_pixels_dense(cooler::Cooler& clr, std::string_view range1, std::string_vie
   return {clr.fetch_dense<double>(range1, range2, normalization)};
 }
 
+template <typename File>
 [[nodiscard]] static std::variant<EigenSparse<std::int32_t>, EigenSparse<double>>
-fetch_pixels_sparse(const hictk::File& f, std::string_view range1, std::string_view range2,
+fetch_pixels_sparse(const File& f, std::string_view range1, std::string_view range2,
                     std::string_view normalization) {
   if (normalization == "NONE") {
     return {transformers::ToSparseMatrix(f.fetch(range1, range2, balancing::Method{normalization}),
@@ -294,7 +346,8 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   }
 }
 
-[[nodiscard]] static int fuzzy_pixels_dfs(const hictk::File& tgt, cooler::Cooler& ref,
+template <typename File>
+[[nodiscard]] static int fuzzy_pixels_dfs(const File& tgt, cooler::Cooler& ref,
                                           const Reference& chroms, std::mt19937_64& rand_eng,
                                           std::discrete_distribution<std::uint32_t>& chrom_sampler,
                                           const Config& c) {
@@ -307,14 +360,20 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   std::size_t num_tests{};
   std::size_t num_failures{};
 
+  auto diagonal_band_width = c.diagonal_band_width;
+  if (diagonal_band_width.has_value()) {
+    diagonal_band_width = *diagonal_band_width / tgt.resolution();
+  }
+
   return std::visit(
       [&](auto& expected) -> int {
         using BufferT = remove_cvref_t<decltype(expected)>;
         auto& found = std::get<BufferT>(found_buffer);
 
         while (compute_elapsed_time(t0) < duration) {
-          const auto [q1, q2] = generate_query_2d(chroms, rand_eng, chrom_sampler,
-                                                  c.query_length_avg, c.query_length_std);
+          const auto [q1, q2] = generate_query(
+              chroms, rand_eng, chrom_sampler, c.min_query_length, c.max_query_length,
+              c.query_relative_length_avg, c.query_relative_length_std, c._1d_to_2d_query_ratio);
           const auto range1 = q1.to_string();
           const auto range2 = q2.to_string();
 
@@ -323,8 +382,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
                   "[{}] running test #{} (range1=\"{}\"; range2=\"{}\"; normalization=\"{}\")..."),
               c.task_id, num_tests, range1, range2, c.normalization);
 
-          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, expected);
-          fetch_pixels(tgt, range1, range2, c.normalization, found);
+          fetch_pixels(tgt.chromosomes(), ref, range1, range2, c.normalization, diagonal_band_width,
+                       expected);
+          fetch_pixels(tgt, range1, range2, c.normalization, diagonal_band_width, found);
 
           ++num_tests;
           num_failures += !compare_pixels(c.task_id, range1, range2, expected, found);  // NOLINT
@@ -336,8 +396,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
       expected_buffer);
 }
 
+template <typename File>
 [[nodiscard]] static int fuzzy_pixels_dense(
-    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    const File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
     std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
   const auto t0 = std::chrono::system_clock::now();
   const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
@@ -346,8 +407,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] =
-        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.min_query_length,
+                                         c.max_query_length, c.query_relative_length_avg,
+                                         c.query_relative_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
@@ -372,8 +434,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   return num_failures != 0;  // NOLINT
 }
 
+template <typename File>
 [[nodiscard]] static int fuzzy_pixels_sparse(
-    const hictk::File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
+    const File& tgt, cooler::Cooler& ref, const Reference& chroms, std::mt19937_64& rand_eng,
     std::discrete_distribution<std::uint32_t>& chrom_sampler, const Config& c) {
   const auto t0 = std::chrono::system_clock::now();
   const std::chrono::microseconds duration{static_cast<std::int64_t>(c.duration * 1.0e6)};
@@ -382,8 +445,9 @@ static void print_report(std::uint16_t task_id, std::size_t num_tests, std::size
   std::size_t num_failures{};
 
   while (compute_elapsed_time(t0) < duration) {
-    const auto [q1, q2] =
-        generate_query_2d(chroms, rand_eng, chrom_sampler, c.query_length_avg, c.query_length_std);
+    const auto [q1, q2] = generate_query(chroms, rand_eng, chrom_sampler, c.min_query_length,
+                                         c.max_query_length, c.query_relative_length_avg,
+                                         c.query_relative_length_std, c._1d_to_2d_query_ratio);
     const auto range1 = q1.to_string();
     const auto range2 = q2.to_string();
 
@@ -435,18 +499,22 @@ int launch_worker_subcommand(const Config& c) {
     const auto chroms = tgt.chromosomes().remove_ALL();
     auto chrom_sampler = init_chrom_sampler(chroms);
 
-    if (c.query_format == "df") {
-      return fuzzy_pixels_dfs(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
-    if (c.query_format == "dense") {
-      return fuzzy_pixels_dense(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
-    if (c.query_format == "sparse") {
-      return fuzzy_pixels_sparse(tgt, ref, chroms, rand_eng, chrom_sampler, c);
-    }
+    return std::visit(
+        [&](const auto& tgt_) {
+          if (c.query_format == "df") {
+            return fuzzy_pixels_dfs(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
+          if (c.query_format == "dense") {
+            return fuzzy_pixels_dense(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
+          if (c.query_format == "sparse") {
+            return fuzzy_pixels_sparse(tgt_, ref, chroms, rand_eng, chrom_sampler, c);
+          }
 
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("unknown query-format=\"{}\""), c.query_format));
+          throw std::runtime_error(
+              fmt::format(FMT_STRING("unknown query-format=\"{}\""), c.query_format));
+        },
+        tgt.get());
 
   } catch (const std::exception& e) {
     // wrap python exceptions while we still hold the scoped_interpreter guard

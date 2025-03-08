@@ -36,20 +36,23 @@ inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_,
-                                    const PixelCoordinates &coords)
+                                    const PixelCoordinates &coords,
+                                    std::optional<std::uint64_t> diagonal_band_width)
     : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
-                    coords, coords) {}
+                    coords, coords, diagonal_band_width) {}
 
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<internal::BlockCache> cache_,
                                     std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                                    PixelCoordinates coord2_)
+                                    PixelCoordinates coord2_,
+                                    std::optional<std::uint64_t> diagonal_band_width)
     : _reader(std::make_shared<internal::HiCBlockReader>(std::move(hfs_), footer_->index(),
                                                          std::move(bins_), std::move(cache_))),
       _footer(std::move(footer_)),
       _coord1(std::make_shared<const PixelCoordinates>(std::move(coord1_))),
-      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))) {
+      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))),
+      _diagonal_band_width(diagonal_band_width) {
   const auto query_is_cis = _coord1->bin1.chrom() == _coord2->bin1.chrom();
   if ((!query_is_cis && _coord1->bin1 > _coord2->bin1) ||
       (query_is_cis && _coord1->bin1.start() > _coord2->bin1.start())) {
@@ -92,7 +95,7 @@ inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept
 
 template <typename N>
 inline auto PixelSelector::cbegin(bool sorted) const -> iterator<N> {
-  return iterator<N>(*this, sorted);
+  return iterator<N>(*this, sorted, _diagonal_band_width);
 }
 
 template <typename N>
@@ -166,16 +169,18 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
 inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCBlockReader> reader_,
                                     std::shared_ptr<const internal::HiCFooter> footer_,
                                     std::shared_ptr<const PixelCoordinates> coord1_,
-                                    std::shared_ptr<const PixelCoordinates> coord2_)
+                                    std::shared_ptr<const PixelCoordinates> coord2_,
+                                    std::optional<std::uint64_t> diagonal_band_width)
     : _reader(std::move(reader_)),
       _footer(std::move(footer_)),
       _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)) {}
+      _coord2(std::move(coord2_)),
+      _diagonal_band_width(diagonal_band_width) {}
 
 inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
                                           PixelCoordinates coord2_) const {
   return {_reader, _footer, std::make_shared<const PixelCoordinates>(std::move(coord1_)),
-          std::make_shared<const PixelCoordinates>(std::move(coord2_))};
+          std::make_shared<const PixelCoordinates>(std::move(coord2_)), _diagonal_band_width};
 }
 
 template <typename N>
@@ -264,7 +269,7 @@ inline std::size_t PixelSelector::estimate_optimal_cache_size(
     const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
     const auto bin1 = bins().at(chrom, pos1);
 
-    auto overlap = idx.find_overlaps({bin1, bin1}, coord2());
+    auto overlap = idx.find_overlaps({bin1, bin1}, coord2(), _diagonal_band_width);
     const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.begin(), overlap.end()));
     max_blocks_per_row = (std::max)(max_blocks_per_row, num_blocks);
   }
@@ -276,25 +281,26 @@ inline void PixelSelector::clear_cache() const {
   if (_reader->cache_size() == 0) {
     return;
   }
-  for (auto blki : _reader->index().find_overlaps(coord1(), coord2())) {
+  for (auto blki : _reader->index().find_overlaps(coord1(), coord2(), _diagonal_band_width)) {
     _reader->evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
   }
 }
 
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorted)
+inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorted,
+                                            std::optional<std::uint64_t> diagonal_band_width)
     : _reader(sel._reader),
       _coord1(sel._coord1),
       _coord2(sel._coord2),
       _footer(sel._footer),
-      _block_idx(std::make_shared<const internal::Index::Overlap>(
-          _reader->index().find_overlaps(coord1(), coord2()))),
+      _block_idx(preload_block_index(sel, diagonal_band_width, sorted)),
       _block_blacklist(std::make_shared<BlockBlacklist>()),
-      _block_it(_block_idx->begin()),
+      _block_it(!!_block_idx ? _block_idx->begin() : internal::Index::Overlap::const_iterator{}),
       _buffer(std::make_shared<BufferT>()),
       _bin1_id(coord1().bin1.rel_id()),
+      _diagonal_band_width(diagonal_band_width.value_or(std::numeric_limits<std::uint64_t>::max())),
       _sorted(sorted) {
-  if (_reader->index().empty()) {
+  if (!!_block_idx && _block_idx->empty()) {
     *this = at_end(_reader, _coord1, _coord2);
     return;
   }
@@ -308,7 +314,7 @@ template <typename N>
 inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBlockReader> reader,
                                                std::shared_ptr<const PixelCoordinates> coord1,
                                                std::shared_ptr<const PixelCoordinates> coord2)
-    -> iterator<N> {
+    -> iterator {
   iterator it{};
 
   it._reader = std::move(reader);
@@ -443,7 +449,7 @@ inline std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
 
 template <typename N>
 inline std::vector<internal::BlockIndex>
-PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) {
+PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) const {
   const auto bin_size = bins().resolution();
 
   const auto end_pos = coord1().bin2.start();
@@ -453,7 +459,7 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
   const auto coord1_ = PixelCoordinates(bins().at(coord1().bin1.chrom(), pos1),
                                         bins().at(coord1().bin1.chrom(), pos2));
 
-  return _reader->index().find_overlaps(coord1_, coord2());
+  return _reader->index().find_overlaps(coord1_, coord2(), _diagonal_band_width);
 }
 
 template <typename N>
@@ -519,6 +525,11 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
     auto pt = transform_pixel(p);
     pt.bin1_id += bin1_offset;
     pt.bin2_id += bin2_offset;
+
+    if (pt.bin2_id - pt.bin1_id >= _diagonal_band_width) {
+      continue;
+    }
+
     _buffer->emplace_back(std::move(pt));
   }
 }
@@ -526,6 +537,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
   assert(!!_reader);
+  assert(_sorted);
 
   if (_block_it == _block_idx->end()) {
     *this = at_end(_reader, _coord1, _coord2);
@@ -559,20 +571,25 @@ inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
       auto pt = transform_pixel(p);
       pt.bin1_id += bin1_offset;
       pt.bin2_id += bin2_offset;
+
+      if (pt.bin2_id - pt.bin1_id >= _diagonal_band_width) {
+        continue;
+      }
+
       _buffer->emplace_back(std::move(pt));
     }
     if (++_block_it == _block_idx->end()) {
       break;
     }
   }
-  if (_sorted) {
-    std::sort(_buffer->begin(), _buffer->end());
-  }
+
+  std::sort(_buffer->begin(), _buffer->end());
 }
 
 template <typename N>
 inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
   assert(!!_reader);
+  assert(_sorted);
 
   if (_bin1_id > coord1().bin2.rel_id()) {
     *this = at_end(_reader, _coord1, _coord2);
@@ -625,6 +642,11 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
       auto pt = transform_pixel(p);
       pt.bin1_id += bin1_offset;
       pt.bin2_id += bin2_offset;
+
+      if (pt.bin2_id - pt.bin1_id >= _diagonal_band_width) {
+        continue;
+      }
+
       _buffer->emplace_back(std::move(pt));
     }
     if (!block_overlaps_query) {
@@ -633,9 +655,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
     }
   }
 
-  if (_sorted) {
-    std::sort(_buffer->begin(), _buffer->end());
-  }
+  std::sort(_buffer->begin(), _buffer->end());
   _bin1_id = bin1_id_last + 1;
 }
 
@@ -698,6 +718,21 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
   pixel.count /= expected_count;
 
   return return_pixel();
+}
+
+template <typename N>
+inline std::shared_ptr<const internal::Index::Overlap>
+PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
+                                                std::optional<std::uint64_t> diagonal_band_width,
+                                                bool sorted) {
+  const auto &idx = sel._reader->index();
+  const auto is_intra = sel.coord1().bin1.chrom() == sel.coord2().bin2.chrom();
+  if (sorted && is_intra && idx.version() > 8) {  // NOLINT(*-avoid-magic-numbers)
+    return nullptr;
+  }
+
+  return std::make_shared<const internal::Index::Overlap>(
+      idx.find_overlaps(sel.coord1(), sel.coord2(), diagonal_band_width));
 }
 
 inline PixelSelectorAll::PixelSelectorAll(
@@ -816,7 +851,7 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
 }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const iterator<N> &other)
+inline PixelSelectorAll::iterator<N>::iterator(const iterator &other)
     : _selectors(other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr),
       _active_selectors(other._active_selectors
                             ? std::make_shared<SelectorQueue>(*other._active_selectors)

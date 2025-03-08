@@ -17,6 +17,7 @@
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
@@ -44,8 +45,8 @@ class HiCFileReader {
   // reads the footer given a pair of chromosomes, wanted_norm, wanted_unit (BP or FRAG) and
   // resolution.
   [[nodiscard]] HiCFooter read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
-                                      MatrixType matrix_type, const balancing::Method &wanted_norm,
-                                      MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
+                                      const BinTable &bins, MatrixType matrix_type,
+                                      const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
                                       std::shared_ptr<balancing::Weights> &weights1,
                                       std::shared_ptr<balancing::Weights> &weights2);
 
@@ -74,8 +75,8 @@ class HiCFileReader {
   [[nodiscard]] static MatrixUnit readMatrixUnit(filestream::FileStream<> &fs, std::string &buff);
 
   [[nodiscard]] Index read_index(std::int64_t fileOffset, const Chromosome &chrom1,
-                                 const Chromosome &chrom2, MatrixUnit wantedUnit,
-                                 std::int64_t wantedResolution);
+                                 const Chromosome &chrom2, const BinTable &bins,
+                                 MatrixUnit wantedUnit);
   void readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer);
 
   [[nodiscard]] static bool checkMagicString(std::string url) noexcept;

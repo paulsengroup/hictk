@@ -41,6 +41,9 @@ class PixelSelector {
   PixelSelector(const Index &index, const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                 const Dataset &pixels_count, std::shared_ptr<const balancing::Weights> weights,
                 bool symmetric_upper_) noexcept;
+  PixelSelector(std::shared_ptr<const BinTable> bins, const Dataset &pixels_bin1_id,
+                const Dataset &pixels_bin2_id, const Dataset &pixels_count,
+                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                 const PixelCoordinates &coords, std::shared_ptr<const balancing::Weights> weights,
@@ -103,19 +106,22 @@ class PixelSelector {
     // This optimization works most of the time, and can significantly speed up calls to
     // jump_to_col().
     std::uint64_t _row_head_h5_offset{};
+    bool _fixed_bin_size{true};
 
     explicit iterator(const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
                       const Dataset &pixels_count,
-                      std::shared_ptr<const balancing::Weights> weights);
+                      std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size,
+                      std::shared_ptr<const Index> index = {});
 
     explicit iterator(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                       const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                       PixelCoordinates coord1, PixelCoordinates coord2,
-                      std::shared_ptr<const balancing::Weights> weights);
+                      std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size);
 
     static auto at_end(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                        const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                       std::shared_ptr<const balancing::Weights> weights) -> iterator;
+                       std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size)
+        -> iterator;
 
    public:
     using difference_type = std::ptrdiff_t;
@@ -143,11 +149,14 @@ class PixelSelector {
     auto operator++() -> iterator &;
     auto operator++(int) -> iterator;
 
+    void jump_to_next_overlap();
+    [[nodiscard]] bool is_indexed() const noexcept;
+    [[nodiscard]] constexpr bool is_fixed_bin_size() const noexcept;
+
    private:
     void jump_to_row(std::uint64_t bin_id);
     void jump_to_col(std::uint64_t bin_id);
     void jump(std::uint64_t bin1_id, std::uint64_t bin2_id);
-    void jump_to_next_overlap();
 
     [[nodiscard]] std::size_t h5_offset() const noexcept;
     void jump_at_end();

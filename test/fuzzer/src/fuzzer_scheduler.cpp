@@ -37,9 +37,13 @@ namespace hictk::fuzzer {
                                 "--format",
                                 c.query_format,
                                 "--query-length-avg",
-                                fmt::to_string(c.query_length_avg),
+                                fmt::to_string(c.query_relative_length_avg),
                                 "--query-length-std",
-                                fmt::to_string(c.query_length_std),
+                                fmt::to_string(c.query_relative_length_std),
+                                "--min-query-length",
+                                fmt::to_string(c.min_query_length),
+                                "--max-query-length",
+                                fmt::to_string(c.max_query_length),
                                 "--normalization",
                                 c.normalization,
                                 "--seed",
@@ -50,6 +54,11 @@ namespace hictk::fuzzer {
   if (c.resolution != 0) {
     args.emplace_back("--resolution");
     args.emplace_back(fmt::to_string(c.resolution));
+  }
+
+  if (c.diagonal_band_width) {
+    args.emplace_back("--diagonal-band-width");
+    args.emplace_back(fmt::to_string(*c.diagonal_band_width));
   }
 
   return args;

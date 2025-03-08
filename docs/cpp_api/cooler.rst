@@ -93,8 +93,8 @@ Single-resolution Cooler (.cool)
 
   **Fetch methods (1D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(const balancing::Method &normalization = balancing::Method::NONE()) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(const balancing::Method &normalization = balancing::Method::NONE(), bool load_index = false) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights, bool load_index = false) const;
 
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, std::shared_ptr<const balancing::Weights> weights, QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, std::shared_ptr<const balancing::Weights> weights) const;

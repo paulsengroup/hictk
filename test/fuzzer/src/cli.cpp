@@ -16,6 +16,7 @@
 #endif
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <array>
@@ -119,10 +120,18 @@ static void add_common_args(CLI::App& sc, Config& c) {
   sc.add_option("--format", c.query_format, "Format used to fetch pixels.")
       ->check(CLI::IsMember{{"dense", "df", "sparse"}})
       ->capture_default_str();
-  sc.add_option("--query-length-avg", c.query_length_avg, "Average query size.")
+  sc.add_option("--query-length-avg", c.query_relative_length_avg,
+                "Average query size expressed as a fraction of chromosome size")
+      ->check(CLI::Bound(0.0, 1.0))
+      ->capture_default_str();
+  sc.add_option("--query-length-std", c.query_relative_length_std,
+                "Query size standard deviation expressed as a fraction of --query-length-avg.")
+      ->check(CLI::Bound(0.0, 1.0))
+      ->capture_default_str();
+  sc.add_option("--min-query-length", c.min_query_length, "Minimum query length (bp).")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
-  sc.add_option("--query-length-std", c.query_length_std, "Query size standard deviation.")
+  sc.add_option("--max-query-length", c.max_query_length, "Maximum query length (bp).")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
   sc.add_option("--normalization", c.normalization, "Name of the dataset to use for balancing.")
@@ -130,6 +139,8 @@ static void add_common_args(CLI::App& sc, Config& c) {
   sc.add_flag("--join", c.join,
               "Fetch pixels in BG2 format.\n"
               "Ignored when --format is not df.")
+      ->capture_default_str();
+  sc.add_option("--diagonal-band-width", c.diagonal_band_width, "Diagonal band width (bp).")
       ->capture_default_str();
   sc.add_option("--seed", c.seed, "Seed used for PRNG.")->capture_default_str();
   sc.add_option("-v,--verbosity", c.verbosity, "Set verbosity of output to the console.")
@@ -225,6 +236,10 @@ static void validate_common_args(const Config& c) {
   if (errors.empty()) {
     validate_normalization(c.test_uri, c.resolution, c.normalization, errors);
     validate_normalization(c.reference_uri, c.resolution, c.normalization, errors);
+
+    if (c.min_query_length > c.max_query_length) {
+      errors.emplace_back("--min-query-length should be less or equal to --max-query-length");
+    }
   }
 
   if (!errors.empty()) {
@@ -235,7 +250,25 @@ static void validate_common_args(const Config& c) {
   }
 }
 
-void Cli::validate_fuzz_subcommand() const { validate_common_args(_config); }
+void Cli::validate_fuzz_subcommand() const {
+  const auto& c = _config;
+
+  validate_common_args(c);
+
+  std::vector<std::string> warnings;
+
+  if (c.diagonal_band_width.has_value() && c.query_format != "df") {
+    warnings.emplace_back("--diagonal-band-width is ignored when --format is not \"df\"");
+  }
+
+  if (c.join && c.query_format != "df") {
+    warnings.emplace_back("--join is ignored when --format is not \"df\"");
+  }
+
+  for (const auto& w : warnings) {
+    SPDLOG_WARN(w);
+  }
+}
 
 void Cli::validate_launch_worker_subcommand() const { validate_common_args(_config); }
 

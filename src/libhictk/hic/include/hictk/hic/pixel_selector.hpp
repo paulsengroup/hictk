@@ -19,6 +19,7 @@ HICTK_DISABLE_WARNING_POP
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <vector>
 
@@ -42,6 +43,7 @@ class PixelSelector {
 
   std::shared_ptr<const PixelCoordinates> _coord1{};
   std::shared_ptr<const PixelCoordinates> _coord2{};
+  std::optional<std::uint64_t> _diagonal_band_width{};
 
  public:
   template <typename N>
@@ -51,12 +53,13 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                const PixelCoordinates &coords);
+                const PixelCoordinates &coords, std::optional<std::uint64_t> diagonal_band_width);
 
   PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<internal::BlockCache> cache_, std::shared_ptr<const BinTable> bins_,
-                PixelCoordinates coord1_, PixelCoordinates coord2_);
+                PixelCoordinates coord1_, PixelCoordinates coord2_,
+                std::optional<std::uint64_t> diagonal_band_width);
 
   PixelSelector(const PixelSelector &other) = delete;
   PixelSelector(PixelSelector &&other) = default;
@@ -113,7 +116,8 @@ class PixelSelector {
   PixelSelector(std::shared_ptr<internal::HiCBlockReader> reader_,
                 std::shared_ptr<const internal::HiCFooter> footer_,
                 std::shared_ptr<const PixelCoordinates> coord1_,
-                std::shared_ptr<const PixelCoordinates> coord2_);
+                std::shared_ptr<const PixelCoordinates> coord2_,
+                std::optional<std::uint64_t> diagonal_band_width);
   template <typename N>
   [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
 
@@ -135,6 +139,7 @@ class PixelSelector {
     mutable std::shared_ptr<BufferT> _buffer{};
     mutable std::size_t _buffer_i{};
     std::uint32_t _bin1_id{};
+    std::uint64_t _diagonal_band_width{};
     bool _sorted{};
 
    public:
@@ -147,7 +152,8 @@ class PixelSelector {
     using iterator_category = std::forward_iterator_tag;
 
     iterator() = default;
-    explicit iterator(const PixelSelector &sel, bool sorted);
+    explicit iterator(const PixelSelector &sel, bool sorted,
+                      std::optional<std::uint64_t> diagonal_band_width);
     [[nodiscard]] static auto at_end(std::shared_ptr<internal::HiCBlockReader> reader,
                                      std::shared_ptr<const PixelCoordinates> coord1,
                                      std::shared_ptr<const PixelCoordinates> coord2) -> iterator;
@@ -175,13 +181,15 @@ class PixelSelector {
 
     [[nodiscard]] std::uint32_t compute_chunk_size() const noexcept;
     [[nodiscard]] std::vector<internal::BlockIndex> find_blocks_overlapping_next_chunk(
-        std::size_t num_bins);
+        std::size_t num_bins) const;
 
     void read_next_chunk();
     void read_next_chunk_unsorted();
     void read_next_chunk_sorted();
     void read_next_chunk_v9_intra_sorted();
     [[nodiscard]] ThinPixel<N> transform_pixel(ThinPixel<float> pixel) const;
+    [[nodiscard]] static std::shared_ptr<const internal::Index::Overlap> preload_block_index(
+        const PixelSelector &sel, std::optional<std::uint64_t> diagonal_band_width, bool sorted);
   };
 };
 
