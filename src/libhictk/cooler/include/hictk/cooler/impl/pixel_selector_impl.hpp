@@ -458,8 +458,11 @@ constexpr bool PixelSelector::iterator<N>::is_fixed_bin_size() const noexcept {
 
 template <typename N>
 inline void PixelSelector::iterator<N>::jump_to_next_overlap() {
-  assert(_coord1);
-  assert(_coord2);
+  if (!_coord1) {
+    assert(!_coord2);
+    return;
+  }
+
   do {
     // We're at/past end: return immediately
     if (is_at_end()) {
