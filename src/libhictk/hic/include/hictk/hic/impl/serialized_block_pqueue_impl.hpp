@@ -99,13 +99,13 @@ inline auto SerializedBlockPQueue<BlockID>::dequeue_timed(std::chrono::milliseco
       }
     }
     SPDLOG_DEBUG(
-        FMT_STRING("SerializedBlockPQueue::dequeue_timed(): queue is empty. Sleeping before trying "
-                   "one more time..."));
+        "SerializedBlockPQueue::dequeue_timed(): queue is empty. Sleeping before trying one more "
+        "time...");
     // NOLINTNEXTLINE(*-avoid-magic-numbers)
     std::this_thread::sleep_for(timeout / 25);
   }
 
-  SPDLOG_DEBUG(FMT_STRING("SerializedBlockPQueue::dequeue_timed(): operation timed out"));
+  SPDLOG_DEBUG("SerializedBlockPQueue::dequeue_timed(): operation timed out");
   return {{}, "", Record::Status::TIMEOUT};
 }
 
@@ -128,8 +128,8 @@ template <typename BlockID>
 inline auto SerializedBlockPQueue<BlockID>::dequeue_unsafe() noexcept -> Record {
   if (HICTK_UNLIKELY(_block_ids.empty())) {
     SPDLOG_DEBUG(
-        FMT_STRING("SerializedBlockPQueue::dequeue_unsafe(): caught attempt to fetch block from a "
-                   "closed queue"));
+        "SerializedBlockPQueue::dequeue_unsafe(): caught attempt to fetch block from a closed "
+        "queue");
     return {{}, "", Record::Status::QUEUE_IS_CLOSED};
   }
 

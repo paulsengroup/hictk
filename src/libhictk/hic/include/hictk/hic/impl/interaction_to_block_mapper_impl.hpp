@@ -240,7 +240,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
     return append_pixels(first_pixel, last_pixel);
   }
 
-  SPDLOG_DEBUG(FMT_STRING("mapping pixels to interaction blocks using 2 threads..."));
+  SPDLOG_DEBUG("mapping pixels to interaction blocks using 2 threads...");
 
   std::atomic<bool> early_return = false;
   // NOLINTNEXTLINE(*-avoid-magic-numbers)

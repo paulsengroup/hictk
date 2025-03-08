@@ -116,7 +116,7 @@ template <typename N>
     std::string_view tmp_cooler_path, const BinTable& bins, std::string_view assembly,
     std::size_t batch_size, std::uint32_t compression_lvl, bool force, bool validate_pixels) {
   static_assert(std::is_same_v<N, std::int32_t> || std::is_same_v<N, double>);
-  SPDLOG_INFO(FMT_STRING("begin loading unsorted pixels into a .cool file..."));
+  SPDLOG_INFO("begin loading unsorted pixels into a .cool file...");
   Stats stats{N{}, 0};
   std::vector<ThinPixel<N>> write_buffer(batch_size);
 
@@ -160,7 +160,7 @@ template <typename N>
     const BinTable& bins, std::string_view assembly, std::size_t batch_size,
     std::uint32_t compression_lvl, bool force, bool validate_pixels) {
   static_assert(std::is_same_v<N, std::int32_t> || std::is_same_v<N, double>);
-  SPDLOG_INFO(FMT_STRING("begin loading pre-sorted pixels into a .cool file..."));
+  SPDLOG_INFO("begin loading pre-sorted pixels into a .cool file...");
   auto attrs = cooler::Attributes::init(bins.resolution());
   attrs.assembly = assembly;
   return ingest_pixels_sorted<N>(
@@ -175,7 +175,7 @@ template <typename N>
     std::string_view tmp_cooler_path, const BinTable& bins, std::string_view assembly,
     std::size_t batch_size, std::uint32_t compression_lvl, bool force, bool validate_pixels) {
   static_assert(std::is_same_v<N, std::int32_t> || std::is_same_v<N, double>);
-  SPDLOG_INFO(FMT_STRING("begin loading pairwise interactions into a .cool file..."));
+  SPDLOG_INFO("begin loading pairwise interactions into a .cool file...");
   std::vector<ThinPixel<N>> write_buffer(batch_size);
   {
     auto sclr_attrs = cooler::SingleCellAttributes::init(bins.resolution());

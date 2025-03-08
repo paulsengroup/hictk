@@ -123,11 +123,11 @@ BinTable init_bin_table(const std::filesystem::path& path_to_bin_table) {
   std::sort(chroms.begin(), chroms.end());
 
   if (fixed_bin_size) {
-    SPDLOG_INFO(FMT_STRING("detected bin table with uniform bin size."));
+    SPDLOG_INFO("detected bin table with uniform bin size.");
     return {chroms.begin(), chroms.end(), bin_size};
   }
 
-  SPDLOG_INFO(FMT_STRING("detected bin table with variable bin size."));
+  SPDLOG_INFO("detected bin table with variable bin size.");
   return {Reference{chroms.begin(), chroms.end()}, start_pos, end_pos};
 }
 

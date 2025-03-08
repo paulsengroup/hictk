@@ -182,7 +182,7 @@ inline void ICE::balance_cis(const MatrixT& matrix, const Chromosome& chrom, std
 template <typename File>
 auto ICE::construct_sparse_matrix(const File& f, Type type, std::size_t num_masked_diags)
     -> internal::SparseMatrixChunked {
-  SPDLOG_INFO(FMT_STRING("Reading interactions into memory..."));
+  SPDLOG_INFO("Reading interactions into memory...");
   if (type == Type::cis) {
     return construct_sparse_matrix_cis(f, num_masked_diags);
   }
@@ -627,7 +627,7 @@ inline void ICE::initialize_biases(const MatrixT& matrix, nonstd::span<double> b
     return;
   }
 
-  SPDLOG_INFO(FMT_STRING("Initializing bias vector..."));
+  SPDLOG_INFO("Initializing bias vector...");
   internal::VectorOfAtomicDecimals marg(biases.size());
   if (min_nnz != 0) {
     SPDLOG_INFO(FMT_STRING("Masking rows with fewer than {} nnz entries..."), min_nnz);

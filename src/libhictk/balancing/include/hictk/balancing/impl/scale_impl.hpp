@@ -129,7 +129,7 @@ inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& 
     SPDLOG_INFO(FMT_STRING("Iteration {}: {}"), _tot_iter, _convergence_stats.error);
 
     if (_convergence_stats.error < params.tol) {
-      SPDLOG_DEBUG(FMT_STRING("handle_convergence"));
+      SPDLOG_DEBUG("handle_convergence");
       const auto status = handle_convergenece(m, dr, dc, row);
       if (status == ControlFlow::break_loop) {
         break;
@@ -151,7 +151,7 @@ inline void SCALE::balance(const Matrix& m, const BinTable& bins, const Params& 
     }
 
     // handle divergence
-    SPDLOG_DEBUG(FMT_STRING("handle_divergence"));
+    SPDLOG_DEBUG("handle_divergence");
     _convergence_stats.diverged = true;
     _convergence_stats.low_divergence = static_cast<std::uint32_t>(_low_cutoff);
     const auto status =
@@ -436,10 +436,10 @@ inline auto SCALE::handle_convergenece(const Matrix& m, std::vector<double>& dr,
                                        internal::VectorOfAtomicDecimals& row) -> ControlFlow {
   _yes = true;
   if (_low_cutoff == 1) {
-    SPDLOG_DEBUG(FMT_STRING("low cutoff"));
+    SPDLOG_DEBUG("low cutoff");
     return ControlFlow::break_loop;
   }
-  SPDLOG_DEBUG(FMT_STRING("non low cutoff"));
+  SPDLOG_DEBUG("non low cutoff");
   _convergence_stats.converged = true;
   _b_conv = _biases1;
   _bad_conv = _bad;
