@@ -79,8 +79,10 @@ static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Thin
 
   REQUIRE(i < table->num_rows());
 
-  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin1_id"), i) == p.bin1_id);
-  CHECK(internal::get_scalar<std::uint64_t>(table->GetColumnByName("bin2_id"), i) == p.bin2_id);
+  CHECK(internal::get_scalar<std::int64_t>(table->GetColumnByName("bin1_id"), i) ==
+        static_cast<std::int64_t>(p.bin1_id));
+  CHECK(internal::get_scalar<std::int64_t>(table->GetColumnByName("bin2_id"), i) ==
+        static_cast<std::int64_t>(p.bin2_id));
 
   CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
 }
@@ -93,16 +95,16 @@ static void compare_pixel(const std::shared_ptr<arrow::Table>& table, const Pixe
 
   CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom1"), i) ==
         p.coords.bin1.chrom().name());
-  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start1"), i) ==
-        p.coords.bin1.start());
-  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end1"), i) ==
-        p.coords.bin1.end());
+  CHECK(internal::get_scalar<std::int32_t>(table->GetColumnByName("start1"), i) ==
+        static_cast<std::int32_t>(p.coords.bin1.start()));
+  CHECK(internal::get_scalar<std::int32_t>(table->GetColumnByName("end1"), i) ==
+        static_cast<std::int32_t>(p.coords.bin1.end()));
   CHECK(internal::get_scalar<std::string>(table->GetColumnByName("chrom2"), i) ==
         p.coords.bin2.chrom().name());
-  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("start2"), i) ==
-        p.coords.bin2.start());
-  CHECK(internal::get_scalar<std::uint32_t>(table->GetColumnByName("end2"), i) ==
-        p.coords.bin2.end());
+  CHECK(internal::get_scalar<std::int32_t>(table->GetColumnByName("start2"), i) ==
+        static_cast<std::int32_t>(p.coords.bin2.start()));
+  CHECK(internal::get_scalar<std::int32_t>(table->GetColumnByName("end2"), i) ==
+        static_cast<std::int32_t>(p.coords.bin2.end()));
   CHECK(internal::get_scalar<N>(table->GetColumnByName("count"), i) == p.count);
 }
 
@@ -118,8 +120,10 @@ namespace internal {
   const auto bin2_ids = data->GetColumnByName("bin2_id");
 
   for (std::int64_t i = 0; i < data->num_rows(); ++i) {
-    buff[static_cast<std::size_t>(i)].bin1_id = get_scalar<std::uint64_t>(bin1_ids, i);
-    buff[static_cast<std::size_t>(i)].bin2_id = get_scalar<std::uint64_t>(bin2_ids, i);
+    buff[static_cast<std::size_t>(i)].bin1_id =
+        static_cast<std::uint64_t>(get_scalar<std::int64_t>(bin1_ids, i));
+    buff[static_cast<std::size_t>(i)].bin2_id =
+        static_cast<std::uint64_t>(get_scalar<std::int64_t>(bin2_ids, i));
   }
   return buff;
 }
@@ -139,13 +143,14 @@ namespace internal {
   const auto end2 = data->GetColumnByName("end2");
 
   for (std::int64_t i = 0; i < data->num_rows(); ++i) {
-    buff[static_cast<std::size_t>(i)] = Pixel{chroms.at(get_scalar<std::string>(chrom1_ids, i)),
-                                              get_scalar<std::uint32_t>(start1, i),
-                                              get_scalar<std::uint32_t>(end1, i),
-                                              chroms.at(get_scalar<std::string>(chrom2_ids, i)),
-                                              get_scalar<std::uint32_t>(start2, i),
-                                              get_scalar<std::uint32_t>(end2, i),
-                                              std::uint8_t{}};
+    buff[static_cast<std::size_t>(i)] =
+        Pixel{chroms.at(get_scalar<std::string>(chrom1_ids, i)),
+              static_cast<std::uint32_t>(get_scalar<std::int32_t>(start1, i)),
+              static_cast<std::uint32_t>(get_scalar<std::int32_t>(end1, i)),
+              chroms.at(get_scalar<std::string>(chrom2_ids, i)),
+              static_cast<std::uint32_t>(get_scalar<std::int32_t>(start2, i)),
+              static_cast<std::uint32_t>(get_scalar<std::int32_t>(end2, i)),
+              std::uint8_t{}};
   }
   return buff;
 }

@@ -130,8 +130,8 @@ template <typename PixelIt>
 inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::coo_schema() const {
   return arrow::schema({
       // clang-format off
-      arrow::field("bin1_id", arrow::uint64(), false),
-      arrow::field("bin2_id", arrow::uint64(), false),
+      arrow::field("bin1_id", arrow::int64(), false),
+      arrow::field("bin2_id", arrow::int64(), false),
       arrow::field("count",   _count_builder.type(), false)
       // clang-format on
   });
@@ -141,18 +141,18 @@ template <typename PixelIt>
 inline std::shared_ptr<arrow::Schema> ToDataFrame<PixelIt>::bg2_schema(bool with_bin_ids) const {
   arrow::FieldVector fields{};
   if (with_bin_ids) {
-    fields.emplace_back(arrow::field("bin1_id", arrow::uint64(), false));
-    fields.emplace_back(arrow::field("bin2_id", arrow::uint64(), false));
+    fields.emplace_back(arrow::field("bin1_id", arrow::int64(), false));
+    fields.emplace_back(arrow::field("bin2_id", arrow::int64(), false));
   }
 
   auto chrom_dict = dictionary(arrow::int32(), arrow::utf8());
 
   fields.emplace_back(arrow::field("chrom1", chrom_dict, false));
-  fields.emplace_back(arrow::field("start1", arrow::uint32(), false));
-  fields.emplace_back(arrow::field("end1", arrow::uint32(), false));
+  fields.emplace_back(arrow::field("start1", arrow::int32(), false));
+  fields.emplace_back(arrow::field("end1", arrow::int32(), false));
   fields.emplace_back(arrow::field("chrom2", chrom_dict, false));
-  fields.emplace_back(arrow::field("start2", arrow::uint32(), false));
-  fields.emplace_back(arrow::field("end2", arrow::uint32(), false));
+  fields.emplace_back(arrow::field("start2", arrow::int32(), false));
+  fields.emplace_back(arrow::field("end2", arrow::int32(), false));
   fields.emplace_back(arrow::field("count", _count_builder.type(), false));
 
   return arrow::schema(fields);
@@ -177,31 +177,31 @@ inline void ToDataFrame<PixelIt>::append_symmetric(Pixel<N> p) {
   assert(chrom2_id >= 0);
 
   if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
-    _bin1_id_buff.push_back(p.coords.bin1.id());
-    _bin2_id_buff.push_back(p.coords.bin2.id());
+    _bin1_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin1.id()));
+    _bin2_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin2.id()));
   }
 
   _chrom1_id_buff.push_back(chrom1_id);
-  _start1_buff.push_back(p.coords.bin1.start());
-  _end1_buff.push_back(p.coords.bin1.end());
+  _start1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.start()));
+  _end1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.end()));
 
   _chrom2_id_buff.push_back(chrom2_id);
-  _start2_buff.push_back(p.coords.bin2.start());
-  _end2_buff.push_back(p.coords.bin2.end());
+  _start2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.start()));
+  _end2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.end()));
 
   _count_buff.push_back(p.count);
 
   if (_span == QuerySpan::full && p.coords.bin1 != p.coords.bin2) {
-    _bin1_id_buff.push_back(p.coords.bin2.id());
-    _bin2_id_buff.push_back(p.coords.bin1.id());
+    _bin1_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin2.id()));
+    _bin2_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin1.id()));
 
     _chrom1_id_buff.push_back(chrom2_id);
-    _start1_buff.push_back(p.coords.bin2.start());
-    _end1_buff.push_back(p.coords.bin2.end());
+    _start1_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.start()));
+    _end1_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.end()));
 
     _chrom2_id_buff.push_back(chrom1_id);
-    _start2_buff.push_back(p.coords.bin1.start());
-    _end2_buff.push_back(p.coords.bin1.end());
+    _start2_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.start()));
+    _end2_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.end()));
 
     _count_buff.push_back(p.count);
   }
@@ -219,13 +219,13 @@ inline void ToDataFrame<PixelIt>::append_symmetric(ThinPixel<N> p) {
     std::swap(p.bin1_id, p.bin2_id);
   }
 
-  _bin1_id_buff.push_back(p.bin1_id);
-  _bin2_id_buff.push_back(p.bin2_id);
+  _bin1_id_buff.push_back(static_cast<std::int64_t>(p.bin1_id));
+  _bin2_id_buff.push_back(static_cast<std::int64_t>(p.bin2_id));
   _count_buff.push_back(p.count);
 
   if (_span == QuerySpan::full && p.bin1_id != p.bin2_id) {
-    _bin1_id_buff.push_back(p.bin2_id);
-    _bin2_id_buff.push_back(p.bin1_id);
+    _bin1_id_buff.push_back(static_cast<std::int64_t>(p.bin2_id));
+    _bin2_id_buff.push_back(static_cast<std::int64_t>(p.bin1_id));
     _count_buff.push_back(p.count);
   }
 }
@@ -251,17 +251,17 @@ inline void ToDataFrame<PixelIt>::append_asymmetric(const Pixel<N>& p) {
 
   if (populate_upper_triangle && p.coords.bin1 <= p.coords.bin2) {
     if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
-      _bin1_id_buff.push_back(p.coords.bin1.id());
-      _bin2_id_buff.push_back(p.coords.bin2.id());
+      _bin1_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin1.id()));
+      _bin2_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin2.id()));
     }
 
     _chrom1_id_buff.push_back(chrom1_id);
-    _start1_buff.push_back(p.coords.bin1.start());
-    _end1_buff.push_back(p.coords.bin1.end());
+    _start1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.start()));
+    _end1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.end()));
 
     _chrom2_id_buff.push_back(chrom2_id);
-    _start2_buff.push_back(p.coords.bin2.start());
-    _end2_buff.push_back(p.coords.bin2.end());
+    _start2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.start()));
+    _end2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.end()));
 
     _count_buff.push_back(p.count);
     return;
@@ -269,17 +269,17 @@ inline void ToDataFrame<PixelIt>::append_asymmetric(const Pixel<N>& p) {
 
   if (populate_lower_triangle && p.coords.bin1 >= p.coords.bin2) {
     if (_format == DataFrameFormat::BG2 || _span != QuerySpan::upper_triangle) {
-      _bin1_id_buff.push_back(p.coords.bin1.id());
-      _bin2_id_buff.push_back(p.coords.bin2.id());
+      _bin1_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin1.id()));
+      _bin2_id_buff.push_back(static_cast<std::int64_t>(p.coords.bin2.id()));
     }
 
     _chrom1_id_buff.push_back(chrom1_id);
-    _start1_buff.push_back(p.coords.bin1.start());
-    _end1_buff.push_back(p.coords.bin1.end());
+    _start1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.start()));
+    _end1_buff.push_back(static_cast<std::int32_t>(p.coords.bin1.end()));
 
     _chrom2_id_buff.push_back(chrom2_id);
-    _start2_buff.push_back(p.coords.bin2.start());
-    _end2_buff.push_back(p.coords.bin2.end());
+    _start2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.start()));
+    _end2_buff.push_back(static_cast<std::int32_t>(p.coords.bin2.end()));
 
     _count_buff.push_back(p.count);
   }
@@ -300,15 +300,15 @@ inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N> p) {
 
   bool inserted = false;
   if (populate_upper_triangle && p.bin1_id <= p.bin2_id) {
-    _bin1_id_buff.push_back(p.bin1_id);
-    _bin2_id_buff.push_back(p.bin2_id);
+    _bin1_id_buff.push_back(static_cast<std::int64_t>(p.bin1_id));
+    _bin2_id_buff.push_back(static_cast<std::int64_t>(p.bin2_id));
     _count_buff.push_back(p.count);
     inserted = true;
   }
 
   if (populate_lower_triangle && !inserted && p.bin1_id >= p.bin2_id) {
-    _bin1_id_buff.push_back(p.bin1_id);
-    _bin2_id_buff.push_back(p.bin2_id);
+    _bin1_id_buff.push_back(static_cast<std::int64_t>(p.bin1_id));
+    _bin2_id_buff.push_back(static_cast<std::int64_t>(p.bin2_id));
     _count_buff.push_back(p.count);
   }
 }
