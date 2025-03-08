@@ -22,6 +22,10 @@ Compiling hictk requires a compiler toolchain supporting C++17, such as:
 * GCC 8+
 * Clang 8+
 * Apple-Clang 10.0+
+* MSVC 19.12+
+
+Based on our testing, hictk binaries compiled on Linux using Clang are noticeably faster than those compiled with GCC.
+For this reason we recommend building hictk using a modern version of Clang whenever possible.
 
 Furthermore, the following tools are required:
 
@@ -83,7 +87,7 @@ Compiling hictk
 
   # Set these variables to the number of CPU cores available on your machine
   # You can check this with e.g.
-  # python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+  # python -c 'import multiprocessing as mp; print(mp.cpu_count())'
   export CONAN_CPU_COUNT=8
   export CMAKE_BUILD_PARALLEL_LEVEL=8
 
@@ -108,6 +112,9 @@ Compiling hictk
         -B /tmp/hictk/build
 
   cmake --build /tmp/hictk/build
+
+  # If you are compiling hictk on Windows you need to pass the build config as well
+  # cmake --build /tmp/hictk/build --config Release
 
 To override the default compiler used by CMake, pass the following arguments to the first CMake command: :code:`-DCMAKE_C_COMPILER=path/to/cc -DCMAKE_CXX_COMPILER=path/to/c++`
 
