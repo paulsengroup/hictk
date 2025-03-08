@@ -4,24 +4,24 @@
 
 find_package(FMT REQUIRED)
 
-add_library(file INTERFACE)
-add_library(hictk::file ALIAS file)
+add_library(hictk_file INTERFACE)
+add_library(hictk::file ALIAS hictk_file)
 
 target_sources(
-  file
+  hictk_file
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  file
+  hictk_file
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
-  file
+  hictk_file
   INTERFACE
     hictk::balancing
     hictk::cooler
@@ -29,4 +29,4 @@ target_link_libraries(
     hictk::reference
 )
 
-target_link_system_libraries(file INTERFACE fmt::fmt-header-only)
+target_link_system_libraries(hictk_file INTERFACE fmt::fmt-header-only)

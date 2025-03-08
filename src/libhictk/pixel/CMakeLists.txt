@@ -2,23 +2,23 @@
 #
 # SPDX-License-Identifier: MIT
 
-add_library(pixel INTERFACE)
-add_library(hictk::pixel ALIAS pixel)
+add_library(hictk_pixel INTERFACE)
+add_library(hictk::pixel ALIAS hictk_pixel)
 
 target_sources(
-  pixel
+  hictk_pixel
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 target_include_directories(
-  pixel
+  hictk_pixel
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
-  pixel
+  hictk_pixel
   INTERFACE
     hictk::bin_table
     hictk::chromosome

@@ -4,7 +4,23 @@
 
 set(
   targets
-  balancing;bin_table;binary_buffer;chromosome;common;cooler;expected_values_aggregator;file;filestream;formatting;genomic_interval;hic;numeric;pixel;reference;transformers;variant
+  balancing
+  bin_table
+  binary_buffer
+  chromosome
+  common
+  cooler
+  expected_values_aggregator
+  file
+  filestream
+  formatting
+  genomic_interval
+  hic
+  numeric
+  pixel
+  reference
+  transformers
+  variant
 )
 
 include(GNUInstallDirs)
@@ -20,23 +36,23 @@ endforeach()
 install(
   TARGETS
     libhictk
-    balancing
-    bin_table
-    binary_buffer
-    chromosome
-    common
-    cooler
-    expected_values_aggregator
-    file
-    filestream
-    formatting
-    genomic_interval
-    hic
-    numeric
-    pixel
-    reference
-    transformers
-    variant
+    hictk_balancing
+    hictk_bin_table
+    hictk_binary_buffer
+    hictk_chromosome
+    hictk_common
+    hictk_cooler
+    hictk_expected_values_aggregator
+    hictk_file
+    hictk_filestream
+    hictk_formatting
+    hictk_genomic_interval
+    hictk_hic
+    hictk_numeric
+    hictk_pixel
+    hictk_reference
+    hictk_transformers
+    hictk_variant
   EXPORT libhictk-targets
   COMPONENT Libraries
   FILE_SET

@@ -28,24 +28,24 @@ else()
   )
 endif()
 
-add_library(hic INTERFACE)
-add_library(hictk::hic ALIAS hic)
+add_library(hictk_hic INTERFACE)
+add_library(hictk::hic ALIAS hictk_hic)
 
 target_sources(
-  hic
+  hictk_hic
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  hic
+  hictk_hic
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
-  hic
+  hictk_hic
   INTERFACE
     hictk::balancing
     hictk::common
@@ -59,7 +59,7 @@ target_link_libraries(
 )
 
 target_link_system_libraries(
-  hic
+  hictk_hic
   INTERFACE
   bshoshany-thread-pool::bshoshany-thread-pool
   concurrentqueue::concurrentqueue

@@ -7,24 +7,24 @@ find_package(phmap REQUIRED)
 find_package(span-lite REQUIRED)
 find_package(zstd REQUIRED)
 
-add_library(balancing INTERFACE)
-add_library(hictk::balancing ALIAS balancing)
+add_library(hictk_balancing INTERFACE)
+add_library(hictk::balancing ALIAS hictk_balancing)
 
 target_sources(
-  balancing
+  hictk_balancing
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  balancing
+  hictk_balancing
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
-  balancing
+  hictk_balancing
   INTERFACE
     hictk::common
     hictk::filestream
@@ -32,7 +32,7 @@ target_link_libraries(
 )
 
 target_link_system_libraries(
-  balancing
+  hictk_balancing
   INTERFACE
   bshoshany-thread-pool::bshoshany-thread-pool
   nonstd::span-lite
@@ -40,4 +40,4 @@ target_link_system_libraries(
   "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )
 
-target_compile_definitions(balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
+target_compile_definitions(hictk_balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
