@@ -9,6 +9,7 @@
 #include <Eigen/SparseCore>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -30,14 +31,17 @@ class ToSparseMatrix {
   std::shared_ptr<const PixelSelector> _sel{};
   QuerySpan _span{QuerySpan::upper_triangle};
   bool _minimize_memory_usage{false};
+  std::optional<std::uint64_t> _diagonal_band_width{};
 
  public:
   using MatrixT = MatrixRowMajor;
   ToSparseMatrix() = delete;
   ToSparseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::upper_triangle,
-                 bool minimize_memory_usage = false);
+                 bool minimize_memory_usage = false,
+                 std::optional<std::uint64_t> diagonal_band_width = {});
   ToSparseMatrix(std::shared_ptr<const PixelSelector> selector, N n,
-                 QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false);
+                 QuerySpan span = QuerySpan::upper_triangle, bool minimize_memory_usage = false,
+                 std::optional<std::uint64_t> diagonal_band_width = {});
 
   ToSparseMatrix(const ToSparseMatrix& other) = delete;
   ToSparseMatrix(ToSparseMatrix&& other) noexcept = default;
@@ -70,17 +74,21 @@ class ToSparseMatrix {
   [[nodiscard]] auto fill_matrix_fast(const PixelSelector& sel, bool populate_upper_triangle,
                                       bool populate_lower_triangle) const -> MatrixT;
 
+  template <typename PixelIt_>
+  [[nodiscard]] auto fill_matrix_fast(PixelIt_ first, const PixelIt_& last,
+                                      bool selector_is_symmetric_upper,
+                                      bool populate_upper_triangle,
+                                      bool populate_lower_triangle) const -> MatrixT;
+
   [[nodiscard]] auto fill_matrix_low_mem(const PixelSelector& sel, bool populate_upper_triangle,
                                          bool populate_lower_triangle) const -> MatrixT;
 
-  template <typename Matrix>
-  [[nodiscard]] static auto fill_row(PixelIt first_pixel, PixelIt last_pixel,
-                                     MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
-                                     std::int64_t& reserved_size_ut, std::int64_t& reserved_size_lt,
-                                     std::vector<ThinPixel<N>>& buffer, bool symmetric_upper,
-                                     std::int64_t offset1, std::int64_t offset2,
-                                     bool populate_lower_triangle, bool populate_upper_triangle)
-      -> PixelIt;
+  template <typename Matrix, typename PixelIt_>
+  static void fill_row(PixelIt_& first_pixel, const PixelIt_& last_pixel, MatrixRowMajor& matrix_ut,
+                       Matrix& matrix_lt, std::int64_t& reserved_size_ut,
+                       std::int64_t& reserved_size_lt, std::vector<ThinPixel<N>>& buffer,
+                       bool symmetric_upper, std::int64_t offset1, std::int64_t offset2,
+                       bool populate_lower_triangle, bool populate_upper_triangle);
 
   [[nodiscard]] auto pre_allocate_matrix(const PixelSelector& sel, bool populate_upper_triangle,
                                          bool populate_lower_triangle) const -> MatrixT;

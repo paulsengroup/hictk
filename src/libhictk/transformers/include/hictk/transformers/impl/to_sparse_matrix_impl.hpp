@@ -17,20 +17,25 @@
 
 #include "hictk/pixel.hpp"
 #include "hictk/transformers/common.hpp"
+#include "hictk/transformers/diagonal_band.hpp"
 
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
-inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(PixelSelector sel, [[maybe_unused]] N n,
-                                                        QuerySpan span, bool minimize_memory_usage)
+inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(
+    PixelSelector sel, [[maybe_unused]] N n, QuerySpan span, bool minimize_memory_usage,
+    std::optional<std::uint64_t> diagonal_band_width)
     : ToSparseMatrix(std::make_shared<const PixelSelector>(std::move(sel)), n, span,
-                     minimize_memory_usage) {}
+                     minimize_memory_usage, diagonal_band_width) {}
 
 template <typename N, typename PixelSelector>
-inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(std::shared_ptr<const PixelSelector> sel,
-                                                        [[maybe_unused]] N n, QuerySpan span,
-                                                        bool minimize_memory_usage)
-    : _sel(std::move(sel)), _span(span), _minimize_memory_usage(minimize_memory_usage) {
+inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(
+    std::shared_ptr<const PixelSelector> sel, [[maybe_unused]] N n, QuerySpan span,
+    bool minimize_memory_usage, std::optional<std::uint64_t> diagonal_band_width)
+    : _sel(std::move(sel)),
+      _span(span),
+      _minimize_memory_usage(minimize_memory_usage),
+      _diagonal_band_width(std::move(diagonal_band_width)) {
   if (!_sel) {
     throw std::runtime_error("hictk::transformers::ToSparseMatrix(): sel cannot be null");
   }
@@ -175,11 +180,12 @@ inline void ToSparseMatrix<N, PixelSelector>::validate_dtype() const {
 }
 
 template <typename N, typename PixelSelector>
-inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelector& sel,
+template <typename PixelIt_>
+inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(PixelIt_ first, const PixelIt_& last,
+                                                               bool selector_is_symmetric_upper,
                                                                bool populate_upper_triangle,
                                                                bool populate_lower_triangle) const
     -> MatrixT {
-  const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(sel);
   MatrixRowMajor matrix_ut(num_rows(), num_cols());
   MatrixColMajor matrix_lt{};
 
@@ -200,22 +206,17 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelect
   std::int64_t reserved_size_ut{0};
   std::int64_t reserved_size_lt{0};
 
-  auto first_pixel = sel.template begin<N>();
-  auto last_pixel = sel.template end<N>();
-
   if (matrix_lt.size() == 0) {
-    while (first_pixel != last_pixel) {
-      first_pixel =
-          fill_row(std::move(first_pixel), last_pixel, matrix_ut, matrix_ut, reserved_size_ut,
-                   reserved_size_lt, row_buff, selector_is_symmetric_upper, row_offset(),
-                   col_offset(), populate_lower_triangle, populate_upper_triangle);
+    while (first != last) {
+      fill_row(first, last, matrix_ut, matrix_ut, reserved_size_ut, reserved_size_lt, row_buff,
+               selector_is_symmetric_upper, row_offset(), col_offset(), populate_lower_triangle,
+               populate_upper_triangle);
     }
   } else {
-    while (first_pixel != last_pixel) {
-      first_pixel =
-          fill_row(std::move(first_pixel), last_pixel, matrix_ut, matrix_lt, reserved_size_lt,
-                   reserved_size_lt, row_buff, selector_is_symmetric_upper, row_offset(),
-                   col_offset(), populate_lower_triangle, populate_upper_triangle);
+    while (first != last) {
+      fill_row(first, last, matrix_ut, matrix_lt, reserved_size_lt, reserved_size_lt, row_buff,
+               selector_is_symmetric_upper, row_offset(), col_offset(), populate_lower_triangle,
+               populate_upper_triangle);
     }
   }
 
@@ -238,6 +239,24 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelect
 
   return matrix_ut;
 }
+
+template <typename N, typename PixelSelector>
+inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_fast(const PixelSelector& sel,
+                                                               bool populate_upper_triangle,
+                                                               bool populate_lower_triangle) const
+    -> MatrixT {
+  const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(sel);
+  if (HICTK_UNLIKELY(_diagonal_band_width.has_value())) {
+    const DiagonalBand band_sel(sel.template begin<N>(), sel.template end<N>(),
+                                *_diagonal_band_width);
+    return fill_matrix_fast(band_sel.begin(), band_sel.end(), selector_is_symmetric_upper,
+                            populate_upper_triangle, populate_lower_triangle);
+  }
+
+  return fill_matrix_fast(sel.template begin<N>(), sel.template end<N>(),
+                          selector_is_symmetric_upper, populate_upper_triangle,
+                          populate_lower_triangle);
+}
 template <typename N, typename PixelSelector>
 inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_low_mem(
     const PixelSelector& sel, bool populate_upper_triangle, bool populate_lower_triangle) const
@@ -254,9 +273,10 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_matrix_low_mem(
   const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(sel);
   auto matrix = pre_allocate_matrix(sel, populate_upper_triangle, populate_lower_triangle);
 
-  internal::fill_matrix(sel.template begin<N>(), sel.template end<N>(), selector_is_symmetric_upper,
-                        matrix, matrix, matrix.rows(), matrix.cols(), row_offset(), col_offset(),
-                        populate_lower_triangle, populate_upper_triangle, matrix_setter);
+  internal::fill_matrix(sel.template begin<N>(), sel.template end<N>(), _diagonal_band_width,
+                        selector_is_symmetric_upper, matrix, matrix, matrix.rows(), matrix.cols(),
+                        row_offset(), col_offset(), populate_lower_triangle,
+                        populate_upper_triangle, matrix_setter);
 
   matrix.makeCompressed();
 
@@ -308,15 +328,15 @@ inline bool ToSparseMatrix<N, PixelSelector>::interactions_can_be_mirrored() con
 }
 
 template <typename N, typename PixelSelector>
-template <typename Matrix>
-inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
-    PixelIt first_pixel, PixelIt last_pixel, MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
+template <typename Matrix, typename PixelIt_>
+inline void ToSparseMatrix<N, PixelSelector>::fill_row(
+    PixelIt_& first_pixel, const PixelIt_& last_pixel, MatrixRowMajor& matrix_ut, Matrix& matrix_lt,
     std::int64_t& reserved_size_ut, std::int64_t& reserved_size_lt,
     std::vector<ThinPixel<N>>& buffer, bool symmetric_upper, std::int64_t offset1,
-    std::int64_t offset2, bool populate_lower_triangle, bool populate_upper_triangle) -> PixelIt {
+    std::int64_t offset2, bool populate_lower_triangle, bool populate_upper_triangle) {
   buffer.clear();
   if (first_pixel == last_pixel) {
-    return last_pixel;
+    return;
   }
 
   std::int64_t num_pixels_ut{};
@@ -368,10 +388,9 @@ inline auto ToSparseMatrix<N, PixelSelector>::fill_row(
     m.insert(i1, i2) = count;
   };
 
-  internal::fill_matrix(buffer.begin(), buffer.end(), symmetric_upper, matrix_ut, matrix_lt,
-                        matrix_ut.rows(), matrix_ut.cols(), offset1, offset2,
+  internal::fill_matrix(buffer.begin(), buffer.end(), std::nullopt, symmetric_upper, matrix_ut,
+                        matrix_lt, matrix_ut.rows(), matrix_ut.cols(), offset1, offset2,
                         populate_lower_triangle, populate_upper_triangle, matrix_setter);
-  return first_pixel;
 }
 
 template <typename N, typename PixelSelector>
@@ -389,10 +408,10 @@ inline auto ToSparseMatrix<N, PixelSelector>::pre_allocate_matrix(
   const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(sel);
 
   std::vector<std::int64_t> nnzs(static_cast<std::size_t>(num_rows()), 0);
-  internal::fill_matrix(sel.template begin<std::int_fast8_t>(),
-                        sel.template end<std::int_fast8_t>(), selector_is_symmetric_upper, nnzs,
-                        nnzs, num_rows(), num_cols(), row_offset(), col_offset(),
-                        populate_lower_triangle, populate_upper_triangle, setter);
+  internal::fill_matrix(
+      sel.template begin<std::int_fast8_t>(), sel.template end<std::int_fast8_t>(),
+      _diagonal_band_width, selector_is_symmetric_upper, nnzs, nnzs, num_rows(), num_cols(),
+      row_offset(), col_offset(), populate_lower_triangle, populate_upper_triangle, setter);
 
   MatrixT matrix(num_rows(), num_cols());
   matrix.reserve(nnzs);
