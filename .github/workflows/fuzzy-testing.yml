@@ -136,13 +136,13 @@ jobs:
       - name: Build hictk_fuzzer
         run: |
           cmake --build build -j $(nproc) -t hictk_fuzzer
-          cp build/test/fuzzer/src/hictk_fuzzer .
+          mv build/test/fuzzer/src/hictk_fuzzer .
           ./hictk_fuzzer --help
 
       - name: Upload hictk_fuzzer
         uses: actions/upload-artifact@v4
         with:
-          name: hictk-fuzzer
+          name: hictk_fuzzer
           path: hictk_fuzzer
           if-no-files-found: error
           retention-days: 1
@@ -215,14 +215,15 @@ jobs:
       - name: Clone hictk
         uses: actions/checkout@v4
 
-      - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
-
       - name: Download hictk_fuzzer
         uses: actions/download-artifact@v4
         with:
-          pattern: hictk-fuzzer
+          name: hictk_fuzzer
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+          chmod 500 hictk_fuzzer
 
       - name: Install test dependencies
         run: |
@@ -297,10 +298,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          mkdir profiles
-
-          export LLVM_PROFILE_FILE="$PWD/${{ steps.test-params.outputs.profile-prefix }}/hictk-fuzz-df.%p.profraw"
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-df.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -317,8 +316,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          export LLVM_PROFILE_FILE="$PWD/${{ steps.test-params.outputs.profile-prefix }}/hictk-fuzz-dense.%p.profraw"
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-dense.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -335,8 +334,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          export LLVM_PROFILE_FILE="$PWD/${{ steps.test-params.outputs.profile-prefix }}/hictk-fuzz-sparse.%p.profraw"
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-sparse.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -351,8 +350,8 @@ jobs:
         run: |
           _100_mbps=100000000
 
-          export LLVM_PROFILE_FILE="$PWD/${{ steps.test-params.outputs.profile-prefix }}/hictk-fuzz-diagonal-band-1d.%p.profraw"
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-1d.%p.profraw"
+          ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -369,8 +368,8 @@ jobs:
         run: |
           _1_gbp=1000000000
 
-          export LLVM_PROFILE_FILE="$PWD/${{ steps.test-params.outputs.profile-prefix }}/hictk-fuzz-diagonal-band-2d.%p.profraw"
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-2d.%p.profraw"
+          ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -382,23 +381,12 @@ jobs:
             *".${{ matrix.format }}" \
             *.cool
 
-      - name: Collect coverage data
-        run: |
-          prefix="$PWD/${{ steps.test-params.outputs.profile-prefix }}/"
-          utils/devel/collect_coverage_data.py   \
-            --output-dir coverage/               \
-            --prefix="$prefix"                   \
-            --format lcov                        \
-            --llvm-cov-bin llvm-cov-19           \
-            --llvm-profdata-bin llvm-profdata-19 \
-            build/test/fuzzer/src/hictk_fuzzer
-
       - name: Upload coverage profiles
         if: github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: fuzzy-testing-cov-${{ steps.test-params.outputs.profile-prefix }}
-          path: coverage/
+          path: profiles/
           if-no-files-found: error
           retention-days: 1
 
@@ -407,12 +395,52 @@ jobs:
     name: Upload Coverage
     needs: fuzzy-project
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      options: "--user=root"
+
     steps:
+      - name: Clone hictk
+        uses: actions/checkout@v4
+
+      - name: Download hictk_fuzzer
+        uses: actions/download-artifact@v4
+        with:
+          name: hictk_fuzzer
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+          chmod 500 hictk_fuzzer
+
       - name: Download coverage profiles
         uses: actions/download-artifact@v4
         with:
           pattern: fuzzy-testing-cov-*
           merge-multiple: true
+
+      - name: Setup dependencies
+        run: |
+          apt-get update
+          apt-get install -q -y --no-install-recommends \
+            curl \
+            gpg \
+            gpg-agent \
+            python3 \
+            sudo \
+            tar
+
+      - name: Collect coverage data
+        run: |
+          mkdir profiles
+          mv *.profraw profiles/
+          utils/devel/collect_coverage_data.py   \
+            --output-dir coverage/               \
+            --prefix="$PWD/profiles/"            \
+            --format lcov                        \
+            --llvm-cov-bin llvm-cov-19           \
+            --llvm-profdata-bin llvm-profdata-19 \
+            ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
@@ -420,6 +448,7 @@ jobs:
           flags: "tests | fuzzer"
           fail_ci_if_error: true
           handle_no_reports_found: true
+          directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
