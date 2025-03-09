@@ -35,7 +35,7 @@ inline ToSparseMatrix<N, PixelSelector>::ToSparseMatrix(
     : _sel(std::move(sel)),
       _span(span),
       _minimize_memory_usage(minimize_memory_usage),
-      _diagonal_band_width(std::move(diagonal_band_width)) {
+      _diagonal_band_width(diagonal_band_width) {
   if (!_sel) {
     throw std::runtime_error("hictk::transformers::ToSparseMatrix(): sel cannot be null");
   }
