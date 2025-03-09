@@ -196,17 +196,9 @@ class CoolerDump:
         if not self._clr:
             return None
 
-        bin_cols = {"chrom", "start", "end"}
-        data = {}
-        with self._clr.open() as h5:
-            for path in h5["bins"]:
-                if path not in bin_cols:
-                    data[path] = h5[f"bins/{path}"][:]
-
-        if len(data) == 0:
-            return None
-
-        return filter_weights(pd.DataFrame(data), self._clr.chromsizes.to_dict(), range1, range2)
+        return filter_weights(self._clr.bins()[:], self._clr.chromsizes.to_dict(), range1, range2).drop(
+            columns=["chrom", "start", "end"]
+        )
 
     def dump(
         self,

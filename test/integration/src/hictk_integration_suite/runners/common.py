@@ -57,10 +57,6 @@ def filter_chroms(chroms: Dict[str, int], range1: str | None, range2: str | None
 
 
 def filter_weights(df: pd.DataFrame, chroms: Dict[str, int], range1: str | None, range2: str | None) -> pd.DataFrame:
-    assert "chrom" not in df.columns
-    assert "start" not in df.columns
-    assert "end" not in df.columns
-
     df = normalize_df_dtypes(df)
 
     if range1 is None:
