@@ -78,15 +78,15 @@ inline auto Index::cbegin() const noexcept -> const_iterator { return begin(); }
 inline auto Index::cend() const noexcept -> const_iterator { return end(); }
 
 inline auto Index::at(std::string_view chrom_name) const -> const mapped_type & {
-  const auto chrom = chromosomes().at(chrom_name);
-  return _idx.at(chrom);
+  const auto chrom_id = chromosomes().get_id(chrom_name);
+  return at(chrom_id);
 }
 
 inline auto Index::at(std::uint32_t chrom_id) -> mapped_type & { return _idx.at(chrom_id); }
 
 inline auto Index::at(std::string_view chrom_name) -> mapped_type & {
   const auto chrom_id = chromosomes().get_id(chrom_name);
-  return _idx.at(chrom_id);
+  return at(chrom_id);
 }
 
 inline auto Index::at(std::uint32_t chrom_id) const -> const mapped_type & {
