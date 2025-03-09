@@ -352,6 +352,7 @@ jobs:
             build/test/fuzzer/src/hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
+        if: github.event_name != 'workflow_dispatch'
         uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
         with:
           flags: "tests | fuzzer"
