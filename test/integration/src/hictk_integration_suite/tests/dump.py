@@ -23,6 +23,14 @@ class HictkDump(HictkTestHarness):
     def __repr__(self) -> str:
         return "hictk-dump"
 
+    def _handle_expected_failure(self):
+        if len(self.stderr()) == 0:
+            self._failures["missing error message"] = ""
+        if len(self.stdout()) != 0 and self.stdout() != "No columns to parse from file":
+            self._failures["unexpected output on stdout"] = self.stdout(500).strip()
+        if self.returncode == 0:
+            self._failures["unexpected return code"] = f"expected non-zero, found {self.returncode}"
+
     def _validate(
         # noqa
         self,
@@ -36,6 +44,7 @@ class HictkDump(HictkTestHarness):
         cis_only: bool,
         trans_only: bool,
         join: bool,
+        excluded_norms: List[str] | None,
     ):
 
         if expect_failure:
@@ -59,6 +68,7 @@ class HictkDump(HictkTestHarness):
             cis_only=cis_only,
             trans_only=trans_only,
         )
+
         if isinstance(self._stdout, pd.DataFrame):
             found = normalize_df_dtypes(self._stdout)
             if table == "bins":
@@ -68,22 +78,23 @@ class HictkDump(HictkTestHarness):
             elif table == "pixels":
                 self._failures |= validators.compare_pixels(expected, found)
             elif table == "normalizations":
-                self._failures |= validators.compare_normalizations(expected, found)
+                self._failures |= validators.compare_normalizations(expected, found, excluded_norms)
             elif table == "resolutions":
                 self._failures |= validators.compare_resolutions(expected, found)
             elif table == "cells":
                 self._failures |= validators.compare_cells(expected, found)
             elif table == "weights":
-                self._failures |= validators.compare_weights(expected, found)
+                self._failures |= validators.compare_weights(expected, found, excluded_norms)
             else:
                 raise NotImplementedError
-        else:
+        elif table in {"bins", "chrom", "pixels", "resolutions"}:
             self._failures["failed to read stdout into a dataframe"] = self.stdout(500).strip()
 
     def run(  # noqa
         self,
         args: List[str],
         reference_uri: str,
+        excluded_norms: List[str] | None = None,
         timeout: int = 3600,
         env_variables: Dict[str, str] | None = None,
         max_attempts: int = 1,
@@ -168,6 +179,7 @@ class HictkDump(HictkTestHarness):
                 join=join,
                 cis_only=cis_only,
                 trans_only=trans_only,
+                excluded_norms=excluded_norms,
             )
         except:  # noqa
             logging.error(f"failed to validate output produced by {args}")
