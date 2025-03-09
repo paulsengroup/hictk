@@ -79,6 +79,9 @@ class Index {
   [[nodiscard]] auto at(std::string_view chrom_name) const -> const mapped_type&;
   [[nodiscard]] auto at(std::uint32_t chrom_id) const -> const mapped_type&;
 
+  [[nodiscard]] bool contains(std::string_view chrom_name) const noexcept;
+  [[nodiscard]] bool contains(std::uint32_t chrom_id) const noexcept;
+
   [[nodiscard]] std::uint64_t get_offset_by_bin_id(std::uint64_t bin_id) const;
   [[nodiscard]] std::uint64_t get_offset_by_pos(const Chromosome& chrom, std::uint32_t pos) const;
   [[nodiscard]] std::uint64_t get_offset_by_pos(std::uint32_t chrom_id, std::uint32_t pos) const;

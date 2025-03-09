@@ -93,6 +93,15 @@ inline auto Index::at(std::uint32_t chrom_id) const -> const mapped_type & {
   return _idx.at(chrom_id);
 }
 
+inline bool Index::contains(std::uint32_t chrom_id) const noexcept {
+  return _idx.contains(chrom_id);
+}
+
+inline bool Index::contains(std::string_view chrom_name) const noexcept {
+  const auto chrom_id = chromosomes().get_id(chrom_name);
+  return contains(chrom_id);
+}
+
 inline std::uint64_t Index::get_offset_by_bin_id(std::uint64_t bin_id) const {
   if (bin_id == size()) {
     return _nnz;

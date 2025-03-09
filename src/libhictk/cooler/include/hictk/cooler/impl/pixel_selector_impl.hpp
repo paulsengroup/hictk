@@ -448,7 +448,30 @@ inline void PixelSelector::iterator<N>::jump(std::uint64_t bin1_id, std::uint64_
 
 template <typename N>
 inline bool PixelSelector::iterator<N>::is_indexed() const noexcept {
-  return !!_index;
+  if (!_index) {
+    return false;
+  }
+
+  if (!_coord1 && !_coord2) {
+    for (const auto &chrom : _index->chromosomes()) {
+      if (!_index->contains(chrom.id())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool loaded = true;
+  if (_coord1) {
+    loaded &= _index->contains(_coord1.bin1.chrom().id());
+  }
+
+  if (_coord2) {
+    loaded &= _index->contains(_coord2.bin1.chrom().id());
+  }
+
+  return loaded;
 }
 
 template <typename N>
