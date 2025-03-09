@@ -10,6 +10,7 @@
 #include <cassert>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -582,9 +583,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
     constexpr std::uint64_t diagonal_band_width{10};
 
-    auto first_fp = sel.begin<std::int32_t>();
-    auto last_fp = sel.end<std::int32_t>();
-    const auto table = ToDataFrame(first_fp, last_fp, format, nullptr, span, false, true, 256'000,
+    const auto table = ToDataFrame(first, last, format, nullptr, span, false, true, 256'000,
                                    diagonal_band_width)();
 
     CHECK(table->num_columns() == 3);
@@ -610,10 +609,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
     constexpr std::uint64_t diagonal_band_width{10};
 
-    auto first_fp = sel.begin<std::int32_t>();
-    auto last_fp = sel.end<std::int32_t>();
-    const auto table = ToDataFrame(first_fp, last_fp, format, clr.bins_ptr(), span, false, true,
-                                   256'000, diagonal_band_width)();
+    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span, false, true, 256'000,
+                                   diagonal_band_width)();
 
     CHECK(table->num_columns() == 7);
     CHECK(table->num_rows() == 856);
@@ -626,6 +623,22 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("empty range") {
     const auto table = ToDataFrame(last, last)();
     CHECK(table->num_rows() == 0);
+  }
+
+  SECTION("invalid args") {
+    const auto gw_sel = clr.fetch();
+
+    constexpr auto format = DataFrameFormat::COO;
+    constexpr auto span = QuerySpan::upper_triangle;
+    constexpr std::uint64_t diagonal_band_width{10};
+
+    const auto first_gw = gw_sel.begin<std::int32_t>();
+    const auto last_gw = gw_sel.end<std::int32_t>();
+
+    CHECK_THROWS_WITH(
+        ToDataFrame(first_gw, last_gw, format, nullptr, span, false, true, 256'000,
+                    diagonal_band_width)(),
+        Catch::Matchers::ContainsSubstring("ToDataFrame<PixelIt>(): file index not loaded!"));
   }
 }
 
