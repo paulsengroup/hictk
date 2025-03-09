@@ -453,13 +453,8 @@ inline bool PixelSelector::iterator<N>::is_indexed() const noexcept {
   }
 
   if (!_coord1 && !_coord2) {
-    for (const auto &chrom : _index->chromosomes()) {
-      if (!_index->contains(chrom.id())) {
-        return false;
-      }
-    }
-
-    return true;
+    return std::all_of(_index->chromosomes().begin(), _index->chromosomes().end(),
+                       [&](const Chromosome &chrom) { return _index->contains(chrom.id()); });
   }
 
   bool loaded = true;
