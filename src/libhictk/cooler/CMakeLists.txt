@@ -9,28 +9,24 @@ find_package(HighFive REQUIRED)
 find_package(phmap REQUIRED)
 find_package(spdlog REQUIRED)
 
-if(HICTK_WITH_EIGEN)
-  find_package(Eigen3 REQUIRED QUIET)
-endif()
-
-add_library(hictk_cooler INTERFACE)
-add_library(hictk::cooler ALIAS hictk_cooler)
+add_library(hictk_internal_cooler INTERFACE)
+add_library(hictk::cooler ALIAS hictk_internal_cooler)
 target_sources(
-  hictk_cooler
+  hictk_internal_cooler
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  hictk_cooler
+  hictk_internal_cooler
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 
 target_link_libraries(
-  hictk_cooler
+  hictk_internal_cooler
   INTERFACE
     hictk::balancing
     hictk::bin_table
@@ -45,9 +41,8 @@ target_link_libraries(
 )
 
 target_link_system_libraries(
-  hictk_cooler
+  hictk_internal_cooler
   INTERFACE
-  "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   FastFloat::fast_float
   fmt::fmt-header-only
   HDF5::HDF5

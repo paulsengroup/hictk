@@ -10,10 +10,6 @@ find_package(phmap REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(zstd REQUIRED)
 
-if(HICTK_WITH_EIGEN)
-  find_package(Eigen3 QUIET REQUIRED)
-endif()
-
 set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
 
 if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
@@ -28,24 +24,24 @@ else()
   )
 endif()
 
-add_library(hictk_hic INTERFACE)
-add_library(hictk::hic ALIAS hictk_hic)
+add_library(hictk_internal_hic INTERFACE)
+add_library(hictk::hic ALIAS hictk_internal_hic)
 
 target_sources(
-  hictk_hic
+  hictk_internal_hic
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  hictk_hic
+  hictk_internal_hic
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
-  hictk_hic
+  hictk_internal_hic
   INTERFACE
     hictk::balancing
     hictk::common
@@ -59,11 +55,10 @@ target_link_libraries(
 )
 
 target_link_system_libraries(
-  hictk_hic
+  hictk_internal_hic
   INTERFACE
   bshoshany-thread-pool::bshoshany-thread-pool
   concurrentqueue::concurrentqueue
-  "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>"
   fmt::fmt-header-only
   "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
   phmap

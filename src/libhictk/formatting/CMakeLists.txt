@@ -4,25 +4,25 @@
 
 find_package(FMT REQUIRED)
 
-add_library(hictk_formatting INTERFACE)
-add_library(hictk::format ALIAS hictk_formatting)
+add_library(hictk_internal_formatting INTERFACE)
+add_library(hictk::format ALIAS hictk_internal_formatting)
 
 target_sources(
-  hictk_formatting
+  hictk_internal_formatting
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_include_directories(
-  hictk_formatting
+  hictk_internal_formatting
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 
 target_link_libraries(
-  hictk_formatting
+  hictk_internal_formatting
   INTERFACE
     hictk::bin_table
     hictk::chromosome
@@ -31,4 +31,4 @@ target_link_libraries(
     hictk::pixel
 )
 
-target_link_system_libraries(hictk_formatting INTERFACE fmt::fmt-header-only)
+target_link_system_libraries(hictk_internal_formatting INTERFACE fmt::fmt-header-only)
