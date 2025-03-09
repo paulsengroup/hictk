@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include "hictk/transformers.hpp"
 #include "hictk/version.hpp"
 
 int main() { std::cout << hictk::config::version::str_long() << "\n"; }

@@ -4,7 +4,23 @@
 
 set(
   targets
-  balancing;bin_table;binary_buffer;chromosome;common;cooler;expected_values_aggregator;file;filestream;formatting;genomic_interval;hic;numeric;pixel;reference;transformers;variant
+  balancing
+  bin_table
+  binary_buffer
+  chromosome
+  common
+  cooler
+  expected_values_aggregator
+  file
+  filestream
+  formatting
+  genomic_interval
+  hic
+  numeric
+  pixel
+  reference
+  transformers
+  variant
 )
 
 include(GNUInstallDirs)
@@ -20,24 +36,44 @@ endforeach()
 install(
   TARGETS
     libhictk
-    balancing
-    bin_table
-    binary_buffer
-    chromosome
-    common
-    cooler
-    expected_values_aggregator
-    file
-    filestream
-    formatting
-    genomic_interval
-    hic
-    numeric
-    pixel
-    reference
-    transformers
-    variant
   EXPORT libhictk-targets
+  COMPONENT Libraries
+  FILE_SET
+  HEADERS
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  RUNTIME
+    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  LIBRARY
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  ARCHIVE
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  PUBLIC_HEADER
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  PRIVATE_HEADER
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+install(
+  TARGETS
+    hictk_internal_balancing
+    hictk_internal_bin_table
+    hictk_internal_binary_buffer
+    hictk_internal_chromosome
+    hictk_internal_common
+    hictk_internal_cooler
+    hictk_internal_expected_values_aggregator
+    hictk_internal_file
+    hictk_internal_filestream
+    hictk_internal_formatting
+    hictk_internal_genomic_interval
+    hictk_internal_hic
+    hictk_internal_numeric
+    hictk_internal_pixel
+    hictk_internal_reference
+    hictk_internal_transformers
+    hictk_internal_variant
+  EXPORT libhictk-internal-targets
   COMPONENT Libraries
   FILE_SET
   HEADERS
@@ -60,6 +96,13 @@ install(
   COMPONENT Libraries
   FILE hictkTargets.cmake
   NAMESPACE hictk::
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/"
+)
+
+install(
+  EXPORT libhictk-internal-targets
+  COMPONENT Libraries
+  FILE hictkInternalTargets.cmake
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/hictk/"
 )
 

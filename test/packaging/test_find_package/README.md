@@ -16,7 +16,7 @@ cmake --build hictk_build/
 cmake --install hictk_build/
 
 # Build test project
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_PREFIX_PATH="$PWD/build;$PWD/hictk_install/lib/cmake/hictk/"
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B build -DCMAKE_PREFIX_PATH="$PWD/build;$PWD/hictk_install/lib/cmake/hictk/;$PWD/hictk_install/lib64/cmake/hictk/"
 cmake --build build/
 
 build/hictk_test_find_package
