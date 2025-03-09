@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -128,7 +129,7 @@ struct DumpConfig {
   std::string normalization{"NONE"};
   hic::MatrixType matrix_type{hic::MatrixType::observed};
   hic::MatrixUnit matrix_unit{hic::MatrixUnit::BP};
-  std::uint32_t resolution{};
+  std::optional<std::uint32_t> resolution{};
   std::int16_t verbosity{2};
   bool force{false};
 };

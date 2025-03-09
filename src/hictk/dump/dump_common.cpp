@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -133,7 +134,7 @@ void dump_cells(std::string_view uri, std::string_view format) {
 }
 
 void dump_chroms(std::string_view uri, std::string_view range1, std::string_view range2,
-                 std::string_view format, std::uint32_t resolution) {
+                 std::string_view format, std::optional<std::uint32_t> resolution) {
   Reference ref{};
 
   if (format == "mcool") {
@@ -171,9 +172,8 @@ void dump_chroms(std::string_view uri, std::string_view range1, std::string_view
 
 static phmap::btree_set<std::string> get_normalizations(std::string_view uri,
                                                         std::string_view format,
-                                                        std::uint32_t resolution) {
+                                                        std::optional<std::uint32_t> resolution) {
   assert(format != "mcool");
-  assert(format != "hic" || resolution != 0);
   if (format == "scool") {
     const auto cell_ids = cooler::SingleCellFile{uri}.cells();
     if (cell_ids.empty()) {
@@ -181,19 +181,10 @@ static phmap::btree_set<std::string> get_normalizations(std::string_view uri,
     }
 
     const auto scool_uri = fmt::format(FMT_STRING("{}::/cells/{}"), uri, *cell_ids.begin());
-    return get_normalizations(scool_uri, "cool", 0);
+    return get_normalizations(scool_uri, "cool", std::nullopt);
   }
 
   phmap::btree_set<std::string> norms{};
-  if (uri == "hic" && resolution == 0) {
-    const hic::File hf{std::string{uri}, resolution};
-
-    for (const auto& norm : hf.avail_normalizations()) {
-      norms.emplace(std::string{norm.to_string()});
-    }
-    return norms;
-  }
-
   const auto norms_ = File{std::string{uri}, resolution}.avail_normalizations();
   std::transform(norms_.begin(), norms_.end(), std::inserter(norms, norms.begin()),
                  [](const auto& n) { return std::string{n.to_string()}; });
@@ -201,7 +192,8 @@ static phmap::btree_set<std::string> get_normalizations(std::string_view uri,
   return norms;
 }
 
-void dump_normalizations(std::string_view uri, std::string_view format, std::uint32_t resolution) {
+void dump_normalizations(std::string_view uri, std::string_view format,
+                         std::optional<std::uint32_t> resolution) {
   phmap::btree_set<std::string> norms{};
   std::vector<std::uint32_t> resolutions{};
   if (format == "mcool") {
@@ -209,7 +201,7 @@ void dump_normalizations(std::string_view uri, std::string_view format, std::uin
     if (resolutions.empty()) {
       return;
     }
-  } else if (format == "hic" && resolution == 0) {
+  } else if (format == "hic" && !resolution.has_value()) {
     resolutions = hic::utils::list_resolutions(std::string{uri});
     if (resolutions.empty()) {
       return;
@@ -229,17 +221,18 @@ void dump_normalizations(std::string_view uri, std::string_view format, std::uin
   }
 }
 
-void dump_resolutions(std::string_view uri, std::string_view format, std::uint32_t resolution) {
+void dump_resolutions(std::string_view uri, std::string_view format,
+                      std::optional<std::uint32_t> resolution) {
   std::vector<std::uint32_t> resolutions{};
 
   if (format == "hic") {
     resolutions = hic::utils::list_resolutions(uri);
-    if (resolution != 0) {
+    if (resolution.has_value()) {
       const auto res_found =
-          std::find(resolutions.begin(), resolutions.end(), resolution) != resolutions.end();
+          std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
       resolutions.clear();
       if (res_found) {
-        resolutions.push_back(resolution);
+        resolutions.push_back(*resolution);
       }
     }
   } else if (format == "mcool") {
