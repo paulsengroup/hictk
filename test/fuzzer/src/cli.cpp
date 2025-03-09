@@ -181,24 +181,25 @@ void Cli::make_cli() {
   make_launch_worker_subcommand();
 }
 
-static void validate_resolution(const std::filesystem::path& uri, std::uint32_t expected_resolution,
+static void validate_resolution(const std::filesystem::path& uri,
+                                std::optional<std::uint32_t> expected_resolution,
                                 std::vector<std::string>& errors) {
-  if (expected_resolution != 0) {
+  if (expected_resolution.has_value()) {
     if (hictk::cooler::utils::is_cooler(uri.string())) {
       const auto found_resolution = cooler::File(uri.string()).resolution();
-      if (found_resolution != expected_resolution) {
+      if (found_resolution != *expected_resolution) {
         errors.emplace_back(fmt::format(FMT_STRING("expected resolution {}, found {} at URI {}"),
-                                        expected_resolution, found_resolution, uri));
+                                        *expected_resolution, found_resolution, uri));
       }
       return;
     }
 
     const auto resolutions = MultiResFile(uri).resolutions();
-    if (std::find(resolutions.begin(), resolutions.end(), expected_resolution) ==
+    if (std::find(resolutions.begin(), resolutions.end(), *expected_resolution) ==
         resolutions.end()) {
       errors.emplace_back(
           fmt::format(FMT_STRING("file at URI {} does not contain interactions for resolution {}"),
-                      uri, expected_resolution));
+                      uri, *expected_resolution));
     }
     return;
   }
@@ -211,19 +212,21 @@ static void validate_resolution(const std::filesystem::path& uri, std::uint32_t 
   }
 }
 
-static void validate_normalization(const std::filesystem::path& uri, std::uint32_t resolution,
+static void validate_normalization(const std::filesystem::path& uri,
+                                   std::optional<std::uint32_t> resolution,
                                    std::string_view normalization,
                                    std::vector<std::string>& errors) {
   if (normalization == "NONE") {
     return;
   }
 
-  const auto avail_normalizations = File(uri.string(), resolution).avail_normalizations();
+  const File f(uri.string(), resolution);
+  const auto avail_normalizations = f.avail_normalizations();
   if (std::find(avail_normalizations.begin(), avail_normalizations.end(), normalization) ==
       avail_normalizations.end()) {
     errors.emplace_back(fmt::format(
         FMT_STRING("file {} does not contain \"{}\" balancing weights at resolution {}"), uri,
-        normalization, resolution));
+        normalization, f.resolution()));
   }
 }
 

@@ -484,16 +484,16 @@ int launch_worker_subcommand(const Config& c) {
     // NOLINTEND(bugprone-unchecked-optional-access)
 
     const hictk::File tgt(c.test_uri, c.resolution);
-    cooler::Cooler ref(
-        hictk::cooler::utils::is_multires_file(c.reference_uri.string())
-            ? fmt::format(FMT_STRING("{}::/resolutions/{}"), c.reference_uri.string(), c.resolution)
-            : c.reference_uri.string());
+    cooler::Cooler ref(hictk::cooler::utils::is_multires_file(c.reference_uri.string())
+                           ? fmt::format(FMT_STRING("{}::/resolutions/{}"),
+                                         c.reference_uri.string(), c.resolution.value_or(0))
+                           : c.reference_uri.string());
 
-    if (c.resolution != 0 && ref.resolution() != c.resolution) {
+    if (c.resolution.has_value() && ref.resolution() != c.resolution) {
       throw std::runtime_error(fmt::format(
           FMT_STRING(
               "Cooler at URI {} does not have the expected resolution: expected {}, found {}."),
-          ref.uri(), c.resolution, ref.resolution()));
+          ref.uri(), *c.resolution, ref.resolution()));
     }
 
     const auto chroms = tgt.chromosomes().remove_ALL();
