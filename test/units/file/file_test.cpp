@@ -7,6 +7,8 @@
 #include <fmt/format.h>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <iterator>
@@ -38,8 +40,21 @@ TEST_CASE("File", "[file][short]") {
     CHECK(File(path_cooler, resolution).path() == path_cooler);
     CHECK(File(uri_cooler).uri() == uri_cooler);
 
-    CHECK_THROWS(File(path_cooler, resolution, hic::MatrixType::expected));
-    CHECK_THROWS(File(path_cooler, resolution, hic::MatrixType::observed, hic::MatrixUnit::FRAG));
+    // Invalid params for .mcool files
+    CHECK_THROWS_WITH(File(path_cooler),
+                      Catch::Matchers::ContainsSubstring("resolution is required"));
+    CHECK_THROWS_WITH(File(path_cooler, resolution, hic::MatrixType::expected),
+                      Catch::Matchers::ContainsSubstring("should always be \"observed\""));
+    CHECK_THROWS_WITH(
+        File(path_cooler, resolution, hic::MatrixType::observed, hic::MatrixUnit::FRAG),
+        Catch::Matchers::ContainsSubstring("should always be \"BP\""));
+
+    // Invalid params for .hic files
+    CHECK_THROWS_WITH(File(path_hic), Catch::Matchers::ContainsSubstring("resolution is required"));
+
+    // Mismatched resolution
+    CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
+                      Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
   }
 
   SECTION("accessors") {

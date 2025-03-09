@@ -245,14 +245,14 @@ inline bool PixelSelector::iterator<N>::operator_neq(const IteratorVar& itv1,
 
 inline File::File(cooler::File clr) : _fp(std::move(clr)) {}
 inline File::File(hic::File hf) : _fp(std::move(hf)) {}
-inline File::File(std::string uri, std::uint32_t resolution, hic::MatrixType type,
+inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic::MatrixType type,
                   hic::MatrixUnit unit) {
   const auto [path, grp] = cooler::parse_cooler_uri(uri);
   if (hic::utils::is_hic_file(path)) {
-    if (resolution == 0) {
-      throw std::runtime_error("resolution cannot be 0 when opening .hic files.");
+    if (!resolution_.has_value()) {
+      throw std::runtime_error("resolution is required when opening .hic files.");
     }
-    *this = File(hic::File(path, resolution, type, unit));
+    *this = File(hic::File(path, *resolution_, type, unit));
     return;
   }
 
@@ -267,10 +267,20 @@ inline File::File(std::string uri, std::uint32_t resolution, hic::MatrixType typ
 
   if (cooler::utils::is_cooler(uri)) {
     *this = File(cooler::File(uri));
+    if (resolution_.has_value() && *resolution_ != resolution()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("found an unexpected resolution while opening file at \"{}\": "
+                                 "expected {}, found {}."),
+                      uri, *resolution_, resolution()));
+    }
     return;
   }
 
-  *this = File(cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, resolution)));
+  if (!resolution_.has_value()) {
+    throw std::runtime_error("resolution is required when opening .mcool files.");
+  }
+
+  *this = File(cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, *resolution_)));
 }
 
 inline std::string File::uri() const {

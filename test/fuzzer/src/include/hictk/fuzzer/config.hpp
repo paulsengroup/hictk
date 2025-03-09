@@ -19,7 +19,7 @@ struct Config {
   std::filesystem::path test_uri{};
   std::filesystem::path reference_uri{};
 
-  std::uint32_t resolution{};
+  std::optional<std::uint32_t> resolution{};
   double _1d_to_2d_query_ratio{0.33};
   double duration{60.0};
   double query_relative_length_avg{0.03};

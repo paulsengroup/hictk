@@ -51,9 +51,9 @@ namespace hictk::fuzzer {
                                 "--verbosity",
                                 fmt::to_string(c.verbosity)};
 
-  if (c.resolution != 0) {
+  if (c.resolution.has_value()) {
     args.emplace_back("--resolution");
-    args.emplace_back(fmt::to_string(c.resolution));
+    args.emplace_back(fmt::to_string(*c.resolution));
   }
 
   if (c.diagonal_band_width) {

@@ -237,8 +237,13 @@ jobs:
 
       - name: Run test (df)
         run: |
+          args=()
+          if [[ '${{ matrix.bin-type }}' == fixed ]]; then
+            args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
+          fi
+
           build/test/fuzzer/src/hictk_fuzzer fuzz \
-            --resolution ${{ steps.test-params.outputs.resolution }} \
+            "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
             --seed ${{ steps.test-params.outputs.seed }} \
@@ -249,8 +254,13 @@ jobs:
 
       - name: Run test (dense)
         run: |
+          args=()
+          if [[ '${{ matrix.bin-type }}' == fixed ]]; then
+            args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
+          fi
+
           build/test/fuzzer/src/hictk_fuzzer fuzz \
-            --resolution ${{ steps.test-params.outputs.resolution }} \
+            "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
             --seed ${{ steps.test-params.outputs.seed }} \
@@ -261,8 +271,13 @@ jobs:
 
       - name: Run test (sparse)
         run: |
+          args=()
+          if [[ '${{ matrix.bin-type }}' == fixed ]]; then
+            args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
+          fi
+
           build/test/fuzzer/src/hictk_fuzzer fuzz \
-            --resolution ${{ steps.test-params.outputs.resolution }} \
+            "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
             --seed ${{ steps.test-params.outputs.seed }} \
