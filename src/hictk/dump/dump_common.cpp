@@ -221,20 +221,29 @@ void dump_normalizations(std::string_view uri, std::string_view format,
   }
 }
 
+static void filter_resolutions(std::vector<std::uint32_t>& resolutions,
+                               std::optional<std::uint32_t> resolution) {
+  if (resolution.has_value()) {
+    const auto res_found =
+        std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
+    resolutions.clear();
+    if (res_found) {
+      resolutions.push_back(*resolution);
+    }
+  }
+
+  if (!resolutions.empty() && resolutions.front() == 0) {
+    resolutions.erase(resolutions.begin());
+    fmt::print(FMT_STRING("variable\n"));
+  }
+}
+
 void dump_resolutions(std::string_view uri, std::string_view format,
                       std::optional<std::uint32_t> resolution) {
   std::vector<std::uint32_t> resolutions{};
 
   if (format == "hic") {
     resolutions = hic::utils::list_resolutions(uri);
-    if (resolution.has_value()) {
-      const auto res_found =
-          std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
-      resolutions.clear();
-      if (res_found) {
-        resolutions.push_back(*resolution);
-      }
-    }
   } else if (format == "mcool") {
     resolutions = cooler::MultiResFile{uri}.resolutions();
   } else if (format == "scool") {
@@ -243,6 +252,8 @@ void dump_resolutions(std::string_view uri, std::string_view format,
     assert(format == "cool");
     resolutions.push_back(cooler::File{uri}.resolution());
   }
+
+  filter_resolutions(resolutions, resolution);
 
   if (!resolutions.empty()) {
     fmt::print(FMT_STRING("{}\n"), fmt::join(resolutions, "\n"));
