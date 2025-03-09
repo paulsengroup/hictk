@@ -231,7 +231,7 @@ jobs:
           # Generate a random 64 bit uint
           seed="$(od -An -vtu8 -N8 < /dev/random)"
 
-          profile_prefix='${{ matrix.dataset }}-${{ matrix.cool }}-${{ matrix.normalization}}-${{ matrix.bin-type }}'
+          profile_prefix='${{ matrix.dataset }}-${{ matrix.format }}-${{ matrix.normalization}}-${{ matrix.bin-type }}'
 
           2>&1 echo "Duration: $duration"
           2>&1 echo "Resolution: $resolution"
@@ -383,7 +383,6 @@ jobs:
           flags: "tests | fuzzer"
           fail_ci_if_error: true
           handle_no_reports_found: true
-          directory: coverage
           os: linux
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
