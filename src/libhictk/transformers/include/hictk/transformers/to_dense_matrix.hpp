@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <type_traits>
 
@@ -29,13 +30,16 @@ class ToDenseMatrix {
 
   std::shared_ptr<const PixelSelector> _sel{};
   QuerySpan _span{QuerySpan::full};
+  std::optional<std::uint64_t> _diagonal_band_width{};
 
  public:
   using MatrixT = Eigen::Matrix<N, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   ToDenseMatrix() = delete;
-  ToDenseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::full);
+  ToDenseMatrix(PixelSelector selector, N n, QuerySpan span = QuerySpan::full,
+                std::optional<std::uint64_t> diagonal_band_width = {});
   ToDenseMatrix(std::shared_ptr<const PixelSelector> selector, N n,
-                QuerySpan span = QuerySpan::full);
+                QuerySpan span = QuerySpan::full,
+                std::optional<std::uint64_t> diagonal_band_width = {});
 
   ToDenseMatrix(const ToDenseMatrix& other) = delete;
   ToDenseMatrix(ToDenseMatrix&& other) noexcept = default;

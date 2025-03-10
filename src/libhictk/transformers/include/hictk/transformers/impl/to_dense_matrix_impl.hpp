@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <variant>
 
@@ -18,14 +19,17 @@
 namespace hictk::transformers {
 
 template <typename N, typename PixelSelector>
-inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(PixelSelector sel, [[maybe_unused]] N n,
-                                                      QuerySpan span)
-    : ToDenseMatrix(std::make_shared<const PixelSelector>(std::move(sel)), n, span) {}
+inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(
+    PixelSelector sel, [[maybe_unused]] N n, QuerySpan span,
+    std::optional<std::uint64_t> diagonal_band_width)
+    : ToDenseMatrix(std::make_shared<const PixelSelector>(std::move(sel)), n, span,
+                    diagonal_band_width) {}
 
 template <typename N, typename PixelSelector>
-inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(std::shared_ptr<const PixelSelector> sel,
-                                                      [[maybe_unused]] N n, QuerySpan span)
-    : _sel(std::move(sel)), _span(span) {
+inline ToDenseMatrix<N, PixelSelector>::ToDenseMatrix(
+    std::shared_ptr<const PixelSelector> sel, [[maybe_unused]] N n, QuerySpan span,
+    std::optional<std::uint64_t> diagonal_band_width)
+    : _sel(std::move(sel)), _span(span), _diagonal_band_width(diagonal_band_width) {
   if (!_sel) {
     throw std::runtime_error("hictk::transformers::ToDenseMatrix(): sel cannot be null");
   }
@@ -69,14 +73,15 @@ inline auto ToDenseMatrix<N, PixelSelector>::operator()() -> MatrixT {
 
       const auto new_sel = _sel->fetch(coord3, coord4);
       internal::fill_matrix(new_sel.template begin<N>(), new_sel.template end<N>(),
-                            internal::selector_is_symmetric_upper(new_sel), matrix, matrix,
-                            matrix.rows(), matrix.cols(), row_offset(), col_offset(),
-                            populate_lower_triangle, populate_upper_triangle, matrix_setter);
+                            _diagonal_band_width, internal::selector_is_symmetric_upper(new_sel),
+                            matrix, matrix, matrix.rows(), matrix.cols(), row_offset(),
+                            col_offset(), populate_lower_triangle, populate_upper_triangle,
+                            matrix_setter);
       return matrix;
     }
   }
 
-  internal::fill_matrix(_sel->template begin<N>(), _sel->template end<N>(),
+  internal::fill_matrix(_sel->template begin<N>(), _sel->template end<N>(), _diagonal_band_width,
                         internal::selector_is_symmetric_upper(*_sel), matrix, matrix, matrix.rows(),
                         matrix.cols(), row_offset(), col_offset(), populate_lower_triangle,
                         populate_upper_triangle, matrix_setter);

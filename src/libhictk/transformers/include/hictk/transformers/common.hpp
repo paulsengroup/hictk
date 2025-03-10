@@ -12,6 +12,7 @@
 
 #include "hictk/pixel.hpp"
 #include "hictk/suppress_warnings.hpp"
+#include "hictk/transformers/diagonal_band.hpp"
 
 namespace hictk::transformers {
 enum class QuerySpan : std::uint_fast8_t { lower_triangle, upper_triangle, full };
@@ -117,12 +118,28 @@ inline void fill_matrix_symmetric_upper(PixelIt first_pixel, PixelIt last_pixel,
 }
 
 template <typename PixelIt, typename MatrixT1, typename MatrixT2, typename SetterOp>
-inline void fill_matrix(PixelIt first_pixel, PixelIt last_pixel, bool symmetric_upper,
+inline void fill_matrix(PixelIt first_pixel, PixelIt last_pixel,
+                        std::optional<std::uint64_t> diagonal_band_width, bool symmetric_upper,
                         MatrixT1& matrix_ut, MatrixT2& matrix_lt, std::int64_t num_rows,
                         std::int64_t num_cols, std::int64_t offset1, std::int64_t offset2,
                         bool populate_lower_triangle, bool populate_upper_triangle,
                         SetterOp matrix_setter) {
   assert(populate_lower_triangle || populate_upper_triangle);
+
+  if (HICTK_UNLIKELY(diagonal_band_width.has_value())) {
+    // We cannot recursively call fill_matrix because that leads to an infinite chain of template
+    // instantiations
+    const DiagonalBand sel{std::move(first_pixel), std::move(last_pixel), *diagonal_band_width};
+    if (HICTK_UNLIKELY(!symmetric_upper)) {
+      fill_matrix_square(sel.begin(), sel.end(), matrix_ut, matrix_lt, num_rows, num_cols, offset1,
+                         offset2, populate_lower_triangle, populate_upper_triangle, matrix_setter);
+      return;
+    }
+    fill_matrix_symmetric_upper(sel.begin(), sel.end(), matrix_ut, matrix_lt, num_rows, num_cols,
+                                offset1, offset2, populate_lower_triangle, populate_upper_triangle,
+                                matrix_setter);
+    return;
+  }
 
   if (HICTK_UNLIKELY(!symmetric_upper)) {
     fill_matrix_square(std::move(first_pixel), std::move(last_pixel), matrix_ut, matrix_lt,

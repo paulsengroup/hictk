@@ -200,6 +200,17 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
     CHECK(matrix.isLowerTriangular());
   }
 
+  SECTION("gw w/ diagonal band") {
+    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    constexpr std::uint64_t diagonal_band_width{10};
+    const cooler::File clr(path.string());
+    const auto matrix = ToDenseMatrix(clr.fetch(balancing::Method::NONE(), true), std::uint32_t{},
+                                      QuerySpan::full, diagonal_band_width)();
+    CHECK(matrix.rows() == 1249);
+    CHECK(matrix.cols() == 1249);
+    CHECK(matrix.sum() == 1'539'111'295);
+  }
+
   SECTION("regression PR #154") {
     const auto path = datadir / "cooler/cooler_test_file.cool";
     const cooler::File clr(path.string());
