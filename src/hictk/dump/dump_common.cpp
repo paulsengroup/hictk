@@ -226,14 +226,19 @@ static void filter_resolutions(std::vector<std::uint32_t>& resolutions,
   if (resolution.has_value()) {
     const auto res_found =
         std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
-    resolutions.clear();
     if (res_found) {
+      resolutions.clear();
       resolutions.push_back(*resolution);
+    } else {
+      throw std::out_of_range(fmt::format(
+          FMT_STRING("file does not have interactions for {} resolution"), *resolution));
     }
   }
 
-  if (!resolutions.empty() && resolutions.front() == 0) {
-    resolutions.erase(resolutions.begin());
+  const auto match = std::find(resolutions.begin(), resolutions.end(), std::uint32_t{});
+
+  if (match != resolutions.end()) {
+    resolutions.erase(match);
     fmt::print(FMT_STRING("variable\n"));
   }
 }
