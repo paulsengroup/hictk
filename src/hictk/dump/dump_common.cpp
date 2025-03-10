@@ -223,24 +223,32 @@ void dump_normalizations(std::string_view uri, std::string_view format,
 
 static void filter_resolutions(std::vector<std::uint32_t>& resolutions,
                                std::optional<std::uint32_t> resolution) {
-  if (resolution.has_value()) {
-    const auto res_found =
-        std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
-    if (res_found) {
-      resolutions.clear();
-      resolutions.push_back(*resolution);
+  if (!resolution.has_value()) {
+    return;
+  }
+
+  const auto res_found =
+      std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
+  if (res_found) {
+    resolutions.clear();
+    resolutions.push_back(*resolution);
+  } else {
+    throw std::out_of_range(
+        fmt::format(FMT_STRING("file does not have interactions for {} resolution"), *resolution));
+  }
+}
+
+[[nodiscard]] static std::string format_resolutions(const std::vector<std::uint32_t>& resolutions) {
+  std::string buff{};
+  for (const auto res : resolutions) {
+    if (res == 0) {
+      buff.append("variable\n");
     } else {
-      throw std::out_of_range(fmt::format(
-          FMT_STRING("file does not have interactions for {} resolution"), *resolution));
+      fmt::format_to(std::back_inserter(buff), FMT_STRING("{}\n"), res);
     }
   }
 
-  const auto match = std::find(resolutions.begin(), resolutions.end(), std::uint32_t{});
-
-  if (match != resolutions.end()) {
-    resolutions.erase(match);
-    fmt::print(FMT_STRING("variable\n"));
-  }
+  return buff;
 }
 
 void dump_resolutions(std::string_view uri, std::string_view format,
@@ -261,7 +269,7 @@ void dump_resolutions(std::string_view uri, std::string_view format,
   filter_resolutions(resolutions, resolution);
 
   if (!resolutions.empty()) {
-    fmt::print(FMT_STRING("{}\n"), fmt::join(resolutions, "\n"));
+    fmt::print(FMT_STRING("{}"), format_resolutions(resolutions));
   }
 }
 
