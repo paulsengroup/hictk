@@ -49,6 +49,9 @@ TEST_CASE("Cooler: index accessors", "[index][short]") {
   const Index idx(bins);
 
   CHECK(Index{}.empty());
+  CHECK(Index{}.bins().empty());
+  CHECK(Index{}.chromosomes().empty());
+  CHECK(Index{}.resolution() == 0);
 
   CHECK(idx.empty("chr1"));
   CHECK_NOTHROW(idx.at("chr1"));
