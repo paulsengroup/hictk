@@ -32,13 +32,13 @@ inline Index::Index(std::shared_ptr<const BinTable> bins,
       _idx(Index::init(_bins->chromosomes(), *_bins, chrom_offsets, allocate)),
       _nnz(nnz) {}
 
-inline const Reference &Index::chromosomes() const noexcept {
-  assert(_bins);
-  return _bins->chromosomes();
-}
+inline const Reference &Index::chromosomes() const noexcept { return bins().chromosomes(); }
 
 inline const BinTable &Index::bins() const noexcept {
-  assert(_bins);
+  if (HICTK_UNLIKELY(!_bins)) {
+    static const BinTable empty_bins{};
+    return empty_bins;
+  }
   return *_bins;
 }
 
@@ -65,7 +65,9 @@ inline bool Index::empty(std::string_view chrom_name) const {
 }
 
 inline std::uint32_t Index::resolution() const noexcept {
-  assert(_bins);
+  if (HICTK_UNLIKELY(!_bins)) {
+    return 0;
+  }
   return _bins->resolution();
 }
 
