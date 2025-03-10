@@ -24,7 +24,8 @@ def _compare_lists(expected: List, found: List, name: str, sort: bool = True) ->
 
 def _empty_sized_to_none(data: Sized | None) -> Sized | None:
     try:
-        len(data)
+        if len(data) == 0:
+            return None
         return data
     except:  # noqa
         return None
@@ -52,7 +53,7 @@ def compare_bins(
     ignore_index: bool = True,
     sort_before_compare: bool = False,
 ) -> Dict[str, str]:
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "bins")
@@ -78,7 +79,7 @@ def compare_bins(
 
 
 def compare_chroms(expected: Dict[str, int] | None, found: pd.DataFrame | Dict[str, int] | None) -> Dict[str, str]:
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "chromosomes")
@@ -106,7 +107,7 @@ def compare_pixels(
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
 
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "pixels")
@@ -147,8 +148,12 @@ def compare_pixels(
     return {}
 
 
-def compare_normalizations(expected: List[str] | None, found: pd.DataFrame | List[str] | None) -> Dict[str, str]:
-    if expected is None and found is None:
+def compare_normalizations(
+    expected: List[str] | None,
+    found: pd.DataFrame | List[str] | None,
+    ignored_norms: List[str] | None = None,
+) -> Dict[str, str]:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "normalizations")
@@ -156,6 +161,21 @@ def compare_normalizations(expected: List[str] | None, found: pd.DataFrame | Lis
         return errors
     if isinstance(found, pd.DataFrame):
         found = found["normalization"].tolist()
+
+    if ignored_norms is not None and len(ignored_norms) != 0:
+        for norm in ignored_norms:
+            if norm in expected:
+                expected.remove(norm)
+
+            if norm in found:
+                found.remove(norm)
+
+        if len(expected) == 0:
+            expected = None
+        if len(found) == 0:
+            found = None
+
+        return compare_normalizations(expected, found, None)
 
     for i, n in enumerate(expected):
         if n == "weight":
@@ -169,7 +189,7 @@ def compare_normalizations(expected: List[str] | None, found: pd.DataFrame | Lis
 
 
 def compare_resolutions(expected: List[int] | None, found: pd.DataFrame | List[int] | None) -> Dict[str, str]:
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "resolutions")
@@ -177,11 +197,16 @@ def compare_resolutions(expected: List[int] | None, found: pd.DataFrame | List[i
         return errors
     if isinstance(found, pd.DataFrame):
         found = found["resolution"].tolist()
+
+    for i, res in enumerate(expected):
+        if res is None:
+            expected[i] = "variable"
+
     return _compare_lists(expected, found, "resolutions")
 
 
 def compare_cells(expected: List[str] | None, found: pd.DataFrame | List[str] | None) -> Dict[str, str]:
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "cells")
@@ -189,24 +214,36 @@ def compare_cells(expected: List[str] | None, found: pd.DataFrame | List[str] | 
         return errors
     if isinstance(found, pd.DataFrame):
         found = found["cell"].tolist()
-    return _compare_lists(expected, found["cell"].tolist(), "cells")
+    return _compare_lists(expected, found, "cells")
 
 
 def compare_weights(
     expected: pd.DataFrame | None,
     found: pd.DataFrame | None,
+    ignored_weights: List[str] | None = None,
     rtol: float = 1.0e-5,
     atol: float = 1.0e-8,
     sort_before_compare: bool = True,
 ) -> Dict[str, str]:
     assert 0 <= rtol <= 1.0
 
-    if expected is None and found is None:
+    if _empty_sized_to_none(expected) is None and _empty_sized_to_none(found) is None:
         return {}
 
     errors = _handle_common_errors(expected, found, "weights")
     if len(errors) != 0:
         return errors
+
+    if ignored_weights is not None and len(ignored_weights) != 0:
+        expected = expected.drop(columns=list(ignored_weights), errors="ignore")
+        found = found.drop(columns=list(ignored_weights), errors="ignore")
+
+        if len(expected) == 0:
+            expected = None
+        if len(found) == 0:
+            found = None
+
+        return compare_weights(expected, found, None, rtol, atol, sort_before_compare)
 
     if sort_before_compare:
         columns = list(sorted(expected.columns.tolist()))

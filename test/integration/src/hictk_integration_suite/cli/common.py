@@ -43,7 +43,6 @@ def _make_file_read_only_win(path: pathlib.Path | str):
 
     dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_READ, user)
     if _file_is_executable(path):
-        print("FOO")
         dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.GENERIC_EXECUTE, user)
 
     security.SetSecurityDescriptorDacl(1, dacl, 0)

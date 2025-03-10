@@ -212,6 +212,158 @@ def _plan_tests_hictk_dump_chroms(
     return plans
 
 
+def _plan_tests_hictk_dump_norms(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-dump-normalizations",
+) -> List[ImmutableOrderedDict]:
+    plans = []
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 5.0,
+        "expect_failure": False,
+    }
+
+    for c in config["files"]:
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        excluded_norms = tuple(c.get("excluded-norms", []))
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            # hictk dump ... -t normalizations
+            args = _make_hictk_dump_args(
+                query,
+                drop_args={"range1", "range2", "normalization"},
+                add_args={"table": "normalizations"},
+            )
+            plans.append(
+                factory
+                | {"args": tuple(args), "reference_uri": query["reference-uri"], "excluded_norms": excluded_norms}
+            )
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
+def _plan_tests_hictk_dump_resolutions(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-dump-resolutions",
+) -> List[ImmutableOrderedDict]:
+    plans = []
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 5.0,
+        "expect_failure": False,
+    }
+
+    for c in config["files"]:
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            # hictk dump ... -t resolutions
+            args = _make_hictk_dump_args(
+                query,
+                drop_args={"range1", "range2", "normalization"},
+                add_args={"table": "resolutions"},
+            )
+            plans.append(factory | {"args": tuple(args), "reference_uri": query["reference-uri"]})
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
+def _plan_tests_hictk_dump_cells(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-dump-cells",
+) -> List[ImmutableOrderedDict]:
+    plans = []
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 5.0,
+        "expect_failure": False,
+    }
+
+    for c in config["files"]:
+        factory["expect_failure"] = c["format"] != "scool"
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            # hictk dump ... -t cells
+            args = _make_hictk_dump_args(
+                query,
+                drop_args={"range1", "range2", "normalization"},
+                add_args={"table": "cells"},
+            )
+            plans.append(factory | {"args": tuple(args), "reference_uri": query["reference-uri"]})
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
+def _plan_tests_hictk_dump_weights(
+    hictk_bin: pathlib.Path,
+    config: Dict[str, Any],
+    wd: WorkingDirectory,
+    title: str = "hictk-dump-weights",
+) -> List[ImmutableOrderedDict]:
+    plans = []
+    factory = {
+        "hictk_bin": str(hictk_bin),
+        "title": title,
+        "timeout": 5.0,
+        "expect_failure": False,
+    }
+
+    for c in config["files"]:
+        uri = wd[c["uri"]]
+        reference_uri = wd[c.get("reference-uri", c["uri"])]
+        factory["expect_failure"] = (is_multires(uri) and c.get("resolution") is None) or is_scool(uri)
+        excluded_norms = tuple(c.get("excluded-norms", []))
+        for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            assert query.get("range1") is not None
+            assert query.get("range2") is not None
+
+            # hictk dump ... -t weights
+            args1 = _make_hictk_dump_args(
+                query,
+                drop_args={"range1", "range2", "normalization"},
+                add_args={"table": "weights"},
+            )
+            # hictk dump ... -t weights --range xxx
+            args2 = _make_hictk_dump_args(
+                query,
+                drop_args={"range2", "normalization"},
+                add_args={"table": "weights"},
+            )
+            # hictk dump ... -t weights --range xxx --range2 xxx
+            args3 = _make_hictk_dump_args(query, drop_args={"normalization"}, add_args={"table": "weights"})
+
+            plans.extend(
+                (
+                    factory
+                    | {"args": tuple(args1), "reference_uri": query["reference-uri"], "excluded_norms": excluded_norms},
+                    factory
+                    | {"args": tuple(args2), "reference_uri": query["reference-uri"], "excluded_norms": excluded_norms},
+                    factory
+                    | {"args": tuple(args3), "reference_uri": query["reference-uri"], "excluded_norms": excluded_norms},
+                )
+            )
+
+    plans = list(set(immutabledict(p) for p in plans))
+    logging.debug(f"{title}: generated {len(plans)} test cases")
+    return plans
+
+
 def _plan_tests_hictk_dump_cis(
     hictk_bin: pathlib.Path,
     config: Dict[str, Any],
@@ -480,7 +632,11 @@ def plan_tests(
     return (
         _plan_tests_cli(hictk_bin, _get_uri(config), wd)
         + _plan_tests_hictk_dump_bins(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_cells(hictk_bin, config, wd)
         + _plan_tests_hictk_dump_chroms(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_norms(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_resolutions(hictk_bin, config, wd)
+        + _plan_tests_hictk_dump_weights(hictk_bin, config, wd)
         + _plan_tests_hictk_dump_cis(hictk_bin, config, wd)
         + _plan_tests_hictk_dump_trans(hictk_bin, config, wd)
         + _plan_tests_hictk_dump_gw(hictk_bin, config, wd)
