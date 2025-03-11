@@ -71,7 +71,7 @@ File handle
   Calling any of these accessors does not involve any computation.
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
-  .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
+  .. cpp:funciton:: [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(std::string_view policy = "union") const;
   .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_) const;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_) const;
 

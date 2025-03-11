@@ -38,6 +38,7 @@ class MultiResFile {
   std::vector<std::uint32_t> _resolutions{};
   MultiResAttributes _attrs{};
   Reference _chroms{};
+  mutable std::optional<std::pair<std::string, std::vector<balancing::Method>>> _normalizations{};
 
   MultiResFile(const HighFive::File& fp, Reference chroms, std::vector<std::uint32_t> resolutions,
                MultiResAttributes attrs);
@@ -64,6 +65,9 @@ class MultiResFile {
   [[nodiscard]] std::string path() const;
   [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
 
+  [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(
+      std::string_view policy = "union") const;
+
   [[nodiscard]] HighFive::File file_handle();
   [[nodiscard]] const HighFive::File& file_handle() const;
 
@@ -76,6 +80,9 @@ class MultiResFile {
  private:
   [[nodiscard]] static std::vector<std::uint32_t> read_resolutions(const HighFive::File& f);
   [[nodiscard]] static MultiResAttributes read_attributes(const HighFive::File& f);
+
+  [[nodiscard]] std::vector<balancing::Method> avail_normalizations_union() const;
+  [[nodiscard]] std::vector<balancing::Method> avail_normalizations_intersection() const;
 };
 
 }  // namespace hictk::cooler

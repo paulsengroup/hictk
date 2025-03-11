@@ -10,6 +10,8 @@
 #include <string_view>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
+#include "hictk/hic/common.hpp"
 #include "hictk/tmpdir.hpp"
 
 namespace hictk::hic::utils {
@@ -36,6 +38,10 @@ void merge(
 
 [[nodiscard]] std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path,
                                                           bool sorted = true);
+[[nodiscard]] std::vector<balancing::Method> list_normalizations(
+    const std::filesystem::path& path, std::string_view policy = "union",
+    MatrixType matrix_type = MatrixType::observed, MatrixUnit matrix_unit = MatrixUnit::BP);
+
 }  // namespace hictk::hic::utils
 
 #include "./impl/utils_impl.hpp"        // NOLINT

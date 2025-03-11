@@ -12,6 +12,7 @@
 #include <tuple>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
@@ -113,6 +114,35 @@ TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
     CHECK_THROWS(mclr.create_resolution(base_resolution / 2));
     CHECK_THROWS(mclr.create_resolution(base_resolution + 1));
   }
+}
+
+TEST_CASE("MultiResCooler: normalizations", "[cooler][short]") {
+  const auto path = datadir / "cooler" / "multires_cooler_test_file.mcool";
+
+  const MultiResFile mclr{path.string()};
+
+  namespace balancing = hictk::balancing;
+
+  const std::vector expected_norms_union{balancing::Method{"weight1"},
+                                         balancing::Method{"weight2"}};
+  const std::vector expected_norms_intersection{balancing::Method{"weight1"}};
+
+  auto found_norms = mclr.avail_normalizations("union");
+  REQUIRE(expected_norms_union.size() == found_norms.size());
+  for (std::size_t i = 0; i < expected_norms_union.size(); ++i) {
+    CHECK(expected_norms_union[i] == found_norms[i]);
+  }
+
+  found_norms = mclr.avail_normalizations("intersection");
+  REQUIRE(expected_norms_intersection.size() == found_norms.size());
+  for (std::size_t i = 0; i < expected_norms_intersection.size(); ++i) {
+    CHECK(expected_norms_intersection[i] == found_norms[i]);
+  }
+
+  CHECK_THROWS_AS(mclr.avail_normalizations("invalid"), std::invalid_argument);
+
+  CHECK(&mclr.avail_normalizations("intersection") == &mclr.avail_normalizations("intersection"));
+  CHECK(&mclr.avail_normalizations("intersection") == &mclr.avail_normalizations("union"));
 }
 
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
