@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/.codecov.yml"
       - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
@@ -17,6 +18,7 @@ on:
 
   pull_request:
     paths:
+      - ".github/.codecov.yml"
       - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
@@ -63,6 +65,91 @@ jobs:
   build-project:
     name: Build project
     needs: build-conan-deps
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      options: "--user=root"
+
+    env:
+      CCACHE_DISABLE: "1"
+      CONAN_HOME: "/opt/conan/"
+      HICTK_CI: "1"
+
+    steps:
+      - name: Clone hictk
+        uses: actions/checkout@v4
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+
+      - name: Install Python
+        run: |
+          apt-get update
+          apt-get install -y python3.12 python3.12-dev
+
+      - name: Restore Conan cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.conan-key }}
+          path: ${{ env.CONAN_HOME }}/p
+          fail-on-cache-miss: true
+
+      - name: Restore CMake configs
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}
+          path: /tmp/cmake-prefix-rwdi.tar
+          fail-on-cache-miss: true
+
+      - name: Extract CMake configs
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-rwdi.tar -C conan-env/ --strip-components=1
+
+      - name: Configure project
+        run: |
+          cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
+
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
+                -DENABLE_DEVELOPER_MODE=ON                    \
+                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
+                -DOPT_ENABLE_SANITIZER_LEAK=OFF               \
+                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF    \
+                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF   \
+                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
+                -DOPT_ENABLE_CPPCHECK=OFF                     \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                   \
+                -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON               \
+                -DHICTK_BUILD_EXAMPLES=OFF                    \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
+                -DCMAKE_C_FLAGS="$cov_flags"                  \
+                -DCMAKE_CXX_FLAGS="$cov_flags"                \
+                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"      \
+                -S .                                          \
+                -B build
+
+      - name: Build hictk_fuzzer
+        run: |
+          cmake --build build -j $(nproc) -t hictk_fuzzer
+          mv build/test/fuzzer/src/hictk_fuzzer .
+          ./hictk_fuzzer --help
+
+      - name: Upload hictk_fuzzer
+        uses: actions/upload-artifact@v4
+        with:
+          name: hictk_fuzzer
+          path: hictk_fuzzer
+          if-no-files-found: error
+          retention-days: 1
+
+  fuzzy-project:
+    name: Fuzzy project
+    needs: build-project
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -122,61 +209,26 @@ jobs:
       options: "--user=root"
 
     env:
-      CCACHE_DISABLE: "1"
-      CONAN_HOME: "/opt/conan/"
       HICTK_CI: "1"
 
     steps:
       - name: Clone hictk
         uses: actions/checkout@v4
 
+      - name: Download hictk_fuzzer
+        uses: actions/download-artifact@v4
+        with:
+          name: hictk_fuzzer
+
       - name: Fix permissions
         run: |
           chown -R $(id -u):$(id -g) $PWD
-
-      - name: Install Python
-        run: |
-          apt-get update
-          apt-get install -y python3.12 python3.12-dev
-
-      - name: Restore Conan cache
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-          fail-on-cache-miss: true
-
-      - name: Restore CMake configs
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
-          path: /tmp/cmake-prefix-rel.tar
-          fail-on-cache-miss: true
-
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
-
-      - name: Configure project
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=Release           \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
-                -DENABLE_DEVELOPER_MODE=ON           \
-                -DOPT_ENABLE_CLANG_TIDY=OFF          \
-                -DOPT_ENABLE_CPPCHECK=OFF            \
-                -DHICTK_ENABLE_TESTING=ON            \
-                -DHICTK_ENABLE_FUZZY_TESTING=ON      \
-                -DHICTK_BUILD_EXAMPLES=OFF           \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF    \
-                -S .                                 \
-                -B build
-
-      - name: Build hictk_fuzzer
-        run: cmake --build build -j $(nproc) -t hictk_fuzzer
+          chmod 500 hictk_fuzzer
 
       - name: Install test dependencies
         run: |
+          apt-get update
+          apt-get install -y python3.12 python3.12-dev
           pip install --no-cache-dir 'cooler==0.10.*' 'numpy<2'
 
       - name: Detect CI type
@@ -217,13 +269,17 @@ jobs:
           # Generate a random 64 bit uint
           seed="$(od -An -vtu8 -N8 < /dev/random)"
 
+          profile_prefix='${{ matrix.dataset }}-${{ matrix.format }}-${{ matrix.normalization}}-${{ matrix.bin-type }}'
+
           2>&1 echo "Duration: $duration"
           2>&1 echo "Resolution: $resolution"
           2>&1 echo "Seed: $seed"
+          2>&1 echo "Profile prefix: $profile_prefix"
 
           echo "duration=$duration" >> "$GITHUB_OUTPUT"
           echo "resolution=$resolution" >> "$GITHUB_OUTPUT"
           echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "profile-prefix=$profile_prefix" >> "$GITHUB_OUTPUT"
 
       - name: Download test datasets
         run: |
@@ -242,7 +298,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-df.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -259,7 +316,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-dense.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -276,7 +334,8 @@ jobs:
             args+=(--resolution '${{ steps.test-params.outputs.resolution }}')
           fi
 
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-sparse.%p.profraw"
+          ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -290,7 +349,9 @@ jobs:
         if: matrix.bin-type == 'fixed'
         run: |
           _100_mbps=100000000
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-1d.%p.profraw"
+          ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -306,7 +367,9 @@ jobs:
         if: matrix.bin-type == 'fixed'
         run: |
           _1_gbp=1000000000
-          build/test/fuzzer/src/hictk_fuzzer fuzz \
+
+          export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-2d.%p.profraw"
+          ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
             --normalization ${{ matrix.normalization }} \
@@ -318,14 +381,94 @@ jobs:
             *".${{ matrix.format }}" \
             *.cool
 
+      - name: Upload coverage profiles
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzy-testing-cov-${{ steps.test-params.outputs.profile-prefix }}
+          path: profiles/
+          if-no-files-found: error
+          retention-days: 1
+
+  upload-coverage:
+    if: github.event_name != 'workflow_dispatch'
+    name: Upload Coverage
+    needs: fuzzy-project
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      options: "--user=root"
+
+    steps:
+      - name: Clone hictk
+        uses: actions/checkout@v4
+
+      - name: Download hictk_fuzzer
+        uses: actions/download-artifact@v4
+        with:
+          name: hictk_fuzzer
+
+      - name: Fix permissions
+        run: |
+          chown -R $(id -u):$(id -g) $PWD
+          chmod 500 hictk_fuzzer
+
+      - name: Download coverage profiles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: fuzzy-testing-cov-*
+          merge-multiple: true
+
+      - name: Setup dependencies
+        run: |
+          apt-get update
+          apt-get install -q -y --no-install-recommends \
+            curl \
+            gpg \
+            gpg-agent \
+            python3 \
+            sudo \
+            tar
+
+      - name: Collect coverage data
+        run: |
+          mkdir profiles
+          mv *.profraw profiles/
+          utils/devel/collect_coverage_data.py   \
+            --output-dir coverage/               \
+            --prefix="$PWD/profiles/"            \
+            --format lcov                        \
+            --llvm-cov-bin llvm-cov-19           \
+            --llvm-profdata-bin llvm-profdata-19 \
+            ./hictk_fuzzer
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
+        with:
+          flags: "tests | fuzzer"
+          fail_ci_if_error: true
+          handle_no_reports_found: true
+          directory: coverage
+          os: linux
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
       - build-project
+      - fuzzy-project
+      - upload-coverage
 
     steps:
       - name: Collect job results
-        if: needs.build-project.result != 'success'
+        if: |
+          needs.build-project.result != 'success'    ||
+          needs.fuzzy-project.result != 'success'    ||
+          (
+           needs.upload-coverage.result != 'success' &&
+           needs.upload-coverage.result != 'skipped'
+          )
         run: exit 1

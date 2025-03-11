@@ -29,6 +29,9 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_writer {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 using namespace hictk::hic::internal;
@@ -72,7 +75,7 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper::BlockMapper", "[hic][v9][short]") {
 }
 
 TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
-  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_block_partitioner.bin").string();
   const std::uint32_t resolution = 25'000;
 
@@ -244,7 +247,7 @@ static void compare_weights(const balancing::Weights& weights_, const balancing:
     for (std::size_t i = 0; i < resolutions.size(); ++i) {
       if (i % 2 == 0) {
         const auto resolution = resolutions[i];
-        const hic::File f((datadir / "4DNFIZ1ZVXC8.hic9").string(), resolution);
+        const hic::File f((datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string(), resolution);
         const auto sel1 = f.fetch("chr3R");
         const auto sel2 = f.fetch("chr3R", "chr4");
         w.add_pixels(resolution, sel1.begin<float>(), sel1.end<float>());
@@ -300,7 +303,7 @@ static void compare_weights(const balancing::Weights& weights_, const balancing:
 }
 
 TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
-  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
 
@@ -324,7 +327,7 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
 }
 
 TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
-  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_004.hic").string();
 
   SECTION("add weights") {

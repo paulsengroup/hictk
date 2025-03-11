@@ -22,28 +22,24 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk::hic;
 
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
-
 namespace hictk::hic::test::pixel_selector {
+
+static const auto& datadir = hictk::test::datadir;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 template <typename N>
 using Pixel = hictk::Pixel<N>;
 
-// NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
-
-// NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV9 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic9").string();
-
-// NOLINTNEXTLINE(cert-err58-cpp)
-const auto path_binary = (hictk::test::datadir / "data.zip").string();
+// NOLINTBEGIN(cert-err58-cpp)
+const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
+const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
+const auto path_binary = (datadir / "various" / "data.zip").string();
+// NOLINTEND(cert-err58-cpp)
 
 template <typename N>
 static std::vector<hictk::Pixel<N>> head(const std::vector<hictk::Pixel<N>>& buffer,

@@ -14,6 +14,9 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
   const auto path = (testdir() / "test_write_bin_table.cool").string();
@@ -46,7 +49,7 @@ TEST_CASE("Cooler: read/write bin table", "[cooler][short]") {
 }
 
 TEST_CASE("Cooler: validate bin table", "[cooler][short]") {
-  auto path = datadir / "ENCFF993FGR.2500000.cool";
+  auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
 
   const File f(path.string());
 

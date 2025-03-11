@@ -14,6 +14,8 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write chromosomes", "[cooler][short]") {
   const auto path = (testdir() / "test_write_chroms.cool").string();

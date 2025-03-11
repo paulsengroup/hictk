@@ -41,6 +41,26 @@ TEST_CASE("Cooler: index ctor", "[index][short]") {
   CHECK_THROWS(idx.size(99));
 }
 
+TEST_CASE("Cooler: index accessors", "[index][short]") {
+  constexpr std::uint32_t bin_size = 100;
+  const auto bins = std::make_shared<const BinTable>(
+      Reference{Chromosome{0, "chr1", 10001}, Chromosome{1, "chr2", 5000}}, bin_size);
+
+  const Index idx(bins);
+
+  CHECK(Index{}.empty());
+  CHECK(Index{}.bins().empty());
+  CHECK(Index{}.chromosomes().empty());
+  CHECK(Index{}.resolution() == 0);
+
+  CHECK(idx.empty("chr1"));
+  CHECK_NOTHROW(idx.at("chr1"));
+  CHECK_THROWS_AS(idx.at("chr123"), std::out_of_range);
+
+  CHECK(idx.contains("chr1"));
+  CHECK_FALSE(idx.contains("chr123"));
+}
+
 TEST_CASE("Cooler: index offset setters and getters", "[index][short]") {
   constexpr std::uint32_t bin_size = 10;
   const Chromosome chrom1{0, "chr1", 100};

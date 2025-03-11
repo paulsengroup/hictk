@@ -9,16 +9,16 @@
 
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk;
 
 namespace hictk::test::file {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("MultiResFile", "[file][short]") {
   const auto path_hic = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
-  const auto path_mcool = (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string();
+  const auto path_mcool = (datadir / "cooler" / "4DNFIZ1ZVXC8.mcool").string();
   const std::uint32_t resolution = 1'000'000;
 
   SECTION("ctors") {

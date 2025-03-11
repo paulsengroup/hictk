@@ -24,18 +24,14 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/to_sparse_matrix.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 using namespace hictk::transformers;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
   spdlog::set_level(spdlog::level::trace);
 
@@ -43,7 +39,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     const auto* suffix = low_mem ? "low-mem" : "fast";
 
     SECTION(fmt::format(FMT_STRING("cis upper_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle, low_mem)();
@@ -55,7 +51,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("cis lower_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle, low_mem)();
@@ -67,7 +63,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("cis full ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full, low_mem)();
@@ -80,7 +76,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("cis upper_triangle (asymmetric; {})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
                                          std::int32_t{}, QuerySpan::upper_triangle, low_mem)();
@@ -91,7 +87,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("cis lower_triangle (asymmetric; {})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
                                          std::int32_t{}, QuerySpan::lower_triangle, low_mem)();
@@ -102,7 +98,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("cis full (asymmetric; {})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch("chr1:0-10,000,000", "chr1:0-21,000,000"),
                                          std::int32_t{}, QuerySpan::full, low_mem)();
@@ -113,7 +109,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("trans upper_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{},
                                          QuerySpan::upper_triangle, low_mem)();
@@ -124,14 +120,14 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("trans lower_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{},
                                   QuerySpan::lower_triangle, low_mem));
     }
 
     SECTION(fmt::format(FMT_STRING("trans full ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full, low_mem)();
@@ -142,7 +138,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("gw upper_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle, low_mem)();
@@ -154,7 +150,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
     }
 
     SECTION(fmt::format(FMT_STRING("gw lower_triangle ({})"), suffix)) {
-      const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle, low_mem)();
@@ -167,7 +163,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
 
     SECTION(fmt::format(FMT_STRING("gw full (storage-mode=square; {})"), suffix)) {
       const auto path =
-          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+          datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix = ToSparseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full, low_mem)();
       CHECK(matrix.nonZeros() == 4'241'909);
@@ -178,7 +174,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
 
     SECTION(fmt::format(FMT_STRING("gw upper_triangle (storage-mode=square; {})"), suffix)) {
       const auto path =
-          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+          datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle, low_mem)();
@@ -191,7 +187,7 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
 
     SECTION(fmt::format(FMT_STRING("gw lower_triangle (storage-mode=square; {})"), suffix)) {
       const auto path =
-          datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+          datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
       const cooler::File clr(path.string());
       const auto matrix =
           ToSparseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle, low_mem)();
@@ -201,9 +197,21 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
       CHECK(matrix.sum() == 257'471'326);
       CHECK(matrix.triangularView<Eigen::StrictlyUpper>().sum() == 0);
     }
+
+    SECTION(fmt::format(FMT_STRING("gw full (diagonal band=10; {})"), suffix)) {
+      const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
+      constexpr std::uint64_t diagonal_band_width{10};
+      const cooler::File clr(path.string());
+      const auto matrix =
+          ToSparseMatrix(clr.fetch(balancing::Method::NONE(), true), std::uint32_t{},
+                         QuerySpan::full, low_mem, diagonal_band_width)();
+      CHECK(matrix.rows() == 1249);
+      CHECK(matrix.cols() == 1249);
+      CHECK(matrix.sum() == 1'539'111'295);
+    }
   }
   SECTION("invalid queries") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
 
     CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
@@ -212,10 +220,10 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
 }
 
 TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
-  const auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  const auto path = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 
   SECTION("cis") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToSparseMatrix(hf.fetch("chr2L"), std::int32_t{})();
     CHECK(matrix.nonZeros() == 55);
     CHECK(matrix.rows() == 10);
@@ -224,7 +232,7 @@ TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
   }
 
   SECTION("trans") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToSparseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
     CHECK(matrix.nonZeros() == 110);
     CHECK(matrix.rows() == 10);
@@ -233,7 +241,7 @@ TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
   }
 
   SECTION("gw") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToSparseMatrix(hf.fetch(), std::int32_t{})();
     CHECK(matrix.nonZeros() == 1770);
     CHECK(matrix.rows() == 60);
@@ -242,7 +250,7 @@ TEST_CASE("Transformers (hic): to sprase matrix", "[transformers][short]") {
   }
 
   SECTION("invalid queries") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
 
     CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
     CHECK_THROWS(ToSparseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));

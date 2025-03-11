@@ -17,6 +17,8 @@
 
 namespace hictk::cooler::test::attribute {
 
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: attribute read - test numeric conversions", "[cooler][short]") {
   const auto path = testdir() / "test_read_attrs_numeric_conversion.cool";

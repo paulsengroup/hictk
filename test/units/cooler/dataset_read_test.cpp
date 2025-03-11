@@ -22,9 +22,12 @@
 
 namespace hictk::cooler::test::dataset {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset read", "[dataset][short]") {
-  const auto path = datadir / "cooler_test_file.cool";
+  const auto path = datadir / "cooler" / "cooler_test_file.cool";
   const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
 
   SECTION("fixed str") {

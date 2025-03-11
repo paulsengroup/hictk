@@ -22,12 +22,12 @@
 #include "hictk/test/testdir.hpp"
 #include "hictk/type_traits.hpp"
 
-namespace hictk::filestream::test {
+namespace hictk::test::filestream {
 
 using namespace hictk::filestream;
 
-const auto path_plaintext = (datadir / "data.txt").string();  // NOLINT(cert-err58-cpp)
-const auto path_binary = (datadir / "data.zip").string();     // NOLINT(cert-err58-cpp)
+const auto path_plaintext = (datadir / "various" / "data.txt").string();  // NOLINT(cert-err58-cpp)
+const auto path_binary = (datadir / "various" / "data.zip").string();     // NOLINT(cert-err58-cpp)
 static const auto& path = path_plaintext;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
@@ -639,4 +639,4 @@ TEST_CASE("FileStream resize", "[filestream][short]") {
 
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
-}  // namespace hictk::filestream::test
+}  // namespace hictk::test::filestream

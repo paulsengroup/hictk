@@ -11,18 +11,14 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/diagonal_band.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 using namespace hictk::transformers;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename T, typename PixelSelector>
 static std::vector<ThinPixel<T>> fetch_pixels(const PixelSelector& sel, std::uint64_t num_bins) {
   std::vector<ThinPixel<T>> buff;

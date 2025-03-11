@@ -21,11 +21,13 @@
 
 namespace hictk::hic::test::utils {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
   SECTION("merge gw") {
-    const auto src = datadir / "4DNFIZ1ZVXC8.hic9";
+    const auto src = datadir / "hic" / "4DNFIZ1ZVXC8.hic9";
     const auto dest = testdir() / "hic_merge_test_001.hic";
 
     const std::uint32_t resolution = 500'000;
@@ -47,7 +49,7 @@ TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
   }  // namespace hictk::hic::test::utils
 
   SECTION("merge chromosomes") {
-    const auto src = datadir / "4DNFIZ1ZVXC8.hic9";
+    const auto src = datadir / "hic" / "4DNFIZ1ZVXC8.hic9";
     const auto dest = testdir() / "hic_merge_test_002.hic";
     std::vector<std::string> sources{};
     const std::uint32_t resolution = 500'000;
@@ -98,8 +100,8 @@ TEST_CASE("HiC: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge - different reference") {
-    const auto src1 = datadir / "4DNFIZ1ZVXC8.hic9";
-    const auto src2 = datadir / "ENCFF993FGR.2500000.hic";
+    const auto src1 = datadir / "hic" / "4DNFIZ1ZVXC8.hic9";
+    const auto src2 = datadir / "hic" / "ENCFF993FGR.2500000.hic";
     const auto dest = testdir() / "cooler_merge_test_003.cool";
 
     const std::array<std::string, 2> sources{src1.string(), src2.string()};

@@ -32,13 +32,13 @@ inline Index::Index(std::shared_ptr<const BinTable> bins,
       _idx(Index::init(_bins->chromosomes(), *_bins, chrom_offsets, allocate)),
       _nnz(nnz) {}
 
-inline const Reference &Index::chromosomes() const noexcept {
-  assert(_bins);
-  return _bins->chromosomes();
-}
+inline const Reference &Index::chromosomes() const noexcept { return bins().chromosomes(); }
 
 inline const BinTable &Index::bins() const noexcept {
-  assert(_bins);
+  if (HICTK_UNLIKELY(!_bins)) {
+    static const BinTable empty_bins{};
+    return empty_bins;
+  }
   return *_bins;
 }
 
@@ -65,7 +65,9 @@ inline bool Index::empty(std::string_view chrom_name) const {
 }
 
 inline std::uint32_t Index::resolution() const noexcept {
-  assert(_bins);
+  if (HICTK_UNLIKELY(!_bins)) {
+    return 0;
+  }
   return _bins->resolution();
 }
 
@@ -78,19 +80,32 @@ inline auto Index::cbegin() const noexcept -> const_iterator { return begin(); }
 inline auto Index::cend() const noexcept -> const_iterator { return end(); }
 
 inline auto Index::at(std::string_view chrom_name) const -> const mapped_type & {
-  const auto chrom = chromosomes().at(chrom_name);
-  return _idx.at(chrom);
+  const auto chrom_id = chromosomes().get_id(chrom_name);
+  return at(chrom_id);
 }
 
 inline auto Index::at(std::uint32_t chrom_id) -> mapped_type & { return _idx.at(chrom_id); }
 
 inline auto Index::at(std::string_view chrom_name) -> mapped_type & {
   const auto chrom_id = chromosomes().get_id(chrom_name);
-  return _idx.at(chrom_id);
+  return at(chrom_id);
 }
 
 inline auto Index::at(std::uint32_t chrom_id) const -> const mapped_type & {
   return _idx.at(chrom_id);
+}
+
+inline bool Index::contains(std::uint32_t chrom_id) const noexcept {
+  return _idx.contains(chrom_id);
+}
+
+inline bool Index::contains(std::string_view chrom_name) const noexcept {
+  try {
+    const auto chrom_id = chromosomes().get_id(chrom_name);
+    return contains(chrom_id);
+  } catch (const std::out_of_range &) {
+    return false;
+  }
 }
 
 inline std::uint64_t Index::get_offset_by_bin_id(std::uint64_t bin_id) const {

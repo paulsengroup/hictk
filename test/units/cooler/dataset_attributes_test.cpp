@@ -15,10 +15,13 @@
 
 namespace hictk::cooler::test::dataset {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset attributes", "[dataset][short]") {
   SECTION("read") {
-    const auto path = datadir / "test_read_attrs.h5";
+    const auto path = datadir / "cooler" / "hdf5" / "test_read_attrs.h5";
 
     const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
     const Dataset dset{grp, "dst"};

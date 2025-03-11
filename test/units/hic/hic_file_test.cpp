@@ -14,21 +14,20 @@
 #include "hictk/balancing/methods.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk::hic;
 
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data/hic"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
-
 namespace hictk::hic::test::file {
+
+static const auto& datadir = hictk::test::datadir;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
-// NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV8 = (hictk::test::datadir / "4DNFIZ1ZVXC8.hic8").string();
-// NOLINTNEXTLINE(cert-err58-cpp)
-const auto path_binary = (hictk::test::datadir / "data.zip").string();
+// NOLINTBEGIN(cert-err58-cpp)
+const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
+const auto path_binary = (datadir / "various" / "data.zip").string();
+// NOLINTEND(cert-err58-cpp)
 
 TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
   CHECK(utils::is_hic_file(pathV8));

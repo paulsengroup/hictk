@@ -19,17 +19,17 @@
 #include "hictk/hic/common.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/string_utils.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk;
 
 namespace hictk::test::file {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("File", "[file][short]") {
   const std::uint32_t resolution = 1'000'000;
   const auto path_hic = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
-  const auto path_cooler = (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string();
+  const auto path_cooler = (datadir / "cooler" / "4DNFIZ1ZVXC8.mcool").string();
 
   const auto uri_cooler = fmt::format(FMT_STRING("{}::/resolutions/{}"), path_cooler, resolution);
 
@@ -137,7 +137,7 @@ TEST_CASE("File", "[file][short]") {
 TEST_CASE("PixelSelector", "[file][short]") {
   const std::uint32_t resolution = 1'000'000;
   const auto path_hic = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
-  const auto path_cooler = (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string();
+  const auto path_cooler = (datadir / "cooler" / "4DNFIZ1ZVXC8.mcool").string();
 
   SECTION("accessors") {
     SECTION("hic") {
@@ -176,7 +176,7 @@ TEST_CASE("PixelSelector::iterator", "[file][short]") {
   const auto hf =
       std::make_shared<const File>((datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string(), resolution);
   const auto clr = std::make_shared<const File>(
-      (datadir / "integration_tests" / "4DNFIZ1ZVXC8.mcool").string(), resolution);
+      (datadir / "cooler" / "4DNFIZ1ZVXC8.mcool").string(), resolution);
 
   const std::array<
       std::tuple<std::string, std::shared_ptr<const File>, std::shared_ptr<const File>>, 3>

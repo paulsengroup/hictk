@@ -11,11 +11,8 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/join_genomic_coords.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
@@ -23,7 +20,7 @@ using namespace hictk::transformers;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): join genomic coords", "[transformers][short]") {
-  const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+  const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
   const cooler::File clr(path.string());
 
   auto sel = clr.fetch("chr1", 5'000'000, 10'000'000);
@@ -45,7 +42,7 @@ TEST_CASE("Transformers (cooler): join genomic coords", "[transformers][short]")
 }
 
 TEST_CASE("Transformers (hic): join genomic coords", "[transformers][short]") {
-  auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  auto path = datadir / "hic" / "4DNFIZ1ZVXC8.hic8";
 
   const hic::File hf(path.string(), 2'500'000);
   auto sel = hf.fetch("chr2L", 5'000'000, 10'000'000);

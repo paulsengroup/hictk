@@ -17,18 +17,14 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/to_dense_matrix.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 using namespace hictk::transformers;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename Matrix>
 [[nodiscard]] static double sum_finite(const Matrix& matrix) noexcept {
   const double* first = matrix.data();
@@ -47,7 +43,7 @@ template <typename Matrix>
 
 TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   SECTION("cis full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::full)();
     CHECK(matrix.rows() == 100);
@@ -57,7 +53,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("cis upper_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::upper_triangle)();
@@ -68,7 +64,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("cis lower_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1"), std::int32_t{}, QuerySpan::lower_triangle)();
@@ -79,7 +75,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("(cis, asymmetric) full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1:192,565,354-202,647,735", "chr1:197,313,124-210,385,543"),
@@ -90,7 +86,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("(cis, normalized) full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
@@ -102,7 +98,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("trans upper_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::upper_triangle)();
@@ -112,14 +108,14 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("trans lower_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     CHECK_THROWS(
         ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::lower_triangle));
   }
 
   SECTION("trans full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch("chr1", "chr2"), std::int32_t{}, QuerySpan::full)();
     CHECK(matrix.rows() == 100);
@@ -128,7 +124,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("(trans, normalized) full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("chr1", "chr2", balancing::Method{"VC"}), 0.0, QuerySpan::full)();
@@ -140,7 +136,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("gw full") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
     CHECK(matrix.rows() == 1249);
@@ -149,7 +145,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("gw upper_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
     CHECK(matrix.rows() == 1249);
@@ -159,7 +155,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("gw lower_triangle") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
     CHECK(matrix.rows() == 1249);
@@ -170,7 +166,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
 
   SECTION("gw full (storage-mode=square)") {
     const auto path =
-        datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+        datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::uint32_t{}, QuerySpan::full)();
     CHECK(matrix.rows() == 3000);
@@ -180,7 +176,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
 
   SECTION("gw upper_triangle (storage-mode=square)") {
     const auto path =
-        datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+        datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::upper_triangle)();
     CHECK(matrix.rows() == 3000);
@@ -191,7 +187,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
 
   SECTION("gw lower_triangle (storage-mode=square)") {
     const auto path =
-        datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+        datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const cooler::File clr(path.string());
     const auto matrix = ToDenseMatrix(clr.fetch(), std::int32_t{}, QuerySpan::lower_triangle)();
     CHECK(matrix.rows() == 3000);
@@ -200,8 +196,19 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
     CHECK(matrix.isLowerTriangular());
   }
 
+  SECTION("gw w/ diagonal band") {
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
+    constexpr std::uint64_t diagonal_band_width{10};
+    const cooler::File clr(path.string());
+    const auto matrix = ToDenseMatrix(clr.fetch(balancing::Method::NONE(), true), std::uint32_t{},
+                                      QuerySpan::full, diagonal_band_width)();
+    CHECK(matrix.rows() == 1249);
+    CHECK(matrix.cols() == 1249);
+    CHECK(matrix.sum() == 1'539'111'295);
+  }
+
   SECTION("regression PR #154") {
-    const auto path = datadir / "cooler/cooler_test_file.cool";
+    const auto path = datadir / "cooler" / "cooler_test_file.cool";
     const cooler::File clr(path.string());
     const auto matrix =
         ToDenseMatrix(clr.fetch("1:0-5,000,000", "1:2,500,000-7,500,000"), std::int32_t{})();
@@ -212,7 +219,7 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("invalid queries") {
-    const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const cooler::File clr(path.string());
 
     CHECK_THROWS(ToDenseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
@@ -221,10 +228,10 @@ TEST_CASE("Transformers (cooler): to dense matrix", "[transformers][short]") {
 }
 
 TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
-  const auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  const auto path = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 
   SECTION("cis") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToDenseMatrix(hf.fetch("chr2L"), std::int32_t{})();
     CHECK(matrix.rows() == 10);
     CHECK(matrix.cols() == 10);
@@ -233,7 +240,7 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("cis, normalized") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToDenseMatrix(hf.fetch("chr2L", balancing::Method{"VC"}), 0.0)();
     CHECK(matrix.rows() == 10);
     CHECK(matrix.cols() == 10);
@@ -243,7 +250,7 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("trans") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToDenseMatrix(hf.fetch("chr2L", "chr2R"), std::int32_t{})();
     CHECK(matrix.rows() == 10);
     CHECK(matrix.cols() == 11);
@@ -251,7 +258,7 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("gw") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToDenseMatrix(hf.fetch(), std::int32_t{})();
     CHECK(matrix.rows() == 60);
     CHECK(matrix.cols() == 60);
@@ -260,7 +267,7 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("gw, normalized") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     const auto matrix = ToDenseMatrix(hf.fetch(balancing::Method{"VC"}), 0.0)();
     CHECK(matrix.rows() == 60);
     CHECK(matrix.cols() == 60);
@@ -270,7 +277,7 @@ TEST_CASE("Transformers (hic): to dense matrix", "[transformers][short]") {
   }
 
   SECTION("invalid queries") {
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
 
     CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", "chr2R"), 0, QuerySpan::lower_triangle));
     CHECK_THROWS(ToDenseMatrix(hf.fetch("chr2L", balancing::Method::VC()), 0));

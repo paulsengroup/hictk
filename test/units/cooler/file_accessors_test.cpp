@@ -18,6 +18,8 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: version", "[cooler][short]") {
   // clang-format off
@@ -36,7 +38,7 @@ TEST_CASE("Cooler: version", "[cooler][short]") {
 }
 
 TEST_CASE("Cooler: accessors", "[cooler][short]") {
-  const auto path = datadir / "cooler_test_file.cool";
+  const auto path = datadir / "cooler" / "cooler_test_file.cool";
   const File f(path.string());
 
   SECTION("group") {

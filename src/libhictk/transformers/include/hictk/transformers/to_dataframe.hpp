@@ -17,7 +17,9 @@ HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 HICTK_DISABLE_WARNING_POP
 // clang-format: on
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #include "hictk/bin_table.hpp"
@@ -89,6 +91,7 @@ class ToDataFrame {
   QuerySpan _span{QuerySpan::upper_triangle};
   bool _drop_bin_ids{true};
   bool _mirror_pixels{true};
+  std::optional<std::uint64_t> _diagonal_band_width{};
 
   std::size_t _chunk_size{};
   arrow::Int64Builder _bin1_id_builder{};
@@ -139,13 +142,15 @@ class ToDataFrame {
               DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
-              bool mirror_pixels = true, std::size_t chunk_size = 256'000);
+              bool mirror_pixels = true, std::size_t chunk_size = 256'000,
+              std::optional<std::uint64_t> diagonal_band_width = {});
 
   template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
-              std::size_t chunk_size = 256'000);
+              std::size_t chunk_size = 256'000,
+              std::optional<std::uint64_t> diagonal_band_width = {});
   // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
@@ -153,6 +158,9 @@ class ToDataFrame {
  private:
   [[nodiscard]] std::shared_ptr<arrow::Schema> coo_schema() const;
   [[nodiscard]] std::shared_ptr<arrow::Schema> bg2_schema(bool with_bin_ids = false) const;
+
+  template <typename PixelIt_>
+  void read_pixels(PixelIt_ first, PixelIt_ last);
 
   void append_symmetric(Pixel<N> p);
   void append_symmetric(ThinPixel<N> p);

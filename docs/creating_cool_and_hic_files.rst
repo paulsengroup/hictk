@@ -66,13 +66,13 @@ Multiple .cool and .hic files using the same reference genome and resolution can
 
   # Merge multiple cooler files
 
-  user@dev:/tmp$ hictk merge 4DNFIZ1ZVXC8.mcool::/resolutions/10000 4DNFIZ1ZVXC8.mcool::/resolutions/10000 -o 4DNFIZ1ZVXC8.merged.10000.cool
+  user@dev:/tmp$ hictk merge data/4DNFIZ1ZVXC8.mcool::/resolutions/10000 data/4DNFIZ1ZVXC8.mcool::/resolutions/10000 -o 4DNFIZ1ZVXC8.merged.10000.cool
 
   [2024-09-26 17:07:57.101] [info]: Running hictk v1.0.0-fbdcb591
   [2024-09-26 17:07:57.101] [info]: begin merging 2 files into one .cool file...
   [2024-09-26 17:07:58.978] [info]: processing chr3L:1030000-1040000 chr3R:29720000-29730000 at 5571031 pixels/s...
   [2024-09-26 17:08:01.224] [info]: DONE! Merging 2 files took 4.12s!
-  [2024-09-26 17:08:01.224] [info]: 4DNFIZ1ZVXC8.merged.10000.cool size: 19.64 MB
+  [2024-09-26 17:08:01.224] [info]: data/4DNFIZ1ZVXC8.merged.10000.cool size: 19.64 MB
 
 Merging .hic files as well as a mix of .hic and .cool files is also supported (as long as all files have the same resolution and reference genome).
 When one or more of the input files are in .hic format, the ``--resolution`` option is mandatory.
