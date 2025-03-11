@@ -15,9 +15,11 @@
 
 namespace hictk::cooler::test::pixel_selector {
 
+static const auto& datadir = hictk::test::datadir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
-  auto path = datadir / "ENCFF993FGR.2500000.cool";
+  auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
   File clr(path.string());
 
   SECTION("read weights") {

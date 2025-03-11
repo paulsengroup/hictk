@@ -18,9 +18,12 @@
 
 namespace hictk::cooler::test::singlecell_cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("SingleCellCooler: open read-only", "[cooler][short]") {
-  const auto path = datadir / "single_cell_cooler_test_file.scool";
+  const auto path = datadir / "cooler" / "single_cell_cooler_test_file.scool";
 
   const SingleCellFile sclr(path.string());
 
@@ -36,7 +39,7 @@ TEST_CASE("SingleCellCooler: open read-only", "[cooler][short]") {
 }
 
 TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
-  const auto base_path = datadir / "cooler_test_file.cool";
+  const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
   const File base_clr(base_path.string());
 
   const auto path = testdir() / "test_create_cells.scool";
@@ -61,7 +64,7 @@ TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
 
 TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
   SECTION("std::int32_t") {
-    const auto base_path = datadir / "cooler_test_file.cool";
+    const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
     const File base_clr(base_path.string());
     const auto path1 = testdir() / "test_aggregate_cells_int.scool";
     const auto path2 = testdir() / "test_aggregate_cells_int.cool";
@@ -86,7 +89,7 @@ TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
   }
 
   SECTION("double") {
-    const auto base_path = datadir / "cooler_test_file_float.cool";
+    const auto base_path = datadir / "cooler" / "cooler_test_file_float.cool";
     const File base_clr(base_path.string());
     const auto path1 = testdir() / "test_aggregate_cells_fp.scool";
     const auto path2 = testdir() / "test_aggregate_cells_fp.cool";

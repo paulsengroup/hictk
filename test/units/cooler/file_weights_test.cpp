@@ -13,10 +13,13 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read weights", "[cooler][short]") {
-  const auto path1 = datadir / "cooler_test_file.cool";
-  const auto path2 = datadir / "ENCFF993FGR.2500000.cool";
+  const auto path1 = datadir / "cooler" / "cooler_test_file.cool";
+  const auto path2 = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
 
   const cooler::File clr1{path1.string()};
   const cooler::File clr2{path2.string()};
@@ -32,7 +35,7 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
 }
 
 TEST_CASE("Cooler: write weights", "[cooler][short]") {
-  const auto path1 = datadir / "cooler_test_file.cool";
+  const auto path1 = datadir / "cooler" / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_write_weights1.cool";
   auto path3 = testdir() / "cooler_test_write_weights2.cool";
 

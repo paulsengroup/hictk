@@ -12,9 +12,11 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read attributes", "[cooler][short]") {
-  auto path = datadir / "cooler_test_file.cool";
+  auto path = datadir / "cooler" / "cooler_test_file.cool";
   const File f(path.string());
 
   SECTION("bin size") { CHECK(f.resolution() == 100'000); }

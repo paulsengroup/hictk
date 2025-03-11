@@ -6,12 +6,7 @@
 #include <filesystem>
 
 #include "hictk/cooler/utils.hpp"
-#include "hictk/tmpdir.hpp"
-
-namespace hictk::test {
-inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::utils {
 static const auto& testdir = hictk::test::testdir;
@@ -19,8 +14,8 @@ static const auto& datadir = hictk::test::datadir;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils equal", "[equal][utils][short]") {
-  const auto path1 = datadir / "cooler_test_file.cool";
-  const auto path2 = datadir / "multires_cooler_test_file.mcool::/resolutions/6400000";
+  const auto path1 = datadir / "cooler" / "cooler_test_file.cool";
+  const auto path2 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/6400000";
 
   const auto path3 = testdir() / "cooler_equal_test.cool";
 

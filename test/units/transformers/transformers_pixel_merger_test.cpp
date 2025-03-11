@@ -16,16 +16,12 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 template <typename It>
 using PixelMerger = ::hictk::transformers::PixelMerger<It>;
 
@@ -65,7 +61,7 @@ static phmap::btree_map<Coords, std::int32_t> merge_pixels_hashmap(
 }
 
 TEST_CASE("Transformers (cooler): pixel merger", "[transformers][short]") {
-  const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+  const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
 
   const cooler::File clr(path.string());
   const auto sel1 = clr.fetch("chr1:0-100,000,000");
@@ -136,7 +132,7 @@ TEST_CASE("Transformers (cooler): pixel merger", "[transformers][short]") {
 }
 
 TEST_CASE("Transformers (hic): pixel merger", "[transformers][short]") {
-  auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  auto path = datadir / "hic" / "4DNFIZ1ZVXC8.hic8";
 
   const hic::File hf(path.string(), 100'000);
   const auto sel1 = hf.fetch("chr2L:0-10,000,000");

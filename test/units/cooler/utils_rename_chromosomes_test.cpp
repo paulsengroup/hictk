@@ -13,6 +13,8 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils rename chromosomes", "[cooler][short]") {
   const Reference ref2{{0, "1", 10}, {1, "2", 10}};

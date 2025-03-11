@@ -21,9 +21,12 @@
 
 namespace hictk::cooler::test::multires_cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
-  const auto path = datadir / "multires_cooler_test_file.mcool";
+  const auto path = datadir / "cooler" / "multires_cooler_test_file.mcool";
 
   auto mclr = MultiResFile(path.string());
 
@@ -38,7 +41,7 @@ TEST_CASE("MultiResCooler: open read-only", "[cooler][short]") {
 }
 
 TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
-  const auto base_path = datadir / "cooler_test_file.cool";
+  const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
   const auto base_resolution = File(base_path.string()).resolution();
 
   const auto path = testdir() / "test_init.mcool";
@@ -83,7 +86,7 @@ TEST_CASE("MultiResCooler: init files", "[cooler][short]") {
 }
 
 TEST_CASE("MultiResCooler: create resolutions", "[cooler][short]") {
-  const auto base_path = datadir / "cooler_test_file.cool";
+  const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
   const File base_clr(base_path.string());
   const auto base_resolution = base_clr.resolution();
 

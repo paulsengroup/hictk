@@ -17,6 +17,8 @@
 
 namespace hictk::cooler::test::dataset {
 
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset large read/write", "[dataset][long]") {
   const auto path = testdir() / "test_dataset_large_rw.h5";

@@ -16,11 +16,14 @@
 
 namespace hictk::cooler::test::dataset {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: dataset accessors", "[dataset][short]") {
   const auto path = testdir() / "test_dataset_accessors.cool";
   std::filesystem::remove(path);
-  std::filesystem::copy_file(datadir / "cooler_test_file.cool", path);
+  std::filesystem::copy_file(datadir / "cooler" / "cooler_test_file.cool", path);
   SECTION("read-only") {
     const RootGroup grp{HighFive::File(path.string()).getGroup("/")};
 

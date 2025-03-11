@@ -20,12 +20,6 @@
 #include "hictk/file.hpp"
 #include "hictk/test/testdir.hpp"
 
-namespace hictk::test {
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
-inline const std::filesystem::path datadir{"test/data/"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
-
 namespace hictk::test::balancing {
 
 [[nodiscard]] static hictk::balancing::Weights read_weights(const std::filesystem::path& path,
@@ -45,11 +39,11 @@ namespace hictk::test::balancing {
 
 TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_intra.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.cis.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.ICE.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -82,9 +76,9 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::cis));
@@ -94,11 +88,11 @@ TEST_CASE("Balancing: ICE (intra)", "[balancing][short]") {
 
 TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_inter.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.trans.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.ICE.trans.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -131,9 +125,9 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::trans));
@@ -144,11 +138,11 @@ TEST_CASE("Balancing: ICE (inter)", "[balancing][medium]") {
 
 TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_ice_gw.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.ICE.gw.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.ICE.gw.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -181,9 +175,9 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::ICE(var_bin_file, hictk::balancing::ICE::Type::gw));
@@ -193,10 +187,10 @@ TEST_CASE("Balancing: ICE (gw)", "[balancing][medium]") {
 
 TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.VC.cis.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.VC.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -213,9 +207,9 @@ TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::cis));
@@ -225,10 +219,10 @@ TEST_CASE("Balancing: VC (intra)", "[balancing][short]") {
 
 TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.VC.inter.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.VC.inter.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -245,9 +239,9 @@ TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::trans));
@@ -257,10 +251,10 @@ TEST_CASE("Balancing: VC (inter)", "[balancing][short]") {
 
 TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.VC.gw.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.VC.gw.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -277,9 +271,9 @@ TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::VC(var_bin_file, hictk::balancing::VC::Type::gw));
@@ -289,11 +283,11 @@ TEST_CASE("Balancing: VC (gw)", "[balancing][short]") {
 
 TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_scale_cis.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.cis.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.SCALE.cis.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -325,9 +319,9 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::cis));
@@ -338,11 +332,11 @@ TEST_CASE("Balancing: SCALE (intra)", "[balancing][short]") {
 
 TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_scale_trans.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.inter.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.SCALE.inter.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -375,9 +369,9 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::trans));
@@ -388,11 +382,11 @@ TEST_CASE("Balancing: SCALE (inter)", "[balancing][short]") {
 
 TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
   const std::array<std::pair<std::string, std::filesystem::path>, 2> files{
-      std::make_pair("cooler", datadir / "cooler/ENCFF993FGR.2500000.cool"),
-      std::make_pair("hic", datadir / "hic/ENCFF993FGR.2500000.hic")};
+      std::make_pair("cooler", datadir / "cooler" / "ENCFF993FGR.2500000.cool"),
+      std::make_pair("hic", datadir / "hic" / "ENCFF993FGR.2500000.hic")};
 
   const auto tmpfile = testdir() / "balancing_scale_gw.tmp";
-  const auto path_weights = datadir / "balancing/ENCFF993FGR.2500000.SCALE.gw.txt";
+  const auto path_weights = datadir / "balancing" / "ENCFF993FGR.2500000.SCALE.gw.txt";
 
   for (const auto& [label, path] : files) {
     SECTION(label) {
@@ -425,9 +419,9 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
 
   SECTION("invalid files") {
     const cooler::File var_bin_file(
-        (datadir / "cooler/cooler_variable_bins_test_file.cool").string());
+        (datadir / "cooler" / "cooler_variable_bins_test_file.cool").string());
     const cooler::File storage_mode_square_file(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
 
     CHECK_THROWS(hictk::balancing::SCALE(var_bin_file, hictk::balancing::SCALE::Type::gw));
@@ -438,8 +432,8 @@ TEST_CASE("Balancing: SCALE (gw)", "[balancing][short]") {
 
 TEST_CASE("Balancing: SCALE (edge cases)", "[balancing][medium]") {
   SECTION("diverged") {
-    const auto path = datadir / "hic/4DNFIZ1ZVXC8.hic9";
-    const auto path_weights = datadir / "balancing/4DNFIZ1ZVXC8.chr2L.10000.SCALE.txt";
+    const auto path = datadir / "hic" / "4DNFIZ1ZVXC8.hic9";
+    const auto path_weights = datadir / "balancing" / "4DNFIZ1ZVXC8.chr2L.10000.SCALE.txt";
 
     const hictk::File f(path.string(), 10'000);
     const auto sel = f.fetch("chr2L");

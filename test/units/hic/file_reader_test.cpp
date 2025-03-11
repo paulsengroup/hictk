@@ -23,12 +23,14 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_reader {
 
+static const auto& datadir = hictk::test::datadir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV8 = (datadir / "4DNFIZ1ZVXC8.hic8").string();
+const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
-const auto pathV9 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
 
 [[maybe_unused]] static void check_weights_are_constant(const balancing::Weights& weights,
                                                         double value = 1.0) {
