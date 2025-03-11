@@ -22,6 +22,7 @@
 
 namespace hictk::test::balancing {
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 [[nodiscard]] static hictk::balancing::Weights read_weights(const std::filesystem::path& path,
                                                             hictk::balancing::Weights::Type type,
                                                             char sep = '\n') {
