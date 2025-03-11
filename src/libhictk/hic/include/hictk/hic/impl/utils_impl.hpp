@@ -33,7 +33,7 @@ inline std::vector<balancing::Method> avail_normalizations_union(const std::file
   hic::internal::HiCFileReader reader(path.string());
 
   const auto& resolutions = reader.header().resolutions;
-  if (resolutions.size() == 0) {
+  if (resolutions.empty()) {
     return {};
   }
 
@@ -60,7 +60,7 @@ inline std::vector<balancing::Method> avail_normalizations_intersection(
   hic::internal::HiCFileReader reader(path.string());
 
   const auto& resolutions = reader.header().resolutions;
-  if (resolutions.size() == 0) {
+  if (resolutions.empty()) {
     return {};
   }
 
@@ -103,7 +103,7 @@ inline std::vector<balancing::Method> list_normalizations(const std::filesystem:
   if (policy == "intersection") {
     return internal::avail_normalizations_intersection(path, matrix_type, matrix_unit);
   }
-  throw std::invalid_argument("policy should be either \"union\" or \"intersection\"");
+  throw std::invalid_argument(R"(policy should be either "union" or "intersection")");
 }
 
 }  // namespace hictk::hic::utils

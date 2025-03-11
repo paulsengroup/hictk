@@ -194,7 +194,7 @@ inline const std::vector<balancing::Method>& MultiResFile::avail_normalizations(
   }
 
   if (policy != "union" && policy != "intersection") {
-    throw std::invalid_argument("policy should be either \"union\" or \"intersection\"");
+    throw std::invalid_argument(R"(policy should be either "union" or "intersection")");
   }
 
   if (_resolutions.empty()) {
