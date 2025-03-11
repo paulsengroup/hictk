@@ -11,12 +11,12 @@
 
 namespace hictk {
 
-inline Bin::Bin(const Chromosome &chrom_, std::uint32_t start_, std::uint32_t end_) noexcept
-    : Bin(Bin::null_id, Bin::rel_null_id, chrom_, start_, end_) {}
+inline Bin::Bin(Chromosome chrom_, std::uint32_t start_, std::uint32_t end_) noexcept
+    : Bin(Bin::null_id, Bin::rel_null_id, std::move(chrom_), start_, end_) {}
 
-inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, const Chromosome &chrom_,
-                std::uint32_t start_, std::uint32_t end_) noexcept
-    : _id(id_), _rel_id(rel_id_), _interval(chrom_, start_, end_) {}
+inline Bin::Bin(std::uint64_t id_, std::uint32_t rel_id_, Chromosome chrom_, std::uint32_t start_,
+                std::uint32_t end_) noexcept
+    : Bin(id_, rel_id_, {std::move(chrom_), start_, end_}) {}
 
 inline Bin::Bin(GenomicInterval interval) noexcept
     : Bin(Bin::null_id, Bin::rel_null_id, std::move(interval)) {}

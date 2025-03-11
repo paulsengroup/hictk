@@ -42,7 +42,9 @@ struct formatter<hictk::Bin> {
 
     return it;
   }
-  format_context::iterator format(const hictk::Bin &b, format_context &ctx) const {
+
+  template <typename FormatContext>
+  auto format(const hictk::Bin &b, FormatContext &ctx) const {
     if (presentation == bed) {
       return format_to(ctx.out(), FMT_STRING("{:bed}"), b.interval());
     }

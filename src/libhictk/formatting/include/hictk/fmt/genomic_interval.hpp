@@ -36,7 +36,9 @@ struct formatter<hictk::GenomicInterval> {
 
     return it;
   }
-  format_context::iterator format(const hictk::GenomicInterval &gi, format_context &ctx) const {
+
+  template <typename FormatContext>
+  auto format(const hictk::GenomicInterval &gi, FormatContext &ctx) const {
     const std::string_view name = !gi ? "null" : gi.chrom().name();
 
     if (presentation == bed) {
