@@ -2,17 +2,20 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/hic.hpp"
+#include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/test/testdir.hpp"
 
@@ -26,6 +29,7 @@ static const auto& datadir = hictk::test::datadir;
 
 // NOLINTBEGIN(cert-err58-cpp)
 const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
+const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
 const auto path_binary = (datadir / "various" / "data.zip").string();
 // NOLINTEND(cert-err58-cpp)
 
@@ -148,6 +152,53 @@ TEST_CASE("HiC: fetch", "[hic][short]") {
   }
 }
 
+TEST_CASE("HiC: list_resolutions", "[hic][short]") {
+  constexpr std::array<std::uint32_t, 10> expected{1000,   5000,   10000,  25000,   50000,
+                                                   100000, 250000, 500000, 1000000, 2500000};
+
+  auto found = utils::list_resolutions(pathV8);
+  REQUIRE(found.size() == expected.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    CHECK(expected[i] == found[i]);
+  }
+
+  found = utils::list_resolutions(pathV9);
+  REQUIRE(found.size() == expected.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    CHECK(expected[i] == found[i]);
+  }
+}
+
+TEST_CASE("HiC: list_normalizations", "[hic][short]") {
+  const std::array<balancing::Method, 4> expected_v8{
+      balancing::Method::KR(),
+      balancing::Method::SCALE(),
+      balancing::Method::VC(),
+      balancing::Method::VC_SQRT(),
+  };
+
+  const std::array<balancing::Method, 3> expected_v9{
+      balancing::Method::SCALE(),
+      balancing::Method::VC(),
+      balancing::Method::VC_SQRT(),
+  };
+
+  for (const auto policy : {"union", "intersection"}) {
+    auto found = utils::list_normalizations(pathV8, policy);
+    REQUIRE(found.size() == expected_v8.size());
+    for (std::size_t i = 0; i < expected_v8.size(); ++i) {
+      CHECK(expected_v8[i] == found[i]);
+    }
+
+    found = utils::list_normalizations(pathV9, policy);
+    REQUIRE(found.size() == expected_v9.size());
+    for (std::size_t i = 0; i < expected_v9.size(); ++i) {
+      CHECK(expected_v9[i] == found[i]);
+    }
+  }
+
+  CHECK_THROWS_AS(utils::list_normalizations(pathV8, "invalid"), std::invalid_argument);
+}
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk::hic::test::file
