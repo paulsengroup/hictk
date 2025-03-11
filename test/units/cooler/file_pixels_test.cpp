@@ -17,9 +17,12 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
-  auto path1 = datadir / "cooler_test_file.cool";
+  auto path1 = datadir / "cooler" / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_read_write_pixels.cool";
 
   using T = std::int32_t;
@@ -104,7 +107,7 @@ TEST_CASE("Cooler: read/write pixels", "[cooler][long]") {
 }
 
 TEST_CASE("Cooler: validate pixels before read_append", "[cooler][long]") {
-  auto path1 = datadir / "cooler_test_file.cool";
+  auto path1 = datadir / "cooler" / "cooler_test_file.cool";
   auto path2 = testdir() / "cooler_test_validate_before_append.cool";
 
   const File clr1(path1.string());

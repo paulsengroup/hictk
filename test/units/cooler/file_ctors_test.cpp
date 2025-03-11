@@ -21,6 +21,9 @@
 
 namespace hictk::cooler::test::cooler_file {
 
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: init files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
@@ -56,7 +59,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   SECTION("default") { CHECK_NOTHROW(File{}); }
 
   SECTION("move #1") {
-    const auto path = datadir / "cooler_test_file.cool";
+    const auto path = datadir / "cooler" / "cooler_test_file.cool";
 
     File f{};
     CHECK(!f);
@@ -89,7 +92,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     }
   }
   SECTION("open .cool (fixed bin size)") {
-    const auto path = datadir / "cooler_test_file.cool";
+    const auto path = datadir / "cooler" / "cooler_test_file.cool";
     const File f(path.string());
 
     CHECK(f.path() == path);
@@ -101,7 +104,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .cool (variable bin size)") {
-    const auto path = datadir / "cooler_variable_bins_test_file.cool";
+    const auto path = datadir / "cooler" / "cooler_variable_bins_test_file.cool";
     const File f(path.string());
 
     CHECK(f.path() == path);
@@ -113,7 +116,8 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .cool (storage-mode=square)") {
-    const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+    const auto path =
+        datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
     const File f(path.string());
 
     CHECK(f.uri() == path.string());
@@ -125,7 +129,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .scool") {
-    const auto path = datadir / "single_cell_cooler_test_file.scool";
+    const auto path = datadir / "cooler" / "single_cell_cooler_test_file.scool";
 
     SECTION("missing suffix") {
       CHECK_THROWS_WITH(
@@ -144,7 +148,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .mcool") {
-    const auto path = datadir / "multires_cooler_test_file.mcool";
+    const auto path = datadir / "cooler" / "multires_cooler_test_file.mcool";
     SECTION("missing suffix") {
       CHECK_THROWS_WITH(
           File(path.string()),
@@ -162,7 +166,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open empty .h5") {
-    const auto path = datadir / "empty_test_file.h5";
+    const auto path = datadir / "cooler" / "hdf5" / "empty_test_file.h5";
     CHECK_THROWS_WITH(File(path.string()),
                       Catch::Matchers::ContainsSubstring("does not look like a valid Cooler file"));
   }
@@ -175,7 +179,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
 
   SECTION("open corrupted .cool") {
     SECTION("corrupted bin table") {
-      const auto path = datadir / "invalid_coolers/corrupted_bins.cool";
+      const auto path = datadir / "cooler" / "invalid" / "corrupted_bins.cool";
       CHECK_THROWS_WITH(File(path.string()),
                         Catch::Matchers::ContainsSubstring("Datasets have inconsistent sizes") &&
                             Catch::Matchers::ContainsSubstring("bins/chrom") &&
@@ -184,7 +188,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
     }
 
     SECTION("corrupted chrom table") {
-      const auto path = datadir / "invalid_coolers/corrupted_chroms.cool";
+      const auto path = datadir / "cooler" / "invalid" / "corrupted_chroms.cool";
       CHECK_THROWS_WITH(File(path.string()),
                         Catch::Matchers::ContainsSubstring("/chroms/name and") &&
                             Catch::Matchers::ContainsSubstring("/chroms/length shape mismatch"));
@@ -192,7 +196,7 @@ TEST_CASE("Cooler: file ctors", "[cooler][short]") {
   }
 
   SECTION("open .cool custom aprops") {
-    const auto path = datadir / "cooler_test_file.cool";
+    const auto path = datadir / "cooler" / "cooler_test_file.cool";
     SECTION("read-once") {
       const auto f = File::open_read_once(path.string());
       CHECK(std::distance(f.begin<std::int32_t>(), f.end<std::int32_t>()) == 107041);

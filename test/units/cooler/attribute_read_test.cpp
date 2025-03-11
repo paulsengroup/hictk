@@ -16,9 +16,11 @@
 
 namespace hictk::cooler::test::attribute {
 
+static const auto& datadir = hictk::test::datadir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: attribute read", "[cooler][short]") {
-  const auto path = datadir / "test_read_attrs.h5";
+  const auto path = datadir / "cooler" / "hdf5" / "test_read_attrs.h5";
 
   auto f = HighFive::File(path.string(), HighFive::File::ReadOnly);
   REQUIRE(f.exist("grp"));

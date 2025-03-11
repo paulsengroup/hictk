@@ -15,6 +15,8 @@
 
 namespace hictk::cooler::test::attribute {
 
+static const auto& testdir = hictk::test::testdir;
+
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename H5Obj, typename T>
 static void compare_attribute(H5Obj& obj, std::string_view key, const T& expected) {

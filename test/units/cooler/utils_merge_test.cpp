@@ -16,12 +16,7 @@
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
-#include "hictk/tmpdir.hpp"
-
-namespace hictk::test {
-inline const internal::TmpDir testdir{true};                     // NOLINT(cert-err58-cpp)
-inline const std::filesystem::path datadir{"test/data/cooler"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::cooler::test::utils {
 static const auto& testdir = hictk::test::testdir;
@@ -30,7 +25,7 @@ static const auto& datadir = hictk::test::datadir;
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   SECTION("merge int") {
-    const auto src = datadir / "cooler_test_file.cool";
+    const auto src = datadir / "cooler" / "cooler_test_file.cool";
     const auto dest = testdir() / "cooler_merge_test_int.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
@@ -57,7 +52,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge float") {
-    const auto src = datadir / "cooler_test_file_float.cool";
+    const auto src = datadir / "cooler" / "cooler_test_file_float.cool";
     const auto dest = testdir() / "cooler_merge_test_float.cool";
 
     const std::array<std::string, 2> sources{src.string(), src.string()};
@@ -84,7 +79,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge chromosomes") {
-    const auto src = datadir / "cooler_test_file.cool";
+    const auto src = datadir / "cooler" / "cooler_test_file.cool";
     const auto dest = testdir() / "cooler_merge_test2.cool";
     std::vector<std::string> sources{};
     {
@@ -125,7 +120,7 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge - different resolutions") {
-    const auto mclr = datadir / "multires_cooler_test_file.mcool";
+    const auto mclr = datadir / "cooler" / "multires_cooler_test_file.mcool";
     const auto dest1 = testdir() / "cooler_merge_test3.cool";
 
     const std::array<std::string, 2> sources1{
@@ -138,8 +133,8 @@ TEST_CASE("Cooler: utils merge", "[merge][utils][long]") {
   }
 
   SECTION("merge - different reference") {
-    const auto clr1 = datadir / "cooler_test_file.cool";
-    const auto clr2 = datadir / "ENCFF993FGR.2500000.cool";
+    const auto clr1 = datadir / "cooler" / "cooler_test_file.cool";
+    const auto clr2 = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
     const auto dest2 = testdir() / "cooler_merge_test2.cool";
 
     const std::array<std::string, 2> sources2{clr1.string(), clr2.string()};

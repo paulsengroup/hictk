@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/transformers/diagonal_band.hpp"

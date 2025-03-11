@@ -22,8 +22,10 @@
 
 namespace hictk::cooler::test::pixel_selector {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 template <typename N>
 static std::pair<std::ptrdiff_t, N> generate_test_data(const std::filesystem::path& path,
                                                        const Reference& chroms,
@@ -231,7 +233,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 }
 
 TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selector][short]") {
-  const auto path1 = datadir / "cooler_variable_bins_test_file.cool";
+  const auto path1 = datadir / "cooler" / "cooler_variable_bins_test_file.cool";
   using T = std::uint32_t;
 
   const File f(path1.string());
@@ -319,7 +321,8 @@ TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selec
 }
 
 TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_selector][short]") {
-  const auto path = datadir / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
+  const auto path =
+      datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/1000";
   using T = std::uint32_t;
 
   const File f(path.string());

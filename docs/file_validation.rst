@@ -44,17 +44,17 @@ Perform a quick check to detect truncated or otherwise invalid files:
 .. code-block:: console
 
   # Validate a .hic file
-  user@dev:/tmp$ hictk validate 4DNFIZ1ZVXC8.hic8
+  user@dev:/tmp$ hictk validate data/4DNFIZ1ZVXC8.hic9
   [2024-09-26 16:20:55.552] [info]: Running hictk v1.0.0-fbdcb591
   {
       "format": "hic",
       "is_valid_hic": true,
-      "uri": "4DNFIZ1ZVXC8.hic8"
+      "uri": "data/4DNFIZ1ZVXC8.hic9"
   }
-  ### SUCCESS: "4DNFIZ1ZVXC8.hic8" is a valid .hic file.
+  ### SUCCESS: "data/4DNFIZ1ZVXC8.hic9" is a valid .hic file.
 
   # Validate a .mcool file
-  user@dev:/tmp$ hictk validate 4DNFIZ1ZVXC8.mcool
+  user@dev:/tmp$ hictk validate data/4DNFIZ1ZVXC8.mcool
   [2024-09-26 16:22:47.348] [info]: Running hictk v1.0.0-fbdcb591
   {
       "1000": {
@@ -102,11 +102,11 @@ Perform a quick check to detect truncated or otherwise invalid files:
       "missing_or_invalid_bin_type_attr": false,
       "missing_or_invalid_format_attr": false,
       "unable_to_open_file": false,
-      "uri": "4DNFIZ1ZVXC8.mcool"
+      "uri": "data/4DNFIZ1ZVXC8.mcool"
   }
-  ### SUCCESS: "4DNFIZ1ZVXC8.mcool" is a valid .mcool file.
+  ### SUCCESS: "data/4DNFIZ1ZVXC8.mcool" is a valid .mcool file.
 
-The quick check will not detect Cooler files with corrupted index, as this requires the ``--validate-index`` option:
+The quick check will not detect Cooler files with corrupted index, as this requires the ``--validate-index`` option (note, this step requires a corrupted .mcool file such as `4DNFI9GMP2J8.mcool <https://data.4dnucleome.org/files-processed/4DNFI9GMP2J8/>`__):
 
 .. code-block:: console
 

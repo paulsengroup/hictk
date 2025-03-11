@@ -7,25 +7,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <hictk/transformers.hpp>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/transformers/coarsen.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
+#include "hictk/test/testdir.hpp"
 
 namespace hictk::test::transformers {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 using namespace hictk::transformers;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   SECTION("simple") {
-    const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
-    const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
+    const auto path1 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/100000";
+    const auto path2 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/200000";
     const cooler::File clr1(path1.string());
     const cooler::File clr2(path2.string());
 
@@ -44,8 +40,8 @@ TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   }
 
   SECTION("coarsen recursive") {
-    const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
-    const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/400000";
+    const auto path1 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/100000";
+    const auto path2 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/400000";
     const cooler::File clr1(path1.string());
     const cooler::File clr2(path2.string());
 
@@ -65,8 +61,8 @@ TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   }
 
   SECTION("coarsen gw") {
-    const auto path1 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
-    const auto path2 = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/200000";
+    const auto path1 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/100000";
+    const auto path2 = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/200000";
     const cooler::File clr1(path1.string());
     const cooler::File clr2(path2.string());
 
@@ -85,7 +81,7 @@ TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
   }
 
   SECTION("coarsen empty range") {
-    const auto path = datadir / "cooler/multires_cooler_test_file.mcool::/resolutions/100000";
+    const auto path = datadir / "cooler" / "multires_cooler_test_file.mcool::/resolutions/100000";
     const cooler::File clr1(path.string());
 
     auto sel = clr1.fetch();
@@ -96,7 +92,7 @@ TEST_CASE("Transformers (cooler): coarsen", "[transformers][short]") {
 }
 
 TEST_CASE("Transformers (hic): coarsen", "[transformers][short]") {
-  auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  auto path = datadir / "hic" / "4DNFIZ1ZVXC8.hic8";
 
   const hic::File hf1(path.string(), 500'000);
   const hic::File hf2(path.string(), 2'500'000);

@@ -23,18 +23,14 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/test/testdir.hpp"
 #include "hictk/transformers/to_dataframe.hpp"
-
-namespace hictk::test {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
-}  // namespace hictk::test
 
 namespace hictk::test::transformers {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-
 using namespace hictk::transformers;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 namespace internal {
 
 template <typename N>
@@ -227,7 +223,7 @@ static void validate_diagonal_band(const Reference& chroms,
 
 TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   using N = std::int32_t;
-  const auto path = datadir / "cooler/ENCFF993FGR.2500000.cool";
+  const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
   const cooler::File clr(path.string());
   const auto& bins = clr.bins();
   auto sel = clr.fetch("chr1");
@@ -407,7 +403,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto sel_ = clr_square.fetch();
     const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), format, nullptr, span)();
@@ -434,7 +430,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::lower_triangle;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto sel_ = clr_square.fetch();
     const auto table =
@@ -462,7 +458,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::full;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto sel_ = clr_square.fetch();
     const auto table =
@@ -488,7 +484,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto& bins_square = clr_square.bins();
     const auto sel_ = clr_square.fetch();
@@ -522,7 +518,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::lower_triangle;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto& bins_square = clr_square.bins();
     const auto sel_ = clr_square.fetch();
@@ -556,7 +552,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::full;
 
     const cooler::File clr_square(
-        (datadir / "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
+        (datadir / "cooler" / "cooler_storage_mode_square_test_file.mcool::/resolutions/8000")
             .string());
     const auto& bins_square = clr_square.bins();
     const auto sel_ = clr_square.fetch();
@@ -648,11 +644,11 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
 }
 
 TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
-  auto path = datadir / "hic/4DNFIZ1ZVXC8.hic8";
+  const auto path = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 
   SECTION("ToDataFrame") {
     using N = std::int32_t;
-    const hic::File hf(path.string(), 2'500'000);
+    const hic::File hf(path, 2'500'000);
     auto sel = hf.fetch("chr2L");
     auto first = sel.begin<N>();
     auto last = sel.end<N>();

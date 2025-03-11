@@ -15,11 +15,11 @@
 #include <string>
 
 #include "hictk/hic.hpp"
+#include "hictk/test/testdir.hpp"
 
 using namespace hictk;
 
 namespace hictk::test::expected_values_aggregator {
-inline const std::filesystem::path datadir{"test/data"};  // NOLINT(cert-err58-cpp)
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("ExpectedValuesAggregator", "[file][short]") {

@@ -15,8 +15,8 @@ Interactions from a single-resolution Cooler file (.cool) can be used to generat
   user@dev:/tmp$ hictk zoomify data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 out.mcool
 
   [2024-09-26 17:21:21.792] [info]: Running hictk v1.0.0-fbdcb591
-  [2024-09-26 17:21:21.795] [info]: coarsening cooler at 4DNFIZ1ZVXC8.mcool::/resolutions/1000 13 times (1000 -> 1000 -> 2000 -> 5000 -> 10000 -> 20000 -> 50000 -> 100000 -> 200000 -> 500000 -> 1000000 -> 2000000 -> 5000000 -> 10000000)
-  [2024-09-26 17:21:21.795] [info]: copying 1000 resolution from 4DNFIZ1ZVXC8.mcool::/resolutions/1000
+  [2024-09-26 17:21:21.795] [info]: coarsening cooler at data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 13 times (1000 -> 1000 -> 2000 -> 5000 -> 10000 -> 20000 -> 50000 -> 100000 -> 200000 -> 500000 -> 1000000 -> 2000000 -> 5000000 -> 10000000)
+  [2024-09-26 17:21:21.795] [info]: copying 1000 resolution from data/4DNFIZ1ZVXC8.mcool::/resolutions/1000
   [2024-09-26 17:21:21.959] [info]: generating 2000 resolution from 1000 (2x)
   [2024-09-26 17:21:22.134] [info]: [1000 -> 2000] processing chr2L:1996000-1998000 at 5747126 pixels/s...
   [2024-09-26 17:21:22.355] [info]: [1000 -> 2000] processing chr2L:4932000-4934000 at 4545455 pixels/s...
@@ -31,8 +31,8 @@ Interactions from a single-resolution Cooler file (.cool) can be used to generat
   user@dev:/tmp$ hictk zoomify data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 out.cool --resolutions 50000
 
   [2024-09-26 17:22:22.203] [info]: Running hictk v1.0.0-fbdcb591
-  [2024-09-26 17:22:22.206] [info]: coarsening cooler at 4DNFIZ1ZVXC8.mcool::/resolutions/1000 2 times (1000 -> 1000 -> 50000)
-  [2024-09-26 17:22:22.206] [info]: copying 1000 resolution from 4DNFIZ1ZVXC8.mcool::/resolutions/1000
+  [2024-09-26 17:22:22.206] [info]: coarsening cooler at data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 2 times (1000 -> 1000 -> 50000)
+  [2024-09-26 17:22:22.206] [info]: copying 1000 resolution from data/4DNFIZ1ZVXC8.mcool::/resolutions/1000
   [2024-09-26 17:22:22.364] [info]: generating 50000 resolution from 1000 (50x)
   [2024-09-26 17:22:23.165] [info]: [1000 -> 50000] processing chr2L:23000000-23050000 at 1253133 pixels/s...
   [2024-09-26 17:22:23.939] [info]: [1000 -> 50000] processing chr3L:4600000-4650000 at 1293661 pixels/s...

@@ -19,14 +19,16 @@ using namespace hictk::hic;
 
 namespace hictk::hic::test::file_writer {
 
-// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
+static const auto& datadir = hictk::test::datadir;
+static const auto& testdir = hictk::test::testdir;
 
 using namespace hictk::hic::internal;
 
+// NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("HiC: HiCFileZoomify", "[hic][v9][zoomify][long]") {
   const std::vector<std::uint32_t> resolutions{100'000, 400'000, 1'000'000};
 
-  const auto path1 = (datadir / "4DNFIZ1ZVXC8.hic9").string();
+  const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_file_zoomify.hic").string();
 
   const auto avail_resolutions = hic::utils::list_resolutions(path1);
