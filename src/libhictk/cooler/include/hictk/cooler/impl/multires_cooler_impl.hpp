@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <parallel_hashmap/phmap.h>
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -185,6 +187,30 @@ inline std::string MultiResFile::path() const { return (*_root_grp)().getFile().
 
 inline auto MultiResFile::chromosomes() const noexcept -> const Reference& { return _chroms; }
 
+inline const std::vector<balancing::Method>& MultiResFile::avail_normalizations(
+    std::string_view policy) const {
+  if (_normalizations.has_value() && _normalizations->first == policy) {
+    return _normalizations->second;
+  }
+
+  if (policy != "union" && policy != "intersection") {
+    throw std::invalid_argument("policy should be either \"union\" or \"intersection\"");
+  }
+
+  if (_resolutions.empty()) {
+    _normalizations.emplace(std::string{policy}, std::vector<balancing::Method>{});
+  } else if (_resolutions.size() == 1) {
+    _normalizations.emplace(std::string{policy}, open(_resolutions.front()).avail_normalizations());
+    return _normalizations->second;
+  } else if (policy == "union") {
+    _normalizations.emplace(std::string{policy}, avail_normalizations_union());
+  } else {
+    assert(policy == "intersection");
+    _normalizations.emplace(std::string{policy}, avail_normalizations_intersection());
+  }
+  return _normalizations->second;
+}
+
 [[nodiscard]] inline std::uint32_t MultiResFile::compute_base_resolution(
     const std::vector<std::uint32_t>& resolutions, std::uint32_t target_res) {
   assert(!resolutions.empty());
@@ -297,6 +323,46 @@ inline MultiResAttributes MultiResFile::read_attributes(const HighFive::File& f)
   }
 
   return attrs;
+}
+
+inline std::vector<balancing::Method> MultiResFile::avail_normalizations_union() const {
+  assert(_resolutions.size() > 1);
+
+  phmap::flat_hash_set<balancing::Method> norms;
+  for (const auto& res : _resolutions) {
+    for (const auto& norm : open(res).avail_normalizations()) {
+      norms.emplace(norm);
+    }
+  }
+
+  std::vector norms_sorted(std::make_move_iterator(norms.begin()),
+                           std::make_move_iterator(norms.end()));
+  std::sort(norms_sorted.begin(), norms_sorted.end());
+  return norms_sorted;
+}
+
+inline std::vector<balancing::Method> MultiResFile::avail_normalizations_intersection() const {
+  assert(_resolutions.size() > 1);
+
+  phmap::flat_hash_map<balancing::Method, std::uint32_t> norms;
+  for (const auto& res : _resolutions) {
+    for (const auto& norm : open(res).avail_normalizations()) {
+      auto [it, inserted] = norms.try_emplace(norm, std::uint32_t{1});
+      if (!inserted) {
+        it->second++;
+      }
+    }
+  }
+
+  std::vector<balancing::Method> filtered_norms{};
+  for (const auto& [norm, count] : norms) {
+    if (count == _resolutions.size()) {
+      filtered_norms.emplace_back(norm);
+    }
+  }
+
+  std::sort(filtered_norms.begin(), filtered_norms.end());
+  return filtered_norms;
 }
 
 }  // namespace hictk::cooler
