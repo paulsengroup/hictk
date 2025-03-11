@@ -25,7 +25,7 @@ The following is an example showing how to balance a .cool file using ICE.
 
 .. code-block:: console
 
-  user@dev:/tmp$ hictk balance ice 4DNFIZ1ZVXC8.mcool::/resolutions/1000
+  user@dev:/tmp$ hictk balance ice data/4DNFIZ1ZVXC8.mcool::/resolutions/1000
 
   [2024-09-26 16:02:19.731] [info]: Running hictk v1.0.0-fbdcb591
   [2024-09-26 16:02:19.731] [info]: balancing using ICE (GW_ICE)
@@ -41,8 +41,8 @@ The following is an example showing how to balance a .cool file using ICE.
   [2024-09-26 16:03:12.752] [info]: Iteration 108: 1.601698258037195e-05
   [2024-09-26 16:03:13.216] [info]: Iteration 109: 1.2493901433163442e-05
   [2024-09-26 16:03:13.681] [info]: Iteration 110: 9.745791018854495e-06
-  [2024-09-26 16:03:13.707] [info]: Writing weights to 4DNFIZ1ZVXC8.mcool::/resolutions/1000/bins/GW_ICE...
-  [2024-09-26 16:03:13.708] [info]: Linking weights to 4DNFIZ1ZVXC8.mcool::/resolutions/1000/bins/weight...
+  [2024-09-26 16:03:13.707] [info]: Writing weights to data/4DNFIZ1ZVXC8.mcool::/resolutions/1000/bins/GW_ICE...
+  [2024-09-26 16:03:13.708] [info]: Linking weights to data/4DNFIZ1ZVXC8.mcool::/resolutions/1000/bins/weight...
 
 When balancing files in .mcool or .hic formats, all resolutions are balanced.
 
