@@ -6,9 +6,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
+#include "hictk/balancing/methods.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
@@ -22,6 +26,7 @@ class MultiResFile {
   hic::MatrixUnit _unit{};
   Reference _chroms{};
   std::vector<std::uint32_t> _resolutions{};
+  mutable std::optional<std::pair<std::string, std::vector<balancing::Method>>> _normalizations{};
   std::string _format{};
   std::uint8_t _format_version{};
   BinTable::Type _bin_type{};
@@ -46,6 +51,8 @@ class MultiResFile {
   [[nodiscard]] constexpr BinTable::Type bin_type() const noexcept;
   [[nodiscard]] constexpr const std::vector<std::uint32_t>& resolutions() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
+  [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(
+      std::string_view policy = "union") const;
 
   [[nodiscard]] File open(std::uint32_t resolution) const;
 };

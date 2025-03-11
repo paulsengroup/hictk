@@ -46,6 +46,7 @@ TEST_CASE("MultiResFile", "[file][short]") {
 
       CHECK(MultiResFile{path_hic}.resolutions().size() == 10);
       CHECK(MultiResFile{path_hic}.chromosomes().size() == 9);
+      CHECK(MultiResFile{path_hic}.avail_normalizations().size() == 4);
     }
     SECTION("mcool") {
       CHECK(MultiResFile{path_mcool}.is_mcool());
@@ -60,6 +61,7 @@ TEST_CASE("MultiResFile", "[file][short]") {
 
       CHECK(MultiResFile{path_mcool}.resolutions().size() == 10);
       CHECK(MultiResFile{path_mcool}.chromosomes().size() == 8);
+      CHECK(MultiResFile{path_mcool}.avail_normalizations().size() == 5);
     }
   }
 
