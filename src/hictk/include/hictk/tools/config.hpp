@@ -185,7 +185,7 @@ struct MergeConfig {
   std::vector<std::string> input_files{};
   std::filesystem::path output_file{};
   std::string output_format{};
-  std::uint32_t resolution{};
+  std::optional<std::uint32_t> resolution{};
 
   std::filesystem::path tmp_dir{};
 

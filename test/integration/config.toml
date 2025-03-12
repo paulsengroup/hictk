@@ -195,7 +195,8 @@ test-cases = [
   { input-uris = ["cooler/cooler_test_file.cool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/multires_cooler_test_file.mcool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
-  { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic", expect-failure = true }
+  { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic" },
+  { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.cool" },
 ]
 
 
