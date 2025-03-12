@@ -53,9 +53,21 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
   }
 
   try {
+    try {
+      [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
+      if (const auto link_type = clr.group("bins")().getLinkType(std::string{norm.to_string()});
+          link_type == HighFive::LinkType::Soft) {
+        SPDLOG_INFO(FMT_STRING("[{}] skipping {} normalization vector as the underlying dataset is "
+                               "a link to another dataset"),
+                    resolution, norm.to_string());
+        return;
+      }
+    } catch (const HighFive::Exception&) {  // NOLINT
+    }
+
     const auto& weights = clr.normalization(norm);
 
-    const auto norm_name = norm.to_string() == "weight" ? "ICE" : norm.to_string();
+    const auto norm_name = norm == "weight" ? "ICE" : norm.to_string();
     SPDLOG_INFO(FMT_STRING("[{}] adding {} normalization vector"), resolution, norm_name);
     w.add_norm_vector(norm_name, "BP", resolution, weights, true);
 
