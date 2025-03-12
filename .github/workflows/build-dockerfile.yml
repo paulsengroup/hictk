@@ -95,10 +95,22 @@ jobs:
 
           FINAL_BASE_IMAGE_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$FINAL_BASE_IMAGE:$FINAL_BASE_IMAGE_TAG" | grep -o '[[:alnum:]:]\+$')"
 
+          if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
+            GIT_HASH='0000000000000000000000000000000000000000'
+            GIT_SHORT_HASH='00000000'
+            CREATION_DATE='2000-01-01'
+            GIT_TAG=''
+          else
+            GIT_HASH="$(git rev-parse HEAD)"
+            GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
+            CREATION_DATE="$(date --iso-8601)"
+            GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
+          fi
+
           GIT_HASH="$(git rev-parse HEAD)"
           GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
           CREATION_DATE="$(date --iso-8601)"
-          GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)"  --points-at HEAD)"
+          GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
           if [ -z "$GIT_TAG" ]; then
             VERSION="sha-$GIT_SHORT_HASH"
             GIT_TAG=unknown
