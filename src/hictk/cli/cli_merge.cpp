@@ -142,15 +142,18 @@ static void validate_resolution(const std::vector<std::string>& paths, std::uint
   assert(!paths.empty());
 
   for (const auto& p : paths) {
-    const auto format = infer_input_format(p);
-    assert(format != "scool");
+    assert(infer_input_format(p) != "scool");
 
     try {
       std::ignore = File{p, resolution};
     } catch (const std::exception& e) {
+      std::string_view msg{e.what()};
+      if (msg.find("found an unexpected resolution") == 0) {
+        msg = "please make sure all provided files have at least one resolution in common";
+      }
       errors.emplace_back(
           fmt::format(FMT_STRING("file \"{}\" does not have interactions for {} resolution: {}"), p,
-                      resolution, e.what()));
+                      resolution, msg));
     }
   }
 }
