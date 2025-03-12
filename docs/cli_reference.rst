@@ -239,7 +239,7 @@ hictk dump
   Options:
     -h,--help                   Print this help message and exit
     --resolution UINT:NONNEGATIVE
-                                HiC matrix resolution (ignored when file is in .cool format).
+                                HiC matrix resolution (required when processing multi-resolution files).
     --matrix-type ENUM:{observed,oe,expected} [observed]
                                 Matrix type (ignored when file is not in .hic format).
     --matrix-unit ENUM:{BP,FRAG} [BP]
@@ -377,8 +377,7 @@ hictk merge
                                 Should be one of:
                                 - cool
                                 - hic
-    --resolution UINT:NONNEGATIVE
-                                Hi-C matrix resolution (ignored when input files are in .cool format).
+    --resolution UINT:POSITIVE  Hi-C matrix resolution (required when all input files are multi-resolution).
     -f,--force                  Force overwrite output file.
     --chunk-size UINT [10000000]
                                 Number of pixels to store in memory before writing to disk.
