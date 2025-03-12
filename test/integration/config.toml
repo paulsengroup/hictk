@@ -74,9 +74,8 @@ files = [
   { uri = "cooler/single_cell_cooler_test_file.scool", format = "scool" },
   { uri = "cooler/cooler_variable_bins_test_file.cool", format = "cool", variable-bin-size = true },
   { uri = "cooler/cooler_storage_mode_square_test_file.mcool::/resolutions/1000", format = "cool" },
-  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
-  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 },
-  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000 }
+  { uri = "hic/4DNFIZ1ZVXC8.hic8", format = "hic", reference-uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000, excluded-norms = ["KR", "ICE", "weight"] },
+  { uri = "hic/4DNFIZ1ZVXC8.hic9", format = "hic", reference-uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/100000", resolution = 100000, excluded-norms = ["KR", "SCALE", "ICE", "weight"] },
 ]
 
 queries = [

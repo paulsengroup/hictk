@@ -133,7 +133,10 @@ class HictkpyDump:
 
     def _fetch_normalizations(self) -> List[str] | None:
         if self._is_multi_res_file():
-            return hictkpy.File(self._f.path(), self._f.resolutions()[-1]).avail_normalizations()
+            normalizations = set()
+            for res in self._f.resolutions():
+                normalizations |= set(hictkpy.File(self._f.path(), res).avail_normalizations())
+            return list(sorted(normalizations))
         if self._is_single_cell_file():
             return None
         if self._f is None:
@@ -157,15 +160,17 @@ class HictkpyDump:
         if not self._is_single_res_file():
             return None
 
-        # TODO remove once hictkpy.File().weights() is available
-        # https://github.com/paulsengroup/hictkpy/pull/49
-        raise NotImplementedError
-
         data = {}
+        bins = self._f.bins().to_df()
+        for col in bins:
+            data[col] = bins[col]
+
         for norm in self._f.avail_normalizations():
             data[norm] = self._f.weights(norm)
 
-        return filter_weights(pd.DataFrame(data), self._f.chromosomes(), range1, range2)
+        return filter_weights(pd.DataFrame(data), self._f.chromosomes(), range1, range2).drop(
+            columns=["chrom", "start", "end"]
+        )
 
     def dump(
         self,

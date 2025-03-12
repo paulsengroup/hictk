@@ -66,7 +66,7 @@ void dump_bins(const File& f, std::string_view range1, std::string_view range2) 
   const auto coords = GenomicInterval::parse_ucsc(bins.chromosomes(), std::string{range});
   const auto [first_bin, last_bin] = bins.find_overlap(coords);
   const auto i0 = (*first_bin).id();
-  const auto i1 = (*last_bin).id();
+  const auto i1 = last_bin == bins.end() ? bins.size() : (*last_bin).id();
 
   return {i0, i1};
 }
@@ -221,20 +221,42 @@ void dump_normalizations(std::string_view uri, std::string_view format,
   }
 }
 
+static void filter_resolutions(std::vector<std::uint32_t>& resolutions,
+                               std::optional<std::uint32_t> resolution) {
+  if (!resolution.has_value()) {
+    return;
+  }
+
+  const auto res_found =
+      std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
+  if (res_found) {
+    resolutions.clear();
+    resolutions.push_back(*resolution);
+  } else {
+    throw std::out_of_range(
+        fmt::format(FMT_STRING("file does not have interactions for {} resolution"), *resolution));
+  }
+}
+
+[[nodiscard]] static std::string format_resolutions(const std::vector<std::uint32_t>& resolutions) {
+  std::string buff{};
+  for (const auto res : resolutions) {
+    if (res == 0) {
+      buff.append("variable\n");
+    } else {
+      fmt::format_to(std::back_inserter(buff), FMT_STRING("{}\n"), res);
+    }
+  }
+
+  return buff;
+}
+
 void dump_resolutions(std::string_view uri, std::string_view format,
                       std::optional<std::uint32_t> resolution) {
   std::vector<std::uint32_t> resolutions{};
 
   if (format == "hic") {
     resolutions = hic::utils::list_resolutions(uri);
-    if (resolution.has_value()) {
-      const auto res_found =
-          std::find(resolutions.begin(), resolutions.end(), *resolution) != resolutions.end();
-      resolutions.clear();
-      if (res_found) {
-        resolutions.push_back(*resolution);
-      }
-    }
   } else if (format == "mcool") {
     resolutions = cooler::MultiResFile{uri}.resolutions();
   } else if (format == "scool") {
@@ -244,8 +266,10 @@ void dump_resolutions(std::string_view uri, std::string_view format,
     resolutions.push_back(cooler::File{uri}.resolution());
   }
 
+  filter_resolutions(resolutions, resolution);
+
   if (!resolutions.empty()) {
-    fmt::print(FMT_STRING("{}\n"), fmt::join(resolutions, "\n"));
+    fmt::print(FMT_STRING("{}"), format_resolutions(resolutions));
   }
 }
 

@@ -89,7 +89,7 @@ class Runner:
         if handle is None:
             raise ValueError("stream cannot be None")
 
-        if len(names) == 0:
+        if names is not None and len(names) == 0:
             raise ValueError("names cannot be an empty list")
 
         try:
@@ -219,4 +219,6 @@ class Runner:
                 delta = time.time() - t0
                 time_left = max(30.0, timeout - delta)
                 logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
-                return returncode, stdout.result(time_left), stderr.result(time_left)
+                stdout = stdout.result(time_left)
+                stderr = stderr.result(1)
+                return returncode, stdout, stderr

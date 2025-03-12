@@ -77,14 +77,12 @@ class HictkConvert(HictkTestHarness):
             _, expected = self._fetch_table(reference_file, resolution=res, table="normalizations")
             _, found = self._fetch_table(test_file, resolution=res, table="normalizations")
 
-            self._failures |= validators.compare_normalizations(expected, found)
+            self._failures |= validators.compare_normalizations(expected, found, ignored_norms=["ICE", "weight"])
 
-            # TODO remove check once hictkpy.File().weights() is available
-            # https://github.com/paulsengroup/hictkpy/pull/49
-            if not is_hic(reference_file) and not is_hic(test_file):
+            if expected == found:
                 _, expected = self._fetch_table(reference_file, resolution=res, table="weights")
                 _, found = self._fetch_table(test_file, resolution=res, table="weights")
-                self._failures |= validators.compare_weights(expected, found)
+                self._failures |= validators.compare_weights(expected, found, ignored_weights=["ICE", "weight"])
 
     def run(  # noqa
         self,
