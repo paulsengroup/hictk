@@ -28,16 +28,18 @@ def _extract_queries_for_uri(
         if not file.endswith(os.path.basename(c["uri"])):
             continue
 
-        queries.append(
-            {
-                "uri": str(uri),
-                "reference-uri": str(reference_uri),
-                "resolution": resolution,
-                "range1": c.get("range1"),
-                "range2": c.get("range2"),
-                "normalization": c.get("normalization"),
-            }
-        )
+        query = {
+            "uri": str(uri),
+            "reference-uri": str(reference_uri),
+            "resolution": resolution,
+            "range1": c.get("range1"),
+            "range2": c.get("range2"),
+            "normalization": c.get("normalization"),
+        }
+        if "expect-failure" in c:
+            query["expect-failure"] = c["expect-failure"]
+
+        queries.append(query)
 
     return queries
 
@@ -124,6 +126,9 @@ def _plan_tests_hictk_dump_bins(
         factory["expect_failure"] = is_multires(uri) and resolution is None
         for query in _extract_queries_for_uri(uri, reference_uri, resolution, cell, config):
             assert query.get("range1") is not None
+
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
 
             # hictk dump ... -t bins
             query_gw = _make_hictk_dump_args(
@@ -231,6 +236,9 @@ def _plan_tests_hictk_dump_norms(
         reference_uri = wd[c.get("reference-uri", c["uri"])]
         excluded_norms = tuple(c.get("excluded-norms", []))
         for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
+
             # hictk dump ... -t normalizations
             args = _make_hictk_dump_args(
                 query,
@@ -265,6 +273,9 @@ def _plan_tests_hictk_dump_resolutions(
         uri = wd[c["uri"]]
         reference_uri = wd[c.get("reference-uri", c["uri"])]
         for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
+
             # hictk dump ... -t resolutions
             args = _make_hictk_dump_args(
                 query,
@@ -333,6 +344,9 @@ def _plan_tests_hictk_dump_weights(
             assert query.get("range1") is not None
             assert query.get("range2") is not None
 
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
+
             # hictk dump ... -t weights
             args1 = _make_hictk_dump_args(
                 query,
@@ -379,6 +393,9 @@ def _plan_tests_hictk_dump_cis(
         factory["expect_failure"] = (is_multires(uri) and c.get("resolution") is None) or is_scool(uri)
         for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
+
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
 
             # hictk dump ... --range xxx
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"range2", "normalization"})
@@ -482,6 +499,9 @@ def _plan_tests_hictk_dump_trans(
             assert query.get("range1") is not None
             assert query.get("range2") is not None
 
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
+
             # hictk dump ... --range xxx --range2 xxx
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"normalization"})
             # hictk dump ... --range xxx --range2 xxx --normalization xxx
@@ -582,6 +602,9 @@ def _plan_tests_hictk_dump_gw(
         for query in _extract_queries_for_uri(uri, reference_uri, c.get("resolution"), c.get("cell"), config):
             assert query.get("range1") is not None
             assert query.get("range2") is not None
+
+            if "expect-failure" in query:
+                factory["expect_failure"] = query["expect-failure"]
 
             # hictk dump ...
             query_raw_coo = _make_hictk_dump_args(query, drop_args={"range1", "range2", "normalization"})

@@ -49,7 +49,7 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (ignored when file is in .cool format).")
+      "HiC matrix resolution (required when processing multi-resolution files).")
       ->check(CLI::NonNegativeNumber);
 
   sc.add_option(
@@ -155,9 +155,13 @@ void Cli::validate_dump_subcommand() const {
   const auto is_mcooler = cooler::utils::is_multires_file(c.uri);
   const auto is_scool = cooler::utils::is_scool_file(c.uri);
 
-  if ((is_hic || is_mcooler) && c.resolution == 0 &&
+  if ((is_hic || is_mcooler) && !c.resolution.has_value() &&
       (c.table == "pixels" || c.table == "bins" || c.table == "weights")) {
-    errors.emplace_back("--resolution is mandatory when file is in .hic or .mcool format.");
+    const auto resolutions =
+        is_hic ? hic::utils::list_resolutions(c.uri) : cooler::utils::list_resolutions(c.uri);
+    if (resolutions.size() != 1) {
+      errors.emplace_back("--resolution is mandatory when file is in .hic or .mcool format.");
+    }
   }
 
   const auto resolution_parsed = !subcmd.get_option("--resolution")->empty();
@@ -220,11 +224,7 @@ void Cli::transform_args_dump_subcommand() {
   c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
 
   c.format = infer_input_format(c.uri);
-  if (c.format == "hic" && c.resolution == 0 && c.table == "chroms") {
-    c.resolution = hic::utils::list_resolutions(c.uri).back();
-  } else if (c.format == "mcool" && c.resolution == 0 && c.table == "chroms") {
-    c.resolution = cooler::utils::list_resolutions(c.uri).back();
-  } else if (c.format == "scool" && (c.table == "chroms" || c.table == "bins")) {
+  if (c.format == "scool" && (c.table == "chroms" || c.table == "bins")) {
     const cooler::SingleCellFile sclr{c.uri};
     if (sclr.cells().empty()) {
       throw std::runtime_error("file does not contain any cell");

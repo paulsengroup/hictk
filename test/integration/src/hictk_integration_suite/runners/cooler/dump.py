@@ -41,8 +41,15 @@ class CoolerDump:
             if resolution is not None:
                 assert clr.binsize == resolution
             return clr
-        if is_multires(uri) and resolution is not None:
-            return cooler.Cooler(f"{uri}::/resolutions/{resolution}")
+
+        if is_multires(uri):
+            if resolution is not None:
+                return cooler.Cooler(f"{uri}::/resolutions/{resolution}")
+
+            suffixes = cooler.fileops.list_coolers(uri)
+            if len(suffixes) == 1:
+                return cooler.Cooler(f"{uri}::{suffixes[0]}")
+
         return None
 
     def _fetch_gw_pixels(self, balance: str | bool, join: bool) -> pd.DataFrame | None:
