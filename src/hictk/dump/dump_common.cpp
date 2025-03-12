@@ -66,7 +66,7 @@ void dump_bins(const File& f, std::string_view range1, std::string_view range2) 
   const auto coords = GenomicInterval::parse_ucsc(bins.chromosomes(), std::string{range});
   const auto [first_bin, last_bin] = bins.find_overlap(coords);
   const auto i0 = (*first_bin).id();
-  const auto i1 = (*last_bin).id();
+  const auto i1 = last_bin == bins.end() ? bins.size() : (*last_bin).id();
 
   return {i0, i1};
 }
