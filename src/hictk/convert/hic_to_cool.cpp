@@ -43,44 +43,16 @@
 
 namespace hictk::tools {
 
-static bool missing_norm_or_interactions(const std::exception& e, balancing::Method norm) {
-  const std::string_view msg{e.what()};
-
-  const auto missing_interactions =
-      msg.find("unable to read file offset") != std::string_view::npos;
-
-  const auto missing_norm_vect =
-      msg.find(fmt::format(FMT_STRING("unable to find {} normalization vector"), norm)) !=
-      std::string_view::npos;
-
-  return missing_interactions || missing_norm_vect;
-}
-
-static bool check_if_norm_exists(hic::File& f, balancing::Method norm) {
-  return std::any_of(f.chromosomes().begin(), f.chromosomes().end(), [&](const Chromosome& chrom) {
-    try {
-      if (!chrom.is_all()) {
-        std::ignore = f.fetch(chrom.name(), norm);
-      }
-      return true;
-    } catch (const std::exception& e) {
-      if (!missing_norm_or_interactions(e, norm)) {
-        throw;
-      }
-    }
-    return false;
-  });
-}
-
 template <typename CoolerFile>
 static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
                          bool fail_if_missing) {
   if (norm == balancing::Method::NONE()) {
     return;
   }
-  const auto dset_name = fmt::to_string(norm);
 
-  const auto norm_exists = check_if_norm_exists(hf, norm);
+  const auto avail_norms = hf.avail_normalizations();
+  const auto norm_exists =
+      std::find(avail_norms.begin(), avail_norms.end(), norm) != avail_norms.end();
 
   if (!norm_exists) {
     if (fail_if_missing) {
@@ -100,9 +72,9 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
   const auto weights = hf.normalization(norm)(balancing::Weights::Type::DIVISIVE);
   using T = std::remove_reference_t<decltype(cf)>;
   if constexpr (std::is_same_v<T, cooler::File>) {
-    cf.write_weights(dset_name, weights.begin(), weights.end(), false, true);
+    cf.write_weights(norm.to_string(), weights.begin(), weights.end(), false, true);
   } else {
-    cooler::File::write_weights(cf, dset_name, weights.begin(), weights.end(), false, true);
+    cooler::File::write_weights(cf, norm.to_string(), weights.begin(), weights.end(), false, true);
   }
 }
 

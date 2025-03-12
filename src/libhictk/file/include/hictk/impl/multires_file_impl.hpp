@@ -4,6 +4,18 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
+#include <cassert>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/cooler/validation.hpp"
@@ -68,6 +80,24 @@ constexpr const std::vector<std::uint32_t>& MultiResFile::resolutions() const no
 }
 
 inline const Reference& MultiResFile::chromosomes() const noexcept { return _chroms; }
+
+inline const std::vector<balancing::Method>& MultiResFile::avail_normalizations(
+    std::string_view policy) const {
+  if (_normalizations.has_value() && _normalizations->first == policy) {
+    return _normalizations->second;
+  }
+
+  if (is_hic()) {
+    _normalizations.emplace(std::string{policy},
+                            hic::utils::list_normalizations(_path, policy, _type, _unit));
+  } else {
+    assert(is_mcool());
+    _normalizations.emplace(std::string{policy},
+                            cooler::MultiResFile(_path).avail_normalizations(policy));
+  }
+
+  return _normalizations->second;
+}
 
 inline File MultiResFile::open(std::uint32_t resolution) const { return File(_path, resolution); }
 

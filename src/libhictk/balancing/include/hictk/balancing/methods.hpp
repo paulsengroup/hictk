@@ -34,6 +34,12 @@ class Method {
   [[nodiscard]] friend bool operator!=(const Method &a, std::string_view b) { return !(a == b); }
   [[nodiscard]] friend bool operator!=(std::string_view a, const Method &b) { return !(a == b); }
 
+  [[nodiscard]] friend bool operator<(const Method &a, const Method &b) {
+    return a._name < b._name;
+  }
+  [[nodiscard]] friend bool operator<(const Method &a, std::string_view b) { return a._name < b; }
+  [[nodiscard]] friend bool operator<(std::string_view a, const Method &b) { return a < b._name; }
+
   [[nodiscard]] std::string_view to_string() const noexcept { return _name; }
 
   static Method NONE() { return Method{"NONE"}; }
