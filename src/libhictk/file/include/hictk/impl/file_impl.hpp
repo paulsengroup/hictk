@@ -23,6 +23,7 @@
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/cooler/uri.hpp"
+#include "hictk/cooler/utils.hpp"
 #include "hictk/cooler/validation.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/pixel_selector.hpp"
@@ -249,10 +250,7 @@ inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic
                   hic::MatrixUnit unit) {
   const auto [path, grp] = cooler::parse_cooler_uri(uri);
   if (hic::utils::is_hic_file(path)) {
-    if (!resolution_.has_value()) {
-      throw std::runtime_error("resolution is required when opening .hic files.");
-    }
-    *this = File(hic::File(path, *resolution_, type, unit));
+    *this = File(hic::File(path, resolution_, type, unit));
     return;
   }
 
@@ -267,7 +265,7 @@ inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic
 
   if (cooler::utils::is_cooler(uri)) {
     *this = File(cooler::File(uri));
-    if (resolution_.has_value() && *resolution_ != resolution()) {
+    if (resolution_.value_or(resolution()) != resolution()) {
       throw std::runtime_error(
           fmt::format(FMT_STRING("found an unexpected resolution while opening file at \"{}\": "
                                  "expected {}, found {}."),
@@ -277,10 +275,15 @@ inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic
   }
 
   if (!resolution_.has_value()) {
-    throw std::runtime_error("resolution is required when opening .mcool files.");
+    const auto resolutions = cooler::utils::list_resolutions(uri, false);
+    if (resolutions.size() != 1) {
+      throw std::runtime_error(
+          "resolution is required when opening .mcool files with more than one resolution.");
+    }
+    resolution_ = resolutions.front();
   }
 
-  *this = File(cooler::File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, *resolution_)));
+  *this = File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, *resolution_));
 }
 
 inline std::string File::uri() const {
