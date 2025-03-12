@@ -28,6 +28,7 @@ static const auto& datadir = hictk::test::datadir;
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 // NOLINTBEGIN(cert-err58-cpp)
+const auto single_res = (datadir / "hic" / "ENCFF993FGR.2500000.hic").string();
 const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
 const auto path_binary = (datadir / "various" / "data.zip").string();
@@ -36,6 +37,19 @@ const auto path_binary = (datadir / "various" / "data.zip").string();
 TEST_CASE("HiC: utils is_hic_file", "[hic][short]") {
   CHECK(utils::is_hic_file(pathV8));
   CHECK_FALSE(utils::is_hic_file(path_binary));
+}
+
+TEST_CASE("HiC: ctors", "[hic][short]") {
+  SECTION("valid") {
+    CHECK_NOTHROW(File{pathV8, 1'000});
+    CHECK_NOTHROW(File{pathV9, 1'000});
+    CHECK(File{single_res}.resolution() == 2'500'000);
+  }
+  SECTION("invalid") {
+    CHECK_THROWS_WITH(File(pathV8, 1), Catch::Matchers::ContainsSubstring(
+                                           "does not have interactions for resolution"));
+    CHECK_THROWS_WITH(File(pathV8), Catch::Matchers::ContainsSubstring("resolution is required"));
+  }
 }
 
 TEST_CASE("HiC: file accessors", "[hic][short]") {

@@ -36,25 +36,35 @@ TEST_CASE("File", "[file][short]") {
   const cooler::File ref(uri_cooler);
 
   SECTION("ctors") {
-    CHECK(File(path_hic, resolution).path() == path_hic);
-    CHECK(File(path_cooler, resolution).path() == path_cooler);
-    CHECK(File(uri_cooler).uri() == uri_cooler);
+    const auto path_singleres_hic = (datadir / "hic" / "ENCFF993FGR.2500000.hic").string();
+    const auto path_singleres_mcool =
+        (datadir / "cooler" / "singleres_cooler_test_file.mcool").string();
+    SECTION("valid") {
+      CHECK(File(path_hic, resolution).path() == path_hic);
+      CHECK(File(path_cooler, resolution).path() == path_cooler);
+      CHECK(File(uri_cooler).uri() == uri_cooler);
+      CHECK(File(path_singleres_hic).resolution() == 2'500'000);
+      CHECK(File(path_singleres_mcool).resolution() == 6'400'000);
+    }
 
-    // Invalid params for .mcool files
-    CHECK_THROWS_WITH(File(path_cooler),
-                      Catch::Matchers::ContainsSubstring("resolution is required"));
-    CHECK_THROWS_WITH(File(path_cooler, resolution, hic::MatrixType::expected),
-                      Catch::Matchers::ContainsSubstring("should always be \"observed\""));
-    CHECK_THROWS_WITH(
-        File(path_cooler, resolution, hic::MatrixType::observed, hic::MatrixUnit::FRAG),
-        Catch::Matchers::ContainsSubstring("should always be \"BP\""));
+    SECTION("invalid") {
+      // Invalid params for .mcool files
+      CHECK_THROWS_WITH(File(path_cooler),
+                        Catch::Matchers::ContainsSubstring("resolution is required"));
+      CHECK_THROWS_WITH(File(path_cooler, resolution, hic::MatrixType::expected),
+                        Catch::Matchers::ContainsSubstring("should always be \"observed\""));
+      CHECK_THROWS_WITH(
+          File(path_cooler, resolution, hic::MatrixType::observed, hic::MatrixUnit::FRAG),
+          Catch::Matchers::ContainsSubstring("should always be \"BP\""));
 
-    // Invalid params for .hic files
-    CHECK_THROWS_WITH(File(path_hic), Catch::Matchers::ContainsSubstring("resolution is required"));
+      // Invalid params for .hic files
+      CHECK_THROWS_WITH(File(path_hic),
+                        Catch::Matchers::ContainsSubstring("resolution is required"));
 
-    // Mismatched resolution
-    CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
-                      Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
+      // Mismatched resolution
+      CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
+                        Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
+    }
   }
 
   SECTION("accessors") {
