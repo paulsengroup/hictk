@@ -329,7 +329,8 @@ void hic_to_cool(const ConvertConfig& c) {  // NOLINT(misc-use-internal-linkage)
         hic::File hf(c.path_to_input.string(), c.resolutions.front());
         assert(spdlog::default_logger());
 
-        if (c.resolutions.size() == 1) {
+        if (c.output_format == "cool") {
+          assert(c.resolutions.size() == 1);
           convert_resolution_multi_threaded<PixelT>(
               hf,
               init_cooler<PixelT>(c.path_to_output.string(), c.resolutions.front(), c.genome,

@@ -25,6 +25,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/multires_file.hpp"
 #include "hictk/string_utils.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
@@ -211,6 +212,13 @@ void Cli::validate_convert_subcommand() const {
       errors.emplace_back(fmt::format(
           FMT_STRING("converting .mcool with storage-mode=\"{}\" to .hic format is not supported"),
           *storage_mode));
+    }
+  } else if (is_hic && output_format == "cool") {
+    const auto input_is_multires = MultiResFile{c.path_to_input.string()}.resolutions().size() != 1;
+    if (c.resolutions.size() != 1 && input_is_multires) {
+      errors.emplace_back(
+          "converting multi-resolution .hic files to .cool format requires exactly one resolution "
+          "to be passed through the --resolutions option");
     }
   }
 
