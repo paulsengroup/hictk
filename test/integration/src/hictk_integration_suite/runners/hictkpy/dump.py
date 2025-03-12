@@ -133,7 +133,10 @@ class HictkpyDump:
 
     def _fetch_normalizations(self) -> List[str] | None:
         if self._is_multi_res_file():
-            return hictkpy.File(self._f.path(), self._f.resolutions()[-1]).avail_normalizations()
+            normalizations = set()
+            for res in self._f.resolutions():
+                normalizations |= set(hictkpy.File(self._f.path(), res).avail_normalizations())
+            return list(sorted(normalizations))
         if self._is_single_cell_file():
             return None
         if self._f is None:

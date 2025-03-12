@@ -167,12 +167,14 @@ class CoolerDump:
 
     def _fetch_normalizations(self) -> List[str] | None:
         if cooler.fileops.is_multires_file(self._uri):
-            uri = f"{self._uri}::{cooler.fileops.list_coolers(self._uri)[-1]}"
-            return cooler.Cooler(uri).bins().columns.drop(["chrom", "start", "end"]).tolist()
-
+            normalizations = set()
+            for suffix in cooler.fileops.list_coolers(self._uri):
+                uri = f"{self._uri}::{suffix}"
+                normalizations |= set(cooler.Cooler(uri).bins().columns.drop(["chrom", "start", "end"]).tolist())
+            return list(sorted(normalizations))
         if self._clr is None:
             return None
-        return self._clr.bins().columns.drop(["chrom", "start", "end"]).tolist()
+        return self._clr.bins().columns.drop(["chrom", "start", "end"]).sort_values().tolist()
 
     def _fetch_resolutions(self) -> List[int] | None:
         if self._clr is not None:
