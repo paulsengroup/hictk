@@ -246,6 +246,7 @@ void Cli::validate_convert_subcommand() const {
   return hic::File{p.string(), resolution}.assembly();
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void Cli::transform_args_convert_subcommand() {
   auto& c = std::get<ConvertConfig>(_config);
   const auto& sc = *_cli.get_subcommand("convert");

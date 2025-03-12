@@ -62,7 +62,7 @@ static void copy_normalization_vector(hic::internal::HiCFileWriter& w, const coo
                     resolution, norm.to_string());
         return;
       }
-    } catch (const HighFive::Exception&) {
+    } catch (const HighFive::Exception&) {  // NOLINT
     }
 
     const auto& weights = clr.normalization(norm);

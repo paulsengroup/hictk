@@ -183,7 +183,7 @@ TEST_CASE("HiC: list_normalizations", "[hic][short]") {
       balancing::Method::VC_SQRT(),
   };
 
-  for (const auto policy : {"union", "intersection"}) {
+  for (const auto* policy : {"union", "intersection"}) {
     auto found = utils::list_normalizations(pathV8, policy);
     REQUIRE(found.size() == expected_v8.size());
     for (std::size_t i = 0; i < expected_v8.size(); ++i) {
