@@ -81,9 +81,27 @@ namespace hictk::tools {
 
 class CoolerFileValidator : public CLI::Validator {
  public:
-  CoolerFileValidator() : Validator("Cooler") {
+  CoolerFileValidator() : Validator(".[ms]cool") {
     func_ = [](std::string& uri) -> std::string {
-      if (!hictk::cooler::utils::is_cooler(uri)) {
+      if (cooler::utils::is_cooler(uri) || cooler::utils::is_multires_file(uri) ||
+          cooler::utils::is_scool_file(uri)) {
+        return "";
+      }
+
+      const auto path = cooler::parse_cooler_uri(uri).file_path;
+      if (!std::filesystem::exists(path)) {
+        return "No such file: " + path;
+      }
+      return "Not a valid Cooler: " + uri;
+    };
+  }
+};
+
+class SingleResCoolerFileValidator : public CLI::Validator {
+ public:
+  SingleResCoolerFileValidator() : Validator(".cool") {
+    func_ = [](std::string& uri) -> std::string {
+      if (!cooler::utils::is_cooler(uri)) {
         if (cooler::utils::is_multires_file(uri)) {
           return "URI points to a .mcool file: " + uri;
         }
@@ -103,7 +121,7 @@ class CoolerFileValidator : public CLI::Validator {
 
 class MultiresCoolerFileValidator : public CLI::Validator {
  public:
-  MultiresCoolerFileValidator() : Validator("Multires-cooler") {
+  MultiresCoolerFileValidator() : Validator(".mcool") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
@@ -119,7 +137,7 @@ class MultiresCoolerFileValidator : public CLI::Validator {
 
 class SingleCellCoolerFileValidator : public CLI::Validator {
  public:
-  SingleCellCoolerFileValidator() : Validator("Single-cell-cooler") {
+  SingleCellCoolerFileValidator() : Validator(".scool") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
@@ -135,7 +153,7 @@ class SingleCellCoolerFileValidator : public CLI::Validator {
 
 class HiCFileValidator : public CLI::Validator {
  public:
-  HiCFileValidator() : Validator("HiC") {
+  HiCFileValidator() : Validator(".hic") {
     func_ = [](std::string& uri) -> std::string {
       const auto path = cooler::parse_cooler_uri(uri).file_path;
       if (!std::filesystem::exists(path)) {
@@ -152,8 +170,6 @@ class HiCFileValidator : public CLI::Validator {
 class AsGenomicDistanceTransformer : public CLI::Validator {
  public:
   explicit AsGenomicDistanceTransformer() {
-    description("UINT [bp]");
-
     func_ = [](std::string& input) -> std::string {
       try {
         CLI::detail::rtrim(input);
@@ -286,10 +302,11 @@ class StringToEnumChecked : public CLI::Validator {
 
 // NOLINTBEGIN(cert-err58-cpp)
 // clang-format off
+inline const auto IsValidHiCFile = HiCFileValidator();
 inline const auto IsValidCoolerFile = CoolerFileValidator();
+inline const auto IsValidSingleResCoolerFile = SingleResCoolerFileValidator();
 inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();
 inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();
-inline const auto IsValidHiCFile = HiCFileValidator();
 inline const auto AsGenomicDistance = AsGenomicDistanceTransformer();
 // clang-format on
 // NOLINTEND(cert-err58-cpp)

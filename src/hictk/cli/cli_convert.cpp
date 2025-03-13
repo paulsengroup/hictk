@@ -49,7 +49,7 @@ void Cli::make_convert_subcommand() {
       "input",
       c.path_to_input,
       "Path to the .hic, .cool or .mcool file to be converted.")
-      ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->required();
   sc.add_option(
       "output",
