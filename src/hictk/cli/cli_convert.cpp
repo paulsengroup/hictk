@@ -176,6 +176,7 @@ static void check_requested_resolutions_avail(const std::filesystem::path& path_
   }
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void Cli::validate_convert_subcommand() const {
   const auto& c = std::get<ConvertConfig>(_config);
   std::vector<std::string> errors;

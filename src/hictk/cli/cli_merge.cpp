@@ -180,9 +180,9 @@ static void validate_files_format(const std::vector<std::string>& paths,
         "unable to infer the resolution to use for merging: --resolution is mandatory when all "
         "input "
         "files are in .hic or .mcool format and contain multiple resolutions.");
+  } else {
+    validate_resolution(paths, *resolution, errors);
   }
-
-  validate_resolution(paths, *resolution, errors);
 }
 
 void Cli::validate_merge_subcommand() const {
