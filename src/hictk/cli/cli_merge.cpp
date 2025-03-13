@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "hictk/file.hpp"
+#include "hictk/multires_file.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -41,7 +42,7 @@ void Cli::make_merge_subcommand() {
       "input-files",
       c.input_files,
       "Path to two or more Cooler or .hic files to be merged (Cooler URI syntax supported).")
-      ->check(IsValidCoolerFile | IsValidHiCFile)
+      ->check(IsValidCoolerFile | IsValidMultiresCoolerFile | IsValidHiCFile)
       ->expected(2, std::numeric_limits<int>::max())
       ->required();
   sc.add_option(
@@ -61,8 +62,8 @@ void Cli::make_merge_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "Hi-C matrix resolution (ignored when input files are in .cool format).")
-      ->check(CLI::NonNegativeNumber);
+      "Hi-C matrix resolution (required when all input files are multi-resolution).")
+      ->check(CLI::PositiveNumber);
   sc.add_flag(
       "-f,--force",
       c.force,
@@ -117,14 +118,50 @@ void Cli::make_merge_subcommand() {
   _config = std::monostate{};
 }
 
-static void validate_files_format(const std::vector<std::string>& paths, std::uint32_t resolution,
+[[nodiscard]] static std::optional<std::uint32_t> infer_resolution(std::string_view path,
+                                                                   std::string_view format = "") {
+  if (format.empty()) {
+    return infer_resolution(path, infer_input_format(path));
+  }
+
+  if (format == "hic" || format == "mcool") {
+    const auto resolutions = MultiResFile{std::string{path}}.resolutions();
+    if (resolutions.size() == 1) {
+      return resolutions.front();
+    }
+  }
+  if (format == "cool") {
+    return cooler::File(path).resolution();
+  }
+
+  return {};
+}
+
+static void validate_resolution(const std::vector<std::string>& paths, std::uint32_t resolution,
+                                std::vector<std::string>& errors) {
+  assert(!paths.empty());
+
+  for (const auto& p : paths) {
+    assert(infer_input_format(p) != "scool");
+
+    try {
+      std::ignore = File{p, resolution};
+    } catch (const std::exception& e) {
+      std::string_view msg{e.what()};
+      if (msg.find("found an unexpected resolution") == 0) {
+        msg = "please make sure all provided files have at least one resolution in common";
+      }
+      errors.emplace_back(
+          fmt::format(FMT_STRING("file \"{}\" does not have interactions for {} resolution: {}"), p,
+                      resolution, msg));
+    }
+  }
+}
+
+static void validate_files_format(const std::vector<std::string>& paths,
+                                  std::optional<std::uint32_t> resolution,
                                   std::vector<std::string>& errors) {
   assert(!paths.empty());
-  const auto& p0 = paths.front();
-  if ((hic::utils::is_hic_file(p0) || cooler::utils::is_multires_file(p0)) && resolution == 0) {
-    errors.emplace_back("--resolution is mandatory when input files are in .hic or .mcool format.");
-    return;
-  }
 
   for (const auto& p : paths) {
     const auto format = infer_input_format(p);
@@ -132,11 +169,19 @@ static void validate_files_format(const std::vector<std::string>& paths, std::ui
       errors.emplace_back("merging file in .scool format is not supported.");
       return;
     }
-    if ((format == "hic" || format == "mcool") && resolution == 0) {
-      errors.emplace_back(
-          "--resolution is mandatory when one or more input files are in .hic or .mcool format.");
-      return;
+
+    if (!resolution.has_value()) {
+      resolution = infer_resolution(p, format);
     }
+  }
+
+  if (!resolution.has_value()) {
+    errors.emplace_back(
+        "unable to infer the resolution to use for merging: --resolution is mandatory when all "
+        "input "
+        "files are in .hic or .mcool format and contain multiple resolutions.");
+  } else {
+    validate_resolution(paths, *resolution, errors);
   }
 }
 
@@ -167,8 +212,21 @@ void Cli::transform_args_merge_subcommand() {
 
   c.output_format = infer_output_format(c.output_file);
 
-  if (c.resolution == 0) {
-    c.resolution = File(c.input_files.front()).resolution();
+  if (!c.resolution.has_value()) {
+    for (const auto& p : c.input_files) {
+      c.resolution = infer_resolution(p);
+      if (c.resolution.has_value()) {
+        break;
+      }
+    }
+  }
+
+  assert(c.resolution.has_value());
+
+  for (auto& f : c.input_files) {
+    if (cooler::utils::is_multires_file(f)) {
+      f.append(fmt::format(FMT_STRING("::/resolutions/{}"), *c.resolution));
+    }
   }
 
   if (sc.get_option("--compression-lvl")->empty()) {

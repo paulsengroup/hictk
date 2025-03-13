@@ -41,11 +41,12 @@ class File {
 
  public:
   using QUERY_TYPE = GenomicInterval::Type;
-  explicit File(std::string url_, std::uint32_t resolution_,
+  explicit File(std::string url_, std::optional<std::uint32_t> resolution_ = {},
                 MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
                 std::uint64_t block_cache_capacity = 0);
-  File &open(std::string url_, std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
-             MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
+  File &open(std::string url_, std::optional<std::uint32_t> resolution_ = {},
+             MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP,
+             std::uint64_t block_cache_capacity = 0);
   File &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed,
              MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   [[nodiscard]] bool has_resolution(std::uint32_t resolution) const;
@@ -142,6 +143,8 @@ class File {
                                     std::optional<std::uint64_t> diagonal_band_width) const;
   [[nodiscard]] std::size_t estimate_cache_size_cis() const;
   [[nodiscard]] std::size_t estimate_cache_size_trans() const;
+  [[nodiscard]] static std::uint32_t infer_or_validate_resolution(
+      const internal::HiCFileReader &fs, std::optional<std::uint32_t> wanted_resolution);
 };
 
 }  // namespace hictk::hic

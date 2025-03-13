@@ -371,6 +371,9 @@ class Cli {
 };
 
 [[nodiscard]] inline std::string infer_input_format(const std::filesystem::path& p) {
+  if (hic::utils::is_hic_file(p)) {
+    return "hic";
+  }
   if (cooler::utils::is_cooler(p.string())) {
     return "cool";
   }
@@ -380,8 +383,9 @@ class Cli {
   if (cooler::utils::is_scool_file(p.string())) {
     return "scool";
   }
-  assert(hic::utils::is_hic_file(p));
-  return "hic";
+
+  throw std::runtime_error(
+      fmt::format(FMT_STRING("unable to infer file format for file \"{}\""), p.string()));
 }
 
 [[nodiscard]] inline std::string infer_output_format(const std::filesystem::path& p) {

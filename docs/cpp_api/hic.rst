@@ -48,11 +48,11 @@ File handle
 
   **Constructors**
 
-  .. cpp:function:: explicit File(std::string url_, std::uint32_t resolution_, MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
+  .. cpp:function:: explicit File(std::string url_, std::optional<std::uint32_t> resolution_, MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
 
   **Open/close methods**
 
-  .. cpp:function:: File &open(std::string url_, std::uint32_t resolution_, MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
+  .. cpp:function:: File &open(std::string url_, std::optional<std::uint32_t> resolution_, MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
   .. cpp:function:: File &open(std::uint32_t resolution_, MatrixType type_ = MatrixType::observed, MatrixUnit unit_ = MatrixUnit::BP, std::uint64_t block_cache_capacity = 0);
 
   **Accessors**

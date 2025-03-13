@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -30,27 +31,26 @@
 
 namespace hictk::hic {
 
-inline File::File(std::string url_, std::uint32_t resolution_, MatrixType type_, MatrixUnit unit_,
-                  std::uint64_t block_cache_capacity)
+inline File::File(std::string url_, std::optional<std::uint32_t> resolution_, MatrixType type_,
+                  MatrixUnit unit_, std::uint64_t block_cache_capacity)
     : _fs(std::make_shared<internal::HiCFileReader>(std::move(url_))),
       _type(type_),
       _unit(unit_),
       _block_cache(std::make_shared<internal::BlockCache>(block_cache_capacity)),
       _weight_cache(std::make_shared<internal::WeightCache>()),
-      _bins(std::make_shared<const BinTable>(_fs->header().chromosomes, resolution_)) {
-  if (!has_resolution(resolution())) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("file {} does not have interactions for resolution {}"), path(), resolution()));
-  }
+      _bins(std::make_shared<const BinTable>(_fs->header().chromosomes,
+                                             infer_or_validate_resolution(*_fs, resolution_))) {
+  assert(has_resolution(resolution()));
 
   if (block_cache_capacity == 0) {
     optimize_cache_size();
   }
 }
 
-inline File& File::open(std::string url_, std::uint32_t resolution_, MatrixType type_,
-                        MatrixUnit unit_, std::uint64_t block_cache_capacity) {
-  if (_fs->path() == url_ && resolution() == resolution_ && _type == type_ && _unit == unit_) {
+inline File& File::open(std::string url_, std::optional<std::uint32_t> resolution_,
+                        MatrixType type_, MatrixUnit unit_, std::uint64_t block_cache_capacity) {
+  if (_fs->path() == url_ && resolution() == resolution_.value_or(0) && _type == type_ &&
+      _unit == unit_) {
     _block_cache->set_capacity(block_cache_capacity, false);
     return *this;
   }
@@ -447,6 +447,27 @@ inline std::size_t File::estimate_cache_size_trans() const {
   const auto num_chrom2_bins = bins().subset(chrom2).size();
 
   return ((cache_size + num_chrom2_bins - 1) / num_chrom2_bins) * num_trans_bins;
+}
+
+inline std::uint32_t File::infer_or_validate_resolution(
+    const internal::HiCFileReader& fs, std::optional<std::uint32_t> wanted_resolution) {
+  const auto& resolutions = fs.header().resolutions;
+  if (!wanted_resolution.has_value()) {
+    if (resolutions.size() == 1) {
+      return resolutions.front();
+    }
+    throw std::runtime_error("resolution is required when opening multi-resolution .hic files");
+  }
+
+  const auto match = std::find(resolutions.begin(), resolutions.end(), *wanted_resolution);
+
+  if (match == resolutions.end()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("file {} does not have interactions for resolution {}"), fs.path(),
+                    *wanted_resolution));
+  }
+
+  return *wanted_resolution;
 }
 
 }  // namespace hictk::hic

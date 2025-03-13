@@ -37,7 +37,10 @@ class HictkpyDump:
         uri: str, resolution: int | None
     ) -> hictkpy.File | hictkpy.MultiResFile | hictkpy.cooler.SingleCellFile | None:
         if is_multires(uri) and resolution is None:
-            return hictkpy.MultiResFile(uri)
+            f = hictkpy.MultiResFile(uri)
+            if len(f.resolutions()) == 1:
+                return f[f.resolutions()[0]]
+            return f
 
         if is_scool(uri):
             f = hictkpy.cooler.SingleCellFile(uri)

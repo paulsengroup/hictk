@@ -5,6 +5,8 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <cassert>
+
 #include "./merge.hpp"
 #include "hictk/file.hpp"
 #include "hictk/tools/config.hpp"
@@ -13,10 +15,11 @@ namespace hictk::tools {
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
 void merge_to_hic(const MergeConfig& c) {
-  SPDLOG_INFO(FMT_STRING("begin merging {} files into one .{} file..."), c.input_files.size(),
-              c.output_format);
+  assert(c.resolution.has_value());
+  SPDLOG_INFO(FMT_STRING("begin merging {} files into one .{} file using {} resolution..."),
+              c.input_files.size(), c.output_format, *c.resolution);
   utils::merge_to_hic(c.input_files.begin(), c.input_files.end(), c.output_file.string(),
-                      c.resolution, c.tmp_dir, c.force, c.chunk_size, c.threads, c.compression_lvl,
+                      *c.resolution, c.tmp_dir, c.force, c.chunk_size, c.threads, c.compression_lvl,
                       c.skip_all_vs_all_matrix);
 }
 

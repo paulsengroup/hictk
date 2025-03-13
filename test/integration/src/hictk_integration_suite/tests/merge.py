@@ -8,6 +8,7 @@ import pathlib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import hictkpy
 import pandas as pd
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.hictk import HictkTestHarness
@@ -46,6 +47,18 @@ class HictkMerge(HictkTestHarness):
 
         return df
 
+    @staticmethod
+    def _infer_resolution(files: List[pathlib.Path | str]) -> int | None:
+        for f in files:
+            try:
+                res = hictkpy.File(f).resolution()
+                if res == 0:
+                    return None
+                return res
+            except:  # noqa
+                pass
+        return None
+
     def _validate(
         self,
         input_files: List[pathlib.Path | str],
@@ -64,8 +77,11 @@ class HictkMerge(HictkTestHarness):
             return
 
         resolution = self._get_hictk_keyword_option("--resolution")
-        if resolution is not None:
+        if resolution is None:
+            resolution = HictkMerge._infer_resolution(input_files)
+        else:
             resolution = int(resolution)
+
         expected = self._merge_pixels([self._fetch_table(f, resolution, table="pixels")[1] for f in input_files])
         found = self._fetch_table(test_file, resolution, table="pixels")[1]
 
