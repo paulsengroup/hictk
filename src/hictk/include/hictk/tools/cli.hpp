@@ -21,6 +21,7 @@
 #include "config.hpp"
 #include "hictk/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
+#include "hictk/genomic_units.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/string_utils.hpp"
@@ -148,6 +149,23 @@ class HiCFileValidator : public CLI::Validator {
   }
 };
 
+class AsGenomicDistanceTransformer : public CLI::Validator {
+ public:
+  explicit AsGenomicDistanceTransformer() {
+    description("UINT [bp]");
+
+    func_ = [](std::string& input) -> std::string {
+      try {
+        CLI::detail::rtrim(input);
+        input = fmt::to_string(parse_genomic_distance<std::uint32_t>(input));
+      } catch (const std::exception& e) {
+        throw CLI::ValidationError(e.what());
+      }
+      return {};
+    };
+  }
+};
+
 [[nodiscard]] static std::string str_replace_all(std::string s, const std::regex& pattern,
                                                  const std::string& replacement) {
   while (std::regex_search(s, pattern)) {
@@ -266,12 +284,15 @@ class StringToEnumChecked : public CLI::Validator {
   }
 };
 
+// NOLINTBEGIN(cert-err58-cpp)
 // clang-format off
-inline const auto IsValidCoolerFile = CoolerFileValidator();                      // NOLINT(cert-err58-cpp)
-inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();      // NOLINT(cert-err58-cpp)
-inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();  // NOLINT(cert-err58-cpp)
-inline const auto IsValidHiCFile = HiCFileValidator();                            // NOLINT(cert-err58-cpp)
+inline const auto IsValidCoolerFile = CoolerFileValidator();
+inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();
+inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();
+inline const auto IsValidHiCFile = HiCFileValidator();
+inline const auto AsGenomicDistance = AsGenomicDistanceTransformer();
 // clang-format on
+// NOLINTEND(cert-err58-cpp)
 
 // clang-format off
 // NOLINTNEXTLINE(cert-err58-cpp)
