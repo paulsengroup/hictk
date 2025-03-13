@@ -49,8 +49,9 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (required when processing multi-resolution files).")
-      ->check(CLI::NonNegativeNumber);
+      "HiC matrix resolution (ignored when file is in .cool format).")
+      ->check(CLI::NonNegativeNumber)
+      ->transform(AsGenomicDistance);
 
   sc.add_option(
       "--matrix-type",

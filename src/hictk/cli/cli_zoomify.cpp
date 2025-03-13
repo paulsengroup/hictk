@@ -70,7 +70,9 @@ void Cli::make_zoomify_subcommand() {
   sc.add_option(
       "--resolutions",
       c.resolutions,
-      "One or more resolutions to be used for coarsening.");
+      "One or more resolutions to be used for coarsening.")
+       ->check(CLI::PositiveNumber)
+       ->transform(AsGenomicDistance);
 
   sc.add_flag(
       "--copy-base-resolution,!--no-copy-base-resolution",

@@ -62,8 +62,9 @@ void Cli::make_merge_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "Hi-C matrix resolution (required when all input files are multi-resolution).")
-      ->check(CLI::PositiveNumber);
+      "Hi-C matrix resolution (ignored when input files are in .cool format).")
+      ->check(CLI::NonNegativeNumber)
+      ->transform(AsGenomicDistance);
   sc.add_flag(
       "-f,--force",
       c.force,
