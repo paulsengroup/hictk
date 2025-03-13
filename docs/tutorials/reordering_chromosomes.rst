@@ -15,7 +15,7 @@ TLDR
                              output.cool \
                              --chrom-sizes=<(hictk dump --table=chroms matrix.cool | sort -k2,2nr) \
                              --format=bg2 \
-                             --bin-size=1000 \
+                             --bin-size=1kbp \
                              --transpose-lower-triangular-pixels
 
 
@@ -65,7 +65,7 @@ Next, we dump pixels in bedGraph2 format (see below for how to make this step mo
 
 .. code-block:: console
 
-    user@dev:/tmp hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000 > pixels.bg2
+    user@dev:/tmp hictk dump 4DNFIOTPSS3L.hic --join --resolution 1kbp > pixels.bg2
 
     user@dev:/tmp head pixels.bg2
 
@@ -89,7 +89,7 @@ Finally, we load pixels into a new .hic file
                              --chrom-sizes=chrom.sizes.sorted \
                              --transpose-lower-triangular-pixels \
                              --format=bg2 \
-                             --bin-size=1000
+                             --bin-size=1kbp
 
     [2024-09-27 19:00:40.344] [info]: Running hictk v1.0.0-fbdcb591
     [2024-09-27 19:00:40.353] [info]: begin loading pixels into a .hic file...
@@ -131,12 +131,12 @@ Luckily, we can completely avoid generating this file by using output redirectio
 
 .. code-block:: console
 
-    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000) \
+    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution 1kbp) \
                              output.hic \
                              --chrom-sizes=chrom.sizes.sorted \
                              --transpose-lower-triangular-pixels \
                              --format=bg2 \
-                             --bin-size=1000
+                             --bin-size=1kbp
 
 
 Note that hictk still needs to generate some temporary file to load interactions into a new .cool or .hic file.
@@ -144,12 +144,12 @@ When processing large files, it is a good idea to specify custom folder where to
 
 .. code-block:: console
 
-    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution=1000) \
+    user@dev:/tmp hictk load <(hictk dump 4DNFIOTPSS3L.hic --join --resolution 1kbp) \
                              output.hic \
                              --chrom-sizes=chrom.sizes.sorted \
                              --transpose-lower-triangular-pixels \
                              --format=bg2 \
-                             --bin-size=1000 \
+                             --bin-size=1kbp \
                              --tmpdir=/var/tmp/
 
 Another option you may want to consider when working with .hic files, is the ``--threads`` option, which can significantly reduce the time required to load interactions into .hic files.
