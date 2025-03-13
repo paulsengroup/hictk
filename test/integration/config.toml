@@ -167,6 +167,8 @@ output-names = [
 [merge]
 
 files = [
+  { uri = "cooler/4DNFIZ1ZVXC8.mcool", format = "mcool" },
+  { uri = "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/2500000", format = "mcool" },
   { uri = "cooler/cooler_test_file.cool", format = "cool" },
   { uri = "cooler/ENCFF993FGR.2500000.cool", format = "cool" },
   { uri = "cooler/multires_cooler_test_file.mcool::/resolutions/100000", format = "cool" },
@@ -187,7 +189,7 @@ test-cases = [
   { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic", args = { "resolution" = 2500000 } },
   { input-uris = ["hic/ENCFF993FGR.2500000.hic", "cooler/ENCFF993FGR.2500000.cool"], output = "test.hic", args = { "resolution" = 2500000 } },
   { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool::/resolutions/99999"], output = "test.cool", expect-failure = true },
-  { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true },
+  { input-uris = ["cooler/cooler_test_file.cool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool" },
   { input-uris = ["cooler/cooler_test_file.cool", "cooler/cooler_variable_bins_test_file.cool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/multires_cooler_test_file.mcool", "cooler/multires_cooler_test_file.mcool"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "cooler/single_cell_cooler_test_file.scool"], output = "test.scool", expect-failure = true },
@@ -197,6 +199,9 @@ test-cases = [
   { input-uris = ["cooler/single_cell_cooler_test_file.scool", "hic/4DNFIZ1ZVXC8.hic9"], output = "test.cool", expect-failure = true },
   { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.hic" },
   { input-uris = ["cooler/ENCFF993FGR.2500000.cool", "hic/ENCFF993FGR.2500000.hic"], output = "test.cool" },
+  { input-uris = ["hic/4DNFIZ1ZVXC8.hic9", "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/2500000"], output = "test.hic" },
+  { input-uris = ["hic/4DNFIZ1ZVXC8.hic9", "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/2500000"], output = "test.cool" },
+  { input-uris = ["cooler/4DNFIZ1ZVXC8.mcool", "cooler/4DNFIZ1ZVXC8.mcool::/resolutions/2500000"], output = "test.cool" },
 ]
 
 
