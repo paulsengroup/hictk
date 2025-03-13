@@ -223,6 +223,12 @@ void Cli::transform_args_merge_subcommand() {
 
   assert(c.resolution.has_value());
 
+  for (auto& f : c.input_files) {
+    if (cooler::utils::is_multires_file(f)) {
+      f.append(fmt::format(FMT_STRING("::/resolutions/{}"), *c.resolution));
+    }
+  }
+
   if (sc.get_option("--compression-lvl")->empty()) {
     c.compression_lvl =
         c.output_format == "hic" ? DEFAULT_HIC_COMPRESSION_LEVEL : DEFAULT_COOL_COMPRESSION_LEVEL;

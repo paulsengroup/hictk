@@ -17,6 +17,7 @@
 #include <string_view>
 #include <vector>
 
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
 #include "hictk/hic/file_writer.hpp"
@@ -144,7 +145,7 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
     buffer.clear();
 
     const auto& f0 = files.front();
-    auto attrs = cooler::Attributes::init(f0.resolution());
+    auto attrs = cooler::Attributes::init(resolution);
     std::visit(
         [&](const auto& f) {
           using FileT = remove_cvref_t<decltype(f)>;
@@ -156,7 +157,10 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
         },
         f0.get());
 
-    auto dest = cooler::File::create<N>(dest_uri, f0.bins(), overwrite_if_exists, attrs,
+    assert(f0.bins().type() == BinTable::Type::fixed);
+    const BinTable bins{f0.chromosomes().remove_ALL(), f0.resolution()};
+
+    auto dest = cooler::File::create<N>(dest_uri, bins, overwrite_if_exists, attrs,
                                         cooler::DEFAULT_HDF5_CACHE_SIZE * 4, compression_lvl);
 
     dest.append_pixels(merger.begin(), merger.end());
