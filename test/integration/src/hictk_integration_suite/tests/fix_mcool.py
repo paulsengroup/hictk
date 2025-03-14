@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import logging
 import os
 import pathlib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import structlog
 from hictk_integration_suite.runners import Runner
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 
@@ -80,13 +80,13 @@ class HictkFixMcool(HictkTestHarness):
         try:
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
             self._validate(test_file=test_file, expect_failure=expect_failure)
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

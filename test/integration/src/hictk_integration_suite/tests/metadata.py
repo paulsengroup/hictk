@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import logging
 import os
 import tomllib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import structlog
 import yaml
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.hictk import HictkTestHarness
@@ -136,7 +136,7 @@ class HictkMetadata(HictkTestHarness):
         try:
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
@@ -146,7 +146,7 @@ class HictkMetadata(HictkTestHarness):
                 expect_failure=expect_failure,
             )
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 import json
-import logging
 import os.path
 import pathlib
 import platform
@@ -13,6 +12,7 @@ import sys
 import tempfile
 from typing import Any, Dict, List, Mapping, Tuple
 
+import structlog
 from hictk_integration_suite.common import URI
 from immutabledict import immutabledict
 
@@ -146,6 +146,8 @@ class WorkingDirectory:
         if not URI(src, False).path.exists():
             raise RuntimeError(f'source file "{src}" does not exist')
 
+        logger = structlog.get_logger().bind()
+
         src = URI(src)
 
         dest_dir = self._path / "staged_files"
@@ -158,9 +160,9 @@ class WorkingDirectory:
             if not exists_ok:
                 raise RuntimeError(f'refusing to overwrite file "{dest.path}"')
 
-            logging.debug(f'file "{src.path}" was already staged')
+            logger.debug(f'file "{src.path}" was already staged')
         else:
-            logging.debug(f'staging file "{src.path}"...')
+            logger.debug(f'staging file "{src.path}"...')
             dest_dir.mkdir(exist_ok=True)
             shutil.copy2(src.path, dest.path)
             if make_read_only:
@@ -174,7 +176,7 @@ class WorkingDirectory:
             self._mappings[URI(src.path)] = dest_file
             self._mappings[dest_file] = dest_file
 
-        logging.debug(f'URI "{src}" successfully staged (dest="{dest}")')
+        logger.debug(f'URI "{src}" successfully staged (dest="{dest}")')
         return dest
 
     def mkdtemp(self, prefix: pathlib.Path | None = None) -> pathlib.Path:
@@ -278,7 +280,7 @@ class WorkingDirectory:
                     pass
 
         def error_handler(_, path, excinfo):
-            logging.warning(f'failed to delete "{path}": {excinfo}')
+            structlog.get_logger().warning(f'failed to delete "{path}": {excinfo}')
 
         major, minor = sys.version_info[:2]
         if major > 2 and minor > 11:

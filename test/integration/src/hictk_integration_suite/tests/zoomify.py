@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import structlog
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.cooler import CoolerCoarsen
 from hictk_integration_suite.runners.hictk import HictkTestHarness
@@ -74,7 +74,7 @@ class HictkZoomify(HictkTestHarness):
                 expected = None
 
             if expected is None:
-                logging.debug(f"coarsening cooler at URI {reference_uri} to resolution {res}...")
+                structlog.get_logger().debug(f"coarsening cooler at URI {reference_uri} to resolution {res}...")
                 reference_uri = CoolerCoarsen(
                     input_uri=reference_uri,
                     base_resolution=None,
@@ -126,7 +126,7 @@ class HictkZoomify(HictkTestHarness):
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
 
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
@@ -141,7 +141,7 @@ class HictkZoomify(HictkTestHarness):
                 tmpdir=pathlib.Path(tmpdir),
             )
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 
