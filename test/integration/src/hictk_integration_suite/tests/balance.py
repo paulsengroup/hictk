@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import pandas as pd
+import structlog
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.cooler import CoolerBalance
 from hictk_integration_suite.runners.hictk import HictkTestHarness
@@ -151,7 +151,7 @@ class _HictkBalance(HictkTestHarness):
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
 
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
@@ -162,7 +162,7 @@ class _HictkBalance(HictkTestHarness):
                 no_validate_weights=no_validate_weights,
             )
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

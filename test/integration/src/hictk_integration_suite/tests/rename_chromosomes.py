@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import pandas as pd
+import structlog
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 from hictk_integration_suite.validators.file_formats import (
     is_cooler,
@@ -159,7 +159,7 @@ class HictkRenameChromosomes(HictkTestHarness):
         try:
             self._run_hictk(args, timeout=timeout, env_variables=env_variables, max_attempts=max_attempts)
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
@@ -169,7 +169,7 @@ class HictkRenameChromosomes(HictkTestHarness):
                 expect_failure=expect_failure,
             )
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

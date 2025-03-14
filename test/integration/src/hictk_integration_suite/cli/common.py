@@ -1,9 +1,9 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
+
 import hashlib
 import json
-import logging
 import os.path
 import pathlib
 import platform
@@ -11,8 +11,10 @@ import shutil
 import stat
 import sys
 import tempfile
+from collections.abc import Sequence
 from typing import Any, Dict, List, Mapping, Tuple
 
+import structlog
 from hictk_integration_suite.common import URI
 from immutabledict import immutabledict
 
@@ -146,6 +148,8 @@ class WorkingDirectory:
         if not URI(src, False).path.exists():
             raise RuntimeError(f'source file "{src}" does not exist')
 
+        logger = structlog.get_logger().bind()
+
         src = URI(src)
 
         dest_dir = self._path / "staged_files"
@@ -158,9 +162,9 @@ class WorkingDirectory:
             if not exists_ok:
                 raise RuntimeError(f'refusing to overwrite file "{dest.path}"')
 
-            logging.debug(f'file "{src.path}" was already staged')
+            logger.debug(f'file "{src.path}" was already staged')
         else:
-            logging.debug(f'staging file "{src.path}"...')
+            logger.debug(f'staging file "{src.path}"...')
             dest_dir.mkdir(exist_ok=True)
             shutil.copy2(src.path, dest.path)
             if make_read_only:
@@ -174,7 +178,7 @@ class WorkingDirectory:
             self._mappings[URI(src.path)] = dest_file
             self._mappings[dest_file] = dest_file
 
-        logging.debug(f'URI "{src}" successfully staged (dest="{dest}")')
+        logger.debug(f'URI "{src}" successfully staged (dest="{dest}")')
         return dest
 
     def mkdtemp(self, prefix: pathlib.Path | None = None) -> pathlib.Path:
@@ -278,7 +282,7 @@ class WorkingDirectory:
                     pass
 
         def error_handler(_, path, excinfo):
-            logging.warning(f'failed to delete "{path}": {excinfo}')
+            structlog.get_logger().warning(f'failed to delete "{path}": {excinfo}')
 
         major, minor = sys.version_info[:2]
         if major > 2 and minor > 11:
@@ -347,21 +351,42 @@ def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
 def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "sha256") -> str:
     tmpdir = str(tmpdir)
 
+    def strip_tmpdir_helper(x):
+        if isinstance(x, os.PathLike):
+            return strip_tmpdir_helper(str(x))
+
+        if isinstance(x, str) and tmpdir in x:
+            x = URI(x)
+            if x.group is None:
+                return str(x.path.name)
+            return f"{x.path.name}::{x.group}"
+        return x
+
     def strip_tmpdir(obj) -> Dict:
         for key, value in obj.items():
             if isinstance(value, dict) or isinstance(value, immutabledict):
-                obj[key] = strip_tmpdir(value)
-            elif isinstance(value, list):
+                obj[key] = strip_tmpdir(dict(value))
+            elif isinstance(value, str) or isinstance(value, os.PathLike):
+                obj[key] = strip_tmpdir_helper(value)
+            elif isinstance(value, Sequence):
+                value = list(value)
                 for i, x in enumerate(value):
-                    if isinstance(x, str) and tmpdir in x:
-                        value[i] = str(URI(x))
-                obj[key] = value
-            elif isinstance(value, str) and tmpdir in value:
-                obj[key] = str(URI(value))
+                    if isinstance(x, dict) or isinstance(x, immutabledict):
+                        value[i] = strip_tmpdir(x)
+                    else:
+                        value[i] = strip_tmpdir_helper(x)
+                obj[key] = tuple(value)
 
-        return dict(sorted(obj.items()))
+        return dict(obj)
 
-    serialized_plan = json.dumps(strip_tmpdir(dict(plan))).encode("utf-8")
+    plan = dict(plan)
+
+    excluded_keys = ("env_variables", "cwd")
+
+    for k in excluded_keys:
+        plan.pop(k, None)
+
+    serialized_plan = json.dumps(strip_tmpdir(plan), sort_keys=True).encode("utf-8")
     h = hashlib.new(algorithm)
     h.update(serialized_plan)
 

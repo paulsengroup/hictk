@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 from typing import Any, Dict, List, Set, Tuple
 
+import structlog
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.tests.dump import HictkDump, HictkDumpCli
 from hictk_integration_suite.validators.file_formats import is_multires, is_scool
@@ -105,7 +105,7 @@ def _plan_tests_cli(
     )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -164,7 +164,7 @@ def _plan_tests_hictk_dump_bins(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -213,7 +213,7 @@ def _plan_tests_hictk_dump_chroms(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -251,7 +251,7 @@ def _plan_tests_hictk_dump_norms(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -285,7 +285,7 @@ def _plan_tests_hictk_dump_resolutions(
             plans.append(factory | {"args": tuple(args), "reference_uri": query["reference-uri"]})
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -317,7 +317,7 @@ def _plan_tests_hictk_dump_cells(
             plans.append(factory | {"args": tuple(args), "reference_uri": query["reference-uri"]})
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -374,7 +374,7 @@ def _plan_tests_hictk_dump_weights(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -478,7 +478,7 @@ def _plan_tests_hictk_dump_cis(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -582,7 +582,7 @@ def _plan_tests_hictk_dump_trans(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -642,7 +642,7 @@ def _plan_tests_hictk_dump_gw(
             )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -677,10 +677,12 @@ def run_tests(
     cwd = wd.mkdtemp()
     tmpdir = wd.mkdtemp()
 
+    logger = structlog.get_logger().bind()
+
     for p in plans:
         skip, p = _preprocess_plan(p, wd)
         if skip:
-            logging.info(f"SKIPPING {p}")
+            logger.bind(status="SKIP").info(str(p))
             num_skip += 1
             continue
         title = p["title"]
@@ -695,7 +697,10 @@ def run_tests(
         num_pass += status["status"] == "PASS"
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)
-        logging.info(status)
+        if status["status"] == "PASS":
+            logger.bind(**status).info("")
+        else:
+            logger.bind(**status).warning("")
 
     if not no_cleanup:
         wd.rmtree(cwd)
