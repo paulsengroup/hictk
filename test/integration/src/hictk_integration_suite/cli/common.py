@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
+
 import hashlib
 import json
 import os.path
@@ -10,6 +11,7 @@ import shutil
 import stat
 import sys
 import tempfile
+from collections.abc import Sequence
 from typing import Any, Dict, List, Mapping, Tuple
 
 import structlog
@@ -349,21 +351,42 @@ def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
 def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "sha256") -> str:
     tmpdir = str(tmpdir)
 
+    def strip_tmpdir_helper(x):
+        if isinstance(x, os.PathLike):
+            return strip_tmpdir_helper(str(x))
+
+        if isinstance(x, str) and tmpdir in x:
+            x = URI(x)
+            if x.group is None:
+                return str(x.path.name)
+            return f"{x.path.name}::{x.group}"
+        return x
+
     def strip_tmpdir(obj) -> Dict:
         for key, value in obj.items():
             if isinstance(value, dict) or isinstance(value, immutabledict):
-                obj[key] = strip_tmpdir(value)
-            elif isinstance(value, list):
+                obj[key] = strip_tmpdir(dict(value))
+            elif isinstance(value, str) or isinstance(value, os.PathLike):
+                obj[key] = strip_tmpdir_helper(value)
+            elif isinstance(value, Sequence):
+                value = list(value)
                 for i, x in enumerate(value):
-                    if isinstance(x, str) and tmpdir in x:
-                        value[i] = str(URI(x))
-                obj[key] = value
-            elif isinstance(value, str) and tmpdir in value:
-                obj[key] = str(URI(value))
+                    if isinstance(x, dict) or isinstance(x, immutabledict):
+                        value[i] = strip_tmpdir(x)
+                    else:
+                        value[i] = strip_tmpdir_helper(x)
+                obj[key] = tuple(value)
 
-        return dict(sorted(obj.items()))
+        return dict(obj)
 
-    serialized_plan = json.dumps(strip_tmpdir(dict(plan))).encode("utf-8")
+    plan = dict(plan)
+
+    excluded_keys = ("env_variables", "cwd")
+
+    for k in excluded_keys:
+        plan.pop(k, None)
+
+    serialized_plan = json.dumps(strip_tmpdir(plan), sort_keys=True).encode("utf-8")
     h = hashlib.new(algorithm)
     h.update(serialized_plan)
 
