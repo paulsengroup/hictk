@@ -321,6 +321,17 @@ def main(
     results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary, max_attempts)
     t1 = time.time()
 
+    unexpected_exit_codes = set()
+    num_unexpected_exit_code = 0
+    for k, runs in results["results"].items():
+        if not k.startswith("hictk"):
+            continue
+        for res in runs:
+            ec = res["exit-code"]
+            if ec not in {0, 1}:
+                unexpected_exit_codes.add(str(ec))
+                num_unexpected_exit_code += 1
+
     num_pass = results["results"]["pass"]
     num_fail = results["results"]["fail"]
     num_skip = results["results"]["skip"]
@@ -332,12 +343,21 @@ def main(
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
 
+    if len(unexpected_exit_codes) != 0:
+        logging.warn(
+            "some of the tests returned non-zero exit codes with unexpected values: "
+            f"{', '.join(sorted(unexpected_exit_codes))}. "
+            "Please carefully review the test report."
+        )
+
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)
     print(f"# SKIP: {num_skip}", file=sys.stderr)
     print(f"# FAIL: {num_fail}", file=sys.stderr)
+    if num_unexpected_exit_code != 0:
+        print(f"# UNEXPECTED EXIT CODE: {num_unexpected_exit_code}", file=sys.stderr)
 
-    sys.exit(num_fail != 0)
+    sys.exit(num_fail != 0 or num_unexpected_exit_code != 0)
 
 
 if __name__ == "__main__":

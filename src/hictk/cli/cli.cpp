@@ -63,7 +63,7 @@ auto Cli::parse_arguments() -> Config {
     }
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
-    _exit_code = _cli.exit(e);
+    _exit_code = exit(e);
     return _config;
   } catch (const std::exception& e) {
     _exit_code = 1;
@@ -86,7 +86,7 @@ auto Cli::parse_arguments() -> Config {
   return _config;
 }
 
-int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e); }
+int Cli::exit(const CLI::ParseError& e) const { return _cli.exit(e) != 0; }  // NOLINT
 int Cli::exit() const noexcept { return _exit_code; }
 
 std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
