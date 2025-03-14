@@ -151,7 +151,6 @@ def _configure_logger_columns(
     event_key: str = "event",
     timestamp_key: str = "timestamp",
     pad_level: bool = True,
-    max_step_nest_levels: int = 3,
 ) -> List[structlog.dev.Column]:
     """
     The body of this function is an extension of the structlog.dev.ConsoleRenderer.
@@ -165,11 +164,6 @@ def _configure_logger_columns(
         level_to_color = structlog.dev.ConsoleRenderer().get_default_level_styles(colors)
     else:
         level_to_color = level_styles
-
-    if hasattr(structlog.dev, "_EVENT_WIDTH"):
-        pad_event = structlog.dev._EVENT_WIDTH  # noqa
-    else:
-        pad_event = 30
 
     level_width = 0 if not pad_level else None
 
@@ -278,7 +272,7 @@ def _configure_logger_columns(
             ),
         ),
         structlog.dev.Column(
-            "event",
+            event_key,
             structlog.dev.KeyValueColumnFormatter(
                 key_style=None,
                 value_style=styles.bright,
@@ -344,10 +338,6 @@ def setup_logger(log_lvl: str):
 
         return event_dict
 
-    renderer = structlog.dev.ConsoleRenderer(
-        columns=_configure_logger_columns(colors=sys.stderr.isatty()),
-    )
-
     log_levelno = _map_log_level_to_levelno(log_lvl)
 
     processors = [
@@ -355,13 +345,16 @@ def setup_logger(log_lvl: str):
         maybe_add_log_level,
         preprocess_eventdict,
         structlog.processors.StackInfoRenderer(),
-        renderer,
+        structlog.dev.ConsoleRenderer(
+            columns=_configure_logger_columns(colors=sys.stderr.isatty()),
+        ),
     ]
 
     structlog.configure(
         cache_logger_on_first_use=True,
         wrapper_class=structlog.make_filtering_bound_logger(log_levelno),
         processors=processors,
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
     )
 
     _install_custom_warning_handler()
