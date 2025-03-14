@@ -49,7 +49,7 @@ void Cli::make_zoomify_subcommand() {
       "cooler/hic",
        c.path_to_input,
       "Path to a .cool or .hic file (Cooler URI syntax supported).")
-      ->check(IsValidCoolerFile | IsValidHiCFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & !IsValidSingleCellCoolerFile)
       ->required();
 
   sc.add_option(
@@ -70,7 +70,9 @@ void Cli::make_zoomify_subcommand() {
   sc.add_option(
       "--resolutions",
       c.resolutions,
-      "One or more resolutions to be used for coarsening.");
+      "One or more resolutions to be used for coarsening.")
+       ->check(CLI::PositiveNumber)
+       ->transform(AsGenomicDistance);
 
   sc.add_flag(
       "--copy-base-resolution,!--no-copy-base-resolution",
@@ -175,8 +177,22 @@ static std::vector<std::uint32_t> detect_invalid_resolutions(
     return cooler::File(path).resolution();
   }
 
+  if (format == "mcool") {
+    const auto resolutions = cooler::utils::list_resolutions(std::string{path}, true);
+    if (resolutions.empty()) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("file \"{}\" does not have any resolution!"), path));
+    }
+    return resolutions.front();
+  }
+
   assert(format == "hic");
-  return hic::utils::list_resolutions(std::string{path}, true).front();
+  const auto resolutions = hic::utils::list_resolutions(std::string{path}, true);
+  if (resolutions.empty()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("file \"{}\" does not have any resolution!"), path));
+  }
+  return resolutions.front();
 }
 
 void Cli::validate_zoomify_subcommand() const {

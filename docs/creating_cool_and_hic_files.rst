@@ -25,7 +25,7 @@ Loading interactions in pairs (4DN-DCIC) format into a .cool/hic file is straigh
 
 .. code-block:: console
 
-  user@dev:/tmp$ hictk load --format 4dn --bin-size 10000 4DNFIKNWM36K.pairs.gz 4DNFIKNWM36K.10000.cool
+  user@dev:/tmp$ hictk load --format 4dn --bin-size 10kbp 4DNFIKNWM36K.pairs.gz 4DNFIKNWM36K.10000.cool
 
   [2024-09-26 16:51:28.059] [info]: Running hictk v1.0.0-fbdcb591
   [2024-09-26 16:51:28.068] [info]: begin loading pairwise interactions into a .cool file...
@@ -75,7 +75,7 @@ Multiple .cool and .hic files using the same reference genome and resolution can
   [2024-09-26 17:08:01.224] [info]: data/4DNFIZ1ZVXC8.merged.10000.cool size: 19.64 MB
 
 Merging .hic files as well as a mix of .hic and .cool files is also supported (as long as all files have the same resolution and reference genome).
-When one or more of the input files are in .hic format, the ``--resolution`` option is mandatory.
+When all input files contain data for multiple resolutions the ``--resolution`` option is mandatory.
 
 **Tips:**
 

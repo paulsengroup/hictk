@@ -28,6 +28,7 @@ target_include_directories(
 target_link_libraries(
   hictk_internal_common
   INTERFACE
+    hictk::numeric
     fmt::fmt-header-only
     "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
     spdlog::spdlog_header_only

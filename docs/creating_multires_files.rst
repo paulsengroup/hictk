@@ -28,7 +28,7 @@ Interactions from a single-resolution Cooler file (.cool) can be used to generat
   [2024-09-26 17:21:42.902] [info]: DONE! Processed 13 resolution(s) in 21.11s!
 
   # Coarsen a single resolution
-  user@dev:/tmp$ hictk zoomify data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 out.cool --resolutions 50000
+  user@dev:/tmp$ hictk zoomify data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 out.cool --resolutions 50kbp
 
   [2024-09-26 17:22:22.203] [info]: Running hictk v1.0.0-fbdcb591
   [2024-09-26 17:22:22.206] [info]: coarsening cooler at data/4DNFIZ1ZVXC8.mcool::/resolutions/1000 2 times (1000 -> 1000 -> 50000)

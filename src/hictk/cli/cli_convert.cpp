@@ -49,7 +49,7 @@ void Cli::make_convert_subcommand() {
       "input",
       c.path_to_input,
       "Path to the .hic, .cool or .mcool file to be converted.")
-      ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->required();
   sc.add_option(
       "output",
@@ -70,7 +70,8 @@ void Cli::make_convert_subcommand() {
       "-r,--resolutions",
       c.resolutions,
       "One or more resolutions to be converted. By default all resolutions are converted.")
-      ->check(CLI::PositiveNumber);
+      ->check(CLI::PositiveNumber)
+      ->transform(AsGenomicDistance);
   sc.add_option(
       "--normalization-methods",
       c.normalization_methods,
