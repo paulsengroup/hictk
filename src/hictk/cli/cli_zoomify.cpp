@@ -293,10 +293,6 @@ void Cli::transform_args_zoomify_subcommand() {
   auto& c = std::get<ZoomifyConfig>(_config);
   const auto& sc = *_cli.get_subcommand("zoomify");
 
-  // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
-
   c.input_format = infer_input_format(c.path_to_input);
   c.output_format = infer_output_format(c.path_to_output);
 
@@ -321,6 +317,12 @@ void Cli::transform_args_zoomify_subcommand() {
   if (sc.get_option("--tmpdir")->empty()) {
     c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
+
+  const auto try_read_from_env = sc.get_option("--verbosity")->empty();
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)
+                    .value_or(static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 }  // namespace hictk::tools

@@ -219,10 +219,6 @@ void Cli::validate_dump_subcommand() const {
 void Cli::transform_args_dump_subcommand() {
   auto& c = std::get<DumpConfig>(_config);
 
-  // in spdlog, high numbers correspond to low log levels
-  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
-
   c.format = infer_input_format(c.uri);
   if (c.format == "scool" && (c.table == "chroms" || c.table == "bins")) {
     const cooler::SingleCellFile sclr{c.uri};
@@ -240,6 +236,11 @@ void Cli::transform_args_dump_subcommand() {
   if (_cli.get_subcommand("dump")->get_option("--range2")->empty()) {
     c.range2 = c.range1;
   }
+
+  // in spdlog, high numbers correspond to low log levels
+  assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
+  c.verbosity = parse_hictk_verbosity_from_env().value_or(
+      static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 }  // namespace hictk::tools

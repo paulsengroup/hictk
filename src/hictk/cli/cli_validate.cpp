@@ -65,11 +65,12 @@ void Cli::transform_args_validate_subcommand() {
   auto& c = std::get<ValidateConfig>(_config);
 
   if (c.quiet) {
-    c.verbosity = static_cast<std::uint8_t>(spdlog::level::err);
+    c.verbosity = static_cast<std::int16_t>(spdlog::level::err);
   } else {
     // in spdlog, high numbers correspond to low log levels
     assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-    c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
+    c.verbosity = parse_hictk_verbosity_from_env().value_or(
+        static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
   }
 }
 
