@@ -48,6 +48,7 @@ class HictkConan(ConanFile):
         self.requires("lz4/1.10.0#68a01ece147a441b463d8cefea68d555", force=True)
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
         self.requires("nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d")
+        self.requires("opentelemetry-cpp/1.18.0#edd81c9cc34028bf0c2da87fc9756e04")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
         self.requires("span-lite/0.11.0#519fd49fff711674cfed8cd17d4ed422")

@@ -142,6 +142,9 @@ void Cli::make_cli() {
       "Print hictk's citation in Bibtex format and exit.");
   _cli.add_flag_callback(
       "--help-license", [this]() { _help_flag = "license"; }, "Print the hictk license and exit.");
+  _cli.add_flag_callback(
+      "--help-telemetry", [this]() { _help_flag = "telemetry"; },
+      "Print information regarding telemetry collection and exit.");
 
   make_balance_subcommand();
   make_convert_subcommand();
@@ -255,6 +258,13 @@ R"(@article{hictk,
 bool Cli::handle_help_flags() {
   if (_help_flag.empty()) {
     return false;
+  }
+
+  if (_help_flag == "telemetry") {
+    fmt::print(FMT_STRING("{}"), get_telemetry_help());
+    _subcommand = subcommand::none;
+    _exit_code = 0;
+    return true;
   }
 
   if (_help_flag == "license") {

@@ -22,6 +22,7 @@
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/telemetry.hpp"
 #include "hictk/tools/tools.hpp"
 #include "hictk/version.hpp"
 
@@ -247,6 +248,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
         "If you see this message, please file an issue on GitHub");
   }
 
+  Tracer tracer{};
   return std::visit(
       [&](const auto &c) {
         using T = hictk::remove_cvref_t<decltype(c)>;
@@ -254,7 +256,12 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
           HICTK_UNREACHABLE_CODE;
           return 1;
         } else {
-          return run_subcmd(c);
+          auto span = tracer.get_scoped_span(subcmd, c);
+          const auto ec = run_subcmd(c);
+          if (ec == 0 && span.has_value()) {
+            span->set_status(Tracer::StatusCode::kOk);
+          }
+          return ec;
         }
       },
       config);
