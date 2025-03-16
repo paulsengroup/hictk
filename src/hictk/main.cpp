@@ -214,7 +214,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
           if constexpr (!std::is_same_v<T, std::monostate>) {
             if (logger.ok()) {
               logger.set_level(config_.verbosity);  // NOLINT
-              if (subcmd != Cli::subcommand::help && subcmd != Cli::subcommand::dump) {
+              if (subcmd != Cli::subcommand::none && subcmd != Cli::subcommand::dump) {
                 logger.print_welcome_msg();
               }
             }
@@ -225,18 +225,18 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
     return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError &e) {
     //  This takes care of formatting and printing error messages (if any)
-    return std::make_tuple(cli.exit(e), Cli::subcommand::help, Config());
+    return std::make_tuple(cli.exit(e), Cli::subcommand::none, Config());
 
   } catch (const std::filesystem::filesystem_error &e) {
     SPDLOG_ERROR(FMT_STRING("FAILURE! {}"), e.what());
-    return std::make_tuple(1, Cli::subcommand::help, Config());
+    return std::make_tuple(1, Cli::subcommand::none, Config());
   } catch (const spdlog::spdlog_ex &e) {
     fmt::print(
         stderr,
         FMT_STRING(
             "FAILURE! An error occurred while setting up the main application logger: {}.\n"),
         e.what());
-    return std::make_tuple(1, Cli::subcommand::help, Config());
+    return std::make_tuple(1, Cli::subcommand::none, Config());
   }
 }
 

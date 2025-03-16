@@ -23,6 +23,7 @@ if(NOT CMAKE_FIND_PACKAGE_PREFER_CONFIG)
   set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 endif()
 
+include(cmake/Licensing.cmake)
 include(cmake/Versioning.cmake)
 
 project(

@@ -297,7 +297,7 @@ inline const auto ParseHiCMatrixUnit =
 class Cli {
  public:
   enum class subcommand : std::uint_fast8_t {
-    help,
+    none,
     balance,
     convert,
     dump,
@@ -326,8 +326,9 @@ class Cli {
   int _exit_code{1};
   Config _config{};
   CLI::App _cli{};
-  subcommand _subcommand{subcommand::help};
+  subcommand _subcommand{subcommand::none};
   mutable std::vector<std::string> _warnings{};
+  std::string_view _help_flag{};
 
   void make_balance_subcommand();
   void make_ice_balance_subcommand(CLI::App& app);
@@ -368,6 +369,8 @@ class Cli {
   void transform_args_validate_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
+
+  [[nodiscard]] bool handle_help_flags();
 };
 
 [[nodiscard]] inline std::string infer_input_format(const std::filesystem::path& p) {

@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 
+#include "hictk/license.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/version.hpp"
 
@@ -38,6 +39,10 @@ auto Cli::parse_arguments() -> Config {
     _cli.name(_exec_name);
     _cli.parse(_argc, _argv);
 
+    if (handle_help_flags()) {
+      return _config;
+    }
+
     if (_cli.get_subcommand("balance")->parsed()) {
       _subcommand = subcommand::balance;
     } else if (_cli.get_subcommand("convert")->parsed()) {
@@ -59,7 +64,17 @@ auto Cli::parse_arguments() -> Config {
     } else if (_cli.get_subcommand("zoomify")->parsed()) {
       _subcommand = subcommand::zoomify;
     } else {
-      _subcommand = subcommand::help;
+      _subcommand = subcommand::none;
+      for (const auto* opt : {"--help", "--version"}) {
+        if (!_cli.get_option(opt)->empty()) {
+          _exit_code = 0;
+          return _config;
+        }
+      }
+      fmt::print(stderr, FMT_STRING("A subcommand is required\n"
+                                    "Run with --help for more information.\n"));
+      _exit_code = 1;
+      return _config;
     }
   } catch (const CLI::ParseError& e) {
     //  This takes care of formatting and printing error messages (if any)
@@ -113,8 +128,8 @@ std::string_view Cli::subcommand_to_str(subcommand s) noexcept {
     case sc::zoomify:
       return "zoomify";
     default:
-      assert(s == sc::help);
-      return "--help";
+      assert(s == sc::none);
+      return "";
   }
 }
 
@@ -122,7 +137,11 @@ void Cli::make_cli() {
   _cli.name(_exec_name);
   _cli.description("Blazing fast tools to work with .hic and .cool files.");
   _cli.set_version_flag("-V,--version", std::string{config::version::str_long()});
-  _cli.require_subcommand(1);
+  _cli.add_flag_callback(
+      "--help-cite", [this]() { _help_flag = "cite"; },
+      "Print hictk's citation in Bibtex format and exit.");
+  _cli.add_flag_callback(
+      "--help-license", [this]() { _help_flag = "license"; }, "Print the hictk license and exit.");
 
   make_balance_subcommand();
   make_convert_subcommand();
@@ -167,7 +186,7 @@ void Cli::validate_args() const {
     case sc::zoomify:
       validate_zoomify_subcommand();
       break;
-    case sc::help:
+    case sc::none:
       break;
   }
 }
@@ -205,9 +224,55 @@ void Cli::transform_args() {
     case sc::zoomify:
       transform_args_zoomify_subcommand();
       break;
-    case sc::help:
+    case sc::none:
       break;
   }
+}
+
+[[nodiscard]] static constexpr std::string_view get_citation() noexcept {
+  // clang-format off
+  return
+R"(@article{hictk,
+    author = {Rossini, Roberto and Paulsen, Jonas},
+    title = "{hictk: blazing fast toolkit to work with .hic and .cool files}",
+    journal = {Bioinformatics},
+    volume = {40},
+    number = {7},
+    pages = {btae408},
+    year = {2024},
+    month = {06},
+    issn = {1367-4811},
+    doi = {10.1093/bioinformatics/btae408},
+    url = {https://doi.org/10.1093/bioinformatics/btae408},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/40/7/btae408/58385157/btae408.pdf},
+}
+)";
+  // clang-format on
+}
+
+[[nodiscard]] static constexpr std::string_view get_telemetry_help() noexcept { return "TODO"; }
+
+bool Cli::handle_help_flags() {
+  if (_help_flag.empty()) {
+    return false;
+  }
+
+  if (_help_flag == "license") {
+    fmt::print(FMT_STRING("{}"), config::license::license);
+    _subcommand = subcommand::none;
+    _exit_code = 0;
+    return true;
+  }
+
+  if (_help_flag == "cite") {
+    fmt::print(FMT_STRING("{}"), get_citation());
+    _subcommand = subcommand::none;
+    _exit_code = 0;
+    return true;
+  }
+
+  HICTK_UNREACHABLE_CODE;
+  return false;
 }
 
 }  // namespace hictk::tools
