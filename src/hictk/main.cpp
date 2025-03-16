@@ -240,6 +240,26 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
   }
 }
 
+[[nodiscard]] static int run_subcommand(Cli::subcommand subcmd, const Config &config) {
+  if (subcmd == Cli::subcommand::none) {
+    throw std::runtime_error(
+        "run_subcommand() was called with subcommand::none: this should never happen! "
+        "If you see this message, please file an issue on GitHub");
+  }
+
+  return std::visit(
+      [&](const auto &c) {
+        using T = hictk::remove_cvref_t<decltype(c)>;
+        if constexpr (std::is_same_v<std::monostate, T>) {
+          HICTK_UNREACHABLE_CODE;
+          return 1;
+        } else {
+          return run_subcmd(c);
+        }
+      },
+      config);
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
@@ -251,49 +271,14 @@ int main(int argc, char **argv) noexcept {
     auto local_logger = acquire_global_logger();
     cli = std::make_unique<Cli>(argc, argv);
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(*cli, *local_logger);
-    if (ec != 0 || subcmd == Cli::subcommand::help) {
+    if (ec != 0 || subcmd == Cli::subcommand::none) {
       local_logger->clear();
       return ec;
     }
 
     cli->log_warnings();
 
-    using sc = Cli::subcommand;
-    switch (subcmd) {
-      case sc::balance:
-        if (std::holds_alternative<BalanceICEConfig>(config)) {
-          return balance_subcmd(std::get<BalanceICEConfig>(config));
-        }
-        if (std::holds_alternative<BalanceSCALEConfig>(config)) {
-          return balance_subcmd(std::get<BalanceSCALEConfig>(config));
-        }
-        assert(std::holds_alternative<BalanceVCConfig>(config));
-        return balance_subcmd(std::get<BalanceVCConfig>(config));
-      case sc::convert:
-        return convert_subcmd(std::get<ConvertConfig>(config));
-      case sc::dump:
-        return dump_subcmd(std::get<DumpConfig>(config));
-      case sc::fix_mcool:
-        return fix_mcool_subcmd(std::get<FixMcoolConfig>(config));
-      case sc::load:
-        return load_subcmd(std::get<LoadConfig>(config));
-      case sc::merge:
-        return merge_subcmd(std::get<MergeConfig>(config));
-      case sc::metadata:
-        return metadata_subcmd(std::get<MetadataConfig>(config));
-      case sc::rename_chromosomes:
-        return rename_chromosomes_subcmd(std::get<RenameChromosomesConfig>(config));
-      case sc::validate:
-        return validate_subcmd(std::get<ValidateConfig>(config));
-      case sc::zoomify:
-        return zoomify_subcmd(std::get<ZoomifyConfig>(config));
-      case sc::help:  // NOLINT
-        break;
-      default:
-        throw std::runtime_error(
-            "Default branch in switch statement in hictk::main() should be unreachable! "
-            "If you see this message, please file an issue on GitHub");
-    }
+    return run_subcommand(subcmd, config);
   } catch (const CLI::ParseError &e) {
     assert(cli);
     return cli->exit(e);  //  This takes care of formatting and printing error messages (if any)

@@ -172,7 +172,7 @@ static void create_hardlinks_scool(HighFive::File& h5f,
 }
 
 // NOLINTNEXTLINE(misc-use-internal-linkage)
-int rename_chromosomes_subcmd(const RenameChromosomesConfig& c) {
+int run_subcmd(const RenameChromosomesConfig& c) {
   if (cooler::utils::is_cooler(c.uri)) {
     return rename_chromosomes_cooler(c);
   }
