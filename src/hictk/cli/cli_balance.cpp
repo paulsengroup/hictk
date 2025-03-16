@@ -482,7 +482,7 @@ void Cli::transform_args_vc_balance_subcommand() {
   }
 
   const auto try_read_from_env =
-      _cli.get_subcommand("balance")->get_subcommand("vc")->get_option("verbosity")->empty();
+      _cli.get_subcommand("balance")->get_subcommand("vc")->get_option("--verbosity")->empty();
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
   c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)

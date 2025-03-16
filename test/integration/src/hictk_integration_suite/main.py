@@ -313,7 +313,7 @@ def main(
     results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary, max_attempts)
     t1 = time.time()
 
-    unexpected_exit_codes = set()
+    unexpected_exit_codes = {}
     num_unexpected_exit_code = 0
     for k, runs in results["results"].items():
         if not k.startswith("hictk"):
@@ -321,7 +321,10 @@ def main(
         for res in runs:
             ec = res["exit-code"]
             if ec not in {0, 1}:
-                unexpected_exit_codes.add(str(ec))
+                if ec in unexpected_exit_codes:
+                    unexpected_exit_codes[ec].append(res)
+                else:
+                    unexpected_exit_codes[ec] = [res]
                 num_unexpected_exit_code += 1
 
     num_pass = results["results"]["pass"]
@@ -335,12 +338,15 @@ def main(
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
 
-    if len(unexpected_exit_codes) != 0:
-        logging.warn(
+    if num_unexpected_exit_code != 0:
+        logger.warn(
             "some of the tests returned non-zero exit codes with unexpected values: "
-            f"{', '.join(sorted(unexpected_exit_codes))}. "
+            f"{', '.join(str(x) for x in sorted(unexpected_exit_codes.keys()))}. "
             "Please carefully review the test report."
         )
+        for results in unexpected_exit_codes.values():
+            for res in results:
+                logger.warn(f"FAIL: {res}")
 
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)

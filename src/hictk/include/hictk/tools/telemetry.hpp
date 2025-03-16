@@ -41,6 +41,7 @@
 
 #include <cassert>
 #include <chrono>
+#include <ciso646>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -447,15 +448,17 @@ class Tracer {
 
   static void register_reset_opentelemetry_tracer_at_exit() noexcept {
     try {
-      static std::once_flag flag1;
-      static std::once_flag flag2;
       auto fx = +[]() noexcept {
         trace_api::Provider::SetTracerProvider(
             std::shared_ptr<opentelemetry::trace::TracerProvider>{});
       };
 
+      static std::once_flag flag1;
       std::call_once(flag1, &std::atexit, fx);
+#ifndef _LIBCPP_VERSION
+      static std::once_flag flag2;
       std::call_once(flag2, &std::at_quick_exit, fx);
+#endif
     } catch (...) {  // NOLINT
     }
   }
