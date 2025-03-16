@@ -94,5 +94,9 @@ class HictkConan(ConanFile):
         self.options["libarchive"].with_mbedtls = False
         self.options["libarchive"].with_xattr = False
         self.options["libarchive"].with_pcre2 = False
+        self.options["opentelemetry-cpp"].with_otlp_http_compression = True
+        self.options["opentelemetry-cpp"].with_no_deprecated_code = True
+        self.options["opentelemetry-cpp"].with_jaeger = False
+        self.options["opentelemetry-cpp"].with_zipkin = False
         self.options["spdlog"].header_only = True
         self.options["zstd"].build_programs = False
