@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import logging
 import tomllib
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
+import structlog
 import yaml
 from hictk_integration_suite.runners.hictk import HictkTestHarness
 

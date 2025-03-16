@@ -21,6 +21,7 @@ classifiers = [
 
 dependencies = [
   "click>=8",
+  "colorama==0.4.*",
   "cooler==0.10.*",
   "h5py!=3.12",  # this version is broken on Windows
   "hictkpy[pandas]==1.1.*",
@@ -29,6 +30,7 @@ dependencies = [
   "pandas==2.2.*",
   "PyYAML",
   "pywin32>=308; platform_system == 'Windows'",
+  "structlog==25.*",
 ]
 
 optional-dependencies.test = [

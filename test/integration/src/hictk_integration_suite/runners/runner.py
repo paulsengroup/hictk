@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 import shutil
@@ -13,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Set, Tuple
 
 import pandas as pd
+import structlog
 
 
 class Runner:
@@ -32,7 +32,7 @@ class Runner:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logging.debug(f'removing temporary folder "{self._tmpdir}"...')
+        structlog.get_logger().debug(f'removing temporary folder "{self._tmpdir}"...')
         os.rmdir(self._tmpdir)
 
     def _cmd_args(self, include_exec: bool = True) -> List[str]:
@@ -62,7 +62,7 @@ class Runner:
             return set()
 
         path = pathlib.Path(path)
-        logging.debug(f'collecting files under folder "{path}"')
+        structlog.get_logger().debug(f'collecting files under folder "{path}"')
 
         assert path.is_dir()
         return Runner._collect_paths(path)
@@ -76,7 +76,7 @@ class Runner:
             whitelist = set()
 
         path = pathlib.Path(path)
-        logging.debug(f'cleaning folder "{path}"')
+        structlog.get_logger().debug(f'cleaning folder "{path}"')
 
         assert path.is_dir()
         paths = Runner._collect_paths(path)
@@ -93,11 +93,11 @@ class Runner:
             raise ValueError("names cannot be an empty list")
 
         try:
-            logging.debug("reading table from FIFO...")
+            structlog.get_logger().debug("reading table from FIFO...")
             df = pd.read_table(handle, names=names)
-            logging.debug(f"read {len(df)} records from FIFO")
+            structlog.get_logger().debug(f"read {len(df)} records from FIFO")
         except (pd.errors.ParserError, ValueError, OSError) as e:
-            logging.warning(f"failed to read table from FIFO: {e}")
+            structlog.get_logger().warning(f"failed to read table from FIFO: {e}")
             return str(e)
 
         return df
@@ -108,13 +108,13 @@ class Runner:
         if handle is None:
             return data
 
-        logging.debug("reading data from FIFO...")
+        structlog.get_logger().debug("reading data from FIFO...")
         try:
             for line in handle:
                 data.append(line)
-            logging.debug(f"read {len(data)} records from FIFO...")
+            structlog.get_logger().debug(f"read {len(data)} records from FIFO...")
         except (ValueError, OSError) as e:
-            logging.warning(f"failed to read data from FIFO: {e}")
+            structlog.get_logger().warning(f"failed to read data from FIFO: {e}")
             return data
 
         return data
@@ -127,7 +127,7 @@ class Runner:
         encoding: str,
         env_variables: Dict[str, str],
     ) -> sp.Popen:
-        logging.debug(f"launching subprocess {self._cmd_args()}...")
+        structlog.get_logger().debug(f"launching subprocess {self._cmd_args()}...")
         return sp.Popen(
             self._cmd_args(),
             stdin=stdin,
@@ -139,17 +139,17 @@ class Runner:
         )
 
     def _log_attempt_failure(self, stdout, stderr, timeout: float, attempt_num: int, max_attempts: int):
-        logging.warning(
+        structlog.get_logger().warning(
             f"subprocess failed to complete within {timeout} seconds (attempt {attempt_num}/{max_attempts})"
         )
 
         def log_output(data, label):
             if isinstance(data, pd.DataFrame):
-                logging.warning(f"read {len(data)} lines from {label}")
+                structlog.get_logger().warning(f"read {len(data)} lines from {label}")
                 return
 
             if len(data) == 0:
-                logging.warning(f"{label}: read no data")
+                structlog.get_logger().warning(f"{label}: read no data")
                 return
 
             if not isinstance(data, list):
@@ -157,7 +157,7 @@ class Runner:
 
             i = min(500, len(data))
             for line in data[-i:]:
-                logging.warning(f"{label}: {line.strip()}")
+                structlog.get_logger().warning(f"{label}: {line.strip()}")
 
         log_output(stdout.result(5.0), "stdout")
         log_output(stderr.result(5.0), "stderr")
@@ -202,14 +202,14 @@ class Runner:
                 stderr = tpool.submit(self._read_file, proc.stderr)
 
                 try:
-                    logging.debug(f"waiting for subprocess to return for up to {timeout}s...")
+                    structlog.get_logger().debug(f"waiting for subprocess to return for up to {timeout}s...")
                     returncode = proc.wait(timeout)
-                    logging.debug(f"subprocess terminated with exit code {returncode}")
+                    structlog.get_logger().debug(f"subprocess terminated with exit code {returncode}")
                 except sp.TimeoutExpired:
                     proc.kill()
                     self._log_attempt_failure(stdout, stderr, timeout, attempt, max_attempts)
                     if attempt < max_attempts:
-                        logging.warning(
+                        structlog.get_logger().warning(
                             f"attempting to run subprocess one more time ({max_attempts - attempt} attempt(s) left)"
                         )
                         continue
@@ -218,7 +218,9 @@ class Runner:
 
                 delta = time.time() - t0
                 time_left = max(30.0, timeout - delta)
-                logging.debug(f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s...")
+                structlog.get_logger().debug(
+                    f"waiting for stdout and stderr parsers to return for up to {time_left:.0f}s..."
+                )
                 stdout = stdout.result(time_left)
                 stderr = stderr.result(1)
                 return returncode, stdout, stderr

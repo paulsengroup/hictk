@@ -51,7 +51,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "input",
       c.path_to_input,
       "Path to the .hic, .cool or .mcool file to be balanced.")
-      ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->required();
   sc.add_option(
       "--mode",
@@ -182,7 +182,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
       "input",
       c.path_to_input,
       "Path to the .hic, .cool or .mcool file to be balanced.")
-      ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->required();
   sc.add_option(
       "--mode",
@@ -300,7 +300,7 @@ void Cli::make_vc_balance_subcommand(CLI::App& app) {
       "input",
       c.path_to_input,
       "Path to the .hic, .cool or .mcool file to be balanced.")
-      ->check(IsValidHiCFile | IsValidCoolerFile | IsValidMultiresCoolerFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->required();
   sc.add_option(
       "--mode",

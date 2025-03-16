@@ -15,7 +15,7 @@ TLDR
                              output.cool \
                              --chrom-sizes=<(hictk dump --table=chroms matrix.cool) \
                              --format=bg2 \
-                             --bin-size=1000 \
+                             --bin-size=1kbp \
                              < <(hictk dump --join
                                             --range=2L:0-10,000,000
                                             --range2=3R:0-10,000,000
@@ -55,7 +55,7 @@ Second, we dump pixels in bedGraph2 format (see below for how to make this step 
 
     user@dev:/tmp hictk dump 4DNFIOTPSS3L.hic \
                              --join \
-                             --resolution=1000 \
+                             --resolution=1kbp \
                              --range=2L:5,000,000-10,000,000 \
                              --range2=3R:7,500,000-10,000,000 > pixels.bg2
 
@@ -80,7 +80,7 @@ Finally, we load pixels into a new .cool file
                              output.cool \
                              --chrom-sizes=chrom.sizes \
                              --format=bg2 \
-                             --bin-size=1000
+                             --bin-size=1kbp
 
     [2024-09-27 18:54:58.532] [info]: Running hictk v1.0.0-fbdcb591
     [2024-09-27 18:54:58.540] [info]: begin loading unsorted pixels into a .cool file...
@@ -116,10 +116,10 @@ Luckily, we can completely avoid generating this file by using output redirectio
                              output.cool \
                              --chrom-sizes=chrom.sizes \
                              --format=bg2 \
-                             --bin-size=1000 \
+                             --bin-size=1kbp \
                              < <(hictk dump 4DNFIOTPSS3L.hic \
                                             --join \
-                                            --resolution=1000 \
+                                            --resolution=1kbp \
                                             --range=2L:0-10,000,000 \
                                             --range2=3R:0-10,000,000)
 
@@ -132,11 +132,11 @@ When processing large files, it is a good idea to specify custom folder where to
                              output.cool \
                              --chrom-sizes=chrom.sizes \
                              --format=bg2 \
-                             --bin-size=1000 \
+                             --bin-size=1kbp \
                              --tmpdir=/var/tmp/ \
                              < <(hictk dump 4DNFIOTPSS3L.hic \
                                             --join \
-                                            --resolution=1000 \
+                                            --resolution=1kbp \
                                             --range=2L:0-10,000,000 \
                                             --range2=3R:0-10,000,000)
 

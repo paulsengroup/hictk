@@ -1,12 +1,12 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 #
 # SPDX-License-Identifier: MIT
-import logging
 import os
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 import pandas as pd
+import structlog
 from hictk_integration_suite import validators
 from hictk_integration_suite.runners.common import normalize_df_dtypes
 from hictk_integration_suite.runners.hictk import HictkTestHarness
@@ -164,7 +164,7 @@ class HictkDump(HictkTestHarness):
                 args, timeout=timeout, env_variables=env_variables, colnames=colnames, max_attempts=max_attempts
             )
         except:  # noqa
-            logging.error(f"failed to execute {args}")
+            structlog.get_logger().error(f"failed to execute {args}")
             raise
         t1 = timer()
         try:
@@ -182,7 +182,7 @@ class HictkDump(HictkTestHarness):
                 excluded_norms=excluded_norms,
             )
         except:  # noqa
-            logging.error(f"failed to validate output produced by {args}")
+            structlog.get_logger().error(f"failed to validate output produced by {args}")
             raise
         t2 = timer()
 

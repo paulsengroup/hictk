@@ -42,7 +42,7 @@ void Cli::make_merge_subcommand() {
       "input-files",
       c.input_files,
       "Path to two or more Cooler or .hic files to be merged (Cooler URI syntax supported).")
-      ->check(IsValidCoolerFile | IsValidMultiresCoolerFile | IsValidHiCFile)
+      ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->expected(2, std::numeric_limits<int>::max())
       ->required();
   sc.add_option(
@@ -62,8 +62,9 @@ void Cli::make_merge_subcommand() {
   sc.add_option(
       "--resolution",
       c.resolution,
-      "Hi-C matrix resolution (required when all input files are multi-resolution).")
-      ->check(CLI::PositiveNumber);
+      "Hi-C matrix resolution (ignored when input files are in .cool format).")
+      ->check(CLI::NonNegativeNumber)
+      ->transform(AsGenomicDistance);
   sc.add_flag(
       "-f,--force",
       c.force,

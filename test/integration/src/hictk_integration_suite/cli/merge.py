@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-import logging
 import os
 import pathlib
 from typing import Any, Dict, List, Tuple
 
+import structlog
 from hictk_integration_suite.tests.merge import HictkMerge, HictkMergeCli
 from immutabledict import ImmutableOrderedDict, immutabledict
 
@@ -46,7 +46,7 @@ def _plan_tests_cli(
     )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -94,7 +94,7 @@ def _plan_tests_cmd(
         )
 
     plans = list(set(immutabledict(p) for p in plans))
-    logging.debug(f"{title}: generated {len(plans)} test cases")
+    structlog.get_logger().debug(f"{title}: generated {len(plans)} test cases")
     return plans
 
 
@@ -115,10 +115,12 @@ def run_tests(
     main_cwd = wd.mkdtemp()
     tmpdir = wd.mkdir(main_cwd / "tmp")
 
+    logger = structlog.get_logger().bind()
+
     for p in plans:
         skip, p = _preprocess_plan(p, wd)
         if skip:
-            logging.info(f"SKIPPING {p}")
+            logger.bind(status="SKIP").info(str(p))
             num_skip += 1
             continue
         title = p["title"]
@@ -134,7 +136,10 @@ def run_tests(
         num_pass += status["status"] == "PASS"
         num_fail += status["status"] == "FAIL"
         results.setdefault(title, []).append(status)
-        logging.info(status)
+        if status["status"] == "PASS":
+            logger.bind(**status).info("")
+        else:
+            logger.bind(**status).warning("")
 
     if not no_cleanup:
         wd.rmtree(main_cwd)

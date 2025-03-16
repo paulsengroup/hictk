@@ -28,6 +28,7 @@ void Cli::make_rename_chromosomes_subcommand() {
       "uri",
       c.uri,
       "Path to a or .[ms]cool file (Cooler URI syntax supported).")
+      ->check(IsValidCoolerFile)
       ->required();
 
   sc.add_option(

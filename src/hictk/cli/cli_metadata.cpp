@@ -38,7 +38,7 @@ void Cli::make_metadata_subcommand() {
       "uri",
       c.uri,
       "Path to a .hic or .[ms]cool file (Cooler URI syntax supported).")
-      ->check(IsValidCoolerFile | IsValidMultiresCoolerFile | IsValidSingleCellCoolerFile | IsValidHiCFile)
+      ->check(IsValidCoolerFile | IsValidHiCFile)
       ->required();
 
   sc.add_option(

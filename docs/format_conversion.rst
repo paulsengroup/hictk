@@ -45,7 +45,7 @@ When specifying a single resolution, the resulting file will be in .cool format.
 
 .. code-block:: console
 
-  user@dev:/tmp$ hictk convert data/4DNFIZ1ZVXC8.hic9 4DNFIZ1ZVXC8.1000.cool --resolutions 1000
+  user@dev:/tmp$ hictk convert data/4DNFIZ1ZVXC8.hic9 4DNFIZ1ZVXC8.1000.cool --resolutions 1kbp
 
   [2024-09-26 16:08:09.827] [info]: Running hictk v1.0.0-fbdcb591
   [2024-09-26 16:08:09.827] [info]: Converting data/4DNFIZ1ZVXC8.hic9 to 4DNFIZ1ZVXC8.cool (hic -> cool)...

@@ -40,17 +40,15 @@ void Cli::make_dump_subcommand() {
       "uri",
       c.uri,
       "Path to a .hic, .cool or .mcool file (Cooler URI syntax supported).")
-      ->check(IsValidHiCFile            |
-              IsValidCoolerFile         |
-              IsValidMultiresCoolerFile |
-              IsValidSingleCellCoolerFile)
+      ->check(IsValidCoolerFile | IsValidHiCFile)
       ->required();
 
   sc.add_option(
       "--resolution",
       c.resolution,
-      "HiC matrix resolution (required when processing multi-resolution files).")
-      ->check(CLI::NonNegativeNumber);
+      "HiC matrix resolution (ignored when file is in .cool format).")
+      ->check(CLI::NonNegativeNumber)
+      ->transform(AsGenomicDistance);
 
   sc.add_option(
       "--matrix-type",

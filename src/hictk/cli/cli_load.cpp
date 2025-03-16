@@ -66,7 +66,8 @@ void Cli::make_load_subcommand() {
       c.bin_size,
       "Bin size (bp).\n"
       "Required when --bin-table is not used.")
-      ->check(CLI::PositiveNumber);
+      ->check(CLI::PositiveNumber)
+      ->transform(AsGenomicDistance);
 
   sc.add_option(
       "--bin-table",

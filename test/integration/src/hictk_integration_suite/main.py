@@ -7,7 +7,6 @@
 import datetime
 import importlib
 import json
-import logging
 import multiprocessing as mp
 import os
 import pathlib
@@ -18,7 +17,9 @@ import tomllib
 from typing import Any, Dict, List
 
 import click
+import structlog
 from hictk_integration_suite.cli.common import WorkingDirectory
+from hictk_integration_suite.cli.logging import setup_logger
 from hictk_integration_suite.common import URI
 from hictk_integration_suite.runners.hictk.common import version
 
@@ -103,20 +104,6 @@ def import_config_and_stage_files(
     return config
 
 
-def parse_log_lvl(lvl: str):
-    if lvl == "debug":
-        return logging.DEBUG
-    if lvl == "info":
-        return logging.INFO
-    if lvl == "warning":
-        return logging.WARNING
-    if lvl == "error":
-        return logging.ERROR
-    if lvl == "critical":
-        return logging.CRITICAL
-    raise NotImplementedError
-
-
 def init_results(hictk_bin: pathlib.Path) -> Dict:
     res = {
         "platform": platform.platform(),
@@ -171,6 +158,9 @@ def run_tests(
             hictk_bin = wd.stage_file(hictk_bin)
         else:
             hictk_bin = URI(hictk_bin)
+
+        logger = structlog.get_logger().bind()
+
         for test in suites:
             module_name = test.replace("-", "_")
             mod = importlib.import_module(f"hictk_integration_suite.cli.{module_name}")
@@ -178,17 +168,17 @@ def run_tests(
             t0 = time.time()
             config = import_config_and_stage_files(config_file, data_dir, wd, command=test)
             delta = (time.time() - t0) * 1000.0
-            logging.info(f"staging test files for {test} tests took {delta:.2f}ms")
+            logger.info(f"staging test files for {test} tests took {delta:.2f}ms")
 
             t0 = time.time()
             plans = mod.plan_tests(hictk_bin, config, wd, threads)
             delta = (time.time() - t0) * 1000.0
-            logging.info(f"planning for {test} tests took {delta:.2f}ms")
+            logger.info(f"planning for {test} tests took {delta:.2f}ms")
 
             t0 = time.time()
             res = mod.run_tests(plans, wd, no_cleanup, max_attempts)
             delta = time.time() - t0
-            logging.info(f"running tests for {test} took {delta:.2f}s")
+            logger.info(f"running tests for {test} took {delta:.2f}s")
 
             num_pass += res[0]
             num_fail += res[1]
@@ -304,7 +294,9 @@ def main(
 
     CONFIG_FILE: Path to the config.toml.
     """
-    logging.basicConfig(level=parse_log_lvl(verbosity))
+    setup_logger(verbosity)
+
+    logger = structlog.get_logger()
 
     if result_file and result_file.exists():
         if force:
@@ -313,7 +305,7 @@ def main(
             raise RuntimeError(f'refusing to overwrite file "{result_file}"')
 
     if user_is_admin():
-        logging.warning("script is being run by root/admin: beware that file permissions won't be enforced!")
+        logger.warning("script is being run by root/admin: beware that file permissions won't be enforced!")
 
     suites = parse_test_suites(suites)
 
@@ -321,23 +313,43 @@ def main(
     results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary, max_attempts)
     t1 = time.time()
 
+    unexpected_exit_codes = set()
+    num_unexpected_exit_code = 0
+    for k, runs in results["results"].items():
+        if not k.startswith("hictk"):
+            continue
+        for res in runs:
+            ec = res["exit-code"]
+            if ec not in {0, 1}:
+                unexpected_exit_codes.add(str(ec))
+                num_unexpected_exit_code += 1
+
     num_pass = results["results"]["pass"]
     num_fail = results["results"]["fail"]
     num_skip = results["results"]["skip"]
 
     delta = t1 - t0
-    logging.info(f"running {num_pass + num_fail} tests took {delta:.2f}s")
+    logger.info(f"running {num_pass + num_fail} tests took {delta:.2f}s")
 
     if result_file is not None:
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
 
+    if len(unexpected_exit_codes) != 0:
+        logging.warn(
+            "some of the tests returned non-zero exit codes with unexpected values: "
+            f"{', '.join(sorted(unexpected_exit_codes))}. "
+            "Please carefully review the test report."
+        )
+
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)
     print(f"# SKIP: {num_skip}", file=sys.stderr)
     print(f"# FAIL: {num_fail}", file=sys.stderr)
+    if num_unexpected_exit_code != 0:
+        print(f"# UNEXPECTED EXIT CODE: {num_unexpected_exit_code}", file=sys.stderr)
 
-    sys.exit(num_fail != 0)
+    sys.exit(num_fail != 0 or num_unexpected_exit_code != 0)
 
 
 if __name__ == "__main__":

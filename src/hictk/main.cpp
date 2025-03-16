@@ -267,6 +267,14 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
       config);
 }
 
+[[nodiscard]] static std::string generate_command_name(const std::unique_ptr<Cli> &cli) {
+  if (cli) {
+    return fmt::format(FMT_STRING("hictk {}"), cli->get_printable_subcommand());
+  }
+
+  return "hictk";
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape)
 int main(int argc, char **argv) noexcept {
   std::unique_ptr<Cli> cli{nullptr};
@@ -287,29 +295,29 @@ int main(int argc, char **argv) noexcept {
 
     return run_subcommand(subcmd, config);
   } catch (const CLI::ParseError &e) {
-    assert(cli);
-    return cli->exit(e);  //  This takes care of formatting and printing error messages (if any)
-  } catch (const std::bad_alloc &err) {
-    SPDLOG_CRITICAL(FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), err.what());
+    if (cli) {
+      //  This takes care of formatting and printing error messages (if any)
+      return cli->exit(e);
+    }
+    SPDLOG_CRITICAL("FAILURE! An unknown error occurred while parsing CLI arguments.");
+    return 1;
+  } catch (const std::bad_alloc &e) {
+    SPDLOG_CRITICAL(FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), e.what());
     return 1;
   } catch (const spdlog::spdlog_ex &e) {
     fmt::print(stderr,
-               FMT_STRING("FAILURE! hictk encountered the following error while logging: {}\n"),
-               e.what());
+               FMT_STRING("FAILURE! {} encountered the following error while logging: {}\n"),
+               generate_command_name(cli), e.what());
     return 1;
   } catch (const std::exception &e) {
-    if (cli) {
-      SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk {} encountered the following error: {}"),
-                      cli->get_printable_subcommand(), e.what());
-    } else {
-      SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk encountered the following error: {}"), e.what());
-    }
+    SPDLOG_CRITICAL(FMT_STRING("FAILURE! {} encountered the following error: {}"),
+                    generate_command_name(cli), e.what());
     return 1;
   } catch (...) {
-    SPDLOG_CRITICAL(FMT_STRING("FAILURE! hictk {} encountered the following error: Caught an "
-                               "unhandled exception! "
-                               "If you see this message, please file an issue on GitHub."),
-                    cli->get_printable_subcommand());
+    SPDLOG_CRITICAL(
+        FMT_STRING("FAILURE! {} encountered the following error: Caught an unhandled exception! If "
+                   "you see this message, please file an issue on GitHub."),
+        generate_command_name(cli));
     return 1;
   }
   return 0;
