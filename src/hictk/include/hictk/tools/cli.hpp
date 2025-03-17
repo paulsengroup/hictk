@@ -462,82 +462,88 @@ class Cli {
 
 [[nodiscard]] inline std::optional<std::int16_t> parse_hictk_verbosity_from_env(
     bool skip = false) noexcept {
-  if (skip) {
-    return {};
-  }
-
-  constexpr auto critical = static_cast<std::int16_t>(spdlog::level::critical);
-
-  if (std::getenv("HICTK_QUIET")) {  // NOLINT(*-mt-unsafe)
-    return critical;
-  }
-
-  if (std::getenv("VERBOSE")) {  // NOLINT(*-mt-unsafe)
-    return static_cast<std::int16_t>(spdlog::level::debug);
-  }
-
-  const auto* verbosity_ptr = std::getenv("HICTK_VERBOSITY");  // NOLINT(*-mt-unsafe)
-  if (!verbosity_ptr) {
-    return {};
-  }
-
-  std::string_view verbosity{verbosity_ptr};
-
-  // in spdlog, high numbers correspond to low log levels
-  if (verbosity == "0") {
-    return critical;
-  }
-  if (verbosity == "1") {
-    return critical - 1;
-  }
-  if (verbosity == "2") {
-    return critical - 2;
-  }
-  if (verbosity == "3") {
-    return critical - 3;
-  }
-  if (verbosity == "4") {
-    return critical - 4;
-  }
-  if (verbosity == "5") {
-    return critical - 5;
-  }
-
-  auto str_compare_case_insensitive = [&](std::string_view lvl) noexcept {
-    if (verbosity.size() != lvl.size()) {
-      return false;
+  try {
+    if (skip) {
+      return {};
     }
 
-    for (std::size_t i = 0; i < verbosity.size(); ++i) {
-      if (std::tolower(verbosity[i]) != lvl[i]) {
+    constexpr auto critical = static_cast<std::int16_t>(spdlog::level::critical);
+
+    if (std::getenv("HICTK_QUIET")) {  // NOLINT(*-mt-unsafe)
+      return critical;
+    }
+
+    if (std::getenv("VERBOSE")) {  // NOLINT(*-mt-unsafe)
+      return static_cast<std::int16_t>(spdlog::level::debug);
+    }
+
+    const auto* verbosity_ptr = std::getenv("HICTK_VERBOSITY");  // NOLINT(*-mt-unsafe)
+    if (!verbosity_ptr) {
+      return {};
+    }
+
+    std::string_view verbosity{verbosity_ptr};
+
+    // NOLINTBEGIN(*-avoid-magic-numbers)
+    // in spdlog, high numbers correspond to low log levels
+    if (verbosity == "0") {
+      return critical;
+    }
+    if (verbosity == "1") {
+      return critical - 1;
+    }
+    if (verbosity == "2") {
+      return critical - 2;
+    }
+    if (verbosity == "3") {
+      return critical - 3;
+    }
+    if (verbosity == "4") {
+      return critical - 4;
+    }
+    if (verbosity == "5") {
+      return critical - 5;
+    }
+    // NOLINTEND(*-avoid-magic-numbers)
+
+    auto str_compare_case_insensitive = [&](std::string_view lvl) noexcept {
+      if (verbosity.size() != lvl.size()) {
         return false;
       }
+
+      for (std::size_t i = 0; i < verbosity.size(); ++i) {
+        if (std::tolower(verbosity[i]) != lvl[i]) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    if (str_compare_case_insensitive("critical")) {
+      return critical;
     }
-    return true;
-  };
+    if (str_compare_case_insensitive("error") || str_compare_case_insensitive("err")) {
+      return static_cast<std::int16_t>(spdlog::level::err);
+    }
+    if (str_compare_case_insensitive("warning") || str_compare_case_insensitive("warn")) {
+      return static_cast<std::int16_t>(spdlog::level::warn);
+    }
+    if (str_compare_case_insensitive("info")) {
+      return static_cast<std::int16_t>(spdlog::level::info);
+    }
+    if (str_compare_case_insensitive("debug")) {
+      return static_cast<std::int16_t>(spdlog::level::debug);
+    }
 
-  if (str_compare_case_insensitive("critical")) {
-    return critical;
+    fmt::println(
+        stderr,
+        FMT_STRING(
+            "WARNING: unable to parse verbosity level from env variable HICTK_VERBOSITY=\"{}\""),
+        verbosity);
+    return {};
+  } catch (...) {
+    return {};
   }
-  if (str_compare_case_insensitive("error") || str_compare_case_insensitive("err")) {
-    return static_cast<std::int16_t>(spdlog::level::err);
-  }
-  if (str_compare_case_insensitive("warning") || str_compare_case_insensitive("warn")) {
-    return static_cast<std::int16_t>(spdlog::level::warn);
-  }
-  if (str_compare_case_insensitive("info")) {
-    return static_cast<std::int16_t>(spdlog::level::info);
-  }
-  if (str_compare_case_insensitive("debug")) {
-    return static_cast<std::int16_t>(spdlog::level::debug);
-  }
-
-  fmt::println(
-      stderr,
-      FMT_STRING(
-          "WARNING: unable to parse verbosity level from env variable HICTK_VERBOSITY=\"{}\""),
-      verbosity);
-  return {};
 }
 
 }  // namespace hictk::tools

@@ -224,7 +224,7 @@ class Tracer {
       return {};
     }
 
-    std::string subcmd_str{Cli::subcommand_to_str(subcmd)};
+    std::string subcmd_str{Cli::subcommand_to_str(subcmd)};  // NOLINT(*-const-correctness)
     if constexpr (std::is_same_v<BalanceICEConfig, Config>) {
       subcmd_str += "-ice";
     } else if constexpr (std::is_same_v<BalanceSCALEConfig, Config>) {
@@ -337,6 +337,8 @@ class Tracer {
     }
     return false;
   }
+
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] static std::string get_exporter_otlp_endpoint() noexcept {
 #ifdef HICTK_EXPORTER_OTLP_ENDPOINT
     constexpr std::string_view endpoint{HICTK_EXPORTER_OTLP_ENDPOINT};
