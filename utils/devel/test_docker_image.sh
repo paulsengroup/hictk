@@ -8,7 +8,7 @@ set -eu
 set -o pipefail
 
 if [ $# -ne 1 ]; then
-  2>&1 echo "Usage: $0 hictk:latest"
+  1>&2 echo "Usage: $0 hictk:latest"
   exit 1
 fi
 
