@@ -45,7 +45,7 @@ if [ -z "$GIT_TAG" ]; then
   GIT_TAG="sha-$GIT_SHORT_HASH"
 fi
 
-2>&1 echo "Building \"$IMAGE_NAME:$IMAGE_TAG\"..."
+1>&2 echo "Building \"$IMAGE_NAME:$IMAGE_TAG\"..."
 
 sudo -u "$BUILD_USER" docker pull docker.io/library/ubuntu:24.04
 FINAL_BASE_IMAGE_DIGEST="$(sudo -u "$BUILD_USER" docker inspect --format='{{index .RepoDigests 0}}' docker.io/library/ubuntu:24.04 | grep -o '[[:alnum:]:]\+$')"

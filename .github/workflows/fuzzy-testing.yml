@@ -271,10 +271,10 @@ jobs:
 
           profile_prefix='${{ matrix.dataset }}-${{ matrix.format }}-${{ matrix.normalization}}-${{ matrix.bin-type }}'
 
-          2>&1 echo "Duration: $duration"
-          2>&1 echo "Resolution: $resolution"
-          2>&1 echo "Seed: $seed"
-          2>&1 echo "Profile prefix: $profile_prefix"
+          1>&2 echo "Duration: $duration"
+          1>&2 echo "Resolution: $resolution"
+          1>&2 echo "Seed: $seed"
+          1>&2 echo "Profile prefix: $profile_prefix"
 
           echo "duration=$duration" >> "$GITHUB_OUTPUT"
           echo "resolution=$resolution" >> "$GITHUB_OUTPUT"
