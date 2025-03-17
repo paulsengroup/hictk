@@ -66,7 +66,6 @@ struct ScopedSpan {
 
   template <typename Config>
   void update_attributes(const Config& c) noexcept {
-    static_assert(!std::is_same_v<Config, std::monostate>);
     try {
       if (span) {
         update_tracer_attributes(span, c);
@@ -85,6 +84,8 @@ struct ScopedSpan {
   }
 
  private:
+  static void update_tracer_attributes([[maybe_unused]] SpanPtr& span,
+                                       [[maybe_unused]] const std::monostate& c) {}
   static void update_tracer_attributes(SpanPtr& span, const BalanceICEConfig& c) {
     span->SetAttribute("input-format", infer_input_format(c.path_to_input));
   }

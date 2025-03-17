@@ -251,18 +251,12 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
   Tracer tracer{};
   return std::visit(
       [&](const auto &c) {
-        using T = hictk::remove_cvref_t<decltype(c)>;
-        if constexpr (std::is_same_v<std::monostate, T>) {
-          HICTK_UNREACHABLE_CODE;
-          return 1;
-        } else {
-          auto span = tracer.get_scoped_span(subcmd, c);
-          const auto ec = run_subcmd(c);
-          if (ec == 0 && span.has_value()) {
-            span->set_status(Tracer::StatusCode::kOk);
-          }
-          return ec;
+        auto span = tracer.get_scoped_span(subcmd, c);
+        const auto ec = run_subcmd(c);
+        if (ec == 0 && span.has_value()) {
+          span->set_status(Tracer::StatusCode::kOk);
         }
+        return ec;
       },
       config);
 }
