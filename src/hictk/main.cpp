@@ -248,14 +248,16 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
         "If you see this message, please file an issue on GitHub");
   }
 
-  Tracer tracer{};
+  auto *tracer = Tracer::instance();
   return std::visit(
       [&](const auto &c) {
-        auto span = tracer.get_scoped_span(subcmd, c);
+        using ScopedSpan = decltype(tracer->get_scoped_span(subcmd, c));
+        auto span = !!tracer ? tracer->get_scoped_span(subcmd, c) : ScopedSpan{};
         const auto ec = run_subcmd(c);
         if (ec == 0 && span.has_value()) {
           span->set_status(Tracer::StatusCode::kOk);
         }
+
         return ec;
       },
       config);
@@ -287,32 +289,30 @@ int main(int argc, char **argv) noexcept {
 
     cli->log_warnings();
 
-    return run_subcommand(subcmd, config);
+    const auto ec_ = run_subcommand(subcmd, config);
+    Tracer::tear_down_instance();
+    return ec_;
   } catch (const CLI::ParseError &e) {
     if (cli) {
       //  This takes care of formatting and printing error messages (if any)
       return cli->exit(e);
     }
     SPDLOG_CRITICAL("FAILURE! An unknown error occurred while parsing CLI arguments.");
-    return 1;
   } catch (const std::bad_alloc &e) {
     SPDLOG_CRITICAL(FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), e.what());
-    return 1;
   } catch (const spdlog::spdlog_ex &e) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error while logging: {}\n"),
                generate_command_name(cli), e.what());
-    return 1;
   } catch (const std::exception &e) {
     SPDLOG_CRITICAL(FMT_STRING("FAILURE! {} encountered the following error: {}"),
                     generate_command_name(cli), e.what());
-    return 1;
   } catch (...) {
     SPDLOG_CRITICAL(
         FMT_STRING("FAILURE! {} encountered the following error: Caught an unhandled exception! If "
                    "you see this message, please file an issue on GitHub."),
         generate_command_name(cli));
-    return 1;
   }
-  return 0;
+  Tracer::tear_down_instance();
+  return 1;
 }

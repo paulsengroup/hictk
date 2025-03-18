@@ -41,11 +41,9 @@
 
 #include <cassert>
 #include <chrono>
-#include <ciso646>
 #include <cstdlib>
 #include <exception>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -178,11 +176,8 @@ class Tracer {
 
   ProviderPtr _provider{};
   TracerPtr _tracer{};
+  inline static std::unique_ptr<Tracer> _instance{};
 
- public:
-  using StatusCode = opentelemetry::trace::StatusCode;
-
-  // NOLINTNEXTLINE(*-mt-unsafe)
   Tracer() noexcept {
     // NOLINTNEXTLINE(*-implicit-bool-conversion, *-mt-unsafe)
     if (!!std::getenv("HICTK_NO_TELEMETRY")) {
@@ -194,27 +189,43 @@ class Tracer {
 
     if (init_remote_telemetry_tracer()) {
       try {
-        init_opentelemetry_logger_once();
+        init_opentelemetry_logger();
         _provider = opentelemetry::trace::Provider::GetTracerProvider();
         _tracer = _provider->GetTracer("hictk");
-        register_reset_opentelemetry_tracer_at_exit();
       } catch (...) {  // NOLINT
       }
     }
   }
 
+ public:
+  using StatusCode = opentelemetry::trace::StatusCode;
+
   Tracer(const Tracer&) = delete;
-  Tracer(Tracer&&) noexcept = default;
+  Tracer(Tracer&&) noexcept = delete;
 
   ~Tracer() noexcept {
     if (!!_tracer) {
       // NOLINTNEXTLINE(*-avoid-magic-numbers)
       _tracer->ForceFlush(std::chrono::milliseconds{500});
     }
+    trace_api::Provider::SetTracerProvider(std::shared_ptr<opentelemetry::trace::TracerProvider>{});
   }
 
   Tracer& operator=(const Tracer&) = delete;
-  Tracer& operator=(Tracer&&) noexcept = default;
+  Tracer& operator=(Tracer&&) noexcept = delete;
+
+  [[nodiscard]] static Tracer* instance() noexcept {
+    if (!_instance) {
+      try {
+        _instance = std::unique_ptr<Tracer>(new Tracer);
+      } catch (...) {  // NOLINT
+        return nullptr;
+      }
+    }
+    return _instance.get();
+  }
+
+  static void tear_down_instance() noexcept { _instance.reset(); }
 
   template <typename Config>
   [[nodiscard]] auto get_scoped_span(Cli::subcommand subcmd, const Config& config,
@@ -325,9 +336,11 @@ class Tracer {
     try {
       namespace trace_sdk = opentelemetry::sdk::trace;
       namespace trace_exporter = opentelemetry::exporter::trace;
+
+      auto x1 = trace_exporter::OStreamSpanExporterFactory::Create();
+      auto x2 = trace_sdk::SimpleSpanProcessorFactory::Create(std::move(x1));
       std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-          trace_sdk::TracerProviderFactory::Create(trace_sdk::SimpleSpanProcessorFactory::Create(
-              trace_exporter::OStreamSpanExporterFactory::Create()));
+          trace_sdk::TracerProviderFactory::Create(std::move(x2));
       trace_api::Provider::SetTracerProvider(std::move(provider));
       return true;
     } catch (const std::exception& e) {
@@ -346,44 +359,9 @@ class Tracer {
       return std::string{endpoint};
     }
     return fmt::format(FMT_STRING("{}/v1/traces"), endpoint);
-#endif
-
-    return "http://localhost:4318/v1/traces";
-  }
-
-  [[nodiscard]] static std::pair<std::string, std::string> get_otlp_http_header() noexcept {
-#ifdef HICTK_EXPORTER_OTLP_ENDPOINT
-    // NOLINTNEXTLINE(*-mt-unsafe)
-    const auto* ptr = std::getenv("HICTK_EXPORTER_OTLP_HEADERS");
-    if (!ptr) {
-      return {};
-    }
-
-    const std::string_view header{ptr};
-    const auto sep = header.find('=');
-    if (sep == std::string_view::npos) {
-      return {};
-    }
-
-    return std::make_pair(std::string{header.substr(0, sep)}, std::string{header.substr(sep + 1)});
 #else
-    return {};
+    return "http://localhost:4318/v1/traces";
 #endif
-  }
-
-  [[nodiscard]] static auto get_otlp_endpoint_data() noexcept {
-    struct Result {
-      std::string url{};
-      std::string header_name{};
-      std::string header_data{};
-    };
-
-    auto [name, data] = get_otlp_http_header();
-    if (name.empty()) {
-      return Result{"http://localhost:4318/v1/traces", "", ""};
-    }
-
-    return Result{get_exporter_otlp_endpoint(), std::move(name), std::move(data)};
   }
 
   [[nodiscard]] static bool init_remote_telemetry_tracer() noexcept {
@@ -405,19 +383,15 @@ class Tracer {
       };
 
       otlp::OtlpHttpExporterOptions opts{};
-      const auto [url, header_name, header_data] = get_otlp_endpoint_data();
-
-      opts.url = url;
+      opts.url = get_exporter_otlp_endpoint();
       opts.compression = "gzip";
-      if (!header_name.empty()) {
-        opts.http_headers.emplace(header_name, header_data);
-      }
+      opts.timeout = std::chrono::seconds{5};  // NOLINT(*-avoid-magic-numbers)
 
+      auto x1 = otlp::OtlpHttpExporterFactory::Create(opts);
+      auto x2 = trace_sdk::BatchSpanProcessorFactory::Create(std::move(x1), {});
+      auto x3 = resource::Resource::Create(resource_attributes);
       std::shared_ptr<trace_api::TracerProvider> provider =
-          trace_sdk::TracerProviderFactory::Create(
-              trace_sdk::BatchSpanProcessorFactory::Create(
-                  otlp::OtlpHttpExporterFactory::Create(opts), {}),
-              resource::Resource::Create(resource_attributes));
+          trace_sdk::TracerProviderFactory::Create(std::move(x2), std::move(x3));
       trace_api::Provider::SetTracerProvider(std::move(provider));
 
       return true;
@@ -429,39 +403,19 @@ class Tracer {
     return false;
   }
 
-  static void init_opentelemetry_logger_once() noexcept {
+  static void init_opentelemetry_logger() noexcept {
     try {
-      static std::once_flag flag;
-      std::call_once(flag, []() {
-        namespace otel_log = opentelemetry::sdk::common::internal_log;
-        otel_log::GlobalLogHandler::SetLogHandler(
-            std::dynamic_pointer_cast<opentelemetry::sdk::common::internal_log::LogHandler>(
-                std::make_shared<OpenTelemetryLogHandler>()));
+      namespace otel_log = opentelemetry::sdk::common::internal_log;
+      otel_log::GlobalLogHandler::SetLogHandler(
+          std::dynamic_pointer_cast<opentelemetry::sdk::common::internal_log::LogHandler>(
+              std::make_shared<OpenTelemetryLogHandler>()));
 
-        using LogLevel = opentelemetry::sdk::common::internal_log::LogLevel;
-        if constexpr (SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_INFO) {
-          otel_log::GlobalLogHandler::SetLogLevel(LogLevel::Debug);
-        } else {
-          otel_log::GlobalLogHandler::SetLogLevel(LogLevel::None);
-        }
-      });
-    } catch (...) {  // NOLINT
-    }
-  }
-
-  static void register_reset_opentelemetry_tracer_at_exit() noexcept {
-    try {
-      auto fx = +[]() noexcept {
-        trace_api::Provider::SetTracerProvider(
-            std::shared_ptr<opentelemetry::trace::TracerProvider>{});
-      };
-
-      static std::once_flag flag1;
-      std::call_once(flag1, &std::atexit, fx);
-#ifndef _LIBCPP_VERSION
-      static std::once_flag flag2;
-      std::call_once(flag2, &std::at_quick_exit, fx);
-#endif
+      using LogLevel = opentelemetry::sdk::common::internal_log::LogLevel;
+      if constexpr (SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_INFO) {
+        otel_log::GlobalLogHandler::SetLogLevel(LogLevel::Debug);
+      } else {
+        otel_log::GlobalLogHandler::SetLogLevel(LogLevel::None);
+      }
     } catch (...) {  // NOLINT
     }
   }
@@ -486,12 +440,14 @@ struct Tracer {
         "hictk was compiled with HICTK_ENABLE_TELEMETRY=OFF: no telemetry information will be "
         "collected.");
   }
+  [[nodiscard]] static Tracer* instance() noexcept { return nullptr; }
   template <typename Config>
   [[nodiscard]] std::optional<ScopedSpan> get_scoped_span(
       [[maybe_unused]] Cli::subcommand subcmd, [[maybe_unused]] const Config& config,
       [[maybe_unused]] StatusCode s = StatusCode::kError) const noexcept {
     return {};
   }
+  static void tear_down_instance() noexcept {}
 };
 
 #endif
