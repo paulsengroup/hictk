@@ -389,9 +389,9 @@ class Tracer {
 
       auto x1 = otlp::OtlpHttpExporterFactory::Create(opts);
       auto x2 = trace_sdk::BatchSpanProcessorFactory::Create(std::move(x1), {});
-      auto x3 = resource::Resource::Create(resource_attributes);
+      const auto x3 = resource::Resource::Create(resource_attributes);
       std::shared_ptr<trace_api::TracerProvider> provider =
-          trace_sdk::TracerProviderFactory::Create(std::move(x2), std::move(x3));
+          trace_sdk::TracerProviderFactory::Create(std::move(x2), x3);
       trace_api::Provider::SetTracerProvider(std::move(provider));
 
       return true;
