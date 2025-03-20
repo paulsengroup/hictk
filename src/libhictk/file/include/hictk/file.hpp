@@ -132,7 +132,7 @@ class File {
 
   explicit File(cooler::File clr);
   explicit File(hic::File hf);
-  explicit File(std::string uri, std::optional<std::uint32_t> resolution_ = {},
+  explicit File(std::string_view uri, std::optional<std::uint32_t> resolution_ = {},
                 hic::MatrixType type = hic::MatrixType::observed,
                 hic::MatrixUnit unit = hic::MatrixUnit::BP);
 

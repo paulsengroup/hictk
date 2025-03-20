@@ -48,6 +48,15 @@ TEST_CASE("File", "[file][short]") {
     }
 
     SECTION("invalid") {
+      // Invalid params for .cool file
+      CHECK_THROWS_WITH(
+          File(fmt::format(FMT_STRING("{}::/resolutions/{}"), path_cooler, resolution + 1)),
+          Catch::Matchers::ContainsSubstring("resolution is required"));
+      CHECK_THROWS_WITH(File(path_cooler, resolution + 1),
+                        Catch::Matchers::ContainsSubstring("unable to find resolution"));
+      CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
+                        Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
+
       // Invalid params for .mcool files
       CHECK_THROWS_WITH(File(path_cooler),
                         Catch::Matchers::ContainsSubstring("resolution is required"));
@@ -60,10 +69,6 @@ TEST_CASE("File", "[file][short]") {
       // Invalid params for .hic files
       CHECK_THROWS_WITH(File(path_hic),
                         Catch::Matchers::ContainsSubstring("resolution is required"));
-
-      // Mismatched resolution
-      CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
-                        Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
     }
   }
 

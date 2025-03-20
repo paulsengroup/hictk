@@ -360,7 +360,7 @@ inline HighFive::File File::open_file(std::string_view uri, unsigned int mode, b
     throw std::runtime_error(
         fmt::format(FMT_STRING("\"{}\" does not look like a valid Cooler file:\n"
                                "Validation report:\n{}"),
-                    uri, fmt::to_string(status)));
+                    uri, status));
   }
 
   return f;

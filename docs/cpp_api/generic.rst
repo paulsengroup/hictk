@@ -36,7 +36,7 @@ File handle
 
   .. cpp:function:: File(cooler::File clr);
   .. cpp:function:: File(hic::File hf);
-  .. cpp:function:: File(std::string uri, std::optional<std::uint32_t> resolution = {}, hic::MatrixType type = hic::MatrixType::observed, hic::MatrixUnit unit = hic::MatrixUnit::BP);
+  .. cpp:function:: File(std::string_view uri, std::optional<std::uint32_t> resolution = {}, hic::MatrixType type = hic::MatrixType::observed, hic::MatrixUnit unit = hic::MatrixUnit::BP);
 
    Constructors for :cpp:class:`File` class.
    ``resolution`` is a mandatory argument when opening .hic files.

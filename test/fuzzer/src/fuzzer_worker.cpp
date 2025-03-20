@@ -483,7 +483,7 @@ int launch_worker_subcommand(const Config& c) {
     std::mt19937_64 rand_eng{*c.seed};
     // NOLINTEND(bugprone-unchecked-optional-access)
 
-    const hictk::File tgt(c.test_uri, c.resolution);
+    const hictk::File tgt(c.test_uri.string(), c.resolution);
     cooler::Cooler ref(hictk::cooler::utils::is_multires_file(c.reference_uri.string())
                            ? fmt::format(FMT_STRING("{}::/resolutions/{}"),
                                          c.reference_uri.string(), c.resolution.value_or(0))
