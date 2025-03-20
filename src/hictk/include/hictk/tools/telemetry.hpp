@@ -360,7 +360,7 @@ class Tracer {
     }
     return fmt::format(FMT_STRING("{}/v1/traces"), endpoint);
 #else
-    return "http://localhost:4318/v1/traces";
+    return "";
 #endif
   }
 
@@ -368,6 +368,9 @@ class Tracer {
     namespace otlp = opentelemetry::exporter::otlp;
     otlp::OtlpHttpExporterOptions opts{};
     opts.url = get_exporter_otlp_endpoint();
+    if (opts.url.empty()) {
+      return std::unique_ptr<opentelemetry::sdk::trace::SpanExporter>{};
+    }
     opts.compression = "gzip";
     opts.timeout = std::chrono::seconds{5};  // NOLINT(*-avoid-magic-numbers)
     opts.ssl_insecure_skip_verify = true;    // false;
@@ -382,6 +385,11 @@ class Tracer {
       namespace trace_sdk = opentelemetry::sdk::trace;
       namespace resource = opentelemetry::sdk::resource;
 
+      auto opts = generate_http_exporter_opts();
+      if (!opts) {
+        return false;
+      }
+
       static const std::string version{hictk::config::version::str()};
 
       const resource::ResourceAttributes resource_attributes{
@@ -394,7 +402,6 @@ class Tracer {
           {"os.arch", get_arch()},
       };
 
-      auto opts = generate_http_exporter_opts();
       auto pf = trace_sdk::BatchSpanProcessorFactory::Create(std::move(opts), {});
       const auto res = resource::Resource::Create(resource_attributes);
       std::shared_ptr<trace_api::TracerProvider> provider =

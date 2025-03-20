@@ -15,7 +15,6 @@ find_package(Threads REQUIRED)
 if(HICTK_ENABLE_TELEMETRY)
   message(STATUS "Building with telemetry support")
   find_package(opentelemetry-cpp REQUIRED)
-  set(HICTK_EXPORTER_OTLP_ENDPOINT "http://localhost:4318/v1/traces") # TODO update
 else()
   message(STATUS "Building without telemetry support")
 endif()
@@ -82,7 +81,7 @@ target_compile_definitions(
     SPDLOG_NO_THREAD_ID
     SPDLOG_DISABLE_DEFAULT_LOGGER
     "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_ENABLE_TELEMETRY>"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_EXPORTER_OTLP_ENDPOINT=\"${HICTK_EXPORTER_OTLP_ENDPOINT}\">"
+    "$<$<BOOL:${HICTK_EXPORTER_OTLP_ENDPOINT}>:HICTK_EXPORTER_OTLP_ENDPOINT=\"${HICTK_EXPORTER_OTLP_ENDPOINT}\">"
     "HICTK_SYSTEM_NAME=\"${CMAKE_SYSTEM_NAME}\""
     "HICTK_SYSTEM_PROCESSOR=\"${CMAKE_SYSTEM_PROCESSOR}\""
     "HICTK_BUILD_TYPE=\"$<CONFIG>\""

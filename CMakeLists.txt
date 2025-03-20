@@ -151,6 +151,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif()
 
+include(CMakeDependentOption)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_ENABLE_FUZZY_TESTING "Build fuzzy tests" OFF)
@@ -160,6 +161,27 @@ option(HICTK_WITH_ARROW "Build with arrow support" ON)
 option(HICTK_WITH_ARROW_SHARED "Force dynamic linking to Arrow libs" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
+
+cmake_dependent_option(
+  HICTK_DOWNLOAD_TEST_DATASET
+  "Download datasets required by unit and integration tests"
+  ON
+  "HICTK_ENABLE_TESTING"
+  OFF
+)
+cmake_dependent_option(
+  HICTK_ENABLE_TELEMETRY
+  "Build CLI tools with support for telemetry"
+  ON
+  "HICTK_BUILD_TOOLS"
+  OFF
+)
+
+set(HICTK_EXPORTER_OTLP_ENDPOINT "http://localhost:9" CACHE STRING "Endpoint where to submit telemetry data")
+
+if(NOT HICTK_ENABLE_TELEMETRY)
+  unset(HICTK_EXPORTER_OTLP_ENDPOINT CACHE)
+endif()
 
 if(HICTK_WITH_EIGEN)
   target_compile_definitions(hictk_project_options INTERFACE HICTK_WITH_EIGEN)
