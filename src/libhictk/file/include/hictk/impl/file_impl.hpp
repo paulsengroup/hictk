@@ -246,8 +246,8 @@ inline bool PixelSelector::iterator<N>::operator_neq(const IteratorVar& itv1,
 
 inline File::File(cooler::File clr) : _fp(std::move(clr)) {}
 inline File::File(hic::File hf) : _fp(std::move(hf)) {}
-inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic::MatrixType type,
-                  hic::MatrixUnit unit) {
+inline File::File(std::string_view uri, std::optional<std::uint32_t> resolution_,
+                  hic::MatrixType type, hic::MatrixUnit unit) {
   const auto [path, grp] = cooler::parse_cooler_uri(uri);
   if (hic::utils::is_hic_file(path)) {
     *this = File(hic::File(path, resolution_, type, unit));
@@ -275,7 +275,14 @@ inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic
   }
 
   if (!resolution_.has_value()) {
-    const auto resolutions = cooler::utils::list_resolutions(uri, false);
+    const auto resolutions = [&]() {
+      try {
+        return cooler::utils::list_resolutions(uri, false);
+      } catch (const std::exception&) {
+        return std::vector<std::uint32_t>{};
+      }
+    }();
+
     if (resolutions.size() != 1) {
       throw std::runtime_error(
           "resolution is required when opening .mcool files with more than one resolution.");
@@ -283,7 +290,24 @@ inline File::File(std::string uri, std::optional<std::uint32_t> resolution_, hic
     resolution_ = resolutions.front();
   }
 
-  *this = File(fmt::format(FMT_STRING("{}::/resolutions/{}"), uri, *resolution_));
+  const auto new_uri = fmt::format(FMT_STRING("{}::/resolutions/{}"), path, *resolution_);
+
+  if (const auto status = cooler::utils::is_cooler(new_uri); !status) {
+    const auto resolution_is_missing =
+        status.missing_groups.size() == 1 &&
+        status.missing_groups.front().find(
+            fmt::format(FMT_STRING("resolutions/{}"), *resolution_)) != std::string::npos;
+    if (resolution_is_missing) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("unable to find resolution {} in file \"{}\""), *resolution_, path));
+    }
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("\"{}\" does not look like a valid Cooler file:\n"
+                               "Validation report:\n{}"),
+                    new_uri, status));
+  }
+
+  *this = File(cooler::File(new_uri, cooler::DEFAULT_HDF5_CACHE_SIZE * 4, false));
 }
 
 inline std::string File::uri() const {
