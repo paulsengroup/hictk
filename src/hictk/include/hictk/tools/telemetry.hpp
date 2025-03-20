@@ -364,10 +364,22 @@ class Tracer {
 #endif
   }
 
+  [[nodiscard]] static auto generate_http_exporter_opts() noexcept {
+    namespace otlp = opentelemetry::exporter::otlp;
+    otlp::OtlpHttpExporterOptions opts{};
+    opts.url = get_exporter_otlp_endpoint();
+    opts.compression = "gzip";
+    opts.timeout = std::chrono::seconds{5};  // NOLINT(*-avoid-magic-numbers)
+    opts.ssl_insecure_skip_verify = true;    // false;
+    opts.ssl_min_tls = "1.3";
+    // opts.ssl_ca_cert_string = "TODO";
+
+    return otlp::OtlpHttpExporterFactory::Create(opts);
+  }
+
   [[nodiscard]] static bool init_remote_telemetry_tracer() noexcept {
     try {
       namespace trace_sdk = opentelemetry::sdk::trace;
-      namespace otlp = opentelemetry::exporter::otlp;
       namespace resource = opentelemetry::sdk::resource;
 
       static const std::string version{hictk::config::version::str()};
@@ -382,16 +394,11 @@ class Tracer {
           {"os.arch", get_arch()},
       };
 
-      otlp::OtlpHttpExporterOptions opts{};
-      opts.url = get_exporter_otlp_endpoint();
-      opts.compression = "gzip";
-      opts.timeout = std::chrono::seconds{5};  // NOLINT(*-avoid-magic-numbers)
-
-      auto x1 = otlp::OtlpHttpExporterFactory::Create(opts);
-      auto x2 = trace_sdk::BatchSpanProcessorFactory::Create(std::move(x1), {});
-      const auto x3 = resource::Resource::Create(resource_attributes);
+      auto opts = generate_http_exporter_opts();
+      auto pf = trace_sdk::BatchSpanProcessorFactory::Create(std::move(opts), {});
+      const auto res = resource::Resource::Create(resource_attributes);
       std::shared_ptr<trace_api::TracerProvider> provider =
-          trace_sdk::TracerProviderFactory::Create(std::move(x2), x3);
+          trace_sdk::TracerProviderFactory::Create(std::move(pf), res);
       trace_api::Provider::SetTracerProvider(std::move(provider));
 
       return true;
