@@ -37,7 +37,7 @@ Unfortunately, this is not a rare issue, as the above bug currently affects most
 hictk validate
 --------------
 
-``hictk validate`` was initially developed to detect files affected by the above issue and was later extended to also validate .cool, .scool and .hic files.
+``hictk validate`` was initially developed to detect files affected by the above issue and was later extended to also validate .cool, .scool, and .hic files as well.
 
 Perform a quick check to detect truncated or otherwise invalid files:
 
@@ -45,7 +45,7 @@ Perform a quick check to detect truncated or otherwise invalid files:
 
   # Validate a .hic file
   user@dev:/tmp$ hictk validate data/4DNFIZ1ZVXC8.hic9
-  [2024-09-26 16:20:55.552] [info]: Running hictk v1.0.0-fbdcb591
+  [2025-03-22 10:48:34.598] [info]: Running hictk v2.0.2-6a99e2c3
   {
       "format": "hic",
       "is_valid_hic": true,
@@ -55,7 +55,7 @@ Perform a quick check to detect truncated or otherwise invalid files:
 
   # Validate a .mcool file
   user@dev:/tmp$ hictk validate data/4DNFIZ1ZVXC8.mcool
-  [2024-09-26 16:22:47.348] [info]: Running hictk v1.0.0-fbdcb591
+  [2025-03-22 10:49:31.404] [info]: Running hictk v2.0.2-6a99e2c3-dirty
   {
       "1000": {
           "bin_table_dtypes_ok": true,
@@ -68,6 +68,10 @@ Perform a quick check to detect truncated or otherwise invalid files:
           "missing_groups": [],
           "missing_or_invalid_bin_type_attr": false,
           "missing_or_invalid_format_attr": false,
+          "pixels_are_sorted": "not_checked",
+          "pixels_are_symmetric_upper": "not_checked",
+          "pixels_are_unique": "not_checked",
+          "pixels_have_valid_counts": "not_checked",
           "unable_to_open_file": false
       },
       "100000": {
@@ -124,10 +128,20 @@ The quick check will not detect Cooler files with corrupted index, as this requi
       "missing_groups": [],
       "missing_or_invalid_bin_type_attr": false,
       "missing_or_invalid_format_attr": false,
+      "pixels_are_symmetric_upper": "not_checked",
+      "pixels_are_unique": "not_checked",
+      "pixels_have_valid_counts": "not_checked",
       "unable_to_open_file": false,
       "uri": "4DNFI9GMP2J8.mcool::/resolutions/100000"
   }
   ### FAILURE: "4DNFI9GMP2J8.mcool::/resolutions/100000" does not point to valid Cooler.
+
+In addition, when validating .[ms]cool files, the ``--validate-pixels`` flag can be used to detect malformed or invalid pixels such as:
+
+* Unsorted pixels (this is usually a consequence of the file index corruption outlined above).
+* File has ``storage-mode="symmetric-upper"`` but pixels overlap with the lower-triangular matrix.
+* File contains duplicate pixels (note that this only checks consecutive values. If duplicate pixels are present but are not consecutive they will be detected by the first check).
+* Pixels have invalid count values (e.g. pixels have 0 interactions).
 
 When launched with default settings, hictk validate outputs its report in .json format. The output format can be changed using the ``--output-format`` option.
 Output to stdout can be completely suppressed by providing the ``--quiet`` option (the outcome of file validation can still be determined based on hictk's exit code).
