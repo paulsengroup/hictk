@@ -16,6 +16,7 @@
 
 #include "hictk/license.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/telemetry.hpp"
 #include "hictk/version.hpp"
 
 namespace hictk::tools {
@@ -253,7 +254,33 @@ R"(@article{hictk,
   // clang-format on
 }
 
-[[nodiscard]] static constexpr std::string_view get_telemetry_help() noexcept { return "TODO"; }
+[[nodiscard]] static std::string_view get_telemetry_help() noexcept {
+  // TODO point to the stable instead of the latest docs
+#ifdef HICTK_ENABLE_TELEMETRY
+  // clang-format off
+  if (Tracer::should_collect_telemetry()) {
+  return
+R"(hictk was compiled WITH support for telemetry.
+Telemetry data will be collected as the environment variable "HICTK_NO_TELEMETRY" is not defined.
+See https://hictk.readthedocs.io/en/latest/telemetry.html for more details.
+)";
+  }
+  return
+R"(hictk was compiled WITH support for telemetry.
+Telemetry data won't be collected as the environment variable "HICTK_NO_TELEMETRY" is defined.
+See https://hictk.readthedocs.io/en/latest/telemetry.html for more details.
+)";
+
+#else
+  assert(!Tracer::should_collect_telemetry());
+  return
+R"(hictk was compiled WITHOUT support for telemetry.
+No telemetry data will be collected.
+See https://hictk.readthedocs.io/en/latest/telemetry.html for more details.
+)";
+  // clang-format on
+#endif
+}
 
 bool Cli::handle_help_flags() {
   if (_help_flag.empty()) {

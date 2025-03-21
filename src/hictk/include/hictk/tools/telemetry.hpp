@@ -179,8 +179,7 @@ class Tracer {
   inline static std::unique_ptr<Tracer> _instance{};
 
   Tracer() noexcept {
-    // NOLINTNEXTLINE(*-implicit-bool-conversion, *-mt-unsafe)
-    if (!!std::getenv("HICTK_NO_TELEMETRY")) {
+    if (!should_collect_telemetry()) {
       SPDLOG_DEBUG(
           "HICTK_NO_TELEMETRY found in environment variable list: no telemetry information will be "
           "collected.");
@@ -252,6 +251,11 @@ class Tracer {
     ss.set_status(default_status_code);
 
     return ss;
+  }
+
+  [[nodiscard]] static bool should_collect_telemetry() noexcept {
+    // NOLINTNEXTLINE(*-implicit-bool-conversion, *-mt-unsafe)
+    return !std::getenv("HICTK_NO_TELEMETRY");
   }
 
  private:
@@ -462,6 +466,7 @@ struct Tracer {
     return {};
   }
   static void tear_down_instance() noexcept {}
+  [[nodiscard]] static bool should_collect_telemetry() noexcept { return false; }
 };
 
 #endif
