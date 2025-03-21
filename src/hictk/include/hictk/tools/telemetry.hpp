@@ -66,6 +66,7 @@ struct ScopedSpan {
   void update_attributes(const Config& c) noexcept {
     try {
       if (span) {
+        span->SetAttribute("schema", 1);  // version of the trace schema
         update_tracer_attributes(span, c);
       }
     } catch (...) {  // NOLINT
@@ -85,20 +86,20 @@ struct ScopedSpan {
   static void update_tracer_attributes([[maybe_unused]] SpanPtr& span,
                                        [[maybe_unused]] const std::monostate& c) {}
   static void update_tracer_attributes(SpanPtr& span, const BalanceICEConfig& c) {
-    span->SetAttribute("input-format", infer_input_format(c.path_to_input));
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
   }
 
   static void update_tracer_attributes(SpanPtr& span, const BalanceSCALEConfig& c) {
-    span->SetAttribute("input-format", infer_input_format(c.path_to_input));
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
   }
 
   static void update_tracer_attributes(SpanPtr& span, const BalanceVCConfig& c) {
-    span->SetAttribute("input-format", infer_input_format(c.path_to_input));
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
   }
 
   static void update_tracer_attributes(SpanPtr& span, const ConvertConfig& c) {
-    span->SetAttribute("input-format", c.input_format);
-    span->SetAttribute("output-format", c.output_format);
+    span->SetAttribute("meta.input-format", c.input_format);
+    span->SetAttribute("meta.output-format", c.output_format);
   }
 
   static void update_tracer_attributes(SpanPtr& span, const DumpConfig& c) {
@@ -106,12 +107,12 @@ struct ScopedSpan {
     if (input_format == "mcool" && c.resolution.has_value()) {
       input_format = "cool";
     }
-    span->SetAttribute("input-format", input_format);
-    span->SetAttribute("table", c.table);
+    span->SetAttribute("meta.input-format", input_format);
+    span->SetAttribute("param.table", c.table);
   }
 
   static void update_tracer_attributes(SpanPtr& span, const LoadConfig& c) {
-    span->SetAttribute("output-format", c.output_format);
+    span->SetAttribute("meta.output-format", c.output_format);
   }
 
   static void update_tracer_attributes(SpanPtr& span, const MergeConfig& c) {
@@ -119,30 +120,30 @@ struct ScopedSpan {
     for (const auto& f : c.input_files) {
       input_formats.emplace(infer_input_format(f));
     }
-    span->SetAttribute("input-formats",
+    span->SetAttribute("meta.input-formats",
                        fmt::format(FMT_STRING("{}"), fmt::join(input_formats, ",")));
-    span->SetAttribute("output-format", c.output_format);
+    span->SetAttribute("meta.output-format", c.output_format);
   }
 
   static void update_tracer_attributes(SpanPtr& span, const MetadataConfig& c) {
-    span->SetAttribute("input-format", c.input_format);
-    span->SetAttribute("output-format", c.output_format);
+    span->SetAttribute("meta.input-format", c.input_format);
+    span->SetAttribute("meta.output-format", c.output_format);
   }
 
   static void update_tracer_attributes([[maybe_unused]] SpanPtr& span,
                                        [[maybe_unused]] const FixMcoolConfig& c) noexcept {}
 
   static void update_tracer_attributes(SpanPtr& span, const RenameChromosomesConfig& c) {
-    span->SetAttribute("input-format", infer_input_format(c.uri));
+    span->SetAttribute("meta.input-format", infer_input_format(c.uri));
   }
 
   static void update_tracer_attributes(SpanPtr& span, const ValidateConfig& c) {
     try {
-      span->SetAttribute("input-format", infer_input_format(c.uri));
+      span->SetAttribute("meta.input-format", infer_input_format(c.uri));
     } catch (...) {
-      span->SetAttribute("input-format", "unknown");
+      span->SetAttribute("meta.input-format", "unknown");
     }
-    span->SetAttribute("output-format", c.output_format);
+    span->SetAttribute("meta.output-format", c.output_format);
   }
 
   static void update_tracer_attributes(SpanPtr& span, const ZoomifyConfig& c) {
@@ -150,7 +151,7 @@ struct ScopedSpan {
     if (input_format == "mcool" && c.resolutions.size() == 1) {
       input_format = "cool";
     }
-    span->SetAttribute("input-format", input_format);
+    span->SetAttribute("meta.input-format", input_format);
   }
 };
 
@@ -234,7 +235,9 @@ class Tracer {
       return {};
     }
 
-    std::string subcmd_str{Cli::subcommand_to_str(subcmd)};  // NOLINT(*-const-correctness)
+    // NOLINTEXTLINE(*-const-correctness)
+    auto subcmd_str = fmt::format(FMT_STRING("subcommand.{}"), Cli::subcommand_to_str(subcmd));
+
     if constexpr (std::is_same_v<BalanceICEConfig, Config>) {
       subcmd_str += "-ice";
     } else if constexpr (std::is_same_v<BalanceSCALEConfig, Config>) {
@@ -297,6 +300,7 @@ class Tracer {
       try {
 #ifdef HICTK_CXX_COMPILER_ID
         s = std::string{HICTK_CXX_COMPILER_ID};
+        std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
 #else
         s = "unknown";
 #endif
@@ -312,6 +316,7 @@ class Tracer {
       try {
 #ifdef HICTK_CXX_COMPILER_VERSION
         s = std::string{HICTK_CXX_COMPILER_VERSION};
+        std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
 #else
         s = "unknown";
 #endif
