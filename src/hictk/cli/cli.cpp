@@ -138,12 +138,19 @@ void Cli::make_cli() {
   _cli.name(_exec_name);
   _cli.description("Blazing fast tools to work with .hic and .cool files.");
   _cli.set_version_flag("-V,--version", std::string{config::version::str_long()});
-  _cli.add_flag_callback(
+
+  auto grp = _cli.add_option_group("help");
+  grp->require_option(0, 1);
+
+  grp->add_flag_callback(
       "--help-cite", [this]() { _help_flag = "cite"; },
       "Print hictk's citation in Bibtex format and exit.");
-  _cli.add_flag_callback(
+  grp->add_flag_callback(
+      "--help-docs", [this]() { _help_flag = "docs"; },
+      "Print the URL to hictk's documentation and exit.");
+  grp->add_flag_callback(
       "--help-license", [this]() { _help_flag = "license"; }, "Print the hictk license and exit.");
-  _cli.add_flag_callback(
+  grp->add_flag_callback(
       "--help-telemetry", [this]() { _help_flag = "telemetry"; },
       "Print information regarding telemetry collection and exit.");
 
@@ -303,6 +310,13 @@ bool Cli::handle_help_flags() {
 
   if (_help_flag == "cite") {
     fmt::print(FMT_STRING("{}"), get_citation());
+    _subcommand = subcommand::none;
+    _exit_code = 0;
+    return true;
+  }
+
+  if (_help_flag == "docs") {
+    fmt::println(FMT_STRING("https://hictk.readthedocs.io"));
     _subcommand = subcommand::none;
     _exit_code = 0;
     return true;
