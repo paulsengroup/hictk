@@ -251,6 +251,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
       auto t0 = std::chrono::steady_clock::now();
       for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
         const auto pixel = internal::process_pixel_interaction_block(*_bin_table, *first_pixel);
+        assert(pixel.count != 0);
         std::ignore = ++first_pixel;
 
         while (!queue.try_enqueue(pixel)) {
@@ -287,7 +288,8 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
         }
 
         queue.wait_dequeue(p);
-        if (p.count == 0) {
+        if (p.coords.bin1.id() == Bin::null_id && p.coords.bin2.id() == Bin::null_id &&
+            p.count == 0) {
           return;
         }
 
