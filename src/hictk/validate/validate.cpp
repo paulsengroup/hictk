@@ -96,15 +96,15 @@ int validate_subcmd(const ValidateConfig& c) {
       return_code = res.first;
       status = merge_tables(status, res.second);
     } else if (is_mcool) {
-      auto res = validate_mcool(c.uri, c.validate_index, c.exhaustive);
+      auto res = validate_mcool(c.uri, c.validate_index, c.validate_pixels, c.exhaustive);
       return_code = res.first;
       status = merge_tables(status, res.second);
     } else if (is_scool) {
-      auto res = validate_scool(c.uri, c.validate_index, c.exhaustive);
+      auto res = validate_scool(c.uri, c.validate_index, c.validate_pixels, c.exhaustive);
       return_code = res.first;
       status = merge_tables(status, res.second);
     } else {
-      auto res = validate_cooler(c.uri, c.validate_index);
+      auto res = validate_cooler(c.uri, c.validate_index, c.validate_pixels);
       return_code = res.first;
       status = merge_tables(status, res.second);
     }

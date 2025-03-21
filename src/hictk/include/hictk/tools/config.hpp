@@ -220,6 +220,7 @@ struct RenameChromosomesConfig {
 struct ValidateConfig {
   std::string uri{};
   bool validate_index{false};
+  bool validate_pixels{false};
   std::string output_format{"json"};
   bool include_file_path{true};
   bool exhaustive{true};

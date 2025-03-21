@@ -115,7 +115,134 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
   return num_invalid_bins == 0;
 }
 
-std::pair<int, toml::table> validate_cooler(std::string_view path, bool validate_index) {
+template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+static bool check_pixels(const cooler::File& clr, toml::table& status) {
+  SPDLOG_DEBUG(FMT_STRING("{}: validating pixels..."), clr.uri());
+  auto first = clr.begin<N>();
+  const auto last = clr.end<N>();
+
+  if (first == last) {
+    return true;
+  }
+
+  const auto symmetric_upper =
+      clr.attributes().storage_mode.value_or("symmetric-upper") == "symmetric-upper";
+
+  auto prev_pixel = *first++;
+  std::optional<std::string> dupl_pixel_status{};
+  std::optional<std::string> sorted_status{};
+  std::optional<std::string> count_status{};
+  std::optional<std::string> symmetry_status{};
+
+  auto check_duplicate = [&](const ThinPixel<N>& pixel, std::size_t i) {
+    if (HICTK_UNLIKELY(dupl_pixel_status.has_value())) {
+      return;
+    }
+    if (HICTK_UNLIKELY(pixel.bin1_id == prev_pixel.bin1_id &&
+                       pixel.bin2_id == prev_pixel.bin2_id)) {
+      if (!dupl_pixel_status) {
+        dupl_pixel_status = fmt::format(
+            FMT_STRING("pixel #{} and #{} have the same coordinates (bin1_id={} and bin2_id={})"),
+            i - 1, i, pixel.bin1_id, pixel.bin2_id);
+        SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *dupl_pixel_status);
+      }
+    }
+  };
+
+  auto check_symmetry = [&](const ThinPixel<N>& pixel, std::size_t i) {
+    if (!symmetric_upper || symmetry_status.has_value()) {
+      return;
+    }
+
+    if (pixel.bin1_id > pixel.bin2_id) {
+      symmetry_status = fmt::format(
+          FMT_STRING("pixel #{} (bin1_id={} bin2_id={}) overlaps with the lower-triangular matrix"),
+          i, pixel.bin1_id, pixel.bin2_id);
+      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *symmetry_status);
+    }
+  };
+
+  auto check_sorted = [&](const ThinPixel<N>& pixel, std::size_t i) {
+    if (HICTK_UNLIKELY(sorted_status.has_value())) {
+      return;
+    }
+
+    if (HICTK_UNLIKELY(prev_pixel > pixel)) {
+      sorted_status = fmt::format(
+          FMT_STRING("pixel #{} and #{} are not sorted in ascending order: {}:{} > {}:{}"), i - 1,
+          i, prev_pixel.bin1_id, prev_pixel.bin2_id, pixel.bin1_id, pixel.bin2_id);
+      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *sorted_status);
+    }
+  };
+
+  auto check_count = [&](const ThinPixel<N>& pixel, std::size_t i) {
+    if (HICTK_UNLIKELY(count_status.has_value())) {
+      return;
+    }
+    if (HICTK_UNLIKELY(pixel.count == 0)) {
+      count_status = fmt::format(FMT_STRING("pixel #{} has an invalid count {}:{}={}"), i,
+                                 pixel.bin1_id, pixel.bin2_id, pixel.count);
+      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *count_status);
+    }
+  };
+
+  check_count(prev_pixel, 1);
+  check_symmetry(prev_pixel, 1);
+
+  for (std::size_t i = 2; first != last; ++i) {
+    const auto p = *first;
+    check_symmetry(p, i);
+    check_sorted(p, i);
+    check_duplicate(p, i);
+    check_count(p, i);
+    if (HICTK_UNLIKELY(symmetry_status.has_value() && dupl_pixel_status.has_value() &&
+                       count_status.has_value() && sorted_status.has_value())) {
+      break;
+    }
+    prev_pixel = p;
+    std::ignore = ++first;
+  }
+
+  if (sorted_status.has_value()) {
+    status.insert("pixels_are_sorted", *sorted_status);
+  } else {
+    status.insert("pixels_are_sorted", true);
+  }
+  if (!symmetric_upper) {
+    status.insert("pixels_are_symmetric_upper", "not_checked");
+  } else if (symmetry_status.has_value()) {
+    status.insert("pixels_are_symmetric_upper", *symmetry_status);
+  } else {
+    status.insert("pixels_are_symmetric_upper", true);
+  }
+  if (dupl_pixel_status.has_value()) {
+    status.insert("pixels_are_unique", *dupl_pixel_status);
+  } else {
+    status.insert("pixels_are_unique", true);
+  }
+  if (count_status.has_value()) {
+    status.insert("pixels_have_valid_counts", *count_status);
+  } else {
+    status.insert("pixels_have_valid_counts", true);
+  }
+
+  return !sorted_status.has_value() && !symmetry_status.has_value() &&
+         !dupl_pixel_status.has_value() && !count_status.has_value();
+}
+
+static bool check_pixels(const cooler::File& clr, toml::table& status) {
+  if (clr.has_float_pixels()) {
+    return check_pixels<double>(clr, status);
+  }
+  if (clr.has_unsigned_pixels()) {
+    return check_pixels<std::uint64_t>(clr, status);
+  }
+  return check_pixels<std::int64_t>(clr, status);
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+std::pair<int, toml::table> validate_cooler(std::string_view path, bool validate_index,
+                                            bool validate_pixels) {
   int return_code = 0;
   toml::table status;
 
@@ -166,6 +293,17 @@ std::pair<int, toml::table> validate_cooler(std::string_view path, bool validate
     }
   } else {
     status.insert("index_is_valid", "not_checked");
+  }
+
+  if (!!clr && validate_pixels) {
+    if (!check_pixels(*clr, status)) {
+      return_code = 1;
+    }
+  } else {
+    status.insert("pixels_are_sorted", "not_checked");
+    status.insert("pixels_are_symmetric_upper", "not_checked");
+    status.insert("pixels_are_unique", "not_checked");
+    status.insert("pixels_have_valid_counts", "not_checked");
   }
 
   if (return_code != 0) {
