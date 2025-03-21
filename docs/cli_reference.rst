@@ -15,10 +15,17 @@ Subcommands
 
 
   Blazing fast tools to work with .hic and .cool files.
-  Usage: hictk [OPTIONS] SUBCOMMAND
+  Usage: hictk [OPTIONS] [SUBCOMMAND]
   Options:
     -h,--help                   Print this help message and exit
     -V,--version                Display program version information and exit
+  [Option Group: help]
+    [At most 1 of the following options are allowed]
+    Options:
+      --help-cite                 Print hictk's citation in Bibtex format and exit.
+      --help-docs                 Print the URL to hictk's documentation and exit.
+      --help-license              Print the hictk license and exit.
+      --help-telemetry            Print information regarding telemetry collection and exit.
   Subcommands:
     balance                     Balance Hi-C files using ICE, SCALE, or VC.
     convert                     Convert Hi-C files between different formats.
@@ -473,7 +480,7 @@ hictk zoomify
   Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
   Usage: hictk zoomify [OPTIONS] cooler/hic [m]cool/hic
   Positionals:
-    cooler/hic TEXT:(.[ms]cool) OR (.hic) REQUIRED
+    cooler/hic TEXT:((.[ms]cool) OR (.hic)) AND (NOT .scool) REQUIRED
                                 Path to a .cool or .hic file (Cooler URI syntax supported).
     [m]cool/hic TEXT REQUIRED   Output path.
                                 When zoomifying Cooler files, providing a single resolution through
