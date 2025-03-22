@@ -8,8 +8,8 @@ endif()
 
 # gersemi: off
 file(
-  DOWNLOAD https://zenodo.org/records/15012705/files/hictk_test_data.tar.zst?download=1
-  EXPECTED_HASH SHA256=d8114081f46eefdf8bea9655e9a6917c28bb46f641244cba2b60d9553d18c3dd
+  DOWNLOAD https://zenodo.org/records/15068509/files/hictk_test_data.tar.zst?download=1
+  EXPECTED_HASH SHA256=85960cc4088c8bdf6122f9c6660cefcf189e0fb050e30090988ae719c9ddb19f
   "${PROJECT_SOURCE_DIR}/test/data/hictk_test_data.tar.zst"
 )
 # gersemi: on
