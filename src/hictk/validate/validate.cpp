@@ -46,7 +46,7 @@ static void print_report(const toml::table& status, std::string_view format) {
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity, misc-use-internal-linkage)
-int validate_subcmd(const ValidateConfig& c) {
+int run_subcmd(const ValidateConfig& c) {
   try {
     int return_code = 0;
     toml::table status;

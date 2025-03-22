@@ -10,7 +10,7 @@
 
 namespace hictk::tools {
 
-int metadata_subcmd(const MetadataConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const MetadataConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto output_format = parse_output_format(c.output_format);
   if (c.input_format == "hic") {
     return print_hic_metadata(c.uri, output_format, c.include_file_path, c.recursive);

@@ -17,7 +17,7 @@
 
 namespace hictk::tools {
 
-int convert_subcmd(const ConvertConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const ConvertConfig& c) {  // NOLINT(misc-use-internal-linkage)
   auto t0 = std::chrono::steady_clock::now();
   SPDLOG_INFO(FMT_STRING("Converting {} to {} ({} -> {})..."), c.path_to_input, c.path_to_output,
               c.input_format, c.output_format);

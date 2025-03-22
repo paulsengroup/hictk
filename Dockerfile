@@ -108,6 +108,12 @@ RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-a
 &&  if [ -z "$HICTK_GIT_SHORT_HASH" ]; then echo "Missing HICTK_GIT_SHORT_HASH --build-arg" && exit 1; fi \
 &&  if [ -z "$CREATION_DATE" ]; then echo "Missing CREATION_DATE --build-arg" && exit 1; fi
 
+RUN if [ "$BUILDARCH" != 'amd64' ]; then \
+    apt-get update \
+&&  apt-get install -q -y --no-install-recommends libatomic1 \
+&&  rm -rf /var/lib/apt/lists/*; \
+fi
+
 # Export project binaries to the final build stage
 COPY --from=builder "$staging_dir" "$install_dir"
 

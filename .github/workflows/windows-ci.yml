@@ -39,6 +39,7 @@ concurrency:
 env:
   CONAN_HOME: "${{ github.workspace }}\\.conan2"
   HICTK_CI: "1"
+  HICTK_NO_TELEMETRY: "1"
 
 defaults:
   run:

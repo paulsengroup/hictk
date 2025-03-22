@@ -18,7 +18,7 @@
 
 namespace hictk::tools {
 
-int balance_subcmd(const BalanceICEConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const BalanceICEConfig& c) {  // NOLINT(misc-use-internal-linkage)
   SPDLOG_INFO(FMT_STRING("balancing using ICE ({})"), c.name);
   const auto tmp_dir =
       !c.in_memory ? std::make_unique<const internal::TmpDir>(c.tmp_dir, true) : nullptr;

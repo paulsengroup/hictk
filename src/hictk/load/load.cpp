@@ -122,7 +122,7 @@ namespace hictk::tools {
   }
 }
 
-int load_subcmd(const LoadConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const LoadConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto t0 = std::chrono::system_clock::now();
 
   const auto stats = [&]() {

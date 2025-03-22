@@ -1,0 +1,15 @@
+// Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+// This file was generated automatically by CMake.
+
+#pragma once
+
+#include <string_view>
+
+namespace hictk::config::license {
+constexpr std::string_view license{
+R"(@HICTK_LICENSE@)"
+};
+}  // namespace hictk::config::license

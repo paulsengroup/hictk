@@ -15,7 +15,7 @@
 
 namespace hictk::tools {
 
-int merge_subcmd(const MergeConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const MergeConfig& c) {  // NOLINT(misc-use-internal-linkage)
   const auto t0 = std::chrono::system_clock::now();
   if (c.output_format == "cool") {
     merge_to_cool(c);

@@ -391,6 +391,7 @@ jobs:
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
             --do-not-copy-binary                               \
+            --enable-telemetry                                 \
             --data-dir test/data                               \
             --threads "$(nproc)"                               \
             --result-file integration-test-report.balance.json \
@@ -407,6 +408,7 @@ jobs:
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
             --do-not-copy-binary                               \
+            --enable-telemetry                                 \
             --data-dir test/data                               \
             --threads "$(nproc)"                               \
             --result-file integration-test-report.convert.json \
@@ -423,6 +425,7 @@ jobs:
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
             --do-not-copy-binary                               \
+            --enable-telemetry                                 \
             --data-dir test/data                               \
             --threads "$(nproc)"                               \
             --result-file integration-test-report.dump.json    \
@@ -439,6 +442,7 @@ jobs:
             build/src/hictk/hictk                                \
             test/integration/config.toml                         \
             --do-not-copy-binary                                 \
+            --enable-telemetry                                   \
             --data-dir test/data                                 \
             --threads "$(nproc)"                                 \
             --result-file integration-test-report.fix-mcool.json \
@@ -455,6 +459,7 @@ jobs:
             build/src/hictk/hictk                           \
             test/integration/config.toml                    \
             --do-not-copy-binary                            \
+            --enable-telemetry                              \
             --data-dir test/data                            \
             --threads "$(nproc)"                            \
             --result-file integration-test-report.load.json \
@@ -471,6 +476,7 @@ jobs:
             build/src/hictk/hictk                            \
             test/integration/config.toml                     \
             --do-not-copy-binary                             \
+            --enable-telemetry                               \
             --data-dir test/data                             \
             --threads "$(nproc)"                             \
             --result-file integration-test-report.merge.json \
@@ -486,6 +492,7 @@ jobs:
             build/src/hictk/hictk                               \
             test/integration/config.toml                        \
             --do-not-copy-binary                                \
+            --enable-telemetry                                  \
             --data-dir test/data                                \
             --threads "$(nproc)"                                \
             --result-file integration-test-report.metadata.json \
@@ -502,6 +509,7 @@ jobs:
             build/src/hictk/hictk                                         \
             test/integration/config.toml                                  \
             --do-not-copy-binary                                          \
+            --enable-telemetry                                            \
             --data-dir test/data                                          \
             --threads "$(nproc)"                                          \
             --result-file integration-test-report.rename-chromosomes.json \
@@ -518,6 +526,7 @@ jobs:
             build/src/hictk/hictk                               \
             test/integration/config.toml                        \
             --do-not-copy-binary                                \
+            --enable-telemetry                                  \
             --data-dir test/data                                \
             --threads "$(nproc)"                                \
             --result-file integration-test-report.validate.json \
@@ -534,6 +543,7 @@ jobs:
             build/src/hictk/hictk                              \
             test/integration/config.toml                       \
             --do-not-copy-binary                               \
+            --enable-telemetry                                 \
             --data-dir test/data                               \
             --threads "$(nproc)"                               \
             --result-file integration-test-report.zoomify.json \

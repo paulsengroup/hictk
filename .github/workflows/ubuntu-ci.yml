@@ -177,6 +177,8 @@ jobs:
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "500M"
       CONAN_HOME: "/opt/conan/"
+      HICTK_CI: "1"
+      HICTK_NO_TELEMETRY: "1"
 
     steps:
       - uses: actions/checkout@v4
