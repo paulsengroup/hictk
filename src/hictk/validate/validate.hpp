@@ -15,11 +15,12 @@ namespace hictk::tools {
 [[nodiscard]] std::pair<int, toml::table> validate_hic(const std::string& path, bool exhaustive);
 
 [[nodiscard]] std::pair<int, toml::table> validate_cooler(std::string_view path,
-                                                          bool validate_index);
+                                                          bool validate_index,
+                                                          bool validate_pixels);
 
 [[nodiscard]] std::pair<int, toml::table> validate_mcool(std::string_view path, bool validate_index,
-                                                         bool exhaustive);
+                                                         bool validate_pixels, bool exhaustive);
 
 [[nodiscard]] std::pair<int, toml::table> validate_scool(std::string_view path, bool validate_index,
-                                                         bool exhaustive);
+                                                         bool validate_pixels, bool exhaustive);
 }  // namespace hictk::tools

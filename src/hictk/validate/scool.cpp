@@ -54,7 +54,7 @@ static void update_status_table(const cooler::utils::ValidationStatusScool& stat
 }
 
 std::pair<int, toml::table> validate_scool(std::string_view path, bool validate_index,
-                                           bool exhaustive) {
+                                           bool validate_pixels, bool exhaustive) {
   int return_code = 0;
   toml::table global_status;
 
@@ -66,7 +66,8 @@ std::pair<int, toml::table> validate_scool(std::string_view path, bool validate_
   }
 
   for (const auto& cell : sclr->cells()) {
-    const auto [_, status] = validate_cooler(sclr->open(cell).uri(), validate_index);
+    const auto [_, status] =
+        validate_cooler(sclr->open(cell).uri(), validate_index, validate_pixels);
     const auto is_cooler = **status.get_as<bool>("is_valid_cooler");
     global_status.insert(cell, status);
 

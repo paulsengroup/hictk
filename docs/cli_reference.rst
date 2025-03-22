@@ -454,6 +454,7 @@ hictk validate
   Options:
     -h,--help                   Print this help message and exit
     --validate-index            Validate Cooler index (may take a long time).
+    --validate-pixels           Validate pixels found in Cooler files (may take a long time).
     -f,--output-format TEXT:{json,toml,yaml} [json]
                                 Format used to report the outcome of file validation.
                                 Should be one of: json, toml, or yaml.
