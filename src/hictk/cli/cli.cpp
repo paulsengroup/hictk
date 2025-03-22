@@ -139,7 +139,7 @@ void Cli::make_cli() {
   _cli.description("Blazing fast tools to work with .hic and .cool files.");
   _cli.set_version_flag("-V,--version", std::string{config::version::str_long()});
 
-  auto grp = _cli.add_option_group("help");
+  auto* grp = _cli.add_option_group("help");
   grp->require_option(0, 1);
 
   grp->add_flag_callback(

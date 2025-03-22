@@ -227,7 +227,7 @@ class Tracer {
 
   static void tear_down_instance() noexcept { _instance.reset(); }
 
-  template <typename Config>
+  template <typename Config>  // NOLINTNEXTLINE(bugprone-exception-escape)
   [[nodiscard]] auto get_scoped_span(Cli::subcommand subcmd, const Config& config,
                                      StatusCode default_status_code = StatusCode::kError) noexcept
       -> std::optional<ScopedSpan<SpanT, ScopeT>> {
