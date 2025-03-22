@@ -10,12 +10,14 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
 
 #include "./validate.hpp"
+#include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
 #include "hictk/string_utils.hpp"
@@ -115,7 +117,68 @@ static bool check_bin_table(const cooler::File& clr, toml::table& status) {
   return num_invalid_bins == 0;
 }
 
-template <typename N>  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+template <typename N>
+static void check_duplicate_pixel([[maybe_unused]] const cooler::File& clr,
+                                  const ThinPixel<N>& prev_pixel, const ThinPixel<N>& pixel,
+                                  std::size_t i, std::optional<std::string>& status) {
+  if (HICTK_UNLIKELY(status.has_value())) {
+    return;
+  }
+
+  if (HICTK_UNLIKELY(pixel.bin1_id == prev_pixel.bin1_id && pixel.bin2_id == prev_pixel.bin2_id)) {
+    status = fmt::format(
+        FMT_STRING("pixel #{} and #{} have the same coordinates (bin1_id={} and bin2_id={})"),
+        i - 1, i, pixel.bin1_id, pixel.bin2_id);
+    SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *status);
+  }
+}
+
+template <typename N>
+static void check_matrix_symmetry([[maybe_unused]] const cooler::File& clr,
+                                  const ThinPixel<N>& pixel, bool file_is_symmetric_upper,
+                                  std::size_t i, std::optional<std::string>& status) {
+  if (HICTK_UNLIKELY(!file_is_symmetric_upper || status.has_value())) {
+    return;
+  }
+
+  if (pixel.bin1_id > pixel.bin2_id) {
+    status = fmt::format(
+        FMT_STRING("pixel #{} (bin1_id={} bin2_id={}) overlaps with the lower-triangular matrix"),
+        i, pixel.bin1_id, pixel.bin2_id);
+    SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *status);
+  }
+}
+
+template <typename N>
+static void check_pixels_are_sorted([[maybe_unused]] const cooler::File& clr,
+                                    const ThinPixel<N>& prev_pixel, const ThinPixel<N>& pixel,
+                                    std::size_t i, std::optional<std::string>& status) {
+  if (HICTK_UNLIKELY(status.has_value())) {
+    return;
+  }
+
+  if (HICTK_UNLIKELY(prev_pixel > pixel)) {
+    status = fmt::format(
+        FMT_STRING("pixel #{} and #{} are not sorted in ascending order: {}:{} > {}:{}"), i - 1, i,
+        prev_pixel.bin1_id, prev_pixel.bin2_id, pixel.bin1_id, pixel.bin2_id);
+    SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *status);
+  }
+}
+
+template <typename N>
+static void check_pixel_count([[maybe_unused]] const cooler::File& clr, const ThinPixel<N>& pixel,
+                              std::size_t i, std::optional<std::string>& status) {
+  if (HICTK_UNLIKELY(status.has_value())) {
+    return;
+  }
+  if (HICTK_UNLIKELY(pixel.count == 0)) {
+    status = fmt::format(FMT_STRING("pixel #{} has an invalid count {}:{}={}"), i, pixel.bin1_id,
+                         pixel.bin2_id, pixel.count);
+    SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *status);
+  }
+}
+
+template <typename N>
 static bool check_pixels(const cooler::File& clr, toml::table& status) {
   SPDLOG_DEBUG(FMT_STRING("{}: validating pixels..."), clr.uri());
   auto first = clr.begin<N>();
@@ -134,72 +197,24 @@ static bool check_pixels(const cooler::File& clr, toml::table& status) {
   std::optional<std::string> count_status{};
   std::optional<std::string> symmetry_status{};
 
-  auto check_duplicate = [&](const ThinPixel<N>& pixel, std::size_t i) {
-    if (HICTK_UNLIKELY(dupl_pixel_status.has_value())) {
-      return;
-    }
-    if (HICTK_UNLIKELY(pixel.bin1_id == prev_pixel.bin1_id &&
-                       pixel.bin2_id == prev_pixel.bin2_id)) {
-      if (!dupl_pixel_status) {
-        dupl_pixel_status = fmt::format(
-            FMT_STRING("pixel #{} and #{} have the same coordinates (bin1_id={} and bin2_id={})"),
-            i - 1, i, pixel.bin1_id, pixel.bin2_id);
-        SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *dupl_pixel_status);
-      }
-    }
+  auto early_return = [&]() {
+    return symmetry_status.has_value() && dupl_pixel_status.has_value() &&
+           count_status.has_value() && sorted_status.has_value();
   };
 
-  auto check_symmetry = [&](const ThinPixel<N>& pixel, std::size_t i) {
-    if (!symmetric_upper || symmetry_status.has_value()) {
-      return;
-    }
-
-    if (pixel.bin1_id > pixel.bin2_id) {
-      symmetry_status = fmt::format(
-          FMT_STRING("pixel #{} (bin1_id={} bin2_id={}) overlaps with the lower-triangular matrix"),
-          i, pixel.bin1_id, pixel.bin2_id);
-      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *symmetry_status);
-    }
-  };
-
-  auto check_sorted = [&](const ThinPixel<N>& pixel, std::size_t i) {
-    if (HICTK_UNLIKELY(sorted_status.has_value())) {
-      return;
-    }
-
-    if (HICTK_UNLIKELY(prev_pixel > pixel)) {
-      sorted_status = fmt::format(
-          FMT_STRING("pixel #{} and #{} are not sorted in ascending order: {}:{} > {}:{}"), i - 1,
-          i, prev_pixel.bin1_id, prev_pixel.bin2_id, pixel.bin1_id, pixel.bin2_id);
-      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *sorted_status);
-    }
-  };
-
-  auto check_count = [&](const ThinPixel<N>& pixel, std::size_t i) {
-    if (HICTK_UNLIKELY(count_status.has_value())) {
-      return;
-    }
-    if (HICTK_UNLIKELY(pixel.count == 0)) {
-      count_status = fmt::format(FMT_STRING("pixel #{} has an invalid count {}:{}={}"), i,
-                                 pixel.bin1_id, pixel.bin2_id, pixel.count);
-      SPDLOG_DEBUG(FMT_STRING("{}: {}"), clr.uri(), *count_status);
-    }
-  };
-
-  check_count(prev_pixel, 1);
-  check_symmetry(prev_pixel, 1);
+  check_pixel_count(clr, prev_pixel, 1, count_status);
+  check_matrix_symmetry(clr, prev_pixel, symmetric_upper, 1, symmetry_status);
 
   for (std::size_t i = 2; first != last; ++i) {
-    const auto p = *first;
-    check_symmetry(p, i);
-    check_sorted(p, i);
-    check_duplicate(p, i);
-    check_count(p, i);
-    if (HICTK_UNLIKELY(symmetry_status.has_value() && dupl_pixel_status.has_value() &&
-                       count_status.has_value() && sorted_status.has_value())) {
+    auto pixel = *first;
+    check_pixel_count(clr, pixel, i, count_status);
+    check_matrix_symmetry(clr, pixel, symmetric_upper, i, symmetry_status);
+    check_pixels_are_sorted(clr, prev_pixel, pixel, i, sorted_status);
+    check_duplicate_pixel(clr, prev_pixel, pixel, i, dupl_pixel_status);
+    if (HICTK_UNLIKELY(early_return())) {
       break;
     }
-    prev_pixel = p;
+    std::swap(prev_pixel, pixel);
     std::ignore = ++first;
   }
 
