@@ -36,6 +36,16 @@ on:
         required: false
         description: "Docker image used to build Conan deps."
 
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: >
+    build-conan-deps-linux-
+    ${{ github.event.pull_request.number || github.ref }}-
+    ${{ inputs.conan-version }}-
+    ${{ inputs.cppstd }}-
+    ${{ inputs.image }}
+  cancel-in-progress: false
+
 defaults:
   run:
     shell: bash
