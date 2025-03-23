@@ -15,9 +15,6 @@ on:
       cmake-prefix-release-key:
         description: "CMake config dir (Release)"
         value: ${{ jobs.build-deps.outputs.cmake-rel-key }}
-      cmake-prefix-relwithdebinfo-key:
-        description: "CMake config dir (RelWithDebInfo)"
-        value: ${{ jobs.build-deps.outputs.cmake-rwdi-key }}
 
     inputs:
       conan-version:
