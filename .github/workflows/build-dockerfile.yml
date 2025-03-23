@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@44673a64dc95ccb54531391ba000e8a595fe9e3d
     name: Cache test dataset
 
   build-dockerfile:

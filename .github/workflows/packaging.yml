@@ -30,7 +30,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@2c256713764f73287f01af1bc40c85bb9fd81859
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@44673a64dc95ccb54531391ba000e8a595fe9e3d
 
   test-find-package:
     runs-on: ubuntu-latest

@@ -50,11 +50,11 @@ permissions:
 jobs:
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@44673a64dc95ccb54531391ba000e8a595fe9e3d
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@2c256713764f73287f01af1bc40c85bb9fd81859
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@44673a64dc95ccb54531391ba000e8a595fe9e3d
 
   build-project:
     name: Build project
