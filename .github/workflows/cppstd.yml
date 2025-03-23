@@ -32,14 +32,14 @@ permissions:
 jobs:
   build-conan-deps-cpp20:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@2c256713764f73287f01af1bc40c85bb9fd81859
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@44903e57bee1492a03c0aa55b5102b3f6440e245
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       cppstd: 20
 
   build-conan-deps-cpp23:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@2c256713764f73287f01af1bc40c85bb9fd81859
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@44903e57bee1492a03c0aa55b5102b3f6440e245
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
       cppstd: 23

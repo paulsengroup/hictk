@@ -77,9 +77,11 @@ jobs:
 
           hash="${{ hashFiles('conanfile.py') }}"
 
-          compiler="$(cc --version | head -n 1 | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
+          image='${{ inputs.image }}'
+          compiler="$(cc --version | head -n 1)"
 
-          suffix="${{ inputs.os }}-$compiler-c++${{ inputs.cppstd }}-$hash"
+          suffix="$image-$compiler-c++${{ inputs.cppstd }}-$hash"
+          suffix="$(echo "$suffix" | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
 
           echo "conan-key=conan-$suffix" | tee -a "$GITHUB_OUTPUT"
           echo "cmake-dbg-key=cmake-dbg-$suffix" | tee -a "$GITHUB_OUTPUT"

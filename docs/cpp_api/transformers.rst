@@ -44,7 +44,7 @@ Coarsening pixels
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> src_bins_ptr() const noexcept;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> dest_bins_ptr() const noexcept;
 
-  :cpp:class:`BinTable` accesors.
+  :cpp:class:`BinTable` accessors.
 
   **Iteration**
 

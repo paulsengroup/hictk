@@ -101,7 +101,7 @@ namespace hictk::fuzzer {
     const auto sleep_time =
         std::chrono::milliseconds(std::uniform_int_distribution<std::uint64_t>{10, 500}(rand_eng));
     SPDLOG_DEBUG(
-        FMT_STRING("sleeping for {}ms befor attempting to launch process #{} one more time..."),
+        FMT_STRING("sleeping for {}ms before attempting to launch process #{} one more time..."),
         sleep_time.count(), id);
     std::this_thread::sleep_for(sleep_time);
   }

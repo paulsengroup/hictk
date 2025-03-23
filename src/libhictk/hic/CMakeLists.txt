@@ -20,7 +20,7 @@ elseif(HICTK_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
 else()
   message(
     FATAL_ERROR
-    "Unable to detect the CPU architecture endiannes.\nPlease specify the endianness of the target architecture with -DHICTK_CXX_BYTE_ORDER=*_ENDIAN.\nSee https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_BYTE_ORDER.html for more details."
+    "Unable to detect the CPU architecture endianness.\nPlease specify the endianness of the target architecture with -DHICTK_CXX_BYTE_ORDER=*_ENDIAN.\nSee https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_BYTE_ORDER.html for more details."
   )
 endif()
 
