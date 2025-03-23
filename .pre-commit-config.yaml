@@ -48,6 +48,11 @@ repos:
     hooks:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v20.1.0
+    hooks:
+      - id: clang-format
+        types_or: [c, c++]
   - repo: https://github.com/BlankSpruce/gersemi
     rev: 0.19.2
     hooks:
@@ -58,13 +63,3 @@ repos:
     hooks:
       - id: prettier
         types_or: [markdown, yaml]
-
-  - repo: local
-    hooks:
-      - id: clang-format
-        name: clang-format
-        entry: clang-format
-        types_or: [c, c++]
-        language: python
-        args: ["-i"]
-        additional_dependencies: ["clang-format==19.1.7"]
