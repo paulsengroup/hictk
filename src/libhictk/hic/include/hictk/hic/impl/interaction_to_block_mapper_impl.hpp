@@ -216,7 +216,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
 }
 
 namespace internal {
-// I am declaring this as a freestanding funciton instead that as a lambda to work around a compiler
+// I am declaring this as a freestanding function instead that as a lambda to work around a compiler
 // bug in MSVC
 template <typename PixelT>
 Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT pixel) {

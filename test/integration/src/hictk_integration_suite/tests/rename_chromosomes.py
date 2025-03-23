@@ -37,14 +37,14 @@ class HictkRenameChromosomes(HictkTestHarness):
                 num_prefix = chrom.count("chr")
                 if num_prefix != 1 and num_prefix != 2:
                     self._failures[f'unexpected prefix for "{chrom}"'] = (
-                        f'expected one or two intances of "chr" prefix, found {num_prefix}'
+                        f'expected one or two instances of "chr" prefix, found {num_prefix}'
                     )
         elif action == "remove_prefix":
             for chrom in found:
                 num_prefix = chrom.count("chr")
                 if num_prefix != 0:
                     self._failures[f'unexpected prefix for "{chrom}"'] = (
-                        f'expected zero intance of "chr" prefix, found {num_prefix}'
+                        f'expected zero instance of "chr" prefix, found {num_prefix}'
                     )
         else:
             raise NotImplementedError

@@ -35,7 +35,7 @@ inline ExpectedValuesAggregator::ExpectedValuesAggregator(std::shared_ptr<const 
   }
 
   const auto bin_size = _bins->resolution();
-  // round down to mimick HiCTools' behavior
+  // round down to mimic HiCTools' behavior
   const auto max_n_bins = max_length / bin_size;
   _possible_distances.resize(max_n_bins, 0.0);
   _actual_distances.resize(max_n_bins, 0.0);
@@ -61,7 +61,7 @@ inline void ExpectedValuesAggregator::add(const Pixel<N> &p) {
     at(chrom1) += count;
     const auto i = p.coords.bin2.id() - p.coords.bin1.id();
     // skip last bin in chromosome if chromosome size is not a multiple of bin size
-    // this is done to mimick HiCTools' behavior
+    // this is done to mimic HiCTools' behavior
     if (i < _actual_distances.size()) {
       _actual_distances[i] += count;
     }

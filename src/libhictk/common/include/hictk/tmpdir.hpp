@@ -24,7 +24,7 @@
 
 namespace hictk::internal {
 // The point of this class is to provide a reliable way to create a directory that automatically
-// deletes istelf and its content by default.
+// deletes itself and its content by default.
 // This can be prevented by setting the internal flag to true.
 // The default constructor will create a unique, randomly named directory under the system tmpdir
 class TmpDir {
