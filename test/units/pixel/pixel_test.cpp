@@ -231,6 +231,79 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
   }
 }
 
+TEST_CASE("PixelCoordinates area", "[pixel][short]") {
+  const Reference chroms{Chromosome{0, "chr1", 100}, Chromosome{1, "chr2", 100}};
+  constexpr std::uint32_t bin_size = 10;
+  const BinTable bins{chroms, bin_size};
+
+  SECTION("empty intervals") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 0)};
+    const PixelCoordinates width{bins.at("chr1", 40), bins.at("chr1", 60)};
+
+    CHECK(area(height, bin_size) == 0);
+    CHECK(area(height, width, bin_size) == 0);
+  }
+
+  SECTION("no intersection") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 30)};
+    const PixelCoordinates width1{bins.at("chr1", 40), bins.at("chr1", 60)};
+    const PixelCoordinates width2{bins.at("chr2", 40), bins.at("chr2", 60)};
+
+    CHECK(area(height, width1, bin_size, true) == 6);
+    CHECK(area(height, width1, bin_size, false) == 6);
+
+    CHECK(area(height, width2, bin_size, true) == 6);
+    CHECK(area(height, width2, bin_size, false) == 6);
+  }
+
+  SECTION("touching diagonal") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 30)};
+    const PixelCoordinates width{bins.at("chr1", 20), bins.at("chr1", 40)};
+
+    CHECK(area(height, width, bin_size, true) == 6);
+    CHECK(area(height, width, bin_size, false) == 6);
+  }
+
+  SECTION("tall w/ small intersection") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 50)};
+    const PixelCoordinates width{bins.at("chr1", 20), bins.at("chr1", 40)};
+
+    CHECK(area(height, width, bin_size, true) == 7);
+    CHECK(area(height, width, bin_size, false) == 10);
+  }
+
+  SECTION("tall w/ intersection") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 60)};
+    const PixelCoordinates width{bins.at("chr1", 20), bins.at("chr1", 40)};
+
+    CHECK(area(height, width, bin_size, true) == 7);
+    CHECK(area(height, width, bin_size, false) == 12);
+  }
+
+  SECTION("wide w/ small intersection") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 40)};
+    const PixelCoordinates width{bins.at("chr1", 10), bins.at("chr1", 50)};
+
+    CHECK(area(height, width, bin_size, true) == 13);
+    CHECK(area(height, width, bin_size, false) == 16);
+  }
+
+  SECTION("wide w/ intersection") {
+    const PixelCoordinates height{bins.at("chr1", 0), bins.at("chr1", 70)};
+    const PixelCoordinates width{bins.at("chr1", 10), bins.at("chr1", 70)};
+
+    CHECK(area(height, width, bin_size, true) == 27);
+    CHECK(area(height, width, bin_size, false) == 42);
+  }
+
+  SECTION("lower triangle") {
+    const PixelCoordinates height{bins.at("chr1", 10), bins.at("chr1", 70)};
+    const PixelCoordinates width{bins.at("chr1", 0), bins.at("chr1", 70)};
+
+    CHECK(area(height, width, bin_size, true) == 21);
+  }
+}
+
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 
 }  // namespace hictk
