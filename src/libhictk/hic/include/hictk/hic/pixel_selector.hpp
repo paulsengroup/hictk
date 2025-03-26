@@ -225,6 +225,8 @@ class PixelSelectorAll {
   template <typename N>
   [[nodiscard]] std::vector<Pixel<N>> read_all() const;
 
+  [[nodiscard]] std::uint64_t size(bool upper_triangle = true) const noexcept;
+
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] const balancing::Method &normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;

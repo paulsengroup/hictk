@@ -201,11 +201,7 @@ inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return *
 inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
   if (!_coord1) {
     assert(!_coord2);
-    const auto n = bins().size();
-    if (upper_triangle) {
-      return (n * (n + 1)) / 2;
-    }
-    return n * n;
+    return 0;
   }
 
   assert(bins().type() == BinTable::Type::fixed);
@@ -799,6 +795,14 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   });
 
   return buff;
+}
+
+inline std::uint64_t PixelSelectorAll::size(bool upper_triangle) const noexcept {
+  const auto n = bins().size();
+  if (upper_triangle) {
+    return (n * (n + 1)) / 2;
+  }
+  return n * n;
 }
 
 inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
