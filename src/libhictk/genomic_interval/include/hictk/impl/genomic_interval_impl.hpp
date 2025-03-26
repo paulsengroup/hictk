@@ -351,6 +351,13 @@ inline std::uint64_t area(std::uint32_t start1_pos, std::uint32_t end1_pos,
     return 0;
   }
 
+  const auto symmetric = i1 == j1 && i2 == j2;
+
+  if (upper_triangular && symmetric) {
+    const auto n = i2 - i1;
+    return n * (n + 1) / 2;
+  }
+
   if (!upper_triangular) {
     return (i2 - i1) * (j2 - j1);
   }
