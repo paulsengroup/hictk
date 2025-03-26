@@ -215,8 +215,8 @@ inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
   const auto start1 = _coord1->bin1.start();
   const auto start2 = _coord2->bin1.start();
 
-  const auto end1 = (_coord1->bin2.rel_id() + 1) * resolution() + 1;
-  const auto end2 = (_coord2->bin2.rel_id() + 1) * resolution() + 1;
+  const auto end1 = ((_coord1->bin2.rel_id() + 1) * resolution()) + 1;
+  const auto end2 = ((_coord2->bin2.rel_id() + 1) * resolution()) + 1;
 
   return area(start1, end1, start2, end2, resolution(), upper_triangle);
 }
