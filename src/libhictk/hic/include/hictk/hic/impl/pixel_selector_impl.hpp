@@ -198,6 +198,33 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
 
 inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return *_coord1; }
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return *_coord2; }
+inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
+  if (!_coord1) {
+    assert(!_coord2);
+    const auto n = bins().size();
+    if (upper_triangle) {
+      return (n * (n + 1)) / 2;
+    }
+    return n * n;
+  }
+
+  assert(bins().type() == BinTable::Type::fixed);
+
+  if (_coord1->bin1.chrom() != _coord2->bin1.chrom()) {
+    const auto height = _coord1->bin2.id() - _coord1->bin1.id() + 1;
+    const auto width = _coord2->bin2.id() - _coord2->bin1.id() + 1;
+    return height * width;
+  }
+
+  const auto start1 = _coord1->bin1.start();
+  const auto start2 = _coord2->bin1.start();
+
+  const auto end1 = (_coord1->bin2.rel_id() + 1) * resolution() + 1;
+  const auto end2 = (_coord2->bin2.rel_id() + 1) * resolution() + 1;
+
+  return area(start1, end1, start2, end2, resolution(), upper_triangle);
+}
+
 inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
 inline const balancing::Method &PixelSelector::normalization() const noexcept {
   return metadata().normalization;

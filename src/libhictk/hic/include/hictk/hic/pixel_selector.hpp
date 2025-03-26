@@ -87,6 +87,8 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
+  [[nodiscard]] std::uint64_t size(bool upper_triangle = true) const;
+
   [[nodiscard]] MatrixType matrix_type() const noexcept;
   [[nodiscard]] const balancing::Method &normalization() const noexcept;
   [[nodiscard]] MatrixUnit unit() const noexcept;
