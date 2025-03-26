@@ -112,6 +112,7 @@ TEST_CASE("File", "[file][short]") {
       const auto hf = File(path_hic, resolution);
       const auto sel1 = ref.fetch("chr4", 0, 1'000'000);
       const auto sel2 = hf.fetch("chr4", 0, 1'000'000);
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();
@@ -125,6 +126,7 @@ TEST_CASE("File", "[file][short]") {
       const auto hf = File(path_hic, resolution);
       const auto sel1 = ref.fetch();
       const auto sel2 = hf.fetch();
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();
@@ -138,6 +140,7 @@ TEST_CASE("File", "[file][short]") {
       const auto clr = File(path_cooler, resolution);
       const auto sel1 = ref.fetch("chr4");
       const auto sel2 = clr.fetch("chr4");
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();
