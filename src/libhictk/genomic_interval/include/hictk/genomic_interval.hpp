@@ -54,13 +54,28 @@ class GenomicInterval {
   [[nodiscard]] constexpr std::uint32_t start() const noexcept;
   [[nodiscard]] constexpr std::uint32_t end() const noexcept;
   [[nodiscard]] constexpr std::uint32_t size() const noexcept;
+  [[nodiscard]] constexpr bool empty() const noexcept;
 };
+
+[[nodiscard]] std::uint64_t area(const GenomicInterval &gi, std::uint32_t resolution = 1,
+                                 bool upper_triangular = false) noexcept;
+[[nodiscard]] std::uint64_t area(const GenomicInterval &gi1, const GenomicInterval &gi2,
+                                 std::uint32_t resolution = 1,
+                                 bool upper_triangular = false) noexcept;
+[[nodiscard]] std::uint64_t area(std::uint32_t start_pos, std::uint32_t end_pos,
+                                 std::uint32_t resolution = 1,
+                                 bool upper_triangular = false) noexcept;
+[[nodiscard]] std::uint64_t area(std::uint32_t start1_pos, std::uint32_t end1_pos,
+                                 std::uint32_t start2_pos, std::uint32_t end2_pos,
+                                 std::uint32_t resolution = 1,
+                                 bool upper_triangular = false) noexcept;
+
 }  // namespace hictk
 
 namespace std {
 template <>
 struct hash<hictk::GenomicInterval> {
-  std::size_t operator()(const hictk::GenomicInterval &gi) const;
+  std::size_t operator()(const hictk::GenomicInterval &gi) const noexcept;
 };
 }  // namespace std
 

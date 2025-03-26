@@ -16,6 +16,7 @@
 
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/genomic_interval.hpp"
 #include "hictk/hash.hpp"
 #include "hictk/numeric_utils.hpp"
 
@@ -408,6 +409,18 @@ inline auto Pixel<N>::from_4dn_pairs(const hictk::BinTable &bins, std::string_vi
     throw std::runtime_error(
         fmt::format(FMT_STRING("line \"{}\" is not in 4DN-DCIC pair format: {}"), line, e.what()));
   }
+}
+
+inline std::uint64_t area(const PixelCoordinates &coords, std::uint32_t resolution,
+                          bool upper_triangular) noexcept {
+  return area(coords, coords, resolution, upper_triangular);
+}
+
+inline std::uint64_t area(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
+                          std::uint32_t resolution, bool upper_triangular) noexcept {
+  return area(GenomicInterval{coords1.bin1.chrom(), coords1.bin1.start(), coords1.bin2.end()},
+              GenomicInterval{coords2.bin1.chrom(), coords2.bin1.start(), coords2.bin2.end()},
+              resolution, upper_triangular);
 }
 
 }  // namespace hictk
