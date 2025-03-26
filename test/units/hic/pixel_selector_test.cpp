@@ -114,7 +114,8 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
     const auto path = version == "v8" ? pathV8 : pathV9;
     SECTION(version) {
       SECTION("intra-chromosomal") {
-        constexpr std::size_t expected_size = 1433133;
+        constexpr std::size_t expected_nnz = 1433133;
+        constexpr std::uint64_t expected_size = 2767128;
         constexpr std::int32_t expected_sum = 19968156;
         constexpr std::int32_t expected_diag_band_sum = 17107568;
 
@@ -127,9 +128,10 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
 
         SECTION("iterable") {
           auto sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP).fetch("chr2L");
+          CHECK(sel.size() == expected_size);
           SECTION("sorted") {
             const auto buffer = sel.read_all<std::int32_t>();
-            REQUIRE(buffer.size() == expected_size);
+            REQUIRE(buffer.size() == expected_nnz);
 
             CHECK(sumCounts<std::int32_t>(buffer) == expected_sum);
 
@@ -192,7 +194,8 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
       }
 
       SECTION("inter-chromosomal") {
-        constexpr std::size_t expected_size = 56743;
+        constexpr std::size_t expected_nnz = 56743;
+        constexpr std::uint64_t expected_size = 317520;
         constexpr std::int32_t expected_sum = 70567;
 
         constexpr std::size_t N = 5;
@@ -205,8 +208,9 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         SECTION("iterable") {
           auto sel = File(path, 10'000, MatrixType::observed, MatrixUnit::BP)
                          .fetch("chr2L", "chr4", hictk::balancing::Method::NONE());
+          CHECK(sel.size() == expected_size);
           const auto buffer = sel.read_all<std::int32_t>();
-          REQUIRE(buffer.size() == expected_size);
+          REQUIRE(buffer.size() == expected_nnz);
 
           CHECK(sumCounts<std::int32_t>(buffer) == expected_sum);
 
@@ -267,6 +271,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
         SECTION("single pixel") {
           auto sel = File(path, resolution, MatrixType::observed, MatrixUnit::BP)
                          .fetch("chr2L:100,000-100,001", hictk::balancing::Method::NONE());
+          CHECK(sel.size() == 1);
           const auto buffer = sel.read_all<std::int32_t>();
           REQUIRE(buffer.size() == 1);
           compareContactRecord(buffer.front(), hictk::ThinPixel<float>{100000, 100000, 13895.0F});
@@ -276,6 +281,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           auto sel = File(path, resolution, MatrixType::observed, MatrixUnit::BP)
                          .fetch("chr2L:0-200,000", "chr2L:123,456-200,000",
                                 hictk::balancing::Method::NONE());
+          CHECK(sel.size() == 132);
           const auto buffer = sel.read_all<std::int32_t>();
           REQUIRE(buffer.size() == 132);
           CHECK(sumCounts<std::int32_t>(buffer) == 124561);
@@ -297,6 +303,7 @@ TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
           auto sel = File(path, resolution, MatrixType::observed, MatrixUnit::BP)
                          .fetch("chr2L:123,456-200,000", "chr4:0-200,000",
                                 hictk::balancing::Method::NONE());
+          CHECK(sel.size() == 160);
           const auto buffer = sel.read_all<std::int32_t>();
           REQUIRE(buffer.size() == 57);
           CHECK(sumCounts<std::int32_t>(buffer) == 74);
