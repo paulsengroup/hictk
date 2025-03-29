@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 ignore:
-  - "benchmarks/"
-  - "examples/"
-  - "test/"
+  - "benchmarks"
+  - "examples"
+  - "test"
 
 fixes:
-  - "/__w/hictk/hictk::"
+  - "**/hictk/src/::src/"
 
 coverage:
   status:
