@@ -61,6 +61,8 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
+  [[nodiscard]] std::uint64_t size(bool upper_triangle = true) const;
+
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   // NOLINTEND(bugprone-exception-escape)

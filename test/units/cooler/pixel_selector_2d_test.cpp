@@ -34,6 +34,7 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
     SECTION("valid") {
       auto selector = f.fetch("1:5000000-5500000", "1:5000000-6500000");
+      CHECK(selector.size() == 65);
       const auto pixels = selector.read_all<T>();
       REQUIRE(pixels.size() == 8);
 
@@ -56,6 +57,7 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-100000");
+      CHECK(selector.size() == 1);
       CHECK(selector.begin<T>() == selector.end<T>());
     }
   }
@@ -74,6 +76,7 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
     }
     SECTION("valid") {
       auto selector = f.fetch("1:48000000-50000000", "4:30000000-35000000");
+      CHECK(selector.size() == 1000);
       const auto pixels = selector.read_all<T>();
       REQUIRE(pixels.size() == 6);
 
@@ -94,6 +97,7 @@ TEST_CASE("Cooler: pixel selector 2D queries", "[pixel_selector][short]") {
 
     SECTION("empty") {
       auto selector = f.fetch("1:0-50000", "2:0-50000");
+      CHECK(selector.size() == 1);
       CHECK(selector.begin<T>() == selector.end<T>());
     }
   }

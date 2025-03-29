@@ -110,6 +110,11 @@ inline const PixelCoordinates& PixelSelector::coord2() const noexcept {
       _sel);
 }
 
+inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
+  assert(!_sel.valueless_by_exception());
+  return std::visit([&](const auto& sel) { return sel.size(upper_triangle); }, _sel);
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape)
 inline const BinTable& PixelSelector::bins() const noexcept {
   assert(!_sel.valueless_by_exception());

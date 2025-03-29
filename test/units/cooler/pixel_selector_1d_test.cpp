@@ -63,6 +63,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("query overlaps chrom start") {
     auto selector = f.fetch("chr1:0-20");
+    CHECK(selector.size() == 3);
     const auto pixels = selector.read_all<T>();
     REQUIRE(pixels.size() == 3);
 
@@ -73,6 +74,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("query overlaps chrom end") {
     auto selector = f.fetch("chr1:980-1000");
+    CHECK(selector.size() == 3);
     const auto pixels = selector.read_all<T>();
     REQUIRE(pixels.size() == 3);
 
@@ -83,6 +85,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("query does not overlap chrom boundaries") {
     auto selector = f.fetch("chr1:750-780");
+    CHECK(selector.size() == 6);
     const auto pixels = selector.read_all<T>();
     REQUIRE(pixels.size() == 6);
 
@@ -96,6 +99,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("query does not line up with bins") {
     auto selector = f.fetch("chr1:901-927");
+    CHECK(selector.size() == 6);
     const auto pixels = selector.read_all<T>();
     REQUIRE(pixels.size() == 6);
 
@@ -109,6 +113,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("large query") {
     auto selector = f.fetch("chr1:75-975");
+    CHECK(selector.size() == 4186);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 4186);
 
     const auto sum = std::accumulate(
@@ -120,36 +125,44 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
   SECTION("query spans 1 bin") {
     auto selector = f.fetch("chr1:0-9");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 1);
 
     selector = f.fetch("chr1:5-7");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 1);
 
     selector = f.fetch("chr1:991-1000");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 6040);
 
     selector = f.fetch("chr2:50-60");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 6091);
   }
 
   SECTION("query spans 1bp") {
     auto selector = f.fetch("chr1:0-1");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 1);
 
     selector = f.fetch("chr2:0-1");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 6051);
 
     selector = f.fetch("chr1:12-13");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 111);
 
     selector = f.fetch("chr1:999-1000");
+    CHECK(selector.size() == 1);
     REQUIRE(std::distance(selector.begin<T>(), selector.end<T>()) == 1);
     CHECK(selector.begin<T>()->count == 6040);
   }
@@ -158,6 +171,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
     auto selector = f.fetch("chr1");
 
     CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == 5050);
+    CHECK(selector.size() == 5050);
     auto sum = std::accumulate(
         selector.begin<T>(), selector.end<T>(), T(0),
         [&](T accumulator, const ThinPixel<T>& pixel) { return accumulator + pixel.count; });
@@ -165,6 +179,7 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
 
     selector = f.fetch("chr2");
 
+    CHECK(selector.size() == 55);
     CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == 55);
     sum = std::accumulate(
         selector.begin<T>(), selector.end<T>(), T(0),
@@ -173,7 +188,9 @@ TEST_CASE("Cooler (fixed bin size): pixel selector 1D queries", "[pixel_selector
   }
 
   SECTION("query spans entire genome") {
+    const auto expected_size = static_cast<std::uint64_t>(expected_nnz);
     auto selector = f.fetch();
+    CHECK(selector.size() == expected_size);
     CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == expected_nnz);
     const auto sum = std::accumulate(
         selector.begin<T>(), selector.end<T>(), T(0),
@@ -310,13 +327,20 @@ TEST_CASE("Cooler (variable bin size): pixel selector 1D queries", "[pixel_selec
 
   SECTION("query spans entire genome") {
     constexpr std::ptrdiff_t expected_nnz = 19;
+    constexpr std::uint64_t expected_size = 36;
     constexpr T expected_sum = 96;
     auto selector = f.fetch();
+    CHECK(selector.size() == expected_size);
     CHECK(std::distance(selector.begin<T>(), selector.end<T>()) == expected_nnz);
     const auto sum = std::accumulate(
         selector.begin<T>(), selector.end<T>(), T(0),
         [&](T accumulator, const ThinPixel<T>& pixel) { return accumulator + pixel.count; });
     CHECK(sum == expected_sum);
+  }
+
+  SECTION("invalid") {
+    CHECK_THROWS_WITH(f.fetch("chr1").size(),
+                      Catch::Matchers::ContainsSubstring("is not supported"));
   }
 }
 
@@ -329,6 +353,7 @@ TEST_CASE("Cooler (storage-mode=square): pixel selector 1D queries", "[pixel_sel
 
   SECTION("valid queries") {
     const auto sel = f.fetch();
+    CHECK(sel.size() == f.bins().size() * f.bins().size());
     const auto sum = std::accumulate(
         sel.template begin<T>(), sel.template end<T>(), std::uint64_t{0},
         [&](std::uint64_t accumulator, const auto& p) { return accumulator + p.count; });
