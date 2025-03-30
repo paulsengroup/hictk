@@ -88,8 +88,8 @@ TEST_CASE("HiC: HiCInteractionToBlockMapper", "[hic][v9][short]") {
 
   HiCInteractionToBlockMapper partitioner(path2, f1.bins_ptr(), 50'000, 3);
 
-  partitioner.append_pixels(pixels1.begin(), pixels1.end());
-  partitioner.append_pixels(pixels2.begin(), pixels2.end());
+  partitioner.append_pixels(pixels1.begin(), pixels1.end(), true);
+  partitioner.append_pixels(pixels2.begin(), pixels2.end(), true);
   partitioner.finalize();
 
   std::size_t num_interactions = 0;
@@ -250,8 +250,8 @@ static void compare_weights(const balancing::Weights& weights_, const balancing:
         const hic::File f((datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string(), resolution);
         const auto sel1 = f.fetch("chr3R");
         const auto sel2 = f.fetch("chr3R", "chr4");
-        w.add_pixels(resolution, sel1.begin<float>(), sel1.end<float>());
-        w.add_pixels(resolution, sel2.begin<float>(), sel2.end<float>());
+        w.add_pixels(resolution, sel1.begin<float>(), sel1.end<float>(), true);
+        w.add_pixels(resolution, sel2.begin<float>(), sel2.end<float>(), true);
       }
     }
     w.serialize();
@@ -306,6 +306,7 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
+  const auto path4 = (testdir() / "hic_writer_003.hic").string();
 
   spdlog::set_level(spdlog::level::trace);
 
@@ -321,9 +322,79 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
     HiCFileWriter w(path3, chromosomes, {100});
 
     const std::vector<Pixel<float>> pixels{Pixel<float>{w.bins(100), 0, 0, 1.0F}};
-    w.add_pixels(100, pixels.begin(), pixels.end());
+    w.add_pixels(100, pixels.begin(), pixels.end(), true);
     w.serialize();  // Before PR 180, this used to throw
   }
+
+  SECTION("validation") {
+    constexpr std::uint32_t resolution = 10;
+
+    std::filesystem::remove(path4);  // NOLINT
+    HiCFileWriter w(path4, Reference{{1, "chr1", 100}}, {resolution});
+    const BinTable invalid_bins{w.chromosomes(), resolution / 2};
+
+    // NOLINTBEGIN(*-pointer-arithmetic)
+    SECTION("invalid count") {
+      const ThinPixel<float> p1{0, 0, 0};
+      const Pixel p2{w.bins(resolution), 0, 0, 0.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p1, &p1 + 1, true),
+                        Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p2, &p2 + 1, true),
+                        Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
+    }
+
+    SECTION("invalid chrom1") {
+      const Chromosome chrom{2, "chr2", 20};
+      const Bin bin1{0, 0, chrom, 0, 10};
+      const Bin bin2{0, 0, w.chromosomes().at("chr1"), 0, 10};
+      const Pixel p{bin1, bin2, 1.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p, &p + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid chromosome id"));
+    }
+
+    SECTION("invalid chrom2") {
+      const Chromosome chrom{2, "chr2", 20};
+      const Bin bin1{0, 0, w.chromosomes().at("chr1"), 0, 10};
+      const Bin bin2{0, 0, chrom, 0, 10};
+      const Pixel p{bin1, bin2, 1.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p, &p + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid chromosome id"));
+    }
+
+    SECTION("invalid bin1_id") {
+      const ThinPixel<float> p1{19, 19, 1};
+      const Pixel p2{invalid_bins, 19, 19, 1.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p1, &p1 + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid bin id"));
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p2, &p2 + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid bin id"));
+    }
+
+    SECTION("invalid bin2_id") {
+      const ThinPixel<float> p1{0, 19, 1};
+      const Pixel p2{invalid_bins, 0, 19, 1.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p1, &p1 + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid bin id"));
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p2, &p2 + 1, true),
+                        Catch::Matchers::ContainsSubstring("invalid bin id"));
+    }
+
+    SECTION("lower triangle") {
+      const ThinPixel<float> p1{1, 0, 1};
+      const Pixel p2{w.bins(resolution), 1, 0, 1.0F};
+
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p1, &p1 + 1, true),
+                        Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
+      CHECK_THROWS_WITH(w.add_pixels(resolution, &p2, &p2 + 1, true),
+                        Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
+    }
+  }
+  // NOLINTEND(*-pointer-arithmetic)
 }
 
 TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
@@ -338,7 +409,7 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
       // init file
       HiCFileWriter w(path2, hf1.chromosomes(), {hf1.resolution()}, "dm6");
       const auto sel = hf1.fetch();
-      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>(), true);
       w.serialize();
     }
 
@@ -394,7 +465,7 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
       std::filesystem::remove(path2);  // NOLINT
       HiCFileWriter w(path2, hf.chromosomes(), {hf.resolution()}, "dm6");
       const auto sel = hf.fetch();
-      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
+      w.add_pixels(resolution, sel.begin<float>(), sel.end<float>(), true);
       w.serialize();
     }
 
