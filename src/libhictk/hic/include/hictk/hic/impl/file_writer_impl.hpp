@@ -404,29 +404,31 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
     const auto num_rows = (num_bins / num_columns) + 1;
 
     HiCInteractionToBlockMapper::BlockMapperIntra mapper{num_rows, num_columns};
-
-    const File f(std::string{path()}, base_resolution);
-    auto sel = f.fetch();
     phmap::btree_map<std::uint64_t, MatrixInteractionBlock<float>> blocks{};
 
-    std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
-      const Pixel<float> pixel(*_bin_tables.at(base_resolution), p);
-      // The result of this coarsening is not correct, as the last bin in a chromosome will
-      // have the same ID as the first bin in the next chromosome, but this is what JuiceBox
-      // expects.
-      // We subtract the chromosome ID as JuiceBox's chromosome grid expects pixels boundaries to be
-      // multiples of the bin size. This turns out to be correct as long as chromosome sizes are not
-      // multiples of the bin size (which should happen extremely rarely), in which case the result
-      // is off by one.
-      const Pixel<float> coarsened_pixel(
-          *bin_table_ALL, (p.bin1_id - (pixel.coords.bin1.chrom().id() - 1)) / factor,
-          (p.bin2_id - (pixel.coords.bin2.chrom().id() - 1)) / factor, p.count);
+    if (!_block_index.empty()) {
+      const File f(std::string{path()}, base_resolution);
+      auto sel = f.fetch();
 
-      const auto bid =
-          mapper(coarsened_pixel.coords.bin1.rel_id(), coarsened_pixel.coords.bin2.rel_id());
-      auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
-      it->second.emplace_back(coarsened_pixel);
-    });
+      std::for_each(sel.begin<float>(), sel.end<float>(), [&](const ThinPixel<float> &p) {
+        const Pixel<float> pixel(*_bin_tables.at(base_resolution), p);
+        // The result of this coarsening is not correct, as the last bin in a chromosome will
+        // have the same ID as the first bin in the next chromosome, but this is what JuiceBox
+        // expects.
+        // We subtract the chromosome ID as JuiceBox's chromosome grid expects pixels boundaries to
+        // be multiples of the bin size. This turns out to be correct as long as chromosome sizes
+        // are not multiples of the bin size (which should happen extremely rarely), in which case
+        // the result is off by one.
+        const Pixel<float> coarsened_pixel(
+            *bin_table_ALL, (p.bin1_id - (pixel.coords.bin1.chrom().id() - 1)) / factor,
+            (p.bin2_id - (pixel.coords.bin2.chrom().id() - 1)) / factor, p.count);
+
+        const auto bid =
+            mapper(coarsened_pixel.coords.bin1.rel_id(), coarsened_pixel.coords.bin2.rel_id());
+        auto [it, inserted] = blocks.try_emplace(bid, MatrixInteractionBlock<float>{});
+        it->second.emplace_back(coarsened_pixel);
+      });
+    }
 
     const auto section_start = _data_block_section.end();
     auto section_end = section_start;
@@ -593,8 +595,14 @@ inline void HiCFileWriter::add_body_metadata(std::uint32_t resolution, const Chr
     mrm.blockSize = static_cast<std::int32_t>(num_rows);
     mrm.blockColumnCount = static_cast<std::int32_t>(num_columns);
 
-    const auto &blks = _block_index.at(BlockIndexKey{chrom1, chrom2, resolution});
-    mrm.set_block_metadata(blks.begin(), blks.end());
+    const auto blks = _block_index.find(BlockIndexKey{chrom1, chrom2, resolution});
+    if (blks != _block_index.end()) {
+      mrm.set_block_metadata(blks->second.begin(), blks->second.end());
+    } else {
+      using T = remove_cvref_t<decltype(*blks->second.begin())>;
+      static const std::vector<T> buff{};
+      mrm.set_block_metadata(buff.begin(), buff.end());
+    }
 
     mm.chr1Idx = static_cast<std::int32_t>(chrom1.id());
     mm.chr2Idx = static_cast<std::int32_t>(chrom2.id());
@@ -952,6 +960,10 @@ inline void HiCFileWriter::add_norm_vector(std::string_view type, std::string_vi
 
 inline void HiCFileWriter::finalize(bool compute_expected_values) {
   try {
+    if (_block_index.empty()) {
+      compute_expected_values = false;
+    }
+
     if (compute_expected_values) {
       compute_and_write_expected_values();
       write_empty_normalized_expected_values();
