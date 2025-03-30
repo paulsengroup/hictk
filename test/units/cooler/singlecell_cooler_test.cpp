@@ -63,6 +63,22 @@ TEST_CASE("SingleCellCooler: create cells", "[cooler][short]") {
 }
 
 TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
+  SECTION("empty file") {
+    const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
+    const File base_clr(base_path.string());
+    const auto path1 = testdir() / "test_aggregate_0_cells.scool";
+    const auto path2 = testdir() / "test_aggregate_0_cells.cool";
+
+    {
+      auto sclr = SingleCellFile::create(path1.string(), base_clr.chromosomes(),
+                                         base_clr.resolution(), true);
+      sclr.aggregate<std::int32_t>(path2.string());
+    }
+
+    const File clr(path2.string());
+    CHECK(std::get<std::int64_t>(clr.attributes().sum.value_or(1)) == 0);
+  }
+
   SECTION("std::int32_t") {
     const auto base_path = datadir / "cooler" / "cooler_test_file.cool";
     const File base_clr(base_path.string());
