@@ -76,7 +76,7 @@ TEST_CASE("SingleCellCooler: aggregate cells", "[cooler][short]") {
     }
 
     const File clr(path2.string());
-    CHECK(std::get<std::int64_t>(clr.attributes().sum.value_or(1)) == 0);
+    CHECK(clr.attributes().nnz == 0);
   }
 
   SECTION("std::int32_t") {
