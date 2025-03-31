@@ -25,7 +25,7 @@ static const auto& datadir = hictk::test::datadir;
 static const auto& testdir = hictk::test::testdir;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
-TEST_CASE("Cooler: init files", "[cooler][short]") {
+TEST_CASE("Cooler: create files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
 
   SECTION("fixed bins") {
@@ -52,6 +52,126 @@ TEST_CASE("Cooler: init files", "[cooler][short]") {
     CHECK(utils::is_cooler(path.string()));  // NOLINTNEXTLINE
     CHECK(File(path.string()).attributes().generated_by->find("hictk") == 0);
     CHECK(File(path.string()).attributes().bin_type == BinTable::Type::variable);
+  }
+
+  SECTION("append pixels") {
+    SECTION("valid") {
+      const auto path = testdir() / "test_init_append_pixels_valid.cool";
+      constexpr std::uint32_t bin_size = 1000;
+      auto clr = File::create(path.string(), chroms, bin_size, true);
+
+      const ThinPixel<std::int32_t> p1{0, 0, 1};
+      const Pixel p2{clr.bins(), ThinPixel<std::int32_t>{0, 1, 1}};
+
+      clr.append_pixels(&p1, &p1 + 1, true);
+      CHECK(clr.attributes().nnz == 1);
+      clr.append_pixels(&p2, &p2 + 1, true);
+      CHECK(clr.attributes().nnz == 2);
+    }
+
+    // NOLINTBEGIN(*-pointer-arithmetic)
+    SECTION("invalid") {
+      const auto path = testdir() / "test_init_append_pixels_invalid.cool";
+      constexpr std::uint32_t bin_size = 1000;
+      auto clr = File::create(path.string(), chroms, bin_size, true);
+      const BinTable invalid_bins{clr.chromosomes(), bin_size / 2};
+
+      SECTION("invalid count") {
+        const ThinPixel<std::int32_t> p1{0, 0, 0};
+        const Pixel p2{clr.bins(), ThinPixel<std::int32_t>{0, 1, 0}};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+                          Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+                          Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
+      }
+
+      SECTION("invalid chrom1") {
+        const Chromosome chrom{2, "chr3", 10000};
+        const Bin bin1{0, 0, chrom, 0, bin_size};
+        const Bin bin2{0, 0, clr.chromosomes().at("chr1"), 0, bin_size};
+        const Pixel p{bin1, bin2, 1};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p, &p + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid chromosome id"));
+      }
+
+      SECTION("invalid chrom2") {
+        const Chromosome chrom{2, "chr3", 10000};
+        const Bin bin1{0, 0, clr.chromosomes().at("chr1"), 0, bin_size};
+        const Bin bin2{0, 0, chrom, 0, bin_size};
+        const Pixel p{bin1, bin2, 1};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p, &p + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid chromosome id"));
+      }
+
+      SECTION("invalid bin1_id") {
+        const ThinPixel<std::int32_t> p1{16, 16, 1};
+        const Pixel p2{invalid_bins, 16, 16, 1};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid bin id"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid bin id"));
+      }
+
+      SECTION("invalid bin2_id") {
+        const ThinPixel<std::int32_t> p1{0, 16, 1};
+        const Pixel p2{invalid_bins, 0, 16, 1};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid bin id"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+                          Catch::Matchers::ContainsSubstring("invalid bin id"));
+      }
+
+      SECTION("lower triangle") {
+        const ThinPixel<std::int32_t> p1{1, 0, 1};
+        const Pixel p2{clr.bins(), 1, 0, 1};
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+                          Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+                          Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
+      }
+
+      SECTION("out of order chunks") {
+        const ThinPixel<std::int32_t> p1{1, 2, 1};
+        const ThinPixel<std::int32_t> p2{1, 1, 1};
+        const ThinPixel<std::int32_t> p3{0, 0, 1};
+        const Pixel p4{clr.bins(), p2};
+        const Pixel p5{clr.bins(), p3};
+
+        clr.append_pixels(&p1, &p1 + 1, true);
+
+        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+                          Catch::Matchers::ContainsSubstring("new pixel") &&
+                              Catch::Matchers::ContainsSubstring("is located upstream"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p3, &p3 + 1, true),
+                          Catch::Matchers::ContainsSubstring("new pixel") &&
+                              Catch::Matchers::ContainsSubstring("is located upstream"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p4, &p4 + 1, true),
+                          Catch::Matchers::ContainsSubstring("new pixel") &&
+                              Catch::Matchers::ContainsSubstring("is located upstream"));
+        CHECK_THROWS_WITH(clr.append_pixels(&p5, &p5 + 1, true),
+                          Catch::Matchers::ContainsSubstring("new pixel") &&
+                              Catch::Matchers::ContainsSubstring("is located upstream"));
+      }
+
+      SECTION("unsorted") {
+        const std::array<ThinPixel<std::int32_t>, 2> p1{ThinPixel<std::int32_t>{0, 1, 1},
+                                                        ThinPixel<std::int32_t>{0, 0, 1}};
+        const std::array<Pixel<std::int32_t>, 2> p2{Pixel{clr.bins(), p1.front()},
+                                                    Pixel{clr.bins(), p1.back()}};
+
+        CHECK_THROWS_WITH(clr.append_pixels(p1.begin(), p1.end(), true),
+                          Catch::Matchers::ContainsSubstring("pixels are not sorted"));
+        CHECK_THROWS_WITH(clr.append_pixels(p2.begin(), p2.end(), true),
+                          Catch::Matchers::ContainsSubstring("pixels are not sorted"));
+      }
+    }
+    // NOLINTEND(*-pointer-arithmetic)
   }
 }
 
