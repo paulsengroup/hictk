@@ -154,9 +154,6 @@ inline void File::validate_pixels_before_append(const PixelIt &first_pixel,
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
       }
     }
-    if (!std::is_sorted(first_pixel, last_pixel)) {
-      throw std::runtime_error("pixels are not sorted in ascending order.");
-    }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));
   }
@@ -165,7 +162,19 @@ inline void File::validate_pixels_before_append(const PixelIt &first_pixel,
 template <typename PixelIt>
 inline void File::validate_thin_pixels_before_append(const PixelIt &first_pixel,
                                                      const PixelIt &last_pixel) const {
-  using T = decltype(first_pixel->count);
+  using PixelT = typename std::iterator_traits<PixelIt>::value_type;
+  using T = decltype(std::declval<PixelT>().count);
+  validate_pixel_type<T>();
+
+  PixelT previous_pixel{};
+
+  auto pixel_lt_op = [&](const auto &p1, const auto &p2) {
+    if (p1.bin1_id != p2.bin1_id) {
+      return p1.bin1_id < p2.bin1_id;
+    }
+    return p1.bin2_id < p2.bin2_id;
+  };
+
   try {
     std::for_each(first_pixel, last_pixel, [&](const ThinPixel<T> &pixel) {
       if (pixel.count == T{0}) {
@@ -186,6 +195,13 @@ inline void File::validate_thin_pixels_before_append(const PixelIt &first_pixel,
         throw std::runtime_error(fmt::format(FMT_STRING("bin1_id is greater than bin2_id: {} > {}"),
                                              pixel.bin1_id, pixel.bin2_id));
       }
+
+      if (!!previous_pixel && !pixel_lt_op(previous_pixel, pixel)) {
+        throw std::runtime_error(
+            fmt::format(FMT_STRING("({}; {}) pixels are not sorted in ascending order"),
+                        previous_pixel, pixel));
+      }
+      previous_pixel = pixel;
     });
 
     if (!dataset("pixels/bin1_id").empty()) {
@@ -208,9 +224,6 @@ inline void File::validate_thin_pixels_before_append(const PixelIt &first_pixel,
         throw std::runtime_error(fmt::format(
             FMT_STRING("new pixel {} is located upstream of pixel {}"), coord1, coord2));
       }
-    }
-    if (!std::is_sorted(first_pixel, last_pixel)) {
-      throw std::runtime_error("pixels are not sorted in ascending order.");
     }
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(FMT_STRING("pixel validation failed: {}"), e.what()));

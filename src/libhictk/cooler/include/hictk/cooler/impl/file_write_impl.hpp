@@ -109,8 +109,6 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
     validate_pixel_type<T>();
   }
 
-  update_indexes(first_pixel, last_pixel);
-
   if (validate) {
     if constexpr (std::is_same_v<PixelT, Pixel<T>>) {
       validate_pixels_before_append(first_pixel, last_pixel);
@@ -118,6 +116,8 @@ inline void File::append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool va
       validate_thin_pixels_before_append(first_pixel, last_pixel);
     }
   }
+
+  update_indexes(first_pixel, last_pixel);
 
   File::append_bins(dataset("pixels/bin1_id"), dataset("pixels/bin2_id"), first_pixel, last_pixel);
 

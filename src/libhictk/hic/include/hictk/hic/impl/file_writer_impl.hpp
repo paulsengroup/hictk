@@ -330,10 +330,10 @@ inline void HiCFileWriter::write_norm_vector_index() {
 
 template <typename PixelIt, typename>
 inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
-                                      PixelIt last_pixel) {
+                                      PixelIt last_pixel, bool validate) {
   try {
     _block_mappers.at(resolution)
-        .append_pixels(std::move(first_pixel), std::move(last_pixel), _tpool);
+        .append_pixels(std::move(first_pixel), std::move(last_pixel), validate, _tpool);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while adding pixels for resolution {} to file \"{}\": {}"),
@@ -496,7 +496,7 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
               sel.begin<float>(), sel.end<float>(),
               std::make_shared<const BinTable>(bins(base_resolution)), factor);
 
-          mapper.append_pixels(coarsener.begin(), coarsener.end(), _tpool);
+          mapper.append_pixels(coarsener.begin(), coarsener.end(), false, _tpool);
         }
       } catch (const std::exception &e) {
         throw std::runtime_error(

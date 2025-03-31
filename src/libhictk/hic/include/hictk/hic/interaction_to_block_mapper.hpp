@@ -144,11 +144,11 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] bool empty(const Chromosome& chrom1, const Chromosome& chrom2) const noexcept;
   // NOLINTBEGIN(*-avoid-magic-numbers)
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel,
+  void append_pixels(PixelIt first_pixel, const PixelIt& last_pixel, bool validate,
                      std::uint32_t update_frequency = 10'000'000);
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, BS::light_thread_pool& tpool,
-                     std::uint32_t update_frequency = 10'000'000);
+  void append_pixels(PixelIt first_pixel, PixelIt last_pixel, bool validate,
+                     BS::light_thread_pool& tpool, std::uint32_t update_frequency = 10'000'000);
   // NOLINTEND(*-avoid-magic-numbers)
 
   [[nodiscard]] auto block_index() const noexcept -> const BlockIndexMap&;
@@ -178,9 +178,9 @@ class HiCInteractionToBlockMapper {
   [[nodiscard]] auto map(const Pixel<N>& p) const -> BlockID;
 
   template <typename N>
-  void add_pixel(const ThinPixel<N>& p);
+  void add_pixel(const ThinPixel<N>& p, bool validate);
   template <typename N>
-  void add_pixel(const Pixel<N>& p);
+  void add_pixel(const Pixel<N>& p, bool validate);
 
   [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid);
   [[nodiscard]] std::vector<Pixel<float>> fetch_pixels(const BlockID& bid, BinaryBuffer& bbuffer,

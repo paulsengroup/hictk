@@ -73,7 +73,8 @@ template <typename N>
       const internal::TmpDir tmpdir{c.tmp_dir, true};
       return ingest_pixels_hic(queue, early_return, c.output_path, tmpdir(), bins.chromosomes(),
                                bins.resolution(), std::string{assembly}, c.skip_all_vs_all_matrix,
-                               c.threads - 1, c.batch_size, c.compression_lvl, c.force);
+                               c.threads - 1, c.batch_size, c.compression_lvl, c.validate_pixels,
+                               c.force);
     } else {
       throw std::logic_error(
           "ingest_pixels() was called with a pixel count type different than float. This is not "
@@ -111,7 +112,8 @@ template <typename N>
       const internal::TmpDir tmpdir{c.tmp_dir, true};
       return ingest_pairs_hic(queue, early_return, c.output_path, tmpdir(), bins.chromosomes(),
                               bins.resolution(), std::string{assembly}, c.skip_all_vs_all_matrix,
-                              c.threads - 1, c.batch_size, c.compression_lvl, c.force);
+                              c.threads - 1, c.batch_size, c.compression_lvl, c.validate_pixels,
+                              c.force);
     } else {
       throw std::logic_error(
           "ingest_pairs() was called with a pixel count type different than float. This is not "
