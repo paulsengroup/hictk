@@ -42,7 +42,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
 
   python3 -m venv /tmp/venv
   /tmp/venv/bin/python3 -m pip install pip setuptools --upgrade
-  /tmp/venv/bin/python3 -m pip install 'cmake>=3.25' 'conan>=2' ninja
+  /tmp/venv/bin/python3 -m pip install 'cmake>=3.25,<4>' 'conan>=2' ninja
 
   # NOTE: It's important to activate the venv after installing CMake
   . /tmp/venv/bin/activate
@@ -55,7 +55,8 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
   conan --version
 
   # Detect compiler toolchain. It is usually a good idea to explicitly set CC and CXX
-  CC=gcc CXX=g++ conan profile detect --force
+  # Use CC=gcc CXX=g++ if clang is not installed on your machine
+   conan profile detect --force
 
 Getting the source code
 -----------------------
@@ -100,7 +101,13 @@ Compiling hictk
                 .
 
   # Do not pass -G Ninja if you want CMake to use make instead of ninja
+  # Use clang whenever possible, as that usually leads to significantly faster hictk binaries.
+  # If clang is not installed on your machine, then replace clang and clang++ with e.g. gcc and g++
+  # -DCMAKE_C_COMPILER=gcc
+  # -DCMAKE_CXX_COMPILER=g++
   cmake -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=clang \
+        -DCMAKE_CXX_COMPILER=clang++ \
         -DCMAKE_PREFIX_PATH="$PWD/build" \
         -DHICTK_ENABLE_TESTING=ON \
         -DHICTK_ENABLE_FUZZY_TESTING=ON \
