@@ -45,6 +45,7 @@ jobs:
     runs-on: ${{ inputs.os }}
 
     env:
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
       CONAN_HOME: "${{ github.workspace }}/.conan2"
       HOMEBREW_NO_AUTO_UPDATE: "1"
 

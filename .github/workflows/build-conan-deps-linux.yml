@@ -54,6 +54,7 @@ jobs:
 
     env:
       CCACHE_DISABLE: "1"
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
       CONAN_HOME: "/opt/conan/"
 
     outputs:
