@@ -54,6 +54,7 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
     CHECK(File(path.string()).attributes().bin_type == BinTable::Type::variable);
   }
 
+  // NOLINTBEGIN(*-pointer-arithmetic)
   SECTION("append pixels") {
     SECTION("valid") {
       const auto path = testdir() / "test_init_append_pixels_valid.cool";
@@ -69,7 +70,6 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
       CHECK(clr.attributes().nnz == 2);
     }
 
-    // NOLINTBEGIN(*-pointer-arithmetic)
     SECTION("invalid") {
       const auto path = testdir() / "test_init_append_pixels_invalid.cool";
       constexpr std::uint32_t bin_size = 1000;
@@ -171,8 +171,8 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
                           Catch::Matchers::ContainsSubstring("pixels are not sorted"));
       }
     }
-    // NOLINTEND(*-pointer-arithmetic)
   }
+  // NOLINTEND(*-pointer-arithmetic)
 }
 
 TEST_CASE("Cooler: file ctors", "[cooler][short]") {
