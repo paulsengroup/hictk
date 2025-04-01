@@ -115,6 +115,12 @@ jobs:
         run: |
           cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
 
+          if ! lld -v &> /dev/null; then
+            LINKER=SYSTEM
+          else
+            LINKER=LLD
+          fi
+
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
                 -DENABLE_DEVELOPER_MODE=ON                    \
@@ -134,6 +140,7 @@ jobs:
                 -DCMAKE_C_FLAGS="$cov_flags"                  \
                 -DCMAKE_CXX_FLAGS="$cov_flags"                \
                 -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"      \
+                -DCMAKE_LINKER_TYPE="$LINKER"                 \
                 -S .                                          \
                 -B build
 
