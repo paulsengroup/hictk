@@ -44,6 +44,7 @@ class HictkConan(ConanFile):
         self.requires("hdf5/1.14.5#51799cda2ba7acaa74c9651dea284ac4", force=True)
         self.requires("highfive/2.10.0#c975a16d7fe3655c173f8a9aab16b416")
         self.requires("libarchive/3.7.7#374e08956b2917304faf929612cd2222")
+        self.requires("libcurl/8.12.1#722cbde4f18cb5824bdc4d4f827b0ec6", force=True)  # otel
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("lz4/1.10.0#68a01ece147a441b463d8cefea68d555", force=True)
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
@@ -94,6 +95,29 @@ class HictkConan(ConanFile):
         self.options["libarchive"].with_mbedtls = False
         self.options["libarchive"].with_xattr = False
         self.options["libarchive"].with_pcre2 = False
+        self.options["libcurl"].with_dict = False
+        self.options["libcurl"].with_file = False
+        self.options["libcurl"].with_ftp = False
+        self.options["libcurl"].with_gopher = False
+        self.options["libcurl"].with_imap = False
+        self.options["libcurl"].with_ldap = False
+        self.options["libcurl"].with_mqtt = False
+        self.options["libcurl"].with_pop3 = False
+        self.options["libcurl"].with_rtsp = False
+        self.options["libcurl"].with_smb = False
+        self.options["libcurl"].with_smtp = False
+        self.options["libcurl"].with_telnet = False
+        self.options["libcurl"].with_tftp = False
+        self.options["libcurl"].with_zlib = True
+        self.options["libcurl"].with_zstd = True
+        self.options["libcurl"].with_ntlm = False
+        self.options["libcurl"].with_ntlm_wb = False
+        self.options["libcurl"].with_cookies = False
+        self.options["libcurl"].with_verbose_debug = False
+        self.options["libcurl"].with_unix_sockets = False
+        self.options["libcurl"].with_verbose_strings = False
+        self.options["libcurl"].with_form_api = False
+        self.options["libcurl"].with_websocket = False
         self.options["opentelemetry-cpp"].with_otlp_http_compression = True
         self.options["opentelemetry-cpp"].with_no_deprecated_code = True
         self.options["opentelemetry-cpp"].with_jaeger = False
