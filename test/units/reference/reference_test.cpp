@@ -85,7 +85,7 @@ TEST_CASE("Reference", "[reference][short]") {
     CHECK_THROWS_AS(chroms.at("chr0"), std::out_of_range);
   }
 
-  SECTION("opertor[]") {
+  SECTION("operator[]") {
     const Reference chroms(expected.begin(), expected.end());
     CHECK(chroms[0] == Chromosome{0, "chr1", 50001});
     CHECK(chroms["chr1"] == Chromosome{0, "chr1", 50001});

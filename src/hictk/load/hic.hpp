@@ -22,7 +22,7 @@ namespace hictk::tools {
                                       const Reference& chromosomes, std::uint32_t bin_size,
                                       const std::string& assembly, bool skip_all_vs_all_matrix,
                                       std::size_t threads, std::size_t batch_size,
-                                      std::uint32_t compression_lvl, bool force);
+                                      std::uint32_t compression_lvl, bool validate, bool force);
 
 [[nodiscard]] Stats ingest_pairs_hic(PixelQueue<float>& pixel_queue,
                                      const std::atomic<bool>& early_return, std::string_view uri,
@@ -30,6 +30,6 @@ namespace hictk::tools {
                                      const Reference& chromosomes, std::uint32_t bin_size,
                                      const std::string& assembly, bool skip_all_vs_all_matrix,
                                      std::size_t threads, std::size_t batch_size,
-                                     std::uint32_t compression_lvl, bool force);
+                                     std::uint32_t compression_lvl, bool validate, bool force);
 
 }  // namespace hictk::tools

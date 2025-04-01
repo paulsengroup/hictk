@@ -70,7 +70,7 @@ static void update_status_table(const cooler::utils::ValidationStatusMultiresCoo
 }
 
 std::pair<int, toml::table> validate_mcool(std::string_view path, bool validate_index,
-                                           bool exhaustive) {
+                                           bool validate_pixels, bool exhaustive) {
   int return_code = 0;
   toml::table global_status;
   const auto validation_status = cooler::utils::is_multires_file(path, false);
@@ -91,7 +91,8 @@ std::pair<int, toml::table> validate_mcool(std::string_view path, bool validate_
     if (early_return) {
       return;
     }
-    const auto [_, status] = validate_cooler(get_cooler_uri_noexcept(*mclr, res), validate_index);
+    const auto [_, status] =
+        validate_cooler(get_cooler_uri_noexcept(*mclr, res), validate_index, validate_pixels);
     const auto is_cooler = **status.template get_as<bool>("is_valid_cooler");
     global_status.insert(fmt::to_string(res), status);
     if (!is_cooler) {

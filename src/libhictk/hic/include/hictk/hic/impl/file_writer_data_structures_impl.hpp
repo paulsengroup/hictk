@@ -69,8 +69,6 @@ inline bool MatrixResolutionMetadata::operator<(
 }
 
 inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  assert(!_block_metadata.empty());
-
   if (clear) {
     buffer.clear();
   }

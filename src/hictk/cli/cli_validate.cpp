@@ -32,6 +32,11 @@ void Cli::make_validate_subcommand() {
       c.validate_index,
       "Validate Cooler index (may take a long time).")
       ->capture_default_str();
+  sc.add_flag(
+      "--validate-pixels",
+      c.validate_pixels,
+      "Validate pixels found in Cooler files (may take a long time).")
+      ->capture_default_str();
   sc.add_option(
       "-f,--output-format",
       c.output_format,

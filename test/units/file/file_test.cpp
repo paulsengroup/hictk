@@ -48,6 +48,15 @@ TEST_CASE("File", "[file][short]") {
     }
 
     SECTION("invalid") {
+      // Invalid params for .cool file
+      CHECK_THROWS_WITH(
+          File(fmt::format(FMT_STRING("{}::/resolutions/{}"), path_cooler, resolution + 1)),
+          Catch::Matchers::ContainsSubstring("resolution is required"));
+      CHECK_THROWS_WITH(File(path_cooler, resolution + 1),
+                        Catch::Matchers::ContainsSubstring("unable to find resolution"));
+      CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
+                        Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
+
       // Invalid params for .mcool files
       CHECK_THROWS_WITH(File(path_cooler),
                         Catch::Matchers::ContainsSubstring("resolution is required"));
@@ -60,10 +69,6 @@ TEST_CASE("File", "[file][short]") {
       // Invalid params for .hic files
       CHECK_THROWS_WITH(File(path_hic),
                         Catch::Matchers::ContainsSubstring("resolution is required"));
-
-      // Mismatched resolution
-      CHECK_THROWS_WITH(File(uri_cooler, resolution + 1),
-                        Catch::Matchers::ContainsSubstring("found an unexpected resolution"));
     }
   }
 
@@ -107,6 +112,7 @@ TEST_CASE("File", "[file][short]") {
       const auto hf = File(path_hic, resolution);
       const auto sel1 = ref.fetch("chr4", 0, 1'000'000);
       const auto sel2 = hf.fetch("chr4", 0, 1'000'000);
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();
@@ -120,6 +126,7 @@ TEST_CASE("File", "[file][short]") {
       const auto hf = File(path_hic, resolution);
       const auto sel1 = ref.fetch();
       const auto sel2 = hf.fetch();
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();
@@ -133,6 +140,7 @@ TEST_CASE("File", "[file][short]") {
       const auto clr = File(path_cooler, resolution);
       const auto sel1 = ref.fetch("chr4");
       const auto sel2 = clr.fetch("chr4");
+      CHECK(sel1.size() == sel2.size());
 
       auto first1 = sel1.begin<std::int32_t>();
       auto last1 = sel1.end<std::int32_t>();

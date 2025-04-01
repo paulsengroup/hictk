@@ -61,6 +61,8 @@ class PixelSelector {
   [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
 
+  [[nodiscard]] std::uint64_t size(bool upper_triangle = true) const;
+
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
   // NOLINTEND(bugprone-exception-escape)
@@ -132,7 +134,7 @@ class File {
 
   explicit File(cooler::File clr);
   explicit File(hic::File hf);
-  explicit File(std::string uri, std::optional<std::uint32_t> resolution_ = {},
+  explicit File(std::string_view uri, std::optional<std::uint32_t> resolution_ = {},
                 hic::MatrixType type = hic::MatrixType::observed,
                 hic::MatrixUnit unit = hic::MatrixUnit::BP);
 

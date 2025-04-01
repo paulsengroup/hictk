@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -29,6 +30,7 @@ inline GenomicInterval::GenomicInterval(Chromosome chrom_, std::uint32_t start_,
                                         std::uint32_t end_) noexcept
     : _chrom(std::move(chrom_)), _start(start_), _end(end_) {
   assert(_start <= _end);
+  assert(_end <= _chrom.size());
 }
 
 inline GenomicInterval::operator bool() const noexcept { return !!chrom(); }
@@ -96,6 +98,7 @@ inline const Chromosome &GenomicInterval::chrom() const noexcept { return _chrom
 constexpr std::uint32_t GenomicInterval::start() const noexcept { return _start; }
 constexpr std::uint32_t GenomicInterval::end() const noexcept { return _end; }
 constexpr std::uint32_t GenomicInterval::size() const noexcept { return _end - _start; }
+constexpr bool GenomicInterval::empty() const noexcept { return size() == 0; }
 
 inline std::tuple<std::string, std::uint32_t, std::uint32_t> GenomicInterval::parse(
     const std::string &query, Type type) {
@@ -311,9 +314,111 @@ inline GenomicInterval GenomicInterval::parse_bed(const Reference &chroms, std::
   return gi;
 }
 
+inline std::uint64_t area(const GenomicInterval &gi, std::uint32_t resolution,
+                          bool upper_triangular) noexcept {
+  return area(gi, gi, resolution, upper_triangular);
+}
+
+inline std::uint64_t area(const GenomicInterval &gi1, const GenomicInterval &gi2,
+                          std::uint32_t resolution, bool upper_triangular) noexcept {
+  if (gi1.chrom() != gi2.chrom()) {
+    return area(gi1.start(), gi1.end(), gi2.start(), gi2.end(), resolution, false);
+  }
+  return area(gi1.start(), gi1.end(), gi2.start(), gi2.end(), resolution, upper_triangular);
+}
+
+inline std::uint64_t area(std::uint32_t start_pos, std::uint32_t end_pos, std::uint32_t resolution,
+                          bool upper_triangular) noexcept {
+  return area(start_pos, end_pos, start_pos, end_pos, resolution, upper_triangular);
+}
+
+inline std::uint64_t area(std::uint32_t start1_pos, std::uint32_t end1_pos,
+                          std::uint32_t start2_pos, std::uint32_t end2_pos,
+                          std::uint32_t resolution, bool upper_triangular) noexcept {
+  assert(start1_pos <= end1_pos);
+  assert(start2_pos <= end2_pos);
+  assert(resolution > 0);
+  if (start1_pos == end1_pos || start2_pos == end2_pos) {
+    return 0;
+  }
+
+  const auto i1 = static_cast<std::uint64_t>(start1_pos / resolution);
+  const auto i2 = static_cast<std::uint64_t>((end1_pos - 1) / resolution);
+  const auto j1 = static_cast<std::uint64_t>(start2_pos / resolution);
+  const auto j2 = static_cast<std::uint64_t>((end2_pos - 1) / resolution);
+
+  if (i1 == i2 || j1 == j2) {
+    return 0;
+  }
+
+  const auto symmetric = i1 == j1 && i2 == j2;
+
+  if (upper_triangular && symmetric) {
+    const auto n = i2 - i1;
+    return n * (n + 1) / 2;
+  }
+
+  if (!upper_triangular) {
+    return (i2 - i1) * (j2 - j1);
+  }
+
+  if (i2 <= j1 + 1) {
+    // area does not cross the matrix diagonal
+    return area(start1_pos, end1_pos, start2_pos, end2_pos, resolution, false);
+  }
+
+  constexpr auto npos = std::numeric_limits<std::uint64_t>::max();
+  const auto intersection_left = j1;
+  auto intersection_right = npos;
+
+  if (j1 < i2) {
+    for (auto x = j2; x > j1; --x) {
+      if (i2 > x) {
+        intersection_right = x;
+        break;
+      }
+    }
+  }
+
+  // this check is probably redundant
+  if (intersection_right == npos) {
+    // area does not cross the matrix diagonal
+    return area(start1_pos, end1_pos, start2_pos, end2_pos, resolution, false);
+  }
+
+  // if we get to this point it means that we are in a scenario like the one depicted below:
+  // ------------
+  // |          |
+  // |    A     |
+  // |╲         | <- begin of intersection with the matrix diagonal
+  // |  ╲       |
+  // |    ╲     |
+  // |  B   ╲   |
+  // |--------╲ | <- end of intersection with the matrix diagonal
+  // |          |
+  // |    C     |
+  // |          |
+  // ------------
+  // we want to calculate the area of the trapezoid A.
+  // This can be achieved by:
+  // - computing the total area delimited by the two genomic intervals
+  // - computing the area of triangle B
+  // - computing the area of the rectangle C
+  // - subtracting B + C from the total area
+
+  const auto total_area = (i2 - i1) * (j2 - j1);
+  const auto intersection_width = intersection_right - intersection_left;
+  const auto triangle_area = (intersection_width * (intersection_width + 1)) / 2;
+  const auto square_area = (intersection_width * (i2 - 1 - intersection_left)) -
+                           (intersection_width * intersection_width);
+
+  assert(total_area >= triangle_area + square_area);
+  return total_area - triangle_area - square_area;
+}
+
 }  // namespace hictk
 
 inline std::size_t std::hash<hictk::GenomicInterval>::operator()(
-    const hictk::GenomicInterval &gi) const {
+    const hictk::GenomicInterval &gi) const noexcept {
   return hictk::internal::hash_combine(0, gi.chrom(), gi.start(), gi.end());
 }

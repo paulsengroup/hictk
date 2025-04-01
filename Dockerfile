@@ -27,6 +27,7 @@ RUN if [ -z "$C_COMPILER" ]; then echo "Missing C_COMPILER --build-arg" && exit 
 
 ENV CC="$C_COMPILER"
 ENV CXX="$CXX_COMPILER"
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
 
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"

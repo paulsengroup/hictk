@@ -252,6 +252,7 @@ Pixel selector
 
   .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord1() const noexcept;
   .. cpp:function:: [[nodiscard]] const PixelCoordinates &coord2() const noexcept;
+  .. cpp:function:: [[nodiscard]] std::uint64_t size(bool upper_triangular = true) const;
 
   .. cpp:function:: [[nodiscard]] const BinTable &bins() const noexcept;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;

@@ -26,7 +26,7 @@ namespace hictk::tools {
 [[nodiscard]] static Stats ingest_pairs(
     hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
     PixelQueue<float>& queue, const std::atomic<bool>& early_return,
-    std::vector<ThinPixel<float>>& buffer, std::size_t batch_size) {
+    std::vector<ThinPixel<float>>& buffer, std::size_t batch_size, bool validate) {
   const auto resolution = hf.resolutions().front();
   assert(batch_size != 0);
   buffer.clear();
@@ -51,7 +51,7 @@ namespace hictk::tools {
 
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   static_cast<double>(buffer.size()) / delta);
-      hf.add_pixels(resolution, buffer.begin(), buffer.end());
+      hf.add_pixels(resolution, buffer.begin(), buffer.end(), validate);
 
       if (buffer.size() != buffer.capacity()) {
         break;
@@ -72,7 +72,7 @@ namespace hictk::tools {
 [[nodiscard]] static Stats ingest_pixels(
     hic::internal::HiCFileWriter&& hf,  // NOLINT(*-rvalue-reference-param-not-moved)
     PixelQueue<float>& queue, const std::atomic<bool>& early_return,
-    std::vector<ThinPixel<float>>& buffer) {
+    std::vector<ThinPixel<float>>& buffer, bool validate) {
   assert(buffer.capacity() != 0);
 
   std::size_t i = 0;
@@ -91,7 +91,7 @@ namespace hictk::tools {
       t0 = t1;
       SPDLOG_INFO(FMT_STRING("preprocessing chunk #{} at {:.0f} pixels/s..."), i + 1,
                   static_cast<double>(buffer.size()) / delta);
-      hf.add_pixels(bins.resolution(), buffer.begin(), buffer.end());
+      hf.add_pixels(bins.resolution(), buffer.begin(), buffer.end(), validate);
       if (buffer.size() != buffer.capacity()) {
         break;
       }
@@ -112,7 +112,7 @@ Stats ingest_pixels_hic(PixelQueue<float>& pixel_queue, const std::atomic<bool>&
                         const Reference& chromosomes, std::uint32_t bin_size,
                         const std::string& assembly, bool skip_all_vs_all_matrix,
                         std::size_t threads, std::size_t batch_size, std::uint32_t compression_lvl,
-                        bool force) {
+                        bool validate, bool force) {
   SPDLOG_INFO("begin loading pixels into a .hic file...");
 
   if (force) {
@@ -123,7 +123,7 @@ Stats ingest_pixels_hic(PixelQueue<float>& pixel_queue, const std::atomic<bool>&
                                   tmp_dir, compression_lvl, skip_all_vs_all_matrix);
 
   std::vector<ThinPixel<float>> write_buffer(batch_size);
-  return ingest_pixels(std::move(hf), pixel_queue, early_return, write_buffer);
+  return ingest_pixels(std::move(hf), pixel_queue, early_return, write_buffer, validate);
 }
 
 Stats ingest_pairs_hic(PixelQueue<float>& pixel_queue, const std::atomic<bool>& early_return,
@@ -131,7 +131,7 @@ Stats ingest_pairs_hic(PixelQueue<float>& pixel_queue, const std::atomic<bool>& 
                        const Reference& chromosomes, std::uint32_t bin_size,
                        const std::string& assembly, bool skip_all_vs_all_matrix,
                        std::size_t threads, std::size_t batch_size, std::uint32_t compression_lvl,
-                       bool force) {
+                       bool validate, bool force) {
   if (force) {
     std::filesystem::remove(uri);  // NOLINT
   }
@@ -140,7 +140,7 @@ Stats ingest_pairs_hic(PixelQueue<float>& pixel_queue, const std::atomic<bool>& 
                                   tmp_dir, compression_lvl, skip_all_vs_all_matrix);
 
   std::vector<ThinPixel<float>> buffer(batch_size);
-  return ingest_pairs(std::move(hf), pixel_queue, early_return, buffer, batch_size);
+  return ingest_pairs(std::move(hf), pixel_queue, early_return, buffer, batch_size, validate);
 }
 
 }  // namespace hictk::tools

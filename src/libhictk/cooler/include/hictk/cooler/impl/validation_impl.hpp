@@ -105,7 +105,33 @@ inline ValidationStatusScool is_scool_file(std::string_view uri, bool validate_c
 }
 
 inline ValidationStatusCooler is_cooler(const HighFive::File &fp, std::string_view root_path) {
-  return is_cooler(fp.getGroup(std::string{root_path}));
+  try {
+    return is_cooler(fp.getGroup(std::string{root_path}));
+  } catch (const HighFive::Exception &) {
+    [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
+
+    const auto root_group = fp.getGroup("/");
+
+    ValidationStatusCooler status{};
+    status.unable_to_open_file = false;
+    status.is_hdf5 = fp.isValid();
+    if (Attribute::exists(root_group, "format-version")) {
+      const auto version = Attribute::read<std::uint8_t>(root_group, "format-version");
+      status.file_was_properly_closed = version != cooler::internal::SENTINEL_ATTR_VALUE;
+    }
+
+    if (!root_path.empty() && root_path != "/") {
+      // NOLINTBEGIN(readability-implicit-bool-conversion)
+      status.uri += fmt::format(FMT_STRING("{}::/{}"), fp.getName(),
+                                root_path.substr(root_path.front() == '/'));
+      status.missing_groups.emplace_back(root_path.substr(root_path.front() == '/'));
+      // NOLINTEND(readability-implicit-bool-conversion)
+    }
+
+    status.is_cooler = false;
+
+    return status;
+  }
 }
 
 inline ValidationStatusCooler is_cooler(const HighFive::Group &root_group) {

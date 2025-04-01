@@ -16,7 +16,7 @@ namespace hictk::test::bin_table {
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Bin", "[bin][short]") {
   const Chromosome chrom1{0, "chr1", 50};
-  const Chromosome chrom2{1, "chr2", 10};
+  const Chromosome chrom2{1, "chr2", 20};
   SECTION("Ctors") {
     CHECK(Bin{chrom1, 1, 2}.has_null_id());
     CHECK_FALSE(Bin{0, 0, chrom1, 1, 2}.has_null_id());
@@ -92,13 +92,13 @@ TEST_CASE("Bin", "[bin][short]") {
   }
 
   SECTION("fmt") {
-    const Bin bin1{chrom1, 0, 100};
-    const Bin bin2{123, 123, chrom1, 0, 100};
+    const Bin bin1{chrom1, 0, 50};
+    const Bin bin2{123, 123, chrom1, 0, 50};
 
     CHECK(fmt::format(FMT_STRING("{}"), bin1) == fmt::to_string(Bin::null_id));
     CHECK(fmt::format(FMT_STRING("{}"), bin2) == "123");
-    CHECK(fmt::format(FMT_STRING("{:bed}"), bin1) == "chr1\t0\t100");
-    CHECK(fmt::format(FMT_STRING("{:ucsc}"), bin1) == "chr1:0-100");
+    CHECK(fmt::format(FMT_STRING("{:bed}"), bin1) == "chr1\t0\t50");
+    CHECK(fmt::format(FMT_STRING("{:ucsc}"), bin1) == "chr1:0-50");
     CHECK(fmt::format(FMT_STRING("{:raw}"), bin2) == "123");
   }
 }

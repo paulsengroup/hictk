@@ -167,6 +167,39 @@ inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _
 
 inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
 
+inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
+  if (!_coord1) {
+    assert(!_coord2);
+    const auto n = bins().size();
+    if (upper_triangle && _symmetric_upper) {
+      return (n * (n + 1)) / 2;
+    }
+    return n * n;
+  }
+
+  if (bins().type() != BinTable::Type::fixed) {
+    throw std::runtime_error(
+        "computing the number of pixels overlapping a query over a matrix with variable bin size "
+        "is not supported.");
+  }
+
+  assert(_symmetric_upper);
+
+  if (_coord1.bin1.chrom() != _coord2.bin1.chrom()) {
+    const auto height = _coord1.bin2.id() - _coord1.bin1.id() + 1;
+    const auto width = _coord2.bin2.id() - _coord2.bin1.id() + 1;
+    return height * width;
+  }
+
+  const auto start1 = _coord1.bin1.start();
+  const auto start2 = _coord2.bin1.start();
+
+  const auto end1 = ((_coord1.bin2.rel_id() + 1) * bins().resolution()) + 1;
+  const auto end2 = ((_coord2.bin2.rel_id() + 1) * bins().resolution()) + 1;
+
+  return area(start1, end1, start2, end2, bins().resolution(), upper_triangle);
+}
+
 inline const BinTable &PixelSelector::bins() const noexcept { return *bins_ptr(); }
 
 inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept { return _bins; }

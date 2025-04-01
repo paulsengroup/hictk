@@ -148,6 +148,7 @@ constexpr auto File::matrix_unit() const noexcept -> MatrixUnit { return _unit; 
 inline PixelSelectorAll File::fetch(const balancing::Method& norm,
                                     std::optional<std::uint64_t> diagonal_band_width) const {
   std::vector<PixelSelector> selectors;
+  bool file_is_empty = true;
 
   for (std::uint32_t chrom1_id = 0; chrom1_id < chromosomes().size(); ++chrom1_id) {
     const auto& chrom1 = chromosomes().at(chrom1_id);
@@ -163,6 +164,7 @@ inline PixelSelectorAll File::fetch(const balancing::Method& norm,
         auto sel = fetch(chrom1.name(), chrom2.name(), norm, QUERY_TYPE::UCSC, diagonal_band_width);
         if (!sel.empty()) {
           selectors.emplace_back(std::move(sel));
+          file_is_empty = false;
         }
       } catch (const std::exception& e) {
         const std::string_view msg{e.what()};
@@ -171,8 +173,13 @@ inline PixelSelectorAll File::fetch(const balancing::Method& norm,
         if (!missing_norm) {
           throw;
         }
+        file_is_empty = false;
       }
     }
+  }
+
+  if (file_is_empty) {
+    return PixelSelectorAll{{}, _weight_cache};
   }
 
   if (selectors.empty()) {

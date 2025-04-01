@@ -184,7 +184,7 @@ inline bool HiCInteractionToBlockMapper::empty(const Chromosome &chrom1,
 
 template <typename PixelIt, typename>
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
-                                                       const PixelIt &last_pixel,
+                                                       const PixelIt &last_pixel, bool validate,
                                                        std::uint32_t update_frequency) {
   using PixelT = remove_cvref_t<decltype(*first_pixel)>;
   static_assert(std::is_same_v<PixelT, ThinPixel<float>> || std::is_same_v<PixelT, Pixel<float>>);
@@ -198,7 +198,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
       write_blocks();
     }
 
-    add_pixel(*first_pixel);
+    add_pixel(*first_pixel, validate);
     std::ignore = ++first_pixel;
 
     if (i == update_frequency) {
@@ -216,7 +216,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
 }
 
 namespace internal {
-// I am declaring this as a freestanding funciton instead that as a lambda to work around a compiler
+// I am declaring this as a freestanding function instead that as a lambda to work around a compiler
 // bug in MSVC
 template <typename PixelT>
 Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT pixel) {
@@ -234,10 +234,10 @@ Pixel<float> process_pixel_interaction_block(const BinTable &bin_table, PixelT p
 template <typename PixelIt, typename>
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, PixelIt last_pixel,
-                                                       BS::light_thread_pool &tpool,
+                                                       bool validate, BS::light_thread_pool &tpool,
                                                        std::uint32_t update_frequency) {
   if (tpool.get_thread_count() < 2) {
-    return append_pixels(first_pixel, last_pixel);
+    return append_pixels(first_pixel, last_pixel, validate, update_frequency);
   }
 
   SPDLOG_DEBUG("mapping pixels to interaction blocks using 2 threads...");
@@ -251,6 +251,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
       auto t0 = std::chrono::steady_clock::now();
       for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
         const auto pixel = internal::process_pixel_interaction_block(*_bin_table, *first_pixel);
+        assert(pixel.count != 0);
         std::ignore = ++first_pixel;
 
         while (!queue.try_enqueue(pixel)) {
@@ -287,11 +288,12 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
         }
 
         queue.wait_dequeue(p);
-        if (p.count == 0) {
+        if (p.coords.bin1.id() == Bin::null_id && p.coords.bin2.id() == Bin::null_id &&
+            p.count == 0) {
           return;
         }
 
-        add_pixel(p);
+        add_pixel(p, validate);
         ++_processed_pixels;
         ++_pending_pixels;
       }
@@ -422,12 +424,62 @@ inline auto HiCInteractionToBlockMapper::map(const Pixel<N> &p) const -> BlockID
 }
 
 template <typename N>
-inline void HiCInteractionToBlockMapper::add_pixel(const ThinPixel<N> &p) {
-  add_pixel(Pixel(*_bin_table, p));
+inline void HiCInteractionToBlockMapper::add_pixel(const ThinPixel<N> &p, bool validate) {
+  if (validate) {
+    if (HICTK_UNLIKELY(p.count == 0)) {
+      throw std::runtime_error(fmt::format(FMT_STRING("({}) found a pixel of value 0"), p));
+    }
+    if (HICTK_UNLIKELY(p.bin1_id > _bin_table->size())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"), p, p.bin1_id));
+    }
+    if (HICTK_UNLIKELY(p.bin2_id > _bin_table->size())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"), p, p.bin2_id));
+    }
+    if (HICTK_UNLIKELY(p.bin1_id > p.bin2_id)) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("({}) bin1_id is greater than bin2_id: {} > {}"), p, p.bin1_id, p.bin2_id));
+    }
+  }
+
+  add_pixel(Pixel(*_bin_table, p), false);
 }
 
 template <typename N>
-inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p) {
+inline void HiCInteractionToBlockMapper::add_pixel(const Pixel<N> &p, bool validate) {
+  if (validate) {
+    if (HICTK_UNLIKELY(p.count == 0)) {
+      throw std::runtime_error(fmt::format(FMT_STRING("({}) found a pixel of value 0"), p));
+    }
+
+    if (HICTK_UNLIKELY(!chromosomes().contains(p.coords.bin1.chrom().id()))) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("({}) invalid chromosome id {}"), p, p.coords.bin1.chrom().id()));
+    }
+
+    if (HICTK_UNLIKELY(!chromosomes().contains(p.coords.bin2.chrom().id()))) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("({}) invalid chromosome id {}"), p, p.coords.bin2.chrom().id()));
+    }
+
+    if (const auto bin_id = p.coords.bin1.id(); HICTK_UNLIKELY(bin_id > _bin_table->size())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"), p, bin_id));
+    }
+
+    if (const auto bin_id = p.coords.bin2.id(); HICTK_UNLIKELY(bin_id > _bin_table->size())) {
+      throw std::runtime_error(fmt::format(
+          FMT_STRING("({}) invalid bin id {}: bin maps outside of the bin table"), p, bin_id));
+    }
+
+    if (HICTK_UNLIKELY(p.coords.bin1.id() > p.coords.bin2.id())) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("({}) bin1_id is greater than bin2_id: {} > {}"), p,
+                      p.coords.bin1.id(), p.coords.bin2.id()));
+    }
+  }
+
   const auto bid = map(p);
 
   const auto &chrom1 = p.coords.bin1.chrom();

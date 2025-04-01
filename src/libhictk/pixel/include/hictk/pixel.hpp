@@ -99,6 +99,11 @@ struct Pixel {
       -> Pixel;
 };
 
+[[nodiscard]] std::uint64_t area(const PixelCoordinates &coords, std::uint32_t resolution,
+                                 bool upper_triangular = false) noexcept;
+[[nodiscard]] std::uint64_t area(const PixelCoordinates &coords1, const PixelCoordinates &coords2,
+                                 std::uint32_t resolution, bool upper_triangular = false) noexcept;
+
 }  // namespace hictk
 
 template <typename N>

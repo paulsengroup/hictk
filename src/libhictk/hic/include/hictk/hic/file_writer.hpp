@@ -167,7 +167,8 @@ class HiCFileWriter {
   [[nodiscard]] auto stats(std::uint32_t resolution) const noexcept -> Stats;
 
   template <typename PixelIt, typename = std::enable_if_t<is_iterable_v<PixelIt>>>
-  void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel);
+  void add_pixels(std::uint32_t resolution, PixelIt first_pixel, PixelIt last_pixel,
+                  bool validate = false);
 
   // Write normalization vectors
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,

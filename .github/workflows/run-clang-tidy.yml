@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/build-project.yml"
+      - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"
@@ -20,7 +20,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/build-project.yml"
+      - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
       - "src/**"
@@ -44,7 +44,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@2c256713764f73287f01af1bc40c85bb9fd81859
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@925c969016f4d41babd703a01d7ae3ad043aa576
 
   build-project:
     name: Build project

@@ -140,7 +140,7 @@ inline std::shared_ptr<const InteractionBlock> HiCBlockReader::read(const Chromo
   const auto type = static_cast<std::int8_t>(_bbuffer.read<char>());
   if (type != 1 && type != 2) {
     throw std::runtime_error(
-        fmt::format(FMT_STRING("uknown interaction type \"{}\". Supported types: 1, 2"), type));
+        fmt::format(FMT_STRING("unknown interaction type \"{}\". Supported types: 1, 2"), type));
   }
 
   switch (type) {

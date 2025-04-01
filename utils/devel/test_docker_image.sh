@@ -8,13 +8,14 @@ set -eu
 set -o pipefail
 
 if [ $# -ne 1 ]; then
-  2>&1 echo "Usage: $0 hictk:latest"
+  1>&2 echo "Usage: $0 hictk:latest"
   exit 1
 fi
 
 IMG="$1"
 
 tmpdir="$(mktemp -d)"
+# shellcheck disable=SC2064
 trap "rm -rf '$tmpdir'" EXIT
 
 cat > "$tmpdir/runme.sh" <<- 'EOM'
@@ -24,10 +25,13 @@ set -eu
 whereis -b hictk
 
 apt-get update
+
+python="$(apt-cache search '^python3\.[0-9]+$' | cut -f 1 -d ' ' | sort -V | tail -n 1)"
+
 apt-get install -q -y --no-install-recommends \
-  python3.11 \
+  "$python" \
   python3-pip \
-  python3.11-venv \
+  "$python"-venv \
   tar \
   zstd
 
@@ -35,7 +39,7 @@ cd /tmp/hictk
 
 tar -xf test/data/hictk_test_data.tar.zst
 
-python3.11 -m venv venv --upgrade
+"$python" -m venv venv --upgrade
 venv/bin/pip install test/integration
 
 venv/bin/hictk_integration_suite \

@@ -21,7 +21,7 @@ on:
 
     inputs:
       conan-version:
-        default: "2.12.*"
+        default: "2.14.*"
         type: string
         required: false
         description: "Conan version to be installed with pip."
@@ -54,6 +54,7 @@ jobs:
 
     env:
       CCACHE_DISABLE: "1"
+      CMAKE_POLICY_VERSION_MINIMUM: 3.5
       CONAN_HOME: "/opt/conan/"
 
     outputs:
@@ -77,9 +78,11 @@ jobs:
 
           hash="${{ hashFiles('conanfile.py') }}"
 
-          compiler="$(cc --version | head -n 1 | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
+          image='${{ inputs.image }}'
+          compiler="$(cc --version | head -n 1)"
 
-          suffix="${{ inputs.os }}-$compiler-c++${{ inputs.cppstd }}-$hash"
+          suffix="$image-$compiler-c++${{ inputs.cppstd }}-$hash"
+          suffix="$(echo "$suffix" | tr -c '[:alnum:]._-' '-' | sed 's/-\+/-/g' | sed 's/-$//')"
 
           echo "conan-key=conan-$suffix" | tee -a "$GITHUB_OUTPUT"
           echo "cmake-dbg-key=cmake-dbg-$suffix" | tee -a "$GITHUB_OUTPUT"
