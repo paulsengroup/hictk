@@ -138,7 +138,14 @@ jobs:
             -name CMakeLists.txt \
             -exec sed -i 's/set(CMAKE_CXX_STANDARD 17)/set(CMAKE_CXX_STANDARD ${{ matrix.cppstd }})/' {} +
 
+          if ! lld -v &> /dev/null; then
+            LINKER=SYSTEM
+          else
+            LINKER=LLD
+          fi
+
           cmake -DCMAKE_BUILD_TYPE=Debug \
+                -DCMAKE_LINKER_TYPE="$LINKER" \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
                 -DHICTK_ENABLE_TESTING=ON \
                 -DHICTK_ENABLE_FUZZY_TESTING=ON \
