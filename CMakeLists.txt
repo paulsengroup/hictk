@@ -177,7 +177,13 @@ cmake_dependent_option(
   OFF
 )
 
-set(HICTK_EXPORTER_OTLP_ENDPOINT "http://localhost:9" CACHE STRING "Endpoint where to submit telemetry data")
+set(
+  HICTK_EXPORTER_OTLP_ENDPOINT
+  # "http://localhost:9"
+  "https://hictk-telemetry.paulsenlab.com:4318"
+  CACHE STRING
+  "Endpoint where to submit telemetry data"
+)
 
 if(NOT HICTK_ENABLE_TELEMETRY)
   unset(HICTK_EXPORTER_OTLP_ENDPOINT CACHE)
