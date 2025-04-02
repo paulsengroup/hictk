@@ -364,7 +364,7 @@ class Tracer {
   [[nodiscard]] static std::string get_exporter_otlp_endpoint() noexcept {
 #ifdef HICTK_EXPORTER_OTLP_ENDPOINT
     constexpr std::string_view endpoint{HICTK_EXPORTER_OTLP_ENDPOINT};
-    if (endpoint.find("/v1/traces") != 0) {
+    if (endpoint.find("/v1/traces") != std::string_view::npos) {
       return std::string{endpoint};
     }
     return fmt::format(FMT_STRING("{}/v1/traces"), endpoint);
