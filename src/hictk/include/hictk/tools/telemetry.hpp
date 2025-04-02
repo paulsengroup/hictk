@@ -382,9 +382,8 @@ class Tracer {
     }
     opts.compression = "gzip";
     opts.timeout = std::chrono::seconds{5};  // NOLINT(*-avoid-magic-numbers)
-    opts.ssl_insecure_skip_verify = true;    // false;
+    opts.ssl_insecure_skip_verify = false;
     opts.ssl_min_tls = "1.3";
-    // opts.ssl_ca_cert_string = "TODO";
 
     return otlp::OtlpHttpExporterFactory::Create(opts);
   }
