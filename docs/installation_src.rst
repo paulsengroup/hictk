@@ -42,7 +42,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
 
   python3 -m venv /tmp/venv
   /tmp/venv/bin/python3 -m pip install pip setuptools --upgrade
-  /tmp/venv/bin/python3 -m pip install 'cmake>=3.25,<4>' 'conan>=2' ninja
+  /tmp/venv/bin/python3 -m pip install 'cmake>=3.25' 'conan>=2' ninja
 
   # NOTE: It's important to activate the venv after installing CMake
   . /tmp/venv/bin/activate
@@ -91,6 +91,7 @@ Compiling hictk
   # python -c 'import multiprocessing as mp; print(mp.cpu_count())'
   export CONAN_CPU_COUNT=8
   export CMAKE_BUILD_PARALLEL_LEVEL=8
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
 
   # Install/build dependencies with Conan
   conan install --build=missing \
