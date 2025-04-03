@@ -114,7 +114,7 @@ jobs:
       - name: Configure project
         run: |
           cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
-          
+
           if ! lld -v &> /dev/null; then
             LINKER=SYSTEM
           else
