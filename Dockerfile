@@ -66,6 +66,7 @@ ARG CCACHE_DISABLE=1
 
 # Configure project
 RUN cmake -DCMAKE_BUILD_TYPE=Release                   \
+          -DCMAKE_LINKER_TYPE=LLD                      \
           -DCMAKE_PREFIX_PATH="$build_dir"             \
           -DENABLE_DEVELOPER_MODE=OFF                  \
           -DHICTK_ENABLE_TESTING=OFF                   \
