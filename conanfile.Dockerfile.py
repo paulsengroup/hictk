@@ -64,8 +64,7 @@ class HictkConan(ConanFile):
             check_min_cppstd(self, self._min_cppstd)
 
     def configure(self):
-        if self.settings.compiler in ["clang", "gcc"]:
-            self.settings.compiler.libcxx = "libstdc++11"
+        self.settings.compiler.libcxx = "libstdc++11"
 
         self.options["fmt"].header_only = True
         self.options["hdf5"].enable_cxx = False

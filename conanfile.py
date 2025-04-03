@@ -69,7 +69,7 @@ class HictkConan(ConanFile):
             check_min_cppstd(self, self._min_cppstd)
 
     def configure(self):
-        if self.settings.compiler in ["clang", "gcc"]:
+        if self.settings.compiler in ["clang", "gcc"] and self.settings.os == "Linux":
             self.settings.compiler.libcxx = "libstdc++11"
 
         self.options["arrow"].compute = True
@@ -149,7 +149,7 @@ class HictkConan(ConanFile):
         self.options["libarchive"].with_mbedtls = False
         self.options["libarchive"].with_xattr = False
         self.options["libarchive"].with_pcre2 = False
-        if self.info.settings.os != "Windows":
+        if self.settings.os != "Windows":
             # Tweaking libcurl on Windows seems to be very brittle
             self.options["libcurl"].with_dict = False
             self.options["libcurl"].with_file = False
