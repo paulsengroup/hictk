@@ -115,6 +115,10 @@ RUN if [ "$BUILDARCH" != 'amd64' ]; then \
 &&  rm -rf /var/lib/apt/lists/*; \
 fi
 
+RUN apt-get update \
+&&  apt-get install -q -y --no-install-recommends ca-certificates \
+&&  rm -rf /var/lib/apt/lists/*
+
 # Export project binaries to the final build stage
 COPY --from=builder "$staging_dir" "$install_dir"
 
