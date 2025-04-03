@@ -115,26 +115,27 @@ jobs:
         run: |
           cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
 
-          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
-                -DENABLE_DEVELOPER_MODE=ON                    \
-                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
-                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
-                -DOPT_ENABLE_SANITIZER_LEAK=OFF               \
-                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF    \
-                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF   \
-                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
-                -DOPT_ENABLE_CPPCHECK=OFF                     \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                   \
-                -DHICTK_BUILD_EXAMPLES=OFF                    \
-                -DHICTK_ENABLE_TESTING=ON                     \
-                -DHICTK_ENABLE_FUZZY_TESTING=OFF              \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
-                -DCMAKE_C_FLAGS="$cov_flags"                  \
-                -DCMAKE_CXX_FLAGS="$cov_flags"                \
-                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"      \
-                -S .                                          \
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
+                -DENABLE_DEVELOPER_MODE=ON                         \
+                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
+                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF                 \
+                -DOPT_ENABLE_SANITIZER_LEAK=OFF                    \
+                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF         \
+                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF        \
+                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF      \
+                -DOPT_ENABLE_CPPCHECK=OFF                          \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                        \
+                -DHICTK_BUILD_EXAMPLES=OFF                         \
+                -DHICTK_ENABLE_TESTING=ON                          \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF                   \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                  \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF            \
+                -DHICTK_EXPORTER_OTLP_ENDPOINT=https://localhost:9 \
+                -DCMAKE_C_FLAGS="$cov_flags"                       \
+                -DCMAKE_CXX_FLAGS="$cov_flags"                     \
+                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"           \
+                -S .                                               \
                 -B build
 
       - name: Restore Ccache folder
@@ -336,7 +337,6 @@ jobs:
 
     env:
       HICTK_CI: "1"
-      HICTK_NO_TELEMETRY: "1"
 
     steps:
       - name: Checkout repo
