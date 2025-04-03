@@ -336,6 +336,7 @@ jobs:
 
     env:
       HICTK_CI: "1"
+      HICTK_NO_TELEMETRY: "1"
 
     steps:
       - name: Checkout repo
