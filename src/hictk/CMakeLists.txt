@@ -103,13 +103,13 @@ target_link_system_libraries(
   CLI11::CLI11
   fmt::fmt-header-only
   nlohmann_json::nlohmann_json
-  $<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>
   readerwriterqueue::readerwriterqueue
   spdlog::spdlog_header_only
   std::filesystem
   tomlplusplus::tomlplusplus
   PUBLIC
   LibArchive::LibArchive
+  "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>"
   Threads::Threads
 )
 
