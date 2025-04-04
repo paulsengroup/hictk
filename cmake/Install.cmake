@@ -12,6 +12,7 @@ set(
   common/default_libdeflate
   common/default_zstd
   common/genomic_units
+  common/tmpdir
   common/type_pretty_printer
   common/type_traits
   cooler
@@ -69,6 +70,7 @@ install(
     hictk_internal_common_default_delete_libdeflate
     hictk_internal_common_default_delete_zstd
     hictk_internal_common_genomic_units
+    hictk_internal_common_tmpdir
     hictk_internal_common_type_pretty_printer
     hictk_internal_common_type_traits
     hictk_internal_cooler

@@ -29,6 +29,7 @@ target_link_libraries(
     hictk_project_warnings
     hictk_project_options
   PUBLIC
+    hictk::tmpdir
     hictk::transformers
 )
 

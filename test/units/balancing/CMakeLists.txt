@@ -26,6 +26,7 @@ target_link_libraries(
   PUBLIC
     hictk::balancing
     hictk::file
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

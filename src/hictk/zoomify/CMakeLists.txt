@@ -32,6 +32,7 @@ target_link_libraries(
     hictk::cooler
     hictk::hic
     hictk::pixel
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

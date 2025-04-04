@@ -51,6 +51,7 @@ target_link_libraries(
     hictk_project_options
   PUBLIC
     hictk::cooler
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

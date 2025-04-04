@@ -27,6 +27,7 @@ target_link_libraries(
     hictk::cooler
     hictk::hic
     hictk::reference
+    hictk::tmpdir
 )
 
 target_link_system_libraries(hictk_internal_file INTERFACE fmt::fmt-header-only)

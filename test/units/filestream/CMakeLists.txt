@@ -19,6 +19,7 @@ target_link_libraries(
     hictk_project_options
   PUBLIC
     hictk::filestream
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

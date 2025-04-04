@@ -53,6 +53,7 @@ target_link_libraries(
     hictk::filestream
     hictk::pixel
     hictk::reference
+    hictk::tmpdir
     hictk::transformers
 )
 

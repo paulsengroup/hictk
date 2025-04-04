@@ -24,6 +24,7 @@ target_link_libraries(
   PUBLIC
     hictk::expected_values_aggregator
     hictk::hic
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

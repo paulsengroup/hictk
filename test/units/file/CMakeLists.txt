@@ -24,6 +24,7 @@ target_link_libraries(
     hictk_project_options
   PUBLIC
     hictk::file
+    hictk::tmpdir
 )
 
 target_link_system_libraries(
