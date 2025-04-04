@@ -320,18 +320,51 @@ def _strip_fields_from_config(config: Mapping[str, Any], fields: List[str] | Non
     return config
 
 
-def _preprocess_plan(
+def _preprocess_plan_helper(
     plan: Mapping[str, Any],
     wd: WorkingDirectory,
     fields_to_strip: List[str] | None = None,
+    env_variable_whitelist: List[str] | None = None,
 ) -> Tuple[bool, Dict[str, Any]]:
     skip = not _check_if_test_should_run(plan)
-    digest = _hash_plan(plan, wd.name)
+    digest = _hash_plan(plan, wd.name, env_variable_whitelist=env_variable_whitelist)
     plan = _strip_fields_from_config(plan, fields_to_strip)
 
     assert "id" not in plan
     plan["id"] = digest
     return skip, plan
+
+
+def _preprocess_plan_cli_helper(
+    plan: Mapping[str, Any],
+    wd: WorkingDirectory,
+    fields_to_strip: List[str] | None = None,
+) -> Tuple[bool, Dict[str, Any]]:
+    return _preprocess_plan_helper(
+        plan,
+        wd,
+        fields_to_strip,
+        [
+            "HICTK_QUIET",
+            "VERBOSE",
+            "HICTK_VERBOSITY",
+            "TMPDIR",
+            "TMP",
+            "TEMP",
+            "TEMPDIR",
+        ],
+    )
+
+
+def _preprocess_plan(
+    plan: Mapping[str, Any],
+    wd: WorkingDirectory,
+    fields_to_strip: List[str] | None = None,
+) -> Tuple[bool, Dict[str, Any]]:
+    title = plan.get("title", "")
+    if title.endswith("-cli") or title.endswith("-verbosity"):
+        return _preprocess_plan_cli_helper(plan, wd, fields_to_strip)
+    return _preprocess_plan_helper(plan, wd, fields_to_strip)
 
 
 def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
@@ -348,7 +381,12 @@ def _get_uri(config: Dict[str, Any], fmt: str | None = None) -> pathlib.Path:
     raise ValueError(f'unable to fetch uri with format "{fmt}" from config')
 
 
-def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "sha256") -> str:
+def _hash_plan(
+    plan: Mapping[str, Any],
+    tmpdir: pathlib.Path,
+    algorithm: str = "sha256",
+    env_variable_whitelist: List[str] | None = None,
+) -> str:
     tmpdir = str(tmpdir)
 
     def strip_tmpdir_helper(x):
@@ -381,7 +419,13 @@ def _hash_plan(plan: Mapping[str, Any], tmpdir: pathlib.Path, algorithm: str = "
 
     plan = dict(plan)
 
-    excluded_keys = ("env_variables", "cwd")
+    excluded_keys = ["cwd"]
+    if env_variable_whitelist is None:
+        excluded_keys.append("env_variables")
+    elif "env_variables" in plan:
+        env_variable_whitelist = set(env_variable_whitelist)
+        env_variables = {k: v for k, v in plan["env_variables"].items() if k in env_variable_whitelist}
+        plan["env_variables"] = env_variables
 
     for k in excluded_keys:
         plan.pop(k, None)
