@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/tools/compressed_reader.hpp"
-
 #include <archive.h>
 #include <fmt/format.h>
 #include <fmt/std.h>
@@ -18,6 +16,7 @@
 #include <tuple>
 
 #include "hictk/common.hpp"
+#include "hictk/tools/compressed_io.hpp"
 
 namespace hictk::tools::io {
 

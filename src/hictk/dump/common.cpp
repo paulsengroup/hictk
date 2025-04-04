@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "./common.hpp"
+
 #include <fmt/format.h>
 #include <parallel_hashmap/btree.h>
 
@@ -13,10 +15,8 @@
 #include <utility>
 #include <vector>
 
-#include "./dump.hpp"
 #include "hictk/cooler.hpp"
 #include "hictk/file.hpp"
-#include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/pixel.hpp"
 

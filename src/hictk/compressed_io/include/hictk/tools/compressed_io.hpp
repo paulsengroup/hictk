@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
@@ -11,9 +11,6 @@
 #include <memory>
 #include <string>
 #include <string_view>
-
-struct archive;
-struct archive_entry;
 
 namespace hictk::tools::io {
 

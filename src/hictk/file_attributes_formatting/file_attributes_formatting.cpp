@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/tools/file_attributes_formatting.hpp"
+
 #include <fmt/format.h>
 
 #include <cassert>
@@ -16,7 +18,6 @@
 #include <vector>
 
 #include "hictk/common.hpp"
-#include "hictk/tools/file_attributes_formatting.hpp"
 #include "hictk/tools/toml.hpp"
 #include "hictk/version.hpp"
 

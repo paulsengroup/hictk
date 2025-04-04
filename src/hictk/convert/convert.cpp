@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/tools/convert.hpp"
+
 #include <fmt/format.h>
 #include <fmt/std.h>
 #include <spdlog/spdlog.h>
