@@ -21,7 +21,12 @@ target_include_directories(
     "$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(hictk_internal_common_genomic_units INTERFACE hictk::common) # TODO fixme
+target_link_libraries(
+  hictk_internal_common_genomic_units
+  INTERFACE
+    hictk::common
+    hictk::type_pretty_printer
+)
 
 target_link_system_libraries(
   hictk_internal_common_genomic_units
