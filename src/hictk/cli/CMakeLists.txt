@@ -39,13 +39,13 @@ target_link_libraries(
     hictk::common
     hictk::cooler
     hictk::file
+    hictk::genomic_units
     hictk::hic
     hictk::string
     hictk::tmpdir
     hictk::version
   PUBLIC
     hictk_internal_tools_config
-    hictk::genomic_units # TODO fixme: this should be private
 )
 
 target_link_system_libraries(

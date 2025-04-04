@@ -5,25 +5,28 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
+#include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
 #include <algorithm>
-#include <cassert>
 #include <cctype>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <filesystem>
-#include <regex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "hictk/cooler.hpp"
+#include "hictk/cooler/cooler.hpp"
+#include "hictk/cooler/singlecell_cooler.hpp"
+#include "hictk/cooler/utils.hpp"
 #include "hictk/cooler/validation.hpp"
-#include "hictk/genomic_units.hpp"
+#include "hictk/hic/common.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
-#include "hictk/string.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::hic {
@@ -78,259 +81,6 @@ inline bool lexical_cast(const std::string& input, MatrixUnit& v) {
 }  // namespace hictk::hic
 
 namespace hictk::tools {
-
-class CoolerFileValidator : public CLI::Validator {
- public:
-  CoolerFileValidator() : Validator(".[ms]cool") {
-    func_ = [](std::string& uri) -> std::string {
-      if (cooler::utils::is_cooler(uri) || cooler::utils::is_multires_file(uri) ||
-          cooler::utils::is_scool_file(uri)) {
-        return "";
-      }
-
-      const auto path = cooler::parse_cooler_uri(uri).file_path;
-      if (!std::filesystem::exists(path)) {
-        return "No such file: " + path;
-      }
-      return "Not a valid Cooler: " + uri;
-    };
-  }
-};
-
-class SingleResCoolerFileValidator : public CLI::Validator {
- public:
-  SingleResCoolerFileValidator() : Validator(".cool") {
-    func_ = [](std::string& uri) -> std::string {
-      if (!cooler::utils::is_cooler(uri)) {
-        if (cooler::utils::is_multires_file(uri)) {
-          return "URI points to a .mcool file: " + uri;
-        }
-        if (cooler::utils::is_scool_file(uri)) {
-          return "URI points to a .scool file: " + uri;
-        }
-        const auto path = cooler::parse_cooler_uri(uri).file_path;
-        if (!std::filesystem::exists(path)) {
-          return "No such file: " + path;
-        }
-        return "Not a valid Cooler: " + uri;
-      }
-      return "";
-    };
-  }
-};
-
-class MultiresCoolerFileValidator : public CLI::Validator {
- public:
-  MultiresCoolerFileValidator() : Validator(".mcool") {
-    func_ = [](std::string& uri) -> std::string {
-      const auto path = cooler::parse_cooler_uri(uri).file_path;
-      if (!std::filesystem::exists(path)) {
-        return "No such file: " + path;
-      }
-      if (!cooler::utils::is_multires_file(uri)) {
-        return "Not a valid multi-resolution cooler: " + uri;
-      }
-      return "";
-    };
-  }
-};
-
-class SingleCellCoolerFileValidator : public CLI::Validator {
- public:
-  SingleCellCoolerFileValidator() : Validator(".scool") {
-    func_ = [](std::string& uri) -> std::string {
-      const auto path = cooler::parse_cooler_uri(uri).file_path;
-      if (!std::filesystem::exists(path)) {
-        return "No such file: " + path;
-      }
-      if (!cooler::utils::is_scool_file(uri)) {
-        return "Not a valid single-cell cooler: " + uri;
-      }
-      return "";
-    };
-  }
-};
-
-class HiCFileValidator : public CLI::Validator {
- public:
-  HiCFileValidator() : Validator(".hic") {
-    func_ = [](std::string& uri) -> std::string {
-      const auto path = cooler::parse_cooler_uri(uri).file_path;
-      if (!std::filesystem::exists(path)) {
-        return "No such file: " + path;
-      }
-      if (!hic::utils::is_hic_file(path)) {
-        return "Not a valid .hic file: " + path;
-      }
-      return "";
-    };
-  }
-};
-
-class AsGenomicDistanceTransformer : public CLI::Validator {
- public:
-  explicit AsGenomicDistanceTransformer() {
-    func_ = [](std::string& input) -> std::string {
-      try {
-        CLI::detail::rtrim(input);
-        input = fmt::to_string(parse_genomic_distance<std::uint32_t>(input));
-      } catch (const std::exception& e) {
-        throw CLI::ValidationError(e.what());
-      }
-      return {};
-    };
-  }
-};
-
-[[nodiscard]] static std::string str_replace_all(std::string s, const std::regex& pattern,
-                                                 const std::string& replacement) {
-  while (std::regex_search(s, pattern)) {
-    s = std::regex_replace(s, pattern, replacement);
-  }
-  return s;
-}
-
-class Formatter : public CLI::Formatter {
-  // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-  [[nodiscard]] std::string make_option_opts(const CLI::Option* opt) const override {
-    if (!opt->get_option_text().empty()) {
-      return opt->get_option_text();
-    }
-
-    auto str_contains = [](const auto& s, const auto query) {
-      return s.find(query) != remove_cvref_t<decltype(s)>::npos;
-    };
-
-    std::string out;
-    if (opt->get_type_size() != 0) {
-      // Format default values so that the help string reads like: --my-option=17.0
-      if (!opt->get_default_str().empty()) {
-        if (internal::starts_with(opt->get_type_name(), "FLOAT")) {
-          auto s = opt->get_default_str();
-          if (s.find('.') == std::string::npos) {
-            s += ".0";
-          }
-          out += fmt::format(FMT_STRING("={}"), s);
-        } else {
-          out += fmt::format(FMT_STRING("={}"), opt->get_default_str());
-        }
-      }
-
-      // Format param domain using open/closed interval notation
-      const std::regex pattern(" - ");
-      if (const auto& t = opt->get_type_name(); str_contains(t, " in ")) {
-        const auto p1 = t.find('[', t.find(" in "));
-        const auto p2 = t.find(']', t.find(" in "));
-        if (p1 != std::string::npos && p2 != std::string::npos && p2 > p1) {
-          out += " " + str_replace_all(t.substr(p1, p2), pattern, ", ");
-        }
-      } else if (str_contains(t, "POSITIVE")) {
-        out += " (0, inf)";
-      } else if (str_contains(t, "NONNEGATIVE") || str_contains(t, "UINT")) {
-        out += " [0, inf)";
-      }
-
-      if (opt->get_expected_max() == CLI::detail::expected_max_vector_size) {
-        out += " ...";
-      } else if (opt->get_expected_min() > 1) {
-        out += fmt::format(FMT_STRING(" x {}"), opt->get_expected());
-      }
-
-      if (opt->get_required()) {
-        out += " REQUIRED";
-      }
-    }
-    if (!opt->get_envname().empty()) {
-      out += fmt::format(FMT_STRING(" ({}: {})"), get_label("env"), opt->get_envname());
-    }
-    if (!opt->get_needs().empty()) {
-      out += fmt::format(FMT_STRING(" {}:"), get_label("needs"));
-      for (const auto* op : opt->get_needs()) {
-        out += fmt::format(FMT_STRING(" {}"), op->get_name());
-      }
-    }
-    if (!opt->get_excludes().empty()) {
-      out += fmt::format(FMT_STRING(" {}:"), get_label("excludes"));
-      for (const auto* op : opt->get_excludes()) {
-        out += fmt::format(FMT_STRING(" {}"), op->get_name());
-      }
-    }
-
-    return out;
-  }
-};
-
-template <typename Enum>
-class StringToEnumChecked : public CLI::Validator {
-  static_assert(std::is_enum_v<Enum>);
-  [[nodiscard]] static std::string to_lower(std::string_view s) {
-    std::string s_lower{s};
-    std::transform(s_lower.begin(), s_lower.end(), s_lower.begin(),
-                   [](auto c) { return std::tolower(c); });
-    return s_lower;
-  }
-
- public:
-  // NOLINTNEXTLINE(*-unnecessary-value-param)
-  explicit StringToEnumChecked(std::vector<std::pair<std::string, Enum>> mappings) {
-    assert(!mappings.empty());
-
-    auto description_formatter = [mappings]() {
-      std::vector<std::string> keys(mappings.size());
-      std::transform(mappings.begin(), mappings.end(), keys.begin(),
-                     [](const auto& kv) { return kv.first; });
-      return fmt::format(FMT_STRING("{{{}}}"), fmt::join(keys, ","));
-    };
-
-    desc_function_ = description_formatter;
-
-    func_ = [mappings, description_formatter](std::string& input) -> std::string {
-      const auto input_lower = to_lower(input);
-
-      const auto match = std::find_if(mappings.begin(), mappings.end(), [&](const auto& kv) {
-        return to_lower(kv.first) == input_lower;
-      });
-
-      if (match != mappings.end()) {
-        return "";
-      }
-
-      return fmt::format(FMT_STRING("{} not in {}"), input, description_formatter());
-    };
-  }
-};
-
-// NOLINTBEGIN(cert-err58-cpp)
-// clang-format off
-inline const auto IsValidHiCFile = HiCFileValidator();
-inline const auto IsValidCoolerFile = CoolerFileValidator();
-inline const auto IsValidSingleResCoolerFile = SingleResCoolerFileValidator();
-inline const auto IsValidMultiresCoolerFile = MultiresCoolerFileValidator();
-inline const auto IsValidSingleCellCoolerFile = SingleCellCoolerFileValidator();
-inline const auto AsGenomicDistance = AsGenomicDistanceTransformer();
-// clang-format on
-// NOLINTEND(cert-err58-cpp)
-
-// clang-format off
-// NOLINTNEXTLINE(cert-err58-cpp)
-inline const auto ParseHiCMatrixType =
-  StringToEnumChecked{
-    std::vector<std::pair<std::string, hic::MatrixType>>{
-      {"observed", hic::MatrixType::observed},
-      {"oe", hic::MatrixType::oe},
-      {"expected", hic::MatrixType::expected}
-    }
-  }.description("");
-
-// NOLINTNEXTLINE(cert-err58-cpp)
-inline const auto ParseHiCMatrixUnit =
-  StringToEnumChecked{
-    std::vector<std::pair<std::string, hic::MatrixUnit>>{
-      {"BP", hic::MatrixUnit::BP},
-      {"FRAG", hic::MatrixUnit::FRAG}
-    }
-  }.description("");
-// clang-format on
 
 class Cli {
  public:
