@@ -24,4 +24,5 @@ target_link_libraries(
     hictk::chromosome
     hictk::common
     hictk::format
+    hictk::type_traits
 )

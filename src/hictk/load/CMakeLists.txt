@@ -39,12 +39,12 @@ target_link_libraries(
     hictk_internal_tools_compressed_io
     hictk_internal_tools_definitions
     hictk::bin_table
-    hictk::common
     hictk::cooler
     hictk::genomic_interval
     hictk::hic
     hictk::pixel
     hictk::reference
+    hictk::type_traits
   PUBLIC
     hictk_internal_tools_config
 )

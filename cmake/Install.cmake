@@ -12,6 +12,7 @@ set(
   common/default_libdeflate
   common/default_zstd
   common/genomic_units
+  common/type_traits
   cooler
   expected_values_aggregator
   file
@@ -67,6 +68,7 @@ install(
     hictk_internal_common_default_delete_libdeflate
     hictk_internal_common_default_delete_zstd
     hictk_internal_common_genomic_units
+    hictk_internal_common_type_traits
     hictk_internal_cooler
     hictk_internal_expected_values_aggregator
     hictk_internal_file

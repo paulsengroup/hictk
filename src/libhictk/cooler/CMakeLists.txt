@@ -37,6 +37,7 @@ target_link_libraries(
     hictk::pixel
     hictk::reference
     hictk::transformers
+    hictk::type_traits
     hictk::variant
 )
 

@@ -22,4 +22,9 @@ target_include_directories(
     "$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(hictk_internal_filestream INTERFACE hictk::common)
+target_link_libraries(
+  hictk_internal_filestream
+  INTERFACE
+    hictk::common
+    hictk::type_traits
+)

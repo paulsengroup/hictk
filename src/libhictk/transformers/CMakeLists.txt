@@ -34,6 +34,7 @@ target_link_libraries(
     hictk::cooler
     hictk::file
     hictk::hic
+    hictk::type_traits
 )
 
 target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>" spdlog::spdlog_header_only phmap)
