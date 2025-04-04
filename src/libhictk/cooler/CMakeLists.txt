@@ -36,6 +36,7 @@ target_link_libraries(
     hictk::genomic_interval
     hictk::pixel
     hictk::reference
+    hictk::string
     hictk::transformers
     hictk::type_pretty_printer
     hictk::type_traits

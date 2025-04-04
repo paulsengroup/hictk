@@ -23,7 +23,7 @@
 #include "hictk/genomic_units.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::hic {

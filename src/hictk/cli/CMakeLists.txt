@@ -40,6 +40,7 @@ target_link_libraries(
     hictk::cooler
     hictk::file
     hictk::hic
+    hictk::string
     hictk::tmpdir
   PUBLIC
     hictk_internal_tools_config

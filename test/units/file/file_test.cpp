@@ -18,7 +18,7 @@
 #include "hictk/hic.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/pixel.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/test/testdir.hpp"
 
 using namespace hictk;

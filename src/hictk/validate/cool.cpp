@@ -20,7 +20,7 @@
 #include "hictk/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/validation.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/file_attributes_formatting.hpp"
 #include "hictk/tools/toml.hpp"

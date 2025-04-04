@@ -14,7 +14,7 @@
 
 #include "./common.hpp"
 #include "hictk/cooler/uri.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

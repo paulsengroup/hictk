@@ -26,7 +26,7 @@
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
 #include "hictk/multires_file.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"

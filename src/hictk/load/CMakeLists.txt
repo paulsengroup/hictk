@@ -44,6 +44,7 @@ target_link_libraries(
     hictk::hic
     hictk::pixel
     hictk::reference
+    hictk::string
     hictk::tmpdir
     hictk::type_traits
   PUBLIC

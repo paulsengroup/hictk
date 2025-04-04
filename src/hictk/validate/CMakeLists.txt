@@ -32,6 +32,7 @@ target_link_libraries(
     hictk::common
     hictk::cooler
     hictk::hic
+    hictk::string
   PUBLIC
     hictk_internal_tools_config
 )
