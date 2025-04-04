@@ -8,16 +8,9 @@
 #include <string_view>
 #include <utility>
 
-#include "hictk/version.hpp"
-
 namespace hictk {
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
-
-// NOLINTBEGIN(cert-err58-cpp)
-inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
-inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::str_long()};
-// NOLINTEND(cert-err58-cpp)
 
 [[nodiscard]] constexpr bool ndebug_defined() noexcept {
 #ifdef NDEBUG

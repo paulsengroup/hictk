@@ -11,6 +11,7 @@ add_subdirectory(string)
 add_subdirectory(tmpdir)
 add_subdirectory(type_pretty_printer)
 add_subdirectory(type_traits)
+add_subdirectory(version)
 
 find_package(fmt REQUIRED QUIET)
 find_package(spdlog REQUIRED QUIET)

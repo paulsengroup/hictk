@@ -18,6 +18,7 @@ set(
   common/tmpdir
   common/type_pretty_printer
   common/type_traits
+  common/version
   cooler
   expected_values_aggregator
   file
@@ -79,6 +80,7 @@ install(
     hictk_internal_common_tmpdir
     hictk_internal_common_type_pretty_printer
     hictk_internal_common_type_traits
+    hictk_internal_common_version
     hictk_internal_cooler
     hictk_internal_expected_values_aggregator
     hictk_internal_file

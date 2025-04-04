@@ -61,6 +61,7 @@ target_link_libraries(
     hictk_internal_tools_validate
     hictk_internal_tools_zoomify
     hictk::common
+    hictk::version
 )
 
 target_link_system_libraries(

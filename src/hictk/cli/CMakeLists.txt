@@ -42,6 +42,7 @@ target_link_libraries(
     hictk::hic
     hictk::string
     hictk::tmpdir
+    hictk::version
   PUBLIC
     hictk_internal_tools_config
     hictk::common_genomic_units # TODO fixme: this should be private

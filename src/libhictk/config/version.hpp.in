@@ -75,3 +75,13 @@ namespace internal {
 }
 
 }  // namespace hictk::config::version
+
+
+namespace hictk {
+
+// NOLINTBEGIN(cert-err58-cpp)
+inline const std::string_view HICTK_VERSION_STRING{hictk::config::version::str()};
+inline const std::string_view HICTK_VERSION_STRING_LONG{hictk::config::version::str_long()};
+// NOLINTEND(cert-err58-cpp)
+
+}

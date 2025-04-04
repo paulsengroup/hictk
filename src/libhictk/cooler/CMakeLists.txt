@@ -41,6 +41,7 @@ target_link_libraries(
     hictk::type_pretty_printer
     hictk::type_traits
     hictk::variant
+    hictk::version
 )
 
 target_link_system_libraries(

@@ -57,6 +57,7 @@ target_link_libraries(
     hictk::static_binary_buffer
     hictk::tmpdir
     hictk::transformers
+    hictk::version
 )
 
 target_link_system_libraries(
