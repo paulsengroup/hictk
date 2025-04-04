@@ -23,5 +23,6 @@ target_link_libraries(
   INTERFACE
     hictk::chromosome
     hictk::common
+    hictk::hash
     hictk::numeric
 )

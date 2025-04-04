@@ -51,6 +51,7 @@ target_link_libraries(
     hictk::chromosome
     hictk::expected_values_aggregator
     hictk::filestream
+    hictk::hash
     hictk::pixel
     hictk::reference
     hictk::tmpdir
