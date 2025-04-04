@@ -43,6 +43,7 @@ def _plan_tests_cli(
 def _plan_tests_verbosity(
     hictk_bin: pathlib.Path,
     uri: str,
+    wd: WorkingDirectory,
     title: str = "hictk-verbosity",
 ) -> List[ImmutableOrderedDict]:
     factory = {
@@ -50,7 +51,7 @@ def _plan_tests_verbosity(
         "title": title,
         "timeout": 5.0,
         "expect_failure": False,
-        "args": tuple(("dump", uri, "-t", "chroms")),
+        "args": tuple(("dump", str(wd[uri]), "-t", "chroms")),
     }
 
     plans = (
@@ -84,7 +85,7 @@ def plan_tests(
     wd: WorkingDirectory,
     threads: int = -1,
 ) -> List[ImmutableOrderedDict]:
-    return _plan_tests_cli(hictk_bin) + _plan_tests_verbosity(hictk_bin, _get_uri(config))
+    return _plan_tests_cli(hictk_bin) + _plan_tests_verbosity(hictk_bin, _get_uri(config), wd)
 
 
 def run_tests(

@@ -345,6 +345,7 @@ def _preprocess_plan_cli_helper(
         wd,
         fields_to_strip,
         [
+            "HICTK_NO_TELEMETRY",
             "HICTK_QUIET",
             "VERBOSE",
             "HICTK_VERBOSITY",
