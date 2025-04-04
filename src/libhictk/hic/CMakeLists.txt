@@ -54,6 +54,7 @@ target_link_libraries(
     hictk::hash
     hictk::pixel
     hictk::reference
+    hictk::static_binary_buffer
     hictk::tmpdir
     hictk::transformers
 )
