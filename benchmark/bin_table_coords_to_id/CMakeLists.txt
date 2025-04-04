@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(CLI11 REQUIRED)
-find_package(Filesystem REQUIRED)
+find_package(CLI11 REQUIRED QUIET)
+find_package(Filesystem REQUIRED QUIET)
 
 add_executable(hictk_bin_table_coords_to_id_bench bin_table_coords_to_id.cpp)
 

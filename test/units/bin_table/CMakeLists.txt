@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
-find_package(Catch2 REQUIRED)
-find_package(fmt REQUIRED)
+find_package(Filesystem REQUIRED QUIET)
+find_package(Catch2 REQUIRED QUIET)
+find_package(fmt REQUIRED QUIET)
 
 include(CTest)
 include(Catch)
