@@ -173,7 +173,6 @@ jobs:
                 -DHICTK_ENABLE_FUZZY_TESTING=OFF                   \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                  \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF            \
-                -DHICTK_EXPORTER_OTLP_ENDPOINT=https://localhost:9 \
                 -DCMAKE_C_FLAGS="$cov_flags"                       \
                 -DCMAKE_CXX_FLAGS="$cov_flags"                     \
                 -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"           \
@@ -192,13 +191,14 @@ jobs:
       - name: Reset Ccache stats
         run: ccache --zero-stats
 
-      - name: Build project
-        run: |
-          cmake --build build -j $(nproc)
-          cmake --build build-no-telem -j $(nproc) -t hictk
+      - name: Build project (w/ telemetry)
+        run: cmake --build build -j $(nproc)
+
+      - name: Build project (wo/ telemetry)
+        run: cmake --build build-no-telem -j $(nproc) -t hictk
 
       - name: Package build folder
-        run: tar --exclude='*.o' -cf - build-*/ | zstd -T0 -13 -o build.tar.zst
+        run: tar --exclude='*.o' -cf - build*/ | zstd -T0 -13 -o build.tar.zst
 
       - name: Upload build folder
         uses: actions/upload-artifact@v4
