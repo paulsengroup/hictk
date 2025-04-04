@@ -145,7 +145,7 @@ def main() -> int:
 
         for binary in set(args["binaries"]):
             digest = hash_file(binary)
-            dest = args["output_dir"] / f"{binary.stem}.{digest}.{ext}"
+            dest = output_dir / f"{binary.stem}.{digest}.{ext}"
             export_coverage(
                 args["llvm_cov_bin"],
                 binary,
