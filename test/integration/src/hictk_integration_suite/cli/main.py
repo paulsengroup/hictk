@@ -26,11 +26,18 @@ def _plan_tests_cli(
     }
 
     plans = (
+        factory | {"args": tuple(), "expect_failure": True},
         factory | {"args": tuple(("--help",))},
+        factory | {"args": tuple(("--version",))},
         factory | {"args": tuple(("--help-cite",))},
         factory | {"args": tuple(("--help-docs",))},
         factory | {"args": tuple(("--help-license",))},
         factory | {"args": tuple(("--help-telemetry",))},
+        factory
+        | {
+            "args": tuple(("--help-telemetry",)),
+            "env_variables": immutabledict(os.environ | {"HICTK_NO_TELEMETRY": "1"}),
+        },
         factory | {"args": tuple(("--foobar",)), "expect_failure": True},
         factory | {"args": tuple(("--help-cite", "--help-telemetry")), "expect_failure": True},
     )
