@@ -4,6 +4,7 @@
 
 add_subdirectory(default_delete_libdeflate)
 add_subdirectory(default_delete_zstd)
+add_subdirectory(genomic_units)
 
 find_package(fmt REQUIRED QUIET)
 find_package(spdlog REQUIRED QUIET)
