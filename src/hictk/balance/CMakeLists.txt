@@ -28,7 +28,6 @@ target_link_libraries(
     hictk_project_warnings
     hictk_internal_tools_definitions
     hictk::balancing
-    hictk::common
     hictk::cooler
     hictk::hic
     hictk::file

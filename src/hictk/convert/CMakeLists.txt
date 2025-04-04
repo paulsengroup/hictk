@@ -30,7 +30,6 @@ target_link_libraries(
     hictk::balancing
     hictk::bin_table
     hictk::chromosome
-    hictk::common
     hictk::cooler
     hictk::hic
     hictk::pixel

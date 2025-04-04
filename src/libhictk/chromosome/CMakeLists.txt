@@ -18,9 +18,4 @@ target_include_directories(
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
-target_link_libraries(
-  hictk_internal_chromosome
-  INTERFACE
-    hictk::common
-    hictk::hash
-)
+target_link_libraries(hictk_internal_chromosome INTERFACE hictk::hash)

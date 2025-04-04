@@ -17,7 +17,6 @@ target_link_libraries(
   PRIVATE
     hictk_project_options
     hictk_project_warnings
-    hictk::common
 )
 
 target_link_system_libraries(

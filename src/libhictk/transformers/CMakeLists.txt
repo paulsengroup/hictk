@@ -31,6 +31,7 @@ target_include_directories(
 target_link_libraries(
   hictk_internal_transformers
   INTERFACE
+    hictk::common
     hictk::cooler
     hictk::file
     hictk::hic

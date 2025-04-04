@@ -22,7 +22,6 @@ target_link_libraries(
   hictk_internal_genomic_interval
   INTERFACE
     hictk::chromosome
-    hictk::common
     hictk::hash
     hictk::numeric
 )

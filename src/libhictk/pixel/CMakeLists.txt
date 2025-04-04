@@ -22,7 +22,6 @@ target_link_libraries(
   INTERFACE
     hictk::bin_table
     hictk::chromosome
-    hictk::common
     hictk::format
     hictk::hash
     hictk::type_traits

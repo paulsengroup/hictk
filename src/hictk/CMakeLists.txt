@@ -60,7 +60,6 @@ target_link_libraries(
     hictk_internal_tools_rename_chromosomes
     hictk_internal_tools_validate
     hictk_internal_tools_zoomify
-    hictk::common
     hictk::version
 )
 

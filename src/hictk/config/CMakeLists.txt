@@ -13,7 +13,6 @@ target_link_libraries(
   INTERFACE
     hictk_project_options
     hictk_project_warnings
-    hictk::common
     hictk::balancing
     hictk::hic
 )

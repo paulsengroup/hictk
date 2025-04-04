@@ -29,7 +29,6 @@ target_link_libraries(
     hictk_internal_tools_definitions
     hictk_internal_tools_file_attributes_formatting
     hictk::chromosome
-    hictk::common
     hictk::cooler
     hictk::hic
     hictk::string

@@ -25,6 +25,7 @@ target_link_libraries(
   hictk_internal_common_genomic_units
   INTERFACE
     hictk::common
+    hictk::numeric
     hictk::type_pretty_printer
 )
 

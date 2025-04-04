@@ -23,7 +23,6 @@ target_link_libraries(
     hictk_project_options
     hictk_project_warnings
     hictk_internal_tools_definitions
-    hictk::common
     hictk::version
   PUBLIC
     hictk_internal_tools_config

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <stdexcept>
-#include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace hictk {
@@ -64,14 +64,5 @@ template <typename T, typename U>
     return static_cast<T>(value);
   }
 }
-
-// helper function to construct unique/shared ptr with a custom deleter fx
-template <auto fn>
-struct DeleterFromFn {
-  template <typename T>
-  constexpr void operator()(T *arg) const {
-    fn(arg);
-  }
-};
 
 }  // namespace hictk

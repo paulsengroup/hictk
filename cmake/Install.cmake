@@ -8,7 +8,7 @@ set(
   bin_table
   binary_buffer
   chromosome
-  common
+  common/common
   common/default_libdeflate
   common/default_zstd
   common/genomic_units

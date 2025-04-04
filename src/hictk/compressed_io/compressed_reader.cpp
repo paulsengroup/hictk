@@ -15,7 +15,6 @@
 #include <string_view>
 #include <tuple>
 
-#include "hictk/common.hpp"
 #include "hictk/tools/compressed_io.hpp"
 
 namespace hictk::tools::io {
