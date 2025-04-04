@@ -111,7 +111,7 @@ jobs:
           mkdir conan-env
           tar -xf /tmp/cmake-prefix-rwdi.tar -C conan-env/ --strip-components=1
 
-      - name: Configure project
+      - name: Configure project (w/ telemetry)
         run: |
           cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
 
@@ -124,6 +124,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
                 -DENABLE_DEVELOPER_MODE=ON                         \
+                -DHICTK_ENABLE_TELEMETRY=ON                        \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF                 \
                 -DOPT_ENABLE_SANITIZER_LEAK=OFF                    \
@@ -145,6 +146,41 @@ jobs:
                 -S .                                               \
                 -B build
 
+      - name: Configure project (wo/ telemetry)
+        run: |
+          cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
+
+          if ! lld -v &> /dev/null; then
+            LINKER=SYSTEM
+          else
+            LINKER=LLD
+          fi
+
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
+                -DENABLE_DEVELOPER_MODE=ON                         \
+                -DHICTK_ENABLE_TELEMETRY=OFF                       \
+                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
+                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF                 \
+                -DOPT_ENABLE_SANITIZER_LEAK=OFF                    \
+                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF         \
+                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF        \
+                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF      \
+                -DOPT_ENABLE_CPPCHECK=OFF                          \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                        \
+                -DHICTK_BUILD_EXAMPLES=OFF                         \
+                -DHICTK_ENABLE_TESTING=ON                          \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF                   \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                  \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF            \
+                -DHICTK_EXPORTER_OTLP_ENDPOINT=https://localhost:9 \
+                -DCMAKE_C_FLAGS="$cov_flags"                       \
+                -DCMAKE_CXX_FLAGS="$cov_flags"                     \
+                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"           \
+                -DCMAKE_LINKER_TYPE="$LINKER"                      \
+                -S .                                               \
+                -B build-no-telem
+
       - name: Restore Ccache folder
         id: cache-ccache
         uses: actions/cache/restore@v4
@@ -157,10 +193,12 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project
-        run: cmake --build build -j $(nproc)
+        run: |
+          cmake --build build -j $(nproc)
+          cmake --build build-no-telem -j $(nproc) -t hictk
 
       - name: Package build folder
-        run: tar --exclude='*.o' -cf - build/ | zstd -T0 -13 -o build.tar.zst
+        run: tar --exclude='*.o' -cf - build-*/ | zstd -T0 -13 -o build.tar.zst
 
       - name: Upload build folder
         uses: actions/upload-artifact@v4
@@ -278,7 +316,7 @@ jobs:
 
       - name: Fix permissions
         run: |
-          chown -R devel:devel build/
+          chown -R devel:devel build*/
 
       - name: Setup dependencies
         run: |
@@ -387,6 +425,40 @@ jobs:
             gpg-agent \
             sudo \
             tar
+
+      - name: Test hictk main (w/ telemetry)
+        run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.main.%id.profraw"
+
+          sudo -u devel                                        \
+          -E env "PATH=$PATH"                                  \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"        \
+          venv/bin/hictk_integration_suite                     \
+            build/src/hictk/hictk                              \
+            test/integration/config.toml                       \
+            --do-not-copy-binary                               \
+            --enable-telemetry                                 \
+            --data-dir test/data                               \
+            --threads "$(nproc)"                               \
+            --result-file integration-test-report.main.json    \
+            --suites=main
+
+      - name: Test hictk main (wo/ telemetry)
+        run: |
+          LLVM_PROFILE_FILE="$PWD/hictk.main-no-telem.%id.profraw"
+
+          sudo -u devel                                              \
+          -E env "PATH=$PATH"                                        \
+                 "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE"              \
+          venv/bin/hictk_integration_suite                           \
+            build-no-telem/src/hictk/hictk                           \
+            test/integration/config.toml                             \
+            --do-not-copy-binary                                     \
+            --enable-telemetry                                       \
+            --data-dir test/data                                     \
+            --threads "$(nproc)"                                     \
+            --result-file integration-test-report.main-no-telem.json \
+            --suites=main
 
       - name: Test hictk balance
         run: |
