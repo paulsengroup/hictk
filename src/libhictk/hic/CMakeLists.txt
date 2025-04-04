@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(bshoshany-thread-pool REQUIRED)
-find_package(concurrentqueue REQUIRED)
-find_package(FMT REQUIRED)
-find_package(libdeflate REQUIRED)
-find_package(phmap REQUIRED)
-find_package(readerwriterqueue REQUIRED)
-find_package(zstd REQUIRED)
+find_package(bshoshany-thread-pool REQUIRED QUIET)
+find_package(concurrentqueue REQUIRED QUIET)
+find_package(fmt REQUIRED QUIET)
+find_package(libdeflate REQUIRED QUIET)
+find_package(phmap REQUIRED QUIET)
+find_package(readerwriterqueue REQUIRED QUIET)
+find_package(zstd REQUIRED QUIET)
 
 set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
 

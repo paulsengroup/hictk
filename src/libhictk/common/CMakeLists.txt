@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FMT REQUIRED)
-find_package(libdeflate REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(zstd REQUIRED)
+find_package(fmt REQUIRED QUIET)
+find_package(libdeflate REQUIRED QUIET)
+find_package(spdlog REQUIRED QUIET)
+find_package(zstd REQUIRED QUIET)
 
 add_library(hictk_internal_common INTERFACE)
 add_library(hictk::common ALIAS hictk_internal_common)

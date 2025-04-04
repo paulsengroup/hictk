@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap REQUIRED)
+find_package(phmap REQUIRED QUIET)
 
 add_library(hictk_internal_reference INTERFACE)
 add_library(hictk::reference ALIAS hictk_internal_reference)

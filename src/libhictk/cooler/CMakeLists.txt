@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FastFloat REQUIRED)
-find_package(FMT REQUIRED)
+find_package(FastFloat REQUIRED QUIET)
+find_package(fmt REQUIRED QUIET)
 find_package(HDF5 REQUIRED QUIET COMPONENTS C)
-find_package(HighFive REQUIRED)
-find_package(phmap REQUIRED)
-find_package(spdlog REQUIRED)
+find_package(HighFive REQUIRED QUIET)
+find_package(phmap REQUIRED QUIET)
+find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_cooler INTERFACE)
 add_library(hictk::cooler ALIAS hictk_internal_cooler)

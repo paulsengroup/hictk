@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FastFloat REQUIRED)
+find_package(FastFloat REQUIRED QUIET)
 
 add_library(hictk_internal_numeric INTERFACE)
 add_library(hictk::numeric ALIAS hictk_internal_numeric)

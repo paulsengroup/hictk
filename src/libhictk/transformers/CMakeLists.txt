@@ -10,6 +10,7 @@ if(HICTK_WITH_EIGEN)
   find_package(Eigen3 REQUIRED QUIET)
 endif()
 
+find_package(phmap REQUIRED QUIET)
 find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_transformers INTERFACE)
@@ -35,7 +36,7 @@ target_link_libraries(
     hictk::hic
 )
 
-target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>" spdlog::spdlog_header_only)
+target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_EIGEN}>:Eigen3::Eigen>" spdlog::spdlog_header_only phmap)
 
 if(HICTK_WITH_ARROW_SHARED)
   target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")

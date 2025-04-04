@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(bshoshany-thread-pool REQUIRED)
-find_package(phmap REQUIRED)
-find_package(span-lite REQUIRED)
-find_package(zstd REQUIRED)
+find_package(bshoshany-thread-pool REQUIRED QUIET)
+find_package(phmap REQUIRED QUIET)
+find_package(span-lite REQUIRED QUIET)
+find_package(zstd REQUIRED QUIET)
 
 add_library(hictk_internal_balancing INTERFACE)
 add_library(hictk::balancing ALIAS hictk_internal_balancing)
