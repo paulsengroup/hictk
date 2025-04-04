@@ -45,7 +45,7 @@ target_link_libraries(
     hictk::version
   PUBLIC
     hictk_internal_tools_config
-    hictk::common_genomic_units # TODO fixme: this should be private
+    hictk::genomic_units # TODO fixme: this should be private
 )
 
 target_link_system_libraries(

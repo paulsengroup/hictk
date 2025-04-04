@@ -5,7 +5,7 @@
 find_package(fmt REQUIRED QUIET)
 
 add_library(hictk_internal_common_genomic_units INTERFACE)
-add_library(hictk::common_genomic_units ALIAS hictk_internal_common_genomic_units)
+add_library(hictk::genomic_units ALIAS hictk_internal_common_genomic_units)
 
 target_sources(
   hictk_internal_common_genomic_units

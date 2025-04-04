@@ -5,7 +5,7 @@
 find_package(zstd REQUIRED QUIET)
 
 add_library(hictk_internal_common_default_delete_zstd INTERFACE)
-add_library(hictk::common_default_delete_zstd ALIAS hictk_internal_common_default_delete_zstd)
+add_library(hictk::default_delete_zstd ALIAS hictk_internal_common_default_delete_zstd)
 
 target_sources(
   hictk_internal_common_default_delete_zstd

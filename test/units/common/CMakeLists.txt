@@ -19,7 +19,7 @@ target_link_libraries(
     hictk_project_warnings
     hictk_project_options
   PUBLIC
-    hictk::common_genomic_units
+    hictk::genomic_units
 )
 
 target_link_system_libraries(

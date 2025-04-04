@@ -27,7 +27,7 @@ target_link_libraries(
   hictk_internal_balancing
   INTERFACE
     hictk::common
-    hictk::common_default_delete_zstd
+    hictk::default_delete_zstd
     hictk::filestream
     hictk::pixel
 )

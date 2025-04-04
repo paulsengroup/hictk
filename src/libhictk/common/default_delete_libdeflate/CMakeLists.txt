@@ -5,7 +5,7 @@
 find_package(libdeflate REQUIRED QUIET)
 
 add_library(hictk_internal_common_default_delete_libdeflate INTERFACE)
-add_library(hictk::common_default_delete_libdeflate ALIAS hictk_internal_common_default_delete_libdeflate)
+add_library(hictk::default_delete_libdeflate ALIAS hictk_internal_common_default_delete_libdeflate)
 
 target_sources(
   hictk_internal_common_default_delete_libdeflate
