@@ -94,9 +94,6 @@ def import_config_and_stage_files(
     wd: WorkingDirectory,
     command: str,
 ) -> Dict[str, Any]:
-    if command == "main":
-        return {}
-
     with open(path, "rb") as f:
         config = tomllib.load(f)
 
