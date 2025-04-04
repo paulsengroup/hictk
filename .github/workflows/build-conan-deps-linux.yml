@@ -141,10 +141,24 @@ jobs:
           CC=gcc CXX=g++ conan profile detect --name gcc
 
           conan install \
-             --requires 'b2/5.3.0' \
+             --requires 'b2/5.2.1' \
              --build='*'           \
              -pr:b=gcc             \
              -pr:h=gcc
+
+      - name: Tweak conan profile
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true'      ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'  ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'  ||
+          steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
+        run: |
+          # Newer versions of b2 lead to exceptions like
+          # ConanException: These libraries were built, but were not used in any boost module
+          cat << EOF | tee -a "$CONAN_DEFAULT_PROFILE_PATH"
+          [tool_requires]
+          boost/*: b2/5.2.1
+          EOF
 
       - name: Install dependencies (Debug)
         if: |

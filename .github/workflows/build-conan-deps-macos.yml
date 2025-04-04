@@ -114,7 +114,15 @@ jobs:
           steps.cache-conan.outputs.cache-hit != 'true'     ||
           steps.cache-cmake-dbg.outputs.cache-hit != 'true' ||
           steps.cache-cmake-rel.outputs.cache-hit != 'true'
-        run: conan profile detect --force
+        run: |
+          conan profile detect --force
+
+          # Newer versions of b2 lead to exceptions like
+          # ConanException: These libraries were built, but were not used in any boost module
+          cat << EOF | tee -a "$(conan profile path default)"
+          [tool_requires]
+          boost/*: b2/5.2.1
+          EOF
 
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
