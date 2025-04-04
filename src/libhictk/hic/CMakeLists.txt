@@ -45,6 +45,8 @@ target_link_libraries(
   INTERFACE
     hictk::balancing
     hictk::common
+    hictk::common_default_delete_libdeflate
+    hictk::common_default_delete_zstd
     hictk::binary_buffer
     hictk::chromosome
     hictk::expected_values_aggregator

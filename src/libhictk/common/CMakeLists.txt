@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+add_subdirectory(default_delete_libdeflate)
+add_subdirectory(default_delete_zstd)
+
 find_package(fmt REQUIRED QUIET)
-find_package(libdeflate REQUIRED QUIET)
 find_package(spdlog REQUIRED QUIET)
-find_package(zstd REQUIRED QUIET)
 
 add_library(hictk_internal_common INTERFACE)
 add_library(hictk::common ALIAS hictk_internal_common)
@@ -30,7 +31,5 @@ target_link_libraries(
   INTERFACE
     hictk::numeric
     fmt::fmt-header-only
-    "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
     spdlog::spdlog_header_only
-    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )
