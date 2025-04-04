@@ -243,7 +243,7 @@ static void dump_tables(const DumpConfig& c) {
   }
 }
 
-int dump_subcmd(const DumpConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const DumpConfig& c) {  // NOLINT(misc-use-internal-linkage)
   if (c.table == "bins" || c.table == "pixels" || c.table == "weights") {
     dump_tables(c);
     return 0;

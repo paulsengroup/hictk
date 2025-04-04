@@ -48,10 +48,12 @@ class HictkConan(ConanFile):
         self.requires("hdf5/1.14.5#51799cda2ba7acaa74c9651dea284ac4", force=True)
         self.requires("highfive/2.10.0#c975a16d7fe3655c173f8a9aab16b416")
         self.requires("libarchive/3.7.7#374e08956b2917304faf929612cd2222")
+        self.requires("libcurl/8.12.1#722cbde4f18cb5824bdc4d4f827b0ec6", force=True)  # otel
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("lz4/1.10.0#68a01ece147a441b463d8cefea68d555", force=True)
         self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
         self.requires("nlohmann_json/3.11.3#45828be26eb619a2e04ca517bb7b828d")
+        self.requires("opentelemetry-cpp/1.18.0#edd81c9cc34028bf0c2da87fc9756e04")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
         self.requires("pybind11/2.13.6#7d301b76bc1a308a51b506dd2de145b0")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
@@ -59,7 +61,7 @@ class HictkConan(ConanFile):
         self.requires("spdlog/1.15.1#92e99f07f134481bce4b70c1a41060e7")
         self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
         self.requires("xz_utils/5.4.5#b885d1d79c9d30cff3803f7f551dbe66")
-        self.requires("zstd/1.5.7#f98394e178ac97e2a7b445ea0ce6bcaf")
+        self.requires("zstd/1.5.7#f98394e178ac97e2a7b445ea0ce6bcaf", force=True)
         self.requires("zlib/1.3.1#b8bc2603263cf7eccbd6e17e66b0ed76")
 
     def validate(self):
@@ -67,7 +69,7 @@ class HictkConan(ConanFile):
             check_min_cppstd(self, self._min_cppstd)
 
     def configure(self):
-        if self.settings.compiler in ["clang", "gcc"]:
+        if self.settings.compiler in ["clang", "gcc"] and self.settings.os == "Linux":
             self.settings.compiler.libcxx = "libstdc++11"
 
         self.options["arrow"].compute = True
@@ -147,5 +149,34 @@ class HictkConan(ConanFile):
         self.options["libarchive"].with_mbedtls = False
         self.options["libarchive"].with_xattr = False
         self.options["libarchive"].with_pcre2 = False
+        if self.settings.os != "Windows":
+            # Tweaking libcurl on Windows seems to be very brittle
+            self.options["libcurl"].with_dict = False
+            self.options["libcurl"].with_file = False
+            self.options["libcurl"].with_ftp = False
+            self.options["libcurl"].with_gopher = False
+            self.options["libcurl"].with_imap = False
+            self.options["libcurl"].with_ldap = False
+            self.options["libcurl"].with_mqtt = False
+            self.options["libcurl"].with_pop3 = False
+            self.options["libcurl"].with_rtsp = False
+            self.options["libcurl"].with_smb = False
+            self.options["libcurl"].with_smtp = False
+            self.options["libcurl"].with_telnet = False
+            self.options["libcurl"].with_tftp = False
+            self.options["libcurl"].with_zlib = True
+            self.options["libcurl"].with_zstd = True
+            self.options["libcurl"].with_ntlm = False
+            self.options["libcurl"].with_ntlm_wb = False
+            self.options["libcurl"].with_cookies = False
+            self.options["libcurl"].with_verbose_debug = False
+            self.options["libcurl"].with_unix_sockets = False
+            self.options["libcurl"].with_verbose_strings = False
+            self.options["libcurl"].with_form_api = False
+            self.options["libcurl"].with_websocket = False
+        self.options["opentelemetry-cpp"].with_otlp_http_compression = True
+        self.options["opentelemetry-cpp"].with_no_deprecated_code = True
+        self.options["opentelemetry-cpp"].with_jaeger = False
+        self.options["opentelemetry-cpp"].with_zipkin = False
         self.options["spdlog"].header_only = True
         self.options["zstd"].build_programs = False

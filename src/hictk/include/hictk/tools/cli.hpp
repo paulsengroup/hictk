@@ -335,7 +335,7 @@ inline const auto ParseHiCMatrixUnit =
 class Cli {
  public:
   enum class subcommand : std::uint_fast8_t {
-    help,
+    none,
     balance,
     convert,
     dump,
@@ -364,8 +364,9 @@ class Cli {
   int _exit_code{1};
   Config _config{};
   CLI::App _cli{};
-  subcommand _subcommand{subcommand::help};
+  subcommand _subcommand{subcommand::none};
   mutable std::vector<std::string> _warnings{};
+  std::string_view _help_flag{};
 
   void make_balance_subcommand();
   void make_ice_balance_subcommand(CLI::App& app);
@@ -406,6 +407,8 @@ class Cli {
   void transform_args_validate_subcommand();
   void transform_args_zoomify_subcommand();
   void transform_args();
+
+  [[nodiscard]] bool handle_help_flags();
 };
 
 [[nodiscard]] inline std::string infer_input_format(const std::filesystem::path& p) {
@@ -455,6 +458,92 @@ class Cli {
   }
   assert(format == "hic");
   return hic::utils::list_resolutions(p, true);
+}
+
+[[nodiscard]] inline std::optional<std::int16_t> parse_hictk_verbosity_from_env(
+    bool skip = false) noexcept {
+  try {
+    if (skip) {
+      return {};
+    }
+
+    constexpr auto critical = static_cast<std::int16_t>(spdlog::level::critical);
+
+    if (std::getenv("HICTK_QUIET")) {  // NOLINT(*-mt-unsafe)
+      return critical;
+    }
+
+    if (std::getenv("VERBOSE")) {  // NOLINT(*-mt-unsafe)
+      return static_cast<std::int16_t>(spdlog::level::debug);
+    }
+
+    const auto* verbosity_ptr = std::getenv("HICTK_VERBOSITY");  // NOLINT(*-mt-unsafe)
+    if (!verbosity_ptr) {
+      return {};
+    }
+
+    std::string_view verbosity{verbosity_ptr};
+
+    // NOLINTBEGIN(*-avoid-magic-numbers)
+    // in spdlog, high numbers correspond to low log levels
+    if (verbosity == "0") {
+      return critical;
+    }
+    if (verbosity == "1") {
+      return critical - 1;
+    }
+    if (verbosity == "2") {
+      return critical - 2;
+    }
+    if (verbosity == "3") {
+      return critical - 3;
+    }
+    if (verbosity == "4") {
+      return critical - 4;
+    }
+    if (verbosity == "5") {
+      return critical - 5;
+    }
+    // NOLINTEND(*-avoid-magic-numbers)
+
+    auto str_compare_case_insensitive = [&](std::string_view lvl) noexcept {
+      if (verbosity.size() != lvl.size()) {
+        return false;
+      }
+
+      for (std::size_t i = 0; i < verbosity.size(); ++i) {
+        if (std::tolower(verbosity[i]) != lvl[i]) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    if (str_compare_case_insensitive("critical")) {
+      return critical;
+    }
+    if (str_compare_case_insensitive("error") || str_compare_case_insensitive("err")) {
+      return static_cast<std::int16_t>(spdlog::level::err);
+    }
+    if (str_compare_case_insensitive("warning") || str_compare_case_insensitive("warn")) {
+      return static_cast<std::int16_t>(spdlog::level::warn);
+    }
+    if (str_compare_case_insensitive("info")) {
+      return static_cast<std::int16_t>(spdlog::level::info);
+    }
+    if (str_compare_case_insensitive("debug")) {
+      return static_cast<std::int16_t>(spdlog::level::debug);
+    }
+
+    fmt::println(
+        stderr,
+        FMT_STRING(
+            "WARNING: unable to parse verbosity level from env variable HICTK_VERBOSITY=\"{}\""),
+        verbosity);
+    return {};
+  } catch (...) {
+    return {};
+  }
 }
 
 }  // namespace hictk::tools

@@ -53,8 +53,9 @@ EOM
 chmod 755 "$tmpdir/runme.sh"
 
 sudo docker run --rm --entrypoint=/bin/bash \
-  -v "$tmpdir/runme.sh:/tmp/runme.sh:ro" \
-  -v "$PWD/test/integration:/tmp/hictk/test/integration:ro" \
-  -v "$PWD/test/data/hictk_test_data.tar.zst:/tmp/hictk/test/data/hictk_test_data.tar.zst:ro" \
+  --volume "$tmpdir/runme.sh:/tmp/runme.sh:ro" \
+  --volume "$PWD/test/integration:/tmp/hictk/test/integration:ro" \
+  --volume "$PWD/test/data/hictk_test_data.tar.zst:/tmp/hictk/test/data/hictk_test_data.tar.zst:ro" \
+  --env 'HICTK_NO_TELEMETRY=1' \
   "$IMG" \
   /tmp/runme.sh

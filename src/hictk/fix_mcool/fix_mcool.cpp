@@ -31,7 +31,7 @@ static void validate_base_resolution(const FixMcoolConfig& c, std::uint32_t base
       fmt::format(FMT_STRING("{}::/resolutions/{}"), c.path_to_input.string(), base_resolution);
   vc.validate_index = true;
 
-  [[maybe_unused]] const auto ec = validate_subcmd(vc);
+  [[maybe_unused]] const auto ec = run_subcmd(vc);
   assert(ec == 0);
 }
 
@@ -48,7 +48,7 @@ static void run_hictk_zoomify(const FixMcoolConfig& c,
   zc.force = c.force;
   zc.verbosity = c.verbosity;
 
-  [[maybe_unused]] const auto ec = zoomify_subcmd(zc);
+  [[maybe_unused]] const auto ec = run_subcmd(zc);
   assert(ec == 0);
 }
 
@@ -113,11 +113,11 @@ static void run_hictk_balance(const FixMcoolConfig& c, std::uint32_t resolution)
   bc->zstd_compression_lvl = c.zstd_compression_lvl;
   bc->chunk_size = c.chunk_size;
 
-  [[maybe_unused]] const auto ec = balance_subcmd(*bc);
+  [[maybe_unused]] const auto ec = run_subcmd(*bc);
   assert(ec == 0);
 }
 
-int fix_mcool_subcmd(const FixMcoolConfig& c) {  // NOLINT(misc-use-internal-linkage)
+int run_subcmd(const FixMcoolConfig& c) {  // NOLINT(misc-use-internal-linkage)
   assert(cooler::utils::is_multires_file(c.path_to_input.string()));
 
   const auto t0 = std::chrono::system_clock::now();

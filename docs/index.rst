@@ -82,6 +82,7 @@ discourse:
 
    installation
    installation_src
+   telemetry
 
 .. toctree::
    :caption: Introduction

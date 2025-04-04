@@ -48,6 +48,7 @@ def get_test_names(include_all: bool = True) -> List[str]:
         "dump",
         "fix-mcool",
         "load",
+        "main",
         "merge",
         "metadata",
         "rename-chromosomes",
@@ -104,12 +105,13 @@ def import_config_and_stage_files(
     return config
 
 
-def init_results(hictk_bin: pathlib.Path) -> Dict:
+def init_results(hictk_bin: pathlib.Path, with_telemetry: bool) -> Dict:
     res = {
         "platform": platform.platform(),
         "arch": platform.machine(),
         "hictk-version": version(hictk_bin),
         "date": datetime.datetime.now().isoformat(),
+        "with_telemetry": with_telemetry,
         "results": {
             "pass": 0,
             "fail": 0,
@@ -147,12 +149,13 @@ def run_tests(
     no_cleanup: bool,
     do_not_copy_binary: bool,
     max_attempts: int,
+    enable_telemetry: bool,
 ) -> Dict:
     num_pass = 0
     num_fail = 0
     num_skip = 0
 
-    results = init_results(hictk_bin)
+    results = init_results(hictk_bin, enable_telemetry)
     with WorkingDirectory(delete=not no_cleanup) as wd:
         if not do_not_copy_binary:
             hictk_bin = wd.stage_file(hictk_bin)
@@ -274,6 +277,13 @@ def run_tests(
     type=click.IntRange(1),
     show_default=True,
 )
+@click.option(
+    "--enable-telemetry",
+    help="Try to enable collection of telemetry data.",
+    default=False,
+    is_flag=True,
+    show_default=True,
+)
 def main(
     hictk_bin: pathlib.Path,
     data_dir: pathlib.Path,
@@ -286,6 +296,7 @@ def main(
     no_cleanup: bool,
     do_not_copy_binary: bool,
     max_attempts: int,
+    enable_telemetry: bool,
 ):
     """
     Run hictk integration test suite.
@@ -309,11 +320,29 @@ def main(
 
     suites = parse_test_suites(suites)
 
+    if enable_telemetry:
+        logger.info("attempting to enable collection of telemetry data")
+        if "HICTK_NO_TELEMETRY" in os.environ:
+            del os.environ["HICTK_NO_TELEMETRY"]
+    else:
+        logger.debug("disabling collection of telemetry data")
+        os.environ["HICTK_NO_TELEMETRY"] = "1"
+
     t0 = time.time()
-    results = run_tests(hictk_bin, data_dir, config_file, suites, threads, no_cleanup, do_not_copy_binary, max_attempts)
+    results = run_tests(
+        hictk_bin,
+        data_dir,
+        config_file,
+        suites,
+        threads,
+        no_cleanup,
+        do_not_copy_binary,
+        max_attempts,
+        enable_telemetry,
+    )
     t1 = time.time()
 
-    unexpected_exit_codes = set()
+    unexpected_exit_codes = {}
     num_unexpected_exit_code = 0
     for k, runs in results["results"].items():
         if not k.startswith("hictk"):
@@ -321,7 +350,10 @@ def main(
         for res in runs:
             ec = res["exit-code"]
             if ec not in {0, 1}:
-                unexpected_exit_codes.add(str(ec))
+                if ec in unexpected_exit_codes:
+                    unexpected_exit_codes[ec].append(res)
+                else:
+                    unexpected_exit_codes[ec] = [res]
                 num_unexpected_exit_code += 1
 
     num_pass = results["results"]["pass"]
@@ -335,12 +367,15 @@ def main(
         with open(result_file, "w") as f:
             f.write(json.dumps(results, indent=2))
 
-    if len(unexpected_exit_codes) != 0:
-        logging.warn(
+    if num_unexpected_exit_code != 0:
+        logger.warn(
             "some of the tests returned non-zero exit codes with unexpected values: "
-            f"{', '.join(sorted(unexpected_exit_codes))}. "
+            f"{', '.join(str(x) for x in sorted(unexpected_exit_codes.keys()))}. "
             "Please carefully review the test report."
         )
+        for results in unexpected_exit_codes.values():
+            for res in results:
+                logger.warn(f"FAIL: {res}")
 
     print("", file=sys.stderr)
     print(f"# PASS: {num_pass}", file=sys.stderr)

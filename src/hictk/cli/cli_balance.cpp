@@ -422,9 +422,11 @@ void Cli::transform_args_ice_balance_subcommand() {
     c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
+  const auto try_read_from_env = sc.get_option("--verbosity")->empty();
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
+  c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)
+                    .value_or(static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 void Cli::transform_args_scale_balance_subcommand() {
@@ -452,9 +454,11 @@ void Cli::transform_args_scale_balance_subcommand() {
     c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
+  const auto try_read_from_env = sc.get_option("--verbosity")->empty();
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
+  c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)
+                    .value_or(static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 void Cli::transform_args_vc_balance_subcommand() {
@@ -477,9 +481,12 @@ void Cli::transform_args_vc_balance_subcommand() {
     input_path = cooler::File(c.path_to_input.string()).path();
   }
 
+  const auto try_read_from_env =
+      _cli.get_subcommand("balance")->get_subcommand("vc")->get_option("--verbosity")->empty();
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
+  c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)
+                    .value_or(static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 }  // namespace hictk::tools

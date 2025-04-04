@@ -15,10 +15,18 @@ Subcommands
 
 
   Blazing fast tools to work with .hic and .cool files.
-  hictk [OPTIONS] SUBCOMMAND
+  hictk [OPTIONS] [SUBCOMMAND]
   OPTIONS:
     -h,     --help              Print this help message and exit
     -V,     --version           Display program version information and exit
+  [Option Group: help]
+    [At most 1 of the following options are allowed]
+  OPTIONS:
+    -h,     --help              Print this help message and exit
+            --help-cite         Print hictk's citation in Bibtex format and exit.
+            --help-docs         Print the URL to hictk's documentation and exit.
+            --help-license      Print the hictk license and exit.
+            --help-telemetry    Print information regarding telemetry collection and exit.
   SUBCOMMANDS:
     balance                     Balance Hi-C files using ICE, SCALE, or VC.
     convert                     Convert Hi-C files between different formats.

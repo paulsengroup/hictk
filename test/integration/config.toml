@@ -163,6 +163,11 @@ output-names = [
   "test.hic"
 ]
 
+[main]
+
+files = [
+  { uri = "cooler/ENCFF993FGR.2500000.cool" },
+]
 
 [merge]
 

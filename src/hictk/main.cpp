@@ -22,6 +22,7 @@
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/telemetry.hpp"
 #include "hictk/tools/tools.hpp"
 #include "hictk/version.hpp"
 
@@ -214,7 +215,7 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
           if constexpr (!std::is_same_v<T, std::monostate>) {
             if (logger.ok()) {
               logger.set_level(config_.verbosity);  // NOLINT
-              if (subcmd != Cli::subcommand::help && subcmd != Cli::subcommand::dump) {
+              if (subcmd != Cli::subcommand::none && subcmd != Cli::subcommand::dump) {
                 logger.print_welcome_msg();
               }
             }
@@ -225,19 +226,41 @@ static std::tuple<int, Cli::subcommand, Config> parse_cli_and_setup_logger(Cli &
     return std::make_tuple(cli.exit(), subcmd, config);
   } catch (const CLI::ParseError &e) {
     //  This takes care of formatting and printing error messages (if any)
-    return std::make_tuple(cli.exit(e), Cli::subcommand::help, Config());
+    return std::make_tuple(cli.exit(e), Cli::subcommand::none, Config());
 
   } catch (const std::filesystem::filesystem_error &e) {
     SPDLOG_ERROR(FMT_STRING("FAILURE! {}"), e.what());
-    return std::make_tuple(1, Cli::subcommand::help, Config());
+    return std::make_tuple(1, Cli::subcommand::none, Config());
   } catch (const spdlog::spdlog_ex &e) {
     fmt::print(
         stderr,
         FMT_STRING(
             "FAILURE! An error occurred while setting up the main application logger: {}.\n"),
         e.what());
-    return std::make_tuple(1, Cli::subcommand::help, Config());
+    return std::make_tuple(1, Cli::subcommand::none, Config());
   }
+}
+
+[[nodiscard]] static int run_subcommand(Cli::subcommand subcmd, const Config &config) {
+  if (subcmd == Cli::subcommand::none) {
+    throw std::runtime_error(
+        "run_subcommand() was called with subcommand::none: this should never happen! "
+        "If you see this message, please file an issue on GitHub");
+  }
+
+  auto *tracer = Tracer::instance();
+  return std::visit(
+      [&](const auto &c) {
+        using ScopedSpan = decltype(tracer->get_scoped_span(subcmd, c));
+        auto span = !!tracer ? tracer->get_scoped_span(subcmd, c) : ScopedSpan{};
+        const auto ec = run_subcmd(c);
+        if (ec == 0 && span.has_value()) {
+          span->set_status(Tracer::StatusCode::kOk);
+        }
+
+        return ec;
+      },
+      config);
 }
 
 [[nodiscard]] static std::string generate_command_name(const std::unique_ptr<Cli> &cli) {
@@ -259,74 +282,37 @@ int main(int argc, char **argv) noexcept {
     auto local_logger = acquire_global_logger();
     cli = std::make_unique<Cli>(argc, argv);
     const auto [ec, subcmd, config] = parse_cli_and_setup_logger(*cli, *local_logger);
-    if (ec != 0 || subcmd == Cli::subcommand::help) {
+    if (ec != 0 || subcmd == Cli::subcommand::none) {
       local_logger->clear();
       return ec;
     }
 
     cli->log_warnings();
 
-    using sc = Cli::subcommand;
-    switch (subcmd) {
-      case sc::balance:
-        if (std::holds_alternative<BalanceICEConfig>(config)) {
-          return balance_subcmd(std::get<BalanceICEConfig>(config));
-        }
-        if (std::holds_alternative<BalanceSCALEConfig>(config)) {
-          return balance_subcmd(std::get<BalanceSCALEConfig>(config));
-        }
-        assert(std::holds_alternative<BalanceVCConfig>(config));
-        return balance_subcmd(std::get<BalanceVCConfig>(config));
-      case sc::convert:
-        return convert_subcmd(std::get<ConvertConfig>(config));
-      case sc::dump:
-        return dump_subcmd(std::get<DumpConfig>(config));
-      case sc::fix_mcool:
-        return fix_mcool_subcmd(std::get<FixMcoolConfig>(config));
-      case sc::load:
-        return load_subcmd(std::get<LoadConfig>(config));
-      case sc::merge:
-        return merge_subcmd(std::get<MergeConfig>(config));
-      case sc::metadata:
-        return metadata_subcmd(std::get<MetadataConfig>(config));
-      case sc::rename_chromosomes:
-        return rename_chromosomes_subcmd(std::get<RenameChromosomesConfig>(config));
-      case sc::validate:
-        return validate_subcmd(std::get<ValidateConfig>(config));
-      case sc::zoomify:
-        return zoomify_subcmd(std::get<ZoomifyConfig>(config));
-      case sc::help:  // NOLINT
-        break;
-      default:
-        throw std::runtime_error(
-            "Default branch in switch statement in hictk::main() should be unreachable! "
-            "If you see this message, please file an issue on GitHub");
-    }
+    const auto ec_ = run_subcommand(subcmd, config);
+    Tracer::tear_down_instance();
+    return ec_;
   } catch (const CLI::ParseError &e) {
     if (cli) {
       //  This takes care of formatting and printing error messages (if any)
       return cli->exit(e);
     }
     SPDLOG_CRITICAL("FAILURE! An unknown error occurred while parsing CLI arguments.");
-    return 1;
   } catch (const std::bad_alloc &e) {
     SPDLOG_CRITICAL(FMT_STRING("FAILURE! Unable to allocate enough memory: {}"), e.what());
-    return 1;
   } catch (const spdlog::spdlog_ex &e) {
     fmt::print(stderr,
                FMT_STRING("FAILURE! {} encountered the following error while logging: {}\n"),
                generate_command_name(cli), e.what());
-    return 1;
   } catch (const std::exception &e) {
     SPDLOG_CRITICAL(FMT_STRING("FAILURE! {} encountered the following error: {}"),
                     generate_command_name(cli), e.what());
-    return 1;
   } catch (...) {
     SPDLOG_CRITICAL(
         FMT_STRING("FAILURE! {} encountered the following error: Caught an unhandled exception! If "
                    "you see this message, please file an issue on GitHub."),
         generate_command_name(cli));
-    return 1;
   }
-  return 0;
+  Tracer::tear_down_instance();
+  return 1;
 }

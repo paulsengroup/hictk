@@ -172,7 +172,7 @@ Multi-resolution Cooler (.mcool)
   .. cpp:function:: [[nodiscard]] auto chromosomes() const noexcept -> const Reference&;
   .. cpp:function:: [[nodiscard]] constexpr const std::vector<std::uint32_t>& resolutions() const noexcept;
   .. cpp:function:: [[nodiscard]] constexpr const MultiResAttributes& attributes() const noexcept;
-  .. cpp:function:: [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(std::string_view policy = "union") const;
+  .. cpp::function:: [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(std::string_view policy = "union") const;
 
   **Modifiers**
 

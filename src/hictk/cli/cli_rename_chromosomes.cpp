@@ -99,9 +99,12 @@ void Cli::transform_args_rename_chromosomes_subcommand() {
   assert(_cli.get_subcommand("rename-chromosomes")->parsed());
   auto& c = std::get<RenameChromosomesConfig>(_config);
 
+  const auto try_read_from_env =
+      _cli.get_subcommand("rename-chromosomes")->get_option("--verbosity")->empty();
   // in spdlog, high numbers correspond to low log levels
   assert(c.verbosity > 0 && c.verbosity < 5);  // NOLINTNEXTLINE(*-narrowing-conversions)
-  c.verbosity = static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity;
+  c.verbosity = parse_hictk_verbosity_from_env(!try_read_from_env)
+                    .value_or(static_cast<std::int16_t>(spdlog::level::critical) - c.verbosity);
 }
 
 }  // namespace hictk::tools

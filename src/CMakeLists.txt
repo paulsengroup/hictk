@@ -5,6 +5,6 @@
 add_subdirectory(libhictk)
 
 if(HICTK_BUILD_TOOLS)
-  message(STATUS "Building cli tools.")
+  message(STATUS "Building CLI tools.")
   add_subdirectory(hictk)
 endif()
