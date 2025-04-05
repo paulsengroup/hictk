@@ -76,7 +76,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@f3d5d682d523ebc361cae4e750a275a859604920
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@5291818b04bb84f4424a9ca33b0f4102b25f3f1e
     with:
       os: windows-2019
 
