@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FMT REQUIRED)
+find_package(fmt REQUIRED QUIET)
 
 add_library(hictk_internal_file INTERFACE)
 add_library(hictk::file ALIAS hictk_internal_file)
@@ -27,6 +27,7 @@ target_link_libraries(
     hictk::cooler
     hictk::hic
     hictk::reference
+    hictk::tmpdir
 )
 
 target_link_system_libraries(hictk_internal_file INTERFACE fmt::fmt-header-only)

@@ -21,7 +21,7 @@
 
 #include "hictk/binary_buffer.hpp"
 #include "hictk/common.hpp"
-#include "hictk/default_delete.hpp"
+#include "hictk/default_delete_zstd.hpp"
 #include "hictk/filestream.hpp"
 
 namespace hictk::balancing::internal {

@@ -2,11 +2,10 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "./dump.hpp"
+#include "hictk/tools/dump.hpp"
 
 #include <fmt/compile.h>
 #include <fmt/format.h>
-#include <parallel_hashmap/btree.h>
 
 #include <algorithm>
 #include <cassert>
@@ -22,6 +21,7 @@
 #include <variant>
 #include <vector>
 
+#include "./common.hpp"
 #include "hictk/balancing/methods.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
@@ -29,9 +29,7 @@
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"
 #include "hictk/file.hpp"
-#include "hictk/genomic_interval.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/tools/config.hpp"
 #include "hictk/transformers/join_genomic_coords.hpp"

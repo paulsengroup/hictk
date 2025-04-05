@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <string_view>
 
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 
 namespace hictk::internal {
 

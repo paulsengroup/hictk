@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/metadata.hpp"
 
 namespace hictk::tools {
 

@@ -25,4 +25,5 @@ target_link_libraries(
     hictk::common
     hictk::genomic_interval
     hictk::reference
+    hictk::type_traits
 )

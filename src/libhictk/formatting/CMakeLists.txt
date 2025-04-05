@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(FMT REQUIRED)
+find_package(fmt REQUIRED QUIET)
 
 add_library(hictk_internal_formatting INTERFACE)
 add_library(hictk::format ALIAS hictk_internal_formatting)
@@ -26,9 +26,9 @@ target_link_libraries(
   INTERFACE
     hictk::bin_table
     hictk::chromosome
-    hictk::common
     hictk::genomic_interval
     hictk::pixel
+    hictk::string
 )
 
 target_link_system_libraries(hictk_internal_formatting INTERFACE fmt::fmt-header-only)

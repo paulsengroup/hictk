@@ -30,7 +30,6 @@ target_link_libraries(
     hictk::bin_table
     hictk::binary_buffer
     hictk::chromosome
-    hictk::common
     hictk::cooler
     hictk::expected_values_aggregator
     hictk::file

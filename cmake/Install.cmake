@@ -8,7 +8,17 @@ set(
   bin_table
   binary_buffer
   chromosome
-  common
+  common/common
+  common/default_libdeflate
+  common/default_zstd
+  common/genomic_units
+  common/hash
+  common/static_binary_buffer
+  common/string
+  common/tmpdir
+  common/type_pretty_printer
+  common/type_traits
+  common/version
   cooler
   expected_values_aggregator
   file
@@ -61,6 +71,16 @@ install(
     hictk_internal_binary_buffer
     hictk_internal_chromosome
     hictk_internal_common
+    hictk_internal_common_default_delete_libdeflate
+    hictk_internal_common_default_delete_zstd
+    hictk_internal_common_genomic_units
+    hictk_internal_common_hash
+    hictk_internal_common_static_binary_buffer
+    hictk_internal_common_string
+    hictk_internal_common_tmpdir
+    hictk_internal_common_type_pretty_printer
+    hictk_internal_common_type_traits
+    hictk_internal_common_version
     hictk_internal_cooler
     hictk_internal_expected_values_aggregator
     hictk_internal_file

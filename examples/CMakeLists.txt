@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+message(STATUS "Building examples")
+
 set(
   HICTK_EXAMPLES
   quicktour_example_001

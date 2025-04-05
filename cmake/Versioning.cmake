@@ -87,5 +87,5 @@ function(ConfigureVersioning input_config_folder output_config_folder)
 endfunction()
 
 configureversioning("${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/version/include/hictk"
 )

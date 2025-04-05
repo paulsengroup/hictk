@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+message(STATUS "Building unit tests")
+
 include_directories(include)
 
 add_subdirectory(balancing)

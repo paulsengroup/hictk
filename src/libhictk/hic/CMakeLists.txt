@@ -2,21 +2,21 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(bshoshany-thread-pool REQUIRED)
-find_package(concurrentqueue REQUIRED)
-find_package(FMT REQUIRED)
-find_package(libdeflate REQUIRED)
-find_package(phmap REQUIRED)
-find_package(readerwriterqueue REQUIRED)
-find_package(zstd REQUIRED)
+find_package(bshoshany-thread-pool REQUIRED QUIET)
+find_package(concurrentqueue REQUIRED QUIET)
+find_package(fmt REQUIRED QUIET)
+find_package(libdeflate REQUIRED QUIET)
+find_package(phmap REQUIRED QUIET)
+find_package(readerwriterqueue REQUIRED QUIET)
+find_package(zstd REQUIRED QUIET)
 
 set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
 
 if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
-  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture")
   message(FATAL_ERROR "hictk::hic cannot be built on machines with big-endian architecture.")
 elseif(HICTK_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
-  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture")
 else()
   message(
     FATAL_ERROR
@@ -45,13 +45,19 @@ target_link_libraries(
   INTERFACE
     hictk::balancing
     hictk::common
+    hictk::default_delete_libdeflate
+    hictk::default_delete_zstd
     hictk::binary_buffer
     hictk::chromosome
     hictk::expected_values_aggregator
     hictk::filestream
+    hictk::hash
     hictk::pixel
     hictk::reference
+    hictk::static_binary_buffer
+    hictk::tmpdir
     hictk::transformers
+    hictk::version
 )
 
 target_link_system_libraries(

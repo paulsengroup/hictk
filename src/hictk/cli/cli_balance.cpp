@@ -17,10 +17,10 @@
 #include <vector>
 
 #include "hictk/file.hpp"
-#include "hictk/hic/validation.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/validators.hpp"
 
 namespace hictk::tools {
 

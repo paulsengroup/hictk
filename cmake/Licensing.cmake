@@ -4,7 +4,7 @@
 
 set(HICTK_LICENSE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(PRE_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config/license.hpp.in")
-set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/include/hictk/license.hpp")
+set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/version/include/hictk/license.hpp")
 file(READ "${HICTK_LICENSE_FILE}" HICTK_LICENSE)
 
 if(NOT WIN32)

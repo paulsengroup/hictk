@@ -25,8 +25,8 @@
 #include "./init_bin_table.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/reference.hpp"
-#include "hictk/string_utils.hpp"
-#include "hictk/tools/compressed_reader.hpp"
+#include "hictk/string.hpp"
+#include "hictk/tools/compressed_io.hpp"
 
 namespace hictk::tools {
 

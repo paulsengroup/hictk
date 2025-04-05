@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <deque>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <string_view>

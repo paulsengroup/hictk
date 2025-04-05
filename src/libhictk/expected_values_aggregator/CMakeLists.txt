@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap REQUIRED)
-find_package(spdlog REQUIRED)
+find_package(phmap REQUIRED QUIET)
+find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_expected_values_aggregator INTERFACE)
 add_library(hictk::expected_values_aggregator ALIAS hictk_internal_expected_values_aggregator)

@@ -2,8 +2,11 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/tools/rename_chromosomes.hpp"
+
 #include <fmt/format.h>
 #include <parallel_hashmap/btree.h>
+#include <spdlog/spdlog.h>
 
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/cooler/singlecell_cooler.hpp"

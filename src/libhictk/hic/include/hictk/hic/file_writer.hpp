@@ -26,7 +26,7 @@
 #include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/binary_buffer.hpp"
-#include "hictk/default_delete.hpp"
+#include "hictk/default_delete_libdeflate.hpp"
 #include "hictk/expected_values_aggregator.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hash.hpp"

@@ -18,7 +18,7 @@
 #include "hictk/tools/config.hpp"
 #include "hictk/tools/file_attributes_formatting.hpp"
 #include "hictk/tools/toml.hpp"
-#include "hictk/tools/tools.hpp"
+#include "hictk/tools/validate.hpp"
 
 namespace hictk::tools {
 

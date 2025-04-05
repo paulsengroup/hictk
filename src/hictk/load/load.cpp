@@ -17,7 +17,7 @@
 
 #include "hictk/pixel.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/tools/tools.hpp"
+#include "hictk/tools/load.hpp"
 
 namespace hictk::tools {
 

@@ -205,18 +205,15 @@ add_subdirectory(src)
 
 if(HICTK_ENABLE_TESTING)
   enable_testing()
-  message(STATUS "Building unit tests.")
   target_compile_definitions(hictk_project_options INTERFACE HICTK_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
 if(HICTK_BUILD_EXAMPLES)
-  message(STATUS "Building examples.")
   add_subdirectory(examples)
 endif()
 
 if(HICTK_BUILD_BENCHMARKS)
-  message(STATUS "Building benchmarks.")
   add_subdirectory(benchmark)
 endif()
 

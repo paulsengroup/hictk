@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
+find_package(Filesystem REQUIRED QUIET)
 
-find_package(Catch2 REQUIRED)
+find_package(Catch2 REQUIRED QUIET)
 include(CTest)
 include(Catch)
 
@@ -24,6 +24,7 @@ target_link_libraries(
   PUBLIC
     hictk::expected_values_aggregator
     hictk::hic
+    hictk::tmpdir
 )
 
 target_link_system_libraries(

@@ -8,8 +8,8 @@
 #include "./common.hpp"
 #include "hictk/balancing/vc.hpp"
 #include "hictk/cooler/cooler.hpp"
-#include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/tools/balance.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

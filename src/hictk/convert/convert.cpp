@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/tools/convert.hpp"
+
 #include <fmt/format.h>
 #include <fmt/std.h>
 #include <spdlog/spdlog.h>
@@ -12,7 +14,7 @@
 
 #include "./common.hpp"
 #include "hictk/cooler/uri.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {

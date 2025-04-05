@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap REQUIRED)
-find_package(spdlog REQUIRED)
+find_package(phmap REQUIRED QUIET)
+find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_filestream INTERFACE)
 add_library(hictk::filestream ALIAS hictk_internal_filestream)
@@ -22,4 +22,9 @@ target_include_directories(
     "$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(hictk_internal_filestream INTERFACE hictk::common)
+target_link_libraries(
+  hictk_internal_filestream
+  INTERFACE
+    hictk::common
+    hictk::type_traits
+)
