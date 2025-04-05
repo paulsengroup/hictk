@@ -85,13 +85,19 @@ jobs:
 
   build-conan-deps-x86:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@925c969016f4d41babd703a01d7ae3ad043aa576
+    permissions:
+      actions: write
+      contents: read
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
     with:
       os: macos-13
 
   build-conan-deps-arm64:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@925c969016f4d41babd703a01d7ae3ad043aa576
+    permissions:
+      actions: write
+      contents: read
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
     with:
       os: macos-14
 
