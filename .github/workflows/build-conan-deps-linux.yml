@@ -129,11 +129,7 @@ jobs:
           conan remove --confirm "*"
 
       - name: Install build dependencies
-        if: |
-          steps.cache-conan.outputs.cache-hit != 'true'      ||
-          steps.cache-cmake-dbg.outputs.cache-hit != 'true'  ||
-          steps.cache-cmake-rel.outputs.cache-hit != 'true'  ||
-          steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
+        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           apt-get update
           apt-get install -y -q gcc g++
