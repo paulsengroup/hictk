@@ -129,10 +129,16 @@ To override the default compiler used by CMake, pass the following arguments to 
 
 We highly recommend using the same compiler when running Conan and CMake.
 
-.. raw:: html
+.. only:: not latex
 
-   <details>
-   <summary><a>Troubleshooting build errors</a></summary>
+  .. raw:: html
+
+     <details>
+     <summary><a>Troubleshooting build errors</a></summary>
+
+.. only:: latex
+
+  .. rubric:: Troubleshooting build errors
 
 * I get an error while building ``boost`` with Conan:
 
@@ -173,9 +179,11 @@ We highly recommend using the same compiler when running Conan and CMake.
     CC=gcc CXX=g++ conan profile detect --name gcc --exist-ok
     conan install -pr:b gcc -pr:h gcc --requires 'b2/5.2.1'
 
-.. raw:: html
+.. only:: not latex
 
-   </details>
+  .. raw:: html
+
+    </details>
 
 Running automated tests
 =======================
@@ -221,10 +229,16 @@ A successful run of the test suite will produce an output like the following:
 
 **All tests are expected to pass. Do not ignore test failures!**
 
-.. raw:: html
+.. only:: not latex
 
-   <details>
-   <summary><a>Troubleshooting test failures</a></summary>
+  .. raw:: html
+
+    <details>
+    <summary><a>Troubleshooting test failures</a></summary>
+
+.. only:: latex
+
+  .. rubric:: Troubleshooting test failures
 
 If one or more tests fail, try the following troubleshooting steps before reaching out for help.
 
@@ -265,9 +279,11 @@ Example:
 
 If after trying the above steps the tests are still failing, feel free to start `discussion <https://github.com/paulsengroup/hictk/discussions>`_ asking for help.
 
-.. raw:: html
+.. only:: not latex
 
-   </details>
+  .. raw:: html
+
+    </details>
 
 
 Integration tests
