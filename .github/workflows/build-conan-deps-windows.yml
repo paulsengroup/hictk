@@ -198,6 +198,14 @@ jobs:
         env:
           ZSTD_CLEVEL: 19
 
+      - name: Evict old CMake configs from cache
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-dbg-key }} || true
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-rel-key }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4
         if: |
