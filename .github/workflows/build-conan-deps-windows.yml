@@ -123,6 +123,13 @@ jobs:
 
           sed -i 's/compiler\.cppstd=.*/compiler.cppstd=${{ inputs.cppstd }}/' "$conan_profile"
 
+          # Newer versions of b2 lead to exceptions like
+          # ConanException: These libraries were built, but were not used in any boost module
+          cat << EOF | tee -a "$conan_profile"
+          [tool_requires]
+          boost/*: b2/5.2.1
+          EOF
+
       - name: Clean Conan cache (pre-build)
         if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
@@ -190,6 +197,14 @@ jobs:
           path: ${{ env.CONAN_HOME }}\p
         env:
           ZSTD_CLEVEL: 19
+
+      - name: Evict old CMake configs from cache
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-dbg-key }} || true
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-rel-key }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4

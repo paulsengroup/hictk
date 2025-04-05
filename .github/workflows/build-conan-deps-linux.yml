@@ -31,7 +31,7 @@ on:
         required: false
         description: "Value to pass to compiler.cppstd."
       image:
-        default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-19
+        default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-20
         type: string
         required: false
         description: "Docker image used to build Conan deps."
@@ -128,6 +128,34 @@ jobs:
           conan cache clean "*" --source
           conan remove --confirm "*"
 
+      - name: Install build dependencies
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          apt-get update
+          apt-get install -y -q gcc g++
+
+          CC=gcc CXX=g++ conan profile detect --name gcc
+
+          conan install \
+             --requires 'b2/5.2.1' \
+             --build='*'           \
+             -pr:b=gcc             \
+             -pr:h=gcc
+
+      - name: Tweak conan profile
+        if: |
+          steps.cache-conan.outputs.cache-hit != 'true'      ||
+          steps.cache-cmake-dbg.outputs.cache-hit != 'true'  ||
+          steps.cache-cmake-rel.outputs.cache-hit != 'true'  ||
+          steps.cache-cmake-rwdi.outputs.cache-hit != 'true'
+        run: |
+          # Newer versions of b2 lead to exceptions like
+          # ConanException: These libraries were built, but were not used in any boost module
+          cat << EOF | tee -a "$CONAN_DEFAULT_PROFILE_PATH"
+          [tool_requires]
+          boost/*: b2/5.2.1
+          EOF
+
       - name: Install dependencies (Debug)
         if: |
           steps.cache-conan.outputs.cache-hit != 'true' ||
@@ -200,6 +228,17 @@ jobs:
           path: ${{ env.CONAN_HOME }}/p
         env:
           ZSTD_CLEVEL: 19
+
+      - name: Evict old CMake configs from cache
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          apt-get update
+          apt-get install -q -y gh
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-dbg-key }}  || true
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-rel-key }}  || true
+          gh cache delete --repo '${{ github.repository }}' ${{ steps.generate-cache-key.outputs.cmake-rwdi-key }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save CMake configs (Debug)
         uses: actions/cache/save@v4
