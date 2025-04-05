@@ -13,10 +13,10 @@ find_package(zstd REQUIRED QUIET)
 set(HICTK_CXX_BYTE_ORDER "${CMAKE_CXX_BYTE_ORDER}" CACHE STRING "Specify the CPU architecture endianness")
 
 if(HICTK_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
-  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture")
   message(FATAL_ERROR "hictk::hic cannot be built on machines with big-endian architecture.")
 elseif(HICTK_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
-  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture.")
+  message(STATUS "Detected ${HICTK_CXX_BYTE_ORDER} architecture")
 else()
   message(
     FATAL_ERROR

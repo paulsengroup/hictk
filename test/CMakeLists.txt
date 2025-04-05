@@ -9,6 +9,5 @@ if(HICTK_ENABLE_FUZZY_TESTING)
 endif()
 
 if(HICTK_DOWNLOAD_TEST_DATASET)
-  message(STATUS "Downloading test dataset...")
-  include(${PROJECT_SOURCE_DIR}/cmake/FetchTestDataset.cmake)
+  include("${PROJECT_SOURCE_DIR}/cmake/FetchTestDataset.cmake")
 endif()

@@ -7,7 +7,7 @@ find_package(Boost REQUIRED QUIET)
 find_package(CLI11 REQUIRED QUIET)
 find_package(Filesystem REQUIRED QUIET)
 find_package(fmt REQUIRED QUIET)
-find_package(pybind11 REQUIRED QUIET)
+find_package(pybind11 REQUIRED)
 find_package(spdlog REQUIRED QUIET)
 find_package(Threads REQUIRED QUIET)
 

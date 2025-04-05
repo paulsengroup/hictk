@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+message(STATUS "Building benchmarks")
+
 add_subdirectory(bin_table_coords_to_id)
 add_subdirectory(bin_table_id_to_coords)
 add_subdirectory(cooler_creation)
