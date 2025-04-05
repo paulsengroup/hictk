@@ -29,7 +29,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@5291818b04bb84f4424a9ca33b0f4102b25f3f1e
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@ededff07255164aa8b21887fd638781a885f8462
 
   analyze:
     name: Analyze (C++)
