@@ -31,7 +31,7 @@ on:
         required: false
         description: "Value to pass to compiler.cppstd."
       image:
-        default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-19
+        default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-20
         type: string
         required: false
         description: "Docker image used to build Conan deps."
