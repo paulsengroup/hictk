@@ -255,6 +255,7 @@ linkcheck_ignore = [
     r".*hgdownload\.cse\.ucsc\.edu.*",
     r"https://hictk.*\.readthedocs\.build.*",
     r"https://hictk.*readthedocs.*/_/downloads/en/.*/pdf/",
+    "https://doi.org/10.1093/bioinformatics/btae408",
 ]
 
 primary_domain = "cpp"
