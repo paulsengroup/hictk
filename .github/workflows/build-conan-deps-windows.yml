@@ -44,6 +44,9 @@ jobs:
     name: Build dependencies with Conan (${{ inputs.os }})
     runs-on: ${{ inputs.os }}
 
+    permissions:
+      actions: write
+
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
       CONAN_HOME: "${{ github.workspace }}\\.conan2"
