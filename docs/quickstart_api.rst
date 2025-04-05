@@ -5,7 +5,12 @@
 Quickstart (API)
 ################
 
-The library component of hictk, libhictk, can be installed and configured in several ways.
+The C++ library component of hictk, libhictk, can be installed and configured in several ways.
+
+If you are looking for the documentation for the Python or R API, please refer to:
+
+* Python API: `hictkpy.readthedocs.io <https://hictkpy.readthedocs.io/en/stable/index.html>`_
+* R API: `paulsengroup.github.io/hictkR <https://paulsengroup.github.io/hictkR/reference/index.html>`_
 
 Installing libhictk
 ===================

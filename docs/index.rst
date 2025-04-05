@@ -82,7 +82,12 @@ discourse:
 
    installation
    installation_src
-   telemetry
+
+.. toctree::
+   :caption: FAQ
+   :maxdepth: 1
+
+   faq
 
 .. toctree::
    :caption: Introduction
@@ -113,5 +118,11 @@ discourse:
 
    cli_reference
    cpp_api/index
-   Python API <https://hictkpy.readthedocs.io/en/latest/index.html>
+   Python API <https://hictkpy.readthedocs.io/en/stable/index.html>
    R API <https://paulsengroup.github.io/hictkR/reference/index.html>
+
+.. toctree::
+   :caption: Telemetry
+   :maxdepth: 1
+
+   telemetry
