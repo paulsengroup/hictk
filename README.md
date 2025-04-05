@@ -23,7 +23,7 @@ hictk is a blazing fast toolkit to work with .hic and .cool files.
 
 This repository hosts `hictk`: a set of CLI tools to work with Cooler and .hic files, as well as `libhictk`: the C++ library underlying `hictk`.
 
-Python bindings for `libhictk` are available at [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy), while R bindings are published at [paulsengroup/hictkR](https://github.com/paulsengroup/hictkR).
+`hictk` can be access from Python and R through the [paulsengroup/hictkpy](https://github.com/paulsengroup/hictkpy) and [paulsengroup/hictkR](https://github.com/paulsengroup/hictkR) libraries, respectively.
 
 hictk is capable of reading files in `.cool`, `.mcool`, `.scool` and `.hic` format (including hic v9) as well as writing `.hic`, `.cool` and `.mcool` files.
 

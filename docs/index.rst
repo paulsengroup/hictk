@@ -113,5 +113,5 @@ discourse:
 
    cli_reference
    cpp_api/index
-   Python API <https://hictkpy.readthedocs.io/en/latest/index.html>
+   Python API <https://hictkpy.readthedocs.io/en/stable/index.html>
    R API <https://paulsengroup.github.io/hictkR/reference/index.html>
