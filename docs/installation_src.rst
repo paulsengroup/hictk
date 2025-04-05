@@ -56,7 +56,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
 
   # Detect compiler toolchain. It is usually a good idea to explicitly set CC and CXX
   # Use CC=gcc CXX=g++ if clang is not installed on your machine
-   conan profile detect --force
+  CC=clang CXX=clang++ conan profile detect --force
 
 Getting the source code
 -----------------------
@@ -100,6 +100,13 @@ Compiling hictk
                 -s compiler.cppstd=17 \
                 --output-folder=./build/ \
                 .
+
+  # If you are facing errors like
+  # ConanException: These libraries were built, but were not used in any boost module
+  # when building boost with Conan, locate the conan profile (e.g. by running conan profile path default)
+  # and add the following lines at the end of the profile:
+  # [tool_requires]
+  # boost/*: b2/5.2.1
 
   # Do not pass -G Ninja if you want CMake to use make instead of ninja
   # Use clang whenever possible, as that usually leads to significantly faster hictk binaries.
