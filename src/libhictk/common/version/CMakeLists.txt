@@ -31,6 +31,10 @@ target_sources(
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${HICTK_VERSION_INCLUDE_DIR}"
+    FILES
+      "${HICTK_VERSION_INCLUDE_DIR}/hictk/git.hpp"
+      "${HICTK_VERSION_INCLUDE_DIR}/hictk/license.hpp"
+      "${HICTK_VERSION_INCLUDE_DIR}/hictk/version.hpp"
 )
 
 target_include_directories(

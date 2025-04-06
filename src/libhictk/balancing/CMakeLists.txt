@@ -15,6 +15,19 @@ target_sources(
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/common.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/ice.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/methods.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/scale.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/sparse_matrix.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/vc.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/weights.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/ice_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/scale_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/sparse_matrix_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/vc_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/weights_impl.hpp"
 )
 
 target_include_directories(

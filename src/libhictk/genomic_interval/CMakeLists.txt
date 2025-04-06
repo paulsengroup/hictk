@@ -10,6 +10,9 @@ target_sources(
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/genomic_interval.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/genomic_interval_impl.hpp"
 )
 
 target_include_directories(

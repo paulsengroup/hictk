@@ -9,6 +9,15 @@ target_sources(
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin_table.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin_table_fixed.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin_table_variable.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/bin_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/bin_table_fixed_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/bin_table_impl.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/bin_table_variable_impl.hpp"
 )
 
 target_include_directories(
