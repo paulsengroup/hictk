@@ -9,8 +9,8 @@ set(
   binary_buffer
   chromosome
   common/common
-  common/default_libdeflate
-  common/default_zstd
+  common/default_delete_libdeflate
+  common/default_delete_zstd
   common/genomic_units
   common/hash
   common/static_binary_buffer

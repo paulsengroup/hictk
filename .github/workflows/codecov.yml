@@ -144,7 +144,6 @@ jobs:
                 -DHICTK_EXPORTER_OTLP_ENDPOINT=https://localhost:9 \
                 -DCMAKE_C_FLAGS="$cov_flags"                       \
                 -DCMAKE_CXX_FLAGS="$cov_flags"                     \
-                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"           \
                 -DCMAKE_LINKER_TYPE="$LINKER"                      \
                 -S .                                               \
                 -B build
@@ -178,7 +177,6 @@ jobs:
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF            \
                 -DCMAKE_C_FLAGS="$cov_flags"                       \
                 -DCMAKE_CXX_FLAGS="$cov_flags"                     \
-                -DCMAKE_STATIC_LINKER_FLAGS="$cov_flags"           \
                 -DCMAKE_LINKER_TYPE="$LINKER"                      \
                 -S .                                               \
                 -B build-no-telem
