@@ -8,11 +8,11 @@
 
 #ifdef HICTK_ENABLE_TELEMETRY
 
-#error "This file was generated from dummy_telemetry.hpp.in even though -DHICTK_ENABLE_TELEMETRY=ON\n"\
+#error \
+    "This file was generated from dummy_telemetry.hpp.in even though -DHICTK_ENABLE_TELEMETRY=ON\n"\
        "This should never happen!\n"\
        "Please delete this file and reconfigure the project.\n"
 #endif
-
 
 #include <spdlog/spdlog.h>
 
@@ -49,4 +49,4 @@ struct Tracer {
   [[nodiscard]] static bool should_collect_telemetry() noexcept { return false; }
 };
 
-}
+}  // namespace hictk::tools

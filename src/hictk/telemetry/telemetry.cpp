@@ -22,24 +22,17 @@
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
 #include <opentelemetry/trace/provider.h>
-#include <parallel_hashmap/btree.h>
 #include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <chrono>
-#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <memory>
-#include <optional>
-#include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <utility>
-#include <variant>
 
 #include "hictk/tools/cli.hpp"
-#include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
 

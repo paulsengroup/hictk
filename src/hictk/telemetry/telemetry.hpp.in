@@ -8,7 +8,8 @@
 
 #ifndef HICTK_ENABLE_TELEMETRY
 
-#error "This file was generated from telemetry.hpp.in even though -DHICTK_ENABLE_TELEMETRY=OFF\n"\
+#error \
+    "This file was generated from telemetry.hpp.in even though -DHICTK_ENABLE_TELEMETRY=OFF\n"\
        "This should never happen!\n"\
        "Please delete this file and reconfigure the project.\n"
 #endif
@@ -27,38 +28,15 @@
 #endif
 // clang-format on
 
-#include <cstdint>
-#include <optional>
-
-#include "hictk/tools/cli.hpp"
-
-#include <fmt/format.h>
-#include <opentelemetry/exporters/ostream/span_exporter_factory.h>
-#include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
-#include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
-#include <opentelemetry/sdk/common/global_log_handler.h>
-#include <opentelemetry/sdk/metrics/aggregation/default_aggregation.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h>
-#include <opentelemetry/sdk/metrics/meter_provider.h>
-#include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
-#include <opentelemetry/sdk/trace/batch_span_processor_options.h>
-#include <opentelemetry/sdk/trace/simple_processor_factory.h>
-#include <opentelemetry/sdk/trace/tracer_provider.h>
-#include <opentelemetry/sdk/trace/tracer_provider_factory.h>
 #include <opentelemetry/trace/provider.h>
-#include <parallel_hashmap/btree.h>
+#include <opentelemetry/trace/tracer.h>
 
-#include <cassert>
-#include <chrono>
-#include <cstdlib>
-#include <exception>
 #include <memory>
-#include <stdexcept>
+#include <optional>
 #include <string>
 #include <type_traits>
-#include <utility>
-#include <variant>
 
+#include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
@@ -142,6 +120,6 @@ class Tracer {
   static void init_opentelemetry_logger() noexcept;
 };
 
-}
+}  // namespace hictk::tools
 
 #include "./impl/telemetry_impl.hpp"
