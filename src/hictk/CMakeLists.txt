@@ -66,12 +66,12 @@ target_link_libraries(
 target_link_system_libraries(
   hictk
   PRIVATE
-  CLI11::CLI11
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  std::filesystem
+    CLI11::CLI11
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    std::filesystem
   PUBLIC
-  Threads::Threads
+    Threads::Threads
 )
 
 include(GNUInstallDirs)

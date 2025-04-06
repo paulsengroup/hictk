@@ -51,11 +51,11 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_cli
   PRIVATE
-  std::filesystem
-  phmap
-PUBLIC
-  CLI11::CLI11
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  Threads::Threads
+    std::filesystem
+    phmap
+  PUBLIC
+    CLI11::CLI11
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    Threads::Threads
 )

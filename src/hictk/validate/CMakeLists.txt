@@ -39,7 +39,7 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_validate
   PRIVATE
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  std::filesystem
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    std::filesystem
 )

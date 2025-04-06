@@ -31,9 +31,9 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_file_attributes_formatting
   PRIVATE
-  fmt::fmt-header-only
+    fmt::fmt-header-only
     std::filesystem
   PUBLIC
-  nlohmann_json::nlohmann_json
-  tomlplusplus::tomlplusplus
+    nlohmann_json::nlohmann_json
+    tomlplusplus::tomlplusplus
 )

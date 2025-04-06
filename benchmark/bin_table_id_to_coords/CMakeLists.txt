@@ -19,6 +19,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_bin_table_id_to_coords_bench
   PUBLIC
-  CLI11::CLI11
-  std::filesystem
+    CLI11::CLI11
+    std::filesystem
 )

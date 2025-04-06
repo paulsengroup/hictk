@@ -31,9 +31,9 @@ target_link_libraries(
 target_link_system_libraries(
   bin_table_tests
   PUBLIC
-  Catch2::Catch2WithMain
-  fmt::fmt-header-only
-  std::filesystem
+    Catch2::Catch2WithMain
+    fmt::fmt-header-only
+    std::filesystem
 )
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")

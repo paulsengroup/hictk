@@ -101,11 +101,11 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_hic
   INTERFACE
-  bshoshany-thread-pool::bshoshany-thread-pool
-  concurrentqueue::concurrentqueue
-  fmt::fmt-header-only
-  "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-  phmap
-  readerwriterqueue::readerwriterqueue
-  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+    bshoshany-thread-pool::bshoshany-thread-pool
+    concurrentqueue::concurrentqueue
+    fmt::fmt-header-only
+    "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+    phmap
+    readerwriterqueue::readerwriterqueue
+    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )

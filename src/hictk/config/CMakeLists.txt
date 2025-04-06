@@ -18,5 +18,7 @@ target_link_libraries(
 )
 
 target_link_system_libraries(
-        hictk_internal_tools_config INTERFACE std::filesystem
+  hictk_internal_tools_config
+  INTERFACE
+    std::filesystem
 )

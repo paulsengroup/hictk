@@ -37,6 +37,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_expected_values_aggregator
   INTERFACE
-  phmap
-  spdlog::spdlog_header_only
+    phmap
+    spdlog::spdlog_header_only
 )

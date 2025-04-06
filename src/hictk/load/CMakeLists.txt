@@ -55,12 +55,12 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_load
   PRIVATE
-  bshoshany-thread-pool::bshoshany-thread-pool
-  fmt::fmt-header-only
-  readerwriterqueue::readerwriterqueue
-  spdlog::spdlog_header_only
-  std::filesystem
-  phmap
+    bshoshany-thread-pool::bshoshany-thread-pool
+    fmt::fmt-header-only
+    readerwriterqueue::readerwriterqueue
+    spdlog::spdlog_header_only
+    std::filesystem
+    phmap
   PUBLIC
-  Threads::Threads
+    Threads::Threads
 )

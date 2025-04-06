@@ -30,8 +30,8 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_fix_mcool
   PRIVATE
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  std::filesystem
-  HighFive
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    std::filesystem
+    HighFive
 )

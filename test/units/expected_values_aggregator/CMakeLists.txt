@@ -30,8 +30,8 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_expected_values_aggregator_tests
   PUBLIC
-  Catch2::Catch2WithMain
-  std::filesystem
+    Catch2::Catch2WithMain
+    std::filesystem
 )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Testing/)

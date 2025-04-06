@@ -41,8 +41,8 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_metadata
   PRIVATE
-  fmt::fmt-header-only
-  nlohmann_json::nlohmann_json
-  std::filesystem
-  phmap
+    fmt::fmt-header-only
+    nlohmann_json::nlohmann_json
+    std::filesystem
+    phmap
 )

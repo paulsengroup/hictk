@@ -19,6 +19,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_cooler_creation_bench
   PUBLIC
-  CLI11::CLI11
-  std::filesystem
+    CLI11::CLI11
+    std::filesystem
 )

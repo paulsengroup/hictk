@@ -43,10 +43,10 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_convert
   PRIVATE
-  fmt::fmt-header-only
-  readerwriterqueue::readerwriterqueue
-  spdlog::spdlog_header_only
-  std::filesystem
+    fmt::fmt-header-only
+    readerwriterqueue::readerwriterqueue
+    spdlog::spdlog_header_only
+    std::filesystem
   PUBLIC
-  Threads::Threads
+    Threads::Threads
 )

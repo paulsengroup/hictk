@@ -41,7 +41,7 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_dump
   PRIVATE
-  fmt::fmt-header-only
-  std::filesystem
-  phmap
+    fmt::fmt-header-only
+    std::filesystem
+    phmap
 )

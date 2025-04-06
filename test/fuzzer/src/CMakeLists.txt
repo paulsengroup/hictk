@@ -49,12 +49,12 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_fuzzer
   PRIVATE
-  Boost::headers
-  CLI11::CLI11
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  std::filesystem
+    Boost::headers
+    CLI11::CLI11
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    std::filesystem
   PRIVATE
-  pybind11::embed
-  Threads::Threads
+    pybind11::embed
+    Threads::Threads
 )

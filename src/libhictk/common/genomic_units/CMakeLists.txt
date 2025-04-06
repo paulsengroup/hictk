@@ -33,5 +33,5 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_common_genomic_units
   INTERFACE
-        fmt::fmt-header-only
+    fmt::fmt-header-only
 )

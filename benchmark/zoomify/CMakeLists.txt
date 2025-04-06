@@ -20,6 +20,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_zoomify_bench
   PUBLIC
-  CLI11::CLI11
-  std::filesystem
+    CLI11::CLI11
+    std::filesystem
 )

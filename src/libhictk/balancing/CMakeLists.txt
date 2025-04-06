@@ -48,10 +48,10 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_balancing
   INTERFACE
-  bshoshany-thread-pool::bshoshany-thread-pool
-  nonstd::span-lite
-  phmap
-  "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
+    bshoshany-thread-pool::bshoshany-thread-pool
+    nonstd::span-lite
+    phmap
+    "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )
 
 target_compile_definitions(hictk_internal_balancing INTERFACE span_FEATURE_MAKE_SPAN=1)

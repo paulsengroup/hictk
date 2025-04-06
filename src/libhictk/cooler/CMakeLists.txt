@@ -84,10 +84,10 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_cooler
   INTERFACE
-  FastFloat::fast_float
-  fmt::fmt-header-only
-  HDF5::HDF5
-  HighFive
-  phmap
-  spdlog::spdlog_header_only
+    FastFloat::fast_float
+    fmt::fmt-header-only
+    HDF5::HDF5
+    HighFive
+    phmap
+    spdlog::spdlog_header_only
 )

@@ -67,10 +67,10 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_telemetry
   PRIVATE
-  "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:fmt::fmt-header-only>"
-  "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:phmap>"
+    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:fmt::fmt-header-only>"
+    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:phmap>"
   PUBLIC
-  spdlog::spdlog_header_only
+    spdlog::spdlog_header_only
 )
 
 if(TARGET opentelemetry-cpp::opentelemetry-cpp)
