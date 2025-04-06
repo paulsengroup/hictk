@@ -1,0 +1,161 @@
+// Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+#ifdef HICTK_ENABLE_TELEMETRY
+
+#include <utility>
+#include "hictk/tools/cli.hpp"
+#include <optional>
+#include <fmt/format.h>
+#include <type_traits>
+#include "hictk/tools/config.hpp"
+
+#include <opentelemetry/sdk/trace/tracer.h>
+
+namespace hictk::tools {
+
+template <typename SpanPtr, typename ScopePtr>
+  inline ScopedSpan<SpanPtr, ScopePtr>::ScopedSpan(SpanPtr span_, ScopePtr scope_) noexcept
+      : span(std::move(span_)), scope(std::move(scope_)) {}
+
+template <typename SpanPtr, typename ScopePtr>
+  template <typename Config>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_attributes(const Config& c) noexcept {
+    try {
+      if (span) {
+        span->SetAttribute("schema", 1);  // version of the trace schema
+        update_tracer_attributes(span, c);
+      }
+    } catch (...) {  // NOLINT
+    }
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+inline void ScopedSpan<SpanPtr, ScopePtr>::set_status(opentelemetry::trace::StatusCode s) noexcept {
+  try {
+    if (span) {
+      span->SetStatus(s);
+    }
+
+  } catch (...) {  // NOLINT
+  }
+}
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes([[maybe_unused]] SpanPtr& span,
+                                       [[maybe_unused]] const std::monostate& c) {}
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const BalanceICEConfig& c) {
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const BalanceSCALEConfig& c) {
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const BalanceVCConfig& c) {
+    span->SetAttribute("meta.input-format", infer_input_format(c.path_to_input));
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const ConvertConfig& c) {
+    span->SetAttribute("meta.input-format", c.input_format);
+    span->SetAttribute("meta.output-format", c.output_format);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const DumpConfig& c) {
+    auto input_format = infer_input_format(c.uri);
+    if (input_format == "mcool" && c.resolution.has_value()) {
+      input_format = "cool";
+    }
+    span->SetAttribute("meta.input-format", input_format);
+    span->SetAttribute("param.table", c.table);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const LoadConfig& c) {
+    span->SetAttribute("meta.output-format", c.output_format);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const MergeConfig& c) {
+    phmap::btree_set<std::string> input_formats{};
+    for (const auto& f : c.input_files) {
+      input_formats.emplace(infer_input_format(f));
+    }
+    span->SetAttribute("meta.input-formats",
+                       fmt::format(FMT_STRING("{}"), fmt::join(input_formats, ",")));
+    span->SetAttribute("meta.output-format", c.output_format);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const MetadataConfig& c) {
+    span->SetAttribute("meta.input-format", c.input_format);
+    span->SetAttribute("meta.output-format", c.output_format);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes([[maybe_unused]] SpanPtr& span,
+                                       [[maybe_unused]] const FixMcoolConfig& c) noexcept {}
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const RenameChromosomesConfig& c) {
+    span->SetAttribute("meta.input-format", infer_input_format(c.uri));
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const ValidateConfig& c) {
+    try {
+      span->SetAttribute("meta.input-format", infer_input_format(c.uri));
+    } catch (...) {
+      span->SetAttribute("meta.input-format", "unknown");
+    }
+    span->SetAttribute("meta.output-format", c.output_format);
+  }
+
+template <typename SpanPtr, typename ScopePtr>
+  inline void ScopedSpan<SpanPtr, ScopePtr>::update_tracer_attributes(SpanPtr& span, const ZoomifyConfig& c) {
+    auto input_format = infer_input_format(c.path_to_input);
+    if (input_format == "mcool" && c.resolutions.size() == 1) {
+      input_format = "cool";
+    }
+    span->SetAttribute("meta.input-format", input_format);
+  }
+
+  template <typename Config>  // NOLINTNEXTLINE(bugprone-exception-escape)
+  inline auto Tracer::get_scoped_span(Cli::subcommand subcmd, const Config& config,
+                                     StatusCode default_status_code) noexcept
+      -> std::optional<ScopedSpan<SpanT, ScopeT>> {
+    if (!_tracer) {
+      return {};
+    }
+
+    // NOLINTEXTLINE(*-const-correctness)
+    auto subcmd_str = fmt::format(FMT_STRING("subcommand.{}"), Cli::subcommand_to_str(subcmd));
+
+    if constexpr (std::is_same_v<BalanceICEConfig, Config>) {
+      subcmd_str += "-ice";
+    } else if constexpr (std::is_same_v<BalanceSCALEConfig, Config>) {
+      subcmd_str += "-scale";
+    } else if constexpr (std::is_same_v<BalanceVCConfig, Config>) {
+      subcmd_str += "-vc";
+    }
+
+    auto span = _tracer->StartSpan(subcmd_str);
+    auto scope = opentelemetry::trace::Tracer::WithActiveSpan(span);
+
+    ScopedSpan ss{std::move(span), std::move(scope)};
+    ss.update_attributes(config);
+    ss.set_status(default_status_code);
+
+    return ss;
+}
+}
+
+#endif

@@ -23,8 +23,10 @@ if(NOT CMAKE_FIND_PACKAGE_PREFER_CONFIG)
   set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 endif()
 
-include(cmake/Licensing.cmake)
-include(cmake/Versioning.cmake)
+set(HICTK_PROJECT_VERSION_MAJOR 2)
+set(HICTK_PROJECT_VERSION_MINOR 0)
+set(HICTK_PROJECT_VERSION_PATCH 2)
+set(HICTK_PROJECT_VERSION_SUFFIX "")
 
 project(
   hictk
@@ -155,6 +157,7 @@ include(CMakeDependentOption)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(HICTK_ENABLE_TESTING "Build unit tests" ON)
 option(HICTK_ENABLE_FUZZY_TESTING "Build fuzzy tests" OFF)
+option(HICTK_ENABLE_GIT_VERSION_TRACKING "Retrieve project version and metadata from git" ON)
 option(HICTK_BUILD_EXAMPLES "Build examples" OFF)
 option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(HICTK_WITH_ARROW "Build with arrow support" ON)

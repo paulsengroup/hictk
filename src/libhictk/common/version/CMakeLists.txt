@@ -2,6 +2,24 @@
 #
 # SPDX-License-Identifier: MIT
 
+include("${PROJECT_SOURCE_DIR}/cmake/Licensing.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/Versioning.cmake")
+
+set(HICTK_VERSION_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
+
+# gersemi: off
+ConfigureLicensing(
+  "${PROJECT_SOURCE_DIR}/LICENSE"
+  "${CMAKE_CURRENT_SOURCE_DIR}/license.hpp.in"
+  "${HICTK_VERSION_INCLUDE_DIR}/hictk/license.hpp"
+)
+
+ConfigureVersioning(
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${HICTK_VERSION_INCLUDE_DIR}/hictk"
+)
+# gersemi: on
+
 find_package(fmt REQUIRED QUIET)
 
 add_library(hictk_internal_common_version INTERFACE)
@@ -12,13 +30,13 @@ target_sources(
   hictk_internal_common_version
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    BASE_DIRS "${HICTK_VERSION_INCLUDE_DIR}"
 )
 
 target_include_directories(
   hictk_internal_common_version
   INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${HICTK_VERSION_INCLUDE_DIR}>"
     "$<INSTALL_INTERFACE:include>"
 )
 

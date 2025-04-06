@@ -18,7 +18,6 @@ set(
   common/tmpdir
   common/type_pretty_printer
   common/type_traits
-  common/version
   cooler
   expected_values_aggregator
   file

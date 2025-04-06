@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: MIT
 
-set(HICTK_LICENSE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-set(PRE_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/config/license.hpp.in")
-set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/libhictk/common/version/include/hictk/license.hpp")
-file(READ "${HICTK_LICENSE_FILE}" HICTK_LICENSE)
+function(ConfigureLicensing license_file input_config_file output_config_file)
+  set(PRE_CONFIGURE_FILE "${input_config_file}")
+  set(POST_CONFIGURE_FILE "${output_config_file}")
 
-if(NOT WIN32)
-  file(LOCK "${POST_CONFIGURE_FILE}" GUARD FILE)
-endif()
+  file(READ "${license_file}" HICTK_LICENSE)
 
-configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
+  if(NOT WIN32)
+    file(LOCK "${POST_CONFIGURE_FILE}" GUARD FUNCTION)
+  endif()
+
+  configure_file("${PRE_CONFIGURE_FILE}" "${POST_CONFIGURE_FILE}" @ONLY)
+endfunction()
