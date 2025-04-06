@@ -83,7 +83,7 @@ else()
   target_link_system_libraries(
     hictk_internal_tools_telemetry
     PUBLIC
-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::http_client>"
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::otlp_http_exporter>"
       "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::ostream_span_exporter>"
       "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::sdk>"
       "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::trace>"
