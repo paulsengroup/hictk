@@ -1,0 +1,57 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Lint CMakeLists.txt files
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/lint-cmakelists.yml"
+      - "src/libhictk/**/.hpp"
+      - "**/CMakeLists.txt"
+
+  pull_request:
+    paths:
+      - ".github/workflows/lint-cmakelists.yml"
+      - "src/libhictk/**/.hpp"
+      - "**/CMakeLists.txt"
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  lint-cff:
+    runs-on: ubuntu-latest
+    name: Lint CMakeLists.txt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate requirements.txt
+        run: echo "gersemi==0.19.2" > requirements.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint CMakeLists.txt
+        run: |
+          if ! utils/devel/update_cmakelists_target_source.py > /dev/null; then
+            2>&1 echo 'It looks like you forgot to run at least one of the following commands:'
+            2>&1 echo '- utils/devel/update_cmakelists_target_source.py --inplace'
+            2>&1 echo '- test/scripts/generate_test_packaging_main.py | tee test/packaging/test_find_package/main.cpp'
+            exit 1
