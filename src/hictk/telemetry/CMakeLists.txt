@@ -68,8 +68,24 @@ target_link_system_libraries(
   hictk_internal_tools_telemetry
   PRIVATE
   "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:fmt::fmt-header-only>"
-  phmap
+  "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:phmap>"
   PUBLIC
   spdlog::spdlog_header_only
-  "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>"
 )
+
+if(TARGET opentelemetry-cpp::opentelemetry-cpp)
+  target_link_libraries(
+    hictk_internal_tools_telemetry
+    PUBLIC
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>"
+  )
+else()
+  target_link_system_libraries(
+    hictk_internal_tools_telemetry
+    PUBLIC
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::http_client>"
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::ostream_span_exporter>"
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::sdk>"
+      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::trace>"
+  )
+endif()

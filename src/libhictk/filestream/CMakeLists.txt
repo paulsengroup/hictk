@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(phmap REQUIRED QUIET)
 find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_filestream INTERFACE)
