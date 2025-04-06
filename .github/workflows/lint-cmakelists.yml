@@ -55,3 +55,4 @@ jobs:
             2>&1 echo '- utils/devel/update_cmakelists_target_source.py --inplace'
             2>&1 echo '- test/scripts/generate_test_packaging_main.py | tee test/packaging/test_find_package/main.cpp'
             exit 1
+          fi
