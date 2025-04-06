@@ -30,6 +30,17 @@ target_link_libraries(
     hictk::bin_table
     hictk::binary_buffer
     hictk::chromosome
+    hictk::common
+    hictk::default_delete_libdeflate
+    hictk::default_delete_zstd
+    hictk::genomic_units
+    hictk::hash
+    hictk::static_binary_buffer
+    hictk::string
+    hictk::tmpdir
+    hictk::type_pretty_printer
+    hictk::type_traits
+    hictk::version
     hictk::cooler
     hictk::expected_values_aggregator
     hictk::file
