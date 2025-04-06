@@ -6,14 +6,6 @@
 
 // This file was generated automatically by CMake.
 
-#ifndef HICTK_ENABLE_TELEMETRY
-
-#error \
-    "This file was generated from telemetry.hpp.in even though -DHICTK_ENABLE_TELEMETRY=OFF\n"\
-       "This should never happen!\n"\
-       "Please delete this file and reconfigure the project.\n"
-#endif
-
 // clang-format off
 #include <spdlog/spdlog.h>
 
