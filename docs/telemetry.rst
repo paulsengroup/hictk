@@ -72,6 +72,6 @@ We provide two mechanisms to disable telemetry.
 Where can I find the code used for telemetry collection?
 --------------------------------------------------------
 
-All code concerning telemetry collection is defined in the header file `hictk/tools/telemetry.hpp <https://github.com/paulsengroup/hictk/blob/main/src/hictk/include/hictk/tools/telemetry.hpp>`_.
+All code concerning telemetry collection is defined in the library under `src/hictk/telemetry <https://github.com/paulsengroup/hictk/tree/main/src/hictk/telemetry>`_.
 
-The link flags and pre-processor macros toggling telemetry support at compile time are defined in `src/hictk/CMakeLists.txt <https://github.com/paulsengroup/hictk/blob/main/src/hictk/CMakeLists.txt>`_.
+The link flags and pre-processor macros toggling telemetry support at compile time are defined in files `src/hictk/CMakeLists.txt <https://github.com/paulsengroup/hictk/blob/main/src/hictk/CMakeLists.txt>`_ and `src/hictk/telemetry/CMakeLists.txt <https://github.com/paulsengroup/hictk/blob/main/src/hictk/telemetry/CMakeLists.txt>`_.
