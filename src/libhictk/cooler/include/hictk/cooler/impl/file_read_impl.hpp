@@ -39,7 +39,7 @@
 #include "hictk/genomic_interval.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
-#include "hictk/string_utils.hpp"
+#include "hictk/string.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
 

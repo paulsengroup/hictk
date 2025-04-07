@@ -2,37 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-set(
-  targets
-  balancing
-  bin_table
-  binary_buffer
-  chromosome
-  common
-  cooler
-  expected_values_aggregator
-  file
-  filestream
-  formatting
-  genomic_interval
-  hic
-  numeric
-  pixel
-  reference
-  transformers
-  variant
-)
-
 include(GNUInstallDirs)
-foreach(tgt ${targets})
-  install(
-    DIRECTORY
-      "${PROJECT_SOURCE_DIR}/src/libhictk/${tgt}/include/hictk"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    COMPONENT Libraries
-  )
-endforeach()
-
 install(
   TARGETS
     libhictk
@@ -61,6 +31,16 @@ install(
     hictk_internal_binary_buffer
     hictk_internal_chromosome
     hictk_internal_common
+    hictk_internal_common_default_delete_libdeflate
+    hictk_internal_common_default_delete_zstd
+    hictk_internal_common_genomic_units
+    hictk_internal_common_hash
+    hictk_internal_common_static_binary_buffer
+    hictk_internal_common_string
+    hictk_internal_common_tmpdir
+    hictk_internal_common_type_pretty_printer
+    hictk_internal_common_type_traits
+    hictk_internal_common_version
     hictk_internal_cooler
     hictk_internal_expected_values_aggregator
     hictk_internal_file

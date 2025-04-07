@@ -1,0 +1,117 @@
+// Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+// This file was generated automatically by CMake.
+
+// clang-format off
+#include <spdlog/spdlog.h>
+
+#ifdef OTEL_INTERNAL_LOG_LEVEL
+#undef OTEL_INTERNAL_LOG_LEVEL
+#endif
+
+#if SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_INFO
+#define OTEL_INTERNAL_LOG_LEVEL OTEL_INTERNAL_LOG_DEBUG
+#else
+#define OTEL_INTERNAL_LOG_LEVEL OTEL_INTERNAL_LOG_NONE
+#endif
+// clang-format on
+
+#include <opentelemetry/trace/provider.h>
+#include <opentelemetry/trace/tracer.h>
+
+#include <memory>
+#include <optional>
+#include <string>
+#include <type_traits>
+
+#include "hictk/tools/cli.hpp"
+#include "hictk/tools/config.hpp"
+
+namespace hictk::tools {
+
+template <typename SpanPtr, typename ScopePtr>
+struct ScopedSpan {
+  SpanPtr span;
+  ScopePtr scope;
+
+  ScopedSpan(SpanPtr span_, ScopePtr scope_) noexcept;
+
+  template <typename Config>
+  void update_attributes(const Config& c) noexcept;
+
+  void set_status(opentelemetry::trace::StatusCode s) noexcept;
+
+ private:
+  static void update_tracer_attributes([[maybe_unused]] SpanPtr& span,
+                                       [[maybe_unused]] const std::monostate& c);
+  static void update_tracer_attributes(SpanPtr& span, const BalanceICEConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const BalanceSCALEConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const BalanceVCConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const ConvertConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const DumpConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const LoadConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const MergeConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const MetadataConfig& c);
+  static void update_tracer_attributes([[maybe_unused]] SpanPtr& span,
+                                       [[maybe_unused]] const FixMcoolConfig& c) noexcept;
+  static void update_tracer_attributes(SpanPtr& span, const RenameChromosomesConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const ValidateConfig& c);
+  static void update_tracer_attributes(SpanPtr& span, const ZoomifyConfig& c);
+};
+
+class Tracer {
+  using ProviderPtr = decltype(opentelemetry::trace::Provider::GetTracerProvider());
+  using TracerPtr = decltype(std::declval<ProviderPtr>()->GetTracer(""));
+
+  using SpanT = remove_cvref_t<decltype(std::declval<TracerPtr>()->StartSpan(""))>;
+  using ScopeT = remove_cvref_t<decltype(opentelemetry::trace::Tracer::WithActiveSpan(
+      std::declval<std::add_lvalue_reference_t<SpanT>>()))>;
+
+  ProviderPtr _provider{};
+  TracerPtr _tracer{};
+  inline static std::unique_ptr<Tracer> _instance{};
+
+  Tracer() noexcept;
+
+ public:
+  using StatusCode = opentelemetry::trace::StatusCode;
+
+  Tracer(const Tracer&) = delete;
+  Tracer(Tracer&&) noexcept = delete;
+  ~Tracer() noexcept;
+
+  Tracer& operator=(const Tracer&) = delete;
+  Tracer& operator=(Tracer&&) noexcept = delete;
+
+  [[nodiscard]] static Tracer* instance() noexcept;
+  static void tear_down_instance() noexcept;
+
+  template <typename Config>  // NOLINTNEXTLINE(bugprone-exception-escape)
+  [[nodiscard]] auto get_scoped_span(Cli::subcommand subcmd, const Config& config,
+                                     StatusCode default_status_code = StatusCode::kError) noexcept
+      -> std::optional<ScopedSpan<SpanT, ScopeT>>;
+
+  [[nodiscard]] static bool should_collect_telemetry() noexcept;
+
+ private:
+  [[nodiscard]] static const std::string& get_os_name() noexcept;
+  [[nodiscard]] static const std::string& get_arch() noexcept;
+  [[nodiscard]] static const std::string& get_compiler_id() noexcept;
+  [[nodiscard]] static const std::string& get_compiler_version() noexcept;
+  [[nodiscard]] static const std::string& get_build_type() noexcept;
+
+  [[nodiscard]] static bool init_local_telemetry_tracer() noexcept;
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  [[nodiscard]] static std::string get_exporter_otlp_endpoint() noexcept;
+  [[nodiscard]] static auto generate_http_exporter_opts() noexcept;
+  [[nodiscard]] static bool init_remote_telemetry_tracer() noexcept;
+  static void init_opentelemetry_logger() noexcept;
+};
+
+}  // namespace hictk::tools
+
+#include "./impl/telemetry_impl.hpp"

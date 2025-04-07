@@ -12,6 +12,7 @@
 #include <filesystem>
 
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/merge.hpp"
 
 namespace hictk::tools {
 

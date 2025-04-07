@@ -15,6 +15,12 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
 
+  pull_request:
+    paths:
+      - ".github/workflows/build-conan-deps-linux.yml"
+      - ".github/workflows/packaging.yml"
+      - "test/packaging/**"
+
 # https://stackoverflow.com/a/72408109
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

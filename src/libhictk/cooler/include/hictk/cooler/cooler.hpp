@@ -37,6 +37,7 @@ HICTK_DISABLE_WARNING_POP
 #include "hictk/numeric_variant.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/type_traits.hpp"
+#include "hictk/version.hpp"
 
 namespace hictk::cooler {
 

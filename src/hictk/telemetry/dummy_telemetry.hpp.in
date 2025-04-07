@@ -1,0 +1,44 @@
+// Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
+// This file was generated automatically by CMake.
+
+#include <spdlog/spdlog.h>
+
+#include <cstdint>
+#include <optional>
+
+#include "hictk/tools/cli.hpp"
+
+namespace hictk::tools {
+
+struct ScopedSpan {
+  template <typename T>
+  void update_attributes([[maybe_unused]] const T& c) const noexcept {}
+  template <typename T>
+  void set_status([[maybe_unused]] T s) const noexcept {}
+};
+
+struct Tracer {
+  enum class StatusCode : std::uint_fast8_t { kUnset, kOk, kError };
+
+  Tracer() noexcept {
+    SPDLOG_DEBUG(
+        "hictk was compiled with HICTK_ENABLE_TELEMETRY=OFF: no telemetry information will be "
+        "collected.");
+  }
+  [[nodiscard]] static Tracer* instance() noexcept { return nullptr; }
+  template <typename Config>
+  [[nodiscard]] std::optional<ScopedSpan> get_scoped_span(
+      [[maybe_unused]] Cli::subcommand subcmd, [[maybe_unused]] const Config& config,
+      [[maybe_unused]] StatusCode s = StatusCode::kError) const noexcept {
+    return {};
+  }
+  static void tear_down_instance() noexcept {}
+  [[nodiscard]] static bool should_collect_telemetry() noexcept { return false; }
+};
+
+}  // namespace hictk::tools

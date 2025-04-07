@@ -20,7 +20,7 @@
 #include "hictk/hic/file_zoomify.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/tools/tools.hpp"
+#include "hictk/tools/zoomify.hpp"
 
 namespace hictk::tools {
 
