@@ -56,7 +56,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
 
   # Detect compiler toolchain. It is usually a good idea to explicitly set CC and CXX
   # Use CC=gcc CXX=g++ if clang is not installed on your machine
-   conan profile detect --force
+  CC=clang CXX=clang++ conan profile detect --force
 
 Getting the source code
 -----------------------
@@ -101,6 +101,7 @@ Compiling hictk
                 --output-folder=./build/ \
                 .
 
+
   # Do not pass -G Ninja if you want CMake to use make instead of ninja
   # Use clang whenever possible, as that usually leads to significantly faster hictk binaries.
   # If clang is not installed on your machine, then replace clang and clang++ with e.g. gcc and g++
@@ -127,6 +128,62 @@ Compiling hictk
 To override the default compiler used by CMake, pass the following arguments to the first CMake command: :code:`-DCMAKE_C_COMPILER=path/to/cc -DCMAKE_CXX_COMPILER=path/to/c++`
 
 We highly recommend using the same compiler when running Conan and CMake.
+
+.. only:: not latex
+
+  .. raw:: html
+
+     <details>
+     <summary><a>Troubleshooting build errors</a></summary>
+
+.. only:: latex
+
+  .. rubric:: Troubleshooting build errors
+
+* I get an error while building ``boost`` with Conan:
+
+  If you are getting an error like::
+
+    ConanException: These libraries were built, but were not used in any boost module
+
+  This is likely due to Conan deciding to use a buggy version of ``b2`` (e.g. v5.3.0) to build ``boost``.
+
+  You can work around this by overriding the version of ``b2`` in your Conan profile.
+
+  To do this:
+
+  1. Locate the Conan profile with e.g. ``conan profile path default``
+  2. Add the following lines at the end of the profile::
+
+      [tool_requires]
+      boost/*: b2/5.2.1
+
+* When building dependencies with Conan I am getting errors like::
+
+    b2: relocation error: b2: symbol _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm, version GLIBCXX_3.4.21 not defined in file libstdc++.so.6 with link time reference
+
+  This is due to ABI incompatibilities between your build environment and the environment used by the `Conan Center Index <https://conan.io/center>`_ to build e.g. ``b2``.
+
+  You can work around this bug by forcing Conan to build ``b2`` (and any other package causing similar errors) from source:
+
+  .. code-block:: shell
+
+    conan install -pr:b default -pr:h default --requires 'b2/5.2.1'
+
+  For the ``b2`` package specifically, compiling the package with ``clang`` on Linux is very brittle and often fails.
+
+  If you run into problems, try compiling ``b2`` using gcc instead:
+
+  .. code-block:: shell
+
+    CC=gcc CXX=g++ conan profile detect --name gcc --exist-ok
+    conan install -pr:b gcc -pr:h gcc --requires 'b2/5.2.1'
+
+.. only:: not latex
+
+  .. raw:: html
+
+    </details>
 
 Running automated tests
 =======================
@@ -172,10 +229,16 @@ A successful run of the test suite will produce an output like the following:
 
 **All tests are expected to pass. Do not ignore test failures!**
 
-.. raw:: html
+.. only:: not latex
 
-   <details>
-   <summary><a>Troubleshooting test failures</a></summary>
+  .. raw:: html
+
+    <details>
+    <summary><a>Troubleshooting test failures</a></summary>
+
+.. only:: latex
+
+  .. rubric:: Troubleshooting test failures
 
 If one or more tests fail, try the following troubleshooting steps before reaching out for help.
 
@@ -216,9 +279,11 @@ Example:
 
 If after trying the above steps the tests are still failing, feel free to start `discussion <https://github.com/paulsengroup/hictk/discussions>`_ asking for help.
 
-.. raw:: html
+.. only:: not latex
 
-   </details>
+  .. raw:: html
+
+    </details>
 
 
 Integration tests
