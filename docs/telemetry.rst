@@ -5,7 +5,7 @@
 Telemetry
 #########
 
-Starting with version vx.x.x of hictk we introduced support for telemetry collection.
+Starting with version v2.1.0 of hictk we introduced support for telemetry collection.
 
 This only applies when hictk is invoked from the CLI (i.e. not to libhictk).
 
