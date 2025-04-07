@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: MIT
 
 set(PYBIND11_FINDPYTHON ON)
-find_package(Boost REQUIRED)
-find_package(CLI11 REQUIRED)
-find_package(Filesystem REQUIRED)
-find_package(FMT REQUIRED)
+find_package(Boost REQUIRED QUIET)
+find_package(CLI11 REQUIRED QUIET)
+find_package(Filesystem REQUIRED QUIET)
+find_package(fmt REQUIRED QUIET)
 find_package(pybind11 REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(Threads REQUIRED)
+find_package(spdlog REQUIRED QUIET)
+find_package(Threads REQUIRED QUIET)
 
 add_executable(hictk_fuzzer)
 
@@ -49,12 +49,12 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_fuzzer
   PRIVATE
-  Boost::headers
-  CLI11::CLI11
-  fmt::fmt-header-only
-  spdlog::spdlog_header_only
-  std::filesystem
+    Boost::headers
+    CLI11::CLI11
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
+    std::filesystem
   PRIVATE
-  pybind11::embed
-  Threads::Threads
+    pybind11::embed
+    Threads::Threads
 )

@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(Filesystem REQUIRED)
+find_package(Filesystem REQUIRED QUIET)
 
-find_package(Catch2 REQUIRED)
+find_package(Catch2 REQUIRED QUIET)
 include(CTest)
 include(Catch)
 
@@ -29,14 +29,15 @@ target_link_libraries(
     hictk_project_warnings
     hictk_project_options
   PUBLIC
+    hictk::tmpdir
     hictk::transformers
 )
 
 target_link_system_libraries(
   hictk_transformers_tests
   PUBLIC
-  Catch2::Catch2WithMain
-  std::filesystem
+    Catch2::Catch2WithMain
+    std::filesystem
 )
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Testing/")

@@ -10,6 +10,9 @@ target_sources(
   INTERFACE
     FILE_SET HEADERS
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/chromosome.hpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/chromosome_impl.hpp"
 )
 
 target_include_directories(
@@ -18,4 +21,4 @@ target_include_directories(
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
-target_link_libraries(hictk_internal_chromosome INTERFACE hictk::common)
+target_link_libraries(hictk_internal_chromosome INTERFACE hictk::hash)

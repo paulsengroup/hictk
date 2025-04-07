@@ -15,6 +15,12 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
 
+  pull_request:
+    paths:
+      - ".github/workflows/build-conan-deps-linux.yml"
+      - ".github/workflows/packaging.yml"
+      - "test/packaging/**"
+
 # https://stackoverflow.com/a/72408109
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -30,7 +36,10 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@925c969016f4d41babd703a01d7ae3ad043aa576
+    permissions:
+      actions: write
+      contents: read
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
 
   test-find-package:
     runs-on: ubuntu-latest

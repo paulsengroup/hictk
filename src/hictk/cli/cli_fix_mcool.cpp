@@ -17,9 +17,11 @@
 #include <variant>
 #include <vector>
 
+#include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/tmpdir.hpp"
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/validators.hpp"
 
 namespace hictk::tools {
 
@@ -149,7 +151,7 @@ void Cli::transform_args_fix_mcool_subcommand() {
   const auto& sc = *_cli.get_subcommand("fix-mcool");
 
   if (sc.get_option("--tmpdir")->empty()) {
-    c.tmp_dir = internal::TmpDir::default_temp_directory_path();
+    c.tmp_dir = hictk::internal::TmpDir::default_temp_directory_path();
   }
 
   const auto try_read_from_env = sc.get_option("--verbosity")->empty();

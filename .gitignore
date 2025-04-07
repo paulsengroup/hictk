@@ -23,10 +23,12 @@ venv/
 
 # Ignored files
 *.bak
+cmake.lock
 gmon.out
 perf.*
 compile_commands.json
 CMakeUserPresets.json
-src/libhictk/common/include/hictk/git.hpp
-src/libhictk/common/include/hictk/license.hpp
-src/libhictk/common/include/hictk/version.hpp
+src/hictk/telemetry/include/**/*.hpp
+src/libhictk/common/**/include/hictk/git.hpp
+src/libhictk/common/**/include/hictk/license.hpp
+src/libhictk/common/**/include/hictk/version.hpp

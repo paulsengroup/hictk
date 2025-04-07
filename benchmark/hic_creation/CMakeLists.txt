@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-find_package(CLI11 REQUIRED)
-find_package(Filesystem REQUIRED)
+find_package(CLI11 REQUIRED QUIET)
+find_package(Filesystem REQUIRED QUIET)
 
 add_executable(hictk_hic_creation_bench hic_creation.cpp)
 
@@ -20,6 +20,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_hic_creation_bench
   PUBLIC
-  CLI11::CLI11
-  std::filesystem
+    CLI11::CLI11
+    std::filesystem
 )

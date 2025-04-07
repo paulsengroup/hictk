@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/tools/fix_mcool.hpp"
+
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
@@ -20,8 +22,10 @@
 
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
+#include "hictk/tools/balance.hpp"
 #include "hictk/tools/config.hpp"
-#include "hictk/tools/tools.hpp"
+#include "hictk/tools/validate.hpp"
+#include "hictk/tools/zoomify.hpp"
 
 namespace hictk::tools {
 
