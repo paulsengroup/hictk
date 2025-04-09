@@ -208,6 +208,8 @@ class PixelSelectorAll {
  public:
   PixelSelectorAll() = default;
   explicit PixelSelectorAll(std::vector<PixelSelector> selectors_,
+                            std::shared_ptr<internal::WeightCache> weight_cache = nullptr);
+  explicit PixelSelectorAll(std::shared_ptr<const BinTable> bins_,
                             std::shared_ptr<internal::WeightCache> weight_cache = nullptr) noexcept;
 
   [[nodiscard]] bool empty() const noexcept;
