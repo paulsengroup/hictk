@@ -227,7 +227,8 @@ inline const balancing::Method &PixelSelector::normalization() const noexcept {
 }
 inline MatrixUnit PixelSelector::unit() const noexcept { return _reader->index().unit(); }
 inline std::uint32_t PixelSelector::resolution() const noexcept {
-  return _reader->index().resolution();
+  assert(_footer);
+  return _footer->resolution();
 }
 
 inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1->bin1.chrom(); }
@@ -758,12 +759,23 @@ PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
       idx.find_overlaps(sel.coord1(), sel.coord2(), diagonal_band_width));
 }
 
-inline PixelSelectorAll::PixelSelectorAll(
-    std::vector<PixelSelector> selectors_,
-    std::shared_ptr<internal::WeightCache> weight_cache) noexcept
+inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_,
+                                          std::shared_ptr<internal::WeightCache> weight_cache)
     : _selectors(std::move(selectors_)),
       _bins(_selectors.empty() ? nullptr : _selectors.front().bins_ptr()),
-      _weight_cache(std::move(weight_cache)) {}
+      _weight_cache(std::move(weight_cache)) {
+  if (_selectors.empty()) {
+    throw std::invalid_argument(
+        "selectors_ cannot be empty! You may want to call a different constructor.");
+  }
+
+  assert(!!_bins);
+}
+
+inline PixelSelectorAll::PixelSelectorAll(
+    std::shared_ptr<const BinTable> bins_,
+    std::shared_ptr<internal::WeightCache> weight_cache) noexcept
+    : _bins(std::move(bins_)), _weight_cache(std::move(weight_cache)) {}
 
 inline bool PixelSelectorAll::empty() const noexcept { return begin<float>() == end<float>(); }
 
@@ -812,9 +824,7 @@ inline const balancing::Method &PixelSelectorAll::normalization() const noexcept
   return _selectors.front().normalization();
 }
 inline MatrixUnit PixelSelectorAll::unit() const noexcept { return _selectors.front().unit(); }
-inline std::uint32_t PixelSelectorAll::resolution() const noexcept {
-  return _selectors.front().resolution();
-}
+inline std::uint32_t PixelSelectorAll::resolution() const noexcept { return bins().resolution(); }
 
 inline const BinTable &PixelSelectorAll::bins() const noexcept {
   assert(_bins);

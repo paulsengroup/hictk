@@ -179,7 +179,7 @@ inline PixelSelectorAll File::fetch(const balancing::Method& norm,
   }
 
   if (file_is_empty) {
-    return PixelSelectorAll{{}, _weight_cache};
+    return PixelSelectorAll{bins_ptr(), _weight_cache};
   }
 
   if (selectors.empty()) {

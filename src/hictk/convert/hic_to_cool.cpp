@@ -137,6 +137,10 @@ static Reference generate_reference(const std::filesystem::path& p, std::uint32_
     }
   }
 
+  if (selectors.empty()) {
+    return hic::PixelSelectorAll{hf.bins_ptr()};
+  }
+
   return hic::PixelSelectorAll{std::move(selectors)};
 }
 
