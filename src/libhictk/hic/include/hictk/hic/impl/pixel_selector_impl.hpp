@@ -227,7 +227,8 @@ inline const balancing::Method &PixelSelector::normalization() const noexcept {
 }
 inline MatrixUnit PixelSelector::unit() const noexcept { return _reader->index().unit(); }
 inline std::uint32_t PixelSelector::resolution() const noexcept {
-  return _reader->index().resolution();
+  assert(_footer);
+  return _footer->resolution();
 }
 
 inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1->bin1.chrom(); }
