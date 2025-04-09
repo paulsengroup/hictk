@@ -36,6 +36,7 @@ template <typename N>
 using Pixel = hictk::Pixel<N>;
 
 // NOLINTBEGIN(cert-err58-cpp)
+const auto path_empty = (datadir / "hic" / "empty_file.hic").string();
 const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
 const auto path_binary = (datadir / "various" / "data.zip").string();
@@ -107,6 +108,32 @@ TEST_CASE("HiC: pixel selector accessors", "[hic][short]") {
   CHECK(sel.resolution() == 2500000);
 
   REQUIRE(sel.chrom1().size() == 23513712);
+}
+
+TEST_CASE("HiC: pixel selector fetch (empty file)", "[hic][short]") {
+  const File hf(path_empty, 10);
+  CHECK(hf.resolution() == 10);
+
+  SECTION("cis") {
+    const auto sel = hf.fetch("chr1");
+    CHECK(sel.begin<float>() == sel.end<float>());
+    CHECK(sel.resolution() == 10);
+    CHECK(sel.bins().size() == 15);
+  }
+
+  SECTION("trans") {
+    const auto sel = hf.fetch("chr1", "chr2");
+    CHECK(sel.begin<float>() == sel.end<float>());
+    CHECK(sel.resolution() == 10);
+    CHECK(sel.bins().size() == 15);
+  }
+
+  SECTION("gw") {
+    const auto sel = hf.fetch();
+    CHECK(sel.begin<float>() == sel.end<float>());
+    CHECK(sel.resolution() == 10);
+    CHECK(sel.bins().size() == 15);
+  }
 }
 
 TEST_CASE("HiC: pixel selector fetch (observed NONE BP 10000)", "[hic][long]") {
