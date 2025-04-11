@@ -90,6 +90,50 @@ Thus, almost every tool calculates this matrix in slightly different ways.
 
 When developing ``hictk`` we refrained from introducing a new way of computing expected interactions, and instead opted to mimic the behavior of `straw <https://github.com/aidenlab/straw>`_.
 
+I am getting an error like "(Virtual File Layer) Unable to lock file" when balancing Cooler files with hictk balance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code-block:: text
+
+  [2025-04-11 11:51:22.095] [info]: Writing weights to /tmp/4DNFIZ1ZVXC8.mcool::/resolutions/1000/bins/GW_ICE...
+  HDF5-DIAG: Error detected in HDF5 (1.14.5):
+    #000: src/src/H5F.c line 827 in H5Fopen(): unable to synchronously open file
+      major: File accessibility
+      minor: Unable to open file
+    #001: src/src/H5F.c line 788 in H5F__open_api_common(): unable to open file
+      major: File accessibility
+      minor: Unable to open file
+    #002: src/src/H5VLcallback.c line 3680 in H5VL_file_open(): open failed
+      major: Virtual Object Layer
+      minor: Can't open object
+    #003: src/src/H5VLcallback.c line 3514 in H5VL__file_open(): open failed
+      major: Virtual Object Layer
+      minor: Can't open object
+    #004: src/src/H5VLnative_file.c line 128 in H5VL__native_file_open(): unable to open file
+      major: File accessibility
+      minor: Unable to open file
+    #005: src/src/H5Fint.c line 1963 in H5F_open(): unable to lock the file
+      major: File accessibility
+      minor: Unable to lock file
+    #006: src/src/H5FD.c line 2402 in H5FD_lock(): driver lock request failed
+      major: Virtual File Layer
+      minor: Unable to lock file
+    #007: src/src/H5FDsec2.c line 956 in H5FD__sec2_lock(): unable to lock file, errno = 11, error message = 'Resource temporarily unavailable'
+      major: Virtual File Layer
+      minor: Unable to lock file
+  [2025-04-11 11:51:22.095] [critical]: FAILURE! hictk balance encountered the following error: Unable to open file /tmp/4DNFIZ1ZVXC8.mcool (Virtual File Layer) Unable to lock file
+
+After computing the balancing weights, ``hictk balance`` needs to write the weight vectors to the given Cooler file.
+
+This requires that:
+
+* You have write permissions on that file
+* The file is not opened in any other process (e.g. Higlass, cooler, hictk, a Jupyter notebook etc.)
+
+If you can't figure out which process is keeping the file open, you can make a copy of the file and run ``hictk balance`` that copy.
+
 How should I cite hictk?
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
