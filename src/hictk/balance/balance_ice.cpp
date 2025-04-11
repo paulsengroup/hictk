@@ -29,6 +29,8 @@ int run_subcmd(const BalanceICEConfig& c) {  // NOLINT(misc-use-internal-linkage
   if (cooler::utils::is_multires_file(c.path_to_input.string())) {
     return balance_multires_cooler<balancing::ICE>(c, tmp_dir_path);
   }
+
+  std::ignore = try_open_hdf5_rw(c.path_to_input.string());
   auto clr = cooler::File(c.path_to_input.string());
   return balance_cooler<balancing::ICE>(clr, c, tmp_dir_path);
 }
