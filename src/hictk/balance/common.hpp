@@ -76,8 +76,12 @@ void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   const auto clr = try_open_hdf5_rw(file);
 
   if (c.symlink_to_weight && clr.exist(link_path) && !c.force) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("unable to create link to {}::{}: object already exists"), file, link_path));
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to create link to {}::{}: object already exists.\n"
+                               "You can either:\n"
+                               "- pass --force if you want to replace the old link\n"
+                               "- pass --no-create-weight-link to keep the old link untouched"),
+                    file, link_path));
   }
 
   if (clr.exist(path)) {
