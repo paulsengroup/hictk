@@ -48,6 +48,23 @@ void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c
   hfw.write_norm_vectors_and_norm_expected_values();
 }
 
+[[nodiscard]] inline HighFive::File try_open_hdf5_rw(std::string_view uri) {
+  const auto& [file, grp] = cooler::parse_cooler_uri(uri);
+  try {
+    return HighFive::File{file, HighFive::File::ReadWrite};
+  } catch (const HighFive::Exception& e) {
+    const std::string_view msg{e.what()};
+    if (msg.find("Unable to lock file") != std::string_view::npos) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("Unable to open file \"{}\" in read-write mode. Please make "
+                                 "sure you have write permissions to the file, and that the file "
+                                 "is not currently opened in any other process."),
+                      msg, file));
+    }
+    throw;
+  }
+}
+
 template <typename BalanceConfig>
 void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
                           const balancing::Weights& weights, const std::vector<double>& variance,
@@ -57,11 +74,15 @@ void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   const auto link_path = fmt::format(FMT_STRING("{}/bins/weight"), grp);
 
   SPDLOG_INFO(FMT_STRING("Writing weights to {}::{}..."), file, path);
-  const HighFive::File clr(file, HighFive::File::ReadWrite);
+  const auto clr = try_open_hdf5_rw(file);
 
   if (c.symlink_to_weight && clr.exist(link_path) && !c.force) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("unable to create link to {}::{}: object already exists"), file, link_path));
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to create link to {}::{}: object already exists.\n"
+                               "You can either:\n"
+                               "- pass --force if you want to replace the old link\n"
+                               "- pass --no-create-weight-link to keep the old link untouched"),
+                    file, link_path));
   }
 
   if (clr.exist(path)) {
@@ -231,6 +252,8 @@ int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
 template <typename Balancer, typename BalanceConfig>
 int balance_multires_cooler(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
   const auto resolutions = cooler::utils::list_resolutions(c.path_to_input.string());
+
+  std::ignore = try_open_hdf5_rw(c.path_to_input.string());
 
   for (const auto& res : resolutions) {
     auto clr = cooler::MultiResFile(c.path_to_input.string()).open(res);
