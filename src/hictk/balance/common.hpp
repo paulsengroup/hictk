@@ -48,9 +48,10 @@ void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c
   hfw.write_norm_vectors_and_norm_expected_values();
 }
 
-[[nodiscard]] inline HighFive::File try_open_hdf5_rw(const std::string& path) {
+[[nodiscard]] inline HighFive::File try_open_hdf5_rw(std::string_view uri) {
+  const auto& [file, grp] = cooler::parse_cooler_uri(uri);
   try {
-    return HighFive::File{path, HighFive::File::ReadWrite};
+    return HighFive::File{file, HighFive::File::ReadWrite};
   } catch (const HighFive::Exception& e) {
     const std::string_view msg{e.what()};
     if (msg.find("Unable to lock file") != std::string_view::npos) {
@@ -58,7 +59,7 @@ void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c
           fmt::format(FMT_STRING("Unable to open file \"{}\" in read-write mode. Please make "
                                  "sure you have write permissions to the file, and that the file "
                                  "is not currently opened in any other process."),
-                      msg, path));
+                      msg, file));
     }
     throw;
   }
