@@ -155,10 +155,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    permissions:
-      actions: write
-      contents: read
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
 
   build-project:
     name: Build project
@@ -236,29 +233,24 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
+          path: |
+            ${{ env.CONAN_HOME }}/p
+            /tmp/cmake-prefix-dbg.tar
+            /tmp/cmake-prefix-rel.tar
+            /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
-      - name: Restore CMake configs (Debug)
+      - name: Extract CMake configs (Debug)
         if: matrix.build_type == 'Debug'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-debug-key }}
-          path: /tmp/cmake-prefix-dbg.tar
-          fail-on-cache-miss: true
-
-      - name: Restore CMake configs (Release)
-        if: matrix.build_type == 'Release'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-release-key }}
-          path: /tmp/cmake-prefix-rel.tar
-          fail-on-cache-miss: true
-
-      - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-*.tar -C conan-env/ --strip-components=1
+          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+
+      - name: Extract CMake configs (Release)
+        if: matrix.build_type == 'Release'
+        run: |
+          mkdir conan-env
+          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
 
       - name: Restore Ccache folder
         id: cache-ccache
