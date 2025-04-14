@@ -54,10 +54,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    permissions:
-      actions: write
-      contents: read
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
 
   build-project:
     name: Build project
@@ -99,14 +96,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-          fail-on-cache-miss: true
-
-      - name: Restore CMake configs
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps.outputs.cmake-prefix-relwithdebinfo-key }}
-          path: /tmp/cmake-prefix-rwdi.tar
+          path: |
+            ${{ env.CONAN_HOME }}/p
+            /tmp/cmake-prefix-dbg.tar
+            /tmp/cmake-prefix-rel.tar
+            /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
       - name: Extract CMake configs

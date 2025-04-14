@@ -32,22 +32,16 @@ permissions:
 jobs:
   build-conan-deps-cpp20:
     name: Build Conan deps
-    permissions:
-      actions: write
-      contents: read
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
     with:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       cppstd: 20
 
   build-conan-deps-cpp23:
     name: Build Conan deps
-    permissions:
-      actions: write
-      contents: read
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@fda0d08dbd667512f523308b77bbb6ba4dcb1d93
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
     with:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       cppstd: 23
 
   build-project:
@@ -100,15 +94,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-cpp20.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-          fail-on-cache-miss: true
-
-      - name: Restore CMake configs (C++20)
-        if: matrix.cppstd == '20'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps-cpp20.outputs.cmake-prefix-debug-key }}
-          path: /tmp/cmake-prefix-dbg.tar
+          path: |
+            ${{ env.CONAN_HOME }}/p
+            /tmp/cmake-prefix-dbg.tar
+            /tmp/cmake-prefix-rel.tar
+            /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
       - name: Restore Conan cache (C++23)
@@ -116,15 +106,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-cpp23.outputs.conan-key }}
-          path: ${{ env.CONAN_HOME }}/p
-          fail-on-cache-miss: true
-
-      - name: Restore CMake configs (C++23)
-        if: matrix.cppstd == '23'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps-cpp23.outputs.cmake-prefix-debug-key }}
-          path: /tmp/cmake-prefix-dbg.tar
+          path: |
+            ${{ env.CONAN_HOME }}/p
+            /tmp/cmake-prefix-dbg.tar
+            /tmp/cmake-prefix-rel.tar
+            /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
       - name: Extract CMake configs
