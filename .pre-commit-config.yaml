@@ -34,7 +34,7 @@ repos:
     hooks:
       - id: codespell
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.17.2
+    rev: v0.18.0
     hooks:
       - id: markdownlint-cli2
   # Formatters should be run late so that they can re-format any prior changes.
@@ -49,17 +49,17 @@ repos:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.0
+    rev: v20.1.4
     hooks:
       - id: clang-format
         types_or: [c, c++]
   - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.19.2
+    rev: 0.19.3
     hooks:
       - id: gersemi
         exclude: ^cmake/modules/
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         types_or: [markdown, yaml]
