@@ -641,6 +641,74 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
                     diagonal_band_width)(),
         Catch::Matchers::ContainsSubstring("ToDataFrame<PixelIt>(): file index not loaded!"));
   }
+
+  SECTION("edge cases (span=full)") {
+    SECTION("query span is full but only overlaps upper triangle") {
+      constexpr std::string_view range1{"chr1:0-2,500,000"};
+      constexpr std::string_view range2{"chr1:10,000,000-50,000,000"};
+      SECTION("COO") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::COO,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        compare_pixel<0>(table, ThinPixel<std::int32_t>{0, 4, 6852});
+        compare_pixel<1>(table, ThinPixel<std::int32_t>{0, 5, 4140});
+        compare_pixel<2>(table, ThinPixel<std::int32_t>{0, 6, 5540});
+        compare_pixel<3>(table, ThinPixel<std::int32_t>{0, 7, 3966});
+        compare_pixel<12>(table, ThinPixel<std::int32_t>{0, 16, 1960});
+        compare_pixel<13>(table, ThinPixel<std::int32_t>{0, 17, 2389});
+        compare_pixel<14>(table, ThinPixel<std::int32_t>{0, 18, 2252});
+        compare_pixel<15>(table, ThinPixel<std::int32_t>{0, 19, 894});
+      }
+
+      SECTION("BG2") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::BG2,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+    }
+
+    SECTION("query span is full and intersects the matrix diagonal") {
+      constexpr std::string_view range1{"chr1:0-10,000,000"};
+      constexpr std::string_view range2{"chr1:5,000,000-15,000,000"};
+      SECTION("COO") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::COO,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        compare_pixel<0>(table, ThinPixel<std::int32_t>{0, 2, 13241});
+        compare_pixel<1>(table, ThinPixel<std::int32_t>{0, 3, 8460});
+        compare_pixel<2>(table, ThinPixel<std::int32_t>{0, 4, 6852});
+        compare_pixel<3>(table, ThinPixel<std::int32_t>{0, 5, 4140});
+        compare_pixel<12>(table, ThinPixel<std::int32_t>{3, 2, 50056});
+        compare_pixel<13>(table, ThinPixel<std::int32_t>{3, 3, 668101});
+        compare_pixel<14>(table, ThinPixel<std::int32_t>{3, 4, 59110});
+        compare_pixel<15>(table, ThinPixel<std::int32_t>{3, 5, 11888});
+      }
+
+      SECTION("BG2") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::BG2,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+    }
+  }
 }
 
 TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
