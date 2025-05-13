@@ -451,7 +451,7 @@ inline void ToDataFrame<PixelIt>::append_asymmetric(ThinPixel<N> p) {
 template <typename PixelIt>
 inline void ToDataFrame<PixelIt>::append(const Pixel<N>& p) {
   assert(_buffer);
-  if (_buffer->size() >= _buffer->capacity()) {
+  if (HICTK_UNLIKELY(_buffer->size() >= _buffer->capacity())) {
     commit_pixels();
   }
 
@@ -480,7 +480,7 @@ inline void ToDataFrame<PixelIt>::append(const Pixel<N>& p) {
 template <typename PixelIt>
 inline void ToDataFrame<PixelIt>::append(const ThinPixel<N>& p) {
   assert(_buffer);
-  if (_buffer->size() >= _buffer->capacity()) {
+  if (HICTK_UNLIKELY(_buffer->size() >= _buffer->capacity())) {
     commit_thin_pixels();
   }
 
