@@ -169,7 +169,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(
       _last(std::move(last)),
       _bins(std::move(bins)),
       _coord1(fix_coordinates(std::move(coord1_))),
-      _coord2(fix_coordinates(std::move(coord2_))),
+      _coord2(fix_coordinates(coord2_.has_value() ? std::move(coord2_) : _coord1)),
       _format(format),
       _span(mirror_pixels ? fix_query_span(_coord1, _coord2, span) : span),
       _drop_bin_ids(!include_bin_ids),

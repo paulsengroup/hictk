@@ -166,7 +166,7 @@ class ToDataFrame {
  public:
   // NOLINTBEGIN(*-avoid-magic-numbers, *-unnecessary-value-param)
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, std::optional<PixelCoordinates> coord1_,
-              std::optional<PixelCoordinates> coord2_,
+              std::optional<PixelCoordinates> coord2_ = {},
               DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
