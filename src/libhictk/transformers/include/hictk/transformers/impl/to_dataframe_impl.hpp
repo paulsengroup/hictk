@@ -189,6 +189,10 @@ inline ToDataFrame<PixelIt>::ToDataFrame(
         "hictk::transformers::ToDataFrame: a bin table is required when span is not "
         "QuerySpan::upper_triangle");
   }
+
+  if (_span == QuerySpan::lower_triangle) {
+    std::swap(_coord1, _coord2);
+  }
 }
 
 template <typename PixelIt>
@@ -750,6 +754,10 @@ template <typename PixelIt>
 inline QuerySpan ToDataFrame<PixelIt>::fix_query_span(const std::optional<PixelCoordinates>& coord1,
                                                       const std::optional<PixelCoordinates>& coord2,
                                                       QuerySpan requested_span) {
+  if (requested_span != QuerySpan::full) {
+    return requested_span;
+  }
+
   if (!coord1.has_value()) {
     assert(!coord2.has_value());
     return requested_span;
