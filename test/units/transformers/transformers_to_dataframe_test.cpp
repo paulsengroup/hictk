@@ -227,13 +227,12 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   const cooler::File clr(path.string());
   const auto& bins = clr.bins();
   auto sel = clr.fetch("chr1");
-  auto first = sel.begin<N>();
-  auto last = sel.end<N>();
+  auto it = sel.end<N>();
 
   SECTION("COO<int> upper_triangle") {
     constexpr auto format = DataFrameFormat::COO;
     constexpr auto span = QuerySpan::upper_triangle;
-    const auto table = ToDataFrame(first, last, format, nullptr, span)();
+    const auto table = ToDataFrame(sel, it, format, nullptr, span)();
 
     CHECK(table->num_columns() == 3);
     CHECK(table->num_rows() == 4'465);
@@ -255,8 +254,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("COO<int> lower_triangle") {
     constexpr auto format = DataFrameFormat::COO;
     constexpr auto span = QuerySpan::lower_triangle;
-    CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+    CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+    const auto table = ToDataFrame(sel, it, format, clr.bins_ptr(), span)();
 
     CHECK(table->num_columns() == 3);
     CHECK(table->num_rows() == 4'465);
@@ -278,8 +277,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("COO<int> full") {
     constexpr auto format = DataFrameFormat::COO;
     constexpr auto span = QuerySpan::full;
-    CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+    CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+    const auto table = ToDataFrame(sel, it, format, clr.bins_ptr(), span)();
 
     CHECK(table->num_columns() == 3);
     CHECK(table->num_rows() == 8'836);
@@ -299,8 +298,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("BG2<int> upper_triangle") {
     constexpr auto format = DataFrameFormat::BG2;
     constexpr auto span = QuerySpan::upper_triangle;
-    CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+    CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+    const auto table = ToDataFrame(sel, it, format, clr.bins_ptr(), span)();
 
     CHECK(table->num_columns() == 7);
     CHECK(table->num_rows() == 4'465);
@@ -325,8 +324,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("BG2<int> lower_triangle") {
     constexpr auto format = DataFrameFormat::BG2;
     constexpr auto span = QuerySpan::lower_triangle;
-    CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+    CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+    const auto table = ToDataFrame(sel, it, format, clr.bins_ptr(), span)();
 
     CHECK(table->num_columns() == 7);
     CHECK(table->num_rows() == 4'465);
@@ -352,8 +351,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   SECTION("BG2<int> full") {
     constexpr auto format = DataFrameFormat::BG2;
     constexpr auto span = QuerySpan::full;
-    CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span)();
+    CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+    const auto table = ToDataFrame(sel, it, format, clr.bins_ptr(), span)();
 
     CHECK(table->num_columns() == 7);
     CHECK(table->num_rows() == 8'836);
@@ -377,9 +376,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto format = DataFrameFormat::COO;
     constexpr auto span = QuerySpan::upper_triangle;
 
-    auto first_fp = sel.begin<double>();
-    auto last_fp = sel.end<double>();
-    const auto table = ToDataFrame(first_fp, last_fp, format, nullptr, span)();
+    auto fp_it = sel.end<double>();
+    const auto table = ToDataFrame(sel, fp_it, format, nullptr, span)();
 
     CHECK(table->num_columns() == 3);
     CHECK(table->num_rows() == 4'465);
@@ -584,8 +582,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
     constexpr std::uint64_t diagonal_band_width{10};
 
-    const auto table = ToDataFrame(first, last, format, nullptr, span, false, true, 256'000,
-                                   diagonal_band_width)();
+    const auto table =
+        ToDataFrame(sel, it, format, nullptr, span, false, 256'000, diagonal_band_width)();
 
     CHECK(table->num_columns() == 3);
     CHECK(table->num_rows() == 856);
@@ -610,8 +608,8 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
     constexpr std::uint64_t diagonal_band_width{10};
 
-    const auto table = ToDataFrame(first, last, format, clr.bins_ptr(), span, false, true, 256'000,
-                                   diagonal_band_width)();
+    const auto table =
+        ToDataFrame(sel, it, format, clr.bins_ptr(), span, true, 256'000, diagonal_band_width)();
 
     CHECK(table->num_columns() == 7);
     CHECK(table->num_rows() == 856);
@@ -622,7 +620,7 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
   }
 
   SECTION("empty range") {
-    const auto table = ToDataFrame(last, last)();
+    const auto table = ToDataFrame(it, it)();
     CHECK(table->num_rows() == 0);
   }
 
@@ -633,13 +631,112 @@ TEST_CASE("Transformers (cooler): to dataframe", "[transformers][short]") {
     constexpr auto span = QuerySpan::upper_triangle;
     constexpr std::uint64_t diagonal_band_width{10};
 
-    const auto first_gw = gw_sel.begin<std::int32_t>();
-    const auto last_gw = gw_sel.end<std::int32_t>();
+    const auto gw_it = gw_sel.end<std::int32_t>();
 
     CHECK_THROWS_WITH(
-        ToDataFrame(first_gw, last_gw, format, nullptr, span, false, true, 256'000,
-                    diagonal_band_width)(),
+        ToDataFrame(gw_sel, it, format, nullptr, span, false, 256'000, diagonal_band_width)(),
         Catch::Matchers::ContainsSubstring("ToDataFrame<PixelIt>(): file index not loaded!"));
+  }
+
+  SECTION("edge cases (span=full)") {
+    SECTION("query span is full but only overlaps upper triangle") {
+      constexpr std::string_view range1{"chr1:0-2,500,000"};
+      constexpr std::string_view range2{"chr1:10,000,000-50,000,000"};
+      SECTION("COO") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::COO,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        compare_pixel<0>(table, ThinPixel<std::int32_t>{0, 4, 6852});
+        compare_pixel<1>(table, ThinPixel<std::int32_t>{0, 5, 4140});
+        compare_pixel<2>(table, ThinPixel<std::int32_t>{0, 6, 5540});
+        compare_pixel<3>(table, ThinPixel<std::int32_t>{0, 7, 3966});
+        compare_pixel<12>(table, ThinPixel<std::int32_t>{0, 16, 1960});
+        compare_pixel<13>(table, ThinPixel<std::int32_t>{0, 17, 2389});
+        compare_pixel<14>(table, ThinPixel<std::int32_t>{0, 18, 2252});
+        compare_pixel<15>(table, ThinPixel<std::int32_t>{0, 19, 894});
+      }
+
+      SECTION("BG2") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::BG2,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+    }
+
+    SECTION("query span is full and intersects the matrix diagonal") {
+      constexpr std::string_view range1{"chr1:0-10,000,000"};
+      constexpr std::string_view range2{"chr1:5,000,000-15,000,000"};
+      SECTION("COO") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::COO,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        compare_pixel<0>(table, ThinPixel<std::int32_t>{0, 2, 13241});
+        compare_pixel<1>(table, ThinPixel<std::int32_t>{0, 3, 8460});
+        compare_pixel<2>(table, ThinPixel<std::int32_t>{0, 4, 6852});
+        compare_pixel<3>(table, ThinPixel<std::int32_t>{0, 5, 4140});
+        compare_pixel<12>(table, ThinPixel<std::int32_t>{3, 2, 50056});
+        compare_pixel<13>(table, ThinPixel<std::int32_t>{3, 3, 668101});
+        compare_pixel<14>(table, ThinPixel<std::int32_t>{3, 4, 59110});
+        compare_pixel<15>(table, ThinPixel<std::int32_t>{3, 5, 11888});
+      }
+
+      SECTION("BG2") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::BG2,
+                                       clr.bins_ptr(), QuerySpan::full)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 16);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+    }
+
+    SECTION("query span is lower_triangle and query is trans") {
+      constexpr std::string_view range1{"chr1"};
+      constexpr std::string_view range2{"chr2"};
+      SECTION("COO") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::COO,
+                                       clr.bins_ptr(), QuerySpan::lower_triangle)();
+
+        CHECK(table->num_columns() == 3);
+        CHECK(table->num_rows() == 9118);
+        CHECK(*table->column(2)->type() == *arrow::int32());
+
+        compare_pixel<0>(table, ThinPixel<std::int32_t>{100, 0, 285});
+        compare_pixel<1>(table, ThinPixel<std::int32_t>{100, 1, 402});
+        compare_pixel<2>(table, ThinPixel<std::int32_t>{100, 2, 468});
+        compare_pixel<3>(table, ThinPixel<std::int32_t>{100, 3, 386});
+        compare_pixel<9114>(table, ThinPixel<std::int32_t>{196, 96, 424});
+        compare_pixel<9115>(table, ThinPixel<std::int32_t>{196, 97, 704});
+        compare_pixel<9116>(table, ThinPixel<std::int32_t>{196, 98, 653});
+        compare_pixel<9117>(table, ThinPixel<std::int32_t>{196, 99, 453});
+      }
+
+      SECTION("BG2") {
+        const auto sel_ = clr.fetch(range1, range2);
+        const auto table = ToDataFrame(sel_, sel_.begin<std::int32_t>(), DataFrameFormat::BG2,
+                                       clr.bins_ptr(), QuerySpan::lower_triangle)();
+
+        CHECK(table->num_columns() == 7);
+        CHECK(table->num_rows() == 9118);
+        CHECK(*table->column(6)->type() == *arrow::int32());
+      }
+    }
   }
 }
 
@@ -650,13 +747,12 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     using N = std::int32_t;
     const hic::File hf(path, 2'500'000);
     auto sel = hf.fetch("chr2L");
-    auto first = sel.begin<N>();
-    auto last = sel.end<N>();
+    const auto it = sel.end<N>();
 
     SECTION("COO<int> upper_triangle") {
       constexpr auto format = DataFrameFormat::COO;
       constexpr auto span = QuerySpan::upper_triangle;
-      const auto table = ToDataFrame(first, last, format, nullptr, span)();
+      const auto table = ToDataFrame(sel, it, format, nullptr, span)();
 
       CHECK(table->num_columns() == 3);
       CHECK(table->num_rows() == 55);
@@ -668,8 +764,8 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     SECTION("COO<int> lower_triangle") {
       constexpr auto format = DataFrameFormat::COO;
       constexpr auto span = QuerySpan::lower_triangle;
-      CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-      const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+      CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+      const auto table = ToDataFrame(sel, it, format, hf.bins_ptr(), span)();
 
       CHECK(table->num_columns() == 3);
       CHECK(table->num_rows() == 55);
@@ -681,8 +777,8 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     SECTION("COO<int> full") {
       constexpr auto format = DataFrameFormat::COO;
       constexpr auto span = QuerySpan::full;
-      CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-      const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+      CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+      const auto table = ToDataFrame(sel, it, format, hf.bins_ptr(), span)();
 
       CHECK(table->num_columns() == 3);
       CHECK(table->num_rows() == 100);
@@ -692,8 +788,8 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     SECTION("BG2<int> upper_triangle") {
       constexpr auto format = DataFrameFormat::BG2;
       constexpr auto span = QuerySpan::upper_triangle;
-      CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-      const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+      CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+      const auto table = ToDataFrame(sel, it, format, hf.bins_ptr(), span)();
 
       CHECK(table->num_columns() == 7);
       CHECK(table->num_rows() == 55);
@@ -705,8 +801,8 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     SECTION("BG2<int> lower_triangle") {
       constexpr auto format = DataFrameFormat::BG2;
       constexpr auto span = QuerySpan::lower_triangle;
-      CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-      const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+      CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+      const auto table = ToDataFrame(sel, it, format, hf.bins_ptr(), span)();
 
       CHECK(table->num_columns() == 7);
       CHECK(table->num_rows() == 55);
@@ -718,15 +814,15 @@ TEST_CASE("Transformers (hic): to dataframe", "[transformers][short]") {
     SECTION("BG2<int> full") {
       constexpr auto format = DataFrameFormat::BG2;
       constexpr auto span = QuerySpan::full;
-      CHECK_THROWS(ToDataFrame(first, last, format, nullptr, span));
-      const auto table = ToDataFrame(first, last, format, hf.bins_ptr(), span)();
+      CHECK_THROWS(ToDataFrame(sel, it, format, nullptr, span));
+      const auto table = ToDataFrame(sel, it, format, hf.bins_ptr(), span)();
 
       CHECK(table->num_columns() == 7);
       CHECK(table->num_rows() == 100);
       CHECK(*table->column(6)->type() == *arrow::int32());
     }
     SECTION("empty range") {
-      const auto table = ToDataFrame(last, last)();
+      const auto table = ToDataFrame(it, it)();
       CHECK(table->num_rows() == 0);
     }
   }

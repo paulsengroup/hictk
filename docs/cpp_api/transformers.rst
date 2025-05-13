@@ -164,6 +164,7 @@ Converting streams of pixels to Arrow Tables
 .. cpp:class:: template <typename PixelIt> ToDataFrame
 
   .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, bool mirror_pixels = true, std::size_t chunk_size = 256'000, std::optional<std::uint64_t> diagonal_band_width = {});
+  .. cpp:function:: ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, std::optional<PixelCoordinates> coord1_, std::optional<PixelCoordinates> coord2_ = {}, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, bool mirror_pixels = true, std::size_t chunk_size = 256'000, std::optional<std::uint64_t> diagonal_band_width = {});
   .. cpp:function:: template <typename PixelSelector> ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO, std::shared_ptr<const BinTable> bins = nullptr, QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false, std::size_t chunk_size = 256'000, std::optional<std::uint64_t> diagonal_band_width = {});
 
   Construct an instance of a :cpp:class:`ToDataFrame` converter given a stream of pixels delimited by ``first_pixel`` and ``last_pixel``, a DataFrame ``format`` and a :cpp:class:`BinTable`.
@@ -173,6 +174,8 @@ Converting streams of pixels to Arrow Tables
   It should be noted that queries spanning the the full-matrix or the lower-triangle are always more expensive because they involve an additional step where pixels are sorted by their genomic coordinates.
 
   When provided, the ``diagonal_band_width`` argument has the same semantics as the ``num_bins`` argument from the :cpp:class:`DiagonalBand` constructor.
+
+  When fetching interactions with ``span=full`` from the cis portion of interaction maps using one of the overloads taking a pair of pixel iterators, users should provide a pair of genomic coordinates to ensure that, if necessary, interactions are correctly mirrored.
 
   .. cpp:function:: [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
