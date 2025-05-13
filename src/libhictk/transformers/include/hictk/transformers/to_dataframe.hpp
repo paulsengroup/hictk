@@ -180,14 +180,14 @@ class ToDataFrame {
               bool mirror_pixels = true, std::size_t chunk_size = 256'000,
               std::optional<std::uint64_t> diagonal_band_width = {});
 
-  template <typename PixelSelector,
+  template <typename PixelSelector,  // NOLINTNEXTLINE(modernize-type-traits)
             typename std::enable_if_t<internal::has_coord1_member_fx<PixelSelector>>* = nullptr>
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               std::size_t chunk_size = 256'000,
               std::optional<std::uint64_t> diagonal_band_width = {});
-  template <typename PixelSelector,
+  template <typename PixelSelector,  // NOLINTNEXTLINE(modernize-type-traits)
             typename std::enable_if_t<!internal::has_coord1_member_fx<PixelSelector>>* = nullptr>
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,

@@ -202,7 +202,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(PixelIt first, PixelIt last, DataFrameF
                   diagonal_band_width) {}
 
 template <typename PixelIt>
-template <typename PixelSelector,
+template <typename PixelSelector,  // NOLINTNEXTLINE(modernize-type-traits)
           typename std::enable_if_t<internal::has_coord1_member_fx<PixelSelector>>*>
 inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
                                          DataFrameFormat format,
@@ -222,6 +222,7 @@ inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unuse
       return;
     }
 
+    // NOLINTBEGIN(*-unchecked-optional-access)
     if (_coord1->bin1.chrom() == _coord2->bin1.chrom() && *_coord1 != *_coord2) {
       auto bin1 = std::min(_coord1->bin1, _coord2->bin1);
       auto bin2 = std::max(_coord1->bin2, _coord2->bin2);
@@ -233,11 +234,12 @@ inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unuse
                       std::move(_coord2), _format, std::move(_bins), _span, !_drop_bin_ids,
                       _mirror_pixels, _buffer->capacity(), _diagonal_band_width);
     }
+    // NOLINTEND(*-unchecked-optional-access)
   }
 }
 
 template <typename PixelIt>
-template <typename PixelSelector,
+template <typename PixelSelector,  // NOLINTNEXTLINE(modernize-type-traits)
           typename std::enable_if_t<!internal::has_coord1_member_fx<PixelSelector>>*>
 inline ToDataFrame<PixelIt>::ToDataFrame(const PixelSelector& sel, [[maybe_unused]] PixelIt it,
                                          DataFrameFormat format,
@@ -504,8 +506,11 @@ inline bool ToDataFrame<PixelIt>::overlaps(std::uint64_t bin1_id,
     assert(!_coord2.has_value());
     return true;
   }
+
+  // NOLINTBEGIN(*-unchecked-optional-access)
   return bin1_id >= _coord1->bin1.id() && bin1_id <= _coord1->bin2.id() &&
          bin2_id >= _coord2->bin1.id() && bin2_id <= _coord2->bin2.id();
+  // NOLINTEND(*-unchecked-optional-access)
 }
 
 template <typename PixelIt>
@@ -750,6 +755,7 @@ inline QuerySpan ToDataFrame<PixelIt>::fix_query_span(const std::optional<PixelC
     return requested_span;
   }
 
+  // NOLINTNEXTLINE(*-unchecked-optional-access)
   if (coord1->bin2.id() <= coord2->bin1.id()) {
     return QuerySpan::upper_triangle;
   }
