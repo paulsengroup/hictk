@@ -83,9 +83,75 @@ class ToDataFrame {
   using N = decltype(std::declval<PixelIt>()->count);
   static_assert(std::is_same_v<PixelT, ThinPixel<N>>);
 
+  struct Builder {
+    arrow::StringDictionary32Builder chrom{};
+    arrow::Int64Builder int64{};
+    arrow::Int32Builder int32{};
+    using NBuilder = decltype(internal::map_cpp_type_to_arrow_builder<N>());
+    NBuilder count{};
+
+    std::size_t chunk_size{};
+    std::int32_t chrom_id_offset{};
+
+    Builder() = default;
+    Builder(const Reference& chroms, std::size_t chunk_size_);
+    explicit Builder(std::size_t chunk_size_);
+
+    [[nodiscard]] std::shared_ptr<arrow::DataType> count_type() const;
+
+   private:
+    [[nodiscard]] static std::shared_ptr<arrow::Array> make_chrom_dict(const Reference& chroms);
+  };
+
+  struct Buffer {
+    std::vector<std::int64_t> bin1_id{};
+    std::vector<std::int64_t> bin2_id{};
+
+    std::vector<std::int32_t> chrom1_id{};
+    std::vector<std::int32_t> start1{};
+    std::vector<std::int32_t> end1{};
+
+    std::vector<std::int32_t> chrom2_id{};
+    std::vector<std::int32_t> start2{};
+    std::vector<std::int32_t> end2{};
+
+    std::vector<N> count{};
+
+    Buffer() = default;
+    Buffer(DataFrameFormat format, QuerySpan span, std::size_t chunk_size_);
+
+    [[nodiscard]] std::size_t capacity() const noexcept;
+    [[nodiscard]] std::size_t size() const noexcept;
+    [[nodiscard]] bool empty() const noexcept;
+
+    void clear() noexcept;
+  };
+
+  struct VectorChunks {
+    arrow::ArrayVector bin1_id{};
+    arrow::ArrayVector bin2_id{};
+
+    arrow::ArrayVector chrom1{};
+    arrow::ArrayVector start1{};
+    arrow::ArrayVector end1{};
+
+    arrow::ArrayVector chrom2{};
+    arrow::ArrayVector start2{};
+    arrow::ArrayVector end2{};
+
+    arrow::ArrayVector count{};
+
+    [[nodiscard]] std::size_t size() const noexcept;
+    [[nodiscard]] bool empty() const noexcept;
+
+    void clear();
+  };
+
   PixelIt _first{};
   PixelIt _last{};
   std::shared_ptr<const BinTable> _bins{};
+  std::optional<PixelCoordinates> _coord1{};
+  std::optional<PixelCoordinates> _coord2{};
 
   DataFrameFormat _format{DataFrameFormat::COO};
   QuerySpan _span{QuerySpan::upper_triangle};
@@ -93,51 +159,20 @@ class ToDataFrame {
   bool _mirror_pixels{true};
   std::optional<std::uint64_t> _diagonal_band_width{};
 
-  std::size_t _chunk_size{};
-  arrow::Int64Builder _bin1_id_builder{};
-  arrow::Int64Builder _bin2_id_builder{};
-
-  arrow::StringDictionary32Builder _chrom1_builder{};
-  arrow::Int32Builder _start1_builder{};
-  arrow::Int32Builder _end1_builder{};
-
-  arrow::StringDictionary32Builder _chrom2_builder{};
-  arrow::Int32Builder _start2_builder{};
-  arrow::Int32Builder _end2_builder{};
-
-  using NBuilder = decltype(internal::map_cpp_type_to_arrow_builder<N>());
-  NBuilder _count_builder{};
-
-  std::vector<std::int64_t> _bin1_id_buff{};
-  std::vector<std::int64_t> _bin2_id_buff{};
-
-  std::vector<std::int32_t> _chrom1_id_buff{};
-  std::vector<std::int32_t> _start1_buff{};
-  std::vector<std::int32_t> _end1_buff{};
-
-  std::vector<std::int32_t> _chrom2_id_buff{};
-  std::vector<std::int32_t> _start2_buff{};
-  std::vector<std::int32_t> _end2_buff{};
-
-  std::vector<N> _count_buff{};
-
-  arrow::ArrayVector _bin1_id{};
-  arrow::ArrayVector _bin2_id{};
-
-  arrow::ArrayVector _chrom1{};
-  arrow::ArrayVector _start1{};
-  arrow::ArrayVector _end1{};
-
-  arrow::ArrayVector _chrom2{};
-  arrow::ArrayVector _start2{};
-  arrow::ArrayVector _end2{};
-
-  arrow::ArrayVector _count{};
-
-  std::int32_t _chrom_id_offset{};
+  std::unique_ptr<Builder> _builder{};
+  std::unique_ptr<Buffer> _buffer{};
+  std::unique_ptr<VectorChunks> _chunks{};
 
  public:
-  // NOLINTBEGIN(*-avoid-magic-numbers)
+  // NOLINTBEGIN(*-avoid-magic-numbers, *-unnecessary-value-param)
+  ToDataFrame(PixelIt first_pixel, PixelIt last_pixel, std::optional<PixelCoordinates> coord1_,
+              std::optional<PixelCoordinates> coord2_,
+              DataFrameFormat format = DataFrameFormat::COO,
+              std::shared_ptr<const BinTable> bins = nullptr,
+              QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
+              bool mirror_pixels = true, std::size_t chunk_size = 256'000,
+              std::optional<std::uint64_t> diagonal_band_width = {});
+
   ToDataFrame(PixelIt first_pixel, PixelIt last_pixel,
               DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
@@ -145,13 +180,21 @@ class ToDataFrame {
               bool mirror_pixels = true, std::size_t chunk_size = 256'000,
               std::optional<std::uint64_t> diagonal_band_width = {});
 
-  template <typename PixelSelector>  // NOLINTNEXTLINE(*-unnecessary-value-param)
+  template <typename PixelSelector,
+            typename std::enable_if_t<internal::has_coord1_member_fx<PixelSelector>>* = nullptr>
   ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
               std::shared_ptr<const BinTable> bins = nullptr,
               QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
               std::size_t chunk_size = 256'000,
               std::optional<std::uint64_t> diagonal_band_width = {});
-  // NOLINTEND(*-avoid-magic-numbers)
+  template <typename PixelSelector,
+            typename std::enable_if_t<!internal::has_coord1_member_fx<PixelSelector>>* = nullptr>
+  ToDataFrame(const PixelSelector& sel, PixelIt it, DataFrameFormat format = DataFrameFormat::COO,
+              std::shared_ptr<const BinTable> bins = nullptr,
+              QuerySpan span = QuerySpan::upper_triangle, bool include_bin_ids = false,
+              std::size_t chunk_size = 256'000,
+              std::optional<std::uint64_t> diagonal_band_width = {});
+  // NOLINTEND(*-avoid-magic-numbers, *-unnecessary-value-param)
 
   [[nodiscard]] std::shared_ptr<arrow::Table> operator()();
 
@@ -168,6 +211,13 @@ class ToDataFrame {
   void append_asymmetric(const Pixel<N>& p);
   void append_asymmetric(ThinPixel<N> p);
 
+  void append(const Pixel<N>& p);
+  void append(const ThinPixel<N>& p);
+
+  [[nodiscard]] bool overlaps(const ThinPixel<N>& p) const noexcept;
+  [[nodiscard]] bool overlaps(const Pixel<N>& p) const noexcept;
+  [[nodiscard]] bool overlaps(std::uint64_t bin1_id, std::uint64_t bin2_id) const noexcept;
+
   static void append(arrow::StringBuilder& builder, std::string_view data);
   template <typename ArrayBuilder, typename T>
   static void append(ArrayBuilder& builder, const std::vector<T>& data);
@@ -180,15 +230,19 @@ class ToDataFrame {
   [[nodiscard]] std::shared_ptr<arrow::Table> make_coo_table();
   [[nodiscard]] std::shared_ptr<arrow::Table> make_bg2_table();
 
-  [[nodiscard]] static std::shared_ptr<arrow::Array> make_chrom_dict(const Reference& chroms);
-
-  void write_thin_pixels();
-  void write_pixels();
+  void commit_thin_pixels();
+  void commit_pixels();
 
   template <typename PixelSelector>
   [[nodiscard]] static bool pixel_selector_is_symmetric_upper(const PixelSelector& sel) noexcept;
 
   static std::shared_ptr<arrow::Table> sort_table(std::shared_ptr<arrow::Table> table);
+
+  [[nodiscard]] static QuerySpan fix_query_span(const std::optional<PixelCoordinates>& coord1,
+                                                const std::optional<PixelCoordinates>& coord2,
+                                                QuerySpan requested_span);
+  [[nodiscard]] static std::optional<PixelCoordinates> fix_coordinates(
+      std::optional<PixelCoordinates> coord);
 };
 
 }  // namespace hictk::transformers
