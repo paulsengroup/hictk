@@ -65,8 +65,8 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'msvc', os: 'windows-2022', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -78,7 +78,7 @@ jobs:
     name: Build Conan deps
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
     with:
-      os: windows-2019
+      os: windows-2025
 
   build-project:
     needs:
