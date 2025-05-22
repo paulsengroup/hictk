@@ -87,7 +87,7 @@ void Cli::make_zoomify_subcommand() {
       "Example:\n"
       "Base resolution: 1000\n"
       "Pow2: 1000, 2000, 4000, 8000...\n"
-      "Nice: 1000, 2000, 5000, 10000...\n")
+      "Nice: 1000, 2000, 5000, 10000...")
       ->default_str("--nice-steps");
 
   sc.add_option(

@@ -58,7 +58,7 @@ void Cli::make_validate_subcommand() {
   sc.add_flag(
       "--quiet",
       c.quiet,
-      "Don't print anything to stdout. Success/failure is reported through exit codes")
+      "Don't print anything to stdout. Success/failure is reported through exit codes.")
       ->capture_default_str();
   // clang-format on
 

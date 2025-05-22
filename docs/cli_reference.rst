@@ -81,7 +81,7 @@ hictk balance ice
                                 balancing.
             --mad-max FLOAT:NONNEGATIVE [5]
                                 Mask bins using the MAD-max filter.
-                                bins whose log marginal sum is less than --mad-max median
+                                Bins whose log marginal sum is less than --mad-max median
                                 absolute deviations below the median log marginal sum of
                                 all the bins in the same chromosome.
             --min-nnz UINT [10]
@@ -234,7 +234,7 @@ hictk convert
                                 Name of one or more normalization methods to be copied.
                                 By default, vectors for all known normalization methods are
                                 copied.
-                                Pass NONE to avoid copying normalization vectors.
+                                Pass NONE to avoid copying the normalization vectors.
             --fail-if-norm-not-found
                                 Fail if any of the requested normalization vectors are missing.
     -g,     --genome TEXT       Genome assembly name. By default this is copied from the .hic
@@ -257,7 +257,7 @@ hictk convert
                                 Specify the strategy used to infer count types when converting
                                 .hic
                                 files to .[m]cool format.
-                                Can be one of: int, float, auto.
+                                Can be one of: int, float, or auto.
     -f,     --force             Overwrite existing files (if any).
 
 
@@ -284,11 +284,11 @@ hictk dump
     -t,     --table TEXT:{chroms,bins,pixels,normalizations,resolutions,cells,weights} [pixels]
                                 Name of the table to dump.
     -r,     --range TEXT [all]  Excludes: --query-file --cis-only --trans-only
-                                Coordinates of the genomic regions to be dumped following
-                                UCSC-style notation (chr1:0-1000).
+                                Coordinates of the genomic regions to be dumped following UCSC
+                                style notation (chr1:0-1000).
             --range2 TEXT [all]  Needs: --range Excludes: --query-file --cis-only --trans-only
-                                Coordinates of the genomic regions to be dumped following
-                                UCSC-style notation (chr1:0-1000).
+                                Coordinates of the genomic regions to be dumped following UCSC
+                                style notation (chr1:0-1000).
             --query-file TEXT:(FILE) OR ({-}) Excludes: --range --range2 --cis-only --trans-only
                                 Path to a BEDPE file with the list of coordinates to be fetched
                                 (pass - to read queries from stdin).
@@ -487,7 +487,7 @@ hictk rename-chromosomes
   Rename chromosomes found in Cooler files.
   hictk rename-chromosomes [OPTIONS] uri
   POSITIONALS:
-    uri TEXT:.[ms]cool REQUIRED Path to a or .[ms]cool file (Cooler URI syntax supported).
+    uri TEXT:.[ms]cool REQUIRED Path to a .[ms]cool file (Cooler URI syntax supported).
   OPTIONS:
     -h,     --help              Print this help message and exit
             --name-mappings TEXT Excludes: --add-chr-prefix --remove-chr-prefix
@@ -525,7 +525,7 @@ hictk validate
                                 When processing multi-resolution or single-cell files,
                                 do not fail as soon as the first error is detected.
             --quiet             Don't print anything to stdout. Success/failure is reported
-                                through exit codes
+                                through exit codes.
 
 
 hictk zoomify
