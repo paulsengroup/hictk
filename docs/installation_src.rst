@@ -12,7 +12,7 @@ Building on Windows follows the same logic but some of the commands may be sligh
 Build instructions
 ==================
 
-hictk can be compiled on most UNIX-like systems (including many Linux distributions, MacOS) and Windows.
+hictk can be compiled on most UNIX-like systems (including many Linux distributions, macOS) and Windows.
 
 Build requirements
 ------------------
@@ -25,7 +25,7 @@ Compiling hictk requires a compiler toolchain supporting C++17, such as:
 * MSVC 19.12+
 
 Based on our testing, hictk binaries compiled on Linux using Clang are noticeably faster than those compiled with GCC.
-For this reason we recommend building hictk using a modern version of Clang whenever possible.
+For this reason, we recommend building hictk using a modern version of Clang whenever possible.
 
 Furthermore, the following tools are required:
 
@@ -36,7 +36,7 @@ Furthermore, the following tools are required:
 * Python3.6+ (including :code:`pip`, required to install Conan)
 
 
-We recommend installing CMake and Conan in a Python `virtualenv <https://virtualenvwrapper.readthedocs.io/en/stable/>`_, but you are of course free to install build dependencies in any way you want.
+We recommend installing CMake and Conan in a Python `virtualenv <https://virtualenvwrapper.readthedocs.io/en/stable/>`_, but you are free to install build dependencies however you prefer.
 
 .. code-block:: bash
 
@@ -44,7 +44,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
   /tmp/venv/bin/python3 -m pip install pip setuptools --upgrade
   /tmp/venv/bin/python3 -m pip install 'cmake>=3.25' 'conan>=2' ninja
 
-  # NOTE: It's important to activate the venv after installing CMake
+  # NOTE: It is important to activate the venv after installing CMake
   . /tmp/venv/bin/activate
 
   whereis cmake  # cmake: /tmp/venv/bin/cmake
@@ -54,7 +54,7 @@ We recommend installing CMake and Conan in a Python `virtualenv <https://virtual
   cmake --version
   conan --version
 
-  # Detect compiler toolchain. It is usually a good idea to explicitly set CC and CXX
+  # Detect the compiler toolchain. It is generally recommended to explicitly set CC and CXX
   # Use CC=gcc CXX=g++ if clang is not installed on your machine
   CC=clang CXX=clang++ conan profile detect --force
 
@@ -104,7 +104,7 @@ Compiling hictk
 
   # Do not pass -G Ninja if you want CMake to use make instead of ninja
   # Use clang whenever possible, as that usually leads to significantly faster hictk binaries.
-  # If clang is not installed on your machine, then replace clang and clang++ with e.g. gcc and g++
+  # If clang is not installed on your machine, then replace clang and clang++ with e.g., gcc and g++
   # -DCMAKE_C_COMPILER=gcc
   # -DCMAKE_CXX_COMPILER=g++
   cmake -DCMAKE_BUILD_TYPE=Release \
@@ -146,13 +146,13 @@ We highly recommend using the same compiler when running Conan and CMake.
 
     ConanException: These libraries were built, but were not used in any boost module
 
-  This is likely due to Conan deciding to use a buggy version of ``b2`` (e.g. v5.3.0) to build ``boost``.
+  This is likely due to Conan deciding to use a buggy version of ``b2`` (e.g., v5.3.0) to build ``boost``.
 
   You can work around this by overriding the version of ``b2`` in your Conan profile.
 
   To do this:
 
-  1. Locate the Conan profile with e.g. ``conan profile path default``
+  1. Locate the Conan profile with e.g., ``conan profile path default``
   2. Add the following lines at the end of the profile::
 
       [tool_requires]
@@ -162,7 +162,7 @@ We highly recommend using the same compiler when running Conan and CMake.
 
     b2: relocation error: b2: symbol _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm, version GLIBCXX_3.4.21 not defined in file libstdc++.so.6 with link time reference
 
-  This is due to ABI incompatibilities between your build environment and the environment used by the `Conan Center Index <https://conan.io/center>`_ to build e.g. ``b2``.
+  This is due to ABI incompatibilities between your build environment and the environment used by the `Conan Center Index <https://conan.io/center>`_ to build e.g., ``b2``.
 
   You can work around this bug by forcing Conan to build ``b2`` (and any other package causing similar errors) from source:
 
@@ -170,7 +170,7 @@ We highly recommend using the same compiler when running Conan and CMake.
 
     conan install -pr:b default -pr:h default --requires 'b2/5.2.1'
 
-  For the ``b2`` package specifically, compiling the package with ``clang`` on Linux is very brittle and often fails.
+  For the ``b2`` package specifically, compiling the package with ``clang`` on Linux is prone to issues and often fails.
 
   If you run into problems, try compiling ``b2`` using gcc instead:
 
@@ -242,9 +242,9 @@ A successful run of the test suite will produce an output like the following:
 
 If one or more tests fail, try the following troubleshooting steps before reaching out for help.
 
-#. Make sure you are running :code:`ctest` from the root of the source tree (:code:`/tmp/hictk` if you are following the instructions).
-#. Make sure you are passing the correct build folder to :code:`--test-dir`. Pass the absolute path if necessary (i.e. :code:`--test-dir=/tmp/hictk/build/` if you are following the instructions).
-#. Re-run :code:`ctest` with :code:`-j1`. This can be necessary on machines with very little memory (e.g. less than 2GB).
+#. Ensure you are running :code:`ctest` from the root of the source tree (:code:`/tmp/hictk` if you are following the instructions).
+#. Ensure you are passing the correct build folder to :code:`--test-dir`. Pass the absolute path if necessary (i.e., :code:`--test-dir=/tmp/hictk/build/` if you are following the instructions).
+#. Re-run :code:`ctest` with :code:`-j1`. This can be necessary on machines with very little memory (e.g., less than 2GB).
 #. Before running :code:`ctest`, create a temporary folder where your user has read-write permissions and where there are at least 100-200MB of space available.
    Then set variable :code:`TMPDIR` to that folder and re-run `ctest`.
 #. Checksum the test dataset located under :code:`test/data/` by running :code:`sha256sum -c checksums.sha256`.
@@ -277,7 +277,7 @@ Example:
 
   # rm -r ~/hictk-test-dir
 
-If after trying the above steps the tests are still failing, feel free to start `discussion <https://github.com/paulsengroup/hictk/discussions>`_ asking for help.
+If after trying the above steps the tests are still failing, please feel free to start a `discussion <https://github.com/paulsengroup/hictk/discussions>`_ asking for help.
 
 .. only:: not latex
 
@@ -359,9 +359,9 @@ Once all tests have passed, :code:`hictk` can be installed as follows:
 Cleaning build artifacts
 ========================
 
-After successfully compiling hictk the following folders safely be removed:
+After successfully compiling hictk the following folders can safely be removed:
 
 * Python virtualenv: :code:`/tmp/venv`
 * hictk source tree: :code:`/tmp/hictk`
 
-If you are not using Conan in any other project feel free to also delete Conan's folder :code:`~/.conan2/`.
+If you are not using Conan in any other project feel free to delete Conan's folder :code:`~/.conan2/`.

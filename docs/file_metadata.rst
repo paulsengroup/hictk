@@ -10,7 +10,7 @@ File metadata
 Fetching metadata from single-resolution files
 ----------------------------------------------
 
-The following shows how to use ``hictk metadata`` to access metadata information stored in single-resolution Cooler files (or URIs, like shown in the example below):
+The following shows how to use ``hictk metadata`` to access metadata information stored in single-resolution Cooler files (or URIs, as shown in the example below):
 
 .. code-block:: console
 
@@ -31,13 +31,14 @@ The following shows how to use ``hictk metadata`` to access metadata information
       "storage-mode": "symmetric-upper"
   }
 
-By default, ``hictk metadata`` outputs information in JSON format, however the output format can be changed using the ``--output-format`` CLI options (currently, ``json``, ``toml``, and ``yaml`` formats are supported).
+By default, ``hictk metadata`` outputs information in JSON format.
+However, the output format can be changed using the ``--output-format`` CLI options (currently, ``json``, ``toml``, and ``yaml`` formats are supported).
 
 
 Fetching metadata from multi-resolution files
 ---------------------------------------------
 
-Next, we look how to fetch metadata from multi-resolution .hic and .mcool files.
+Next, we will look at how to fetch metadata from multi-resolution .hic and .mcool files.
 
 .. code-block:: console
 

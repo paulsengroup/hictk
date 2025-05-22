@@ -10,7 +10,7 @@ Format conversion
 Converting from .hic to .[m]cool
 --------------------------------
 
-Converting from .hic to .cool or .mcool formats consists of the following operations
+Converting from .hic to .cool or .mcool formats involves the following operations
 
 #. Fetch the list of available resolutions
 #. For each resolution to be converted:
@@ -101,4 +101,4 @@ The main difference is that in this case hictk computes the raw and normalized e
 **Tips:**
 
 * When converting large .[m]cool files to .hic, ``hictk`` may need to create large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
-* When converting .[m]cool files to .hic certain conversion steps can be performed in parallel. To improve performance, please make sure to increase the number of processing threads with option ``--threads``.
+* When converting .[m]cool files to .hic certain conversion steps can be performed in parallel. To improve performance, ensure you increase the number of processing threads with option ``--threads``.

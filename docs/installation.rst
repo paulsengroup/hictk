@@ -8,7 +8,7 @@ Installation
 Conda (bioconda)
 ================
 
-hictk package for Linux and MacOS is available on bioconda and can be installed as follows:
+The hictk package for Linux and macOS is available on bioconda and can be installed as follows:
 
 .. code-block:: console
 
@@ -26,7 +26,7 @@ hictk package for Linux and MacOS is available on bioconda and can be installed 
 Containers (Docker or Singularity/Apptainer)
 ============================================
 
-First, make sure you follow the instructions on how to install Docker or Singularity/Apptainer on your OS.
+First, ensure you have followed the instructions on how to install Docker or Singularity/Apptainer on your OS.
 
 .. raw:: html
 
@@ -36,10 +36,10 @@ First, make sure you follow the instructions on how to install Docker or Singula
 The following instructions assume you have root/admin permissions.
 
 * `Linux <https://docs.docker.com/desktop/install/linux-install/>`_
-* `MacOS <https://docs.docker.com/desktop/install/mac-install/>`_
+* `macOS <https://docs.docker.com/desktop/install/mac-install/>`_
 * `Windows <https://docs.docker.com/desktop/install/windows-install/>`_
 
-On some Linux distributions just installing Docker is not enough.
+On some Linux distributions, simply installing Docker is not enough.
 You also need to start (and optionally enable) the appropriate service(s).
 This is usually done with one of the following:
 
@@ -59,7 +59,7 @@ Pulling hictk Docker image
 --------------------------
 
 hictk Docker images are available on `GHCR.io <https://github.com/paulsengroup/hictk/pkgs/container/hictk>`_
-and `DockerHub <https://hub.docker.com/repository/docker/paulsengroup/hictk>`_.
+and `DockerHub <https://hub.docker.com/r/paulsengroup/hictk>`_.
 
 Downloading and running the latest stable release can be done as follows:
 
@@ -89,7 +89,7 @@ Downloading and running the latest stable release can be done as follows:
     validate                    Validate .hic and Cooler files.
     zoomify                     Convert single-resolution Cooler and .hic files to multi-resolution by coarsening.
 
-The above will print hictk's help message, and is equivalent to running :code:`hictk --help` on the command line (assuming hictk is available on your machine).
+The above will print hictk's help message, and is equivalent to running :code:`hictk --help` from the command line (assuming hictk is available on your machine).
 
 Installing from source
 ======================

@@ -5,7 +5,7 @@
 Balancing Hi-C matrices
 #######################
 
-``hictk`` supports balancing .hic, .cool and .mcool files using ICE (iterative correction and eigenvector decomposition), SCALE and VC:
+``hictk`` supports balancing .hic, .cool, and .mcool files using ICE (iterative correction and eigenvector decomposition), SCALE, and VC:
 
 .. code-block:: console
 
@@ -46,7 +46,7 @@ The following is an example showing how to balance a .cool file using ICE.
 
 When balancing files in .mcool or .hic formats, all resolutions are balanced.
 
-By default balancing coefficients are stored in the input file under the name of "weight".
+By default, balancing coefficients are stored in the input file under the name "weight".
 
 This can be changed by passing the desired name through the ``--name`` option.
 
@@ -56,12 +56,12 @@ This can be changed by passing the desired name through the ``--name`` option.
 * Using trans interactions only
 * Using cis interactions only
 
-Balancing method can be changed through the ``--mode`` option (e.g. ``--mode=gw`` or ``--mode=cis``).
+The balancing method can be changed through the ``--mode`` option (e.g., ``--mode=gw`` or ``--mode=cis``).
 
-When enough memory is available, ``hictk`` can be instructed to load all interactions into system memory by passing the ``--in-memory`` flag. This can dramatically speed up matrix balancing at the cost of potentially much higher memory usage (approximately 1 GB of RAM for every 40M interactions).
+When enough memory is available, ``hictk`` can be instructed to load all interactions into system memory by passing the ``--in-memory`` flag. This can dramatically speed up matrix balancing, at the cost of potentially much higher memory usage (approximately 1 GB of RAM for every 40M interactions).
 
-Another way to improve performance is to increase the number of threads available for computation using the ``--thread`` option.
-It should be noted that when using a large number of threads (e.g. more than 16) without the ``--in-memory`` option, performance is likely limited by disk throughput. Thus, users are advised to use a large number of threads only when temporary data (``/tmp`` by default on most UNIX-like systems) is stored on a fast SSD.
+Another way to improve performance is to increase the number of threads available for computation using the ``--threads`` option.
+It should be noted that when using a large number of threads (e.g., more than 16) without the ``--in-memory`` option, performance is likely limited by disk throughput. Thus, users are advised to use a large number of threads only when temporary data (``/tmp`` by default on most UNIX-like systems) is stored on a fast SSD.
 
 When the ``--in-memory`` option is not used, ``hictk`` will create a temporary file under the default temporary folder. This file stores interactions using a layout and compression that are optimized for the access pattern used by ``hictk balance``. When balancing large matrices, this file can be quite large (sometimes tens of GBs). If this is the case, it may be appropriate to change the temporary folder using the ``--tmpdir`` option.
 

@@ -152,4 +152,4 @@ When processing large files, it is a good idea to specify custom folder where to
                              --bin-size=1kbp \
                              --tmpdir=/var/tmp/
 
-Another option you may want to consider when working with .hic files, is the ``--threads`` option, which can significantly reduce the time required to load interactions into .hic files.
+Another option you may want to consider when working with .hic files is the ``--threads`` option, which can significantly reduce the time required to load interactions into .hic files.

@@ -9,13 +9,41 @@ hictk supports creating .cool and .hic files from text files in the following fo
 
 * `pairs (4DN-DCIC) <https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md#example-pairs-file>`_
 * `validPairs (nf-core/hic) <https://nf-co.re/hic/2.1.0/docs/output/#valid-pairs-detection-with-hic-pro>`_
-* `bedGraph2 <https://cooler.readthedocs.io/en/latest/datamodel.html#genomically-labeled-arrays>`_
+* `bedGraph2 (BG2) <https://cooler.readthedocs.io/en/latest/datamodel.html#genomically-labeled-arrays>`_
 * `COO <https://cooler.readthedocs.io/en/latest/datamodel.html#genomically-labeled-arrays>`_
 
-File requirements:
+The section below show some examples of what files in the above formats look like
 
-* ``dm6.chrom.sizes`` - `download <https://hgdownload.cse.ucsc.edu/goldenpath/dm6/bigZips/dm6.chrom.sizes>`__
-* ``4DNFIKNWM36K.pairs.gz`` - `download <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/930ba072-05ac-4382-9a92-369517184ec7/4DNFIKNWM36K.pairs.gz>`__
+.. tip::
+  :class: dropdown
+
+  **4DN-DCIC pairs**
+
+  .. literalinclude:: assets/interactions.pairs
+    :language: text
+
+  **validPairs**
+
+  .. literalinclude:: assets/interactions.validPairs
+    :language: text
+
+  **BG2**
+
+  .. literalinclude:: assets/interactions.bg2
+    :language: text
+
+  **COO**
+
+  .. literalinclude:: assets/interactions.coo
+    :language: text
+
+
+.. important::
+
+  The following files are required to follow along with the examples below:
+
+  * ``dm6.chrom.sizes`` - `download <https://hgdownload.cse.ucsc.edu/goldenpath/dm6/bigZips/dm6.chrom.sizes>`__
+  * ``4DNFIKNWM36K.pairs.gz`` - `download <https://4dn-open-data-public.s3.amazonaws.com/fourfront-webprod/wfoutput/930ba072-05ac-4382-9a92-369517184ec7/4DNFIKNWM36K.pairs.gz>`__
 
 
 Ingesting pairwise interactions into a 10kbp .cool file
@@ -44,16 +72,16 @@ hictk has native support for reading compressed interactions in the following fo
 By default, the list of chromosomes is read from the file header.
 The reference genome used to build the .cool or .hic file can be provided explicitly using the ``--chrom-sizes`` option.
 Note that ``--chrom-sizes`` is a mandatory option when ingesting interactions in formats other than ``--format=4dn``.
-In case the input file contains interactions mapping on chromosomes missing from the reference genome provided through ``--chrom-sizes``, the ``--drop-unknown-chroms`` flag can be used to instruct hictk to ignored said interactions.
+In case the input file contains interactions mapping on chromosomes missing from the reference genome provided through ``--chrom-sizes``, the ``--drop-unknown-chroms`` flag can be used to instruct hictk to ignore said interactions.
 
 When loading interactions using ``--format=pairs`` or ``--format=validPairs`` into a .cool file, tables of variable bins are supported.
-To load interactions in to a .cool with a variable bin size provide the table of bins using the ``--bin-table`` option.
+To load interactions into a .cool with a variable bin size, provide the table of bins using the ``--bin-table`` option.
 
 **Tips:**
 
 * When creating large .cool/hic files, ``hictk`` needs to create potentially large temporary files. When this is the case, use option ``--tmpdir`` to set the temporary folder to a path with sufficient space.
 * When loading interactions into .hic files, some of the steps can be run in parallel by increasing the number of processing threads using the ``--threads`` option.
-* When loading pre-binned interactions into .cool file, if the interactions are already sorted by genomic coordinates, the ``--assume-sorted`` option can be used to load interactions at once, without using temporary files.
+* When loading pre-binned interactions into a .cool file, if the interactions are already sorted by genomic coordinates, the ``--assume-sorted`` option can be used to load interactions at once, without using temporary files.
 * Interaction loading performance can be improved by processing interactions in larger chunks. This can be controlled using the ``--chunk-size`` option. In fact, when ``--chunk-size`` is greater than the number of interactions to be loaded, .hic and .cool files can be created without the use of temporary files.
 
 
@@ -75,8 +103,8 @@ Multiple .cool and .hic files using the same reference genome and resolution can
   [2024-09-26 17:08:01.224] [info]: data/4DNFIZ1ZVXC8.merged.10000.cool size: 19.64 MB
 
 Merging .hic files as well as a mix of .hic and .cool files is also supported (as long as all files have the same resolution and reference genome).
-When all input files contain data for multiple resolutions the ``--resolution`` option is mandatory.
+When all input files contain data for multiple resolutions, the ``--resolution`` option is mandatory.
 
 **Tips:**
 
-See the list of Tips for hictk load.
+Refer to the list of Tips from the previous section.

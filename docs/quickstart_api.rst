@@ -51,8 +51,8 @@ For more options and details refer to hictk page on `ConanCenter <https://conan.
 Installing using CMake FetchContent
 -----------------------------------
 
-Before beginning, make sure all of hictk dependencies have been installed.
-Refer to `conanfile.txt <https://github.com/paulsengroup/hictk/blob/main/conanfile.py>`_ for an up-to-date list of hictk dependencies.
+Before beginning, please ensure that all of hictk's dependencies have been installed.
+Refer to `conanfile.py <https://github.com/paulsengroup/hictk/blob/main/conanfile.py>`_ for an up-to-date list of hictk dependencies.
 
 To install and configure hictk using `FetchContent <https://cmake.org/cmake/help/latest/module/FetchContent.html>`_, first write a ``CMakeLists.txt`` file like the following:
 
@@ -85,7 +85,7 @@ To install and configure hictk using `FetchContent <https://cmake.org/cmake/help
 Include hictk source using CMake add_subdirectory
 -------------------------------------------------
 
-Simply add a copy of hictk source code to your source tree (e.g. under folder ``myproject/external/hictk``), then add ``add_subdirectory("external/hictk")`` to your ``CMakeLists.txt``.
+Simply add a copy of hictk source code to your source tree (e.g., under folder ``myproject/external/hictk``), then add ``add_subdirectory("external/hictk")`` to your ``CMakeLists.txt``.
 
 
 A quick tour of libhictk
@@ -100,7 +100,7 @@ libhictk public API is organized in 5 main sections:
 #. Classes :cpp:class:`cooler::File`, :cpp:class:`cooler::MultiResFile` and :cpp:class:`cooler::SingleCellFile`, which can be used to read and write .cool, .mcool and .scool files respectively.
 #. Class :cpp:class:`hic::File` which can be used to read .hic files
 #. Class :cpp:class:`File` which wraps :cpp:class:`cooler::File` and :cpp:class:`hic::File` and provides a uniform interface to read .cool and .hic files
-#. Various other classes used e.g. to model tables of bins, reference genomes and much more
+#. Various other classes used e.g., to model tables of bins, reference genomes and much more
 #. Classes and free-standing functions to perform common operations on files or pixel iterators, such as coarsening and balancing.
 
 The quick tour showcases basic functionality of the generic :cpp:class:`File` class. For more detailed examples refer to hictk `examples <https://github.com/paulsengroup/hictk/tree/main/examples>`_ and :doc:`cpp_api/index`.
@@ -165,7 +165,8 @@ Joining genomic coordinates to pixel counts can be done as follows:
   }
 
 
-The above examples work just fine, however using iterators returned by generic :cpp:class:`PixelSelector` is suboptimal. These iterators are implemented using `std::variant <https://en.cppreference.com/w/cpp/utility/variant>`_ and require checking the type of the underlying ``PixelSelector`` every iteration. The overhead of this check is quite low but still noticeable.
+The above examples work just fine.
+However, using iterators returned by generic :cpp:class:`PixelSelector` is suboptimal. These iterators are implemented using `std::variant <https://en.cppreference.com/w/cpp/utility/variant>`_ and require checking the type of the underlying ``PixelSelector`` every iteration. The overhead of this check is quite low but still noticeable.
 
 We can avoid paying this overhead by using the format-specific file handles instead of the generic one, or by using `std::visit <https://en.cppreference.com/w/cpp/utility/variant/visit>`_ as follows:
 
