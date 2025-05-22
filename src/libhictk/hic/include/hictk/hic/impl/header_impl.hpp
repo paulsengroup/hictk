@@ -99,9 +99,14 @@ inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
 
   fs.unsafe_read(header.version);
   if (header.version < 6) {  // NOLINT(*-avoid-magic-numbers)
-    throw std::runtime_error(fmt::format(
-        FMT_STRING(".hic version 5 and older are no longer supported. Found version {}"),
-        header.version));
+    throw std::runtime_error(fmt::format(FMT_STRING("unable to open .hic file with version={}: "
+                                                    "version 5 and older are no longer supported"),
+                                         header.version));
+  }
+  if (header.version > 9) {  // NOLINT(*-avoid-magic-numbers)
+    throw std::runtime_error(fmt::format(FMT_STRING("unable to open .hic file with version={}: "
+                                                    "versions newer than v9 are not yet supported"),
+                                         header.version));
   }
   fs.unsafe_read(header.footerPosition);
   if (header.footerPosition < 0 ||
