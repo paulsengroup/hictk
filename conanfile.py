@@ -35,11 +35,11 @@ class HictkConan(ConanFile):
         return 17
 
     def requirements(self):
-        self.requires("arrow/19.0.1#f6937fd566ecbec1eab37b40e292dfec")
+        self.requires("arrow/19.0.1#e5b40539e3f5411d03603a38b5fb698a")
         self.requires("boost/1.87.0#0c087f18c4e6487235dd10480613cbb5", force=True)
         self.requires("bshoshany-thread-pool/5.0.0#d94da300363f0c35b8f41b2c5490c94d")
         self.requires("bzip2/1.0.8#00b4a4658791c1f06914e087f0e792f5")
-        self.requires("catch2/3.8.0#2c87b60d2c85f3c8509bb209f37cbf67")
+        self.requires("catch2/3.8.1#141f4cd552b86c7278436c434473ae2f")
         self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
         self.requires("concurrentqueue/1.0.4#1e48e1c712bcfd892087c9c622a51502")
         self.requires("eigen/3.4.0#2e192482a8acff96fe34766adca2b24c")
