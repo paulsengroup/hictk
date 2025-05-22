@@ -90,7 +90,7 @@ discourse:
    faq
 
 .. toctree::
-   :caption: Introduction
+   :caption: Getting Started
    :maxdepth: 1
 
    quickstart_cli
@@ -105,7 +105,7 @@ discourse:
    balancing_matrices
 
 .. toctree::
-   :caption: Tutorials
+   :caption: How-Tos
    :maxdepth: 2
 
    tutorials/reordering_chromosomes
