@@ -112,7 +112,7 @@ Compiling hictk
         -DCMAKE_CXX_COMPILER=clang++ \
         -DCMAKE_PREFIX_PATH="$PWD/build" \
         -DHICTK_ENABLE_TESTING=ON \
-        -DHICTK_ENABLE_FUZZY_TESTING=ON \
+        -DHICTK_ENABLE_FUZZY_TESTING=OFF \
         -DHICTK_BUILD_TOOLS=ON \
         -DHICTK_BUILD_BENCHMARKS=OFF \
         -DHICTK_BUILD_EXAMPLES=OFF \
@@ -128,6 +128,68 @@ Compiling hictk
 To override the default compiler used by CMake, pass the following arguments to the first CMake command: :code:`-DCMAKE_C_COMPILER=path/to/cc -DCMAKE_CXX_COMPILER=path/to/c++`
 
 We highly recommend using the same compiler when running Conan and CMake.
+
+Tweaking hictk's build options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+hictk build can be customized by providing one or more build flags when invoking CMake.
+All hictk-specific build options are defined in `CMakeLists.txt <https://github.com/paulsengroup/hictk/blob/main/CMakeLists.txt>`__ file located in the project root.
+
+If you only want to build the hictk executable, then you should pass ``-DHICTK_WITH_ARROW=OFF`` and ``-DHICTK_WITH_EIGEN=OFF``. You may also want to remove ``arrow``, ``boost``, ``eigen``, and ``pybind11`` from the list of requirements in the ``conanfile.py``.
+
+We always recommend building and running the unit tests. However, if you are really sure you do not want to build the tests, feel free to also pass ``-DHICTK_ENABLE_TESTING=OFF``.
+
+If you do not intend to run any of the automated tests, then you can also disable the automatic download of the test datasets with ``-DHICTK_DOWNLOAD_TEST_DATASET=OFF``.
+
+.. list-table:: Complete list of build options
+  :header-rows: 1
+
+  * - Option
+    - Description
+    - Default
+  * - BUILD_SHARED_LIBS
+    - Build library and binaries using dynamic linking
+    - OFF
+  * - HICTK_ENABLE_TESTING
+    - Build the suite of unit tests
+    - ON
+  * - HICTK_ENABLE_FUZZY_TESTING
+    - Build hictk's fuzzer
+    - OFF
+  * - HICTK_ENABLE_GIT_VERSION_TRACKING
+    - Attempt to retrieve project version and metadata from git
+    - ON
+  * - HICTK_BUILD_EXAMPLES
+    - Build hictk's example programs
+    - OFF
+  * - HICTK_BUILD_BENCHMARKS
+    - Build hictk benchmarks
+    - OFF
+  * - HICTK_WITH_ARROW
+    - Build with Arrow support
+    - ON
+  * - HICTK_WITH_ARROW_SHARED
+    - Force dynamic linking to Arrow libraries
+    - OFF
+  * - HICTK_WITH_EIGEN
+    - Build with Eigen3 support
+    - ON
+  * - HICTK_BUILD_TOOLS
+    - Build the hictk binary
+    - ON
+  * - HICTK_DOWNLOAD_TEST_DATASET
+    - Download datasets required by unit and integration tests
+    - ON
+  * - HICTK_ENABLE_TELEMETRY
+    - Build CLI tools with support for telemetry
+    - ON
+
+There are several other options that are disabled unless ``-DENABLE_DEVELOPER_MODE=ON``.
+Keep in mind that enabling this option will enable the sanitizers, pass ``-Werror`` to the compiler, run clang-tidy, and much more.
+Binaries compiled with ``-DENABLE_DEVELOPER_MODE=ON`` are much bigger and slower than the regular binaries, and should only be used for debugging purposes.
+To further tweak the options enabled when ``-DENABLE_DEVELOPER_MODE=ON``, please use ``ccmake`` and have a look at options prefixed with ``OPT_``.
+
+Finally, you can override the version metadata embedded in the hictk binary and version headers by tweaking any of the ``HICTK_GIT_`` variables defined in file `cmake/Versioning.cmake <https://github.com/paulsengroup/hictk/blob/main/cmake/Versioning.cmake>`__ (e.g., ``-DHICTK_GIT_AUTHOR_NAME='Alan Turing'``).
 
 .. only:: not latex
 
