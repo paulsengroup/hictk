@@ -17,12 +17,15 @@ SPDX-License-Identifier: MIT
         <a href="https://anaconda.org/bioconda/hictk">
           <img src="https://img.shields.io/conda/vn/bioconda/hictk?label=bioconda&logo=Anaconda" alt="Bioconda">
         </a>
+        &nbsp
         <a href="https://conan.io/center/recipes/hictk">
           <img src="https://img.shields.io/conan/v/hictk" alt="Conan Center Index">
         </a>
+        &nbsp
         <a href="https://hub.docker.com/r/paulsengroup/hictk">
           <img src="https://img.shields.io/docker/pulls/paulsengroup/hictk" alt="DockerHub">
         </a>
+        &nbsp
         <a href="https://doi.org/10.5281/zenodo.8214220">
           <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.8214220.svg" alt="Zenodo">
         </a>
@@ -58,12 +61,15 @@ SPDX-License-Identifier: MIT
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/ubuntu-ci.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/ubuntu-ci.yml/badge.svg" alt="Ubuntu CI Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/macos-ci.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/macos-ci.yml/badge.svg" alt="macOS CI Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/windows-ci.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/windows-ci.yml/badge.svg" alt="Windows CI Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/build-dockerfile.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/build-dockerfile.yml/badge.svg" alt="Build Dockerfile Status">
         </a>
@@ -75,9 +81,11 @@ SPDX-License-Identifier: MIT
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/codeql-cpp.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/codeql-cpp.yml/badge.svg" alt="CodeQL (C++) Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/codeql-python.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/codeql-python.yml/badge.svg" alt="CodeQL (Python) Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/codeql-actions.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/codeql-actions.yml/badge.svg" alt="CodeQL (GH Actions) Status">
         </a>
@@ -97,9 +105,11 @@ SPDX-License-Identifier: MIT
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/run-clang-tidy.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/run-clang-tidy.yml/badge.svg" alt="clang-tidy Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/lint-cmakelists.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/lint-cmakelists.yml/badge.svg" alt="Lint CMakeLists.txt files Status">
         </a>
+        &nbsp
         <a href="https://github.com/paulsengroup/hictk/actions/workflows/lint-cff.yml">
           <img src="https://github.com/paulsengroup/hictk/actions/workflows/lint-cff.yml/badge.svg" alt="Lint CITATION.cff Status">
         </a>
