@@ -43,6 +43,7 @@
 #include "hictk/generic_variant.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/genomic_units.hpp"
+#include "hictk/git.hpp"
 #include "hictk/hash.hpp"
 #include "hictk/hic.hpp"
 #include "hictk/hic/block_reader.hpp"
@@ -62,6 +63,7 @@
 #include "hictk/hic/serialized_block_pqueue.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"
+#include "hictk/license.hpp"
 #include "hictk/multires_file.hpp"
 #include "hictk/numeric_utils.hpp"
 #include "hictk/numeric_variant.hpp"
@@ -84,5 +86,6 @@
 #include "hictk/type_pretty_printer.hpp"
 #include "hictk/type_traits.hpp"
 #include "hictk/variant_buff.hpp"
+#include "hictk/version.hpp"
 
 int main() { std::cout << hictk::config::version::str_long() << '\n'; }
