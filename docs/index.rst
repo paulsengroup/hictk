@@ -7,7 +7,7 @@ Introduction
 
 hictk is a blazing fast toolkit to work with .hic and .cool files.
 
-hictk is capable of reading and writing files in .cool, .mcool, .scool and .hic format (including hic v9).
+hictk is capable of reading and writing files in .cool, .mcool, .scool, and .hic format (including hic v9).
 
 .. only:: not latex
 
@@ -32,9 +32,9 @@ hictk is capable of reading and writing files in .cool, .mcool, .scool and .hic 
 
    .. rubric:: Installation
 
-hictk is developed on Linux and tested on Linux, MacOS and Windows. CLI tools can be installed in several different ways. Refer to :doc:`Installation <./installation>` for more details.
+hictk is developed on Linux and tested on Linux, macOS, and Windows. CLI tools can be installed in several different ways. Refer to :doc:`Installation <./installation>` for more details.
 
-hictk can be compiled on most UNIX-like systems (including many Linux distributions and MacOS) as well as Windows. See the :doc:`build instructions <./installation_src>` for more details.
+hictk can be compiled on most UNIX-like systems (including many Linux distributions and macOS) as well as Windows. See the :doc:`build instructions <./installation_src>` for more details.
 
 hictk can be used from languages other than C++ through the following bindings:
 
@@ -90,7 +90,7 @@ discourse:
    faq
 
 .. toctree::
-   :caption: Introduction
+   :caption: Getting Started
    :maxdepth: 1
 
    quickstart_cli
@@ -105,7 +105,7 @@ discourse:
    balancing_matrices
 
 .. toctree::
-   :caption: Tutorials
+   :caption: How-Tos
    :maxdepth: 2
 
    tutorials/reordering_chromosomes

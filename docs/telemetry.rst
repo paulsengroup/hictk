@@ -5,9 +5,9 @@
 Telemetry
 #########
 
-Starting with version v2.1.0 of hictk we introduced support for telemetry collection.
+Starting with version v2.1.0 of hictk, we introduced support for telemetry collection.
 
-This only applies when hictk is invoked from the CLI (i.e. not to libhictk).
+This only applies when hictk is invoked from the CLI (i.e., not to libhictk).
 
 This page outlines what information we are collecting and why.
 Furthermore, we provide instructions on how telemetry collection can be disabled at execution and compile time.
@@ -19,14 +19,14 @@ What information is being collected
 
 We do not collect any sensitive information that could be used to identify our users, the machine or environment where ``hictk`` is being run, the datasets processed by ``hictk``, or the parameters used to run ``hictk``.
 
-These is the data we are collecting:
+This is the data we are collecting:
 
-* Information on how ``hictk`` was compiled (i.e. compiler name, version, and build type).
-* Information on the system where ``hictk`` is being run (i.e. operating system and processor architecture).
-* Information about ``hictk`` itself (i.e. version of ``hictk`` and of the library used for telemetry collection).
-* How ``hictk`` is being invoked (i.e. the subcommand and input/output format(s) where applicable).
-* Information about ``hictk`` execution (i.e. when it was launched, how long the command took to finish, and whether the command terminated with an error).
-* For the ``hictk dump`` subcommand, we are also collecting the name of the table that is being dumped (e.g. pixels or chroms).
+* Information on how ``hictk`` was compiled (i.e., compiler name, version, and build type).
+* Information on the system where ``hictk`` is being run (i.e., operating system and processor architecture).
+* Information about ``hictk`` itself (i.e., version of ``hictk`` and of the library used for telemetry collection).
+* How ``hictk`` is being invoked (i.e., the subcommand and input/output format(s) where applicable).
+* Information about ``hictk`` execution (i.e., when it was launched, how long the command took to finish, and whether the command terminated with an error).
+* For the ``hictk dump`` subcommand, we are also collecting the name of the table that is being dumped (e.g., pixels or chroms).
 
 The following table shows an example of the telemetry collected when running ``hictk dump``:
 
@@ -40,8 +40,8 @@ Why are we collecting this information?
 
 There are two main motivations behind our decision to start collecting telemetry data:
 
-#. To get an idea of how big our user base is - this will help us, among other things, to secure funding to maintain ``hictk`` in the future.
-#. To better understand which of the functionalities offered by ``hictk`` are most used by our users - we intend to use this information to help us decide which features we should focus our development efforts on.
+#. To get an idea of how big our user base is: this will help us, among other things, to secure funding to maintain ``hictk`` in the future.
+#. To better understand which of the functionalities offered by ``hictk`` are most used by our users: we intend to use this information to help us decide which features we should focus our development efforts on.
 
 How is telemetry information processed and stored
 -------------------------------------------------
@@ -61,10 +61,10 @@ How to disable telemetry collection
 
 We provide two mechanisms to disable telemetry.
 
-#. Disabling telemetry at runtime: simply define the ``HICTK_NO_TELEMETRY`` environment variable before launching ``hictk`` (e.g. ``HICTK_NO_TELEMETRY=1 hictk dump matrix.cool``)
+#. Disabling telemetry at runtime: simply define the ``HICTK_NO_TELEMETRY`` environment variable before launching ``hictk`` (e.g., ``HICTK_NO_TELEMETRY=1 hictk dump matrix.cool``)
 #. Disabling telemetry at compile time: this only applies if you are building hictk from source as outlined in :doc:`installation_src`.
 
-   To completely disable telemetry support at compile time pass ``-DHICTK_ENABLE_TELEMETRY=OFF`` when configuring the project with cmake.
+   To completely disable telemetry support at compile time pass ``-DHICTK_ENABLE_TELEMETRY=OFF`` when configuring the project with CMake.
 
    When ``HICTK_ENABLE_TELEMETRY`` is set to ``OFF``, classes and functions used to collect information using OpenTelemetry are replaced with alternative implementations that do nothing.
    Furthermore, the OpenTelemetry library is not linked to the ``hictk`` binary, meaning that no code involved in the collection of telemetry information is contained in or loaded by the ``hictk`` binary.

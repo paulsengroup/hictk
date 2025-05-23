@@ -5,7 +5,7 @@
 Downloading test datasets
 #########################
 
-Test dataset for ``hictk`` are hosted on Zenodo: `doi.org/10.5281/zenodo.8121686 <https://doi.org/10.5281/zenodo.8121686>`_
+Test datasets for ``hictk`` are hosted on Zenodo: `doi.org/10.5281/zenodo.8121686 <https://doi.org/10.5281/zenodo.8121686>`_
 
 After downloading the data, move to a folder with at least ~1 GB of free space and extract the test datasets:
 

@@ -11,15 +11,15 @@ Frequently Asked Questions (FAQ)
 The .hic files created by hictk are in the latest format revision (.hic v9).
 
 Versions of Juicebox available on `github.com/aidenlab/Juicebox <https://github.com/aidenlab/Juicebox/wiki/Download>`_ are not capable of reading .hic v9 files.
-Instead, you should download the latest version of JuiceBox from the `github.com/aidenlab/JuiceboxGUI <https://github.com/aidenlab/JuiceboxGUI>`_ repository (e.g. `JuiceboxGUI v3.1.4 <https://github.com/aidenlab/JuiceboxGUI/releases/tag/v3.1.4>`_).
+Instead, you should download the latest version of JuiceBox from the `github.com/aidenlab/JuiceboxGUI <https://github.com/aidenlab/JuiceboxGUI>`_ repository (e.g., `JuiceboxGUI v3.1.4 <https://github.com/aidenlab/JuiceboxGUI/releases/tag/v3.1.4>`_).
 
 I am trying to install hictk using conda and I am running into package incompatibilities. What can I do?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Unfortunately this is a common issue when working with Conda environments (and is not unique to hictk).
+This is a common issue when working with Conda environments (and is not unique to hictk).
 Here are some options:
 
-* Install all the dependency at once, when creating the environment.
+* Install all the dependencies at once, when creating the environment.
 
   Instead of:
     .. code-block:: bash
@@ -42,9 +42,9 @@ Here are some options:
 
 * Compile from source:
 
-  Package incompatibilities encountered with Conda are due to the way applications are compiled and packaged by conda (i.e. using dynamic linking).
+  Package incompatibilities encountered with Conda are due to the way applications are compiled and packaged by conda (i.e., using dynamic linking).
 
-  In contrast, when build hictk from source, all of hictk dependencies are statically linked into the hictk executable.
+  In contrast, when building hictk from source, all of hictk's dependencies are statically linked into the hictk executable.
   This means that external dependencies are embedded into the hictk executable itself and are thus only needed while compiling hictk.
 
   After compilation, you are free to remove all of hictk's dependencies, make copies of the hictk binary, and even share the same binary across multiple machines (provided that system libraries such as libc and libstdc++ are ABI compatible).
@@ -54,7 +54,7 @@ Here are some options:
 How do I turn off telemetry?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The simplest way is to ensure you are defining environment variable ``HICTK_NO_TELEMETRY`` before running hictk:
+The simplest way is to ensure you are defining the environment variable ``HICTK_NO_TELEMETRY`` before running hictk:
 
 .. code-block:: bash
 
@@ -130,7 +130,7 @@ After computing the balancing weights, ``hictk balance`` needs to write the weig
 This requires that:
 
 * You have write permissions on that file
-* The file is not opened in any other process (e.g. Higlass, cooler, hictk, a Jupyter notebook etc.)
+* The file is not opened in any other process (e.g., Higlass, cooler, hictk, a Jupyter notebook etc.)
 
 If you can't figure out which process is keeping the file open, you can make a copy of the file and run ``hictk balance`` that copy.
 

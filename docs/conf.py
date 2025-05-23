@@ -24,6 +24,7 @@ if os.environ.get("READTHEDOCS", "") == "True":
 # ones.
 extensions = [
     "sphinx_copybutton",
+    "sphinx_togglebutton",
     "sphinxcontrib.moderncmakedomain",
     "sphinx.ext.intersphinx",
 ]

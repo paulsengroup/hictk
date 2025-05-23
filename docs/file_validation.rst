@@ -8,14 +8,14 @@ File validation
 Why is this needed?
 -------------------
 
-``hictk validate`` can detect several types of data corruption in .hic and .[ms]cool files, from simple file truncation due to e.g. failed downloads to subtle index corruption in .mcool files.
+``hictk validate`` can detect several types of data corruption in .hic and .[ms]cool files, from simple file truncation due to e.g., failed downloads to subtle index corruption in .mcool files.
 
 .. _cooler-index-corruption-label:
 
 Cooler index corruption
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To make a long story short, older versions of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
+In essence, older versions of cooler (including v0.8.3) had a bug in ``cooler zoomify`` that caused the generation of invalid file indexes. This results in duplicate pixels with different values being reported for the affected region.
 
 Example:
 
@@ -24,7 +24,7 @@ Example:
   :header-rows: 1
   :delim: tab
 
-Unfortunately, this is not a rare issue, as the above bug currently affects most .mcool files released by 4DNucleome:
+Unfortunately, this is not a rare issue, as the above bug currently affects most .mcool files released by 4D Nucleome:
 
 .. only:: not latex
 
@@ -140,8 +140,8 @@ In addition, when validating .[ms]cool files, the ``--validate-pixels`` flag can
 
 * Unsorted pixels (this is usually a consequence of the file index corruption outlined above).
 * File has ``storage-mode="symmetric-upper"`` but pixels overlap with the lower-triangular matrix.
-* File contains duplicate pixels (note that this only checks consecutive values. If duplicate pixels are present but are not consecutive they will be detected by the first check).
-* Pixels have invalid count values (e.g. pixels have 0 interactions).
+* File contains duplicate pixels (note that this only checks consecutive values. If duplicate pixels are present but are not consecutive, they will be detected by the first check).
+* Pixels have invalid count values (e.g., pixels have 0 interactions).
 
 When launched with default settings, hictk validate outputs its report in .json format. The output format can be changed using the ``--output-format`` option.
 Output to stdout can be completely suppressed by providing the ``--quiet`` option (the outcome of file validation can still be determined based on hictk's exit code).

@@ -78,7 +78,7 @@ void Cli::make_convert_subcommand() {
       c.normalization_methods,
       "Name of one or more normalization methods to be copied.\n"
       "By default, vectors for all known normalization methods are copied.\n"
-      "Pass NONE to avoid copying normalization vectors.")
+      "Pass NONE to avoid copying the normalization vectors.")
       ->default_str("ALL");
   sc.add_flag(
       "--fail-if-norm-not-found",
@@ -132,7 +132,7 @@ void Cli::make_convert_subcommand() {
       c.count_type,
       "Specify the strategy used to infer count types when converting .hic\n"
       "files to .[m]cool format.\n"
-      "Can be one of: int, float, auto.")
+      "Can be one of: int, float, or auto.")
       ->check(CLI::IsMember{{"auto", "int", "float"}})
       ->capture_default_str();
   sc.add_flag(

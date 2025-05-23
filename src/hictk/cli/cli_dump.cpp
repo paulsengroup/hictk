@@ -78,13 +78,13 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "-r,--range",
       c.range1,
-      "Coordinates of the genomic regions to be dumped following UCSC-style notation (chr1:0-1000).")
+      "Coordinates of the genomic regions to be dumped following UCSC style notation (chr1:0-1000).")
       ->capture_default_str();
 
   sc.add_option(
       "--range2",
       c.range2,
-      "Coordinates of the genomic regions to be dumped following UCSC-style notation (chr1:0-1000).")
+      "Coordinates of the genomic regions to be dumped following UCSC style notation (chr1:0-1000).")
       ->capture_default_str();
 
   sc.add_option(

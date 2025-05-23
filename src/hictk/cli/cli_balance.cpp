@@ -77,7 +77,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
       "--mad-max",
       c.mad_max,
       "Mask bins using the MAD-max filter.\n"
-      "bins whose log marginal sum is less than --mad-max median\n"
+      "Bins whose log marginal sum is less than --mad-max median\n"
       "absolute deviations below the median log marginal sum of\n"
       "all the bins in the same chromosome.")
       ->check(CLI::NonNegativeNumber)

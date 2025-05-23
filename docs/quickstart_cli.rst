@@ -17,7 +17,7 @@ Next, verify that hictk was installed correctly with:
 Command line interface
 ======================
 
-hictk CLI support performing common operations on .hic and .cool files directly from the shell.
+hictk CLI supports performing common operations on .hic and .cool files directly from the shell.
 
 Verifying file integrity
 ------------------------
