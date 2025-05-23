@@ -73,6 +73,7 @@ class HictkConan(ConanFile):
             self.settings.compiler.libcxx = "libstdc++11"
 
         self.options["arrow"].compute = True
+        self.options["arrow"].filesystem_layer = False
         self.options["arrow"].parquet = False
         self.options["arrow"].with_boost = True
         self.options["arrow"].with_re2 = True
