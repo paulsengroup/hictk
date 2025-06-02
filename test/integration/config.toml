@@ -136,6 +136,7 @@ files = [
   { input-path = "various/dm6.bins.bed", format = "bed" },
   { input-path = "various/dm6.chrom.sizes", format = "chrom.sizes" },
   { input-path = "various/dm6.chrom.sizes.sorted", format = "chrom.sizes" },
+  { input-path = "various/dm6.subset.chrom.sizes", format = "chrom.sizes" },
   { input-path = "cooler/4DNFIKNWM36K.subset.fixed-bins.cool", format = "cool" },
   { input-path = "cooler/4DNFIKNWM36K.subset.fixed-bins.float.cool", format = "cool" },
   { input-path = "cooler/4DNFIKNWM36K.subset.variable-bins.cool", format = "cool", variable-bin-size = true }
@@ -155,7 +156,9 @@ test-cases = [
   { input-path = "interactions/4DNFIKNWM36K.subset.unsorted.coo.xz", format = "coo", chrom-sizes-path = "various/dm6.chrom.sizes", reference-uri = "cooler/4DNFIKNWM36K.subset.fixed-bins.cool", timeout = 240, args = { format = "coo", bin-size = 10000, assume-unsorted = "" } },
   { input-path = "interactions/4DNFIKNWM36K.subset.sorted.bg2.xz", format = "bg2", chrom-sizes-path = "various/dm6.chrom.sizes.sorted", expect-failure = true, timeout = 240, args = { format = "bg2", bin-size = 10000, assume-unsorted = "" } },
   { input-path = "interactions/4DNFIKNWM36K.subset.sorted.bg2.xz", format = "bg2", chrom-sizes-path = "various/dm6.chrom.sizes.sorted", no-validate = true, timeout = 240, args = { format = "bg2", bin-size = 10000, assume-unsorted = "", transpose-lower-triangular-pixels = "" } },
-  { input-path = "interactions/4DNFIKNWM36K.subset.sorted.float.coo.xz", format = "coo", chrom-sizes-path = "various/dm6.chrom.sizes", reference-uri = "cooler/4DNFIKNWM36K.subset.fixed-bins.float.cool", timeout = 240, args = { format = "coo", bin-size = 10000, assume-sorted = "", count-as-float = "" } }
+  { input-path = "interactions/4DNFIKNWM36K.subset.sorted.float.coo.xz", format = "coo", chrom-sizes-path = "various/dm6.chrom.sizes", reference-uri = "cooler/4DNFIKNWM36K.subset.fixed-bins.float.cool", timeout = 240, args = { format = "coo", bin-size = 10000, assume-sorted = "", count-as-float = "" } },
+  { input-path = "interactions/4DNFIKNWM36K.subset.pairs.gz", format = "pairs", chrom-sizes-path = "various/dm6.subset.chrom.sizes", expect-failure = true, timeout = 240, args = { format = "4dn", bin-size = 10000 } },
+  { input-path = "interactions/4DNFIKNWM36K.subset.pairs.gz", format = "pairs", chrom-sizes-path = "various/dm6.subset.chrom.sizes", no-validate = true, timeout = 240, args = { format = "4dn", bin-size = 10000, drop-unknown-chroms = "" } }
 ]
 
 output-names = [
