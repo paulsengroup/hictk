@@ -106,6 +106,7 @@ class PixelParser {
                                             const std::filesystem::path& path_to_interactions,
                                             const std::filesystem::path& path_to_chrom_sizes,
                                             const std::filesystem::path& path_to_bins,
-                                            std::uint32_t resolution, std::string_view assembly);
+                                            std::uint32_t resolution, std::string_view assembly,
+                                            bool drop_unknown_chroms);
 
 }  // namespace hictk::tools

@@ -31,7 +31,7 @@ namespace hictk::tools {
   const auto format = format_from_string(c.format);
 
   auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
-                                  c.bin_size, c.assembly);
+                                  c.bin_size, c.assembly, c.drop_unknown_chroms);
 
   const auto& bins = parser.bins();
 
@@ -68,7 +68,7 @@ namespace hictk::tools {
   const auto format = format_from_string(c.format);
 
   auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
-                                  c.bin_size, c.assembly);
+                                  c.bin_size, c.assembly, c.drop_unknown_chroms);
 
   const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<double>);
   PixelQueue<double> pixel_queue{queue_capacity};
@@ -101,7 +101,7 @@ namespace hictk::tools {
   const auto format = format_from_string(c.format);
 
   auto parser = init_pixel_parser(format, c.input_path, c.path_to_chrom_sizes, c.path_to_bin_table,
-                                  c.bin_size, c.assembly);
+                                  c.bin_size, c.assembly, c.drop_unknown_chroms);
 
   const auto queue_capacity = queue_capacity_bytes / sizeof(ThinPixel<std::int32_t>);
   PixelQueue<std::int32_t> pixel_queue{queue_capacity};
