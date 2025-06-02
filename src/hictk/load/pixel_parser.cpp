@@ -197,7 +197,7 @@ Header PixelParser::parse_header(Format format_) {
 PixelParser init_pixel_parser(Format format, const std::filesystem::path& path_to_interactions,
                               const std::filesystem::path& path_to_chrom_sizes,
                               const std::filesystem::path& path_to_bins, std::uint32_t resolution,
-                              std::string_view assembly) {
+                              std::string_view assembly, bool drop_unknown_chroms) {
   assert(format == Format::_4DN || !path_to_chrom_sizes.empty() || !path_to_bins.empty());
   BinTable bins{};
 
@@ -211,12 +211,12 @@ PixelParser init_pixel_parser(Format format, const std::filesystem::path& path_t
     case Format::_4DN: {
       if (bins.empty()) {
         assert(resolution != 0);
-        return {path_to_interactions, resolution, format, assembly};
+        return {path_to_interactions, resolution, format, assembly, drop_unknown_chroms};
       }
-      return {path_to_interactions, std::move(bins), format, assembly};
+      return {path_to_interactions, std::move(bins), format, assembly, drop_unknown_chroms};
     }
     default:
-      return {path_to_interactions, std::move(bins), format, assembly};
+      return {path_to_interactions, std::move(bins), format, assembly, drop_unknown_chroms};
   }
   unreachable_code();
 }

@@ -56,40 +56,58 @@ class PixelParser {
 
   template <typename N>
   [[nodiscard]] bool next_pixel(ThinPixel<N>& buff, std::int64_t offset) {
-    if (_strbuff.empty()) {  // EOF
-      buff.bin1_id = ThinPixel<N>::null_id;
-      buff.bin2_id = ThinPixel<N>::null_id;
-      buff.count = 0;
-      return false;
-    }
-
-    try {
-      switch (_format) {
-        case Format::COO:
-          buff = ThinPixel<N>::from_coo(bins(), _strbuff, offset);
-          break;
-        case Format::BG2:
-          buff = Pixel<N>::from_bg2(bins(), _strbuff, offset).to_thin();
-          break;
-        case Format::VP:
-          buff = Pixel<N>::from_validpair(bins(), _strbuff, offset).to_thin();
-          break;
-        case Format::_4DN:
-          buff = Pixel<N>::from_4dn_pairs(bins(), _strbuff, offset).to_thin();
-          break;
+    auto handle_chrom_not_found = [&](std::string_view msg) {
+      if (!_drop_unknown_chroms) {
+        throw;
       }
-    } catch (const std::out_of_range& e) {
-      const auto chrom_not_found = internal::starts_with(e.what(), "chromosome \"") &&
-                                   internal::ends_with(e.what(), "\" not found");
-      if (_drop_unknown_chroms && chrom_not_found) {
+
+      const auto pos = msg.rfind("chromosome \"");
+      if (pos == std::string_view::npos) {
+        throw;
+      }
+
+      msg.remove_prefix(pos);
+      const auto chrom_not_found = internal::ends_with(msg, "\" not found");
+      if (chrom_not_found) {
         ++_num_dropped_records;
-        return next_pixel(buff, offset);
+        std::ignore = getline();
+        return;
       }
-      throw;
-    }
-    std::ignore = getline();
 
-    return true;
+      throw;
+    };
+
+    while (HICTK_LIKELY(!_strbuff.empty())) {
+      try {
+        switch (_format) {
+          case Format::COO:
+            buff = ThinPixel<N>::from_coo(bins(), _strbuff, offset);
+            break;
+          case Format::BG2:
+            buff = Pixel<N>::from_bg2(bins(), _strbuff, offset).to_thin();
+            break;
+          case Format::VP:
+            buff = Pixel<N>::from_validpair(bins(), _strbuff, offset).to_thin();
+            break;
+          case Format::_4DN:
+            buff = Pixel<N>::from_4dn_pairs(bins(), _strbuff, offset).to_thin();
+            break;
+        }
+        std::ignore = getline();
+        return true;
+      } catch (const std::out_of_range& e) {
+        handle_chrom_not_found(e.what());
+      } catch (const std::runtime_error& e) {
+        handle_chrom_not_found(e.what());
+      }
+    }
+
+    // EOF
+    assert(_strbuff.empty());
+    buff.bin1_id = ThinPixel<N>::null_id;
+    buff.bin2_id = ThinPixel<N>::null_id;
+    buff.count = 0;
+    return false;
   }
 
  private:
@@ -106,6 +124,7 @@ class PixelParser {
                                             const std::filesystem::path& path_to_interactions,
                                             const std::filesystem::path& path_to_chrom_sizes,
                                             const std::filesystem::path& path_to_bins,
-                                            std::uint32_t resolution, std::string_view assembly);
+                                            std::uint32_t resolution, std::string_view assembly,
+                                            bool drop_unknown_chroms);
 
 }  // namespace hictk::tools

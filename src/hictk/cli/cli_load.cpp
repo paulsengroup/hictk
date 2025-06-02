@@ -235,6 +235,11 @@ void Cli::validate_load_subcommand() const {
         "--assume-sorted has no effect when ingesting interactions in 4dn or validpairs format.");
   }
 
+  const auto drop_unknown_chroms_parsed = !sc.get_option("--drop-unknown-chroms")->empty();
+  if (c.format == "coo" && drop_unknown_chroms_parsed) {
+    _warnings.emplace_back("--drop-unknown-chroms has no effect when --format=coo");
+  }
+
   if (!errors.empty()) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("the following error(s) where encountered while validating CLI "

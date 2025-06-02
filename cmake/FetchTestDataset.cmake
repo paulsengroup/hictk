@@ -12,8 +12,8 @@ message(STATUS "Fetching the test dataset")
 
 # gersemi: off
 file(
-  DOWNLOAD https://zenodo.org/records/15182021/files/hictk_test_data.tar.zst?download=1
-  EXPECTED_HASH SHA256=7734a78307885e549ca64828a497a2c524e47acb92453e42532409ec7fb4e98a
+  DOWNLOAD https://zenodo.org/records/15579549/files/hictk_test_data.tar.zst?download=1
+  EXPECTED_HASH SHA256=af98f7997852c4a896fb19f1084dd482b0136b7e3ced15b02bcf71ed96fb5573
   "${TEST_DATASET_TAR}"
 )
 # gersemi: on
