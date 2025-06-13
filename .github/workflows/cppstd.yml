@@ -51,7 +51,7 @@ jobs:
       - build-conan-deps-cpp20
       - build-conan-deps-cpp23
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     env:
