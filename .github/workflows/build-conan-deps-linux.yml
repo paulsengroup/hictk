@@ -12,7 +12,7 @@ on:
 
     inputs:
       conan-version:
-        default: "2.14.*"
+        default: "2.17.*"
         type: string
         required: false
         description: "Conan version to be installed with pip."
@@ -99,11 +99,7 @@ jobs:
 
       - name: Clean Conan cache (pre-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        run: |
-          conan cache clean "*" --build
-          conan cache clean "*" --download
-          conan cache clean "*" --source
-          conan remove --confirm "*"
+        run: conan remove --confirm "*"
 
       - name: Install build dependencies
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
