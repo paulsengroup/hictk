@@ -83,8 +83,8 @@ jobs:
 
           OS_NAME='ubuntu'
           OS_VERSION='22.04'
-          C_COMPILER='clang-19'
-          CXX_COMPILER='clang++-19'
+          C_COMPILER='clang-20'
+          CXX_COMPILER='clang++-20'
 
           BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
           TEST_BASE_IMAGE="$BUILD_BASE_IMAGE"
