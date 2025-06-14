@@ -7,7 +7,6 @@
 #include <spdlog/spdlog.h>
 
 #include <BS_thread_pool.hpp>
-#include <boost/process/v2.hpp>
 #include <cassert>
 #include <cstdint>
 #include <exception>
@@ -20,6 +19,15 @@
 #include "hictk/fuzzer/config.hpp"
 #include "hictk/fuzzer/cooler.hpp"
 #include "hictk/fuzzer/tools.hpp"
+
+// clang-format off
+// As of HighFive 2.9.0, these headers must be included after HighFive/hictk,
+// otherwise this source file fails to compile with MSVC
+#include <boost/asio/io_context.hpp>
+#include <boost/process/v2/environment.hpp>
+#include <boost/process/v2/process.hpp>
+#include <boost/process/v2/stdio.hpp>
+// clang-format on
 
 namespace hictk::fuzzer {
 

@@ -30,6 +30,8 @@ HICTK_DISABLE_WARNING_POP
 
 namespace hictk::transformers {
 
+// NOLINTBEGIN(*-template-virtual-member-function)
+// There's not much we can do about this warning, as it occurs in Arrow's headers
 namespace internal {
 template <typename N, typename std::enable_if_t<std::is_same_v<N, std::uint8_t>>* = nullptr>
 static arrow::UInt8Builder map_cpp_type_to_arrow_builder() {
@@ -74,6 +76,7 @@ static arrow::DoubleBuilder map_cpp_type_to_arrow_builder() {
   return arrow::DoubleBuilder{};
 }
 }  // namespace internal
+// NOLINTEND(*-template-virtual-member-function)
 
 enum class DataFrameFormat : std::uint_fast8_t { COO, BG2 };
 

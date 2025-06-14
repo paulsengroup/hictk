@@ -94,13 +94,13 @@ jobs:
 
             // Debug builds (short CI)
             includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
             includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'ON'  })
 
             // Release builds (short CI)
-            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'ON'  })
 
             if (ci_short) {
               return { include: includes }
@@ -112,6 +112,7 @@ jobs:
             includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
@@ -122,6 +123,7 @@ jobs:
             includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             // Release builds (long CI)
             includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
@@ -130,6 +132,7 @@ jobs:
             includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
@@ -141,11 +144,12 @@ jobs:
             includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
             // Make sure project builds with CMake 3.25
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.25.2', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.25.2', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Unix Makefiles', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Unix Makefiles', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -155,7 +159,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
 
   build-project:
     name: Build project
