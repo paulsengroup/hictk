@@ -36,14 +36,14 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
 
   test-find-package:
     runs-on: ubuntu-latest
     name: Test find_package()
     needs: build-conan-deps
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     env:
@@ -107,7 +107,7 @@ jobs:
     name: Test add_subdirectory()
     needs: build-conan-deps
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     env:

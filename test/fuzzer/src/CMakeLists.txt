@@ -50,6 +50,7 @@ target_link_system_libraries(
   hictk_fuzzer
   PRIVATE
     Boost::headers
+    "$<TARGET_NAME_IF_EXISTS:Boost::process>"
     CLI11::CLI11
     fmt::fmt-header-only
     spdlog::spdlog_header_only

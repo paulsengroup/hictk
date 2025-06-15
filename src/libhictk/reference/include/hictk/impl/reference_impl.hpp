@@ -143,11 +143,13 @@ inline const Chromosome& Reference::operator[](std::string_view chrom_name) cons
   return *it;
 }
 
+// NOLINTBEGIN(*-container-contains)
 inline bool Reference::contains(std::uint32_t id) const { return find(id) != end(); }
 inline bool Reference::contains(const Chromosome& chrom) const { return find(chrom) != end(); }
 inline bool Reference::contains(std::string_view chrom_name) const {
   return find(chrom_name) != end();
 }
+// NOLINTEND(*-container-contains)
 
 inline std::uint32_t Reference::get_id(std::string_view chrom_name) const {
   if (const auto match = find(chrom_name); match != end()) {

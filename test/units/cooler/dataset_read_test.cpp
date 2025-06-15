@@ -187,7 +187,7 @@ TEST_CASE("Cooler: dataset lower_bound", "[dataset][medium]") {
 
   SECTION("randomized") {
     const auto max_offset1 = static_cast<std::ptrdiff_t>(buff.size() - (buff.size() / 2));
-    const auto max_offset2 = static_cast<std::ptrdiff_t>(buff.size());
+    const auto max_offset2 = static_cast<std::ptrdiff_t>(buff.size()) - 1;
 
     for (std::size_t i = 0; i < 25'000; ++i) {
       const auto offset1 = std::uniform_int_distribution<std::ptrdiff_t>{0, max_offset1}(rand_eng);

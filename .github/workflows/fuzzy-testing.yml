@@ -60,14 +60,14 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@314c7d731a37ea69820f1a96aa81c7da4ed81a83
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
 
   build-project:
     name: Build project
     needs: build-conan-deps
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     env:
@@ -209,7 +209,7 @@ jobs:
             }
 
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     env:
@@ -400,7 +400,7 @@ jobs:
     needs: fuzzy-project
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-19
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       options: "--user=root"
 
     steps:
@@ -442,8 +442,8 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/profiles/"            \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-19           \
-            --llvm-profdata-bin llvm-profdata-19 \
+            --llvm-cov-bin llvm-cov-20           \
+            --llvm-profdata-bin llvm-profdata-20 \
             ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
