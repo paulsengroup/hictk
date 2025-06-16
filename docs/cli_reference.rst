@@ -82,8 +82,8 @@ hictk balance ice
             --mad-max FLOAT:NONNEGATIVE [5]
                                 Mask bins using the MAD-max filter.
                                 Bins whose log marginal sum is less than --mad-max median
-                                absolute deviations below the median log marginal sum of
-                                all the bins in the same chromosome.
+                                absolute deviations below the median log marginal sum of all the
+                                bins in the same chromosome.
             --min-nnz UINT [10]
                                 Mask rows with fewer than --min-nnz non-zero entries.
             --min-count UINT [0]
@@ -148,8 +148,7 @@ hictk balance scale
                                 Maximum number of iterations.
             --rescale-weights, --no-rescale-weights{false}
                                 Rescale weights such that the sum of the balanced matrix is
-                                similar
-                                to that of the input matrix.
+                                similar to that of the input matrix.
             --name TEXT         Name to use when writing weights to file.
                                 Defaults to SCALE, INTER_SCALE and GW_SCALE when --mode is cis,
                                 trans and gw, respectively.
@@ -191,8 +190,7 @@ hictk balance vc
                                 - cis-only interactions (cis)
             --rescale-weights, --no-rescale-weights{false}
                                 Rescale weights such that the sum of the balanced matrix is
-                                similar
-                                to that of the input matrix.
+                                similar to that of the input matrix.
             --name TEXT         Name to use when writing weights to file.
                                 Defaults to VC, INTER_VC and GW_VC when --mode is cis, trans and
                                 gw, respectively.
@@ -255,8 +253,7 @@ hictk convert
                                 Has no effect when creating .[m]cool files.
             --count-type TEXT:{auto,int,float} [auto]
                                 Specify the strategy used to infer count types when converting
-                                .hic
-                                files to .[m]cool format.
+                                .hic files to .[m]cool format.
                                 Can be one of: int, float, or auto.
     -f,     --force             Overwrite existing files (if any).
 
@@ -380,8 +377,8 @@ hictk load
             --one-based, --zero-based{false}
                                 Interpret genomic coordinates or bins as one/zero based.
                                 By default coordinates are assumed to be one-based for
-                                interactions in
-                                4dn and validpairs formats and zero-based otherwise.
+                                interactions in 4dn and validpairs formats and zero-based
+                                otherwise.
             --count-as-float    Interactions are floats.
             --skip-all-vs-all, --no-skip-all-vs-all{false}
                                 Do not generate All vs All matrix.
@@ -391,14 +388,12 @@ hictk load
             --validate-pixels, --no-validate-pixels{false}
                                 Toggle pixel validation on or off.
                                 When --no-validate-pixels is used and invalid pixels are
-                                encountered,
-                                hictk will either crash or produce invalid files.
+                                encountered, hictk will either crash or produce invalid files.
             --transpose-lower-triangular-pixels, --no-transpose-lower-triangular-pixels{false}
                                 Transpose pixels overlapping the lower-triangular matrix.
                                 When --no-transpose-lower-triangular-pixels is used and one or
-                                more pixels overlapping
-                                with the lower triangular matrix are encountered an exception
-                                will be raised.
+                                more pixels overlapping with the lower triangular matrix are
+                                encountered an exception will be raised.
             --chunk-size UINT [10000000]
                                 Number of pixels to buffer in memory.
     -l,     --compression-lvl UINT:INT bounded to [1 - 12]
@@ -522,8 +517,8 @@ hictk validate
             --include-file-path, --exclude-file-path{false}
                                 Output the given input path using attribute "uri".
             --exhaustive, --fail-fast{false}
-                                When processing multi-resolution or single-cell files,
-                                do not fail as soon as the first error is detected.
+                                When processing multi-resolution or single-cell files, do not
+                                fail as soon as the first error is detected.
             --quiet             Don't print anything to stdout. Success/failure is reported
                                 through exit codes.
 
@@ -541,10 +536,8 @@ hictk zoomify
                                 Path to a .cool or .hic file (Cooler URI syntax supported).
     [m]cool/hic TEXT REQUIRED   Output path.
                                 When zoomifying Cooler files, providing a single resolution
-                                through
-                                --resolutions and specifying --no-copy-base-resolution, the
-                                output file
-                                will be in .cool format.
+                                through --resolutions and specifying --no-copy-base-resolution,
+                                the output file will be in .cool format.
   OPTIONS:
     -h,     --help              Print this help message and exit
             --force             Force overwrite existing output file(s).
