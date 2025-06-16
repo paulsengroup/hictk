@@ -71,15 +71,15 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
   sc.add_option(
       "--ignore-diags",
       c.masked_diags,
-      "Number of diagonals (including the main diagonal) to mask before balancing.")
+      "Number of diagonals (including the main diagonal) to mask before "
+      "balancing.")
       ->capture_default_str();
   sc.add_option(
       "--mad-max",
       c.mad_max,
       "Mask bins using the MAD-max filter.\n"
-      "Bins whose log marginal sum is less than --mad-max median\n"
-      "absolute deviations below the median log marginal sum of\n"
-      "all the bins in the same chromosome.")
+      "Bins whose log marginal sum is less than --mad-max median absolute deviations "
+      "below the median log marginal sum of all the bins in the same chromosome.")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
   sc.add_option(
@@ -95,7 +95,7 @@ void Cli::make_ice_balance_subcommand(CLI::App& app) {
   sc.add_option(
       "--tolerance",
       c.tolerance,
-      "Threshold of the variance of marginals used to determine whether\n"
+      "Threshold of the variance of marginals used to determine whether "
       "the algorithm has converged.")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
@@ -201,7 +201,8 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
   sc.add_option(
       "--max-percentile",
       c.max_percentile,
-      "Percentile used to compute the maximum number of nnz values that cause a row to be masked.")
+      "Percentile used to compute the maximum number of nnz values that cause a "
+      "row to be masked.")
       ->capture_default_str();
   sc.add_option(
       "--max-row-sum-err",
@@ -212,8 +213,8 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
   sc.add_option(
       "--tolerance",
       c.tolerance,
-      "Threshold of the variance of marginals used to determine whether\n"
-      "the algorithm has converged.")
+      "Threshold of the variance of marginals used to determine whether the "
+      "algorithm has converged.")
       ->check(CLI::NonNegativeNumber)
       ->capture_default_str();
   sc.add_option(
@@ -225,7 +226,7 @@ void Cli::make_scale_balance_subcommand(CLI::App& app) {
   sc.add_flag(
       "--rescale-weights,!--no-rescale-weights",
       c.rescale_marginals,
-      "Rescale weights such that the sum of the balanced matrix is similar\n"
+      "Rescale weights such that the sum of the balanced matrix is similar "
       "to that of the input matrix.")
       ->capture_default_str();
   sc.add_option(
@@ -314,7 +315,7 @@ void Cli::make_vc_balance_subcommand(CLI::App& app) {
   sc.add_flag(
       "--rescale-weights,!--no-rescale-weights",
       c.rescale_marginals,
-      "Rescale weights such that the sum of the balanced matrix is similar\n"
+      "Rescale weights such that the sum of the balanced matrix is similar "
       "to that of the input matrix.")
       ->capture_default_str();
   sc.add_option(

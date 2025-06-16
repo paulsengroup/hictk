@@ -70,7 +70,7 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "-t,--table",
       c.table,
-      "Name of the table to dump.\n")
+      "Name of the table to dump.")
       ->check(CLI::IsMember({"chroms", "bins", "pixels", "normalizations",
                              "resolutions", "cells", "weights"}))
       ->capture_default_str();
@@ -78,19 +78,22 @@ void Cli::make_dump_subcommand() {
   sc.add_option(
       "-r,--range",
       c.range1,
-      "Coordinates of the genomic regions to be dumped following UCSC style notation (chr1:0-1000).")
+      "Coordinates of the genomic regions to be dumped following UCSC style "
+      "notation (chr1:0-1000).")
       ->capture_default_str();
 
   sc.add_option(
       "--range2",
       c.range2,
-      "Coordinates of the genomic regions to be dumped following UCSC style notation (chr1:0-1000).")
+      "Coordinates of the genomic regions to be dumped following UCSC style "
+      "notation (chr1:0-1000).")
       ->capture_default_str();
 
   sc.add_option(
       "--query-file",
       c.query_file,
-      "Path to a BEDPE file with the list of coordinates to be fetched (pass - to read queries from stdin).")
+      "Path to a BEDPE file with the list of coordinates to be fetched "
+      "(pass - to read queries from stdin).")
       ->check(CLI::ExistingFile | CLI::IsMember({"-"}))
       ->capture_default_str();
 

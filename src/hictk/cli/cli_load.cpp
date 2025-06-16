@@ -51,7 +51,7 @@ void Cli::make_load_subcommand() {
       c.output_path,
       "Path to output file.\n"
       "File extension will be used to infer the output format.\n"
-      "This behavior can be overridden by explicitly specifying an\n"
+      "This behavior can be overridden by explicitly specifying an "
       "output format through option --output-fmt.")
       ->required();
 
@@ -116,7 +116,7 @@ void Cli::make_load_subcommand() {
       "--one-based,!--zero-based",
       c.one_based,
       "Interpret genomic coordinates or bins as one/zero based.\n"
-      "By default coordinates are assumed to be one-based for interactions in\n"
+      "By default coordinates are assumed to be one-based for interactions in "
       "4dn and validpairs formats and zero-based otherwise.");
 
   sc.add_flag(
@@ -142,7 +142,7 @@ void Cli::make_load_subcommand() {
       "--validate-pixels,!--no-validate-pixels",
       c.validate_pixels,
       "Toggle pixel validation on or off.\n"
-      "When --no-validate-pixels is used and invalid pixels are encountered,\n"
+      "When --no-validate-pixels is used and invalid pixels are encountered, "
       "hictk will either crash or produce invalid files.")
       ->capture_default_str();
 
@@ -150,7 +150,7 @@ void Cli::make_load_subcommand() {
       "--transpose-lower-triangular-pixels,!--no-transpose-lower-triangular-pixels",
       c.transpose_lower_triangular_pixels,
       "Transpose pixels overlapping the lower-triangular matrix.\n"
-      "When --no-transpose-lower-triangular-pixels is used and one or more pixels overlapping\n"
+      "When --no-transpose-lower-triangular-pixels is used and one or more pixels overlapping "
       "with the lower triangular matrix are encountered an exception will be raised.")
       ->capture_default_str();
 
