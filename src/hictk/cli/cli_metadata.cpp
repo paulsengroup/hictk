@@ -52,7 +52,7 @@ void Cli::make_metadata_subcommand() {
   sc.add_flag(
       "--recursive",
       c.recursive,
-      "Print metadata for each resolution or cell contained in a\n"
+      "Print metadata for each resolution or cell contained in a "
       "multi-resolution or single-cell file.")
       ->capture_default_str();
   // clang-format on

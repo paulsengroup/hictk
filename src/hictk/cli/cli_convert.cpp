@@ -88,7 +88,8 @@ void Cli::make_convert_subcommand() {
   sc.add_option(
       "-g,--genome",
       c.genome,
-      "Genome assembly name. By default this is copied from the .hic file metadata.");
+      "Genome assembly name. By default this is copied from the .hic file "
+      "metadata.");
   sc.add_option(
       "--tmpdir",
       c.tmp_dir,
@@ -130,7 +131,7 @@ void Cli::make_convert_subcommand() {
   sc.add_option(
       "--count-type",
       c.count_type,
-      "Specify the strategy used to infer count types when converting .hic\n"
+      "Specify the strategy used to infer count types when converting .hic "
       "files to .[m]cool format.\n"
       "Can be one of: int, float, or auto.")
       ->check(CLI::IsMember{{"auto", "int", "float"}})

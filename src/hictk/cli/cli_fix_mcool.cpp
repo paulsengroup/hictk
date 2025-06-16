@@ -83,13 +83,15 @@ void Cli::make_fix_mcool_subcommand() {
   sc.add_option(
       "-t,--threads",
       c.threads,
-      "Maximum number of parallel threads to spawn (only applies to the balancing stage).")
+      "Maximum number of parallel threads to spawn (only applies to the balancing "
+      " stage).")
       ->check(CLI::Range(std::uint32_t{1}, std::thread::hardware_concurrency()))
       ->capture_default_str();
   sc.add_option(
       "-l,--compression-lvl",
       c.zstd_compression_lvl,
-      "Compression level used to compress temporary files using ZSTD (only applies to the balancing stage).")
+      "Compression level used to compress temporary files using ZSTD (only "
+      "applies to the balancing stage).")
       ->check(CLI::Range(std::int16_t{0}, MAX_ZSTD_COMPRESSION_LEVEL))
       ->capture_default_str();
   sc.add_flag(

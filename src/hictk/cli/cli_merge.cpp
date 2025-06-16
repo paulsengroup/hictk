@@ -42,7 +42,8 @@ void Cli::make_merge_subcommand() {
   sc.add_option(
       "input-files",
       c.input_files,
-      "Path to two or more Cooler or .hic files to be merged (Cooler URI syntax supported).")
+      "Path to two or more Cooler or .hic files to be merged "
+      "(Cooler URI syntax supported).")
       ->check((IsValidCoolerFile | IsValidHiCFile) & (!IsValidSingleCellCoolerFile))
       ->expected(2, std::numeric_limits<int>::max())
       ->required();

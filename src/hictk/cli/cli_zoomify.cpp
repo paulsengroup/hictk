@@ -57,8 +57,8 @@ void Cli::make_zoomify_subcommand() {
       "[m]cool/hic",
       c.path_to_output,
       "Output path.\n"
-      "When zoomifying Cooler files, providing a single resolution through\n"
-      "--resolutions and specifying --no-copy-base-resolution, the output file\n"
+      "When zoomifying Cooler files, providing a single resolution through "
+      "--resolutions and specifying --no-copy-base-resolution, the output file "
       "will be in .cool format.")
       ->required();
 
@@ -87,7 +87,7 @@ void Cli::make_zoomify_subcommand() {
       "Example:\n"
       "Base resolution: 1000\n"
       "Pow2: 1000, 2000, 4000, 8000...\n"
-      "Nice: 1000, 2000, 5000, 10000...")
+      "Nice: 1000, 2000, 5000, 10000...\n")
       ->default_str("--nice-steps");
 
   sc.add_option(

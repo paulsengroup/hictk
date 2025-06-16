@@ -52,7 +52,7 @@ void Cli::make_validate_subcommand() {
   sc.add_flag(
       "--exhaustive,!--fail-fast",
       c.exhaustive,
-      "When processing multi-resolution or single-cell files,\n"
+      "When processing multi-resolution or single-cell files, "
       "do not fail as soon as the first error is detected.")
       ->capture_default_str();
   sc.add_flag(

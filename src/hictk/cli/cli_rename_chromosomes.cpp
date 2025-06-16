@@ -36,7 +36,7 @@ void Cli::make_rename_chromosomes_subcommand() {
       "--name-mappings",
       c.path_to_name_mappings,
       "Path to a two column TSV with pairs of chromosomes to be renamed.\n"
-      "The first column should contain the original chromosome name,\n"
+      "The first column should contain the original chromosome name, "
       "while the second column should contain the destination name to use when renaming."
   );
 
