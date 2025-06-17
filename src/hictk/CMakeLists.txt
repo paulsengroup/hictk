@@ -25,6 +25,7 @@ add_subdirectory(load)
 add_subdirectory(merge)
 add_subdirectory(metadata)
 add_subdirectory(rename_chromosomes)
+add_subdirectory(runner)
 add_subdirectory(telemetry)
 add_subdirectory(validate)
 add_subdirectory(zoomify)
@@ -39,28 +40,15 @@ add_executable(hictk)
 
 target_sources(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
-target_include_directories(hictk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-
 target_link_libraries(
   hictk
   PRIVATE
     hictk_project_options
     hictk_project_warnings
-    hictk_internal_tools_config
+    hictk_internal_common_type_traits
     hictk_internal_tools_definitions
     hictk_internal_tools_cli
-    hictk_internal_tools_telemetry
-    hictk_internal_tools_balance
-    hictk_internal_tools_convert
-    hictk_internal_tools_dump
-    hictk_internal_tools_fix_mcool
-    hictk_internal_tools_load
-    hictk_internal_tools_merge
-    hictk_internal_tools_metadata
-    hictk_internal_tools_rename_chromosomes
-    hictk_internal_tools_validate
-    hictk_internal_tools_zoomify
-    hictk::version
+    hictk_internal_tools_runner
 )
 
 target_link_system_libraries(
