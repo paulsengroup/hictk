@@ -39,6 +39,7 @@ struct Tracer {
   }
   static void tear_down_instance() noexcept {}
   [[nodiscard]] static bool should_collect_telemetry() noexcept { return false; }
+  [[nodiscard]] static constexpr bool is_dummy() noexcept { return true; }
 };
 
 }  // namespace hictk::tools
