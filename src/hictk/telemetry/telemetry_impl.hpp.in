@@ -168,4 +168,7 @@ inline auto Tracer::get_scoped_span(Cli::subcommand subcmd, const Config& config
 
   return ss;
 }
+
+constexpr bool Tracer::is_dummy() noexcept { return false; }
+
 }  // namespace hictk::tools

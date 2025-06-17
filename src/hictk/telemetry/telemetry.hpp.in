@@ -96,6 +96,7 @@ class Tracer {
       -> std::optional<ScopedSpan<SpanT, ScopeT>>;
 
   [[nodiscard]] static bool should_collect_telemetry() noexcept;
+  [[nodiscard]] static constexpr bool is_dummy() noexcept;
 
  private:
   [[nodiscard]] static const std::string& get_os_name() noexcept;
