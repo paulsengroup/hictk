@@ -254,11 +254,21 @@ Tweaking hictk's dependencies
 | Most users don't require all the dependencies.
 | The following table shows the dependency matrix for ``hictk`` and ``libhictk``.
 
-.. csv-table::
-  :file: ./assets/dependency_matrix.tsv
-  :header-rows: 1
-  :delim: tab
-  :encoding: utf-8
+.. only:: not latex
+
+  .. csv-table::
+    :file: ./assets/dependency_matrix_utf8.tsv
+    :header-rows: 1
+    :delim: tab
+    :encoding: utf-8
+
+.. only:: latex
+
+  .. csv-table::
+    :file: ./assets/dependency_matrix_ascii.tsv
+    :header-rows: 1
+    :delim: tab
+    :encoding: ascii
 
 | :sup:`1` required depending on how libarchive was compiled
 | :sup:`2` required to compile with telemetry enabled
