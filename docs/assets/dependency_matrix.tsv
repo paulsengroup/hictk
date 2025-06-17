@@ -1,0 +1,30 @@
+Feature	HICTK_BUILD_TOOLS=ON	HICTK_WITH_ARROW=ON	HICTK_WITH_EIGEN=ON	HICTK_ENABLE_TESTING=ON	HICTK_ENABLE_FUZZY_TESTING=ON
+abseil	✅ ²	❌	❌	❌	❌
+arrow	❌	✅	❌	✅ ⁴	✅ ⁴
+boost	❌	✅ ³	❌	✅ ⁴	✅ ⁴
+bshoshany-thread-pool	✅	✅	✅	✅	✅
+bzip2	✅ ¹	❌	❌	❌	❌
+catch2	❌	❌	❌	✅	❌
+cli11	✅	❌	❌	❌	✅
+concurrentqueue	✅	✅	✅	✅	✅
+eigen	❌	❌	✅	✅ ⁴	✅ ⁴
+fast_float	✅	✅	✅	✅	✅
+fmt	✅	✅	✅	✅	✅
+hdf5	✅	✅	✅	✅	✅
+highfive	✅	✅	✅	✅	✅
+libarchive	✅	❌	❌	❌	❌
+libcurl	✅ ²	❌	❌	❌	❌
+libdeflate	✅	✅	✅	✅	✅
+lz4	✅ ¹	❌	❌	❌	❌
+lzo	✅ ¹	❌	❌	❌	❌
+nlohmann_json	✅	❌	❌	❌	❌
+opentelemetry-cpp	✅ ²	❌	❌	❌	❌
+parallel-hashmap	✅	✅	✅	✅	✅
+pybind11	❌	❌	❌	❌	❌
+readerwriterqueue	✅	✅	✅	✅	✅
+span-lite	✅	✅	✅	✅	✅
+spdlog	✅	✅	✅	✅	✅
+tomlplusplus	✅	❌	❌	❌	❌
+xz_utils	✅ ¹	❌	❌	❌	❌
+zstd	✅	✅	✅	✅	✅
+zlib	✅ ¹	❌	❌	❌	❌
