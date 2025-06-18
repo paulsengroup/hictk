@@ -32,17 +32,24 @@ ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
 # Build hictk deps using Conan
 RUN mkdir -p "$src_dir"
 
-COPY conanfile.Dockerfile.py "$src_dir/conanfile.py"
-RUN conan install "$src_dir/conanfile.py"        \
-             --build=missing                     \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH" \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH" \
-             -s build_type=Release               \
-             -s compiler.libcxx=libstdc++11      \
-             -s compiler.cppstd=17               \
-             --output-folder="$build_dir"        \
-&& conan cache clean "*" --build                 \
-&& conan cache clean "*" --download              \
+COPY conanfile.py "$src_dir/conanfile.py"
+RUN conan install "$src_dir/conanfile.py"               \
+             --build=missing                            \
+             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"        \
+             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"        \
+             -s build_type=Release                      \
+             -s compiler.libcxx=libstdc++11             \
+             -s compiler.cppstd=17                      \
+             -o 'hictk/*:with_cli_tool_deps=True'       \
+             -o 'hictk/*:with_benchmark_deps=False'     \
+             -o 'hictk/*:with_arrow=False'              \
+             -o 'hictk/*:with_eigen=False'              \
+             -o 'hictk/*:with_telemetry_deps=True'      \
+             -o 'hictk/*:with_unit_testing_deps=False'  \
+             -o 'hictk/*:with_fuzzy_testing_deps=False' \
+             --output-folder="$build_dir"               \
+&& conan cache clean "*" --build                        \
+&& conan cache clean "*" --download                     \
 && conan cache clean "*" --source
 
 # Copy source files
