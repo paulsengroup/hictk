@@ -54,9 +54,9 @@ def import_from_path(file_path: pathlib.Path, module_name="conanfile"):
     return module
 
 
-def extract_requirements(conanfile: pathlib.Path) -> List[Tuple[str, Any, Any, str]]:
+def extract_requirements(conanfile: pathlib.Path, section: str) -> List[Tuple[str, Any, Any, str]]:
     conanfile = import_from_path(conanfile, conanfile.stem)
-    source = inspect.getsource(conanfile.HictkConan.requirements)
+    source = inspect.getsource(getattr(conanfile.HictkConan, section))
 
     pattern = re.compile(r"^\"([\w\-_]+)/([\w.\-_]+)#(\w+)\"(.*)$")
 
@@ -146,12 +146,25 @@ def get_last_recipe(package: str, remotes: str) -> Tuple[str, str, str]:
     return package, ver, rev
 
 
+def process_build_requirements(conanfile: pathlib.Path):
+    print("### build_requirements\n###")
+    for package, _, _, suffix in extract_requirements(conanfile, "build_requirements"):
+        package, version, revision = get_last_recipe(package, "*")
+        print(f'self.requires("{package}/{version}#{revision}"{suffix}')
+
+
+def process_requirements(conanfile: pathlib.Path):
+    print("### requirements\n###")
+    for package, _, _, suffix in extract_requirements(conanfile, "requirements"):
+        package, version, revision = get_last_recipe(package, "*")
+        print(f'self.requires("{package}/{version}#{revision}"{suffix}')
+
+
 def main():
     args = vars(make_cli().parse_args())
 
-    for package, _, _, suffix in extract_requirements(args["conanfile"]):
-        package, version, revision = get_last_recipe(package, "*")
-        print(f'self.requires("{package}/{version}#{revision}"{suffix}')
+    process_build_requirements(args["conanfile"])
+    process_requirements(args["conanfile"])
 
 
 if __name__ == "__main__":
