@@ -15,6 +15,7 @@ on:
       - "src/**"
       - "test/integration/**"
       - "test/units/**"
+      - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
 
@@ -28,6 +29,7 @@ on:
       - "src/**"
       - "test/integration/**"
       - "test/units/**"
+      - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
 
@@ -76,7 +78,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@8b45168added4a6ed866d9f9e53f65628b34865a
     with:
       os: windows-2025
 

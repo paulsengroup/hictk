@@ -13,6 +13,7 @@ on:
       - "examples/**"
       - "src/**"
       - "test/units/**"
+      - "utils/devel/build_dependencies.py"
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -25,6 +26,7 @@ on:
       - "examples/**"
       - "src/**"
       - "test/units/**"
+      - "utils/devel/build_dependencies.py"
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
@@ -44,7 +46,7 @@ permissions:
 jobs:
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8b45168added4a6ed866d9f9e53f65628b34865a
 
   build-project:
     name: Build project
