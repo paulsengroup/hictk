@@ -119,38 +119,18 @@ jobs:
       - name: Install dependencies (Debug)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          conan install conanfile.py                  \
-             --build='missing'                        \
-             --build="b2/*"                           \
-             --build="catch2/*"                       \
-             -pr:b=default                            \
-             -pr:h=default                            \
-             -s build_type=Debug                      \
-             -s compiler.runtime_type=Debug           \
-             -s compiler.cppstd=${{ inputs.cppstd }}  \
-             --output-folder cmake-prefix-dbg
-
-          dest="$(cygpath "${{ github.workspace }}/cmake-prefix-dbg.tar")"
-          tar -cf "$dest" cmake-prefix-dbg
-          rm -r cmake-prefix-dbg
+          utils/devel/build_dependencies.py \
+            --build-type=Debug \
+            --cppstd="${{ inputs.cppstd }}" \
+            --ci
 
       - name: Install dependencies (Release)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          conan install conanfile.py                  \
-             --build='missing'                        \
-             --build="b2/*"                           \
-             --build="catch2/*"                       \
-             -pr:b=default                            \
-             -pr:h=default                            \
-             -s build_type=Release                    \
-             -s compiler.runtime_type=Release         \
-             -s compiler.cppstd=${{ inputs.cppstd }}  \
-             --output-folder cmake-prefix-rel
-
-          dest="$(cygpath "${{ github.workspace }}/cmake-prefix-rel.tar")"
-          tar -cf "$dest" cmake-prefix-rel
-          rm -r cmake-prefix-rel
+          utils/devel/build_dependencies.py \
+            --build-type=Release \
+            --cppstd="${{ inputs.cppstd }}" \
+            --ci
 
       - name: Clean Conan cache (post-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'

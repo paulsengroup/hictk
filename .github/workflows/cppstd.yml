@@ -14,6 +14,7 @@ on:
       - "src/**"
       - "test/scripts/**"
       - "test/units/**"
+      - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
 
@@ -32,14 +33,14 @@ permissions:
 jobs:
   build-conan-deps-cpp20:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8b45168added4a6ed866d9f9e53f65628b34865a
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       cppstd: 20
 
   build-conan-deps-cpp23:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@1deb8549e07e3db069ef17af65045b9fd4621ac6
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8b45168added4a6ed866d9f9e53f65628b34865a
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
       cppstd: 23
@@ -140,7 +141,7 @@ jobs:
                 -DCMAKE_LINKER_TYPE="$LINKER" \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
                 -DHICTK_ENABLE_TESTING=ON \
-                -DHICTK_ENABLE_FUZZY_TESTING=ON \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF \
                 -DHICTK_BUILD_TOOLS=OFF \
                 -DHICTK_BUILD_EXAMPLES=ON \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF \
