@@ -128,47 +128,30 @@ jobs:
       - name: Install dependencies (Debug)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          conan install conanfile.py                  \
-             --build='missing'                        \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -s build_type=Debug                      \
-             -s compiler.libcxx=libstdc++11           \
-             -s compiler.cppstd=${{ inputs.cppstd }}  \
-             --output-folder cmake-prefix-dbg
-
-          tar -cf /tmp/cmake-prefix-dbg.tar cmake-prefix-dbg
-          rm -r cmake-prefix-dbg
+          utils/devel/build_dependencies.py \
+            --build-type=Debug \
+            --cppstd="${{ inputs.cppstd }}" \
+            --ci
 
       - name: Install dependencies (Release)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          conan install conanfile.py                  \
-             --build='missing'                        \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -s build_type=Release                    \
-             -s compiler.libcxx=libstdc++11           \
-             -s compiler.cppstd=${{ inputs.cppstd }}  \
-             --output-folder cmake-prefix-rel
-
-          tar -cf /tmp/cmake-prefix-rel.tar cmake-prefix-rel
-          rm -r cmake-prefix-rel
+          utils/devel/build_dependencies.py \
+            --cppstd="${{ inputs.cppstd }}" \
+            --build-type=Release \
+            --ci
 
       - name: Install dependencies (RelWithDebInfo)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          conan install conanfile.py                  \
-             --build='missing'                        \
-             -pr:b="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -pr:h="$CONAN_DEFAULT_PROFILE_PATH"      \
-             -s build_type=RelWithDebInfo             \
-             -s compiler.libcxx=libstdc++11           \
-             -s compiler.cppstd=${{ inputs.cppstd }}  \
-             --output-folder cmake-prefix-rwdi
+          utils/devel/build_dependencies.py \
+            --cppstd="${{ inputs.cppstd }}" \
+            --build-type=RelWithDebInfo \
+            --ci
 
-          tar -cf /tmp/cmake-prefix-rwdi.tar cmake-prefix-rwdi
-          rm -r cmake-prefix-rwdi
+      - name: Move archives
+        if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
+        run: mv cmake-prefix-*.tar /tmp/
 
       - name: Clean Conan cache (post-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
