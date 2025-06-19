@@ -99,6 +99,9 @@ Compiling hictk
                 -s build_type=Release \
                 -s compiler.cppstd=17 \
                 --output-folder=./build/ \
+                -o 'hictk/*:with_cli_tool_deps=True' \
+                -o 'hictk/*:with_telemetry_deps=True' \
+                -o 'hictk/*:with_unit_testing_deps=True' \
                 .
 
 
@@ -116,6 +119,8 @@ Compiling hictk
         -DHICTK_BUILD_TOOLS=ON \
         -DHICTK_BUILD_BENCHMARKS=OFF \
         -DHICTK_BUILD_EXAMPLES=OFF \
+        -DHICTK_WITH_ARROW=OFF \
+        -DHICTK_WITH_EIGEN=OFF \
         -G Ninja \
         -S /tmp/hictk \
         -B /tmp/hictk/build
@@ -125,9 +130,61 @@ Compiling hictk
   # If you are compiling hictk on Windows you need to pass the build config as well
   # cmake --build /tmp/hictk/build --config Release
 
-To override the default compiler used by CMake, pass the following arguments to the first CMake command: :code:`-DCMAKE_C_COMPILER=path/to/cc -DCMAKE_CXX_COMPILER=path/to/c++`
+.. only:: not latex
 
-We highly recommend using the same compiler when running Conan and CMake.
+  .. raw:: html
+
+     <details>
+     <summary><a>Troubleshooting build errors</a></summary>
+
+.. only:: latex
+
+  .. rubric:: Troubleshooting build errors
+
+* I get an error while building ``boost`` with Conan:
+
+  If you are getting an error like::
+
+    ConanException: These libraries were built, but were not used in any boost module
+
+  This is likely due to Conan deciding to use a buggy version of ``b2`` (e.g., v5.3.0) to build ``boost``.
+
+  You can work around this by overriding the version of ``b2`` in your Conan profile.
+
+  To do this:
+
+  1. Locate the Conan profile with e.g., ``conan profile path default``
+  2. Add the following lines at the end of the profile::
+
+      [tool_requires]
+      boost/*: b2/5.2.1
+
+* When building dependencies with Conan I am getting errors like::
+
+    b2: relocation error: b2: symbol _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm, version GLIBCXX_3.4.21 not defined in file libstdc++.so.6 with link time reference
+
+  This is due to ABI incompatibilities between your build environment and the environment used by the `Conan Center Index <https://conan.io/center>`_ to build e.g., ``b2``.
+
+  You can work around this bug by forcing Conan to build ``b2`` (and any other package causing similar errors) from source:
+
+  .. code-block:: shell
+
+    conan install -pr:b default -pr:h default --requires 'b2/5.2.1'
+
+  For the ``b2`` package specifically, compiling the package with ``clang`` on Linux is prone to issues and often fails.
+
+  If you run into problems, try compiling ``b2`` using gcc instead:
+
+  .. code-block:: shell
+
+    CC=gcc CXX=g++ conan profile detect --name gcc --exist-ok
+    conan install -pr:b gcc -pr:h gcc --requires 'b2/5.2.1'
+
+.. only:: not latex
+
+  .. raw:: html
+
+    </details>
 
 Tweaking hictk's build options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,61 +248,33 @@ To further tweak the options enabled when ``-DENABLE_DEVELOPER_MODE=ON``, please
 
 Finally, you can override the version metadata embedded in the hictk binary and version headers by tweaking any of the ``HICTK_GIT_`` variables defined in file `cmake/Versioning.cmake <https://github.com/paulsengroup/hictk/blob/main/cmake/Versioning.cmake>`__ (e.g., ``-DHICTK_GIT_AUTHOR_NAME='Alan Turing'``).
 
+Tweaking hictk's dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+| The ``conanfile.py`` file contains the dependencies to compile the entire ``hictk`` project.
+| Most users don't require all the dependencies.
+| The following table shows the dependency matrix for ``hictk`` and ``libhictk``.
+
 .. only:: not latex
 
-  .. raw:: html
-
-     <details>
-     <summary><a>Troubleshooting build errors</a></summary>
+  .. csv-table::
+    :file: ./assets/dependency_matrix_utf8.tsv
+    :header-rows: 1
+    :delim: tab
+    :encoding: utf-8
 
 .. only:: latex
 
-  .. rubric:: Troubleshooting build errors
+  .. csv-table::
+    :file: ./assets/dependency_matrix_ascii.tsv
+    :header-rows: 1
+    :delim: tab
+    :encoding: ascii
 
-* I get an error while building ``boost`` with Conan:
-
-  If you are getting an error like::
-
-    ConanException: These libraries were built, but were not used in any boost module
-
-  This is likely due to Conan deciding to use a buggy version of ``b2`` (e.g., v5.3.0) to build ``boost``.
-
-  You can work around this by overriding the version of ``b2`` in your Conan profile.
-
-  To do this:
-
-  1. Locate the Conan profile with e.g., ``conan profile path default``
-  2. Add the following lines at the end of the profile::
-
-      [tool_requires]
-      boost/*: b2/5.2.1
-
-* When building dependencies with Conan I am getting errors like::
-
-    b2: relocation error: b2: symbol _ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm, version GLIBCXX_3.4.21 not defined in file libstdc++.so.6 with link time reference
-
-  This is due to ABI incompatibilities between your build environment and the environment used by the `Conan Center Index <https://conan.io/center>`_ to build e.g., ``b2``.
-
-  You can work around this bug by forcing Conan to build ``b2`` (and any other package causing similar errors) from source:
-
-  .. code-block:: shell
-
-    conan install -pr:b default -pr:h default --requires 'b2/5.2.1'
-
-  For the ``b2`` package specifically, compiling the package with ``clang`` on Linux is prone to issues and often fails.
-
-  If you run into problems, try compiling ``b2`` using gcc instead:
-
-  .. code-block:: shell
-
-    CC=gcc CXX=g++ conan profile detect --name gcc --exist-ok
-    conan install -pr:b gcc -pr:h gcc --requires 'b2/5.2.1'
-
-.. only:: not latex
-
-  .. raw:: html
-
-    </details>
+| :sup:`1` required depending on how libarchive was compiled
+| :sup:`2` required to compile with telemetry enabled
+| :sup:`3` only ``Boost::headers`` is required
+| :sup:`4` required if the corresponding functionality should be tested
 
 Running automated tests
 =======================
