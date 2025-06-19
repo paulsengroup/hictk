@@ -99,6 +99,9 @@ Compiling hictk
                 -s build_type=Release \
                 -s compiler.cppstd=17 \
                 --output-folder=./build/ \
+                -o 'hictk/*:with_cli_tool_deps=True' \
+                -o 'hictk/*:with_telemetry_deps=True' \
+                -o 'hictk/*:with_unit_testing_deps=True' \
                 .
 
 
@@ -116,6 +119,8 @@ Compiling hictk
         -DHICTK_BUILD_TOOLS=ON \
         -DHICTK_BUILD_BENCHMARKS=OFF \
         -DHICTK_BUILD_EXAMPLES=OFF \
+        -DHICTK_WITH_ARROW=OFF \
+        -DHICTK_WITH_EIGEN=OFF \
         -G Ninja \
         -S /tmp/hictk \
         -B /tmp/hictk/build
@@ -124,10 +129,6 @@ Compiling hictk
 
   # If you are compiling hictk on Windows you need to pass the build config as well
   # cmake --build /tmp/hictk/build --config Release
-
-To override the default compiler used by CMake, pass the following arguments to the first CMake command: :code:`-DCMAKE_C_COMPILER=path/to/cc -DCMAKE_CXX_COMPILER=path/to/c++`
-
-We highly recommend using the same compiler when running Conan and CMake.
 
 .. only:: not latex
 

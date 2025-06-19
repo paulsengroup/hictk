@@ -1,5 +1,4 @@
 Feature	HICTK_BUILD_TOOLS=ON	HICTK_WITH_ARROW=ON	HICTK_WITH_EIGEN=ON	HICTK_ENABLE_TESTING=ON	HICTK_ENABLE_FUZZY_TESTING=ON
-abseil	✅ ²	❌	❌	❌	❌
 arrow	❌	✅	❌	✅ ⁴	✅ ⁴
 boost	❌	✅ ³	❌	✅ ⁴	✅ ⁴
 bshoshany-thread-pool	✅	✅	✅	✅	✅
