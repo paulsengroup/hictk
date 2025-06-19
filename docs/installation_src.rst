@@ -66,7 +66,7 @@ Download from the `Release <https://github.com/paulsengroup/hictk/releases>`_ pa
 .. code-block:: bash
 
   mkdir /tmp/hictk
-  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v2.1.3.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
+  curl -L 'https://github.com/paulsengroup/hictk/archive/refs/tags/v2.1.4.tar.gz' | tar --strip-components=1 -C /tmp/hictk -xzf -
 
 
 Using git.
@@ -76,7 +76,7 @@ Using git.
   git clone https://github.com/paulsengroup/hictk.git /tmp/hictk
 
   cd /tmp/hictk
-  git checkout v2.1.3  # Skip this step if you want to build the latest commit from main
+  git checkout v2.1.4  # Skip this step if you want to build the latest commit from main
 
 Compiling hictk
 ---------------
