@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #if __has_include(<readerwriterqueue.h>)
 #include <readerwriterqueue.h>
 #else
@@ -294,21 +295,50 @@ static void convert_resolution_multi_threaded(hic::File& hf, cooler::File&& clr,
 [[nodiscard]] static std::variant<std::int32_t, float> infer_count_type(
     const std::filesystem::path& p,
     std::size_t max_sample_size = 1'000'000) {  // NOLINT(*-avoid-magic-numbers)
+  SPDLOG_INFO(FMT_STRING("inferring count type for file \"{}\"..."), p);
   const auto base_resolution = hic::utils::list_resolutions(p, true).front();
   const hic::File f(p.string(), base_resolution);
-  const auto sel = f.fetch();
 
-  auto first_pixel = sel.begin<float>();
-  const auto last_pixel = sel.end<float>();
+  auto make_float = []() {
+    SPDLOG_INFO("detected count_type=float");
+    return float{};
+  };
 
-  for (std::size_t i = 0; i < max_sample_size && first_pixel != last_pixel; ++i, ++first_pixel) {
-    const auto pixel = *first_pixel;
-    if (pixel.count != std::floor(pixel.count)) {
-      return {float{}};
+  auto make_int = []() {
+    SPDLOG_INFO("detected count_type=int");
+    return std::int32_t{};
+  };
+
+  std::size_t i = 0;
+  for (const auto& chrom1 : f.chromosomes()) {
+    if (chrom1.is_all()) {
+      continue;
+    }
+    for (std::uint32_t chrom2_id = chrom1.id(); chrom2_id < f.chromosomes().size(); ++chrom2_id) {
+      const auto& chrom2 = f.chromosomes().at(chrom2_id);
+      if (chrom2.is_all()) {
+        continue;
+      }
+
+      const auto sel = f.fetch(chrom1.name(), chrom2.name());
+
+      auto first_pixel = sel.begin<float>();
+      const auto last_pixel = sel.end<float>();
+
+      while (first_pixel != last_pixel) {
+        const auto pixel = *first_pixel;
+        if (pixel.count != std::floor(pixel.count)) {
+          return make_float();
+        }
+        if (++i == max_sample_size) {
+          return make_int();
+        }
+        std::ignore = ++first_pixel;
+      }
     }
   }
 
-  return {std::int32_t{}};
+  return make_int();
 }
 
 void hic_to_cool(const ConvertConfig& c) {  // NOLINT(misc-use-internal-linkage)
