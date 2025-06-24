@@ -18,7 +18,9 @@
 #include "hictk/cooler.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/multires_file.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/string.hpp"
 
 namespace hictk::tools {
 void print(const Pixel<double>& pixel) {
@@ -142,7 +144,14 @@ void dump_chroms(std::string_view uri, std::string_view range1, std::string_view
   } else if (format == "scool") {
     ref = cooler::SingleCellFile{std::string{uri}}.chromosomes();
   } else {
-    ref = File{std::string{uri}, resolution}.chromosomes();
+    try {
+      ref = MultiResFile{std::string{uri}}.chromosomes();
+    } catch (const std::exception& e) {
+      if (!internal::starts_with(e.what(), "file is not in .hic or .mcool format")) {
+        throw;
+      }
+      ref = File{uri, resolution}.chromosomes();
+    }
   }
 
   if (range1 == "all") {
