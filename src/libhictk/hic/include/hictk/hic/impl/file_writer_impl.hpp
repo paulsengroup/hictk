@@ -1304,7 +1304,7 @@ inline void HiCFileWriter::read_norm_vectors() {
 inline std::vector<float> HiCFileWriter::read_norm_vector(
     const NormalizationVectorIndexBlock &blk) {
   try {
-    const auto offset = blk.position;
+    const auto offset = conditional_static_cast<std::streampos>(blk.position);
     const auto &chrom = chromosomes().at(static_cast<std::uint32_t>(blk.chrIdx));
     const auto bin_size = static_cast<std::size_t>(blk.binSize);
     const auto nValuesExpected = (static_cast<std::size_t>(chrom.size()) + bin_size - 1) / bin_size;
