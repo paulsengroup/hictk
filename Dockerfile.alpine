@@ -1,0 +1,175 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+##### IMPORTANT #####
+# This Dockerfile requires several build arguments to be defined through --build-arg
+# See utils/devel/build_dockerfile_alpine.sh for an example of how to build this Dockerfile
+#####################
+
+ARG BUILD_BASE_IMAGE
+ARG FINAL_BASE_IMAGE
+ARG FINAL_BASE_IMAGE_DIGEST
+
+FROM "$BUILD_BASE_IMAGE" AS builder
+
+ARG src_dir='/root/hictk'
+ARG build_dir='/root/hictk/build'
+ARG staging_dir='/root/hictk/staging'
+ARG install_dir='/usr/local'
+
+ENV CC=clang
+ENV CXX=clang++
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
+
+# Setup build deps
+RUN apk add --no-cache \
+    clang20-dev \
+    clang20-static \
+    cmake \
+    git \
+    libc++-dev \
+    libc++-static \
+    linux-headers \
+    lld \
+    llvm-libunwind-dev \
+    llvm-libunwind-static \
+    m4 \
+    make \
+    ninja \
+    perl \
+    py3-pip \
+    python3
+
+RUN python3 -m venv /tmp/venv \
+&& /tmp/venv/bin/pip install 'conan==2.18.*' --no-cache-dir \
+&& /tmp/venv/bin/conan profile detect \
+&& sed -i '/^compiler\.libcxx.*$/d' "$HOME/.conan2/profiles/default" \
+&& echo 'compiler.libcxx=libc++' >> "$HOME/.conan2/profiles/default" \
+&& echo '[platform_tool_requires]' >> "$HOME/.conan2/profiles/default" \
+&& echo 'cmake/3.31.7' >> "$HOME/.conan2/profiles/default" \
+&& echo 'm4/1.4.19' >> "$HOME/.conan2/profiles/default" \
+&& cat "$HOME/.conan2/profiles/default"
+
+RUN /tmp/venv/bin/conan install --requires=b2/5.3.3 -o "b2/*:toolset=clang" --build="*" \
+&& /tmp/venv/bin/conan cache clean "*" --build \
+&& /tmp/venv/bin/conan cache clean "*" --download \
+&& /tmp/venv/bin/conan cache clean "*" --source
+
+# Build hictk deps using Conan
+RUN mkdir -p "$src_dir"
+
+COPY conanfile.py "$src_dir/conanfile.py"
+
+RUN /tmp/venv/bin/conan install                \
+    "$src_dir/conanfile.py"                    \
+    --build=missing                            \
+    -s build_type=Release                      \
+    -o 'hictk/*:with_cli_tool_deps=True'       \
+    -o 'hictk/*:with_benchmark_deps=False'     \
+    -o 'hictk/*:with_arrow=False'              \
+    -o 'hictk/*:with_eigen=False'              \
+    -o 'hictk/*:with_telemetry_deps=True'      \
+    -o 'hictk/*:with_unit_testing_deps=False'  \
+    -o 'hictk/*:with_fuzzy_testing_deps=False' \
+    --output-folder=/tmp/cmake-prefix \
+    -pr:b default \
+    -pr:h default \
+&& /tmp/venv/bin/conan cache clean "*" --build \
+&& /tmp/venv/bin/conan cache clean "*" --download \
+&& /tmp/venv/bin/conan cache clean "*" --source
+
+# Copy source files
+COPY LICENSE "$src_dir/"
+COPY external "$src_dir/external/"
+COPY cmake "$src_dir/cmake/"
+COPY CMakeLists.txt "$src_dir/"
+COPY src "$src_dir/src/"
+
+ARG HICTK_GIT_HASH
+ARG HICTK_GIT_SHORT_HASH
+ARG HICTK_GIT_TAG
+ARG HICTK_GIT_IS_DIRTY
+
+RUN if [ -z "$HICTK_GIT_HASH" ]; then echo "Missing HICTK_GIT_HASH --build-arg" && exit 1; fi \
+&&  if [ -z "$HICTK_GIT_SHORT_HASH" ]; then echo "Missing HICTK_GIT_SHORT_HASH --build-arg" && exit 1; fi \
+&&  if [ -z "$HICTK_GIT_IS_DIRTY" ]; then echo "Missing HICTK_GIT_IS_DIRTY --build-arg" && exit 1; fi \
+&&  if [ -z "$HICTK_GIT_TAG" ]; then echo "Missing HICTK_GIT_TAG --build-arg" && exit 1; fi
+
+ARG CCACHE_DISABLE=1
+
+# Configure project
+RUN cmake \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=/tmp/cmake-prefix \
+    -DHICTK_ENABLE_TESTING=OFF \
+    -DHICTK_WITH_ARROW=OFF \
+    -DHICTK_WITH_EIGEN=OFF \
+    -DHICTK_DOWNLOAD_TEST_DATASET=OFF \
+    -DCMAKE_CXX_FLAGS='-stdlib=libc++' \
+    -DCMAKE_EXE_LINKER_FLAGS='-static -stdlib=libc++ -lc++ -lc++abi' \
+    -DCMAKE_LINKER_TYPE=LLD \
+    -DCMAKE_C_COMPILER_AR="$(which ar)" \
+    -DCMAKE_C_COMPILER_RANLIB="$(which ranlib)" \
+    -DCMAKE_CXX_COMPILER_AR="$(which ar)" \
+    -DCMAKE_CXX_COMPILER_RANLIB="$(which ranlib)" \
+    -DCMAKE_INSTALL_PREFIX="$staging_dir" \
+    -S "$src_dir" \
+    -B "$build_dir"
+
+
+# Build and install project
+RUN cmake --build "$build_dir" -t hictk -j "$(nproc)"  \
+&& cmake --install "$build_dir" --component Runtime    \
+&& rm -r "$build_dir"
+
+ARG FINAL_BASE_IMAGE
+ARG FINAL_BASE_IMAGE_DIGEST
+FROM "${FINAL_BASE_IMAGE}@${FINAL_BASE_IMAGE_DIGEST}" AS base
+
+ARG staging_dir='/root/hictk/staging'
+ARG install_dir='/usr/local'
+
+ARG BUILD_BASE_IMAGE
+ARG FINAL_BASE_IMAGE
+ARG FINAL_BASE_IMAGE_DIGEST
+
+ARG HICTK_GIT_HASH
+ARG HICTK_GIT_SHORT_HASH
+ARG VERSION
+ARG CREATION_DATE
+
+RUN if [ -z "$BUILD_BASE_IMAGE" ]; then echo "Missing BUILD_BASE_IMAGE --build-arg" && exit 1; fi \
+&&  if [ -z "$FINAL_BASE_IMAGE" ]; then echo "Missing FINAL_BASE_IMAGE --build-arg" && exit 1; fi \
+&&  if [ -z "$FINAL_BASE_IMAGE_DIGEST" ]; then echo "Missing FINAL_BASE_IMAGE_DIGEST --build-arg" && exit 1; fi \
+&&  if [ -z "$HICTK_GIT_HASH" ]; then echo "Missing HICTK_GIT_HASH --build-arg" && exit 1; fi \
+&&  if [ -z "$HICTK_GIT_SHORT_HASH" ]; then echo "Missing HICTK_GIT_SHORT_HASH --build-arg" && exit 1; fi \
+&&  if [ -z "$CREATION_DATE" ]; then echo "Missing CREATION_DATE --build-arg" && exit 1; fi
+
+RUN apk add --no-cache ca-certificates
+
+# Export project binaries to the final build stage
+COPY --from=builder "$staging_dir" "$install_dir"
+
+WORKDIR /data
+ENTRYPOINT ["/usr/local/bin/hictk"]
+
+RUN hictk --help
+RUN hictk --version
+
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+LABEL org.opencontainers.image.authors='Roberto Rossini <roberros@uio.no>'
+LABEL org.opencontainers.image.url='https://github.com/paulsengroup/hictk'
+LABEL org.opencontainers.image.documentation='https://hictk.readthedocs.io/en/stable/'
+LABEL org.opencontainers.image.source='https://github.com/paulsengroup/hictk'
+LABEL org.opencontainers.image.licenses='MIT'
+LABEL org.opencontainers.image.title='hictk'
+LABEL org.opencontainers.image.description='Blazing fast toolkit to work with .hic and .cool files'
+LABEL org.opencontainers.image.base.digest="$FINAL_BASE_IMAGE_DIGEST"
+LABEL org.opencontainers.image.base.name="$FINAL_BASE_IMAGE"
+LABEL paulsengroup.hictk.image.build-base="$BUILD_BASE_IMAGE"
+
+LABEL org.opencontainers.image.revision="$HICTK_GIT_HASH"
+LABEL org.opencontainers.image.created="$CREATION_DATE"
+LABEL org.opencontainers.image.version="${VERSION:-sha-$HICTK_GIT_SHORT_HASH}"
