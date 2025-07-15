@@ -35,6 +35,27 @@
 
 namespace hictk::filestream {
 
+#ifdef _GNU_SOURCE
+namespace internal {
+
+// https://stackoverflow.com/questions/41953104/strerror-r-is-incorrectly-declared-on-alpine-linux
+inline char *strerror_r_wrapper_helper([[maybe_unused]] int result, char *buffer,
+                                       [[maybe_unused]] int err) {
+  return buffer;
+}
+
+inline char *strerror_r_wrapper_helper(char *result, [[maybe_unused]] char *buffer,
+                                       [[maybe_unused]] int err) {
+  return result;
+}
+
+inline char *strerror_r_wrapper(int errnum, std::string &buff) {
+  return strerror_r_wrapper_helper(strerror_r(errnum, buff.data(), buff.size()), buff.data(),
+                                   errnum);
+}
+}  // namespace internal
+#endif
+
 template <typename Mutex>
 inline FileStream<Mutex>::FileStream(std::string path, std::shared_ptr<Mutex> mtx,
                                      std::ios::openmode mode)
@@ -686,7 +707,7 @@ inline void FileStream<Mutex>::get_underlying_os_error([[maybe_unused]] int errn
     return;
   }
 #if defined(_GNU_SOURCE)
-  buffer = strerror_r(errno_, buffer.data(), buffer.size());
+  buffer = internal::strerror_r_wrapper(errno_, buffer);
 #elif defined(_WIN32)
   buffer.resize(std::max(buffer.capacity(), std::size_t{1024}), '\0');
   const int status = strerror_s(buffer.data(), buffer.size(), errno_);
