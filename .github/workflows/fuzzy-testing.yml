@@ -117,6 +117,7 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+                -DCMAKE_CXX_STANDARD=17                       \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
