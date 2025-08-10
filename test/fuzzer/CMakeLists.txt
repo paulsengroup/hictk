@@ -4,10 +4,6 @@
 
 message(STATUS "Building hictk_fuzzer")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 add_library(hictk_fuzzer_project_options INTERFACE)
 add_library(hictk_fuzzer_project_warnings INTERFACE)
 target_link_libraries(hictk_fuzzer_project_options INTERFACE hictk_project_options)
