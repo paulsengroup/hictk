@@ -2,12 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#ifdef SPDLOG_ACTIVE_LEVEL
-#undef SPDLOG_ACTIVE_LEVEL
-#endif
-
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-
 #include "hictk/hic/file_writer.hpp"
 
 #include <catch2/catch_test_macros.hpp>

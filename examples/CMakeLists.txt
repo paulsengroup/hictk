@@ -16,8 +16,8 @@ foreach(EXAMPLE ${HICTK_EXAMPLES})
   target_link_libraries(
     "hictk_${EXAMPLE}"
     PRIVATE
-      hictk_project_warnings
-      hictk_project_options
+      hictk::project_options
+      hictk::project_warnings
       hictk::file
       hictk::transformers
   )

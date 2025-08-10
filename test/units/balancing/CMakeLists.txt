@@ -13,17 +13,16 @@ add_executable(hictk_balancing_tests)
 target_sources(
   hictk_balancing_tests
   PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/matrix_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/weights_test.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/balancing_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/matrix_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/weights_test.cpp"
 )
 
 target_link_libraries(
   hictk_balancing_tests
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
-  PUBLIC
+    hictk::project_warnings
+    hictk::project_options
     hictk::balancing
     hictk::file
     hictk::tmpdir
@@ -31,7 +30,7 @@ target_link_libraries(
 
 target_link_system_libraries(
   hictk_balancing_tests
-  PUBLIC
+  PRIVATE
     Catch2::Catch2WithMain
     std::filesystem
 )

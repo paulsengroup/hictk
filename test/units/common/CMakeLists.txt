@@ -16,15 +16,14 @@ target_sources(hictk_common_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/genomic_u
 target_link_libraries(
   hictk_common_tests
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
-  PUBLIC
+    hictk::project_warnings
+    hictk::project_options
     hictk::genomic_units
 )
 
 target_link_system_libraries(
   hictk_common_tests
-  PUBLIC
+  PRIVATE
     Catch2::Catch2WithMain
     fmt::fmt-header-only
     std::filesystem

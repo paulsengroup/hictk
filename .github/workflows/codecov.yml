@@ -121,6 +121,7 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_CXX_STANDARD=17                            \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
                 -DENABLE_DEVELOPER_MODE=ON                         \
                 -DHICTK_ENABLE_TELEMETRY=ON                        \
@@ -155,6 +156,7 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_CXX_STANDARD=17                            \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
                 -DENABLE_DEVELOPER_MODE=ON                         \
                 -DHICTK_ENABLE_TELEMETRY=OFF                       \

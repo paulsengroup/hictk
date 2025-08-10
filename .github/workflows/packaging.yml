@@ -77,6 +77,7 @@ jobs:
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release           \
+                -DCMAKE_CXX_STANDARD=17              \
                 -DHICTK_ENABLE_TESTING=OFF           \
                 -DHICTK_BUILD_TOOLS=OFF              \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
@@ -94,6 +95,7 @@ jobs:
           CMAKE_PREFIX_PATH="$PWD/conan-env;$PWD/hictk_install/lib/cmake/hictk/"
 
           cmake -DCMAKE_BUILD_TYPE=Release               \
+                -DCMAKE_CXX_STANDARD=17                  \
                 -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
                 -S test/packaging/test_find_package      \
                 -B test_find_package_build
@@ -143,6 +145,7 @@ jobs:
           ln -s "$PWD" test/packaging/test_add_subdirectory/hictk_root
 
           cmake -DCMAKE_BUILD_TYPE=Release              \
+                -DCMAKE_CXX_STANDARD=17                 \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"    \
                 -S test/packaging/test_add_subdirectory \
                 -B test_add_subdirectory_build

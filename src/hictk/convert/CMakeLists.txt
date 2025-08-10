@@ -24,9 +24,8 @@ target_include_directories(hictk_internal_tools_convert PUBLIC "${CMAKE_CURRENT_
 target_link_libraries(
   hictk_internal_tools_convert
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
-    hictk_internal_tools_definitions
+    hictk::project_options
+    hictk::project_warnings
     hictk::balancing
     hictk::bin_table
     hictk::chromosome
