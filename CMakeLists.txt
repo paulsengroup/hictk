@@ -30,6 +30,13 @@ project(
   DESCRIPTION "Blazing fast toolkit to work with .hic and .cool files."
 )
 
+if(DEFINED CMAKE_CXX_STANDARD AND CMAKE_CXX_STANDARD LESS 17)
+  message(
+    FATAL_ERROR
+    "hictk requires C++17 or newer (found CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}): please re-configure the project using -DCMAKE_CXX_STANDARD=17"
+  )
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
   _hictk_project_options
