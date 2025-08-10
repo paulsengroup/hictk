@@ -85,27 +85,32 @@ dynamic_project_options(
   "${CUDA_WARNINGS}"
 )
 
-target_compile_features(hictk_project_options INTERFACE "cxx_std_${CMAKE_CXX_STANDARD}")
+add_library(hictk::project_options ALIAS hictk_project_options)
+add_library(hictk::project_warnings ALIAS hictk_project_warnings)
 
-# Tweak fmt
+target_compile_features(
+  hictk_project_options
+  INTERFACE
+    "cxx_std_$<IF:$<BOOL:${CMAKE_CXX_STANDARD}>,17,${CMAKE_CXX_STANDARD}>"
+)
+
 target_compile_definitions(
   hictk_project_options
   INTERFACE
+    # Tweak fmt
     FMT_HEADER_ONLY
     FMT_ENFORCE_COMPILE_STRING
     FMT_USE_FULL_CACHE_DRAGONBOX
+    # Tweak spdlog
+    SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_$<IF:$<CONFIG:Debug>,DEBUG,INFO>
+    SPDLOG_CLOCK_COARSE
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_NO_THREAD_ID
+    SPDLOG_NO_ATOMIC_LEVELS
+    # Windows-specific tweaks
+    $<$<BOOL:${WIN32}>:NOMINMAX>
+    $<$<BOOL:${WIN32}>:_CRT_SECURE_NO_WARNINGS>
 )
-# Tweak spdlog
-target_compile_definitions(hictk_project_options INTERFACE SPDLOG_FMT_EXTERNAL)
-
-if(WIN32)
-  target_compile_definitions(
-    hictk_project_options
-    INTERFACE
-      NOMINMAX
-      _CRT_SECURE_NO_WARNINGS
-  )
-endif()
 
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")

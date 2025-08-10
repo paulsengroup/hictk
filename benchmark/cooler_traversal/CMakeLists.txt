@@ -10,8 +10,8 @@ add_executable(hictk_cooler_traversal_bench cooler_traversal.cpp)
 target_link_libraries(
   hictk_cooler_traversal_bench
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
+    hictk::project_warnings
+    hictk::project_options
   PUBLIC
     hictk::cooler
 )

@@ -4,12 +4,6 @@
 
 #ifdef HICTK_WITH_EIGEN
 
-#ifdef SPDLOG_ACTIVE_LEVEL
-#undef SPDLOG_ACTIVE_LEVEL
-#endif
-
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-
 #include <spdlog/spdlog.h>
 
 #include <cassert>

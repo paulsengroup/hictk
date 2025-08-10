@@ -15,16 +15,15 @@ target_sources(hictk_pixel_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pixel_test
 target_link_libraries(
   hictk_pixel_tests
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
-  PUBLIC
+    hictk::project_warnings
+    hictk::project_options
     hictk::pixel
     hictk::format
 )
 
 target_link_system_libraries(
   hictk_pixel_tests
-  PUBLIC
+  PRIVATE
     Catch2::Catch2WithMain
     std::filesystem
 )
