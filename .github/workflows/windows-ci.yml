@@ -208,7 +208,7 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -268,7 +268,7 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
