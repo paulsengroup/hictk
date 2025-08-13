@@ -6,7 +6,12 @@
 
 #include <spdlog/spdlog.h>
 
+#if __has_include(<eigen3/Eigen/SparseCore>)
+#include <eigen3/Eigen/SparseCore>
+#else
 #include <Eigen/SparseCore>
+#endif
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
