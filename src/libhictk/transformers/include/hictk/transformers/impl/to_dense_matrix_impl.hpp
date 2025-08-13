@@ -4,7 +4,12 @@
 
 #pragma once
 
+#if __has_include(<eigen3/Eigen/Dense>)
+#include <eigen3/Eigen/Dense>
+#else
 #include <Eigen/Dense>
+#endif
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>

@@ -6,7 +6,12 @@
 
 #ifdef HICTK_WITH_EIGEN
 
+#if __has_include(<eigen3/Eigen/Dense>)
+#include <eigen3/Eigen/Dense>
+#else
 #include <Eigen/Dense>
+#endif
+
 #include <cstdint>
 #include <memory>
 #include <optional>
