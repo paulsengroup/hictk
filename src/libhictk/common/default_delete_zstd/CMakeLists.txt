@@ -11,8 +11,8 @@ target_sources(
   hictk_internal_common_default_delete_zstd
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/default_delete_zstd.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/default_delete_zstd.hpp"
 )
 
 target_include_directories(

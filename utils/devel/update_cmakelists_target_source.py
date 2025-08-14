@@ -176,6 +176,8 @@ def main() -> int:
     for cmakelists in root_dir.rglob("src/libhictk/**/CMakeLists.txt"):
         if cmakelists == root_dir / "src/libhictk/CMakeLists.txt":
             continue
+        if cmakelists == root_dir / "src/libhictk/common/version/CMakeLists.txt":
+            continue
 
         if process_cmakelists(cmakelists, gersemi, args["inplace"]):
             num_outdated_files += 1

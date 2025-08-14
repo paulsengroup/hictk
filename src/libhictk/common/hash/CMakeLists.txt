@@ -9,8 +9,8 @@ target_sources(
   hictk_internal_common_hash
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hash.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hash.hpp"
 )
 
 target_include_directories(

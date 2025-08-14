@@ -8,8 +8,7 @@ install(
     libhictk
   EXPORT libhictk-targets
   COMPONENT Libraries
-  FILE_SET
-  HEADERS
+  FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   RUNTIME
     DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -55,8 +54,7 @@ install(
     hictk_internal_variant
   EXPORT libhictk-internal-targets
   COMPONENT Libraries
-  FILE_SET
-  HEADERS
+  FILE_SET HEADERS
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   RUNTIME
     DESTINATION "${CMAKE_INSTALL_BINDIR}"

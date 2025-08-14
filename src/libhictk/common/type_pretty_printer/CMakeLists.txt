@@ -9,8 +9,8 @@ target_sources(
   hictk_internal_common_type_pretty_printer
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/type_pretty_printer.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/type_pretty_printer.hpp"
 )
 
 target_include_directories(

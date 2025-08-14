@@ -12,8 +12,8 @@ target_sources(
   hictk_internal_common_tmpdir
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/tmpdir.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/tmpdir.hpp"
 )
 
 target_include_directories(

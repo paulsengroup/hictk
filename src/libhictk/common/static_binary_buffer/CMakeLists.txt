@@ -9,8 +9,8 @@ target_sources(
   hictk_internal_common_static_binary_buffer
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/static_binary_buffer.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/static_binary_buffer.hpp"
 )
 
 target_include_directories(

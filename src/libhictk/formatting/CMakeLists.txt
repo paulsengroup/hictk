@@ -11,14 +11,14 @@ target_sources(
   hictk_internal_formatting
   INTERFACE
     FILE_SET HEADERS
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt.hpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/bin.hpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/chromosome.hpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/common.hpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/genomic_interval.hpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/pixel.hpp"
+      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/bin.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/chromosome.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/common.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/genomic_interval.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/fmt/pixel.hpp"
 )
 
 target_include_directories(
