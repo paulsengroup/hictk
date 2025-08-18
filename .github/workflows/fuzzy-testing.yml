@@ -79,7 +79,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Fix permissions
         run: |
@@ -219,10 +219,10 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download hictk_fuzzer
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hictk_fuzzer
 
@@ -407,10 +407,10 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download hictk_fuzzer
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: hictk_fuzzer
 
@@ -420,7 +420,7 @@ jobs:
           chmod 500 hictk_fuzzer
 
       - name: Download coverage profiles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: fuzzy-testing-cov-*
           merge-multiple: true
