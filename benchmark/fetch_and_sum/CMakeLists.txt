@@ -10,8 +10,8 @@ add_executable(hictk_fetch_and_sum_bench fetch_and_sum.cpp)
 target_link_libraries(
   hictk_fetch_and_sum_bench
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
+    hictk::project_warnings
+    hictk::project_options
   PUBLIC
     hictk::cooler
     hictk::hic

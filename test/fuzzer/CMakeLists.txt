@@ -4,16 +4,12 @@
 
 message(STATUS "Building hictk_fuzzer")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 add_library(hictk_fuzzer_project_options INTERFACE)
 add_library(hictk_fuzzer_project_warnings INTERFACE)
-target_link_libraries(hictk_fuzzer_project_options INTERFACE hictk_project_options)
-target_link_libraries(hictk_fuzzer_project_warnings INTERFACE hictk_project_warnings)
-
-target_compile_features(hictk_fuzzer_project_options INTERFACE "cxx_std_${CMAKE_CXX_STANDARD}")
+add_library(hictk_fuzzer::project_options ALIAS hictk_fuzzer_project_options)
+add_library(hictk_fuzzer::project_warnings ALIAS hictk_fuzzer_project_warnings)
+target_link_libraries(hictk_fuzzer_project_options INTERFACE hictk::project_options)
+target_link_libraries(hictk_fuzzer_project_warnings INTERFACE hictk::project_warnings)
 
 if(NOT HICTK_WITH_EIGEN OR NOT HICTK_WITH_ARROW)
   message(

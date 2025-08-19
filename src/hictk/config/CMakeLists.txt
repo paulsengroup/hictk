@@ -11,8 +11,8 @@ target_include_directories(hictk_internal_tools_config INTERFACE "${CMAKE_CURREN
 target_link_libraries(
   hictk_internal_tools_config
   INTERFACE
-    hictk_project_options
-    hictk_project_warnings
+    hictk::project_options
+    hictk::project_warnings
     hictk::balancing
     hictk::hic
 )

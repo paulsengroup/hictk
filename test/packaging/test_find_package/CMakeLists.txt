@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.25)
-cmake_policy(VERSION 3.25...4.0)
+cmake_policy(VERSION 3.25...4.1)
 set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 

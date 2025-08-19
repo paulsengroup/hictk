@@ -10,8 +10,8 @@ add_executable(hictk_pixel_merger_bench pixel_merger.cpp)
 target_link_libraries(
   hictk_pixel_merger_bench
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
+    hictk::project_warnings
+    hictk::project_options
   PUBLIC
     hictk::pixel
     hictk::transformers
