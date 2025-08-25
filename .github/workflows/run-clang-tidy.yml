@@ -63,7 +63,7 @@ jobs:
       CONAN_HOME: "/opt/conan/"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Fix permissions
         run: |
@@ -202,7 +202,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         continue-on-error: true
         with:
           pattern: stale-cache-*
