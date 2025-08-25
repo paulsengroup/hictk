@@ -117,7 +117,7 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: "1"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Generate requirements.txt for pip
         run: echo 'cmake==${{ matrix.cmake }}' > requirements.txt
@@ -312,7 +312,7 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         continue-on-error: true
         with:
           pattern: stale-cache-*
@@ -343,7 +343,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -353,7 +353,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -399,7 +399,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -415,7 +415,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
