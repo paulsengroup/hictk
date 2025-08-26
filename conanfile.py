@@ -241,7 +241,7 @@ class HictkConan(ConanFile):
 
         if self._with_libcurl:
             # opentelemetry-cpp
-            self.requires("libcurl/8.12.1#130109dbd628be0f3d336b6a74b8b987", force=True)
+            self.requires("libcurl/8.15.0#f94d17d44efcc8d467e3bdd7e694a892", force=True)
 
         if self._with_lz4:
             # libarchive
@@ -264,7 +264,7 @@ class HictkConan(ConanFile):
         self.requires("fast_float/8.0.2#846ad0ebab16bc265c511095c3b490e9")
         self.requires("fmt/11.2.0#579bb2cdf4a7607621beea4eb4651e0f")
         self.requires("hdf5/1.14.6#6f1acd01d23d00735fe97300f4d5980c", force=True)
-        self.requires("highfive/2.10.0#c975a16d7fe3655c173f8a9aab16b416")
+        self.requires("highfive/2.10.0#75c849a0d940b2d4dae6055915132690")
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
@@ -273,28 +273,28 @@ class HictkConan(ConanFile):
         self.requires("zstd/1.5.7#fde461c0d847a22f16d3066774f61b11", force=True)
 
         if self._with_arrow:
-            self.requires("arrow/20.0.0#4cee9561dda8adabc8ed329a721ccf38")
+            self.requires("arrow/21.0.0#228b4b648a5100809cd7d17451d87233")
 
         if self._with_boost:
-            self.requires("boost/1.88.0#05d1de185e5e04841048ae04dc66d081", force=True)
+            self.requires("boost/1.88.0#14ecfc01dd5a690f15e1318e56a6b78c", force=True)
 
         if self._with_catch2:
-            self.requires("catch2/3.8.1#141f4cd552b86c7278436c434473ae2f")
+            self.requires("catch2/3.9.1#ae6ee6142c3ddd72c837e09513ef1904")
 
         if self._with_cli11:
             self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
 
         if self._with_eigen:
-            self.requires("eigen/3.4.0#2e192482a8acff96fe34766adca2b24c")
+            self.requires("eigen/3.4.90-unstable git.2025.08.15#b407f03f085cdb246f6bcbadd84fe9db", force=True)
 
         if self._with_libarchive:
-            self.requires("libarchive/3.7.9#ccfcd1200bad50b111fb730160af8197")
+            self.requires("libarchive/3.8.1#b42b1df243cee62014e0a884a9468b7a")
 
         if self._with_nlohmann_json:
             self.requires("nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c", force=True)
 
         if self._with_opentelemetry:
-            self.requires("opentelemetry-cpp/1.21.0#0a4189efa35500fc81fab1ca9e0370ec")
+            self.requires("opentelemetry-cpp/1.21.0#0e9433ad7338516dd9847000bba6e927")
 
         if self._with_pybind11:
             self.requires("pybind11/2.13.6#7d1417680344884436657a0d12212274")
