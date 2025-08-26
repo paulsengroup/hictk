@@ -54,7 +54,7 @@ class HictkConan(ConanFile):
 
     @property
     def _with_boost(self) -> bool:
-        return self.options.with_fuzzy_testing_deps
+        return self._with_arrow or self.options.with_fuzzy_testing_deps
 
     @property
     def _with_bzip2(self) -> bool:
@@ -115,8 +115,8 @@ class HictkConan(ConanFile):
         self.options["arrow"].compute = True
         self.options["arrow"].filesystem_layer = False
         self.options["arrow"].parquet = False
-        self.options["arrow"].with_boost = False
-        self.options["arrow"].with_re2 = False
+        self.options["arrow"].with_boost = True
+        self.options["arrow"].with_re2 = True
         self.options["arrow"].with_thrift = False
 
     def _configure_boost(self):
