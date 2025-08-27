@@ -4,6 +4,7 @@
 
 from conan import ConanFile
 from conan.tools.build import check_min_cppstd
+from conan.tools.microsoft import is_msvc
 
 required_conan_version = ">=2"
 
@@ -54,7 +55,7 @@ class HictkConan(ConanFile):
 
     @property
     def _with_boost(self) -> bool:
-        return self._with_arrow or self.options.with_fuzzy_testing_deps
+        return (self._with_arrow and is_msvc(self)) or self.options.with_fuzzy_testing_deps
 
     @property
     def _with_bzip2(self) -> bool:
@@ -115,7 +116,7 @@ class HictkConan(ConanFile):
         self.options["arrow"].compute = True
         self.options["arrow"].filesystem_layer = False
         self.options["arrow"].parquet = False
-        self.options["arrow"].with_boost = True
+        self.options["arrow"].with_boost = is_msvc(self)
         self.options["arrow"].with_re2 = True
         self.options["arrow"].with_thrift = False
 
@@ -273,7 +274,8 @@ class HictkConan(ConanFile):
         self.requires("zstd/1.5.7#fde461c0d847a22f16d3066774f61b11", force=True)
 
         if self._with_arrow:
-            self.requires("arrow/21.0.0#228b4b648a5100809cd7d17451d87233")
+            # Arrow 21.0.0 can't find certain kernels (e.g., sort_indices)
+            self.requires("arrow/20.0.0#6e04404a336dd16f08062f6923e6f8f1")
 
         if self._with_boost:
             self.requires("boost/1.88.0#14ecfc01dd5a690f15e1318e56a6b78c", force=True)
@@ -285,7 +287,7 @@ class HictkConan(ConanFile):
             self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
 
         if self._with_eigen:
-            self.requires("eigen/3.4.90-unstable git.2025.08.15#b407f03f085cdb246f6bcbadd84fe9db", force=True)
+            self.requires("eigen/3.4.90-unstable+git.2025.08.15#b407f03f085cdb246f6bcbadd84fe9db", force=True)
 
         if self._with_libarchive:
             self.requires("libarchive/3.8.1#b42b1df243cee62014e0a884a9468b7a")
