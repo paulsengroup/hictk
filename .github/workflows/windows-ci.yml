@@ -139,6 +139,7 @@ jobs:
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
+                -DCMAKE_CXX_STANDARD=17                              \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env"                 \
                 -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
                 -DHICTK_ENABLE_TESTING=ON                            \

@@ -15,8 +15,8 @@ target_include_directories(hictk_internal_tools_compressed_io PUBLIC "${CMAKE_CU
 target_link_libraries(
   hictk_internal_tools_compressed_io
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
+    hictk::project_options
+    hictk::project_warnings
 )
 
 target_link_system_libraries(

@@ -22,9 +22,8 @@ target_include_directories(hictk_internal_tools_merge PUBLIC "${CMAKE_CURRENT_SO
 target_link_libraries(
   hictk_internal_tools_merge
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
-    hictk_internal_tools_definitions
+    hictk::project_options
+    hictk::project_warnings
     hictk::file
   PUBLIC
     hictk_internal_tools_config

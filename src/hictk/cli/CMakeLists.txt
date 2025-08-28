@@ -32,9 +32,8 @@ target_include_directories(hictk_internal_tools_cli PUBLIC "${CMAKE_CURRENT_SOUR
 target_link_libraries(
   hictk_internal_tools_cli
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
-    hictk_internal_tools_definitions
+    hictk::project_options
+    hictk::project_warnings
     hictk_internal_tools_telemetry
     hictk::common
     hictk::cooler

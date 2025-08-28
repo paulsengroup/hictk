@@ -55,9 +55,8 @@ target_compile_definitions(
 target_link_libraries(
   hictk_internal_tools_telemetry
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
-    hictk_internal_tools_definitions
+    hictk::project_options
+    hictk::project_warnings
   PUBLIC
     hictk_internal_tools_config
     hictk_internal_tools_cli

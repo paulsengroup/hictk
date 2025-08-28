@@ -30,19 +30,12 @@ set_target_properties(
     CXX_VISIBILITY_PRESET
       hidden
 )
-target_compile_definitions(
-  hictk_fuzzer
-  PRIVATE
-    SPDLOG_ACTIVE_LEVEL=$<IF:$<CONFIG:Debug>,SPDLOG_LEVEL_DEBUG,SPDLOG_LEVEL_INFO>
-    SPDLOG_CLOCK_COARSE
-    SPDLOG_NO_THREAD_ID
-    SPDLOG_DISABLE_DEFAULT_LOGGER
-)
+
 target_link_libraries(
   hictk_fuzzer
   PRIVATE
-    hictk_fuzzer_project_options
-    hictk_fuzzer_project_warnings
+    hictk_fuzzer::project_options
+    hictk_fuzzer::project_warnings
     hictk::libhictk
 )
 

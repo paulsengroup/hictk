@@ -26,9 +26,8 @@ target_include_directories(hictk_internal_tools_metadata PUBLIC "${CMAKE_CURRENT
 target_link_libraries(
   hictk_internal_tools_metadata
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
-    hictk_internal_tools_definitions
+    hictk::project_options
+    hictk::project_warnings
     hictk_internal_tools_file_attributes_formatting
     hictk::bin_table
     hictk::common

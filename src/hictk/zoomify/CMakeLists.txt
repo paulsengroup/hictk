@@ -24,10 +24,9 @@ target_include_directories(hictk_internal_tools_zoomify PUBLIC "${CMAKE_CURRENT_
 target_link_libraries(
   hictk_internal_tools_zoomify
   PRIVATE
-    hictk_project_options
-    hictk_project_warnings
+    hictk::project_options
+    hictk::project_warnings
     hictk_internal_tools_config
-    hictk_internal_tools_definitions
     hictk::cooler
     hictk::hic
     hictk::pixel

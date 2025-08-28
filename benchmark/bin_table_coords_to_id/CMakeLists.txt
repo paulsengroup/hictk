@@ -10,8 +10,8 @@ add_executable(hictk_bin_table_coords_to_id_bench bin_table_coords_to_id.cpp)
 target_link_libraries(
   hictk_bin_table_coords_to_id_bench
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
+    hictk::project_warnings
+    hictk::project_options
   PUBLIC
     hictk::bin_table
 )

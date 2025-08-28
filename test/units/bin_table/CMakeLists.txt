@@ -21,16 +21,15 @@ target_sources(
 target_link_libraries(
   bin_table_tests
   PRIVATE
-    hictk_project_warnings
-    hictk_project_options
-  PUBLIC
+    hictk::project_warnings
+    hictk::project_options
     hictk::bin_table
     hictk::format
 )
 
 target_link_system_libraries(
   bin_table_tests
-  PUBLIC
+  PRIVATE
     Catch2::Catch2WithMain
     fmt::fmt-header-only
     std::filesystem
