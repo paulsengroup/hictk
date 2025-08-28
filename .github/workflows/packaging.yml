@@ -52,7 +52,7 @@ jobs:
       CONAN_HOME: "/opt/conan/"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Fix permissions
         run: |
@@ -118,7 +118,7 @@ jobs:
       CONAN_HOME: "/opt/conan/"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Fix permissions
         run: |
