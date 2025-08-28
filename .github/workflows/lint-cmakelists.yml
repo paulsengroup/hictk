@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Generate requirements.txt
-        run: echo "gersemi==0.19.3" > requirements.txt
+        run: echo 'gersemi==0.22.1' > requirements.txt
 
       - uses: actions/setup-python@v5
         with:
@@ -51,8 +51,8 @@ jobs:
       - name: Lint CMakeLists.txt
         run: |
           if ! utils/devel/update_cmakelists_target_source.py > /dev/null; then
-            2>&1 echo 'It looks like you forgot to run at least one of the following commands:'
-            2>&1 echo '- utils/devel/update_cmakelists_target_source.py --inplace'
-            2>&1 echo '- test/scripts/generate_test_packaging_main.py | tee test/packaging/test_find_package/main.cpp'
+            1>&2 echo 'It looks like you forgot to run at least one of the following commands:'
+            1>&2 echo '- utils/devel/update_cmakelists_target_source.py --inplace'
+            1>&2 echo '- test/scripts/generate_test_packaging_main.py | tee test/packaging/test_find_package/main.cpp'
             exit 1
           fi

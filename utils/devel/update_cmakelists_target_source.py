@@ -23,8 +23,17 @@ def existing_dir(arg):
 def make_cli() -> argparse.ArgumentParser:
     cli = argparse.ArgumentParser()
 
-    cli.add_argument("--root", type=pathlib.Path, help="Path to the repository root.")
-    cli.add_argument("--inplace", action="store_true", default=False, help="Modify CMakeLists.txt files in place.")
+    cli.add_argument(
+        "--root",
+        type=pathlib.Path,
+        help="Path to the repository root.",
+    )
+    cli.add_argument(
+        "--inplace",
+        action="store_true",
+        default=False,
+        help="Modify CMakeLists.txt files in place.",
+    )
 
     return cli
 
