@@ -53,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout conanfile.py
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Update build deps
         run: pip install "conan==${{ inputs.conan-version }}"
