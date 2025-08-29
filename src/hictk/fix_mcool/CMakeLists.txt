@@ -32,5 +32,5 @@ target_link_system_libraries(
     fmt::fmt-header-only
     spdlog::spdlog_header_only
     std::filesystem
-    HighFive
+    "HighFive$<$<VERSION_GREATER_EQUAL:${HighFive_VERSION},3>:::HighFive>"
 )

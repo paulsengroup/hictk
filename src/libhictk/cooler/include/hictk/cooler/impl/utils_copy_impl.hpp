@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
+#include <highfive/H5Version.hpp>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -91,7 +92,11 @@ inline void copy(std::string_view uri1, RootGroup dest) {
         attr.read(buffer);
         attr_out.write(buffer);
       } else {
+#if HIGHFIVE_VERSION_MAJOR > 2
+        attr.read_raw(buffer.data(), attr.getDataType());
+#else
         attr.read(buffer.data(), attr.getDataType());
+#endif
         attr_out.write_raw(buffer.data(), attr.getDataType());
       }
     };

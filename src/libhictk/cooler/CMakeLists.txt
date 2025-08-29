@@ -87,7 +87,7 @@ target_link_system_libraries(
     FastFloat::fast_float
     fmt::fmt-header-only
     HDF5::HDF5
-    HighFive
+    "HighFive$<$<VERSION_GREATER_EQUAL:${HighFive_VERSION},3>:::HighFive>"
     phmap
     spdlog::spdlog_header_only
 )

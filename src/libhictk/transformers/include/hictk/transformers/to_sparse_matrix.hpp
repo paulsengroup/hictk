@@ -6,10 +6,10 @@
 
 #ifdef HICTK_WITH_EIGEN
 
-#if __has_include(<eigen3/Eigen/SparseCore>)
-#include <eigen3/Eigen/SparseCore>
-#else
+#if __has_include(<Eigen/SparseCore>)
 #include <Eigen/SparseCore>
+#else
+#include <eigen3/Eigen/SparseCore>
 #endif
 
 #include <cstdint>

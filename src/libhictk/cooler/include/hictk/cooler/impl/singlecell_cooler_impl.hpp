@@ -84,7 +84,7 @@ inline SingleCellFile::SingleCellFile(const HighFive::File& fp, BinTable bins,
       _bins(std::make_shared<const BinTable>(std::move(bins))) {
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, unsigned int mode)
+inline SingleCellFile::SingleCellFile(const std::filesystem::path& path, HighFiveAccessMode mode)
     : SingleCellFile(HighFive::File(path.string(), mode),
                      init_bin_table(HighFive::File(path.string())),
                      read_standard_attributes(HighFive::File(path.string()),

@@ -56,6 +56,7 @@ struct SingleCellAttributes {
 };
 
 class SingleCellFile {
+  using HighFiveAccessMode = remove_cvref_t<decltype(HighFive::File::ReadOnly)>;
   std::unique_ptr<RootGroup> _root_grp{};
   phmap::btree_set<std::string> _cells{};
   SingleCellAttributes _attrs{SingleCellAttributes::init_empty()};
@@ -65,7 +66,7 @@ class SingleCellFile {
 
  public:
   explicit SingleCellFile(const std::filesystem::path& path,
-                          unsigned int mode = HighFive::File::ReadOnly);
+                          HighFiveAccessMode mode = HighFive::File::ReadOnly);
   [[nodiscard]] static SingleCellFile create(
       const std::filesystem::path& path, const Reference& chroms, std::uint32_t bin_size,
       bool force_overwrite, SingleCellAttributes attributes = SingleCellAttributes::init(0));

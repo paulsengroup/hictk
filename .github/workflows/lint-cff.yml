@@ -33,7 +33,7 @@ jobs:
     name: Lint CITATION.cff
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: CITATION.cff
           sparse-checkout-cone-mode: false

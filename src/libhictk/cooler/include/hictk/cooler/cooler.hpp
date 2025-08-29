@@ -90,7 +90,8 @@ class File {
   friend MultiResFile;
   friend SingleCellFile;
   using NumericVariant = hictk::internal::NumericVariant;
-  unsigned int _mode{HighFive::File::ReadOnly};
+  using HighFiveAccessMode = remove_cvref_t<decltype(HighFive::File::ReadOnly)>;
+  HighFiveAccessMode _mode{HighFive::File::ReadOnly};
   RootGroup _root_group{};
   GroupMap _groups{};
   DatasetMap _datasets{};
@@ -103,7 +104,7 @@ class File {
   bool _finalize{false};
 
   // Private ctors
-  File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0,
+  File(RootGroup entrypoint, HighFiveAccessMode mode, std::size_t cache_size_bytes, double w0,
        bool validate);
 
   template <typename PixelT>
@@ -312,7 +313,7 @@ class File {
   [[nodiscard]] auto index() const noexcept -> const Index &;
   [[nodiscard]] auto index() noexcept -> Index &;
 
-  [[nodiscard]] static HighFive::File open_file(std::string_view uri, unsigned int mode,
+  [[nodiscard]] static HighFive::File open_file(std::string_view uri, HighFiveAccessMode mode,
                                                 bool validate);
 
   [[nodiscard]] static auto open_or_create_root_group(HighFive::File f, std::string_view uri)
