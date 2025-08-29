@@ -52,7 +52,7 @@ inline MultiResFile::MultiResFile(const HighFive::File& fp, Reference chroms,
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
-inline MultiResFile::MultiResFile(const std::filesystem::path& path, unsigned int mode)
+inline MultiResFile::MultiResFile(const std::filesystem::path& path, HighFiveAccessMode mode)
     : MultiResFile(HighFive::File(path.string(), mode), {},
                    read_resolutions(HighFive::File(path.string())),
                    read_attributes(HighFive::File(path.string()))) {}

@@ -151,7 +151,7 @@ Multi-resolution Cooler (.mcool)
 
   **Constructors**
 
-  .. cpp:function:: explicit MultiResFile(const std::filesystem::path& path, unsigned int mode = HighFive::File::ReadOnly);
+  .. cpp:function:: explicit MultiResFile(const std::filesystem::path& path, HighFiveAccessMode mode = HighFive::File::ReadOnly);
 
   **Factory functions**
 
@@ -193,7 +193,7 @@ Single-cell Cooler (.scool)
 
   **Constructors**
 
-  .. cpp:function:: explicit SingleCellFile(const std::filesystem::path& path, unsigned int mode = HighFive::File::ReadOnly);
+  .. cpp:function:: explicit SingleCellFile(const std::filesystem::path& path, HighFiveAccessMode mode = HighFive::File::ReadOnly);
 
   **Factory functions**
 

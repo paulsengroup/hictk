@@ -34,6 +34,7 @@ struct MultiResAttributes {
 };
 
 class MultiResFile {
+  using HighFiveAccessMode = remove_cvref_t<decltype(HighFive::File::ReadOnly)>;
   std::unique_ptr<RootGroup> _root_grp{};
   std::vector<std::uint32_t> _resolutions{};
   MultiResAttributes _attrs{};
@@ -45,7 +46,7 @@ class MultiResFile {
 
  public:
   explicit MultiResFile(const std::filesystem::path& path,
-                        unsigned int mode = HighFive::File::ReadOnly);
+                        HighFiveAccessMode mode = HighFive::File::ReadOnly);
   [[nodiscard]] static MultiResFile create(const std::filesystem::path& path,
                                            const Reference& chroms, bool force_overwrite = false);
   template <typename ResolutionIt>

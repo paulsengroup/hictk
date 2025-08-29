@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <highfive/H5DataType.hpp>
 #include <highfive/H5Utility.hpp>
+#include <highfive/H5Version.hpp>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -43,7 +44,12 @@ inline std::size_t Dataset::read(std::vector<std::string> &buff, std::size_t num
   buff.resize(num);
   const auto str_length = _dataset.getDataType().getSize();
   std::string strbuff(size() * str_length, '\0');
+
+#if HIGHFIVE_VERSION_MAJOR > 2
+  _dataset.read_raw(strbuff.data(), _dataset.getDataType());
+#else
   _dataset.read(strbuff.data(), _dataset.getDataType());
+#endif
 
   for (std::size_t i = 0; i < buff.size(); ++i) {
     const auto i0 = (offset + i) * str_length;
@@ -137,7 +143,11 @@ inline std::size_t Dataset::read(std::string &buff, std::size_t offset) const {
   auto h5type = get_h5type();
   const auto str_length = h5type.getSize();
   buff.resize(str_length);
+#if HIGHFIVE_VERSION_MAJOR > 2
+  select(offset, 1).read_raw(buff.data(), h5type);
+#else
   select(offset, 1).read(buff.data(), h5type);
+#endif
 
   const auto i1 = (std::min)(buff.find('\0'), buff.size());
   buff.resize(i1);
@@ -228,7 +238,11 @@ inline auto Dataset::read_attribute(std::string_view key, bool missing_ok) const
 
 template <typename T>
 inline std::size_t Dataset::read(T *buffer, std::size_t buff_size, std::size_t offset) const {
+#if HIGHFIVE_VERSION_MAJOR > 2
+  select(offset, buff_size).read_raw(buffer, HighFive::create_datatype<T>());
+#else
   select(offset, buff_size).read(buffer, HighFive::create_datatype<T>());
+#endif
   return offset + buff_size;
 }
 

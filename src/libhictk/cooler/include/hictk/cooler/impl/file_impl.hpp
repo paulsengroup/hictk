@@ -37,8 +37,8 @@
 
 namespace hictk::cooler {
 
-inline File::File(RootGroup entrypoint, unsigned int mode, std::size_t cache_size_bytes, double w0,
-                  bool validate)
+inline File::File(RootGroup entrypoint, HighFiveAccessMode mode, std::size_t cache_size_bytes,
+                  double w0, bool validate)
     : _mode(mode),
       _root_group(std::move(entrypoint)),
       _groups(open_groups(_root_group)),
@@ -345,7 +345,8 @@ inline void File::finalize() {
   _finalize = false;
 }
 
-inline HighFive::File File::open_file(std::string_view uri, unsigned int mode, bool validate) {
+inline HighFive::File File::open_file(std::string_view uri, HighFiveAccessMode mode,
+                                      bool validate) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   const auto [file_path, root_grp] = parse_cooler_uri(uri);
 

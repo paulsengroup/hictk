@@ -26,7 +26,7 @@ TEST_CASE("MultiResFile", "[file][short]") {
     CHECK(MultiResFile{hic::File(path_hic, resolution)}.path() == path_hic);
 
     CHECK(MultiResFile{path_mcool}.path() == path_mcool);
-    CHECK(MultiResFile{cooler::MultiResFile(path_mcool, resolution)}.path() == path_mcool);
+    CHECK(MultiResFile{cooler::MultiResFile(path_mcool)}.path() == path_mcool);
 
     CHECK_THROWS(MultiResFile{path_mcool, hic::MatrixType::expected});
     CHECK_THROWS(MultiResFile{path_mcool, hic::MatrixType::observed, hic::MatrixUnit::FRAG});
