@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 from conan import ConanFile
-from conan.tools.build import check_min_cppstd
 from conan.tools.microsoft import is_msvc
 
 required_conan_version = ">=2"
@@ -40,10 +39,6 @@ class HictkConan(ConanFile):
     }
 
     generators = "CMakeDeps"
-
-    @property
-    def _min_cppstd(self) -> int:
-        return 17
 
     @property
     def _with_abseil(self) -> bool:
@@ -304,14 +299,7 @@ class HictkConan(ConanFile):
         if self._with_tomlplusplus:
             self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
 
-    def validate(self):
-        if self.settings.get_safe("compiler.cppstd"):
-            check_min_cppstd(self, self._min_cppstd)
-
     def configure(self):
-        if self.settings.compiler in ["clang", "gcc"] and self.settings.os == "Linux":
-            self.settings.compiler.libcxx = "libstdc++11"
-
         self._configure_arrow()
         self._configure_boost()
         self.options["fmt"].header_only = True
