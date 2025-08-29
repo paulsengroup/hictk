@@ -66,7 +66,7 @@ class SingleCellFile {
 
  public:
   explicit SingleCellFile(const std::filesystem::path& path,
-                          HighFiveAccessMode = HighFive::File::ReadOnly);
+                          HighFiveAccessMode mode = HighFive::File::ReadOnly);
   [[nodiscard]] static SingleCellFile create(
       const std::filesystem::path& path, const Reference& chroms, std::uint32_t bin_size,
       bool force_overwrite, SingleCellAttributes attributes = SingleCellAttributes::init(0));
