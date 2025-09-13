@@ -229,7 +229,7 @@ class HictkConan(ConanFile):
         # The only reason why they are defined here is to pin their recipe versions
         if self._with_abseil:
             # opentelemetry-cpp
-            self.requires("abseil/20250127.0#9e8e8cfc89a1324139fc0ee3bd4d8c8c", force=True)
+            self.requires("abseil/20250127.0#faefa3bbf31b5c32933e328d72e42cfe", force=True)
 
         if self._with_bzip2:
             # libarchive
@@ -260,7 +260,7 @@ class HictkConan(ConanFile):
         self.requires("fast_float/8.0.2#846ad0ebab16bc265c511095c3b490e9")
         self.requires("fmt/11.2.0#579bb2cdf4a7607621beea4eb4651e0f")
         self.requires("hdf5/1.14.6#6f1acd01d23d00735fe97300f4d5980c", force=True)
-        self.requires("highfive/2.10.0#75c849a0d940b2d4dae6055915132690")
+        self.requires("highfive/3.1.1#d0c724526ebc8ce396ffa1bf7f3c7b64")
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
@@ -276,7 +276,7 @@ class HictkConan(ConanFile):
             self.requires("boost/1.88.0#14ecfc01dd5a690f15e1318e56a6b78c", force=True)
 
         if self._with_catch2:
-            self.requires("catch2/3.9.1#ae6ee6142c3ddd72c837e09513ef1904")
+            self.requires("catch2/3.10.0#961108bb7a9bd40817ea370a0778a662")
 
         if self._with_cli11:
             self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
@@ -291,10 +291,10 @@ class HictkConan(ConanFile):
             self.requires("nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c", force=True)
 
         if self._with_opentelemetry:
-            self.requires("opentelemetry-cpp/1.21.0#0e9433ad7338516dd9847000bba6e927")
+            self.requires("opentelemetry-cpp/1.21.0#499287a2da2848b78e6c27984af69a6e")
 
         if self._with_pybind11:
-            self.requires("pybind11/2.13.6#7d1417680344884436657a0d12212274")
+            self.requires("pybind11/3.0.1#81ed7e3cc5c945080013ca4c5c3abbbb")
 
         if self._with_tomlplusplus:
             self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
