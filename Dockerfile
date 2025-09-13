@@ -39,7 +39,7 @@ RUN conan install "$src_dir/conanfile.py"               \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH"        \
              -s build_type=Release                      \
              -s compiler.libcxx=libstdc++11             \
-             -s compiler.cppstd=17                      \
+             -s compiler.cppstd=23                      \
              -o 'hictk/*:with_cli_tool_deps=True'       \
              -o 'hictk/*:with_benchmark_deps=False'     \
              -o 'hictk/*:with_arrow=False'              \
@@ -73,7 +73,7 @@ ARG CCACHE_DISABLE=1
 
 # Configure project
 RUN cmake -DCMAKE_BUILD_TYPE=Release                   \
-          -DCMAKE_CXX_STANDARD=17                      \
+          -DCMAKE_CXX_STANDARD=23                      \
           -DCMAKE_LINKER_TYPE=LLD                      \
           -DCMAKE_PREFIX_PATH="$build_dir"             \
           -DENABLE_DEVELOPER_MODE=OFF                  \
