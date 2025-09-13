@@ -445,8 +445,8 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/profiles/"            \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov

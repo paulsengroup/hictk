@@ -356,8 +356,8 @@ jobs:
             --output-dir coverage/               \
             --prefix=profiles/                   \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
@@ -634,16 +634,16 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/hictk."               \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             build/src/hictk/hictk
 
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="$PWD/hictk-no-telem."      \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             build-no-telem/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
