@@ -23,6 +23,7 @@ Checks: >
   -misc-no-recursion,
   -misc-use-anonymous-namespace,
   -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once,
   -readability-identifier-length,
   -readability-magic-numbers,
   -readability-redundant-member-init,
