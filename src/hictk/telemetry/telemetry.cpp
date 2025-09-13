@@ -76,16 +76,21 @@ Tracer::~Tracer() noexcept {
 
 Tracer* Tracer::instance() noexcept {
   if (!_instance) {
+    // NOLINTBEGIN
     try {
-      _instance = std::unique_ptr<Tracer>(new Tracer);
-    } catch (...) {  // NOLINT
+      _instance = new Tracer{};
+    } catch (...) {
       return nullptr;
     }
+    // NOLINTEND
   }
-  return _instance.get();
+  return _instance;
 }
 
-void Tracer::tear_down_instance() noexcept { _instance.reset(); }
+void Tracer::tear_down_instance() noexcept {
+  delete _instance;  // NOLINT
+  _instance = nullptr;
+}
 
 bool Tracer::should_collect_telemetry() noexcept {
   // NOLINTNEXTLINE(*-implicit-bool-conversion, *-mt-unsafe)

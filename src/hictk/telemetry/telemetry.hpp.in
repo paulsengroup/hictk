@@ -23,7 +23,6 @@
 #include <opentelemetry/trace/provider.h>
 #include <opentelemetry/trace/tracer.h>
 
-#include <memory>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -73,7 +72,7 @@ class Tracer {
 
   ProviderPtr _provider{};
   TracerPtr _tracer{};
-  inline static std::unique_ptr<Tracer> _instance{};
+  inline static Tracer* _instance{};
 
   Tracer() noexcept;
 
