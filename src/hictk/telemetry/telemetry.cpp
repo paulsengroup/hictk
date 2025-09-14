@@ -9,6 +9,7 @@
 // clang-format on
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <opentelemetry/exporters/ostream/span_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
@@ -24,17 +25,46 @@
 #include <opentelemetry/trace/provider.h>
 #include <spdlog/spdlog.h>
 
+#include <boost/hash2/sha3.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <memory>
+#include <nonstd/span.hpp>
 #include <string>
 #include <utility>
 
 #include "hictk/tools/cli.hpp"
 
 namespace hictk::tools {
+
+namespace internal {
+
+std::string hash_argv(nonstd::span<const char*> argv) noexcept {
+  try {
+    if (argv.empty()) {
+      return {};
+    }
+
+    boost::hash2::sha3_256 hasher;
+    for (const char* arg : argv) {
+      hasher.update(arg, std::strlen(arg));
+    }
+
+    const auto digest = hasher.result();
+    return fmt::format(FMT_STRING("{:x}"), fmt::join(digest.begin(), digest.end(), ""));
+
+  } catch (const std::exception& e) {
+    SPDLOG_WARN(FMT_STRING("failed to hash command line arguments: {}"), e.what());
+  } catch (...) {
+    SPDLOG_WARN("failed to hash command line arguments: unknown error");
+  }
+
+  return {};
+}
+}  // namespace internal
 
 class OpenTelemetryLogHandler : public opentelemetry::sdk::common::internal_log::LogHandler {
   void Handle([[maybe_unused]] opentelemetry::sdk::common::internal_log::LogLevel level,

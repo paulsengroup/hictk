@@ -12,6 +12,7 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
@@ -29,6 +30,9 @@ inline void ScopedSpan<SpanPtr, ScopePtr>::update_attributes(const Config& c) no
     if (span) {
       span->SetAttribute("schema", 1);  // version of the trace schema
       update_tracer_attributes(span, c);
+      if constexpr (!std::is_same_v<Config, std::monostate>) {
+        span->SetAttribute("meta.argv-sha3-256", internal::hash_argv(c.argv));
+      }
     }
   } catch (...) {  // NOLINT
   }

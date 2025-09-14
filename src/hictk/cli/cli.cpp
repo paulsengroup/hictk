@@ -39,6 +39,15 @@ auto Cli::parse_arguments() -> Config {
   try {
     _cli.name(_exec_name);
     _cli.parse(_argc, _argv);
+    std::visit(
+        [this](auto& config) {
+          using T = remove_cvref_t<decltype(config)>;
+          if constexpr (!std::is_same_v<T, std::monostate>) {
+            config.argv =
+                nonstd::span{const_cast<const char**>(_argv), static_cast<std::size_t>(_argc)};
+          }
+        },
+        _config);
 
     if (handle_help_flags()) {
       return _config;
