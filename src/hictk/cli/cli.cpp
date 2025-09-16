@@ -15,7 +15,9 @@
 #include <string_view>
 
 #include "hictk/license.hpp"
+#include "hictk/tools/build_options.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/dependency_metadata.hpp"
 #include "hictk/tools/telemetry.hpp"
 #include "hictk/version.hpp"
 
@@ -154,6 +156,9 @@ void Cli::make_cli() {
   grp->add_flag_callback(
       "--help-cite", [this]() { _help_flag = "cite"; },
       "Print hictk's citation in Bibtex format and exit.");
+  grp->add_flag_callback(
+      "--help-build-meta", [this]() { _help_flag = "build-meta"; },
+      "Print information regarding hictk's build options and third-party dependencies, and exit.");
   grp->add_flag_callback(
       "--help-docs", [this]() { _help_flag = "docs"; },
       "Print the URL to hictk's documentation and exit.");
@@ -301,35 +306,74 @@ bool Cli::handle_help_flags() {
     return false;
   }
 
+  _subcommand = subcommand::none;
+  _exit_code = 0;
+
   if (_help_flag == "telemetry") {
     fmt::print(FMT_STRING("{}"), get_telemetry_help());
-    _subcommand = subcommand::none;
-    _exit_code = 0;
     return true;
   }
 
   if (_help_flag == "license") {
     fmt::print(FMT_STRING("{}"), config::license::license);
-    _subcommand = subcommand::none;
-    _exit_code = 0;
     return true;
   }
 
   if (_help_flag == "cite") {
     fmt::print(FMT_STRING("{}"), get_citation());
-    _subcommand = subcommand::none;
-    _exit_code = 0;
     return true;
   }
 
   if (_help_flag == "docs") {
     fmt::println(FMT_STRING("https://hictk.readthedocs.io"));
-    _subcommand = subcommand::none;
-    _exit_code = 0;
     return true;
   }
 
-  HICTK_UNREACHABLE_CODE;
+  if (_help_flag == "build-meta") {
+    auto deps = get_dependency_versions_json();
+    auto build = get_build_options_json();
+
+    if (deps.empty() && build.empty()) {
+      if (deps.empty()) {
+        SPDLOG_WARN("failed to collect information about third-party dependencies!");
+      }
+      if (build.empty()) {
+        SPDLOG_WARN("failed to collect information about build options!");
+      }
+      _subcommand = subcommand::none;
+      _exit_code = 1;
+      return true;
+    }
+
+    nlohmann::json compiler_json{
+        {"name", build.at("compiler_name")},
+        {"version", build.at("compiler_version")},
+    };
+
+    nlohmann::json build_json{
+        {"type", build.at("build_type")},
+        {"compiler", std::move(compiler_json)},
+        {"dependencies", std::move(deps)},
+    };
+
+    nlohmann::json os_json{
+        {"name", build.at("os_name")},
+        {"version", build.at("os_version")},
+    };
+
+    // clang-format off
+    const nlohmann::json metadata{
+        {"arch", build.at("arch")},
+        {"build", std::move(build_json)},
+        {"os", std::move(os_json)}
+    };
+    // clang-format on
+
+    fmt::println(FMT_STRING("{}"), metadata.dump(2, ' '));
+    return true;
+  }
+
+  unreachable_code();
   return false;
 }
 
