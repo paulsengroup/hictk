@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(nlohmann_json REQUIRED QUIET)
+
 add_library(hictk_internal_tools_build_metadata STATIC)
 
 target_sources(
@@ -29,6 +31,11 @@ target_link_libraries(
   PRIVATE
     hictk::project_options
     hictk::project_warnings
+)
+
+target_link_system_libraries(
+    hictk_internal_tools_build_metadata
+    PUBLIC nlohmann_json::nlohmann_json
 )
 
 set(
@@ -63,26 +70,3 @@ foreach(PKG ${HICTK_DEPENDENCIES})
       "HICTK_${PKG_NORMALIZED}_VERSION=\"${${PKG}_VERSION}\""
   )
 endforeach()
-
-target_link_system_libraries(
-    hictk_internal_tools_build_metadata
-    PRIVATE
-      HDF5::HDF5
-      LibArchive::LibArchive
-      "libdeflate::libdeflate_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-      "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
-)
-
-if(TARGET opentelemetry-cpp::opentelemetry-cpp)
-  target_link_libraries(
-    hictk_internal_tools_build_metadata
-    PRIVATE
-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::opentelemetry-cpp>"
-  )
-else()
-  target_link_system_libraries(
-    hictk_internal_tools_build_metadata
-    PRIVATE
-      "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:opentelemetry-cpp::sdk>"
-  )
-endif()

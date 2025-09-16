@@ -4,11 +4,8 @@
 
 #include "hictk/tools/dependency_metadata.hpp"
 
-#include <H5public.h>
-#include <archive.h>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
-#include <zstd.h>
 
 #include <exception>
 #include <nlohmann/json.hpp>
@@ -16,30 +13,6 @@
 #include <string_view>
 
 namespace hictk::tools {
-
-[[nodiscard]] static std::string get_hdf5_library_version() noexcept {
-  try {
-    unsigned major{};
-    unsigned minor{};
-    unsigned patch{};
-
-    const auto status = H5get_libversion(&major, &minor, &patch);
-    if (status == 0) {
-      return fmt::format(FMT_STRING("{}.{}.{}"), major, minor, patch);
-    }
-
-  } catch (...) {  // NOLINT
-  }
-  return "unknown";
-}
-
-[[nodiscard]] static std::string_view get_libarchive_library_version() noexcept {
-  constexpr std::string_view prefix{"libarchive "};
-  std::string_view version{archive_version_string()};
-  version.remove_prefix(prefix.size());
-
-  return version;
-}
 
 nlohmann::json get_dependency_versions_json() noexcept {
   try {
@@ -60,11 +33,11 @@ nlohmann::json get_dependency_versions_json() noexcept {
     deps.emplace("tomlplusplus", HICTK_TOMLPLUSPLUS_VERSION);
 
     // runtime-deps
-    deps.emplace("HDF5", get_hdf5_library_version());
-    deps.emplace("LibArchive", get_libarchive_library_version());
+    deps.emplace("HDF5", HICTK_HDF5_VERSION);
+    deps.emplace("LibArchive", HICTK_LIBARCHIVE_VERSION);
     deps.emplace("libdeflate", HICTK_LIBDEFLATE_VERSION);
     deps.emplace("opentelemetry-cpp", HICTK_OPENTELEMETRY_CPP_VERSION);
-    deps.emplace("zstd", ZSTD_versionString());
+    deps.emplace("zstd", HICTK_ZSTD_VERSION);
 
     return deps;
 
