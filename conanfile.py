@@ -121,7 +121,7 @@ class HictkConan(ConanFile):
 
     def _configure_boost(self):
         if self._with_boost_header_only:
-            self.options["boost"].header_only = True
+            self.options["boost"].header_only = not self._with_boost
             return
 
         if not self._with_boost:

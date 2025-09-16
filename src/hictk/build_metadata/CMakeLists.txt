@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(fmt REQUIRED QUIET)
 find_package(nlohmann_json REQUIRED QUIET)
+find_package(spdlog REQUIRED QUIET)
 
 add_library(hictk_internal_tools_build_metadata STATIC)
 
@@ -31,6 +33,8 @@ target_link_libraries(
   PRIVATE
     hictk::project_options
     hictk::project_warnings
+    fmt::fmt-header-only
+    spdlog::spdlog_header_only
 )
 
 target_link_system_libraries(
