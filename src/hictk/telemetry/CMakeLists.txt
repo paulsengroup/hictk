@@ -46,11 +46,6 @@ target_compile_definitions(
   PRIVATE
     "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_ENABLE_TELEMETRY=1>"
     "$<$<BOOL:${HICTK_EXPORTER_OTLP_ENDPOINT}>:HICTK_EXPORTER_OTLP_ENDPOINT=\"${HICTK_EXPORTER_OTLP_ENDPOINT}\">"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_SYSTEM_NAME=\"${CMAKE_SYSTEM_NAME}\">"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_SYSTEM_PROCESSOR=\"${CMAKE_SYSTEM_PROCESSOR}\">"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_BUILD_TYPE=\"$<CONFIG>\">"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_CXX_COMPILER_ID=\"$<CXX_COMPILER_ID>\">"
-    "$<$<BOOL:${HICTK_ENABLE_TELEMETRY}>:HICTK_CXX_COMPILER_VERSION=\"$<CXX_COMPILER_VERSION>\">"
 )
 
 target_link_libraries(
@@ -59,6 +54,7 @@ target_link_libraries(
     hictk::project_options
     hictk::project_warnings
   PUBLIC
+    hictk_internal_tools_build_metadata
     hictk_internal_tools_config
     hictk_internal_tools_cli
 )

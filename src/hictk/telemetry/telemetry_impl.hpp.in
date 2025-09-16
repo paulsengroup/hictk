@@ -16,6 +16,7 @@
 
 #include "hictk/tools/cli.hpp"
 #include "hictk/tools/config.hpp"
+#include "hictk/tools/dependency_metadata.hpp"
 
 namespace hictk::tools {
 

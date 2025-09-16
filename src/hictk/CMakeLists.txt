@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 add_subdirectory(balance)
+add_subdirectory(build_metadata)
 add_subdirectory(cli)
 add_subdirectory(compressed_io)
 add_subdirectory(config)

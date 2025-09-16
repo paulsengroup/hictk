@@ -36,6 +36,7 @@
 #include <string>
 #include <utility>
 
+#include "hictk/tools/build_options.hpp"
 #include "hictk/tools/cli.hpp"
 
 namespace hictk::tools {
@@ -122,94 +123,51 @@ bool Tracer::should_collect_telemetry() noexcept {
   return !std::getenv("HICTK_NO_TELEMETRY");
 }
 
-const std::string& Tracer::get_os_name() noexcept {
-  static std::string s{};
-  if (s.empty()) {
+[[nodiscard]] static opentelemetry::sdk::resource::ResourceAttributes
+generate_resource_attributes() {
+  auto try_get_build_attr =
+      [build = get_build_options_json()](std::string_view key) noexcept -> std::string {
     try {
-#ifdef HICTK_SYSTEM_NAME
-      s = std::string{HICTK_SYSTEM_NAME};
-      std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
-#else
-      s = "unknown";
-#endif
+      return build.at(key).get<std::string>();
     } catch (...) {  // NOLINT
+      return "unknown";
     }
-  }
-  return s;
-}
+  };
 
-const std::string& Tracer::get_arch() noexcept {
-  static std::string s{};
-  if (s.empty()) {
-    try {
-#ifdef HICTK_SYSTEM_PROCESSOR
-      s = std::string{HICTK_SYSTEM_PROCESSOR};
-      std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
-#else
-      s = "unknown";
-#endif
-    } catch (...) {  // NOLINT
-    }
-  }
-  return s;
-}
+  opentelemetry::sdk::resource::ResourceAttributes attrs{
+      {"service.name", "hictk"},
+      {"service.version", std::string{config::version::str()}},
+      {"host.arch", try_get_build_attr("arch")},
+      {"build.compiler.name", try_get_build_attr("compiler_name")},
+      {"build.compiler.version", try_get_build_attr("compiler_version")},
+      {"build.type", try_get_build_attr("build_type")},
+      {"os.type", try_get_build_attr("os_name")},
+      {"os.version", try_get_build_attr("os_version")},
+  };
 
-const std::string& Tracer::get_compiler_id() noexcept {
-  static std::string s{};
-  if (s.empty()) {
-    try {
-#ifdef HICTK_CXX_COMPILER_ID
-      s = std::string{HICTK_CXX_COMPILER_ID};
-      std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
-#else
-      s = "unknown";
-#endif
-    } catch (...) {  // NOLINT
-    }
+  const auto deps = get_dependency_versions_json();
+  for (const auto& [key, value] : deps.items()) {
+    std::string name = key;
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](const auto c) { return std::tolower(c); });
+    attrs.emplace(fmt::format(FMT_STRING("build.dependencies.{}.version"), name),
+                  value.get<std::string>());
   }
-  return s;
-}
 
-const std::string& Tracer::get_compiler_version() noexcept {
-  static std::string s{};
-  if (s.empty()) {
-    try {
-#ifdef HICTK_CXX_COMPILER_VERSION
-      s = std::string{HICTK_CXX_COMPILER_VERSION};
-      std::transform(s.begin(), s.end(), s.begin(), [](const auto c) { return std::tolower(c); });
-#else
-      s = "unknown";
-#endif
-    } catch (...) {  // NOLINT
-    }
-  }
-  return s;
-}
-
-const std::string& Tracer::get_build_type() noexcept {
-  static std::string s{};
-  if (s.empty()) {
-    try {
-#ifdef HICTK_BUILD_TYPE
-      s = std::string{HICTK_BUILD_TYPE};
-#else
-      s = "unknown";
-#endif
-    } catch (...) {  // NOLINT
-    }
-  }
-  return s;
+  return attrs;
 }
 
 bool Tracer::init_local_telemetry_tracer() noexcept {
   try {
     namespace trace_sdk = opentelemetry::sdk::trace;
     namespace trace_exporter = opentelemetry::exporter::trace;
+    namespace resource = opentelemetry::sdk::resource;
 
     auto x1 = trace_exporter::OStreamSpanExporterFactory::Create();
     auto x2 = trace_sdk::SimpleSpanProcessorFactory::Create(std::move(x1));
+    const auto res = resource::Resource::Create(generate_resource_attributes());
     std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-        trace_sdk::TracerProviderFactory::Create(std::move(x2));
+        trace_sdk::TracerProviderFactory::Create(std::move(x2), res);
     trace_api::Provider::SetTracerProvider(std::move(provider));
     return true;
   } catch (const std::exception& e) {
@@ -258,20 +216,8 @@ bool Tracer::init_remote_telemetry_tracer() noexcept {
       return false;
     }
 
-    static const std::string version{hictk::config::version::str()};
-
-    const resource::ResourceAttributes resource_attributes{
-        {"service.name", "hictk"},
-        {"service.version", version},
-        {"build.type", get_build_type()},
-        {"build.compiler-id", get_compiler_id()},
-        {"build.compiler-version", get_compiler_version()},
-        {"os.type", get_os_name()},
-        {"os.arch", get_arch()},
-    };
-
     auto pf = trace_sdk::BatchSpanProcessorFactory::Create(std::move(opts), {});
-    const auto res = resource::Resource::Create(resource_attributes);
+    const auto res = resource::Resource::Create(generate_resource_attributes());
     std::shared_ptr<trace_api::TracerProvider> provider =
         trace_sdk::TracerProviderFactory::Create(std::move(pf), res);
     trace_api::Provider::SetTracerProvider(std::move(provider));
