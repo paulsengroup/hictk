@@ -120,7 +120,7 @@ class HictkConan(ConanFile):
         self.options["arrow"].with_thrift = False
 
     def _configure_boost(self):
-        if not (self._with_boost or self._with_boost_header_only):
+        if not self._with_boost and not self._with_boost_header_only:
             return
 
         self.options["boost"].system_no_deprecated = True

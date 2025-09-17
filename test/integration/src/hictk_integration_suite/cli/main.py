@@ -29,6 +29,7 @@ def _plan_tests_cli(
         factory | {"args": tuple(), "expect_failure": True},
         factory | {"args": tuple(("--help",))},
         factory | {"args": tuple(("--version",))},
+        factory | {"args": tuple(("--help-build-meta",))},
         factory | {"args": tuple(("--help-cite",))},
         factory | {"args": tuple(("--help-docs",))},
         factory | {"args": tuple(("--help-license",))},
