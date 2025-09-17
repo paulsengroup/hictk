@@ -28,12 +28,57 @@ This is the data we are collecting:
 * Information about ``hictk`` execution (i.e., when it was launched, how long the command took to finish, and whether the command terminated with an error).
 * For the ``hictk dump`` subcommand, we are also collecting the name of the table that is being dumped (e.g., pixels or chroms).
 
-The following table shows an example of the telemetry collected when running ``hictk dump``:
+This is an example of the telemetry collected when running ``hictk dump``:
 
-.. csv-table:: Telemetry information collected when running ``hictk dump``
-  :file: ./assets/telemetry_table.tsv
-  :header-rows: 1
-  :delim: tab
+.. code-block:: text
+
+  name          : subcommand.dump
+  trace_id      : a51ce70f8aff91281eb70332c5eb775b
+  span_id       : 869ec9f57d2e170e
+  tracestate    :
+  parent_span_id: 0000000000000000
+  start         : 1758032386754347017
+  duration      : 151590958
+  description   :
+  span kind     : Internal
+  status        : Ok
+  attributes    :
+	param.table: pixels
+	meta.input-format: mcool
+	meta.argv-sha3-256: 6840f26c9293a323369ea6d571a48b8a49934e76e6e1a645f224caf14663c
+	schema: 1
+  events        :
+  links         :
+  resources     :
+	build.compiler.name: Clang
+	build.compiler.version: 20.1.8
+	build.dependencies.boost.version: 1.88.0
+	build.dependencies.bshoshany-thread-pool.version: 5.0.0
+	build.dependencies.cli11.version: 2.5.0
+	build.dependencies.concurrentqueue.version: 1.0.4
+	build.dependencies.fast_float.version: 8.0.2
+	build.dependencies.fmt.version: 11.2.0
+	build.dependencies.hdf5.version: 1.14.6
+	build.dependencies.highfive.version: 2.10.0
+	build.dependencies.libarchive.version: 3.8.1
+	build.dependencies.libdeflate.version: 1.23
+	build.dependencies.nlohmann_json.version: 3.12.0
+	build.dependencies.opentelemetry-cpp.version: 1.21.0
+	build.dependencies.parallel-hashmap.version: 2.0.0
+	build.dependencies.readerwriterqueue.version: 1.0.6
+	build.dependencies.span-lite.version: 0.11.0
+	build.dependencies.tomlplusplus.version: 3.4.0
+	build.dependencies.zstd.version: 1.5.7
+	build.type: Release
+	host.arch: x86_64
+	os.type: Linux
+	os.version: 6.16.3-200.fc42.x86_64
+	service.name: hictk
+	service.version: 2.1.5
+	telemetry.sdk.language: cpp
+	telemetry.sdk.name: opentelemetry
+	telemetry.sdk.version: 1.21.0
+  instr-lib     : hictk
 
 Why are we collecting this information?
 ---------------------------------------

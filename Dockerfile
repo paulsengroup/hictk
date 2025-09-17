@@ -48,9 +48,9 @@ RUN conan install "$src_dir/conanfile.py"               \
              -o 'hictk/*:with_unit_testing_deps=False'  \
              -o 'hictk/*:with_fuzzy_testing_deps=False' \
              --output-folder="$build_dir"               \
-&& conan cache clean "*" --build                        \
-&& conan cache clean "*" --download                     \
-&& conan cache clean "*" --source
+&&  conan cache clean "*" --build                       \
+&&  conan cache clean "*" --download                    \
+&&  conan cache clean "*" --source
 
 # Copy source files
 COPY LICENSE "$src_dir/"

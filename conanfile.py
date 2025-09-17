@@ -53,6 +53,10 @@ class HictkConan(ConanFile):
         return (self._with_arrow and is_msvc(self)) or self.options.with_fuzzy_testing_deps
 
     @property
+    def _with_boost_header_only(self) -> bool:
+        return self.options.with_telemetry_deps
+
+    @property
     def _with_bzip2(self) -> bool:
         return self._with_libarchive
 
@@ -116,8 +120,9 @@ class HictkConan(ConanFile):
         self.options["arrow"].with_thrift = False
 
     def _configure_boost(self):
-        if not self._with_boost:
+        if not self._with_boost and not self._with_boost_header_only:
             return
+
         self.options["boost"].system_no_deprecated = True
         self.options["boost"].asio_no_deprecated = True
         self.options["boost"].filesystem_no_deprecated = True
@@ -162,6 +167,9 @@ class HictkConan(ConanFile):
         self.options["boost"].without_type_erasure = True
         self.options["boost"].without_url = True
         self.options["boost"].without_wave = True
+
+        if self._with_boost_header_only:
+            self.options["boost"].header_only = not self._with_boost
 
     def _configure_libarchive(self):
         if not self._with_libarchive:
@@ -272,7 +280,7 @@ class HictkConan(ConanFile):
             # Arrow 21.0.0 can't find certain kernels (e.g., sort_indices)
             self.requires("arrow/20.0.0#6e04404a336dd16f08062f6923e6f8f1")
 
-        if self._with_boost:
+        if self._with_boost or self._with_boost_header_only:
             self.requires("boost/1.88.0#14ecfc01dd5a690f15e1318e56a6b78c", force=True)
 
         if self._with_catch2:

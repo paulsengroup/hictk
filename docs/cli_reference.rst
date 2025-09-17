@@ -24,6 +24,8 @@ Subcommands
   OPTIONS:
     -h,     --help              Print this help message and exit
             --help-cite         Print hictk's citation in Bibtex format and exit.
+            --help-build-meta   Print information regarding hictk's build options and third-party
+                                dependencies, and exit.
             --help-docs         Print the URL to hictk's documentation and exit.
             --help-license      Print the hictk license and exit.
             --help-telemetry    Print information regarding telemetry collection and exit.
