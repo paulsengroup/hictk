@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(span-lite REQUIRED QUIET)
 find_package(Filesystem REQUIRED QUIET)
 
 add_library(hictk_internal_tools_config INTERFACE)
@@ -20,5 +21,6 @@ target_link_libraries(
 target_link_system_libraries(
   hictk_internal_tools_config
   INTERFACE
+    nonstd::span-lite
     std::filesystem
 )

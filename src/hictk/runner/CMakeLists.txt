@@ -17,6 +17,7 @@ target_link_libraries(
     hictk::project_options
     hictk::project_warnings
     hictk_internal_tools_balance
+    hictk_internal_tools_build_metadata
     hictk_internal_tools_convert
     hictk_internal_tools_dump
     hictk_internal_tools_fix_mcool

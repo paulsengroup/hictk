@@ -34,6 +34,7 @@ target_link_libraries(
   PRIVATE
     hictk::project_options
     hictk::project_warnings
+    hictk_internal_tools_build_metadata
     hictk_internal_tools_telemetry
     hictk::common
     hictk::cooler

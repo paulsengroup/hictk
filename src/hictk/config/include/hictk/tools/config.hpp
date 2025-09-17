@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <nonstd/span.hpp>
 #include <optional>
 #include <string>
 #include <variant>
@@ -50,6 +51,7 @@ struct BalanceICEConfig {
 
   std::int16_t verbosity{3};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct BalanceSCALEConfig {
@@ -72,6 +74,7 @@ struct BalanceSCALEConfig {
 
   std::int16_t verbosity{3};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct BalanceVCConfig {
@@ -86,6 +89,7 @@ struct BalanceVCConfig {
 
   std::int16_t verbosity{3};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct ConvertConfig {
@@ -109,6 +113,7 @@ struct ConvertConfig {
 
   std::int16_t verbosity{3};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct DumpConfig {
@@ -132,6 +137,7 @@ struct DumpConfig {
   std::optional<std::uint32_t> resolution{};
   std::int16_t verbosity{2};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct FixMcoolConfig {
@@ -149,6 +155,7 @@ struct FixMcoolConfig {
   std::size_t threads{1};
   std::int16_t verbosity{3};
   bool force{false};
+  nonstd::span<const char*> argv{};
 };
 
 struct LoadConfig {
@@ -179,6 +186,7 @@ struct LoadConfig {
 
   std::int16_t verbosity{3};
   std::size_t batch_size{10'000'000};
+  nonstd::span<const char*> argv{};
 };
 
 struct MergeConfig {
@@ -197,6 +205,7 @@ struct MergeConfig {
 
   bool force{false};
   std::int16_t verbosity{3};
+  nonstd::span<const char*> argv{};
 };
 
 struct MetadataConfig {
@@ -207,6 +216,7 @@ struct MetadataConfig {
   bool recursive{false};
 
   std::int16_t verbosity{2};
+  nonstd::span<const char*> argv{};
 };
 
 struct RenameChromosomesConfig {
@@ -215,6 +225,7 @@ struct RenameChromosomesConfig {
   bool add_chr_prefix{false};
   bool remove_chr_prefix{false};
   std::int16_t verbosity{3};
+  nonstd::span<const char*> argv{};
 };
 
 struct ValidateConfig {
@@ -226,6 +237,7 @@ struct ValidateConfig {
   bool exhaustive{true};
   bool quiet{false};
   std::int16_t verbosity{3};
+  nonstd::span<const char*> argv{};
 };
 
 struct ZoomifyConfig {
@@ -246,6 +258,7 @@ struct ZoomifyConfig {
 
   bool force{false};
   std::int16_t verbosity{3};
+  nonstd::span<const char*> argv{};
 };
 
 // NOLINTEND(*-avoid-magic-numbers)

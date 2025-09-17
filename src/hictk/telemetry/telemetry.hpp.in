@@ -23,6 +23,8 @@
 #include <opentelemetry/trace/provider.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <memory>
+#include <nonstd/span.hpp>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -31,6 +33,10 @@
 #include "hictk/tools/config.hpp"
 
 namespace hictk::tools {
+
+namespace internal {
+  [[nodiscard]] std::string hash_argv(nonstd::span<const char*> argv) noexcept;
+}
 
 template <typename SpanPtr, typename ScopePtr>
 struct ScopedSpan {
