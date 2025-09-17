@@ -70,7 +70,8 @@ sudo -u "$BUILD_USER" docker buildx build --platform linux/amd64 \
   -t "$IMAGE_NAME:latest" \
   -t "$IMAGE_NAME:$(echo "$CREATION_DATE" | tr -d '\-' )" \
   -t "$IMAGE_NAME:$IMAGE_TAG" \
-  "$(git rev-parse --show-toplevel)"
+  "$(git rev-parse --show-toplevel)" \
+  --progress=plain
 
  # sudo singularity build -F "${img_name}_v${ver}.sif" \
  #                           "docker-daemon://${img_name}:${ver}"
