@@ -120,10 +120,6 @@ class HictkConan(ConanFile):
         self.options["arrow"].with_thrift = False
 
     def _configure_boost(self):
-        if self._with_boost_header_only:
-            self.options["boost"].header_only = not self._with_boost
-            return
-
         if not self._with_boost:
             return
 
@@ -171,6 +167,9 @@ class HictkConan(ConanFile):
         self.options["boost"].without_type_erasure = True
         self.options["boost"].without_url = True
         self.options["boost"].without_wave = True
+
+        if self._with_boost_header_only:
+            self.options["boost"].header_only = not self._with_boost
 
     def _configure_libarchive(self):
         if not self._with_libarchive:
