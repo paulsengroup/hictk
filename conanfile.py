@@ -98,6 +98,10 @@ class HictkConan(ConanFile):
         return self.options.with_telemetry_deps
 
     @property
+    def _with_protobuf(self) -> bool:
+        return self._with_opentelemetry
+
+    @property
     def _with_pybind11(self) -> bool:
         return self.options.with_fuzzy_testing_deps
 
@@ -237,7 +241,7 @@ class HictkConan(ConanFile):
         # The only reason why they are defined here is to pin their recipe versions
         if self._with_abseil:
             # opentelemetry-cpp
-            self.requires("abseil/20250127.0#faefa3bbf31b5c32933e328d72e42cfe", force=True)
+            self.requires("abseil/20250512.1#6765207d9cf041601188adfbb86663e7", force=True)
 
         if self._with_bzip2:
             # libarchive
@@ -254,6 +258,10 @@ class HictkConan(ConanFile):
         if self._with_lzo:
             # libarchive
             self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
+
+        if self._with_protobuf:
+            # opentelemetry-cpp
+            self.requires("protobuf/6.30.1#97bae23ef6d7f9fcfdb4ded9468ad6de", force=True)
 
         if self._with_xz_utils:
             # libarchive
@@ -299,7 +307,7 @@ class HictkConan(ConanFile):
             self.requires("nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c", force=True)
 
         if self._with_opentelemetry:
-            self.requires("opentelemetry-cpp/1.21.0#499287a2da2848b78e6c27984af69a6e")
+            self.requires("opentelemetry-cpp/1.22.0#a7deeadbd209a75ccb42aeec309dfb51")
 
         if self._with_pybind11:
             self.requires("pybind11/3.0.1#81ed7e3cc5c945080013ca4c5c3abbbb")
