@@ -241,7 +241,7 @@ class HictkConan(ConanFile):
         # The only reason why they are defined here is to pin their recipe versions
         if self._with_abseil:
             # opentelemetry-cpp
-            self.requires("abseil/20250512.1#6765207d9cf041601188adfbb86663e7", force=True)
+            self.requires("abseil/20250814.0#4e0fdd34a888b97aca482e648fc27a3b", force=True)
 
         if self._with_bzip2:
             # libarchive
@@ -274,8 +274,8 @@ class HictkConan(ConanFile):
         self.requires("bshoshany-thread-pool/5.0.0#d94da300363f0c35b8f41b2c5490c94d")
         self.requires("concurrentqueue/1.0.4#1e48e1c712bcfd892087c9c622a51502")
         self.requires("fast_float/8.0.2#846ad0ebab16bc265c511095c3b490e9")
-        self.requires("fmt/11.2.0#579bb2cdf4a7607621beea4eb4651e0f")
-        self.requires("hdf5/1.14.6#6f1acd01d23d00735fe97300f4d5980c", force=True)
+        self.requires("fmt/12.0.0#dc7de7f3968e5d6b377f27b7d0f33916", force=True)
+        self.requires("hdf5/1.14.6#0b780319690d537e6cb0683244919955", force=True)
         self.requires("highfive/3.1.1#d0c724526ebc8ce396ffa1bf7f3c7b64")
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
