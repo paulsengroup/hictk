@@ -83,57 +83,56 @@ jobs:
 
           OS_NAME='ubuntu'
           OS_VERSION='22.04'
-          C_COMPILER='clang-20'
-          CXX_COMPILER='clang++-20'
+
+          COMPILER_NAME='clang'
+          COMPILER_VERSION='20'
+          C_COMPILER="$COMPILER_NAME-$COMPILER_VERSION"
+
+          FINAL_BASE_IMAGE_TAG="$OS_VERSION"
+          FINAL_BASE_IMAGE="docker.io/library/$OS_NAME:$FINAL_BASE_IMAGE_TAG"
+
+          docker pull "$FINAL_BASE_IMAGE"
+          FINAL_BASE_IMAGE_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$FINAL_BASE_IMAGE" | grep -o '[[:alnum:]:]\+$')"
 
           BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
-          TEST_BASE_IMAGE="$BUILD_BASE_IMAGE"
-
-          FINAL_BASE_IMAGE="docker.io/library/$OS_NAME"
-          FINAL_BASE_IMAGE_TAG="$OS_VERSION"
-          sudo docker pull "$FINAL_BASE_IMAGE:$FINAL_BASE_IMAGE_TAG"
-
-          FINAL_BASE_IMAGE_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$FINAL_BASE_IMAGE:$FINAL_BASE_IMAGE_TAG" | grep -o '[[:alnum:]:]\+$')"
+          FINAL_BASE_IMAGE="$(echo "${FINAL_BASE_IMAGE#docker.io/library/}" | cut -d : -f 1)"
 
           if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
-            GIT_HASH='0000000000000000000000000000000000000000'
-            GIT_SHORT_HASH='00000000'
-            CREATION_DATE='2000-01-01'
-            GIT_TAG=''
+            HICTK_GIT_HASH=0000000000000000000000000000000000000000
+            HICTK_GIT_SHORT_HASH=00000000
+            HICTK_GIT_TAG=unknown
+            HICTK_GIT_IS_DIRTY=false
+            VERSION=latest
           else
-            GIT_HASH="$(git rev-parse HEAD)"
-            GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
-            CREATION_DATE="$(date --iso-8601)"
-            GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
+            HICTK_GIT_HASH="$(git rev-parse HEAD)"
+            HICTK_GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
+            HICTK_GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
+            if [ -z "$HICTK_GIT_TAG" ]; then
+              VERSION="sha-$GIT_SHORT_HASH"
+              GIT_TAG=unknown
+            else
+              VERSION="$GIT_TAG"
+            fi
           fi
 
-          GIT_HASH="$(git rev-parse HEAD)"
-          GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
-          CREATION_DATE="$(date --iso-8601)"
-          GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
-          if [ -z "$GIT_TAG" ]; then
-            VERSION="sha-$GIT_SHORT_HASH"
-            GIT_TAG=unknown
-          else
-            VERSION="$GIT_TAG"
-          fi
+          CREATION_DATE="$(date -I)"
 
           PLATFORM="$(echo '${{ matrix.platform }}' | cut -d '/' -f 2)"
           CACHE_REGISTRY="ghcr.io/${{ github.repository }}:buildcache-$PLATFORM"
 
-          echo "C_COMPILER=$C_COMPILER" | tee -a "$GITHUB_OUTPUT"
-          echo "CXX_COMPILER=$CXX_COMPILER" | tee -a "$GITHUB_OUTPUT"
-          echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
-          echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG" | tee -a "$GITHUB_OUTPUT"
-          echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
-          echo "TEST_BASE_IMAGE=$TEST_BASE_IMAGE" | tee -a "$GITHUB_OUTPUT"
-          echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST" | tee -a "$GITHUB_OUTPUT"
-          echo "HICTK_GIT_HASH=$GIT_HASH" | tee -a "$GITHUB_OUTPUT"
-          echo "HICTK_GIT_SHORT_HASH=$GIT_SHORT_HASH" | tee -a "$GITHUB_OUTPUT"
-          echo "CREATION_DATE=$CREATION_DATE" | tee -a "$GITHUB_OUTPUT"
-          echo "HICTK_GIT_TAG=$GIT_TAG" | tee -a "$GITHUB_OUTPUT"
-          echo "VERSION=$VERSION" | tee -a "$GITHUB_OUTPUT"
-          echo "CACHE_REGISTRY=$CACHE_REGISTRY" | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "BUILD_BASE_IMAGE=$BUILD_BASE_IMAGE"
+            echo "CACHE_REGISTRY=$CACHE_REGISTRY"
+            echo "CREATION_DATE=$CREATION_DATE"
+            echo "C_COMPILER=$C_COMPILER"
+            echo "FINAL_BASE_IMAGE=$FINAL_BASE_IMAGE"
+            echo "FINAL_BASE_IMAGE_DIGEST=$FINAL_BASE_IMAGE_DIGEST"
+            echo "FINAL_BASE_IMAGE_TAG=$FINAL_BASE_IMAGE_TAG"
+            echo "HICTK_GIT_HASH=$HICTK_GIT_HASH"
+            echo "HICTK_GIT_SHORT_HASH=$HICTK_GIT_SHORT_HASH"
+            echo "HICTK_GIT_TAG=$HICTK_GIT_TAG"
+            echo "VERSION=$VERSION"
+          } | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
@@ -176,18 +175,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
           build-args: |
-            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
-            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
             BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
-            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
-            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
-            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
-            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
-            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
-            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
             CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
-            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
             HICTK_GIT_IS_DIRTY=false
+            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
+            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
       - name: Test Docker image
@@ -205,18 +202,16 @@ jobs:
           platforms: ${{ matrix.platform }}
           outputs: type=image,"name=${{ github.repository }},ghcr.io/${{ github.repository }}",push-by-digest=true,name-canonical=true,push=true
           build-args: |
-            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
-            CXX_COMPILER=${{ steps.build-args.outputs.CXX_COMPILER }}
             BUILD_BASE_IMAGE=${{ steps.build-args.outputs.BUILD_BASE_IMAGE }}
-            TEST_BASE_IMAGE=${{ steps.build-args.outputs.TEST_BASE_IMAGE }}
-            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
-            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
-            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
-            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
-            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
             CREATION_DATE=${{ steps.build-args.outputs.CREATION_DATE }}
-            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
+            C_COMPILER=${{ steps.build-args.outputs.C_COMPILER }}
+            FINAL_BASE_IMAGE=${{ steps.build-args.outputs.FINAL_BASE_IMAGE }}
+            FINAL_BASE_IMAGE_DIGEST=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_DIGEST }}
+            FINAL_BASE_IMAGE_TAG=${{ steps.build-args.outputs.FINAL_BASE_IMAGE_TAG }}
+            HICTK_GIT_HASH=${{ steps.build-args.outputs.HICTK_GIT_HASH }}
             HICTK_GIT_IS_DIRTY=false
+            HICTK_GIT_SHORT_HASH=${{ steps.build-args.outputs.HICTK_GIT_SHORT_HASH }}
+            HICTK_GIT_TAG=${{ steps.build-args.outputs.HICTK_GIT_TAG }}
             VERSION=${{ steps.build-args.outputs.VERSION }}
 
       - name: Export digest
