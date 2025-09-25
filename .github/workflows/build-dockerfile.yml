@@ -101,7 +101,6 @@ jobs:
             HICTK_GIT_HASH=0000000000000000000000000000000000000000
             HICTK_GIT_SHORT_HASH=00000000
             HICTK_GIT_TAG=unknown
-            HICTK_GIT_IS_DIRTY=false
             VERSION=latest
           else
             HICTK_GIT_HASH="$(git rev-parse HEAD)"
@@ -227,7 +226,7 @@ jobs:
         run: |
           echo 'name=${{ matrix.platform }}' |
             sed 's|[^[:alnum:]=-]\+|-|g' |
-            tee -a $GITHUB_OUTPUT
+            tee -a "$GITHUB_OUTPUT"
 
       - name: Upload digest
         if: github.event_name != 'pull_request'
@@ -289,8 +288,8 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '  ${{ github.repository }}@sha256:%s ' *)
+          docker buildx imagetools create "$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")" \
+            "$(printf '  ${{ github.repository }}@sha256:%s ' *)"
 
       - name: Inspect image (DockerHub)
         run: docker buildx imagetools inspect ${{ github.repository }}
@@ -299,8 +298,8 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '  ghcr.io/${{ github.repository }}@sha256:%s ' *)
+          docker buildx imagetools create "$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")" \
+            "$(printf '  ghcr.io/${{ github.repository }}@sha256:%s ' *)"
 
       - name: Inspect image (GHCR.io)
         run: docker buildx imagetools inspect ghcr.io/${{ github.repository }}
