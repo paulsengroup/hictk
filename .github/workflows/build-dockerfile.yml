@@ -82,7 +82,7 @@ jobs:
           set -o pipefail
 
           OS_NAME='ubuntu'
-          OS_VERSION='22.04'
+          OS_VERSION='24.04'
 
           COMPILER_NAME='clang'
           COMPILER_VERSION='20'
