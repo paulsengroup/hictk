@@ -250,7 +250,16 @@ jobs:
       - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-???.tar -C conan-env/ --strip-components=1
+
+          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
+            archive='/tmp/cmake-prefix-dbg.tar'
+          elif [[ '${{ matrix.build_type }}' == 'Release' ]]; then
+            archive='/tmp/cmake-prefix-rel.tar'
+          else
+            archive='/tmp/cmake-prefix-rwdi.tar'
+          fi
+
+          tar -xf "$archive" -C conan-env/ --strip-components=1
 
       - name: Restore Ccache folder
         id: cache-ccache

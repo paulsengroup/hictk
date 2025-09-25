@@ -58,7 +58,7 @@ EOM
 
 chmod 755 "$tmpdir/runme.sh"
 
-sudo docker -u "$DOCKER_USER" run \
+sudo -u "$DOCKER_USER" docker run \
   --rm \
   --entrypoint=/bin/bash \
   --volume "$tmpdir/runme.sh:/tmp/runme.sh:ro" \

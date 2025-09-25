@@ -186,7 +186,14 @@ jobs:
       - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-???.tar -C conan-env/ --strip-components=1
+
+          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
+            archive='/tmp/cmake-prefix-dbg.tar'
+          else
+            archive='/tmp/cmake-prefix-rel.tar'
+          fi
+
+          gtar -xf "$archive" -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |

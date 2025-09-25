@@ -121,19 +121,18 @@ jobs:
             ${{ github.workspace }}\cmake-prefix-rel.tar
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs (Debug)
-        if: matrix.build_type == 'Debug'
+      - name: Extract CMake configs
         run: |
           mkdir conan-env
           srcdir="$(cygpath '${{ github.workspace }}')"
-          tar -xf "$srcdir/"cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
-      - name: Extract CMake configs (Release)
-        if: matrix.build_type == 'Release'
-        run: |
-          mkdir conan-env
-          srcdir="$(cygpath '${{ github.workspace }}')"
-          tar -xf "$srcdir/"cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
+            archive="$srcdir/cmake-prefix-dbg.tar"
+          else
+            archive="$srcdir/cmake-prefix-rel.tar"
+          fi
+
+          tar -xf "$archive" -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
