@@ -94,9 +94,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Generate requirements.txt for pip
-        run: echo 'cmake==${{ matrix.cmake }}' > requirements.txt
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -104,13 +101,15 @@ jobs:
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
-          echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
+          {
+            echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus"
+            echo "CTEST_PARALLEL_LEVEL=$ncpus"
+          } >> "$GITHUB_ENV"
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: pip install 'cmake==${{ matrix.cmake }}'
 
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
@@ -288,9 +287,9 @@ jobs:
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "NPROC=$ncpus" | tee -a $GITHUB_ENV
+          echo "NPROC=$ncpus" | tee -a "$GITHUB_ENV"
 
       - name: Test hictk balance
         run: |
