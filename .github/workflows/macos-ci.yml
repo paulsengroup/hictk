@@ -119,25 +119,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Generate requirements.txt for pip
-        run: echo 'cmake==${{ matrix.cmake }}' > requirements.txt
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "NPROC=$ncpus" >> $GITHUB_ENV
-          echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
-          echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
+          {
+            echo "NPROC=$ncpus"
+            echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus"
+            echo "CTEST_PARALLEL_LEVEL=$ncpus"
+          } | tee -a "$GITHUB_ENV"
 
       - name: Install build deps
         run: |
-          pip install -r requirements.txt
+          pip install 'cmake==${{ matrix.cmake }}'
           brew install ccache
 
       - name: Generate cache key
@@ -145,21 +143,23 @@ jobs:
         run: |
           set -u
 
-          os="${{ matrix.os }}"
-          compiler="${{ matrix.compiler_name }}"
-          compiler_version="${{ matrix.compiler_version }}"
-          build_type="${{ matrix.build_type }}"
+          os='${{ matrix.os }}'
+          compiler='${{ matrix.compiler_name }}'
+          compiler_version='${{ matrix.compiler_version }}'
+          build_type='${{ matrix.build_type }}'
 
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          conanfile_hash='${{ hashFiles('conanfile.py') }}'
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
           ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
 
-          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a $GITHUB_OUTPUT
-          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a $GITHUB_OUTPUT
-          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
+          {
+            echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
+            echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
+            echo "ccache-restore-key-2=$ccache_key_prefix"
+          } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache (x86)
         if: matrix.os == 'macos-13'
@@ -183,33 +183,26 @@ jobs:
             /tmp/cmake-prefix-rel.tar
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs (Debug)
-        if: matrix.build_type == 'Debug'
+      - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
-
-      - name: Extract CMake configs (Release)
-        if: matrix.build_type == 'Release'
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+          tar -xf /tmp/cmake-prefix-???.tar -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
-                -DCMAKE_CXX_STANDARD=17                              \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env/"                \
-                -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
-                -DHICTK_ENABLE_TESTING=ON                            \
-                -DHICTK_BUILD_EXAMPLES=ON                            \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
-                -DOPT_ENABLE_CPPCHECK=OFF                            \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
-                -DCMAKE_INSTALL_PREFIX=dest                          \
-                -S "${{ github.workspace }}"                         \
-                -B "${{ github.workspace }}/build"
+          cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
+                -DCMAKE_CXX_STANDARD=17                                \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env/"                  \
+                -DENABLE_DEVELOPER_MODE='${{ matrix.developer_mode }}' \
+                -DHICTK_ENABLE_TESTING=ON                              \
+                -DHICTK_BUILD_EXAMPLES=ON                              \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                            \
+                -DOPT_ENABLE_CPPCHECK=OFF                              \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                      \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF                \
+                -DCMAKE_INSTALL_PREFIX=dest                            \
+                -S '${{ github.workspace }}'                           \
+                -B '${{ github.workspace }}/build'
 
       - name: Restore Ccache folder
         id: cache-ccache
@@ -223,7 +216,7 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project
-        run: cmake --build ${{ github.workspace }}/build
+        run: cmake --build '${{ github.workspace }}/build'
 
       - name: Package binaries
         run: |
@@ -323,7 +316,7 @@ jobs:
         continue-on-error: true
         run: |
           set -x
-          while read entry; do
+          while read -r entry; do
             if ! grep -q '/heads/main' <(echo "$entry"); then
               gh cache delete --repo '${{ github.repository }}' "$entry"
             fi
@@ -367,17 +360,12 @@ jobs:
           gtar -xf unit-tests.tar.zst
           gtar -xf test/data/hictk_test_data.tar.zst
 
-      - name: Generate requirements.txt for pip
-        run: |
-          echo 'cmake==${{ matrix.cmake }}' > requirements.txt
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install test dependencies
-        run: pip install -r requirements.txt
+        run: pip install 'cmake==${{ matrix.cmake }}'
 
       - name: Run unit tests
         run: |
@@ -436,9 +424,9 @@ jobs:
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "NPROC=$ncpus" | tee -a $GITHUB_ENV
+          echo "NPROC=$ncpus" | tee -a "$GITHUB_ENV"
 
       - name: Test hictk balance
         run: |
