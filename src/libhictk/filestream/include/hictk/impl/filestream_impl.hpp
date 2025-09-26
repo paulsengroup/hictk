@@ -706,7 +706,7 @@ inline void FileStream<Mutex>::get_underlying_os_error([[maybe_unused]] int errn
     buffer = "Success";
     return;
   }
-#if defined(_GNU_SOURCE)
+#if defined(_GNU_SOURCE)  // NOLINT(*-use-concise-preprocessor-directives)
   buffer = internal::strerror_r_wrapper(errno_, buffer);
 #elif defined(_WIN32)
   buffer.resize(std::max(buffer.capacity(), std::size_t{1024}), '\0');

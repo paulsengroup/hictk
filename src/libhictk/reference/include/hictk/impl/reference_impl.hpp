@@ -229,8 +229,8 @@ inline auto Reference::construct_chrom_buffer(ChromosomeNameIt first_chrom_name,
     buff.emplace_back(static_cast<std::uint32_t>(buff.size()), std::string{*first_chrom_name},
                       conditional_static_cast<std::uint32_t>(*first_chrom_size));
 
-    ++first_chrom_name;
-    ++first_chrom_size;
+    ++first_chrom_name;  // NOLINT(*-pointer-arithmetic)
+    ++first_chrom_size;  // NOLINT(*-pointer-arithmetic)
   }
   return buff;
 }

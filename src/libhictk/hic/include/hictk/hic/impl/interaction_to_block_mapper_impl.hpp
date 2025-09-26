@@ -199,7 +199,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel,
     }
 
     add_pixel(*first_pixel, validate);
-    std::ignore = ++first_pixel;
+    std::ignore = ++first_pixel;  // NOLINT(*-pointer-arithmetic)
 
     if (i == update_frequency) {
       const auto t1 = std::chrono::steady_clock::now();
@@ -252,7 +252,7 @@ inline void HiCInteractionToBlockMapper::append_pixels(PixelIt first_pixel, Pixe
       for (std::size_t i = 0; first_pixel != last_pixel && !early_return; ++i) {
         const auto pixel = internal::process_pixel_interaction_block(*_bin_table, *first_pixel);
         assert(pixel.count != 0);
-        std::ignore = ++first_pixel;
+        std::ignore = ++first_pixel;  // NOLINT(*-pointer-arithmetic)
 
         while (!queue.try_enqueue(pixel)) {
           if (early_return) {

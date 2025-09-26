@@ -71,8 +71,8 @@ class Cooler {
   Cooler() = default;
   explicit Cooler(std::string_view uri);
 
-  [[nodiscard]] std::string uri() const noexcept;
-  [[nodiscard]] std::uint32_t resolution() const noexcept;
+  [[nodiscard]] std::string uri() const;
+  [[nodiscard]] std::uint32_t resolution() const;
 
   template <typename N>
   void fetch_df(COODataFrame<N>& buff, std::string_view range1, std::string_view range2 = "",

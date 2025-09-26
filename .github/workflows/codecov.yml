@@ -56,14 +56,14 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@8b45168added4a6ed866d9f9e53f65628b34865a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@347de7aee00e9d7242bd500c8e1e9ad16baafd66
 
   build-project:
     name: Build project
     needs: build-conan-deps
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       options: "--user=root"
 
     env:
@@ -284,7 +284,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       options: "--user=root"
 
     env:
@@ -355,12 +355,12 @@ jobs:
             --output-dir coverage/               \
             --prefix=profiles/                   \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           flags: "tests | unittests"
           fail_ci_if_error: true
@@ -375,7 +375,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-20
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       options: "--user=root"
 
     env:
@@ -633,20 +633,20 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/hictk."               \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             build/src/hictk/hictk
 
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="$PWD/hictk-no-telem."      \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-20           \
-            --llvm-profdata-bin llvm-profdata-20 \
+            --llvm-cov-bin llvm-cov-21           \
+            --llvm-profdata-bin llvm-profdata-21 \
             build-no-telem/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           flags: "tests | integration"
           fail_ci_if_error: true

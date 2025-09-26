@@ -15,18 +15,18 @@
 
 template <>
 struct fmt::formatter<hictk::PixelCoordinates> {
-  enum Presentation : std::uint_fast8_t { bg2, raw };
-  Presentation presentation{bg2};
+  enum class Presentation : std::uint_fast8_t { bg2, raw };
+  Presentation presentation{Presentation::bg2};
 
   constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      presentation = bg2;
+      presentation = Presentation::bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
@@ -39,29 +39,29 @@ struct fmt::formatter<hictk::PixelCoordinates> {
 
   template <typename FormatContext>
   auto format(const hictk::PixelCoordinates &c, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (presentation == bg2) {
+    if (presentation == Presentation::bg2) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:bed}\t{:bed}"), c.bin1, c.bin2);
     }
 
-    assert(presentation == raw);
+    assert(presentation == Presentation::raw);
     return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{:raw}"), c.bin1, c.bin2);
   }
 };
 
 template <typename N>
 struct fmt::formatter<hictk::Pixel<N>> {
-  enum Presentation : std::uint_fast8_t { bg2, raw };
-  Presentation presentation{bg2};
+  enum class Presentation : std::uint_fast8_t { bg2, raw };
+  Presentation presentation{Presentation::bg2};
 
   constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
     const auto *it = ctx.begin();
     const auto *end = ctx.end();
 
     if (hictk::internal::starts_with(ctx, "bg2")) {
-      presentation = bg2;
+      presentation = Presentation::bg2;
       it += std::string_view{"bg2"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     }
 
@@ -74,11 +74,11 @@ struct fmt::formatter<hictk::Pixel<N>> {
 
   template <typename FormatContext>
   auto format(const hictk::Pixel<N> &p, FormatContext &ctx) const -> decltype(ctx.out()) {
-    if (presentation == raw) {
+    if (presentation == Presentation::raw) {
       return fmt::format_to(ctx.out(), FMT_STRING("{:raw}\t{}"), p.coords, p.count);
     }
 
-    assert(presentation == bg2);
+    assert(presentation == Presentation::bg2);
     return fmt::format_to(ctx.out(), FMT_STRING("{:bg2}\t{}"), p.coords, p.count);
   }
 };

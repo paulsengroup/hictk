@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>

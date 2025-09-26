@@ -29,7 +29,7 @@ def make_cli() -> argparse.ArgumentParser:
         nargs="+",
         type=str,
         default=("gcc", "clang"),
-        choices={"gcc", "clang"},
+        choices={"gcc", "clang", "default"},
         help="Names of the conan profiles to be used.",
     )
     cli.add_argument(
@@ -186,8 +186,10 @@ def run_conan(
         env["CXX"] = "g++"
     elif profile == "clang":
         env["CXX"] = "clang++"
-    else:
-        raise RuntimeError(f'Unrecognized compiler "{profile}". Profiles should be either named "gcc" or "clang"')
+    elif profile != "default":
+        raise RuntimeError(
+            f'Unrecognized compiler "{profile}". Profiles should be either named "gcc", "clang", or "default".'
+        )
 
     run_or_print(args, env=env, dry_run=dry_run)
 

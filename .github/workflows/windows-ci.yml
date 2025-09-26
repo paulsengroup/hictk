@@ -57,7 +57,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: set-result
         with:
           script: |
@@ -67,8 +67,8 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.0.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.0.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'msvc', os: 'windows-2025', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
@@ -78,7 +78,7 @@ jobs:
 
   build-conan-deps:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@8b45168added4a6ed866d9f9e53f65628b34865a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@347de7aee00e9d7242bd500c8e1e9ad16baafd66
     with:
       os: windows-2025
 
@@ -94,9 +94,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: "pip"
 
       - name: Detect number available CPUs
@@ -223,9 +223,9 @@ jobs:
         run: |
           echo 'cmake==${{ matrix.cmake }}' > requirements.txt
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: "pip"
 
       - name: Install test dependencies
@@ -252,9 +252,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache-dependency-path: "test/integration/pyproject.toml"
           cache: "pip"
 

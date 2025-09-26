@@ -22,7 +22,7 @@ namespace hictk {
 
 [[nodiscard]] constexpr bool ndebug_not_defined() noexcept { return !ndebug_defined(); }
 
-#if defined(__GNUC__)
+#if defined(__GNUC__)  // NOLINT(-use-concise-preprocessor-directives)
 #define HICTK_UNREACHABLE_CODE __builtin_unreachable()
 #elif defined(_MSC_VER)
 #define HICTK_UNREACHABLE_CODE __assume(0)
@@ -37,7 +37,7 @@ namespace hictk {
   HICTK_UNREACHABLE_CODE;
 }
 
-#if defined(__GNUC__)
+#if defined(__GNUC__)  // NOLINT(-use-concise-preprocessor-directives)
 #define HICTK_LIKELY(x)   __builtin_expect(!!(x), 1)  // NOLINT(*-simplify-boolean-expr)
 #define HICTK_UNLIKELY(x) __builtin_expect(!!(x), 0)  // NOLINT(*-simplify-boolean-expr)
 #else

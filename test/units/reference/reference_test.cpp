@@ -107,7 +107,7 @@ TEST_CASE("Reference", "[reference][short]") {
 
   SECTION("operators") {
     const Reference chroms1(expected.begin(), expected.end());
-    const Reference chroms2(expected.begin(), expected.end() - 1);
+    const Reference chroms2(expected.begin(), expected.end() - 1);  // NOLINT(*-pointer-arithmetic)
 
     CHECK(chroms1 == chroms1);
     CHECK(chroms1 != chroms2);

@@ -148,16 +148,26 @@ def get_last_recipe(package: str, remotes: str) -> Tuple[str, str, str]:
 
 def process_build_requirements(conanfile: pathlib.Path):
     print("### build_requirements\n###")
-    for package, _, _, suffix in extract_requirements(conanfile, "build_requirements"):
-        package, version, revision = get_last_recipe(package, "*")
-        print(f'self.requires("{package}/{version}#{revision}"{suffix}')
+    for old_package, old_version, old_revision, suffix in extract_requirements(conanfile, "build_requirements"):
+        package, version, revision = get_last_recipe(old_package, "*")
+
+        old_package = f"{old_package}/{old_version}#{revision}"
+        new_package = f"{package}/{version}#{revision}"
+
+        if old_package != new_package:
+            print(f'self.requires("{new_package}"{suffix}')
 
 
 def process_requirements(conanfile: pathlib.Path):
     print("### requirements\n###")
-    for package, _, _, suffix in extract_requirements(conanfile, "requirements"):
-        package, version, revision = get_last_recipe(package, "*")
-        print(f'self.requires("{package}/{version}#{revision}"{suffix}')
+    for old_package, old_version, old_revision, suffix in extract_requirements(conanfile, "requirements"):
+        package, version, revision = get_last_recipe(old_package, "*")
+
+        old_package = f"{old_package}/{old_version}#{revision}"
+        new_package = f"{package}/{version}#{revision}"
+
+        if old_package != new_package:
+            print(f'self.requires("{new_package}"{suffix}')
 
 
 def main():

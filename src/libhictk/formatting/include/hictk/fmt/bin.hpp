@@ -16,8 +16,8 @@
 namespace fmt {
 template <>
 struct formatter<hictk::Bin> {
-  enum Presentation : std::uint_fast8_t { bed, raw, ucsc };
-  Presentation presentation{raw};
+  enum class Presentation : std::uint_fast8_t { bed, raw, ucsc };
+  Presentation presentation{Presentation::raw};
 
   constexpr format_parse_context::iterator parse(format_parse_context &ctx) {
     const auto *it = ctx.begin();
@@ -25,13 +25,13 @@ struct formatter<hictk::Bin> {
 
     // NOLINTBEGIN(*-bounds-pointer-arithmetic)
     if (hictk::internal::starts_with(ctx, "bed")) {
-      presentation = bed;
+      presentation = Presentation::bed;
       it += std::string_view{"bed"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "raw")) {
-      presentation = raw;
+      presentation = Presentation::raw;
       it += std::string_view{"raw"}.size();  // NOLINT
     } else if (hictk::internal::starts_with(ctx, "ucsc")) {
-      presentation = ucsc;
+      presentation = Presentation::ucsc;
       it += std::string_view{"ucsc"}.size();  // NOLINT
     }
     // NOLINTEND(*-bounds-pointer-arithmetic)
@@ -45,13 +45,13 @@ struct formatter<hictk::Bin> {
 
   template <typename FormatContext>
   auto format(const hictk::Bin &b, FormatContext &ctx) const {
-    if (presentation == bed) {
+    if (presentation == Presentation::bed) {
       return format_to(ctx.out(), FMT_STRING("{:bed}"), b.interval());
     }
-    if (presentation == raw) {
+    if (presentation == Presentation::raw) {
       return format_to(ctx.out(), FMT_STRING("{}"), b.id());
     }
-    assert(presentation == ucsc);
+    assert(presentation == Presentation::ucsc);
     return format_to(ctx.out(), FMT_STRING("{:ucsc}"), b.interval());
   }
 };

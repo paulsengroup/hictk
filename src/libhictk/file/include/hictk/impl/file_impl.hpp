@@ -274,7 +274,7 @@ inline File::File(std::string_view uri, std::optional<std::uint32_t> resolution_
       throw std::runtime_error(
           fmt::format(FMT_STRING("found an unexpected resolution while opening file at \"{}\": "
                                  "expected {}, found {}."),
-                      uri, *resolution_, resolution()));
+                      uri, *resolution_, resolution()));  // NOLINT(*-unchecked-optional-access)
     }
     return;
   }

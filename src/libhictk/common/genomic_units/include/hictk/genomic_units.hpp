@@ -89,7 +89,7 @@ template <typename T = std::uint64_t>
     }
 
     size = static_cast<std::size_t>(std::distance(distance.begin(), match));
-    const std::string_view unit{distance.data() + size};
+    const auto unit = distance.substr(size);
 
     const auto numeric_cfx = internal::parse_numeric_or_throw<double>(cfx);
     const auto multiplier = static_cast<double>(parse_genomic_unit(unit));

@@ -106,7 +106,9 @@ target_compile_definitions(
   INTERFACE
     # Tweak fmt
     FMT_HEADER_ONLY
-    FMT_ENFORCE_COMPILE_STRING
+    # starting with fmt v12, clang-tidy breaks when FMT_ENFORCE_COMPILE_STRING is defined
+    # https://github.com/fmtlib/fmt/commit/619b3a5aa031a25e8d06fec1e03992e5e727c5a5#diff-bdc6f79e8e9f5b4331d66fb785636a87d29f55cf729865e13925b4209424c878R4223
+    $<$<NOT:$<BOOL:OPT_ENABLE_CLANG_TIDY>>:FMT_ENFORCE_COMPILE_STRING>
     FMT_USE_FULL_CACHE_DRAGONBOX
     # Tweak spdlog
     SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_$<IF:$<CONFIG:Debug>,DEBUG,INFO>
