@@ -95,7 +95,7 @@ jobs:
           FINAL_BASE_IMAGE_DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$FINAL_BASE_IMAGE" | grep -o '[[:alnum:]:]\+$')"
 
           BUILD_BASE_IMAGE="ghcr.io/paulsengroup/ci-docker-images/$OS_NAME-$OS_VERSION-cxx-$C_COMPILER:latest"
-          FINAL_BASE_IMAGE="$(echo "${FINAL_BASE_IMAGE#docker.io/library/}" | cut -d : -f 1)"
+          FINAL_BASE_IMAGE="${FINAL_BASE_IMAGE#docker.io/library/}"
 
           if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
             HICTK_GIT_HASH=0000000000000000000000000000000000000000
@@ -107,10 +107,10 @@ jobs:
             HICTK_GIT_SHORT_HASH="$(git rev-parse --short HEAD)"
             HICTK_GIT_TAG="$(git for-each-ref 'refs/tags/v*.*.*' --count 1 --sort=-v:refname --format "%(refname:short)" --points-at HEAD)"
             if [ -z "$HICTK_GIT_TAG" ]; then
-              VERSION="sha-$GIT_SHORT_HASH"
-              GIT_TAG=unknown
+              VERSION="sha-$HICTK_GIT_SHORT_HASH"
+              HICTK_GIT_TAG=unknown
             else
-              VERSION="$GIT_TAG"
+              VERSION="$HICTK_GIT_TAG"
             fi
           fi
 
@@ -288,8 +288,12 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
-          docker buildx imagetools create "$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")" \
-            "$(printf '  ${{ github.repository }}@sha256:%s ' *)"
+          args="$(printf '  ${{ github.repository }}@sha256:%s ' *)"
+          args+=" $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          read -r -a args_array <<< "$args"
+
+          set -x
+          docker buildx imagetools create "${args_array[@]}"
 
       - name: Inspect image (DockerHub)
         run: docker buildx imagetools inspect ${{ github.repository }}
@@ -298,8 +302,12 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
-          docker buildx imagetools create "$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")" \
-            "$(printf '  ghcr.io/${{ github.repository }}@sha256:%s ' *)"
+          args="$(printf '  ghcr.io/${{ github.repository }}@sha256:%s ' *)"
+          args+=" $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          read -r -a args_array <<< "$args"
+
+          set -x
+          docker buildx imagetools create "${args_array[@]}"
 
       - name: Inspect image (GHCR.io)
         run: docker buildx imagetools inspect ghcr.io/${{ github.repository }}
