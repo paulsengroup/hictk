@@ -30,14 +30,15 @@ Checks: >
   -readability-static-definition-in-anonymous-namespace,
   -zircon-*
 WarningsAsErrors: ""
+HeaderFileExtensions: ["", "hpp"]
+ImplementationFileExtensions: ["cpp"]
 HeaderFilterRegex: "(^\\.\\/.*)|(.*hictk.*)"
 FormatStyle: none
 CheckOptions:
   - key: cppcoreguidelines-macro-usage.AllowedRegexp
     value: "HICTK_.*"
-  - key: misc-include-cleaner.IgnoreHeaders
-    value: "fmt/.*"
   - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
     value: "1"
   - key: readability-implicit-bool-conversion.AllowPointerConditions
     value: "1"
+SystemHeaders: false

@@ -477,12 +477,12 @@ inline void ICE::mad_max_filtering(nonstd::span<const std::uint64_t> chrom_offse
     const auto i0 = static_cast<std::ptrdiff_t>(chrom_offsets[i - 1] - chrom_offsets.front());
     const auto i1 = static_cast<std::ptrdiff_t>(chrom_offsets[i] - chrom_offsets.front());
 
-    cmarg.clear();
+    cmarg.clear();  // NOLINTNEXTLINE(*-pointer-arithmetic)
     std::copy_if(marg.begin() + i0, marg.begin() + i1, std::back_inserter(cmarg),
                  [](const auto n) { return n > 0; });
 
     if (!cmarg.empty()) {
-      const auto median_ = median(cmarg);
+      const auto median_ = median(cmarg);  // NOLINTNEXTLINE(*-pointer-arithmetic)
       std::transform(marg.begin() + i0, marg.begin() + i1, marg.begin() + i0,
                      [&](const auto n) { return n / median_; });
     }
