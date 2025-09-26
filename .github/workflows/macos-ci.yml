@@ -62,7 +62,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: set-result
         with:
           script: |
@@ -119,7 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -367,7 +367,7 @@ jobs:
           gtar -xf unit-tests.tar.zst
           gtar -xf test/data/hictk_test_data.tar.zst
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -397,7 +397,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache-dependency-path: "test/integration/pyproject.toml"
