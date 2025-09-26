@@ -134,6 +134,11 @@ option(HICTK_WITH_ARROW "Build with arrow support" ON)
 option(HICTK_WITH_ARROW_SHARED "Force dynamic linking to Arrow libs" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
+option(
+  HICTK_ASSUME_STD_FILESYSTEM_AVAIL
+  "Assume that the <filesystem> header is available and does not require special linker flags"
+  OFF
+)
 
 cmake_dependent_option(
   HICTK_DOWNLOAD_TEST_DATASET
@@ -172,6 +177,10 @@ endif()
 
 if(BUILD_SHARED_LIBS)
   set(HICTK_WITH_ARROW_SHARED ON CACHE BOOL "Force dynamic linking to Arrow libs" FORCE)
+endif()
+
+if(HICTK_ASSUME_STD_FILESYSTEM_AVAIL)
+  add_library(std::filesystem INTERFACE)
 endif()
 
 add_subdirectory(src)

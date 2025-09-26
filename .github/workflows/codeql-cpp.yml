@@ -89,7 +89,7 @@ jobs:
                 -B build
 
       - name: Build project
-        run: cmake --build build -j $(nproc)
+        run: cmake --build build -j "$(nproc)"
 
       - name: Run Analysis
         uses: github/codeql-action/analyze@192325c86100d080feab897ff886c34abd4c83a3 # v3.30.3
