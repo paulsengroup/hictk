@@ -77,8 +77,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
+        run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Generate cache key
         id: cache-key
@@ -90,9 +89,11 @@ jobs:
 
           ccache_key_prefix="codecov-ccache-$conanfile_hash"
 
-          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a "$GITHUB_OUTPUT"
-          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a "$GITHUB_OUTPUT"
-          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
+            echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
+            echo "ccache-restore-key-2=$ccache_key_prefix"
+          } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
@@ -191,10 +192,10 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project (w/ telemetry)
-        run: cmake --build build -j $(nproc)
+        run: cmake --build build -j "$(nproc)"
 
       - name: Build project (wo/ telemetry)
-        run: cmake --build build-no-telem -j $(nproc) -t hictk
+        run: cmake --build build-no-telem -j "$(nproc)" -t hictk
 
       - name: Package build folder
         run: tar --exclude='*.o' -cf - build*/ | zstd -T0 -13 -o build.tar.zst
@@ -270,7 +271,7 @@ jobs:
         continue-on-error: true
         run: |
           set -x
-          while read entry; do
+          while read -r entry; do
             if ! grep -q '/heads/main' <(echo "$entry"); then
               gh cache delete --repo '${{ github.repository }}' "$entry"
             fi
@@ -338,14 +339,12 @@ jobs:
             hash="$(sha256sum "$bin" | cut -f1 -d ' ')"
             LLVM_PROFILE_FILE="$PWD/profiles/$hash.profraw"
 
-            sudo -u devel                                      \
-                 -E env "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE" \
-                 "$bin"
-
-            if [ $? -ne 0 ]; then
+            if ! sudo -u devel                                      \
+                      -E env "LLVM_PROFILE_FILE=$LLVM_PROFILE_FILE" \
+                      "$bin"; \
+            then
               exit 1
             fi
-
           done
 
       - name: Collect coverage data

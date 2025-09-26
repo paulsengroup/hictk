@@ -14,6 +14,12 @@ fi
 
 IMG="$1"
 
+if [ "$(uname)" == "Darwin" ]; then
+  DOCKER_USER="$USER"
+else
+  DOCKER_USER='root'
+fi
+
 tmpdir="$(mktemp -d)"
 # shellcheck disable=SC2064
 trap "rm -rf '$tmpdir'" EXIT
@@ -52,7 +58,9 @@ EOM
 
 chmod 755 "$tmpdir/runme.sh"
 
-sudo docker run --rm --entrypoint=/bin/bash \
+sudo -u "$DOCKER_USER" docker run \
+  --rm \
+  --entrypoint=/bin/bash \
   --volume "$tmpdir/runme.sh:/tmp/runme.sh:ro" \
   --volume "$PWD/test/integration:/tmp/hictk/test/integration:ro" \
   --volume "$PWD/test/data/hictk_test_data.tar.zst:/tmp/hictk/test/data/hictk_test_data.tar.zst:ro" \

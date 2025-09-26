@@ -94,9 +94,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Generate requirements.txt for pip
-        run: echo 'cmake==${{ matrix.cmake }}' > requirements.txt
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -104,13 +101,15 @@ jobs:
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
-          echo "CTEST_PARALLEL_LEVEL=$ncpus" >> $GITHUB_ENV
+          {
+            echo "CMAKE_BUILD_PARALLEL_LEVEL=$ncpus"
+            echo "CTEST_PARALLEL_LEVEL=$ncpus"
+          } >> "$GITHUB_ENV"
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: pip install 'cmake==${{ matrix.cmake }}'
 
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
@@ -122,19 +121,18 @@ jobs:
             ${{ github.workspace }}\cmake-prefix-rel.tar
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs (Debug)
-        if: matrix.build_type == 'Debug'
+      - name: Extract CMake configs
         run: |
           mkdir conan-env
           srcdir="$(cygpath '${{ github.workspace }}')"
-          tar -xf "$srcdir/"cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
-      - name: Extract CMake configs (Release)
-        if: matrix.build_type == 'Release'
-        run: |
-          mkdir conan-env
-          srcdir="$(cygpath '${{ github.workspace }}')"
-          tar -xf "$srcdir/"cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
+            archive="$srcdir/cmake-prefix-dbg.tar"
+          else
+            archive="$srcdir/cmake-prefix-rel.tar"
+          fi
+
+          tar -xf "$archive" -C conan-env/ --strip-components=1
 
       - name: Configure project
         run: |
@@ -288,9 +286,9 @@ jobs:
 
       - name: Detect number available CPUs
         run: |
-          ncpus=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+          ncpus="$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')"
 
-          echo "NPROC=$ncpus" | tee -a $GITHUB_ENV
+          echo "NPROC=$ncpus" | tee -a "$GITHUB_ENV"
 
       - name: Test hictk balance
         run: |

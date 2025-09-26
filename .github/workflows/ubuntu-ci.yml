@@ -190,8 +190,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
+        run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Check build deps are up-to-date
         id: build-deps-outdated
@@ -218,11 +217,11 @@ jobs:
         run: |
           set -u
 
-          os="${{ matrix.os }}"
-          compiler="${{ matrix.compiler }}"
-          generator="${{ matrix.generator }}"
-          build_type="${{ matrix.build_type }}"
-          dev_mode="${{ matrix.developer_mode }}"
+          os='${{ matrix.os }}'
+          compiler='${{ matrix.compiler }}'
+          generator='${{ matrix.generator }}'
+          build_type='${{ matrix.build_type }}'
+          dev_mode='${{ matrix.developer_mode }}'
 
           conanfile_hash="${{ hashFiles('conanfile.py') }}"
 
@@ -231,9 +230,11 @@ jobs:
 
           ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type-$generator-$dev_mode"
 
-          echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}" | tee -a $GITHUB_OUTPUT
-          echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF" | tee -a $GITHUB_OUTPUT
-          echo "ccache-restore-key-2=$ccache_key_prefix" | tee -a $GITHUB_OUTPUT
+          {
+            echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
+            echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
+            echo "ccache-restore-key-2=$ccache_key_prefix"
+          } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
@@ -246,17 +247,19 @@ jobs:
             /tmp/cmake-prefix-rwdi.tar
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs (Debug)
-        if: matrix.build_type == 'Debug'
+      - name: Extract CMake configs
         run: |
           mkdir conan-env
-          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
-      - name: Extract CMake configs (Release)
-        if: matrix.build_type == 'Release'
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rel.tar -C conan-env/ --strip-components=1
+          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
+            archive='/tmp/cmake-prefix-dbg.tar'
+          elif [[ '${{ matrix.build_type }}' == 'Release' ]]; then
+            archive='/tmp/cmake-prefix-rel.tar'
+          else
+            archive='/tmp/cmake-prefix-rwdi.tar'
+          fi
+
+          tar -xf "$archive" -C conan-env/ --strip-components=1
 
       - name: Restore Ccache folder
         id: cache-ccache
@@ -277,24 +280,24 @@ jobs:
             LINKER=LLD
           fi
 
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
-                -DCMAKE_CXX_STANDARD=17                              \
-                -DCMAKE_LINKER_TYPE="$LINKER"                        \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"                 \
-                -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                          \
-                -DOPT_ENABLE_CPPCHECK=OFF                            \
-                -DHICTK_ENABLE_TESTING=ON                            \
-                -DHICTK_BUILD_EXAMPLES=ON                            \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                    \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF              \
-                -DCMAKE_INSTALL_PREFIX=dest                          \
-                -G '${{ matrix.generator }}'                         \
-                -S .                                                 \
+          cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
+                -DCMAKE_CXX_STANDARD=17                                \
+                -DCMAKE_LINKER_TYPE="$LINKER"                          \
+                -DCMAKE_PREFIX_PATH="$PWD/conan-env"                   \
+                -DENABLE_DEVELOPER_MODE='${{ matrix.developer_mode }}' \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                            \
+                -DOPT_ENABLE_CPPCHECK=OFF                              \
+                -DHICTK_ENABLE_TESTING=ON                              \
+                -DHICTK_BUILD_EXAMPLES=ON                              \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                      \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF                \
+                -DCMAKE_INSTALL_PREFIX=dest                            \
+                -G '${{ matrix.generator }}'                           \
+                -S .                                                   \
                 -B build
 
       - name: Build project
-        run: cmake --build build -j $(nproc)
+        run: cmake --build build -j "$(nproc)"
 
       - name: Package binaries
         run: |
@@ -396,7 +399,7 @@ jobs:
         continue-on-error: true
         run: |
           set -x
-          while read entry; do
+          while read -r entry; do
             if ! grep -q '/heads/main' <(echo "$entry"); then
               gh cache delete --repo '${{ github.repository }}' "$entry"
             fi
@@ -448,8 +451,7 @@ jobs:
         run: useradd devel
 
       - name: Fix permissions
-        run: |
-          chown -R devel:devel build/
+        run: chown -R devel:devel build/
 
       - name: Setup dependencies
         run: |
@@ -458,7 +460,7 @@ jobs:
             python3-pip \
             sudo
 
-          python3 -m pip install "cmake==${{ matrix.cmake }}"
+          python3 -m pip install 'cmake==${{ matrix.cmake }}'
 
       - name: Run unit tests
         run: |
@@ -468,7 +470,7 @@ jobs:
                 --output-on-failure         \
                 --no-tests=error            \
                 --timeout 240               \
-                -j $(nproc)
+                -j "$(nproc)"
 
   run-integration-tests:
     name: Run integration tests
@@ -502,7 +504,7 @@ jobs:
             zip \
             zstd
 
-          if [ "${{ matrix.developer_mode }}" = ON ]; then
+          if [ '${{ matrix.developer_mode }}' = ON ]; then
             apt-get install -q -y --no-install-recommends \
               libasan8 \
               libubsan1

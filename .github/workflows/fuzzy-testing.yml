@@ -82,8 +82,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Fix permissions
-        run: |
-          chown -R $(id -u):$(id -g) $PWD
+        run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Install Python
         run: |
@@ -142,7 +141,7 @@ jobs:
 
       - name: Build hictk_fuzzer
         run: |
-          cmake --build build -j $(nproc) -t hictk_fuzzer
+          cmake --build build -j "$(nproc)" -t hictk_fuzzer
           mv build/test/fuzzer/src/hictk_fuzzer .
           ./hictk_fuzzer --help
 
@@ -229,7 +228,7 @@ jobs:
 
       - name: Fix permissions
         run: |
-          chown -R $(id -u):$(id -g) $PWD
+          chown -R "$(id -u):$(id -g)" "$PWD"
           chmod 500 hictk_fuzzer
 
       - name: Install test dependencies
@@ -283,10 +282,12 @@ jobs:
           1>&2 echo "Seed: $seed"
           1>&2 echo "Profile prefix: $profile_prefix"
 
-          echo "duration=$duration" >> "$GITHUB_OUTPUT"
-          echo "resolution=$resolution" >> "$GITHUB_OUTPUT"
-          echo "seed=$seed" >> "$GITHUB_OUTPUT"
-          echo "profile-prefix=$profile_prefix" >> "$GITHUB_OUTPUT"
+          {
+            echo "duration=$duration"
+            echo "resolution=$resolution"
+            echo "seed=$seed"
+            echo "profile-prefix=$profile_prefix"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Download test datasets
         run: |
@@ -306,14 +307,16 @@ jobs:
           fi
 
           export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-df.%p.profraw"
+
+          # shellcheck disable=SC2035
           ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --normalization ${{ matrix.normalization }} \
-            --seed ${{ steps.test-params.outputs.seed }} \
-            --nproc $(nproc) \
+            --normalization '${{ matrix.normalization }}' \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --nproc "$(nproc)" \
             --format df \
-            *".${{ matrix.format }}" \
+            *'.${{ matrix.format }}' \
             *.cool
 
       - name: Run test (dense)
@@ -324,14 +327,16 @@ jobs:
           fi
 
           export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-dense.%p.profraw"
+
+          # shellcheck disable=SC2035
           ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --normalization ${{ matrix.normalization }} \
-            --seed ${{ steps.test-params.outputs.seed }} \
-            --nproc $(nproc) \
+            --normalization '${{ matrix.normalization }}' \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --nproc "$(nproc)" \
             --format dense \
-            *".${{ matrix.format }}" \
+            *'.${{ matrix.format }}' \
             *.cool
 
       - name: Run test (sparse)
@@ -342,14 +347,16 @@ jobs:
           fi
 
           export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-sparse.%p.profraw"
+
+          # shellcheck disable=SC2035
           ./hictk_fuzzer fuzz \
             "${args[@]}" \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --normalization ${{ matrix.normalization }} \
-            --seed ${{ steps.test-params.outputs.seed }} \
-            --nproc $(nproc) \
+            --normalization '${{ matrix.normalization }}' \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --nproc "$(nproc)" \
             --format sparse \
-            *".${{ matrix.format }}" \
+            *'.${{ matrix.format }}' \
             *.cool
 
       - name: Run test (diagonal band; 1D queries)
@@ -358,16 +365,18 @@ jobs:
           _100_mbps=100000000
 
           export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-1d.%p.profraw"
+
+          # shellcheck disable=SC2035
           ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --normalization ${{ matrix.normalization }} \
-            --seed ${{ steps.test-params.outputs.seed }} \
-            --nproc $(nproc) \
+            --normalization '${{ matrix.normalization }}' \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --nproc "$(nproc)" \
             --format df \
             --1d-to-2d-query-ratio 1 \
             --diagonal-band-width "$_100_mbps" \
-            *".${{ matrix.format }}" \
+            *'.${{ matrix.format }}' \
             *.cool
 
       - name: Run test (diagonal band; 2D queries)
@@ -376,16 +385,18 @@ jobs:
           _1_gbp=1000000000
 
           export LLVM_PROFILE_FILE="$PWD/profiles/${{ steps.test-params.outputs.profile-prefix }}-hictk-fuzz-diagonal-band-2d.%p.profraw"
+
+          # shellcheck disable=SC2035
           ./hictk_fuzzer fuzz \
             --resolution ${{ steps.test-params.outputs.resolution }} \
             --duration '${{ steps.test-params.outputs.duration }}' \
-            --normalization ${{ matrix.normalization }} \
-            --seed ${{ steps.test-params.outputs.seed }} \
-            --nproc $(nproc) \
+            --normalization '${{ matrix.normalization }}' \
+            --seed '${{ steps.test-params.outputs.seed }}' \
+            --nproc "$(nproc)" \
             --format df \
             --1d-to-2d-query-ratio=0 \
             --diagonal-band-width "$_1_gbp" \
-            *".${{ matrix.format }}" \
+            *'.${{ matrix.format }}' \
             *.cool
 
       - name: Upload coverage profiles
@@ -417,7 +428,7 @@ jobs:
 
       - name: Fix permissions
         run: |
-          chown -R $(id -u):$(id -g) $PWD
+          chown -R "$(id -u):$(id -g)" "$PWD"
           chmod 500 hictk_fuzzer
 
       - name: Download coverage profiles
@@ -440,7 +451,7 @@ jobs:
       - name: Collect coverage data
         run: |
           mkdir profiles
-          mv *.profraw profiles/
+          mv ./*.profraw profiles/
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="$PWD/profiles/"            \
