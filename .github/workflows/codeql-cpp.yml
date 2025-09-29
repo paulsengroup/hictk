@@ -70,7 +70,7 @@ jobs:
           tar -xf /home/runner/tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@3c3833e0f8c1c83d449a7478aa59c036a9165498 # v3.29.11
+        uses: github/codeql-action/init@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
         with:
           languages: c-cpp
           build-mode: manual
@@ -92,6 +92,6 @@ jobs:
         run: cmake --build build -j "$(nproc)"
 
       - name: Run Analysis
-        uses: github/codeql-action/analyze@3c3833e0f8c1c83d449a7478aa59c036a9165498 # v3.29.11
+        uses: github/codeql-action/analyze@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
         with:
           category: "/language:c-cpp"

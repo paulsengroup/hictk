@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Generate matrix
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: set-result
         with:
           script: |

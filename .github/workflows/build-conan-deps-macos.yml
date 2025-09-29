@@ -85,7 +85,7 @@ jobs:
             /tmp/cmake-prefix-dbg.tar
             /tmp/cmake-prefix-rel.tar
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         with:
           python-version: "3.13"
