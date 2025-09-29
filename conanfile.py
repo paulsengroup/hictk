@@ -175,6 +175,11 @@ class HictkConan(ConanFile):
         if self._with_boost_header_only:
             self.options["boost"].header_only = not self._with_boost
 
+    def _configure_eigen(self):
+        if not self._with_eigen:
+            return
+        self.options["eigen"].MPL2_only = True
+
     def _configure_libarchive(self):
         if not self._with_libarchive:
             return
@@ -298,7 +303,7 @@ class HictkConan(ConanFile):
             self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
 
         if self._with_eigen:
-            self.requires("eigen/3.4.90-unstable+git.2025.08.15#b407f03f085cdb246f6bcbadd84fe9db", force=True)
+            self.requires("eigen/5.0.0#f7561f543f4aafd6d2dc1f6d677e3075", force=True)
 
         if self._with_libarchive:
             self.requires("libarchive/3.8.1#b42b1df243cee62014e0a884a9468b7a")
@@ -327,6 +332,7 @@ class HictkConan(ConanFile):
         self.options["highfive"].with_eigen = False
         self.options["highfive"].with_opencv = False
         self.options["highfive"].with_xtensor = False
+        self._configure_eigen()
         self._configure_libarchive()
         self._configure_libcurl()
         self._configure_opentelemetry()
