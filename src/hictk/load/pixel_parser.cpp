@@ -127,7 +127,7 @@ std::pair<std::string, std::uint32_t> PixelParser::parse_chromsize(std::string_v
   const auto strlen = static_cast<std::size_t>(std::distance(it, line.end()));
   const auto offset = static_cast<std::size_t>(std::distance(line.begin(), it));
 
-  const std::string_view chrom_size{line.data() + offset, strlen};
+  const auto chrom_size = line.substr(offset, strlen);
   if (chrom_size.empty()) {
     throw std::runtime_error(fmt::format(FMT_STRING("malformed chromsize entry \"{}\"."), line));
   }
