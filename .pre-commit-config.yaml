@@ -49,12 +49,12 @@ repos:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.1
+    rev: v21.1.2
     hooks:
       - id: clang-format
         types_or: [c, c++]
   - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.22.2
+    rev: 0.22.3
     hooks:
       - id: gersemi
         exclude: ^cmake/modules/
