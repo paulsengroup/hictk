@@ -1,0 +1,12 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+#
+# SPDX-License-Identifier: MIT
+
+*.cpp.in                            linguist-language=C++
+*.hpp.in                            linguist-language=C++
+*.xz                                binary
+
+cmake/modules/FindFilesystem.cmake  linguist-vendored
+docs/**                             linguist-documentation
+external/**                         linguist-vendored
+test/data/**                        linguist-generated

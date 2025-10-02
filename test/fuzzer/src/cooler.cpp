@@ -41,14 +41,14 @@ std::string_view version() {
 
 Cooler::Cooler(std::string_view uri) : _clr(open_cooler(uri)) {}
 
-std::string Cooler::uri() const noexcept {
+std::string Cooler::uri() const {
   if (_clr) {
     return _clr.attr("uri").cast<std::string>();
   }
   return "";
 }
 
-std::uint32_t Cooler::resolution() const noexcept {
+std::uint32_t Cooler::resolution() const {
   if (_clr) {
     return _clr.attr("binsize").cast<std::uint32_t>();
   }

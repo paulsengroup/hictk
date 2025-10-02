@@ -13,8 +13,8 @@
 namespace fmt {
 template <>
 struct formatter<hictk::Chromosome> {
-  enum Presentation : std::uint_fast8_t { tsv, ucsc };
-  Presentation presentation{ucsc};
+  enum class Presentation : std::uint_fast8_t { tsv, ucsc };
+  Presentation presentation{Presentation::ucsc};
 
   constexpr format_parse_context::iterator parse(format_parse_context& ctx) {
     const auto* it = ctx.begin();
@@ -22,10 +22,10 @@ struct formatter<hictk::Chromosome> {
 
     // NOLINTBEGIN(*-bounds-pointer-arithmetic)
     if (hictk::internal::starts_with(ctx, "ucsc")) {
-      presentation = ucsc;
+      presentation = Presentation::ucsc;
       it += std::string_view{"ucsc"}.size();
     } else if (hictk::internal::starts_with(ctx, "tsv")) {
-      presentation = tsv;
+      presentation = Presentation::tsv;
       it += std::string_view{"tsv"}.size();
     }
     // NOLINTEND(*-bounds-pointer-arithmetic)
@@ -39,8 +39,9 @@ struct formatter<hictk::Chromosome> {
 
   template <typename FormatContext>
   auto format(const hictk::Chromosome& c, FormatContext& ctx) const {
-    return presentation == tsv ? format_to(ctx.out(), FMT_STRING("{}\t{}"), c.name(), c.size())
-                               : format_to(ctx.out(), FMT_STRING("{}:{}"), c.name(), c.size());
+    return presentation == Presentation::tsv
+               ? format_to(ctx.out(), FMT_STRING("{}\t{}"), c.name(), c.size())
+               : format_to(ctx.out(), FMT_STRING("{}:{}"), c.name(), c.size());
   }
 };  // namespace fmt
 
