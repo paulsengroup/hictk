@@ -192,6 +192,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
     }
 
     SECTION("operator-") {
+      // NOLINTBEGIN(*-pointer-arithmetic)
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
       CHECK(*(table.begin() - -1) == expected[1]);
@@ -204,6 +205,7 @@ TEST_CASE("BinTable (fixed bins)", "[bin-table][short]") {
       }
 
       CHECK_THROWS_AS(it1 - 100, std::out_of_range);
+      // NOLINTEND(*-pointer-arithmetic)
     }
 
     SECTION("accessors") {
@@ -426,18 +428,20 @@ TEST_CASE("BinTable (variable bins)", "[bin-table][short]") {
     }
 
     SECTION("operator-") {
+      // NOLINTBEGIN(*-pointer-arithmetic)
       CHECK(table.begin() - 0 == table.begin());
       CHECK(*(table.end() - 5) == *(expected.end() - 5));
       CHECK(*(table.begin() - -1) == expected[1]);
 
       auto it1 = table.end();
-      auto it2 = expected.end();  // NOLINT
+      auto it2 = expected.end();  // NOLINT(*-qualified-auto)
       const auto size = static_cast<std::ptrdiff_t>(expected.size());
       for (std::ptrdiff_t i = 1; i < size; ++i) {
-        CHECK(*(it1 - i) == *(it2 - i));  // NOLINT
+        CHECK(*(it1 - i) == *(it2 - i));
       }
 
       CHECK_THROWS_AS(it1 - 100, std::out_of_range);
+      // NOLINTEND(*-pointer-arithmetic)
     }
 
     SECTION("accessors") {

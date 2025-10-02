@@ -98,6 +98,10 @@ class HictkConan(ConanFile):
         return self.options.with_telemetry_deps
 
     @property
+    def _with_protobuf(self) -> bool:
+        return self._with_opentelemetry
+
+    @property
     def _with_pybind11(self) -> bool:
         return self.options.with_fuzzy_testing_deps
 
@@ -171,6 +175,11 @@ class HictkConan(ConanFile):
         if self._with_boost_header_only:
             self.options["boost"].header_only = not self._with_boost
 
+    def _configure_eigen(self):
+        if not self._with_eigen:
+            return
+        self.options["eigen"].MPL2_only = True
+
     def _configure_libarchive(self):
         if not self._with_libarchive:
             return
@@ -237,7 +246,7 @@ class HictkConan(ConanFile):
         # The only reason why they are defined here is to pin their recipe versions
         if self._with_abseil:
             # opentelemetry-cpp
-            self.requires("abseil/20250127.0#9e8e8cfc89a1324139fc0ee3bd4d8c8c", force=True)
+            self.requires("abseil/20250814.0#4e0fdd34a888b97aca482e648fc27a3b", force=True)
 
         if self._with_bzip2:
             # libarchive
@@ -255,6 +264,10 @@ class HictkConan(ConanFile):
             # libarchive
             self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
 
+        if self._with_protobuf:
+            # opentelemetry-cpp
+            self.requires("protobuf/6.30.1#97bae23ef6d7f9fcfdb4ded9468ad6de", force=True)
+
         if self._with_xz_utils:
             # libarchive
             self.requires("xz_utils/5.4.5#b885d1d79c9d30cff3803f7f551dbe66")
@@ -266,9 +279,9 @@ class HictkConan(ConanFile):
         self.requires("bshoshany-thread-pool/5.0.0#d94da300363f0c35b8f41b2c5490c94d")
         self.requires("concurrentqueue/1.0.4#1e48e1c712bcfd892087c9c622a51502")
         self.requires("fast_float/8.0.2#846ad0ebab16bc265c511095c3b490e9")
-        self.requires("fmt/11.2.0#579bb2cdf4a7607621beea4eb4651e0f")
-        self.requires("hdf5/1.14.6#6f1acd01d23d00735fe97300f4d5980c", force=True)
-        self.requires("highfive/2.10.0#75c849a0d940b2d4dae6055915132690")
+        self.requires("fmt/12.0.0#dc7de7f3968e5d6b377f27b7d0f33916", force=True)
+        self.requires("hdf5/1.14.6#0b780319690d537e6cb0683244919955", force=True)
+        self.requires("highfive/3.1.1#d0c724526ebc8ce396ffa1bf7f3c7b64")
         self.requires("libdeflate/1.23#4994bea7cf7e93789da161fac8e26a53")
         self.requires("parallel-hashmap/2.0.0#82acae64ffe2693fff5fb3f9df8e1746")
         self.requires("readerwriterqueue/1.0.6#aaa5ff6fac60c2aee591e9e51b063b83")
@@ -284,13 +297,13 @@ class HictkConan(ConanFile):
             self.requires("boost/1.88.0#14ecfc01dd5a690f15e1318e56a6b78c", force=True)
 
         if self._with_catch2:
-            self.requires("catch2/3.9.1#ae6ee6142c3ddd72c837e09513ef1904")
+            self.requires("catch2/3.10.0#961108bb7a9bd40817ea370a0778a662")
 
         if self._with_cli11:
             self.requires("cli11/2.5.0#1b7c81ea2bff6279eb2150bbe06a200a")
 
         if self._with_eigen:
-            self.requires("eigen/3.4.90-unstable+git.2025.08.15#b407f03f085cdb246f6bcbadd84fe9db", force=True)
+            self.requires("eigen/5.0.0#f7561f543f4aafd6d2dc1f6d677e3075", force=True)
 
         if self._with_libarchive:
             self.requires("libarchive/3.8.1#b42b1df243cee62014e0a884a9468b7a")
@@ -299,10 +312,10 @@ class HictkConan(ConanFile):
             self.requires("nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c", force=True)
 
         if self._with_opentelemetry:
-            self.requires("opentelemetry-cpp/1.21.0#0e9433ad7338516dd9847000bba6e927")
+            self.requires("opentelemetry-cpp/1.22.0#a7deeadbd209a75ccb42aeec309dfb51")
 
         if self._with_pybind11:
-            self.requires("pybind11/2.13.6#7d1417680344884436657a0d12212274")
+            self.requires("pybind11/3.0.1#81ed7e3cc5c945080013ca4c5c3abbbb")
 
         if self._with_tomlplusplus:
             self.requires("tomlplusplus/3.4.0#85dbfed71376fb8dc23cdcc0570e4727")
@@ -319,6 +332,7 @@ class HictkConan(ConanFile):
         self.options["highfive"].with_eigen = False
         self.options["highfive"].with_opencv = False
         self.options["highfive"].with_xtensor = False
+        self._configure_eigen()
         self._configure_libarchive()
         self._configure_libcurl()
         self._configure_opentelemetry()

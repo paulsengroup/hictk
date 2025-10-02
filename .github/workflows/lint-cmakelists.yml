@@ -40,7 +40,7 @@ jobs:
       - name: Generate requirements.txt
         run: echo 'gersemi==0.22.1' > requirements.txt
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip

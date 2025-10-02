@@ -120,7 +120,7 @@ inline std::size_t Dataset::write(InputIt first_value, const InputIt &last_value
     }
 
     buff.emplace_back(op(*first_value));
-    std::ignore = ++first_value;
+    std::ignore = ++first_value;  // NOLINT(*-pointer-arithmetic)
   }
 
   if (!buff.empty()) {
