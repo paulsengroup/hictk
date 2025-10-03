@@ -23,8 +23,10 @@ This is the data we are collecting:
 
 * Information on how ``hictk`` was compiled (i.e., compiler name, version, and build type).
 * Information on the system where ``hictk`` is being run (i.e., operating system and processor architecture).
-* Information about ``hictk`` itself (i.e., version of ``hictk`` and of the library used for telemetry collection).
-* How ``hictk`` is being invoked (i.e., the subcommand and input/output format(s) where applicable).
+* Information about ``hictk`` itself (i.e., version of ``hictk`` and its third-party version of dependencies).
+* The continent, country, and region names, as well as the time zone where ``hictk`` was launched.
+  This information is inferred from the IP address used to submit the telemetry (the IP address itself is not part of the telemetry data we collect and it never stored by our servers).
+* How ``hictk`` is being invoked (i.e., the subcommand, the hash of the command line arguments used to invoke ``hictk``, and the input/output format(s) where applicable).
 * Information about ``hictk`` execution (i.e., when it was launched, how long the command took to finish, and whether the command terminated with an error).
 * For the ``hictk dump`` subcommand, we are also collecting the name of the table that is being dumped (e.g., pixels or chroms).
 
@@ -70,6 +72,10 @@ This is an example of the telemetry collected when running ``hictk dump``:
 	build.dependencies.tomlplusplus.version: 3.4.0
 	build.dependencies.zstd.version: 1.5.7
 	build.type: Release
+  geo.continent_name: Europe
+  geo.country_name: Norway
+  geo.region_name: Oslo County
+  geo.timezone: Europe/Oslo
 	host.arch: x86_64
 	os.type: Linux
 	os.version: 6.16.3-200.fc42.x86_64

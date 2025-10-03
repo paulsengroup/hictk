@@ -17,11 +17,13 @@
 
 namespace hictk::config::version {
 
+// NOLINTBEGIN(*-avoid-magic-numbers)
 // clang-format off
 [[nodiscard]] constexpr std::uint_fast8_t major() noexcept { return @HICTK_PROJECT_VERSION_MAJOR@; }
 [[nodiscard]] constexpr std::uint_fast8_t minor() noexcept { return @HICTK_PROJECT_VERSION_MINOR@; }
 [[nodiscard]] constexpr std::uint_fast8_t patch() noexcept { return @HICTK_PROJECT_VERSION_PATCH@; }
 // clang-format on
+// NOLINTEND(*-avoid-magic-numbers)
 
 namespace internal {
 
