@@ -319,6 +319,8 @@ def run_ci_macos(args: Dict[str, Any]) -> str:
         f"compiler.cppstd={cppstd}",
         "--settings",
         f"build_type={build_type}",
+        "--settings:h",
+        "os.version=14.0",
         "--output-folder",
         generate_output_folder(build_type),
     ]
