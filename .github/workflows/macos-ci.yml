@@ -80,6 +80,7 @@ jobs:
             includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15-intel', cmake: '4.1.*', build_type: 'Debug', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '17', os: 'macos-26', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '17', os: 'macos-26', cmake: '4.1.*', build_type: 'Release', developer_mode: 'ON' })
 
             return { include: includes }
 
@@ -149,13 +150,18 @@ jobs:
           compiler='${{ matrix.compiler_name }}'
           compiler_version='${{ matrix.compiler_version }}'
           build_type='${{ matrix.build_type }}'
+          if [ '${{ matrix.developer_mode }}' = ON ]; then
+            suffix=-devel
+          else
+            suffix=''
+          fi
 
           conanfile_hash='${{ hashFiles('conanfile.py') }}'
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type$suffix"
 
           {
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
