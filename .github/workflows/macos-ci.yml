@@ -205,6 +205,17 @@ jobs:
 
       - name: Configure project
         run: |
+          if [[ '${{ matrix.os }}' == *14* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
+          elif [[ '${{ matrix.os }}' == *15* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@18)/bin/llvm-symbolizer"
+          else
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@20)/bin/llvm-symbolizer"
+          fi
+
+          export ASAN_SYMBOLIZER_PATH
+          which "$ASAN_SYMBOLIZER_PATH"
+
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
                 -DCMAKE_CXX_STANDARD=17                                \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env/"                  \
@@ -216,6 +227,8 @@ jobs:
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                      \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF                \
                 -DCMAKE_INSTALL_PREFIX=dest                            \
+                -DCMAKE_C_FLAGS='-g'                                   \
+                -DCMAKE_CXX_FLAGS='-g'                                 \
                 -S '${{ github.workspace }}'                           \
                 -B '${{ github.workspace }}/build'
 
@@ -384,6 +397,16 @@ jobs:
 
       - name: Run unit tests
         run: |
+          if [[ '${{ matrix.os }}' == *14* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
+          elif [[ '${{ matrix.os }}' == *15* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@18)/bin/llvm-symbolizer"
+          else
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@20)/bin/llvm-symbolizer"
+          fi
+
+          export ASAN_SYMBOLIZER_PATH
+          which "$ASAN_SYMBOLIZER_PATH"
           ctest --test-dir build/   \
                 --schedule-random   \
                 --output-on-failure \

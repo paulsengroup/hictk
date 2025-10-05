@@ -28,6 +28,9 @@ static const auto& testdir = hictk::test::testdir;
 TEST_CASE("Cooler: create files", "[cooler][short]") {
   const Reference chroms{Chromosome{0, "chr1", 10000}, Chromosome{1, "chr2", 5000}};
 
+  using TP = ThinPixel<std::int32_t>;
+  using P = Pixel<std::int32_t>;
+
   SECTION("fixed bins") {
     const auto path = testdir() / "test_init_fixed_bins.cool";
     constexpr std::uint32_t bin_size = 1000;
@@ -61,12 +64,12 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
       constexpr std::uint32_t bin_size = 1000;
       auto clr = File::create(path.string(), chroms, bin_size, true);
 
-      const ThinPixel<std::int32_t> p1{0, 0, 1};
-      const Pixel p2{clr.bins(), ThinPixel<std::int32_t>{0, 1, 1}};
+      const std::vector p1{ThinPixel<std::int32_t>{0, 0, 1}};
+      const std::vector p2{Pixel{clr.bins(), ThinPixel<std::int32_t>{0, 1, 1}}};
 
-      clr.append_pixels(&p1, &p1 + 1, true);
+      clr.append_pixels(p1.begin(), p1.end(), true);
       CHECK(clr.attributes().nnz == 1);
-      clr.append_pixels(&p2, &p2 + 1, true);
+      clr.append_pixels(p2.begin(), p2.end(), true);
       CHECK(clr.attributes().nnz == 2);
     }
 
@@ -77,12 +80,12 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
       const BinTable invalid_bins{clr.chromosomes(), bin_size / 2};
 
       SECTION("invalid count") {
-        const ThinPixel<std::int32_t> p1{0, 0, 0};
-        const Pixel p2{clr.bins(), ThinPixel<std::int32_t>{0, 1, 0}};
+        const std::array<TP, 1> buff1{TP{0, 0, 0}};
+        const std::array<P, 1> buff2{P{clr.bins(), TP{0, 1, 0}}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin(), buff1.end(), true),
                           Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.end(), true),
                           Catch::Matchers::ContainsSubstring("found a pixel of value 0"));
       }
 
@@ -90,9 +93,9 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
         const Chromosome chrom{2, "chr3", 10000};
         const Bin bin1{0, 0, chrom, 0, bin_size};
         const Bin bin2{0, 0, clr.chromosomes().at("chr1"), 0, bin_size};
-        const Pixel p{bin1, bin2, 1};
+        const std::array<P, 1> p{P{bin1, bin2, 1}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p, &p + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(p.begin(), p.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid chromosome id"));
       }
 
@@ -100,74 +103,70 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
         const Chromosome chrom{2, "chr3", 10000};
         const Bin bin1{0, 0, clr.chromosomes().at("chr1"), 0, bin_size};
         const Bin bin2{0, 0, chrom, 0, bin_size};
-        const Pixel p{bin1, bin2, 1};
+        const std::array<P, 1> p{P{bin1, bin2, 1}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p, &p + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(p.begin(), p.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid chromosome id"));
       }
 
       SECTION("invalid bin1_id") {
-        const ThinPixel<std::int32_t> p1{16, 16, 1};
-        const Pixel p2{invalid_bins, 16, 16, 1};
+        const std::array<TP, 1> buff1{TP{16, 16, 1}};
+        const std::array<P, 1> buff2{P{invalid_bins, 16, 16, 1}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin(), buff1.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid bin id"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid bin id"));
       }
 
       SECTION("invalid bin2_id") {
-        const ThinPixel<std::int32_t> p1{0, 16, 1};
-        const Pixel p2{invalid_bins, 0, 16, 1};
+        const std::array<TP, 1> buff1{TP{0, 16, 1}};
+        const std::array<P, 1> buff2{P{invalid_bins, 0, 16, 1}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin(), buff1.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid bin id"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.end(), true),
                           Catch::Matchers::ContainsSubstring("invalid bin id"));
       }
 
       SECTION("lower triangle") {
-        const ThinPixel<std::int32_t> p1{1, 0, 1};
-        const Pixel p2{clr.bins(), 1, 0, 1};
+        const std::array<TP, 1> buff1{TP{1, 0, 1}};
+        const std::array<P, 1> buff2{P{clr.bins(), 1, 0, 1}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p1, &p1 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin(), buff1.end(), true),
                           Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.end(), true),
                           Catch::Matchers::ContainsSubstring("bin1_id is greater than bin2_id"));
       }
 
       SECTION("out of order chunks") {
-        const ThinPixel<std::int32_t> p1{1, 2, 1};
-        const ThinPixel<std::int32_t> p2{1, 1, 1};
-        const ThinPixel<std::int32_t> p3{0, 0, 1};
-        const Pixel p4{clr.bins(), p2};
-        const Pixel p5{clr.bins(), p3};
+        const std::array<TP, 3> buff1{{TP{1, 2, 1}, TP{1, 1, 1}, TP{0, 0, 1}}};
 
-        clr.append_pixels(&p1, &p1 + 1, true);
+        const std::array<P, 2> buff2{{P{clr.bins(), buff1[1]}, P{clr.bins(), buff1[2]}}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(&p2, &p2 + 1, true),
+        clr.append_pixels(buff1.begin(), buff1.begin() + 1, true);
+
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin() + 1, buff1.begin() + 2, true),
                           Catch::Matchers::ContainsSubstring("new pixel") &&
                               Catch::Matchers::ContainsSubstring("is located upstream"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p3, &p3 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin() + 2, buff1.begin() + 3, true),
                           Catch::Matchers::ContainsSubstring("new pixel") &&
                               Catch::Matchers::ContainsSubstring("is located upstream"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p4, &p4 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.begin() + 1, true),
                           Catch::Matchers::ContainsSubstring("new pixel") &&
                               Catch::Matchers::ContainsSubstring("is located upstream"));
-        CHECK_THROWS_WITH(clr.append_pixels(&p5, &p5 + 1, true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin() + 1, buff2.begin() + 2, true),
                           Catch::Matchers::ContainsSubstring("new pixel") &&
                               Catch::Matchers::ContainsSubstring("is located upstream"));
       }
 
       SECTION("unsorted") {
-        const std::array<ThinPixel<std::int32_t>, 2> p1{ThinPixel<std::int32_t>{0, 1, 1},
-                                                        ThinPixel<std::int32_t>{0, 0, 1}};
-        const std::array<Pixel<std::int32_t>, 2> p2{Pixel{clr.bins(), p1.front()},
-                                                    Pixel{clr.bins(), p1.back()}};
+        const std::array<TP, 2> buff1{TP{0, 1, 1}, TP{0, 0, 1}};
+        const std::array<P, 2> buff2{P{clr.bins(), buff1.front()}, P{clr.bins(), buff1.back()}};
 
-        CHECK_THROWS_WITH(clr.append_pixels(p1.begin(), p1.end(), true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff1.begin(), buff1.end(), true),
                           Catch::Matchers::ContainsSubstring("pixels are not sorted"));
-        CHECK_THROWS_WITH(clr.append_pixels(p2.begin(), p2.end(), true),
+        CHECK_THROWS_WITH(clr.append_pixels(buff2.begin(), buff2.end(), true),
                           Catch::Matchers::ContainsSubstring("pixels are not sorted"));
       }
     }
