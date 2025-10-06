@@ -67,7 +67,17 @@ target_link_system_libraries(
 )
 
 if(HICTK_WITH_ARROW_SHARED)
-  target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>")
+  target_link_system_libraries(
+    hictk_internal_transformers
+    INTERFACE
+      "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_shared>"
+      "$<$<BOOL:${HICTK_WITH_ARROW}>:ArrowCompute::arrow_compute_shared>"
+  )
 else()
-  target_link_system_libraries(hictk_internal_transformers INTERFACE "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>")
+  target_link_system_libraries(
+    hictk_internal_transformers
+    INTERFACE
+      "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>"
+      "$<$<BOOL:${HICTK_WITH_ARROW}>:ArrowCompute::arrow_compute_static>"
+  )
 endif()
