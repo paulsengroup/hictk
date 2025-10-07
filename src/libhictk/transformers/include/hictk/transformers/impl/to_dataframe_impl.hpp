@@ -12,6 +12,7 @@ HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include <arrow/array.h>
 #include <arrow/builder.h>
 #include <arrow/compute/api_vector.h>
+#include <arrow/compute/initialize.h>
 #include <arrow/datum.h>
 #include <arrow/table.h>
 #include <arrow/type.h>
@@ -24,6 +25,7 @@ HICTK_DISABLE_WARNING_POP
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 
 #include "hictk/bin_table.hpp"
@@ -716,9 +718,23 @@ void ToDataFrame<PixelIt>::commit_pixels() {
   _buffer->clear();
 }
 
+namespace internal {
+inline void init_arrow_compute() {
+  static std::once_flag flag;
+  std::call_once(flag, []() {
+    const auto status = arrow::compute::Initialize();
+    if (!status.ok()) {
+      throw std::runtime_error(status.ToString());
+    }
+  });
+}
+}  // namespace internal
+
 template <typename PixelIt>
 std::shared_ptr<arrow::Table> ToDataFrame<PixelIt>::sort_table(
     std::shared_ptr<arrow::Table> table) {
+  internal::init_arrow_compute();
+
   const arrow::compute::SortOptions opts{
       {arrow::compute::SortKey{"bin1_id", arrow::compute::SortOrder::Ascending},
        arrow::compute::SortKey{"bin2_id", arrow::compute::SortOrder::Ascending}}};
