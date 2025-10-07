@@ -80,4 +80,13 @@ else()
       "$<$<BOOL:${HICTK_WITH_ARROW}>:Arrow::arrow_static>"
       "$<$<BOOL:${HICTK_WITH_ARROW}>:ArrowCompute::arrow_compute_static>"
   )
+  if(WIN32)
+    target_compile_definitions(
+      hictk_internal_transformers
+      INTERFACE
+        # TODO ARROW_COMPUTE_STATIC should've been defined by Conan
+        "$<$<BOOL:${HICTK_WITH_ARROW}>:ARROW_STATIC>"
+        "$<$<BOOL:${HICTK_WITH_ARROW}>:ARROW_COMPUTE_STATIC>"
+    )
+  endif()
 endif()
