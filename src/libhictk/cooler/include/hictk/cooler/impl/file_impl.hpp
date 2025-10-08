@@ -307,7 +307,9 @@ inline File &File::operator=(File &&other) noexcept {
   return *this;
 }
 
-inline File::operator bool() const noexcept { return !!_bins; }
+constexpr File::operator bool() const noexcept { return bool(_root_group); }
+
+constexpr bool File::operator!() const noexcept { return !bool(*this); }
 
 inline void File::close() {
   finalize();
