@@ -81,6 +81,13 @@ def make_cli() -> argparse.ArgumentParser:
     )
 
     cli.add_argument(
+        "--no-update",
+        action="store_true",
+        default=False,
+        help="Do not pass --update to conan install/create.",
+    )
+
+    cli.add_argument(
         "--with-cli-tool-deps",
         action="store_true",
         default=False,
@@ -155,6 +162,7 @@ def run_conan(
     cppstd: str,
     output_prefix: pathlib.Path,
     dry_run: bool,
+    no_update: bool,
     recipe_options: Dict[str, bool],
 ):
     output_folder = output_prefix / profile / build_type / ("shared" if shared else "static")
@@ -164,7 +172,6 @@ def run_conan(
         "install",
         infer_root_dir() / "conanfile.py",
         "--build=missing",
-        "--update",
         "--profile",
         profile,
         "--settings",
@@ -176,6 +183,9 @@ def run_conan(
         "--options",
         f"*/*:shared={shared}",
     ]
+
+    if not no_update:
+        args.append("--update")
 
     for opt, val in recipe_options.items():
         args.extend(("--options", f"hictk/*:{opt}={val}"))
