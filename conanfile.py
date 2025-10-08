@@ -250,7 +250,7 @@ class HictkConan(ConanFile):
 
         if self._with_bzip2:
             # libarchive
-            self.requires("bzip2/1.0.8#00b4a4658791c1f06914e087f0e792f5")
+            self.requires("bzip2/1.0.8#00b4a4658791c1f06914e087f0e792f5", force=True)
 
         if self._with_libcurl:
             # opentelemetry-cpp
@@ -262,7 +262,7 @@ class HictkConan(ConanFile):
 
         if self._with_lzo:
             # libarchive
-            self.requires("lzo/2.10#5725914235423c771cb1c6b607109b45")
+            self.requires("lzo/2.10#f00b10acc508cea70645727d970a23e1", force=True)
 
         if self._with_protobuf:
             # opentelemetry-cpp
@@ -270,10 +270,10 @@ class HictkConan(ConanFile):
 
         if self._with_xz_utils:
             # libarchive
-            self.requires("xz_utils/5.4.5#b885d1d79c9d30cff3803f7f551dbe66")
+            self.requires("xz_utils/5.4.5#b885d1d79c9d30cff3803f7f551dbe66", force=True)
 
         # hdf5, libarchive, and opentelemetry-cpp
-        self.requires("zlib/1.3.1#b8bc2603263cf7eccbd6e17e66b0ed76")
+        self.requires("zlib/1.3.1#b8bc2603263cf7eccbd6e17e66b0ed76", force=True)
 
     def requirements(self):
         self.requires("bshoshany-thread-pool/5.0.0#d94da300363f0c35b8f41b2c5490c94d")
