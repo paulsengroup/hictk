@@ -9,15 +9,12 @@
 #include <cassert>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
-#include <vector>
 
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/hic.hpp"
-#include "hictk/pixel.hpp"
 #include "hictk/test/testdir.hpp"
 #include "hictk/transformers/to_sparse_matrix.hpp"
 
@@ -210,6 +207,22 @@ TEST_CASE("Transformers (cooler): to sparse matrix", "[transformers][short]") {
 
     CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", "chr2"), 0, QuerySpan::lower_triangle));
     CHECK_THROWS(ToSparseMatrix(clr.fetch("chr1", balancing::Method::VC()), 0));
+  }
+
+  SECTION("regression PR #453") {
+    const auto path = datadir / "cooler" / "ENCFF993FGR.2500000.cool";
+    const cooler::File clr(path.string());
+    const auto normalization = balancing::Method::VC();
+    const bool low_memory = true;
+
+    const auto sel = clr.fetch("chr1", balancing::Method::VC());
+
+    CHECK_THROWS_WITH(
+        ToSparseMatrix(sel, std::int32_t{}, QuerySpan::upper_triangle, low_memory)(),
+        Catch::Matchers::EndsWith(
+            "n should be of floating-point type when fetching normalized interactions."));
+
+    CHECK_NOTHROW(ToSparseMatrix(sel, double{}, QuerySpan::upper_triangle, low_memory)());
   }
 }
 
