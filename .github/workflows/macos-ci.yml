@@ -72,12 +72,15 @@ jobs:
 
             var includes = []
 
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-13', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15-intel', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '17', os: 'macos-26', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '15', os: 'macos-14', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
             includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '16', os: 'macos-15-intel', cmake: '4.1.*', build_type: 'Debug', developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '17', os: 'macos-26', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler_name: 'apple-clang', compiler_version: '17', os: 'macos-26', cmake: '4.1.*', build_type: 'Release', developer_mode: 'ON' })
 
             return { include: includes }
 
@@ -89,13 +92,13 @@ jobs:
     name: Build Conan deps
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
     with:
-      os: macos-13
+      os: macos-15-intel
 
   build-conan-deps-arm64:
     name: Build Conan deps
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
     with:
-      os: macos-14
+      os: macos-26
 
   build-project:
     name: Build project
@@ -147,13 +150,18 @@ jobs:
           compiler='${{ matrix.compiler_name }}'
           compiler_version='${{ matrix.compiler_version }}'
           build_type='${{ matrix.build_type }}'
+          if [ '${{ matrix.developer_mode }}' = ON ]; then
+            suffix=-devel
+          else
+            suffix=''
+          fi
 
           conanfile_hash='${{ hashFiles('conanfile.py') }}'
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type$suffix"
 
           {
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
@@ -162,7 +170,7 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore Conan cache (x86)
-        if: matrix.os == 'macos-13'
+        if: matrix.os == 'macos-15-intel'
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-x86.outputs.conan-key }}
@@ -173,7 +181,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore Conan cache (arm64)
-        if: matrix.os == 'macos-14' || matrix.os == 'macos-15'
+        if: matrix.os != 'macos-15-intel'
         uses: actions/cache/restore@v4
         with:
           key: ${{ needs.build-conan-deps-arm64.outputs.conan-key }}
@@ -197,6 +205,18 @@ jobs:
 
       - name: Configure project
         run: |
+          # shellcheck disable=SC2193
+          if [[ '${{ matrix.os }}' == *14* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
+          elif [[ '${{ matrix.os }}' == *15* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@18)/bin/llvm-symbolizer"
+          else
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@20)/bin/llvm-symbolizer"
+          fi
+
+          export ASAN_SYMBOLIZER_PATH
+          which "$ASAN_SYMBOLIZER_PATH"
+
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
                 -DCMAKE_CXX_STANDARD=17                                \
                 -DCMAKE_PREFIX_PATH="$PWD/conan-env/"                  \
@@ -208,6 +228,8 @@ jobs:
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF                      \
                 -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF                \
                 -DCMAKE_INSTALL_PREFIX=dest                            \
+                -DCMAKE_C_FLAGS='-g'                                   \
+                -DCMAKE_CXX_FLAGS='-g'                                 \
                 -S '${{ github.workspace }}'                           \
                 -B '${{ github.workspace }}/build'
 
@@ -341,6 +363,7 @@ jobs:
 
     env:
       HICTK_CI: "1"
+      ASAN_OPTIONS: "detect_container_overflow=0"
 
     steps:
       - name: Checkout repo
@@ -376,6 +399,17 @@ jobs:
 
       - name: Run unit tests
         run: |
+          # shellcheck disable=SC2193
+          if [[ '${{ matrix.os }}' == *14* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
+          elif [[ '${{ matrix.os }}' == *15* ]]; then
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@18)/bin/llvm-symbolizer"
+          else
+            ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@20)/bin/llvm-symbolizer"
+          fi
+
+          export ASAN_SYMBOLIZER_PATH
+          which "$ASAN_SYMBOLIZER_PATH"
           ctest --test-dir build/   \
                 --schedule-random   \
                 --output-on-failure \
@@ -392,6 +426,7 @@ jobs:
 
     env:
       HICTK_CI: "1"
+      ASAN_OPTIONS: "detect_container_overflow=0"
 
     steps:
       - name: Checkout repo
