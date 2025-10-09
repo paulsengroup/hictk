@@ -224,6 +224,8 @@ def run_local(args: Dict[str, Any]):
     else:
         shared_build = [True, False]
 
+    no_update = args["no_update"]
+
     dry_run = args["dry_run"]
 
     output_prefix = infer_root_dir() / "conan-envs"
@@ -242,6 +244,7 @@ def run_local(args: Dict[str, Any]):
             output_prefix=output_prefix,
             dry_run=dry_run,
             recipe_options=recipe_options,
+            no_update=no_update,
         )
 
 
