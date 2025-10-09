@@ -402,9 +402,10 @@ template <typename N, typename PixelSelector>
 inline auto ToSparseMatrix<N, PixelSelector>::pre_allocate_matrix(
     const PixelSelector& sel, bool populate_upper_triangle, bool populate_lower_triangle) const
     -> MatrixT {
+  using M = std::conditional_t<std::is_floating_point_v<N>, float, std::int_fast8_t>;
+
   auto setter = [](std::vector<std::int64_t>& buff, std::int64_t i1,
-                   [[maybe_unused]] std::int64_t i2,
-                   [[maybe_unused]] std::int_fast8_t count) noexcept {
+                   [[maybe_unused]] std::int64_t i2, [[maybe_unused]] M count) noexcept {
     assert(i1 >= 0);
     assert(static_cast<std::size_t>(i1) < buff.size());
     ++buff[static_cast<std::size_t>(i1)];
@@ -413,10 +414,11 @@ inline auto ToSparseMatrix<N, PixelSelector>::pre_allocate_matrix(
   const auto selector_is_symmetric_upper = internal::selector_is_symmetric_upper(sel);
 
   std::vector<std::int64_t> nnzs(static_cast<std::size_t>(num_rows()), 0);
-  internal::fill_matrix(
-      sel.template begin<std::int_fast8_t>(), sel.template end<std::int_fast8_t>(),
-      _diagonal_band_width, selector_is_symmetric_upper, nnzs, nnzs, num_rows(), num_cols(),
-      row_offset(), col_offset(), populate_lower_triangle, populate_upper_triangle, setter);
+
+  internal::fill_matrix(sel.template begin<M>(), sel.template end<M>(), _diagonal_band_width,
+                        selector_is_symmetric_upper, nnzs, nnzs, num_rows(), num_cols(),
+                        row_offset(), col_offset(), populate_lower_triangle,
+                        populate_upper_triangle, setter);
 
   MatrixT matrix(num_rows(), num_cols());
   matrix.reserve(nnzs);
