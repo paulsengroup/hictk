@@ -205,6 +205,7 @@ jobs:
 
       - name: Configure project
         run: |
+          # shellcheck disable=SC2193
           if [[ '${{ matrix.os }}' == *14* ]]; then
             ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
           elif [[ '${{ matrix.os }}' == *15* ]]; then
@@ -362,6 +363,7 @@ jobs:
 
     env:
       HICTK_CI: "1"
+      ASAN_OPTIONS: "detect_container_overflow=0"
 
     steps:
       - name: Checkout repo
@@ -397,6 +399,7 @@ jobs:
 
       - name: Run unit tests
         run: |
+          # shellcheck disable=SC2193
           if [[ '${{ matrix.os }}' == *14* ]]; then
             ASAN_SYMBOLIZER_PATH="$(brew --prefix llvm@15)/bin/llvm-symbolizer"
           elif [[ '${{ matrix.os }}' == *15* ]]; then
@@ -423,6 +426,7 @@ jobs:
 
     env:
       HICTK_CI: "1"
+      ASAN_OPTIONS: "detect_container_overflow=0"
 
     steps:
       - name: Checkout repo
