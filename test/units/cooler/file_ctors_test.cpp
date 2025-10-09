@@ -176,7 +176,14 @@ TEST_CASE("Cooler: create files", "[cooler][short]") {
 }
 
 TEST_CASE("Cooler: file ctors", "[cooler][short]") {
-  SECTION("default") { CHECK_NOTHROW(File{}); }
+  SECTION("default") {
+    // NOLINTBEGIN(*-container-size-empty)
+    CHECK_NOTHROW(File{});
+    CHECK(File{}.path() == "");
+    CHECK(File{}.hdf5_path() == "");
+    CHECK(File{}.uri() == "");
+    // NOLINTEND(*-container-size-empty)
+  }
 
   SECTION("move #1") {
     const auto path = datadir / "cooler" / "cooler_test_file.cool";

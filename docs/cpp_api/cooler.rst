@@ -50,7 +50,8 @@ Single-resolution Cooler (.cool)
   .. cpp:function:: File &operator=(const File &other) = delete;
   .. cpp:function:: File &operator=(File &&other) noexcept = default;
 
-  .. cpp:function:: [[nodiscard]] explicit operator bool() const noexcept;
+  .. cpp:function:: [[nodiscard]] constexpr explicit operator bool() const noexcept;
+  .. cpp:function:: [[nodiscard]] constexpr bool operator!() const noexcept;
 
   Return whether the :cpp:class:`File` is in a valid state and other member functions can be safely called.
 

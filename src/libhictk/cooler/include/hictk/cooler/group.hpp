@@ -40,6 +40,9 @@ class RootGroup {
 
   ~RootGroup() noexcept = default;
 
+  [[nodiscard]] constexpr explicit operator bool() const noexcept { return _group.has_value(); }
+  [[nodiscard]] constexpr bool operator!() const noexcept { return !bool(*this); }
+
   RootGroup& operator=(const RootGroup& other) = default;
   // NOLINTNEXTLINE(bugprone-exception-escape)
   RootGroup& operator=(RootGroup&& other) noexcept {

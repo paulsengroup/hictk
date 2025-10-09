@@ -178,7 +178,8 @@ class File {
   // NOLINTNEXTLINE(bugprone-exception-escape)
   File &operator=(File &&other) noexcept;
 
-  [[nodiscard]] explicit operator bool() const noexcept;
+  [[nodiscard]] constexpr explicit operator bool() const noexcept;
+  [[nodiscard]] constexpr bool operator!() const noexcept;
 
   void close();
 

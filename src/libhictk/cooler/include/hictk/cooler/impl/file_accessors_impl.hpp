@@ -36,6 +36,9 @@ HICTK_DISABLE_WARNING_POP
 namespace hictk::cooler {
 
 inline std::string File::uri() const {
+  if (!*this) {
+    return "";
+  }
   if (hdf5_path() == "/") {
     return path();
   }
