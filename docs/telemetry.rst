@@ -69,6 +69,7 @@ This is an example of the telemetry collected when running ``hictk dump``:
 	build.dependencies.parallel-hashmap.version: 2.0.0
 	build.dependencies.readerwriterqueue.version: 1.0.6
 	build.dependencies.span-lite.version: 0.11.0
+	build.dependencies.spdlog.version: 1.15.3
 	build.dependencies.tomlplusplus.version: 3.4.0
 	build.dependencies.zstd.version: 1.5.7
 	build.type: Release
