@@ -30,6 +30,7 @@ nlohmann::json get_dependency_versions_json() noexcept {
     deps.emplace("parallel-hashmap", HICTK_PHMAP_VERSION);
     deps.emplace("readerwriterqueue", HICTK_READERWRITERQUEUE_VERSION);
     deps.emplace("span-lite", HICTK_SPAN_LITE_VERSION);
+    deps.emplace("spdlog", HICTK_SPDLOG_VERSION);
     deps.emplace("tomlplusplus", HICTK_TOMLPLUSPLUS_VERSION);
 
     // runtime-deps
