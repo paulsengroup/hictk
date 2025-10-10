@@ -7,8 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
       - "examples/**"
@@ -21,8 +19,6 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/ubuntu-ci.yml"
       - "cmake/**"
       - "examples/**"
@@ -161,15 +157,28 @@ jobs:
     name: Cache test dataset
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps-dbg:
+    name: Build dependencies (Debug)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    with:
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.21.*"
+      build-type: Debug
+
+  build-deps-rel:
+    name: Build dependencies (Release)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    with:
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.21.*"
+      build-type: Release
 
   build-project:
     name: Build project
     needs:
       - matrix-factory
-      - build-conan-deps
+      - build-deps-dbg
+      - build-deps-rel
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -184,9 +193,9 @@ jobs:
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "500M"
-      CONAN_HOME: "/opt/conan/"
       HICTK_CI: "1"
       HICTK_NO_TELEMETRY: "1"
+      TMPDIR: "/tmp/"
 
     steps:
       - uses: actions/checkout@v5
@@ -229,43 +238,44 @@ jobs:
             suffix=''
           fi
 
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          if [[ '${{ matrix.build_type }}' == Debug ]]; then
+            deps_cache_key='${{ needs.build-deps-dbg.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-dbg.outputs.tar }}'
+          elif [[ '${{ matrix.build_type }}' == Release ]]; then
+            deps_cache_key='${{ needs.build-deps-rel.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-rel.outputs.tar }}'
+          else
+            1>&2 echo 'Unknown build type "${{ matrix.build_type }}"'
+            exit 1
+          fi
+
+          deps_hash="$(echo "$deps_cache_key" | sha256sum | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="ccache-$os-$compiler-$conanfile_hash-$build_type-$generator$suffix"
+          ccache_key_prefix="ccache-$os-$compiler-$deps_hash-$build_type-$generator$suffix"
 
           {
+            echo "deps-key=${deps_cache_key}"
+            echo "deps-path=${deps_cache_path}"
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
             echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
             echo "ccache-restore-key-2=$ccache_key_prefix"
           } | tee -a "$GITHUB_OUTPUT"
 
-      - name: Restore Conan cache
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ steps.cache-key.outputs.deps-key }}
+          path: ${{ steps.cache-key.outputs.deps-path }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
+      - name: Unpack dependencies
         run: |
-          mkdir conan-env
-
-          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
-            archive='/tmp/cmake-prefix-dbg.tar'
-          elif [[ '${{ matrix.build_type }}' == 'Release' ]]; then
-            archive='/tmp/cmake-prefix-rel.tar'
-          else
-            archive='/tmp/cmake-prefix-rwdi.tar'
-          fi
-
-          tar -xf "$archive" -C conan-env/ --strip-components=1
+          tar -C "$TMPDIR" \
+              --strip-components 1 \
+              -xf '${{ steps.cache-key.outputs.deps-path }}'
 
       - name: Restore Ccache folder
         id: cache-ccache
@@ -289,7 +299,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
                 -DCMAKE_CXX_STANDARD=17                                \
                 -DCMAKE_LINKER_TYPE="$LINKER"                          \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"                   \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"              \
                 -DENABLE_DEVELOPER_MODE='${{ matrix.developer_mode }}' \
                 -DOPT_ENABLE_CLANG_TIDY=OFF                            \
                 -DOPT_ENABLE_CPPCHECK=OFF                              \
@@ -304,6 +314,8 @@ jobs:
 
       - name: Build project
         run: cmake --build build -j "$(nproc)"
+        env:
+          CCACHE_MAXSIZE: "5G"
 
       - name: Package binaries
         run: |
