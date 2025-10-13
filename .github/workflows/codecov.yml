@@ -8,8 +8,6 @@ on:
     branches: [main]
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
       - "examples/**"
@@ -24,8 +22,6 @@ on:
   pull_request:
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
       - "examples/**"
@@ -54,13 +50,17 @@ jobs:
     name: Cache test dataset
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps:
+    name: Build dependencies
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    with:
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.21.*"
+      build-type: RelWithDebInfo
 
   build-project:
     name: Build project
-    needs: build-conan-deps
+    needs: build-deps
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
@@ -72,6 +72,7 @@ jobs:
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "500M"
       CONAN_HOME: "/opt/conan/"
+      TMPDIR: "/tmp/"
 
     steps:
       - uses: actions/checkout@v5
@@ -82,12 +83,12 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          deps_hash="$(echo '${{ needs.build-deps.outputs.cache-key }}' | sha256sum | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
           current_date="$(date '+%s')"
 
-          ccache_key_prefix="codecov-ccache-$conanfile_hash"
+          ccache_key_prefix="codecov-ccache-$deps_hash"
 
           {
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
@@ -98,18 +99,15 @@ jobs:
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ needs.build-deps.outputs.cache-key }}
+          path: ${{ needs.build-deps.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
+      - name: Unpack dependencies
         run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rwdi.tar -C conan-env/ --strip-components=1
+          tar -C "$TMPDIR" \
+              --strip-components 1 \
+              -xf '${{ needs.build-deps.outputs.tar }}'
 
       - name: Configure project (w/ telemetry)
         run: |
@@ -123,7 +121,7 @@ jobs:
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
                 -DCMAKE_CXX_STANDARD=17                            \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"          \
                 -DENABLE_DEVELOPER_MODE=ON                         \
                 -DHICTK_ENABLE_TELEMETRY=ON                        \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
@@ -158,7 +156,7 @@ jobs:
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
                 -DCMAKE_CXX_STANDARD=17                            \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"          \
                 -DENABLE_DEVELOPER_MODE=ON                         \
                 -DHICTK_ENABLE_TELEMETRY=OFF                       \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
@@ -193,9 +191,13 @@ jobs:
 
       - name: Build project (w/ telemetry)
         run: cmake --build build -j "$(nproc)"
+        env:
+          CCACHE_MAXSIZE: "5G"
 
       - name: Build project (wo/ telemetry)
         run: cmake --build build-no-telem -j "$(nproc)" -t hictk
+        env:
+          CCACHE_MAXSIZE: "5G"
 
       - name: Package build folder
         run: tar --exclude='*.o' -cf - build*/ | zstd -T0 -13 -o build.tar.zst
