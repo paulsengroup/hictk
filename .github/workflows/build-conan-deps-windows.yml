@@ -161,6 +161,6 @@ jobs:
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cache-key }}
-          path: ${{ steps.generate-cache-key.outputs.tar }}
+          path: ${{ steps.archive-deps.outputs.tar }}
         env:
           ZSTD_CLEVEL: 0
