@@ -8,7 +8,6 @@ on:
     branches: [main]
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
       - "src/**"
@@ -20,7 +19,6 @@ on:
   pull_request:
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/fuzzy-testing.yml"
       - "cmake/**"
       - "src/**"
@@ -60,13 +58,17 @@ permissions:
   contents: read
 
 jobs:
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps:
+    name: Build dependencies
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    with:
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.21.*"
+      build-type: RelWithDebInfo
 
   build-project:
     name: Build project
-    needs: build-conan-deps
+    needs: build-deps
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
@@ -74,8 +76,8 @@ jobs:
 
     env:
       CCACHE_DISABLE: "1"
-      CONAN_HOME: "/opt/conan/"
       HICTK_CI: "1"
+      TMPDIR: "/tmp/"
 
     steps:
       - name: Clone hictk
@@ -89,21 +91,18 @@ jobs:
           apt-get update
           apt-get install -y python3.12 python3.12-dev
 
-      - name: Restore Conan cache
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ needs.build-deps.outputs.cache-key }}
+          path: ${{ needs.build-deps.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
+      - name: Unpack dependencies
         run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rwdi.tar -C conan-env/ --strip-components=1
+          tar -C "$TMPDIR" \
+              --strip-components 1 \
+              -xf '${{ needs.build-deps.outputs.tar }}'
 
       - name: Configure project
         run: |
@@ -117,7 +116,7 @@ jobs:
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
                 -DCMAKE_CXX_STANDARD=17                       \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"     \
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
