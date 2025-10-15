@@ -290,10 +290,10 @@ jobs:
 
       - name: Configure project
         run: |
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
+          if [[ '${{ matrix.compiler }}' == 'clang' ]]; then
             LINKER=LLD
+          else
+            LINKER=SYSTEM
           fi
 
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \

@@ -110,15 +110,9 @@ jobs:
 
       - name: Configure project
         run: |
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
-            LINKER=LLD
-          fi
-
           cmake -DCMAKE_BUILD_TYPE=Debug                      \
                 -DCMAKE_CXX_STANDARD=17                       \
-                -DCMAKE_LINKER_TYPE="$LINKER"                 \
+                -DCMAKE_LINKER_TYPE=LLD                       \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"     \
                 -DENABLE_DEVELOPER_MODE=ON                    \
                 -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \

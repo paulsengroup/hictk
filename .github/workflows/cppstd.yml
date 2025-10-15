@@ -127,17 +127,11 @@ jobs:
 
       - name: Configure project
         run: |
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
-            LINKER=LLD
-          fi
-
           cmake -DCMAKE_BUILD_TYPE=Release                       \
                 -DCMAKE_CXX_STANDARD='${{ matrix.cppstd }}'      \
                 -DCMAKE_C_COMPILER_FLAGS_RELEASE='-O2 -DDEBUG'   \
                 -DCMAKE_CXX_COMPILER_FLAGS_RELEASE='-O2 -DDEBUG' \
-                -DCMAKE_LINKER_TYPE="$LINKER"                    \
+                -DCMAKE_LINKER_TYPE=LLD                          \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"        \
                 -DHICTK_ENABLE_TESTING=ON                        \
                 -DHICTK_ENABLE_FUZZY_TESTING=OFF                 \
