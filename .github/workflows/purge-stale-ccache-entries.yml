@@ -1,0 +1,47 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Purge stale CCache entries
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  purge-stale-ccache-entries:
+    name: Purge stale CCache entries
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Download IDs of stale entries
+        uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          pattern: stale-cache-*
+          merge-multiple: true
+
+      - name: Evict entries
+        continue-on-error: true
+        run: |
+          set -x
+          ok=true
+
+          while read -r entry; do
+            if ! gh cache delete --repo '${{ github.repository }}' "$entry"; then
+              ok=false
+            fi
+          done < <(cat stale-cache*.txt | grep -v '^$' | grep -v '/heads/main')
+
+          if [[ "$ok" != true ]]; then
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
