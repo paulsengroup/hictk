@@ -64,8 +64,7 @@ jobs:
       CCACHE_DIR: "/opt/ccache-cache"
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXFILES: "300"
-      CCACHE_MAXSIZE: "150M"
+      CCACHE_MAXSIZE: "10G"
       TMPDIR: "/tmp/"
 
     strategy:
@@ -161,9 +160,10 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project
-        run: cmake --build build -j "$(nproc)"
-        env:
-          CCACHE_MAXSIZE: "5G"
+        id: cmake-build
+        run: |
+          echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+          cmake --build build -j "$(nproc)"
 
       - name: Print Ccache statistics (pre-cleanup)
         run: |
@@ -173,9 +173,11 @@ jobs:
 
       - name: Cleanup Ccache folder
         run: |
-          ccache --evict-older-than=14400s # 4h
+          timestamp="$(date +%s)"
+          time_delta="$(( timestamp - ${{ steps.cmake-build.outputs.start }} + 60 ))"
+          ccache --evict-older-than="${time_delta}s"
           ccache --recompress=19 --recompress-threads="$(nproc)"
-          ccache --cleanup
+          ccache --cleanup --max-size 1G
 
       - name: Print Ccache statistics (post-cleanup)
         run: |
@@ -209,32 +211,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  clean-stale-cache:
+  purge-stale-ccache-entries:
+    name: Purge stale CCache entries
     needs: [build-project]
-    name: Evict stale cache entries
-    runs-on: ubuntu-latest
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@0a18aef88705bbc2322b4fdd0ddde64d20f6e765
     permissions:
+      contents: read
       actions: write
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v5
-        continue-on-error: true
-        with:
-          pattern: stale-cache-*
-          merge-multiple: true
-
-      - name: Evict cache entries
-        continue-on-error: true
-        run: |
-          set -x
-          while read -r entry; do
-            if ! grep -q '/heads/main' <(echo "$entry"); then
-              gh cache delete --repo '${{ github.repository }}' "$entry"
-            fi
-          done < <(cat stale-cache*.txt | grep -v '^$')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   cppstd-status-check:
     name: Status Check (cppstd)
