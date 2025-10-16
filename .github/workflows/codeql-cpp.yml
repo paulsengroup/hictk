@@ -7,7 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/codeql-cpp.yml"
       - "cmake/**"
       - "examples/**"
@@ -16,6 +15,9 @@ on:
       - "test/units/**"
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/codeql-cpp.yml"
   schedule:
     - cron: "0 5 1 * *" # run monthly at 05:00
 
@@ -28,46 +30,39 @@ permissions:
   contents: read
 
 jobs:
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps:
+    name: Build dependencies
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@23afa44267ab9955167f95918788f972675197ee
+    with:
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.21.*"
+      build-type: Debug
 
   analyze:
     name: Analyze (C++)
     runs-on: ubuntu-24.04
-    needs: [build-conan-deps]
+    needs: [build-deps]
     permissions:
       contents: read
       security-events: write
 
     env:
       CCACHE_DISABLE: "1"
-      CONAN_HOME: "/opt/conan/"
+      TMPDIR: "/tmp/"
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
 
-      - name: Symlink Conan home
-        run: |
-          mkdir -p /home/runner/opt/conan
-          ln -s /home/runner/opt/conan/ /opt/conan
-
-      - name: Restore Conan cache
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ needs.build-deps.outputs.cache-key }}
+          path: ${{ needs.build-deps.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          tar -xf /home/runner/tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        run: tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@192325c86100d080feab897ff886c34abd4c83a3 # v3.30.3
@@ -77,15 +72,17 @@ jobs:
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Debug                \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"    \
-                -DENABLE_DEVELOPER_MODE=OFF             \
-                -DHICTK_ENABLE_TESTING=ON               \
-                -DHICTK_BUILD_EXAMPLES=ON               \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF       \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF \
-                -DCMAKE_INSTALL_PREFIX=dest             \
-                -S .                                    \
+          cmake -DCMAKE_BUILD_TYPE=Debug                  \
+                -DCMAKE_C_STANDARD=17                     \
+                -DCMAKE_CXX_STANDARD=17                   \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/" \
+                -DENABLE_DEVELOPER_MODE=OFF               \
+                -DHICTK_ENABLE_TESTING=ON                 \
+                -DHICTK_BUILD_EXAMPLES=ON                 \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF         \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF   \
+                -DCMAKE_INSTALL_PREFIX=dest               \
+                -S .                                      \
                 -B build
 
       - name: Build project
