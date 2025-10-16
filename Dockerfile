@@ -24,6 +24,7 @@ ARG CMAKE_GENERATOR=Ninja
 ARG CMAKE_INSTALL_PREFIX="$staging_dir"
 ARG CMAKE_POLICY_VERSION_MINIMUM=3.5
 ARG CMAKE_PREFIX_PATH="$build_dir"
+ARG C_STANDARD=23
 ARG CXX_STANDARD=23
 
 ARG HICTK_GIT_HASH=0000000000000000000000000000000000000000
@@ -49,6 +50,7 @@ RUN conan install "$src_dir/conanfile.py"                      \
              -pr:b="$CONAN_DEFAULT_PROFILE_PATH"               \
              -pr:h="$CONAN_DEFAULT_PROFILE_PATH"               \
              --settings=build_type=Release                     \
+             --settings=compiler.cstd="$C_STANDARD"            \
              --settings=compiler.cppstd="$CXX_STANDARD"        \
 &&  conan cache clean "*" --build                              \
 &&  conan cache clean "*" --download                           \
@@ -62,7 +64,8 @@ COPY CMakeLists.txt "$src_dir/"
 COPY src "$src_dir/src/"
 
 # Configure project
-RUN cmake -DCMAKE_CXX_STANDARD="$CXX_STANDARD"                \
+RUN cmake -DCMAKE_C_STANDARD="$C_STANDARD"                    \
+          -DCMAKE_CXX_STANDARD="$CXX_STANDARD"                \
           -DCMAKE_LINKER_TYPE=LLD                             \
           -DENABLE_DEVELOPER_MODE=OFF                         \
           -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF             \
