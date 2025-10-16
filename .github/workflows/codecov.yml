@@ -52,7 +52,7 @@ jobs:
 
   build-deps:
     name: Build dependencies
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
     with:
       image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
       conan-version: "2.21.*"
@@ -71,7 +71,6 @@ jobs:
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
       CCACHE_MAXSIZE: "10G"
-      CONAN_HOME: "/opt/conan/"
       TMPDIR: "/tmp/"
 
     steps:
@@ -86,9 +85,15 @@ jobs:
           deps_hash="$(echo '${{ needs.build-deps.outputs.cache-key }}' | sha256sum | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          current_date="$(date '+%Y-%m-%d-%H:%M:%S')"
 
-          ccache_key_prefix="codecov-ccache-$deps_hash"
+          ccache_key_prefix="ccache-codecov-$deps_hash"
+          ccache_key_prefix="$(echo "$ccache_key_prefix" |
+                               tr -c '[:alnum:]._-' '-' |
+                               sed 's/-\+/-/g' |
+                               sed 's/-$//' |
+                               tr '[:upper:]' '[:lower:]'
+                             )"
 
           {
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"

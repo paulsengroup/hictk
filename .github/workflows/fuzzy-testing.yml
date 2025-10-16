@@ -60,7 +60,7 @@ permissions:
 jobs:
   build-deps:
     name: Build dependencies
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
     with:
       image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
       conan-version: "2.21.*"

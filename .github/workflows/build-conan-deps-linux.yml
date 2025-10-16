@@ -79,7 +79,7 @@ jobs:
 
           compiler="$(cc --version | head -n 1)"
 
-          suffix="$image-$compiler-c++${{ inputs.cppstd }}-${{ inputs.build-type }}-$hash"
+          suffix="$image-$compiler-cxx${{ inputs.cppstd }}-${{ inputs.build-type }}-$hash"
           suffix="$(echo "$suffix" |
                     tr -c '[:alnum:]._-' '-' |
                     sed 's/-\+/-/g' |
@@ -100,20 +100,13 @@ jobs:
           path: ${{ steps.generate-cache-key.outputs.tar }}
           lookup-only: true
 
-      - name: Restore package cache
-        uses: actions/cache/restore@v4
-        if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        with:
-          key: ${{ steps.generate-cache-key.outputs.cache-key }}
-          path: ${{ steps.generate-cache-key.outputs.tar }}
-
       - name: Update build deps
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        run: pip install "conan==${{ inputs.conan-version }}"
+        run: pip install 'conan==${{ inputs.conan-version }}'
 
       - name: Clean Conan cache (pre-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        run: conan remove --confirm "*"
+        run: conan remove --confirm '*'
 
       - name: Install build dependencies
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
@@ -143,16 +136,16 @@ jobs:
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
           utils/devel/build_dependencies.py \
-            --build-type=${{ inputs.build-type }} \
-            --cppstd="${{ inputs.cppstd }}" \
+            --build-type='${{ inputs.build-type }}' \
+            --cppstd='${{ inputs.cppstd }}' \
             --ci
 
       - name: Archive dependencies
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          src="$(readlink -f "$TMPDIR/deps")"
+          src='deps/'
           dest='${{ steps.generate-cache-key.outputs.tar }}'
-          tar -cf - "$src" |
+          tar -C "$TMPDIR" -cf - "$src" |
             zstd -T0 -22 --long --ultra -v -o "$dest"
 
           echo "tar=$dest" | tee -a "$GITHUB_OUTPUT"

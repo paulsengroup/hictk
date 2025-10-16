@@ -36,7 +36,7 @@ permissions:
 jobs:
   build-deps-cpp20:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       cppstd: 20
@@ -44,7 +44,7 @@ jobs:
 
   build-deps-cpp23:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3b94da98703f30ee9914f97362743056b00b280a
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
     with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       cppstd: 23
@@ -94,10 +94,18 @@ jobs:
             exit 1
           fi
 
+          deps_hash="$(echo "$deps_cache_key" | sha256sum | cut -f 1 -d ' ')"
+
           # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          current_date="$(date '+%Y-%m-%d-%H:%M:%S')"
 
           ccache_key_prefix="ccache-cppstd-${{ matrix.cppstd }}-$deps_hash"
+          ccache_key_prefix="$(echo "$ccache_key_prefix" |
+                               tr -c '[:alnum:]._-' '-' |
+                               sed 's/-\+/-/g' |
+                               sed 's/-$//' |
+                               tr '[:upper:]' '[:lower:]'
+                             )"
 
           {
             echo "deps-key=${deps_cache_key}"

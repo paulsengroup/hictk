@@ -82,10 +82,10 @@ jobs:
           cl.exe 1> /dev/null 2> version.txt
           compiler="msvc-$(head -n 1 version.txt | grep -o '[[:digit:].]\+' | head -n 1)"
 
-          suffix="${{ inputs.os }}-$compiler-c++${{ inputs.cppstd }}-$hash"
+          suffix="${{ inputs.os }}-$compiler-cxx${{ inputs.cppstd }}-${{ inputs.build-type }}-$hash"
           suffix="$(echo "$suffix" |
                     tr -c '[:alnum:]._-' '-' |
-                    sed 's/-\+/-/g' |
+                    sed -E 's/-+/-/g' |
                     sed 's/-$//' |
                     tr '[:upper:]' '[:lower:]'
                   )"
@@ -93,7 +93,7 @@ jobs:
           dest="$TMPDIR/dependencies.conan.${{ inputs.build-type }}.tar.zst"
 
           echo "cache-key=conan-$suffix" | tee -a "$GITHUB_OUTPUT"
-          echo "tar=$dest" | tee -a "$GITHUB_OUTPUT"
+          echo "tar=$(cygpath -w "$dest")" | tee -a "$GITHUB_OUTPUT"
 
       - name: Lookup package cache
         id: lookup-conan-cache
@@ -102,13 +102,6 @@ jobs:
           key: ${{ steps.generate-cache-key.outputs.cache-key }}
           path: ${{ steps.generate-cache-key.outputs.tar }}
           lookup-only: true
-
-      - name: Restore package cache
-        uses: actions/cache/restore@v4
-        if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        with:
-          key: ${{ steps.generate-cache-key.outputs.cache-key }}
-          path: ${{ steps.generate-cache-key.outputs.tar }}
 
       - uses: actions/setup-python@v6
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
@@ -149,18 +142,16 @@ jobs:
       - name: Archive dependencies
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: |
-          src="$TMPDIR/deps"
-          dest='${{ steps.generate-cache-key.outputs.tar }}'
-          tar -cf - "$src" |
+          src='deps'
+          dest="$(cygpath -u '${{ steps.generate-cache-key.outputs.tar }}')"
+          tar -C "$TMPDIR" -cf - "$src" |
             zstd -T0 -22 --long --ultra -v -o "$dest"
-
-          echo "tar=$dest" | tee -a "$GITHUB_OUTPUT"
 
       - name: Export dependencies
         uses: actions/cache/save@v4
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.generate-cache-key.outputs.cache-key }}
-          path: ${{ steps.archive-deps.outputs.tar }}
+          path: ${{ steps.generate-cache-key.outputs.tar }}
         env:
           ZSTD_CLEVEL: 0
