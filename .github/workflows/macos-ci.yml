@@ -234,6 +234,7 @@ jobs:
           which "$ASAN_SYMBOLIZER_PATH"
 
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
+                -DCMAKE_C_STANDARD=17                                  \
                 -DCMAKE_CXX_STANDARD=17                                \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"              \
                 -DENABLE_DEVELOPER_MODE='${{ matrix.developer_mode }}' \

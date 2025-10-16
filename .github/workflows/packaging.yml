@@ -75,6 +75,7 @@ jobs:
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release                \
+                -DCMAKE_C_STANDARD=17                     \
                 -DCMAKE_CXX_STANDARD=17                   \
                 -DHICTK_ENABLE_TESTING=OFF                \
                 -DHICTK_BUILD_TOOLS=OFF                   \
@@ -93,6 +94,7 @@ jobs:
           CMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/;$PWD/hictk_install/lib/cmake/hictk/"
 
           cmake -DCMAKE_BUILD_TYPE=Release               \
+                -DCMAKE_C_STANDARD=17                    \
                 -DCMAKE_CXX_STANDARD=17                  \
                 -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
                 -S test/packaging/test_find_package      \
@@ -139,6 +141,7 @@ jobs:
           ln -s "$PWD" test/packaging/test_add_subdirectory/hictk_root
 
           cmake -DCMAKE_BUILD_TYPE=Release                \
+                -DCMAKE_C_STANDARD=17                     \
                 -DCMAKE_CXX_STANDARD=17                   \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/" \
                 -S test/packaging/test_add_subdirectory   \

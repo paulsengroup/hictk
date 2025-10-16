@@ -125,6 +125,7 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_C_STANDARD=17                              \
                 -DCMAKE_CXX_STANDARD=17                            \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"          \
                 -DENABLE_DEVELOPER_MODE=ON                         \

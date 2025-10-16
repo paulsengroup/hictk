@@ -303,6 +303,7 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
+                -DCMAKE_C_STANDARD=17                                  \
                 -DCMAKE_CXX_STANDARD=17                                \
                 -DCMAKE_LINKER_TYPE="$LINKER"                          \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"              \
