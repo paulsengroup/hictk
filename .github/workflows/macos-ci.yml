@@ -81,7 +81,7 @@ jobs:
 
   build-deps-dbg-x86:
     name: Build Conan deps (Debug; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -89,7 +89,7 @@ jobs:
 
   build-deps-rel-x86:
     name: Build Conan deps (Release; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -97,7 +97,7 @@ jobs:
 
   build-deps-dbg-arm64:
     name: Build Conan deps (Debug; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -105,7 +105,7 @@ jobs:
 
   build-deps-rel-arm64:
     name: Build Conan deps (Release; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -214,10 +214,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Unpack dependencies
-        run: |
-          gtar -C "$TMPDIR" \
-              --strip-components 1 \
-              -xf '${{ steps.cache-key.outputs.deps-path }}'
+        run: gtar -C "$TMPDIR" -xf '${{ steps.cache-key.outputs.deps-path }}'
 
       - name: Configure project
         run: |

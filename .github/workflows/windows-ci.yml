@@ -71,7 +71,7 @@ jobs:
 
   build-deps-dbg:
     name: Build Conan deps (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -79,7 +79,7 @@ jobs:
 
   build-deps-rel:
     name: Build Conan deps (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@89e2c2b5fff5bdabbd0f4df2b54ed66857d26008
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -146,11 +146,11 @@ jobs:
 
       - name: Unpack dependencies
         if: matrix.build_type == 'Debug'
-        run: tar -C "$TMPDIR" -xf "$(cygwin -u '${{ needs.build-deps-dbg.outputs.deps-path }}')"
+        run: tar -C "$TMPDIR" -xf "$(cygpath -u '${{ needs.build-deps-dbg.outputs.tar }}')"
 
       - name: Unpack dependencies
         if: matrix.build_type == 'Release'
-        run: tar -C "$TMPDIR" -xf "$(cygwin -u '${{ needs.build-deps-rel.outputs.deps-path }}')"
+        run: tar -C "$TMPDIR" -xf "$(cygpath -u '${{ needs.build-deps-rel.outputs.tar }}')"
 
       - name: Configure project
         run: |
