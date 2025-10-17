@@ -52,11 +52,13 @@ jobs:
 
   build-deps:
     name: Build dependencies
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
-      conan-version: "2.21.*"
       build-type: RelWithDebInfo
+      conan-version: "2.21.*"
+      cppstd: 17
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      ref: main
 
   build-project:
     name: Build project

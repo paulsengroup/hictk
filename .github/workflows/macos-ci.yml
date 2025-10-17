@@ -81,35 +81,43 @@ jobs:
 
   build-deps-dbg-x86:
     name: Build Conan deps (Debug; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Debug
       conan-version: "2.21.*"
+      cppstd: 17
       os: macos-15-intel
+      ref: main
 
   build-deps-rel-x86:
     name: Build Conan deps (Release; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
       conan-version: "2.21.*"
+      cppstd: 17
       os: macos-15-intel
+      ref: main
 
   build-deps-dbg-arm64:
     name: Build Conan deps (Debug; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Debug
       conan-version: "2.21.*"
+      cppstd: 17
       os: macos-26
+      ref: main
 
   build-deps-rel-arm64:
     name: Build Conan deps (Release; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
       conan-version: "2.21.*"
+      cppstd: 17
       os: macos-26
+      ref: main
 
   build-project:
     name: Build project

@@ -12,6 +12,11 @@ on:
     paths:
       - ".github/workflows/populate-cache.yml"
   workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        default: main
+        description: "Reference used to clone the conanfile.py and build script."
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -31,7 +36,6 @@ jobs:
     name: Cache test dataset
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
-  ### Linux ###
   build-deps-linux:
     name: Build dependencies (Linux)
     strategy:
@@ -50,36 +54,37 @@ jobs:
               cppstd: 23,
               image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21,
             }
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.21.*"
       cppstd: ${{ matrix.cppstd }}
       image: ${{ matrix.image }}
+      ref: ${{ inputs.ref }}
 
-  ### macOS ###
-  build-deps-macos-dbg-x86:
+  build-deps-macos:
     name: Build Conan deps (macOS)
     strategy:
       matrix:
         build-type: [Debug, Release]
         os: [macos-15-intel, macos-26]
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.21.*"
       cppstd: 17
       os: ${{ matrix.os }}
+      ref: ${{ inputs.ref }}
 
-  ### Windows ###
-  build-deps-win-dbg:
+  build-deps-win:
     name: Build Conan deps (Windows)
     strategy:
       matrix:
         build-type: [Debug, Release]
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@3673f75f9ef0dc50743b21235769f82d1d82df04
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.21.*"
       cppstd: 17
       os: windows-2025
+      ref: ${{ inputs.ref }}
