@@ -16,6 +16,9 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+  pull_request:
+    paths:
+      - ".github/workflows/codeql-cpp.yml"
   schedule:
     - cron: "0 5 1 * *" # run monthly at 05:00
 
