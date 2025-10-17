@@ -186,7 +186,8 @@ if(BUILD_SHARED_LIBS)
 endif()
 
 if(HICTK_ASSUME_STD_FILESYSTEM_AVAIL)
-  add_library(std::filesystem INTERFACE)
+  add_library(hictk_internal_std_filesystem_dummy INTERFACE)
+  add_library(std::filesystem ALIAS hictk_internal_std_filesystem_dummy)
 endif()
 
 add_subdirectory(src)
