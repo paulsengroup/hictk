@@ -14,6 +14,10 @@ on:
         value: ${{ jobs.build-deps.outputs.tar }}
 
     inputs:
+      build-type:
+        type: string
+        required: true
+        description: "Build type to pass to Conan."
       conan-version:
         default: "2.21.*"
         type: string
@@ -29,10 +33,10 @@ on:
         type: string
         required: false
         description: "Docker image used to build Conan deps."
-      build-type:
+      ref:
         type: string
-        required: true
-        description: "Build type to pass to Conan."
+        default: main
+        description: "Reference used to clone the conanfile.py and build script."
 
 defaults:
   run:
@@ -62,6 +66,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Generate cache key
         id: generate-cache-key

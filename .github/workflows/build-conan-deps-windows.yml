@@ -14,6 +14,10 @@ on:
         value: ${{ jobs.build-deps.outputs.tar }}
 
     inputs:
+      build-type:
+        type: string
+        required: true
+        description: "Build type to pass to Conan."
       conan-version:
         default: "2.21.*"
         type: string
@@ -24,14 +28,14 @@ on:
         type: string
         required: false
         description: "Value to pass to compiler.cppstd."
-      build-type:
-        type: string
-        required: true
-        description: "Build type to pass to Conan."
       os:
         type: string
         required: true
         description: "OS used to build Conan deps."
+      ref:
+        type: string
+        default: main
+        description: "Reference used to clone the conanfile.py and build script."
 
 defaults:
   run:
@@ -55,6 +59,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Add devtools to PATH
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
