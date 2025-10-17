@@ -19,23 +19,20 @@ on:
         required: true
         description: "Build type to pass to Conan."
       conan-version:
-        default: "2.21.*"
         type: string
-        required: false
+        required: true
         description: "Conan version to be installed with pip."
       cppstd:
-        default: "17"
         type: string
-        required: false
+        required: true
         description: "Value to pass to compiler.cppstd."
       image:
-        default: ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21
         type: string
-        required: false
+        required: true
         description: "Docker image used to build Conan deps."
       ref:
         type: string
-        default: main
+        required: true
         description: "Reference used to clone the conanfile.py and build script."
 
 defaults:
