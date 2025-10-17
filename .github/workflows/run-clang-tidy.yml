@@ -55,7 +55,6 @@ jobs:
           fetch-depth: 0
 
       - name: Detect changed files
-        if: github.event_name == 'pull_request'
         id: changed-files
         run: |
           if [[ '${{ github.event_name }}' == 'pull_request' ]]; then

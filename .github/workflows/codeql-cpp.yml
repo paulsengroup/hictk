@@ -15,6 +15,7 @@ on:
       - "test/units/**"
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
+      - "conanfile.py"
   schedule:
     - cron: "0 5 1 * *" # run monthly at 05:00
 
@@ -61,7 +62,10 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Unpack dependencies
-        run: tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
+        run: |
+          sudo chown "$UID" '${{ needs.build-deps.outputs.tar }}'
+          tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
+          sudo chown -R "$UID" "$TMPDIR/deps/"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
