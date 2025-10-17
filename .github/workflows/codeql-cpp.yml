@@ -65,10 +65,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Unpack dependencies
-        run: |
-          sudo chown "$UID" '${{ needs.build-deps.outputs.tar }}'
-          tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
-          sudo chown -R "$UID" "$TMPDIR/deps/"
+        run: tar -C "$TMPDIR" -xf '/home/runner/${{ needs.build-deps.outputs.tar }}'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
@@ -79,15 +76,20 @@ jobs:
       - name: Configure project
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug                  \
+                -DCMAKE_C_COMPILER=clang                  \
+                -DCMAKE_CXX_COMPILER=clang++              \
                 -DCMAKE_C_STANDARD=17                     \
                 -DCMAKE_CXX_STANDARD=17                   \
                 -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/" \
                 -DENABLE_DEVELOPER_MODE=OFF               \
-                -DHICTK_ENABLE_TESTING=ON                 \
+                -DHICTK_BUILD_BENCHMARKS=ON               \
                 -DHICTK_BUILD_EXAMPLES=ON                 \
+                -DHICTK_BUILD_TOOLS=ON                    \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF         \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF   \
-                -DCMAKE_INSTALL_PREFIX=dest               \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON           \
+                -DHICTK_ENABLE_TESTING=ON                 \
+                -DHICTK_WITH_ARROW=ON                     \
+                -DHICTK_WITH_EIGEN=ON                     \
                 -S .                                      \
                 -B build
 
