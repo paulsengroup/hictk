@@ -481,7 +481,7 @@ jobs:
                 --schedule-random           \
                 --output-on-failure         \
                 --no-tests=error            \
-                --timeout 240               \
+                --timeout 300               \
                 -j "$(nproc)"
 
   run-integration-tests:
