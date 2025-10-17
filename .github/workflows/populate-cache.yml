@@ -1,0 +1,90 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Populate shared Cache entries
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/populate-cache.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/populate-cache.yml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        default: main
+        description: "Reference used to clone the conanfile.py and build script."
+
+# https://stackoverflow.com/a/72408109
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UBUNTU_20.04_IMAGE: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+  UBUNTU_24.04_IMAGE: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21"
+  CONAN_VERSION: "2.21.*"
+
+jobs:
+  cache-test-dataset:
+    name: Cache test dataset
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+
+  build-deps-linux:
+    name: Build dependencies (Linux)
+    strategy:
+      matrix:
+        build-type: [Debug, RelWithDebInfo, Release]
+        cppstd: [17]
+        image: [ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21]
+        include:
+          - {
+              build-type: Release,
+              cppstd: 20,
+              image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21,
+            }
+          - {
+              build-type: Release,
+              cppstd: 23,
+              image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21,
+            }
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: ${{ matrix.build-type }}
+      conan-version: "2.21.*"
+      cppstd: ${{ matrix.cppstd }}
+      image: ${{ matrix.image }}
+      ref: ${{ inputs.ref }}
+
+  build-deps-macos:
+    name: Build Conan deps (macOS)
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+        os: [macos-15-intel, macos-26]
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: ${{ matrix.build-type }}
+      conan-version: "2.21.*"
+      cppstd: 17
+      os: ${{ matrix.os }}
+      ref: ${{ inputs.ref }}
+
+  build-deps-win:
+    name: Build Conan deps (Windows)
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: ${{ matrix.build-type }}
+      conan-version: "2.21.*"
+      cppstd: 17
+      os: windows-2025
+      ref: ${{ inputs.ref }}

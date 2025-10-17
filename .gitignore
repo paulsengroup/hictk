@@ -32,3 +32,4 @@ src/hictk/telemetry/include/**/*.hpp
 src/libhictk/common/**/include/hictk/git.hpp
 src/libhictk/common/**/include/hictk/license.hpp
 src/libhictk/common/**/include/hictk/version.hpp
+utils/devel/run-clang-tidy.py

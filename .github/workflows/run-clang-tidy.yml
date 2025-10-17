@@ -7,7 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
@@ -20,7 +19,6 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/run-clang-tidy.yml"
       - "cmake/**"
       - "examples/**"
@@ -44,23 +42,77 @@ permissions:
   contents: read
 
 jobs:
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  detect-changed-files:
+    name: Detect Changed Files
+    runs-on: ubuntu-24.04
 
-  build-project:
-    name: Build project
-    needs: build-conan-deps
+    outputs:
+      no-files-changed: ${{ steps.changed-files.outputs.skip }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        if: github.event_name == 'pull_request'
+        id: changed-files
+        run: |
+          if [[ '${{ github.event_name }}' == 'pull_request' ]]; then
+            BASE_REF='${{ github.event.pull_request.base.ref }}'
+            HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+            BASE_SHA="$(git merge-base "origin/$BASE_REF" "$HEAD_SHA")"
+
+            1>&2 echo "Comparing $HEAD_SHA with $BASE_SHA..."
+            git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA"
+          else
+            git ls-tree -r '${{ github.ref }}' --name-only
+          fi |
+            { grep '.*\.[hc]pp$' || true; } |
+            sed '/^$/d' |
+            tee filelist.txt
+
+          if [ -s filelist.txt ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload filelist.txt
+        if: steps.changed-files.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: clang-tidy-filelist
+          path: filelist.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  build-deps:
+    name: Build dependencies
+    if: needs.detect-changed-files.outputs.no-files-changed != 'true'
+    needs: [detect-changed-files]
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: Debug
+      conan-version: "2.21.*"
+      cppstd: 17
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      ref: main
+
+  run-clang-tidy:
+    name: Run clang-tidy
+    if: needs.detect-changed-files.outputs.no-files-changed != 'true'
+    needs:
+      - build-deps
+      - detect-changed-files
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       options: "--user=root"
 
     env:
-      CCACHE_DIR: "/opt/ccache-cache"
-      CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXSIZE: "300M"
-      CONAN_HOME: "/opt/conan/"
+      CCACHE_DISABLE: 1
+      TMPDIR: "/tmp/"
 
     steps:
       - uses: actions/checkout@v5
@@ -68,168 +120,88 @@ jobs:
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
 
-      - name: Print clang-tidy version
-        run: clang-tidy --version
+      - name: Print clang-tidy version and config
+        run: |
+          clang-tidy -dump-config
+          clang-tidy --version
 
       - name: Install Python headers
         run: |
           apt-get update
           apt-get install -y python3.12-dev
 
-      - name: Generate cache key
-        id: cache-key
+      - name: Download run-clang-tidy.py
         run: |
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          apt-get update
+          apt-get install -y curl xz-utils
 
-          # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          LLVM_VERSION=21.1.3
+          CHECKSUM='2b2bacf525daba5ab183f98fdbd0f21df8bb421e15d938b2245180944186fc73'
 
-          ccache_key_prefix="ccache-clang-tidy-$conanfile_hash"
+          curl -L "https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVM_VERSION/clang-tools-extra-$LLVM_VERSION.src.tar.xz" |
+            tar --strip-components=3 -xJf - "clang-tools-extra-$LLVM_VERSION.src/clang-tidy/tool/run-clang-tidy.py"
 
-          {
-            echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
-            echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
-            echo "ccache-restore-key-2=$ccache_key_prefix"
-          } | tee -a "$GITHUB_OUTPUT"
+          sha256sum -c <(echo "$CHECKSUM  run-clang-tidy.py")
 
-      - name: Restore Conan cache
+          ./run-clang-tidy.py --help
+
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ needs.build-deps.outputs.cache-key }}
+          path: ${{ needs.build-deps.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        run: tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
 
       - name: Configure project
         run: |
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
-            LINKER=LLD
-          fi
-
           cmake -DCMAKE_BUILD_TYPE=Debug                      \
+                -DCMAKE_C_STANDARD=17                         \
                 -DCMAKE_CXX_STANDARD=17                       \
-                -DCMAKE_LINKER_TYPE="$LINKER"                 \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"          \
-                -DENABLE_DEVELOPER_MODE=ON                    \
-                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
-                -DOPT_ENABLE_SANITIZER_LEAK=OFF               \
-                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF    \
-                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF   \
-                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
-                -DOPT_ENABLE_CPPCHECK=OFF                     \
-                -DOPT_ENABLE_CLANG_TIDY=ON                    \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"     \
+                -DENABLE_DEVELOPER_MODE=OFF                   \
                 -DHICTK_BUILD_BENCHMARKS=ON                   \
                 -DHICTK_BUILD_EXAMPLES=ON                     \
-                -DHICTK_ENABLE_TESTING=ON                     \
-                -DHICTK_ENABLE_FUZZY_TESTING=ON               \
+                -DHICTK_BUILD_TOOLS=ON                        \
                 -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
+                -DHICTK_ENABLE_FUZZY_TESTING=ON               \
+                -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_WITH_ARROW=ON                         \
+                -DHICTK_WITH_EIGEN=ON                         \
                 -S .                                          \
                 -B build
 
-      - name: Restore Ccache folder
-        id: cache-ccache
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
-          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
-          path: ${{ env.CCACHE_DIR }}
+      - name: Generate files
+        run: cmake --build build -t _hictk_check_git
 
-      - name: Reset Ccache stats
-        run: ccache --zero-stats
-
-      - name: Build project
-        run: cmake --build build -j "$(nproc)"
-
-      - name: Print Ccache statistics (pre-cleanup)
-        run: |
-          ccache --show-stats \
-                 --show-compression \
-                 --verbose
-
-      - name: Cleanup Ccache folder
-        run: |
-          ccache --evict-older-than=14400s # 4h
-          ccache --recompress=19 --recompress-threads="$(nproc)"
-          ccache --cleanup
-
-      - name: Print Ccache statistics (post-cleanup)
-        run: |
-          ccache --show-stats \
-                 --show-compression \
-                 --verbose
-
-      - name: Save Ccache folder
-        uses: actions/cache/save@v4
-        with:
-          key: ${{ steps.cache-key.outputs.ccache-key }}
-          path: ${{ env.CCACHE_DIR }}
-        env:
-          ZSTD_CLEVEL: 1
-
-      - name: Generate list of stale cache entries
-        id: stale-cache
-        if: steps.cache-ccache.outputs.cache-matched-key != ''
-        run: |
-          fname='stale-cache-run-clang-tidy.txt'
-          echo '${{ steps.cache-ccache.outputs.cache-matched-key }}' > "$fname"
-
-          echo "name=$fname" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Upload stale cache entries
-        if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.stale-cache.outputs.name }}
-          path: "${{ steps.stale-cache.outputs.name }}"
-          if-no-files-found: error
-          retention-days: 1
-
-  clean-stale-cache:
-    needs: [build-project]
-    name: Evict stale cache entries
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-
-    steps:
-      - name: Download artifacts
+      - name: Download list of changed files
         uses: actions/download-artifact@v5
-        continue-on-error: true
         with:
-          pattern: stale-cache-*
-          merge-multiple: true
+          name: clang-tidy-filelist
 
-      - name: Evict cache entries
-        continue-on-error: true
+      - name: Run clang-tidy
         run: |
-          set -x
-          while read -r entry; do
-            if ! grep -q '/heads/main' <(echo "$entry"); then
-              gh cache delete --repo '${{ github.repository }}' "$entry"
-            fi
-          done < <(cat stale-cache*.txt | grep -v '^$')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xargs \
+          ./run-clang-tidy.py \
+            -config-file=.clang-tidy \
+            -j "$(nproc)" \
+            -use-color \
+            -warnings-as-errors='*' \
+            -p build/ \
+          < filelist.txt
 
   clang-tidy-status-check:
     name: Status Check (clang-tidy)
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs:
-      - build-project
+      - run-clang-tidy
 
     steps:
       - name: Collect job results
-        if: needs.build-project.result != 'success'
+        if: |
+          needs.run-clang-tidy.result != 'success' &&
+          needs.run-clang-tidy.result != 'skipped'
         run: exit 1

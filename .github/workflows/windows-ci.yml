@@ -7,7 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-windows.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/windows-ci.yml"
       - "cmake/**"
@@ -21,7 +20,6 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps-windows.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/windows-ci.yml"
       - "cmake/**"
@@ -37,11 +35,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
-env:
-  CONAN_HOME: "${{ github.workspace }}\\.conan2"
-  HICTK_CI: "1"
-  HICTK_NO_TELEMETRY: "1"
 
 defaults:
   run:
@@ -76,16 +69,32 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
     name: Cache test dataset
 
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps-dbg:
+    name: Build Conan deps (Debug)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
+      build-type: Debug
+      conan-version: "2.21.*"
+      cppstd: 17
       os: windows-2025
+      ref: main
+
+  build-deps-rel:
+    name: Build Conan deps (Release)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: Release
+      conan-version: "2.21.*"
+      cppstd: 17
+      os: windows-2025
+      ref: main
 
   build-project:
+    name: Build project
     needs:
       - matrix-factory
-      - build-conan-deps
+      - build-deps-dbg
+      - build-deps-rel
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -111,34 +120,48 @@ jobs:
       - name: Install deps
         run: pip install 'cmake==${{ matrix.cmake }}'
 
-      - name: Restore Conan cache
+      - name: Detect TMPDIR
+        run: |
+          cat << EOF >> get_tmpdir.py
+          import pathlib
+          import tempfile
+
+          path = pathlib.Path(tempfile.gettempdir())
+          print(path.as_posix())
+          EOF
+
+          echo "TMPDIR=$(python get_tmpdir.py)" | tee -a "$GITHUB_ENV"
+
+      - name: Restore cached dependencies (Debug)
+        if: matrix.build_type == 'Debug'
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}\p
-            ${{ github.workspace }}\cmake-prefix-dbg.tar
-            ${{ github.workspace }}\cmake-prefix-rel.tar
+          key: ${{ needs.build-deps-dbg.outputs.cache-key }}
+          path: ${{ needs.build-deps-dbg.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          srcdir="$(cygpath '${{ github.workspace }}')"
+      - name: Restore cached dependencies (Release)
+        if: matrix.build_type == 'Release'
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ needs.build-deps-rel.outputs.cache-key }}
+          path: ${{ needs.build-deps-rel.outputs.tar }}
+          fail-on-cache-miss: true
 
-          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
-            archive="$srcdir/cmake-prefix-dbg.tar"
-          else
-            archive="$srcdir/cmake-prefix-rel.tar"
-          fi
+      - name: Unpack dependencies
+        if: matrix.build_type == 'Debug'
+        run: tar -C "$TMPDIR" -xf "$(cygpath -u '${{ needs.build-deps-dbg.outputs.tar }}')"
 
-          tar -xf "$archive" -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        if: matrix.build_type == 'Release'
+        run: tar -C "$TMPDIR" -xf "$(cygpath -u '${{ needs.build-deps-rel.outputs.tar }}')"
 
       - name: Configure project
         run: |
-          cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}          \
+          cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'        \
+                -DCMAKE_C_STANDARD=17                                \
                 -DCMAKE_CXX_STANDARD=17                              \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"                 \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"            \
                 -DENABLE_DEVELOPER_MODE=${{ matrix.developer_mode }} \
                 -DHICTK_ENABLE_TESTING=ON                            \
                 -DHICTK_BUILD_EXAMPLES=ON                            \
@@ -147,8 +170,8 @@ jobs:
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DCMAKE_INSTALL_PREFIX=dest                          \
-                -S "${{ github.workspace }}"                         \
-                -B "${{ github.workspace }}/build"
+                -S '${{ github.workspace }}'                         \
+                -B '${{ github.workspace }}/build'
 
       - name: Build project
         run: cmake --build build --config ${{ matrix.build_type }}
@@ -193,6 +216,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+    env:
+      HICTK_CI: "1"
 
     steps:
       - name: Checkout repo
@@ -247,6 +272,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
+    env:
+      HICTK_CI: "1"
 
     steps:
       - name: Checkout repo

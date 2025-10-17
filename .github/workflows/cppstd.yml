@@ -7,7 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-linux.yml"
       - ".github/workflows/cppstd.yml"
       - "cmake/**"
       - "examples/**"
@@ -17,6 +16,10 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+
+  pull_request:
+    paths:
+      - ".github/workflows/cppstd.yml"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -31,26 +34,32 @@ permissions:
   contents: read
 
 jobs:
-  build-conan-deps-cpp20:
+  build-deps-cpp20:
     name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      build-type: Release
+      conan-version: "2.21.*"
       cppstd: 20
-
-  build-conan-deps-cpp23:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
-    with:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      ref: main
+
+  build-deps-cpp23:
+    name: Build Conan deps
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: Release
+      conan-version: "2.21.*"
       cppstd: 23
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      ref: main
 
   build-project:
     runs-on: ubuntu-latest
     name: Build project
     needs:
-      - build-conan-deps-cpp20
-      - build-conan-deps-cpp23
+      - build-deps-cpp20
+      - build-deps-cpp23
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
       options: "--user=root"
@@ -59,8 +68,8 @@ jobs:
       CCACHE_DIR: "/opt/ccache-cache"
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXSIZE: "150M"
-      CONAN_HOME: "/opt/conan/"
+      CCACHE_MAXSIZE: "10G"
+      TMPDIR: "/tmp/"
 
     strategy:
       fail-fast: false
@@ -76,49 +85,49 @@ jobs:
         run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Generate cache key
-        id: generate-cache-key
+        id: cache-key
         run: |
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          if [[ '${{ matrix.cppstd }}' == 20 ]]; then
+            deps_cache_key='${{ needs.build-deps-cpp20.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-cpp20.outputs.tar }}'
+          elif [[ '${{ matrix.cppstd }}' == 23 ]]; then
+            deps_cache_key='${{ needs.build-deps-cpp23.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-cpp23.outputs.tar }}'
+          else
+            1>&2 echo 'Unknown cppstd "${{ matrix.cppstd }}"'
+            exit 1
+          fi
+
+          deps_hash="$(echo "$deps_cache_key" | sha256sum | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          current_date="$(date '+%Y-%m-%d-%H:%M:%S')"
 
-          ccache_key_prefix="ccache-cppstd-${{ matrix.cppstd }}-$conanfile_hash"
+          ccache_key_prefix="ccache-cppstd-${{ matrix.cppstd }}-$deps_hash"
+          ccache_key_prefix="$(echo "$ccache_key_prefix" |
+                               tr -c '[:alnum:]._-' '-' |
+                               sed 's/-\+/-/g' |
+                               sed 's/-$//' |
+                               tr '[:upper:]' '[:lower:]'
+                             )"
 
           {
+            echo "deps-key=${deps_cache_key}"
+            echo "deps-path=${deps_cache_path}"
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
             echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
             echo "ccache-restore-key-2=$ccache_key_prefix"
           } | tee -a "$GITHUB_OUTPUT"
 
-      - name: Restore Conan cache (C++20)
-        if: matrix.cppstd == '20'
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps-cpp20.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ steps.cache-key.outputs.deps-key }}
+          path: ${{ steps.cache-key.outputs.deps-path }}
           fail-on-cache-miss: true
 
-      - name: Restore Conan cache (C++23)
-        if: matrix.cppstd == '23'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps-cpp23.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
-          fail-on-cache-miss: true
-
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-dbg.tar -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        run: tar -C "$TMPDIR" -xf '${{ steps.cache-key.outputs.deps-path }}'
 
       - name: Install Python headers
         run: |
@@ -127,38 +136,38 @@ jobs:
 
       - name: Configure project
         run: |
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
-            LINKER=LLD
-          fi
-
-          cmake -DCMAKE_BUILD_TYPE=Debug \
-                -DCMAKE_CXX_STANDARD='${{ matrix.cppstd }}' \
-                -DCMAKE_LINKER_TYPE="$LINKER" \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env" \
-                -DHICTK_ENABLE_TESTING=ON \
-                -DHICTK_ENABLE_FUZZY_TESTING=OFF \
-                -DHICTK_BUILD_TOOLS=OFF \
-                -DHICTK_BUILD_EXAMPLES=ON \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF \
-                -S . \
+          cmake -DCMAKE_BUILD_TYPE=Release                       \
+                -DCMAKE_C_STANDARD=17                            \
+                -DCMAKE_CXX_STANDARD='${{ matrix.cppstd }}'      \
+                -DCMAKE_C_COMPILER_FLAGS_RELEASE='-O2 -DDEBUG'   \
+                -DCMAKE_CXX_COMPILER_FLAGS_RELEASE='-O2 -DDEBUG' \
+                -DCMAKE_LINKER_TYPE=LLD                          \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"        \
+                -DHICTK_ENABLE_TESTING=ON                        \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF                 \
+                -DHICTK_BUILD_TOOLS=OFF                          \
+                -DHICTK_BUILD_EXAMPLES=ON                        \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF          \
+                -S .                                             \
                 -B build
 
       - name: Restore Ccache folder
         id: cache-ccache
         uses: actions/cache/restore@v4
         with:
-          key: ${{ steps.generate-cache-key.outputs.ccache-restore-key-1 }}
-          restore-keys: ${{ steps.generate-cache-key.outputs.ccache-restore-key-2 }}
+          key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
+          restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
           path: ${{ env.CCACHE_DIR }}
 
       - name: Reset Ccache stats
         run: ccache --zero-stats
 
       - name: Build project
-        run: cmake --build build -j "$(nproc)"
+        id: cmake-build
+        run: |
+          echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+          cmake --build build -j "$(nproc)"
 
       - name: Print Ccache statistics (pre-cleanup)
         run: |
@@ -168,9 +177,11 @@ jobs:
 
       - name: Cleanup Ccache folder
         run: |
-          ccache --evict-older-than=14400s # 4h
+          timestamp="$(date +%s)"
+          time_delta="$(( timestamp - ${{ steps.cmake-build.outputs.start }} + 60 ))"
+          ccache --evict-older-than="${time_delta}s"
           ccache --recompress=19 --recompress-threads="$(nproc)"
-          ccache --cleanup
+          ccache --cleanup --max-size 1G
 
       - name: Print Ccache statistics (post-cleanup)
         run: |
@@ -181,7 +192,7 @@ jobs:
       - name: Save Ccache folder
         uses: actions/cache/save@v4
         with:
-          key: ${{ steps.generate-cache-key.outputs.ccache-key }}
+          key: ${{ steps.cache-key.outputs.ccache-key }}
           path: ${{ env.CCACHE_DIR }}
         env:
           ZSTD_CLEVEL: 1
@@ -204,32 +215,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  clean-stale-cache:
+  purge-stale-ccache-entries:
+    name: Purge stale CCache entries
     needs: [build-project]
-    name: Evict stale cache entries
-    runs-on: ubuntu-latest
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@0a18aef88705bbc2322b4fdd0ddde64d20f6e765
     permissions:
+      contents: read
       actions: write
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v5
-        continue-on-error: true
-        with:
-          pattern: stale-cache-*
-          merge-multiple: true
-
-      - name: Evict cache entries
-        continue-on-error: true
-        run: |
-          set -x
-          while read -r entry; do
-            if ! grep -q '/heads/main' <(echo "$entry"); then
-              gh cache delete --repo '${{ github.repository }}' "$entry"
-            fi
-          done < <(cat stale-cache*.txt | grep -v '^$')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   cppstd-status-check:
     name: Status Check (cppstd)

@@ -8,8 +8,6 @@ on:
     branches: [main]
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
       - "examples/**"
@@ -24,8 +22,6 @@ on:
   pull_request:
     paths:
       - ".github/.codecov.yml"
-      - ".github/workflows/build-conan-deps-linux.yml"
-      - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/codecov.yml"
       - "cmake/**"
       - "examples/**"
@@ -54,13 +50,19 @@ jobs:
     name: Cache test dataset
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
-  build-conan-deps:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps:
+    name: Build dependencies
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: RelWithDebInfo
+      conan-version: "2.21.*"
+      cppstd: 17
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      ref: main
 
   build-project:
     name: Build project
-    needs: build-conan-deps
+    needs: build-deps
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
@@ -70,8 +72,8 @@ jobs:
       CCACHE_DIR: "/opt/ccache-cache"
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXSIZE: "500M"
-      CONAN_HOME: "/opt/conan/"
+      CCACHE_MAXSIZE: "10G"
+      TMPDIR: "/tmp/"
 
     steps:
       - uses: actions/checkout@v5
@@ -82,12 +84,18 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          conanfile_hash="${{ hashFiles('conanfile.py') }}"
+          deps_hash="$(echo '${{ needs.build-deps.outputs.cache-key }}' | sha256sum | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          current_date="$(date '+%Y-%m-%d-%H:%M:%S')"
 
-          ccache_key_prefix="codecov-ccache-$conanfile_hash"
+          ccache_key_prefix="ccache-codecov-$deps_hash"
+          ccache_key_prefix="$(echo "$ccache_key_prefix" |
+                               tr -c '[:alnum:]._-' '-' |
+                               sed 's/-\+/-/g' |
+                               sed 's/-$//' |
+                               tr '[:upper:]' '[:lower:]'
+                             )"
 
           {
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
@@ -95,21 +103,15 @@ jobs:
             echo "ccache-restore-key-2=$ccache_key_prefix"
           } | tee -a "$GITHUB_OUTPUT"
 
-      - name: Restore Conan cache
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-            /tmp/cmake-prefix-rwdi.tar
+          key: ${{ needs.build-deps.outputs.cache-key }}
+          path: ${{ needs.build-deps.outputs.tar }}
           fail-on-cache-miss: true
 
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-          tar -xf /tmp/cmake-prefix-rwdi.tar -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        run: tar -C "$TMPDIR" -xf '${{ needs.build-deps.outputs.tar }}'
 
       - name: Configure project (w/ telemetry)
         run: |
@@ -122,8 +124,9 @@ jobs:
           fi
 
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
+                -DCMAKE_C_STANDARD=17                              \
                 -DCMAKE_CXX_STANDARD=17                            \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"          \
                 -DENABLE_DEVELOPER_MODE=ON                         \
                 -DHICTK_ENABLE_TELEMETRY=ON                        \
                 -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
@@ -150,34 +153,28 @@ jobs:
         run: |
           cov_flags='-fprofile-instr-generate -fcoverage-mapping -fcoverage-mcdc'
 
-          if ! lld -v &> /dev/null; then
-            LINKER=SYSTEM
-          else
-            LINKER=LLD
-          fi
-
-          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo                  \
-                -DCMAKE_CXX_STANDARD=17                            \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env"               \
-                -DENABLE_DEVELOPER_MODE=ON                         \
-                -DHICTK_ENABLE_TELEMETRY=OFF                       \
-                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF      \
-                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF                 \
-                -DOPT_ENABLE_SANITIZER_LEAK=OFF                    \
-                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF         \
-                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF        \
-                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF      \
-                -DOPT_ENABLE_CPPCHECK=OFF                          \
-                -DOPT_ENABLE_CLANG_TIDY=OFF                        \
-                -DHICTK_BUILD_EXAMPLES=OFF                         \
-                -DHICTK_ENABLE_TESTING=ON                          \
-                -DHICTK_ENABLE_FUZZY_TESTING=OFF                   \
-                -DHICTK_DOWNLOAD_TEST_DATASET=OFF                  \
-                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF            \
-                -DCMAKE_C_FLAGS="$cov_flags"                       \
-                -DCMAKE_CXX_FLAGS="$cov_flags"                     \
-                -DCMAKE_LINKER_TYPE="$LINKER"                      \
-                -S .                                               \
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo             \
+                -DCMAKE_CXX_STANDARD=17                       \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"     \
+                -DENABLE_DEVELOPER_MODE=ON                    \
+                -DHICTK_ENABLE_TELEMETRY=OFF                  \
+                -DOPT_ENABLE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+                -DOPT_ENABLE_SANITIZER_ADDRESS=OFF            \
+                -DOPT_ENABLE_SANITIZER_LEAK=OFF               \
+                -DOPT_ENABLE_SANITIZER_POINTER_COMPARE=OFF    \
+                -DOPT_ENABLE_SANITIZER_POINTER_SUBTRACT=OFF   \
+                -DOPT_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=OFF \
+                -DOPT_ENABLE_CPPCHECK=OFF                     \
+                -DOPT_ENABLE_CLANG_TIDY=OFF                   \
+                -DHICTK_BUILD_EXAMPLES=OFF                    \
+                -DHICTK_ENABLE_TESTING=ON                     \
+                -DHICTK_ENABLE_FUZZY_TESTING=OFF              \
+                -DHICTK_DOWNLOAD_TEST_DATASET=OFF             \
+                -DHICTK_ENABLE_GIT_VERSION_TRACKING=OFF       \
+                -DCMAKE_C_FLAGS="$cov_flags"                  \
+                -DCMAKE_CXX_FLAGS="$cov_flags"                \
+                -DCMAKE_LINKER_TYPE=LLD                       \
+                -S .                                          \
                 -B build-no-telem
 
       - name: Restore Ccache folder
@@ -192,7 +189,10 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project (w/ telemetry)
-        run: cmake --build build -j "$(nproc)"
+        id: cmake-build
+        run: |
+          echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+          cmake --build build -j "$(nproc)"
 
       - name: Build project (wo/ telemetry)
         run: cmake --build build-no-telem -j "$(nproc)" -t hictk
@@ -216,9 +216,11 @@ jobs:
 
       - name: Cleanup Ccache folder
         run: |
-          ccache --evict-older-than=14400s # 4h
+          timestamp="$(date +%s)"
+          time_delta="$(( timestamp - ${{ steps.cmake-build.outputs.start }} + 60 ))"
+          ccache --evict-older-than="${time_delta}s"
           ccache --recompress=19 --recompress-threads="$(nproc)"
-          ccache --cleanup
+          ccache --cleanup --max-size 1G
 
       - name: Print Ccache statistics (post-cleanup)
         run: |
@@ -252,32 +254,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  clean-stale-cache:
+  purge-stale-ccache-entries:
+    name: Purge stale CCache entries
     needs: [build-project]
-    name: Evict stale cache entries
-    runs-on: ubuntu-latest
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@0a18aef88705bbc2322b4fdd0ddde64d20f6e765
     permissions:
+      contents: read
       actions: write
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v5
-        continue-on-error: true
-        with:
-          pattern: stale-cache-*
-          merge-multiple: true
-
-      - name: Evict cache entries
-        continue-on-error: true
-        run: |
-          set -x
-          while read -r entry; do
-            if ! grep -q '/heads/main' <(echo "$entry"); then
-              gh cache delete --repo '${{ github.repository }}' "$entry"
-            fi
-          done < <(cat stale-cache*.txt | grep -v '^$')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   run-unit-tests:
     name: Run unit tests

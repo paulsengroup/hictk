@@ -7,7 +7,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/build-conan-deps-macos.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/macos-ci.yml"
       - "cmake/**"
@@ -21,7 +20,6 @@ on:
 
   pull_request:
     paths:
-      - ".github/workflows/build-conan-deps-macos.yml"
       - ".github/workflows/cache-test-dataset.yml"
       - ".github/workflows/macos-ci.yml"
       - "cmake/**"
@@ -39,13 +37,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CCACHE_DIR: "${{ github.workspace }}/ccache-cache"
-  CCACHE_COMPILERCHECK: "content"
-  CCACHE_COMPRESSLEVEL: "1"
-  CCACHE_MAXSIZE: "250M"
-  CONAN_HOME: "${{ github.workspace }}/.conan2"
-  HICTK_CI: "1"
-  HICTK_NO_TELEMETRY: "1"
   HOMEBREW_NO_AUTO_UPDATE: "1"
 
 defaults:
@@ -88,24 +79,54 @@ jobs:
     name: Cache test dataset
     uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
 
-  build-conan-deps-x86:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps-dbg-x86:
+    name: Build Conan deps (Debug; x86)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
+      build-type: Debug
+      conan-version: "2.21.*"
+      cppstd: 17
       os: macos-15-intel
+      ref: main
 
-  build-conan-deps-arm64:
-    name: Build Conan deps
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@0b901ec93290543745de761ba7e94b6e2f255ca9
+  build-deps-rel-x86:
+    name: Build Conan deps (Release; x86)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
+      build-type: Release
+      conan-version: "2.21.*"
+      cppstd: 17
+      os: macos-15-intel
+      ref: main
+
+  build-deps-dbg-arm64:
+    name: Build Conan deps (Debug; arm64)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: Debug
+      conan-version: "2.21.*"
+      cppstd: 17
       os: macos-26
+      ref: main
+
+  build-deps-rel-arm64:
+    name: Build Conan deps (Release; arm64)
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    with:
+      build-type: Release
+      conan-version: "2.21.*"
+      cppstd: 17
+      os: macos-26
+      ref: main
 
   build-project:
     name: Build project
     needs:
       - matrix-factory
-      - build-conan-deps-x86
-      - build-conan-deps-arm64
+      - build-deps-dbg-arm64
+      - build-deps-dbg-x86
+      - build-deps-rel-arm64
+      - build-deps-rel-x86
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -115,9 +136,8 @@ jobs:
       CCACHE_DIR: "${{ github.workspace }}/ccache-cache"
       CCACHE_COMPILERCHECK: "content"
       CCACHE_COMPRESSLEVEL: "1"
-      CCACHE_MAXSIZE: "250M"
-      CONAN_HOME: "${{ github.workspace }}/.conan2"
-      HOMEBREW_NO_AUTO_UPDATE: "1"
+      CCACHE_MAXSIZE: "10G"
+      TMPDIR: "/tmp/"
 
     steps:
       - uses: actions/checkout@v5
@@ -156,52 +176,53 @@ jobs:
             suffix=''
           fi
 
-          conanfile_hash='${{ hashFiles('conanfile.py') }}'
+          if [[ "$build_type" == Debug && "$os" == *-intel ]]; then
+            deps_cache_key='${{ needs.build-deps-dbg-x86.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-dbg-x86.outputs.tar }}'
+          elif [[ "$build_type" == Release && "$os" == *-intel ]]; then
+            deps_cache_key='${{ needs.build-deps-rel-x86.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-rel-x86.outputs.tar }}'
+          elif [[ "$build_type" == Debug && "$os" != *-intel ]]; then
+            deps_cache_key='${{ needs.build-deps-dbg-arm64.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-dbg-arm64.outputs.tar }}'
+          elif [[ "$build_type" == Release && "$os" != *-intel ]]; then
+            deps_cache_key='${{ needs.build-deps-rel-arm64.outputs.cache-key }}'
+            deps_cache_path='${{ needs.build-deps-rel-arm64.outputs.tar }}'
+          else
+            1>&2 echo 'Unknown build type "${{ matrix.build_type }}" and/or os "${{ matrix.os }}"'
+            exit 1
+          fi
+
+          deps_hash="$(echo "$deps_cache_key" | shasum -a256 | cut -f 1 -d ' ')"
 
           # This can be used by to always update a cache entry (useful e.g. for ccache)
-          current_date="$(date '+%s')"
+          current_date="$(date '+%Y-%m-%d-%H:%M:%S')"
 
-          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$conanfile_hash-$build_type$suffix"
+          ccache_key_prefix="ccache-$os-$compiler-$compiler_version-$deps_hash-$build_type$suffix"
+          ccache_key_prefix="$(echo "$ccache_key_prefix" |
+                               tr -c '[:alnum:]._-' '-' |
+                               sed -E 's/-+/-/g' |
+                               sed 's/-$//' |
+                               tr '[:upper:]' '[:lower:]'
+                             )"
 
           {
+            echo "deps-key=${deps_cache_key}"
+            echo "deps-path=${deps_cache_path}"
             echo "ccache-key=${ccache_key_prefix}-$GITHUB_REF-${current_date}"
             echo "ccache-restore-key-1=$ccache_key_prefix-$GITHUB_REF"
             echo "ccache-restore-key-2=$ccache_key_prefix"
           } | tee -a "$GITHUB_OUTPUT"
 
-      - name: Restore Conan cache (x86)
-        if: matrix.os == 'macos-15-intel'
+      - name: Restore cached dependencies
         uses: actions/cache/restore@v4
         with:
-          key: ${{ needs.build-conan-deps-x86.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
+          key: ${{ steps.cache-key.outputs.deps-key }}
+          path: ${{ steps.cache-key.outputs.deps-path }}
           fail-on-cache-miss: true
 
-      - name: Restore Conan cache (arm64)
-        if: matrix.os != 'macos-15-intel'
-        uses: actions/cache/restore@v4
-        with:
-          key: ${{ needs.build-conan-deps-arm64.outputs.conan-key }}
-          path: |
-            ${{ env.CONAN_HOME }}/p
-            /tmp/cmake-prefix-dbg.tar
-            /tmp/cmake-prefix-rel.tar
-          fail-on-cache-miss: true
-
-      - name: Extract CMake configs
-        run: |
-          mkdir conan-env
-
-          if [[ '${{ matrix.build_type }}' == 'Debug' ]]; then
-            archive='/tmp/cmake-prefix-dbg.tar'
-          else
-            archive='/tmp/cmake-prefix-rel.tar'
-          fi
-
-          gtar -xf "$archive" -C conan-env/ --strip-components=1
+      - name: Unpack dependencies
+        run: gtar -C "$TMPDIR" -xf '${{ steps.cache-key.outputs.deps-path }}'
 
       - name: Configure project
         run: |
@@ -218,8 +239,9 @@ jobs:
           which "$ASAN_SYMBOLIZER_PATH"
 
           cmake -DCMAKE_BUILD_TYPE='${{ matrix.build_type }}'          \
+                -DCMAKE_C_STANDARD=17                                  \
                 -DCMAKE_CXX_STANDARD=17                                \
-                -DCMAKE_PREFIX_PATH="$PWD/conan-env/"                  \
+                -DCMAKE_PREFIX_PATH="$TMPDIR/deps/cmake/"              \
                 -DENABLE_DEVELOPER_MODE='${{ matrix.developer_mode }}' \
                 -DHICTK_ENABLE_TESTING=ON                              \
                 -DHICTK_BUILD_EXAMPLES=ON                              \
@@ -245,7 +267,10 @@ jobs:
         run: ccache --zero-stats
 
       - name: Build project
-        run: cmake --build '${{ github.workspace }}/build'
+        id: cmake-build
+        run: |
+          echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+          cmake --build '${{ github.workspace }}/build'
 
       - name: Package binaries
         run: |
@@ -290,9 +315,11 @@ jobs:
 
       - name: Cleanup Ccache folder
         run: |
-          ccache --evict-older-than=14400s # 4h
+          timestamp="$(date +%s)"
+          time_delta="$(( timestamp - ${{ steps.cmake-build.outputs.start }} + 60 ))"
+          ccache --evict-older-than="${time_delta}s"
           ccache --recompress=19 --recompress-threads="$NPROC"
-          ccache --cleanup
+          ccache --cleanup --max-size 1G
 
       - name: Print Ccache statistics (post-cleanup)
         run: |
@@ -326,32 +353,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  clean-stale-cache:
+  purge-stale-ccache-entries:
+    name: Purge stale CCache entries
     needs: [build-project]
-    name: Evict stale cache entries
-    runs-on: ubuntu-latest
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@0a18aef88705bbc2322b4fdd0ddde64d20f6e765
     permissions:
+      contents: read
       actions: write
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v5
-        continue-on-error: true
-        with:
-          pattern: stale-cache-*
-          merge-multiple: true
-
-      - name: Evict cache entries
-        continue-on-error: true
-        run: |
-          set -x
-          while read -r entry; do
-            if ! grep -q '/heads/main' <(echo "$entry"); then
-              gh cache delete --repo '${{ github.repository }}' "$entry"
-            fi
-          done < <(cat stale-cache*.txt | grep -v '^$')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   run-unit-tests:
     name: Run unit tests

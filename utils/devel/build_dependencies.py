@@ -11,8 +11,8 @@ import platform
 import shlex
 import shutil
 import subprocess as sp
-import tarfile
-from typing import Any, Dict
+import tempfile
+from typing import Any, Dict, List
 
 
 def make_cli() -> argparse.ArgumentParser:
@@ -22,7 +22,7 @@ def make_cli() -> argparse.ArgumentParser:
         "-o",
         "--output-prefix",
         type=pathlib.Path,
-        help="Path where to store the resulting *.cmake files",
+        help="Path where to resulting output file(s).",
     )
     cli.add_argument(
         "--profile",
@@ -64,6 +64,13 @@ def make_cli() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Print the commands that would be executed if --dry-run was not specified, then exit.",
+    )
+
+    cli.add_argument(
+        "--deploy",
+        action="store_true",
+        default=False,
+        help="Deploy dependencies under the output prefix folder.",
     )
 
     cli.add_argument(
@@ -139,6 +146,10 @@ def make_cli() -> argparse.ArgumentParser:
     return cli
 
 
+def get_tempdir() -> pathlib.Path:
+    return pathlib.Path(tempfile.gettempdir())
+
+
 def infer_root_dir() -> pathlib.Path:
     path = pathlib.Path(sp.check_output(["git", "rev-parse", "--show-toplevel"], encoding="utf-8").strip())
 
@@ -155,6 +166,23 @@ def run_or_print(args, env: Dict[str, str], dry_run: bool):
         sp.check_call(args, env=env)
 
 
+def add_output_params(args: List, dest: pathlib.Path, deploy: bool):
+    if deploy:
+        return args + [
+            f"--deployer-folder",
+            dest,
+            "--deployer=full_deploy",
+            "--conf=tools.deployer:symlinks=False",
+            "--output-folder",
+            dest / "cmake",
+        ]
+
+    return args + [
+        "--output-folder",
+        dest,
+    ]
+
+
 def run_conan(
     profile: str,
     build_type: str,
@@ -163,6 +191,7 @@ def run_conan(
     output_prefix: pathlib.Path,
     dry_run: bool,
     no_update: bool,
+    deploy: bool,
     recipe_options: Dict[str, bool],
 ):
     output_folder = output_prefix / profile / build_type / ("shared" if shared else "static")
@@ -178,8 +207,6 @@ def run_conan(
         f"build_type={build_type}",
         "--settings",
         f"compiler.cppstd={cppstd}",
-        "--output-folder",
-        output_folder,
         "--options",
         f"*/*:shared={shared}",
     ]
@@ -189,6 +216,8 @@ def run_conan(
 
     for opt, val in recipe_options.items():
         args.extend(("--options", f"hictk/*:{opt}={val}"))
+
+    args = add_output_params(args, output_folder, deploy)
 
     env = os.environ.copy()
     env["CC"] = profile
@@ -225,6 +254,7 @@ def run_local(args: Dict[str, Any]):
         shared_build = [True, False]
 
     no_update = args["no_update"]
+    deploy = args["deploy"]
 
     dry_run = args["dry_run"]
 
@@ -242,23 +272,11 @@ def run_local(args: Dict[str, Any]):
             *args,
             cppstd=cppstd,
             output_prefix=output_prefix,
+            deploy=deploy,
             dry_run=dry_run,
             recipe_options=recipe_options,
             no_update=no_update,
         )
-
-
-def generate_output_folder(build_type: str) -> str:
-    if build_type == "Debug":
-        return "cmake-prefix-dbg"
-
-    if build_type == "RelWithDebInfo":
-        return "cmake-prefix-rwdi"
-
-    if build_type == "Release":
-        return "cmake-prefix-rel"
-
-    raise RuntimeError(f'Unknown build type "{build_type}"')
 
 
 def run_ci_linux(args: Dict[str, Any]) -> str:
@@ -271,7 +289,6 @@ def run_ci_linux(args: Dict[str, Any]) -> str:
     build_type = build_type[0]
 
     cppstd = args["cppstd"]
-    generate_output_folder(build_type),
     conan_args = [
         "conan",
         "install",
@@ -288,16 +305,16 @@ def run_ci_linux(args: Dict[str, Any]) -> str:
         f"compiler.cppstd={cppstd}",
         "--settings",
         f"build_type={build_type}",
-        "--output-folder",
-        generate_output_folder(build_type),
     ]
 
     for opt, val in collect_recipe_options(args).items():
         conan_args.extend(("--options", f"hictk/*:{opt}={val}"))
 
+    dest = get_tempdir() / "deps" / "cmake"
+    conan_args = add_output_params(conan_args, dest.parent, True)
     run_or_print(conan_args, os.environ.copy(), False)
 
-    return generate_output_folder(build_type)
+    return str(dest)
 
 
 def run_ci_macos(args: Dict[str, Any]) -> str:
@@ -324,16 +341,16 @@ def run_ci_macos(args: Dict[str, Any]) -> str:
         f"build_type={build_type}",
         "--settings:h",
         "os.version=14.0",
-        "--output-folder",
-        generate_output_folder(build_type),
     ]
 
     for opt, val in collect_recipe_options(args).items():
         conan_args.extend(("--options", f"hictk/*:{opt}={val}"))
 
+    dest = get_tempdir() / "deps" / "cmake"
+    conan_args = add_output_params(conan_args, dest.parent, True)
     run_or_print(conan_args, os.environ.copy(), False)
 
-    return generate_output_folder(build_type)
+    return str(dest)
 
 
 def run_ci_windows(args: Dict[str, Any]) -> str:
@@ -362,37 +379,32 @@ def run_ci_windows(args: Dict[str, Any]) -> str:
         f"compiler.runtime_type={build_type}",
         "--settings",
         f"build_type={build_type}",
-        "--output-folder",
-        generate_output_folder(build_type),
     ]
 
     for opt, val in collect_recipe_options(args).items():
         conan_args.extend(("--options", f"hictk/*:{opt}={val}"))
 
+    dest = get_tempdir() / "deps" / "cmake"
+    conan_args = add_output_params(conan_args, dest.parent, True)
     run_or_print(conan_args, os.environ.copy(), False)
 
-    return generate_output_folder(build_type)
+    return str(dest)
 
 
 def run_ci(args: Dict[str, Any]):
     if platform.system() == "Linux":
-        output_folder = run_ci_linux(args)
-    elif platform.system() == "Darwin":
-        output_folder = run_ci_macos(args)
-    elif platform.system() == "Windows":
-        output_folder = run_ci_windows(args)
-    else:
-        raise RuntimeError(f"Platform {platform.system()} is not supported!")
+        run_ci_linux(args)
+        return
 
-    build_type = args["build_type"]
-    assert len(build_type) == 1
-    build_type = build_type[0]
+    if platform.system() == "Darwin":
+        run_ci_macos(args)
+        return
 
-    output_file = generate_output_folder(build_type)
-    with tarfile.open(f"{output_file}.tar", "w") as tar:
-        tar.add(output_folder)
+    if platform.system() == "Windows":
+        run_ci_windows(args)
+        return
 
-    shutil.rmtree(output_folder)
+    raise RuntimeError(f"Platform {platform.system()} is not supported!")
 
 
 def main():
