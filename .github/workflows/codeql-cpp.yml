@@ -68,7 +68,7 @@ jobs:
         run: tar -C "$TMPDIR" -xf '/home/runner/${{ needs.build-deps.outputs.tar }}'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
+        uses: github/codeql-action/init@16140ae1a102900babc80a33c44059580f687047 # v4.30.9
         with:
           languages: c-cpp
           build-mode: manual
@@ -97,6 +97,6 @@ jobs:
         run: cmake --build build -j "$(nproc)"
 
       - name: Run Analysis
-        uses: github/codeql-action/analyze@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
+        uses: github/codeql-action/analyze@16140ae1a102900babc80a33c44059580f687047 # v4.30.9
         with:
           category: "/language:c-cpp"
