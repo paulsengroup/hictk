@@ -30,7 +30,7 @@ dependencies = [
   "pandas==2.3.*",
   "PyYAML",
   "pywin32>=308; platform_system == 'Windows'",
-  "structlog==25.*",
+  "structlog>=25.5,<26",
 ]
 
 optional-dependencies.test = [
