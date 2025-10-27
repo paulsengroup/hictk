@@ -301,52 +301,54 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   const auto path2 = (testdir() / "hic_writer_001.hic").string();
   const auto path3 = (testdir() / "hic_writer_002.hic").string();
   const auto path4 = (testdir() / "hic_writer_003.hic").string();
+  const auto path5 = (testdir() / "hic_writer_004.hic").string();
+  const auto path6 = (testdir() / "hic_writer_005.hic").string();
+  const auto path7 = (testdir() / "hic_writer_006.hic").string();
+  const auto path8 = (testdir() / "hic_writer_007.hic").string();
 
   spdlog::set_level(spdlog::level::trace);
 
   SECTION("move ctor") {
-    const auto path = (testdir() / "hic_writer_move_ctor.hic").string();
-
-    HiCFileWriter w1{path, Reference{{0, "chr1", 100}}, {100}};
-    REQUIRE(w1.path() == path);
+    HiCFileWriter w1{path2, Reference{{0, "chr1", 100}}, {100}};
+    REQUIRE(w1.path() == path2);
 
     const HiCFileWriter w2{std::move(w1)};
 
     CHECK(w1.path().empty());
-    CHECK(w2.path() == path);
+    CHECK(w2.path() == path2);
   }
 
   SECTION("move assignment operator") {
-    const auto path = (testdir() / "hic_writer_move_assignment_op.hic").string();
-
-    HiCFileWriter w1{path, Reference{{0, "chr1", 100}}, {100}};
-    REQUIRE(w1.path() == path);
+    HiCFileWriter w1{path3, Reference{{0, "chr1", 100}}, {100}};
+    REQUIRE(w1.path() == path3);
 
     const auto w2 = std::move(w1);
     CHECK(w1.path().empty());
-    CHECK(w2.path() == path);
+    CHECK(w2.path() == path3);
   }
+
+  SECTION("empty reference") { CHECK_THROWS(HiCFileWriter{path4, Reference{}, {10}}); }
 
   SECTION("empty file") {
     {
       const hictk::Reference chromosomes{{0, "chr1", 100}};
-      HiCFileWriter w(path2, chromosomes, {10});
+      HiCFileWriter w(path5, chromosomes, {10});
       w.serialize();
     }
-    const File hf{path2};
+    const File hf{path5};
     CHECK(hf.fetch().read_all<float>().empty());
   }
 
   SECTION("create file (mt)") {
     const std::vector<std::uint32_t> resolutions{25'000, 1'000'000, 2'500'000};
-    hic_file_writer_create_file_test(path1, path3, resolutions, 16, true);
+    hic_file_writer_create_file_test(path1, path6, resolutions, 16, true);
   }
 
   SECTION("regression PR 180") {
     // Ensure we can create .hic files having bin tables with 1 bin per chromosome
     // See https://github.com/paulsengroup/hictk/pull/180
     const hictk::Reference chromosomes{{0, "chr1", 10}};
-    HiCFileWriter w(path4, chromosomes, {100});
+    HiCFileWriter w(path7, chromosomes, {100});
 
     const std::vector<Pixel<float>> pixels{Pixel<float>{w.bins(100), 0, 0, 1.0F}};
     w.add_pixels(100, pixels.begin(), pixels.end(), true);
@@ -356,8 +358,8 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
   SECTION("validation") {
     constexpr std::uint32_t resolution = 10;
 
-    std::filesystem::remove(path4);  // NOLINT
-    HiCFileWriter w(path4, Reference{{1, "chr1", 100}}, {resolution});
+    std::filesystem::remove(path8);  // NOLINT
+    HiCFileWriter w(path8, Reference{{1, "chr1", 100}}, {resolution});
     const BinTable invalid_bins{w.chromosomes(), resolution / 2};
 
     // NOLINTBEGIN(*-pointer-arithmetic)
