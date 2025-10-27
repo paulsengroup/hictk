@@ -304,6 +304,29 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
 
   spdlog::set_level(spdlog::level::trace);
 
+  SECTION("move ctor") {
+    const auto path = (testdir() / "hic_writer_move_ctor.hic").string();
+
+    HiCFileWriter w1{path, Reference{{0, "chr1", 100}}, {100}};
+    REQUIRE(w1.path() == path);
+
+    const HiCFileWriter w2{std::move(w1)};
+
+    CHECK(w1.path().empty());
+    CHECK(w2.path() == path);
+  }
+
+  SECTION("move assignment operator") {
+    const auto path = (testdir() / "hic_writer_move_assignment_op.hic").string();
+
+    HiCFileWriter w1{path, Reference{{0, "chr1", 100}}, {100}};
+    REQUIRE(w1.path() == path);
+
+    const auto w2 = std::move(w1);
+    CHECK(w1.path().empty());
+    CHECK(w2.path() == path);
+  }
+
   SECTION("empty file") {
     {
       const hictk::Reference chromosomes{{0, "chr1", 100}};
