@@ -197,6 +197,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, std::size_t n_thread
     : _fs(std::string{path_}, std::make_shared<std::mutex>(), std::ios::in | std::ios::out),
       _header(read_header(_fs)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
+      _block_index_mtx(std::make_unique<std::mutex>()),
       _tpool(init_tpool(n_threads)) {
   read_offsets();
   read_norm_expected_values();
@@ -213,6 +214,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
       _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
                           skip_all_vs_all_matrix)),
       _bin_tables(init_bin_tables(chromosomes(), resolutions())),
+      _block_index_mtx(std::make_unique<std::mutex>()),
       _block_mappers(init_interaction_block_mappers(_tmpdir, _bin_tables, chunk_size, 3)),
       _compression_lvl(compression_lvl),
       _compressor(libdeflate_alloc_compressor(static_cast<std::int32_t>(compression_lvl))),
@@ -332,8 +334,9 @@ template <typename PixelIt, typename>
 inline void HiCFileWriter::add_pixels(std::uint32_t resolution, PixelIt first_pixel,
                                       PixelIt last_pixel, bool validate) {
   try {
+    assert(_tpool);
     _block_mappers.at(resolution)
-        .append_pixels(std::move(first_pixel), std::move(last_pixel), validate, _tpool);
+        .append_pixels(std::move(first_pixel), std::move(last_pixel), validate, *_tpool);
   } catch (const std::exception &e) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("an error occurred while adding pixels for resolution {} to file \"{}\": {}"),
@@ -496,7 +499,8 @@ inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromoso
               sel.begin<float>(), sel.end<float>(),
               std::make_shared<const BinTable>(bins(base_resolution)), factor);
 
-          mapper.append_pixels(coarsener.begin(), coarsener.end(), false, _tpool);
+          assert(_tpool);
+          mapper.append_pixels(coarsener.begin(), coarsener.end(), false, *_tpool);
         }
       } catch (const std::exception &e) {
         throw std::runtime_error(
@@ -790,13 +794,14 @@ inline NormalizedExpectedValuesBlock HiCFileWriter::compute_normalized_expected_
 }
 
 inline HiCSectionOffsets HiCFileWriter::compute_and_write_expected_values() {
-  assert(_tpool.get_thread_count() != 0);
+  assert(_tpool);
+  assert(_tpool->get_thread_count() != 0);
   ExpectedValues ev{};
 
   std::vector<std::future<ExpectedValuesBlock>> results{};
   for (const auto &resolution : resolutions()) {
     results.emplace_back(
-        _tpool.submit_task([&, res = resolution]() { return compute_expected_values(res); }));
+        _tpool->submit_task([&, res = resolution]() { return compute_expected_values(res); }));
   }
 
   for (auto &res : results) {
@@ -821,7 +826,8 @@ inline HiCSectionOffsets HiCFileWriter::compute_and_write_expected_values() {
 }
 
 inline HiCSectionOffsets HiCFileWriter::compute_and_write_normalized_expected_values() {
-  assert(_tpool.get_thread_count() != 0);
+  assert(_tpool);
+  assert(_tpool->get_thread_count() != 0);
   NormalizedExpectedValues ev{};
 
   phmap::btree_map<NormalizedExpectedValuesBlock, std::future<NormalizedExpectedValuesBlock>>
@@ -833,8 +839,8 @@ inline HiCSectionOffsets HiCFileWriter::compute_and_write_normalized_expected_va
         _normalized_expected_values.find(key) != _normalized_expected_values.end();
     const auto nev_already_submitted_for_computation = results.find(key) != results.end();
     if (!nev_available && !nev_already_submitted_for_computation) {
-      results.emplace(key, _tpool.submit_task([&, res = static_cast<std::uint32_t>(blk.binSize),
-                                               type = blk.type]() {
+      results.emplace(key, _tpool->submit_task([&, res = static_cast<std::uint32_t>(blk.binSize),
+                                                type = blk.type]() {
         const balancing::Method norm{type};
         return compute_normalized_expected_values(res, norm);
       }));
@@ -1123,8 +1129,8 @@ inline auto HiCFileWriter::init_interaction_block_mappers(const std::filesystem:
   return mappers;
 }
 
-inline BS::light_thread_pool HiCFileWriter::init_tpool(std::size_t n_threads) {
-  return BS::light_thread_pool{n_threads < 2 ? std::size_t{1} : n_threads};
+inline std::unique_ptr<BS::light_thread_pool> HiCFileWriter::init_tpool(std::size_t n_threads) {
+  return std::make_unique<BS::light_thread_pool>(n_threads < 2 ? std::size_t{1} : n_threads);
 }
 
 inline HiCSectionOffsets HiCFileWriter::write_pixels(const Chromosome &chrom1,
@@ -1162,7 +1168,8 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
                                                     std::uint32_t resolution)
     -> std::pair<HiCSectionOffsets, Stats> {
   assert(offset >= 0);
-  assert(_tpool.get_thread_count() > 0);
+  assert(_tpool);
+  assert(_tpool->get_thread_count() > 0);
 
   try {
     std::mutex mapper_mtx{};
@@ -1180,7 +1187,7 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
                                 matrix_block_mapper->second.end());
     CompressedBlockPQueue compressed_block_queue(
         block_ids.begin(), block_ids.end(),
-        conditional_static_cast<std::size_t>(_tpool.get_thread_count()));
+        conditional_static_cast<std::size_t>(_tpool->get_thread_count()));
 
     std::atomic<bool> early_return = false;
 
@@ -1189,9 +1196,9 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
     const auto *last_bid = block_ids.data() + block_ids.size();
 
     std::vector<std::future<Stats>> workers(
-        conditional_static_cast<std::size_t>(_tpool.get_thread_count()));
+        conditional_static_cast<std::size_t>(_tpool->get_thread_count()));
     for (std::size_t i = 0; i < workers.size(); ++i) {
-      workers[i] = _tpool.submit_task([&, i]() {
+      workers[i] = _tpool->submit_task([&, i]() {
         return merge_and_compress_blocks_thr(i, chrom1, chrom2, resolution, mapper, mapper_mtx,
                                              first_bid, last_bid, compressed_block_queue,
                                              early_return);
@@ -1208,7 +1215,7 @@ inline auto HiCFileWriter::write_interaction_blocks(std::streampos offset, const
   } catch (const std::exception &e) {
     throw std::runtime_error(
         fmt::format(FMT_STRING("an error occurred while interaction blocks using {} threads: {}"),
-                    _tpool.get_thread_count(), e.what()));
+                    !_tpool ? 0 : _tpool->get_thread_count(), e.what()));
   }
 }
 
@@ -1497,7 +1504,8 @@ inline void HiCFileWriter::write_compressed_blocks(
     const MatrixBlockMetadata mm{static_cast<std::int32_t>(bid.bid), file_offset, buffer_size};
     const BlockIndexKey key{chrom1, chrom2, resolution};
 
-    [[maybe_unused]] const std::scoped_lock lck2(_block_index_mtx);
+    assert(_block_index_mtx);
+    [[maybe_unused]] const std::scoped_lock lck2(*_block_index_mtx);
     auto idx = _block_index.find(key);
     if (idx != _block_index.end()) {
       idx->second.emplace(mm);
