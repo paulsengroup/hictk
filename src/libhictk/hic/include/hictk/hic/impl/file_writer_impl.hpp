@@ -1085,6 +1085,10 @@ inline HiCHeader HiCFileWriter::init_header(std::string_view path, Reference chr
                                             std::vector<std::uint32_t> resolutions,
                                             std::string_view assembly,
                                             bool skip_all_vs_all_matrix) {
+  if (chromosomes.empty()) {
+    throw std::invalid_argument("HiCFileWriter::init_header() was called with an empty Reference");
+  }
+
   if (skip_all_vs_all_matrix) {
     chromosomes = chromosomes.remove_ALL();
   } else {
