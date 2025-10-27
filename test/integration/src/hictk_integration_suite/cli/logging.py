@@ -147,7 +147,7 @@ def _format_title(title: str) -> str:
 
 def _configure_logger_columns(
     colors: bool,
-    level_styles: Optional[structlog.dev.Styles] = None,
+    level_styles: Optional[structlog.dev.ColumnStyles] = None,
     event_key: str = "event",
     timestamp_key: str = "timestamp",
     pad_level: bool = True,
