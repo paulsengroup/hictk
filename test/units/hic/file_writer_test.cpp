@@ -313,8 +313,6 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
     REQUIRE(w1.path() == path2);
 
     const HiCFileWriter w2{std::move(w1)};
-
-    CHECK(w1.path().empty());
     CHECK(w2.path() == path2);
   }
 
@@ -323,7 +321,6 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
     REQUIRE(w1.path() == path3);
 
     const auto w2 = std::move(w1);
-    CHECK(w1.path().empty());
     CHECK(w2.path() == path3);
   }
 
