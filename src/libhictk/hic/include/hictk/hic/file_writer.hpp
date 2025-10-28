@@ -114,7 +114,7 @@ class HiCFileWriter {
 
   HiCHeader _header{};
   BinTables _bin_tables{};
-  std::mutex _block_index_mtx{};
+  std::unique_ptr<std::mutex> _block_index_mtx{};
   BlockIndex _block_index{};
   BlockMappers _block_mappers{};
 
@@ -142,7 +142,7 @@ class HiCFileWriter {
   HiCSectionOffsets _norm_vector_index_section{};
   HiCSectionOffsets _norm_vectors_section{};
 
-  BS::light_thread_pool _tpool{};
+  std::unique_ptr<BS::light_thread_pool> _tpool{};
 
   bool _skip_all_vs_all_matrix{};
 
@@ -159,6 +159,13 @@ class HiCFileWriter {
       std::filesystem::path tmpdir = hictk::internal::TmpDir::default_temp_directory_path(),
       std::uint32_t compression_lvl = 11, bool skip_all_vs_all_matrix = false);
   // NOLINTEND(*-avoid-magic-numbers)
+
+  HiCFileWriter(const HiCFileWriter&) = delete;
+  HiCFileWriter(HiCFileWriter&&) noexcept = default;
+  ~HiCFileWriter() noexcept = default;
+
+  HiCFileWriter& operator=(const HiCFileWriter&) = delete;
+  HiCFileWriter& operator=(HiCFileWriter&&) noexcept = default;
 
   [[nodiscard]] std::string_view path() const noexcept;
   [[nodiscard]] const Reference& chromosomes() const noexcept;
@@ -196,7 +203,7 @@ class HiCFileWriter {
                                                            const BinTables& bin_tables,
                                                            std::size_t chunk_size,
                                                            int compression_lvl) -> BlockMappers;
-  [[nodiscard]] static BS::light_thread_pool init_tpool(std::size_t n_threads);
+  [[nodiscard]] static std::unique_ptr<BS::light_thread_pool> init_tpool(std::size_t n_threads);
 
   // Write header
   void write_header();
