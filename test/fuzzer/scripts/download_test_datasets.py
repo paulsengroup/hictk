@@ -17,6 +17,7 @@ import sys
 import tempfile
 import time
 from typing import Any, Dict, List, Tuple
+from urllib.error import ContentTooShortError
 from urllib.request import HTTPError, urlcleanup, urlretrieve
 
 
@@ -173,7 +174,7 @@ def download_file(url: str, md5sum: str, dest: pathlib.Path, max_attempts: int =
                 t1 = time.time()
                 logging.info('finished downloading "%s": download took %fs.', url, t1 - t0)
                 break
-            except HTTPError as e:
+            except (ContentTooShortError, HTTPError) as e:
                 logging.warning(f'failed to download file from URL "{url}" (attempt {attempt}/{max_attempts}): {e}')
                 if attempt == max_attempts:
                     msg = f'Failed to download file from URL "{url}": {e}'
