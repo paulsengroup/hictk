@@ -425,7 +425,7 @@ TEST_CASE("HiC: HiCFileWriter (creation)", "[hic][v9][long]") {
 
 TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
   const auto path1 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
-  const auto path2 = (testdir() / "hic_writer_004.hic").string();
+  const auto path2 = (testdir() / "hic_writer_008.hic").string();
 
   SECTION("add weights") {
     const std::uint32_t resolution = 500'000;
