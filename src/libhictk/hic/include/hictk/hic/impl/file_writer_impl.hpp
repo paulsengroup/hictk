@@ -458,6 +458,7 @@ inline void HiCFileWriter::write_all_matrix(std::uint32_t target_num_bins) {
   }
 }
 
+// NOLINTNEXTLINE(*-function-cognitive-complexity)
 inline auto HiCFileWriter::write_pixels(const Chromosome &chrom1, const Chromosome &chrom2)
     -> HiCSectionOffsets {
   try {
