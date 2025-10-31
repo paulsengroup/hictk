@@ -352,16 +352,32 @@ inline std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     return weights;
   }
 
+  std::uint32_t num_missing_chroms{};
   std::vector<double> buff(bins().size(), std::numeric_limits<double>::quiet_NaN());
   for (const auto& chrom : chromosomes()) {
     if (chrom.is_all()) {
+      ++num_missing_chroms;
       continue;
     }
 
-    const auto& chrom_weights = normalization(norm, chrom);
-    const auto offset = static_cast<std::ptrdiff_t>(bins().at(chrom).id());
-    std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-              chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
+    try {
+      const auto& chrom_weights = normalization(norm, chrom);
+      const auto offset = static_cast<std::ptrdiff_t>(bins().at(chrom).id());
+      std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
+                chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
+    } catch (const std::runtime_error& e) {
+      const auto missing_norm_msg =
+          fmt::format(FMT_STRING("unable to read \"{}\" weights"), norm.to_string());
+      if (missing_norm_msg != std::string_view{e.what()}) {
+        throw;
+      }
+      ++num_missing_chroms;
+    }
+  }
+
+  if (num_missing_chroms == chromosomes().size()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("unable to read \"{}\" weights"), norm.to_string()));
   }
 
   *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};

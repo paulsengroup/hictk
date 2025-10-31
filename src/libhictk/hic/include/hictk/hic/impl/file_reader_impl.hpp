@@ -568,7 +568,7 @@ inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chro
 inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (version() >= 9) {  // NOLINT(*-avoid-magic-numbers)
-    return list_avail_normalizations_v9();
+    return list_avail_normalizations_v9(wanted_unit, wanted_resolution);
   }
 
   phmap::flat_hash_set<balancing::Method> methods{};
@@ -592,12 +592,15 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
   const auto nNormVectors = _fs->read<std::int32_t>();
   for (std::int32_t i = 0; i < nNormVectors; i++) {
     const auto foundNorm = readNormalizationMethod();
-    methods.emplace(foundNorm);
     [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
     [[maybe_unused]] const auto foundUnit = readMatrixUnit();
     [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
     [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
     [[maybe_unused]] const auto nBytes = _fs->read<std::int32_t>();
+    assert(foundUnit == wanted_unit);
+    assert(foundResolution == wanted_resolution);
+
+    methods.emplace(foundNorm);
   }
 
   std::vector<balancing::Method> methods_{methods.size()};
@@ -607,7 +610,8 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
   return methods_;
 }
 
-inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9() {
+inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9(
+    MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (_header->normVectorIndexPosition <= 0) {
     return {};
   }
@@ -616,12 +620,15 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v
   const auto nNormVectors = _fs->read<std::int32_t>();
   for (std::int32_t i = 0; i < nNormVectors; i++) {
     const auto foundNorm = readNormalizationMethod();
-    methods.emplace(foundNorm);
     [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
-    [[maybe_unused]] const auto foundUnit = readMatrixUnit();
-    [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    const auto foundUnit = readMatrixUnit();
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
     [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
     [[maybe_unused]] const auto nBytes = _fs->read<std::int64_t>();
+
+    if (foundUnit == wanted_unit && foundResolution == wanted_resolution) {
+      methods.emplace(foundNorm);
+    }
   }
 
   std::vector<balancing::Method> methods_{methods.size()};
