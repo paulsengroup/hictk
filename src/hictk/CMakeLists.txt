@@ -35,6 +35,7 @@ target_link_libraries(
   PRIVATE
     hictk::project_options
     hictk::project_warnings
+    "$<TARGET_NAME_IF_EXISTS:hictk::mimalloc_override>"
     hictk_internal_common_type_traits
     hictk_internal_tools_cli
     hictk_internal_tools_runner
@@ -45,6 +46,7 @@ target_link_system_libraries(
   PRIVATE
     CLI11::CLI11
     fmt::fmt-header-only
+    "$<TARGET_NAME_IF_EXISTS:hictk::mimalloc>"
     spdlog::spdlog_header_only
     std::filesystem
     Threads::Threads
