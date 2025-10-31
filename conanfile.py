@@ -106,6 +106,10 @@ class HictkConan(ConanFile):
         return self.options.with_fuzzy_testing_deps
 
     @property
+    def _with_re2(self) -> bool:
+        return self._with_arrow
+
+    @property
     def _with_tomlplusplus(self) -> bool:
         return self.options.with_cli_tool_deps
 
@@ -245,7 +249,7 @@ class HictkConan(ConanFile):
         # these are all transitive dependencies.
         # The only reason why they are defined here is to pin their recipe versions
         if self._with_abseil:
-            # opentelemetry-cpp
+            # opentelemetry-cpp, re2
             self.requires("abseil/20250814.0#4e0fdd34a888b97aca482e648fc27a3b", force=True)
 
         if self._with_bzip2:
@@ -267,6 +271,10 @@ class HictkConan(ConanFile):
         if self._with_protobuf:
             # opentelemetry-cpp
             self.requires("protobuf/6.32.1#f481fd276fc23a33b85a3ed1e898b693", force=True)
+
+        if self._with_re2:
+            # arrow
+            self.requires("re2/20250722#7547baba4648ebb432652af97ec9c972")
 
         if self._with_xz_utils:
             # libarchive
