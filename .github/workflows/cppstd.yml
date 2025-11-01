@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload stale cache entries
         if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.stale-cache.outputs.name }}
           path: "${{ steps.stale-cache.outputs.name }}"

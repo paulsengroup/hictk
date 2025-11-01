@@ -79,7 +79,7 @@ jobs:
 
       - name: Upload filelist.txt
         if: steps.changed-files.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: clang-tidy-filelist
           path: filelist.txt
@@ -176,7 +176,7 @@ jobs:
         run: cmake --build build -t _hictk_check_git
 
       - name: Download list of changed files
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: clang-tidy-filelist
 
