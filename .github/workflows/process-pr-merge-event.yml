@@ -26,9 +26,10 @@ jobs:
         id: delete-caches
         continue-on-error: true
         run: |
-          gh cache list -L 1000 --ref 'refs/pull/${{ github.event.pull_request.number }}/merge' |
+          gh cache list --repo '${{ github.repository }}' -L 1000 \
+              --ref 'refs/pull/${{ github.event.pull_request.number }}/merge' |
             cut -f1 -d $'\t' |
-            xargs -L1 gh cache delete
+            xargs -L1 gh cache delete --repo '${{ github.repository }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
