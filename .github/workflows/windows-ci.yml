@@ -106,7 +106,6 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-          cache: "pip"
 
       - name: Detect number available CPUs
         run: |
@@ -251,7 +250,6 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-          cache: "pip"
 
       - name: Install test dependencies
         run: pip install -r requirements.txt
@@ -283,7 +281,6 @@ jobs:
         with:
           python-version: "3.13"
           cache-dependency-path: "test/integration/pyproject.toml"
-          cache: "pip"
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
