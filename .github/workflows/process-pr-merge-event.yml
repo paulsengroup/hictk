@@ -29,6 +29,8 @@ jobs:
           gh cache list -L 1000 --ref 'refs/pull/${{ github.event.pull_request.number }}/merge' |
             cut -f1 -d $'\t' |
             xargs -L1 gh cache delete
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Warn on failure
         if: steps.delete-caches.outputs.outcome == 'failure'
