@@ -593,14 +593,14 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
   for (std::int32_t i = 0; i < nNormVectors; i++) {
     const auto foundNorm = readNormalizationMethod();
     [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
-    [[maybe_unused]] const auto foundUnit = readMatrixUnit();
-    [[maybe_unused]] const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    const auto foundUnit = readMatrixUnit();
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
     [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
     [[maybe_unused]] const auto nBytes = _fs->read<std::int32_t>();
-    assert(foundUnit == wanted_unit);
-    assert(foundResolution == wanted_resolution);
 
-    methods.emplace(foundNorm);
+    if (foundUnit == wanted_unit && foundResolution == wanted_resolution) {
+      methods.emplace(foundNorm);
+    }
   }
 
   std::vector<balancing::Method> methods_{methods.size()};
