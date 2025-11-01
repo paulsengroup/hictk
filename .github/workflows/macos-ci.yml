@@ -444,7 +444,6 @@ jobs:
         with:
           python-version: "3.13"
           cache-dependency-path: "test/integration/pyproject.toml"
-          cache: "pip"
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
