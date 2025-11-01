@@ -72,6 +72,7 @@ jobs:
         with:
           languages: c-cpp
           build-mode: manual
+          trap-caching: false
 
       - name: Configure project
         run: |
