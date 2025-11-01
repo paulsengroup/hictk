@@ -565,13 +565,38 @@ inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chro
   return {std::move(index), std::move(metadata), std::move(expectedValues), weights1, weights2};
 }
 
+inline std::vector<balancing::Method> HiCFileReader::read_avail_normalizations(
+    MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
+  phmap::flat_hash_set<balancing::Method> methods{};
+  const auto nNormVectors = _fs->read<std::int32_t>();
+  for (std::int32_t i = 0; i < nNormVectors; ++i) {
+    const auto foundNorm = readNormalizationMethod();
+    [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
+    const auto foundUnit = readMatrixUnit();
+    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
+    [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
+    [[maybe_unused]] const auto nBytes = version() >= 9
+                                             ? _fs->read<std::int64_t>()
+                                             : static_cast<std::int64_t>(_fs->read<std::int32_t>());
+
+    if (foundUnit == wanted_unit && foundResolution == wanted_resolution) {
+      methods.emplace(foundNorm);
+    }
+  }
+
+  std::vector<balancing::Method> methods_{methods.size()};
+  std::move(methods.begin(), methods.end(), methods_.begin());
+  std::sort(methods_.begin(), methods_.end(),
+            [&](const auto &m1, const auto &m2) { return m1.to_string() < m2.to_string(); });
+  return methods_;
+}
+
 inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (version() >= 9) {  // NOLINT(*-avoid-magic-numbers)
     return list_avail_normalizations_v9(wanted_unit, wanted_resolution);
   }
 
-  phmap::flat_hash_set<balancing::Method> methods{};
   _fs->seekg(masterOffset());
   [[maybe_unused]] const auto offset = read_footer_file_offset("1_1");
   assert(offset != -1);
@@ -589,25 +614,7 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     return {};
   }
 
-  const auto nNormVectors = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nNormVectors; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
-    [[maybe_unused]] const auto nBytes = _fs->read<std::int32_t>();
-
-    if (foundUnit == wanted_unit && foundResolution == wanted_resolution) {
-      methods.emplace(foundNorm);
-    }
-  }
-
-  std::vector<balancing::Method> methods_{methods.size()};
-  std::copy(methods.begin(), methods.end(), methods_.begin());
-  std::sort(methods_.begin(), methods_.end(),
-            [&](const auto &m1, const auto &m2) { return m1.to_string() < m2.to_string(); });
-  return methods_;
+  return read_avail_normalizations(wanted_unit, wanted_resolution);
 }
 
 inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9(
@@ -615,27 +622,9 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v
   if (_header->normVectorIndexPosition <= 0) {
     return {};
   }
-  phmap::flat_hash_set<balancing::Method> methods{};
+
   _fs->seekg(_header->normVectorIndexPosition);
-  const auto nNormVectors = _fs->read<std::int32_t>();
-  for (std::int32_t i = 0; i < nNormVectors; i++) {
-    const auto foundNorm = readNormalizationMethod();
-    [[maybe_unused]] const auto chrIdx = _fs->read<std::int32_t>();
-    const auto foundUnit = readMatrixUnit();
-    const auto foundResolution = _fs->read_as_unsigned<std::int32_t>();
-    [[maybe_unused]] const auto position = _fs->read<std::int64_t>();
-    [[maybe_unused]] const auto nBytes = _fs->read<std::int64_t>();
-
-    if (foundUnit == wanted_unit && foundResolution == wanted_resolution) {
-      methods.emplace(foundNorm);
-    }
-  }
-
-  std::vector<balancing::Method> methods_{methods.size()};
-  std::copy(methods.begin(), methods.end(), methods_.begin());
-  std::sort(methods_.begin(), methods_.end(),
-            [&](const auto &m1, const auto &m2) { return m1.to_string() < m2.to_string(); });
-  return methods_;
+  return read_avail_normalizations(wanted_unit, wanted_resolution);
 }
 
 }  // namespace hictk::hic::internal
