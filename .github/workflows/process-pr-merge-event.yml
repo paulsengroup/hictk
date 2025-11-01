@@ -1,0 +1,39 @@
+# Copyright (C) 2025 Roberto Rossini <roberros@uio.no>
+# SPDX-License-Identifier: MIT
+
+name: Process PR merge event
+
+on:
+  pull_request:
+    types: [closed]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  delete-stale-caches:
+    name: Delete Stale Cache entries
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Delete caches
+        id: delete-caches
+        continue-on-error: true
+        run: |
+          gh cache list -L 1000 --ref 'refs/pull/${{ github.event.pull_request.number }}/merge' |
+            cut -f1 -d $'\t' |
+            xargs -L1 gh cache delete
+
+      - name: Warn on failure
+        if: steps.delete-caches.outputs.outcome == 'failure'
+        run: |
+          title='Cache deletion failed (PR #${{ github.event.pull_request.number }})!'
+          msg='Please double-check that the workflow is still working as intended.'
+
+          echo "::warning title=$title::$msg"
