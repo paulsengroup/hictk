@@ -284,7 +284,7 @@ jobs:
           gtar --exclude='*.o' -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -296,7 +296,7 @@ jobs:
           retention-days: 1
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -346,7 +346,7 @@ jobs:
 
       - name: Upload stale cache entries
         if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.stale-cache.outputs.name }}
           path: "${{ steps.stale-cache.outputs.name }}"
@@ -385,7 +385,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -453,7 +453,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\

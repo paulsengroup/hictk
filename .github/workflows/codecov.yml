@@ -201,7 +201,7 @@ jobs:
         run: tar --exclude='*.o' -cf - build*/ | zstd -T0 -13 -o build.tar.zst
 
       - name: Upload build folder
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "build-codecov"
           path: build.tar.zst
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload stale cache entries
         if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.stale-cache.outputs.name }}
           path: "${{ steps.stale-cache.outputs.name }}"
@@ -285,7 +285,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: "build-codecov"
 
@@ -376,7 +376,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: "build-codecov"
 
