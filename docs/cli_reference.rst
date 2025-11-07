@@ -15,14 +15,13 @@ Subcommands
 
 
   Blazing fast tools to work with .hic and .cool files.
-  hictk [OPTIONS] [SUBCOMMAND]
+  hictk [OPTIONS] [SUBCOMMANDS]
   OPTIONS:
     -h,     --help              Print this help message and exit
     -V,     --version           Display program version information and exit
   [Option Group: help]
     [At most 1 of the following options are allowed]
   OPTIONS:
-    -h,     --help              Print this help message and exit
             --help-cite         Print hictk's citation in Bibtex format and exit.
             --help-build-meta   Print information regarding hictk's build options and third-party
                                 dependencies, and exit.
