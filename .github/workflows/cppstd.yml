@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload stale cache entries
         if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.stale-cache.outputs.name }}
           path: "${{ steps.stale-cache.outputs.name }}"
@@ -218,7 +218,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@0a18aef88705bbc2322b4fdd0ddde64d20f6e765
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
     permissions:
       contents: read
       actions: write

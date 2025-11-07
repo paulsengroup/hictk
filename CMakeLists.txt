@@ -139,6 +139,7 @@ option(HICTK_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(HICTK_WITH_ARROW "Build with arrow support" ON)
 option(HICTK_WITH_ARROW_SHARED "Force dynamic linking to Arrow libs" OFF)
 option(HICTK_WITH_EIGEN "Build with Eigen3 support" ON)
+option(HICTK_WITH_MIMALLOC "Statically link mimalloc to hictk to attempt to override malloc and new" OFF)
 option(HICTK_BUILD_TOOLS "Build cli tools" ON)
 option(
   HICTK_ASSUME_STD_FILESYSTEM_AVAIL
@@ -168,6 +169,8 @@ set(
   CACHE STRING
   "Endpoint where to submit telemetry data"
 )
+
+include(cmake/ThirdPartyDeps.cmake)
 
 if(NOT HICTK_ENABLE_TELEMETRY)
   unset(HICTK_EXPORTER_OTLP_ENDPOINT CACHE)
