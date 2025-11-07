@@ -11,30 +11,37 @@ FetchContent_Declare(
   SYSTEM
 )
 if(HICTK_WITH_MIMALLOC)
-  message(STATUS "Building with mimalloc support")
-  set(MI_OVERRIDE ON)
-  set(MI_BUILD_OBJECT ON)
-  set(MI_BUILD_STATIC OFF)
-  set(MI_BUILD_SHARED OFF)
-  set(MI_BUILD_TESTS OFF)
-  set(MI_TRACK_ASAN ${OPT_ENABLE_SANITIZER_ADDRESS})
+  if(WIN32)
+    message(WARNING "Building with mimalloc is not supported on Windows: ignoring value of DHICTK_WITH_MIMALLOC")
+  else()
+    message(STATUS "Building with mimalloc support")
+    message(WARNING "Building hictk with mimalloc is an experimental feature: use at your own risk!")
+    set(MI_OVERRIDE ON)
+    set(MI_BUILD_OBJECT ON)
+    set(MI_BUILD_STATIC OFF)
+    set(MI_BUILD_SHARED OFF)
+    set(MI_BUILD_TESTS OFF)
+    set(MI_TRACK_ASAN ${OPT_ENABLE_SANITIZER_ADDRESS})
 
-  FetchContent_MakeAvailable(_hictk_mimalloc)
-  # TODO this only works on unix-like systems
-  add_library(hictk::mimalloc ALIAS mimalloc-obj)
+    FetchContent_MakeAvailable(_hictk_mimalloc)
+    add_library(hictk::mimalloc ALIAS mimalloc-obj)
 
-  add_library(_hictk_mimalloc_override STATIC)
-  add_library(hictk::mimalloc_override ALIAS _hictk_mimalloc_override)
+    add_library(_hictk_mimalloc_override STATIC)
+    add_library(hictk::mimalloc_override ALIAS _hictk_mimalloc_override)
 
-  set(HICTK_MIMALLOC_OVERRIDE_CPP_FILE "${CMAKE_CURRENT_BINARY_DIR}/generated/mimalloc_override/mimalloc_override.cpp")
-  file(WRITE "${HICTK_MIMALLOC_OVERRIDE_CPP_FILE}" "#include \"mimalloc-new-delete.h\"")
-  target_sources(_hictk_mimalloc_override PRIVATE "${HICTK_MIMALLOC_OVERRIDE_CPP_FILE}")
+    set(
+      HICTK_MIMALLOC_OVERRIDE_CPP_FILE
+      "${CMAKE_CURRENT_BINARY_DIR}/generated/mimalloc_override/mimalloc_override.cpp"
+    )
+    file(WRITE "${HICTK_MIMALLOC_OVERRIDE_CPP_FILE}" "#include \"mimalloc-new-delete.h\"")
+    target_sources(_hictk_mimalloc_override PRIVATE "${HICTK_MIMALLOC_OVERRIDE_CPP_FILE}")
 
-  target_link_libraries(_hictk_mimalloc_override PRIVATE hictk::mimalloc)
-  set_target_properties(
-    _hictk_mimalloc_override
-    PROPERTIES
-      INTERFACE_LINK_LIBRARIES_DIRECT
-        $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:hictk::mimalloc>
-  )
+    target_link_libraries(_hictk_mimalloc_override PRIVATE hictk::mimalloc)
+    set_target_properties(
+      _hictk_mimalloc_override
+      PROPERTIES
+        INTERFACE_LINK_LIBRARIES_DIRECT
+          $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:hictk::mimalloc>
+    )
+  endif()
 endif()
