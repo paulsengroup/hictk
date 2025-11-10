@@ -71,7 +71,7 @@ jobs:
 
   build-deps-dbg:
     name: Build Conan deps (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -81,7 +81,7 @@ jobs:
 
   build-deps-rel:
     name: Build Conan deps (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Release
       conan-version: "2.21.*"
