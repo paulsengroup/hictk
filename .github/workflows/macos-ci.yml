@@ -77,11 +77,11 @@ jobs:
 
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@c27c2074b6199677c97963f9d2cedee832d6981d
 
   build-deps-dbg-x86:
     name: Build Conan deps (Debug; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -91,7 +91,7 @@ jobs:
 
   build-deps-rel-x86:
     name: Build Conan deps (Release; x86)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -101,7 +101,7 @@ jobs:
 
   build-deps-dbg-arm64:
     name: Build Conan deps (Debug; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -111,7 +111,7 @@ jobs:
 
   build-deps-rel-arm64:
     name: Build Conan deps (Release; arm64)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -356,7 +356,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     permissions:
       contents: read
       actions: write

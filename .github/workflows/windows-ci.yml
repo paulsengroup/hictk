@@ -66,12 +66,12 @@ jobs:
             return { include: includes }
 
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     name: Cache test dataset
 
   build-deps-dbg:
     name: Build Conan deps (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -81,7 +81,7 @@ jobs:
 
   build-deps-rel:
     name: Build Conan deps (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Release
       conan-version: "2.21.*"
