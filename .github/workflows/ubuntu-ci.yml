@@ -159,7 +159,7 @@ jobs:
 
   build-deps-dbg:
     name: Build dependencies (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Debug
       conan-version: "2.21.*"
@@ -169,7 +169,7 @@ jobs:
 
   build-deps-rel:
     name: Build dependencies (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     with:
       build-type: Release
       conan-version: "2.21.*"
@@ -414,7 +414,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@c27c2074b6199677c97963f9d2cedee832d6981d
     permissions:
       contents: read
       actions: write
