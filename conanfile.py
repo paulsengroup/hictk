@@ -274,7 +274,7 @@ class HictkConan(ConanFile):
 
         if self._with_re2:
             # arrow
-            self.requires("re2/20250722#7547baba4648ebb432652af97ec9c972")
+            self.requires("re2/20251105#2eec620fc641f812a5837c642ecb7d66", force=True)
 
         if self._with_xz_utils:
             # libarchive
@@ -298,7 +298,7 @@ class HictkConan(ConanFile):
         self.requires("zstd/1.5.7#fde461c0d847a22f16d3066774f61b11", force=True)
 
         if self._with_arrow:
-            self.requires("arrow/22.0.0#0a31a3dca837570a86d22b65ded024f4")
+            self.requires("arrow/22.0.0#e46b173ba20adc478f7926495aeed142")
 
         if self._with_boost or self._with_boost_header_only:
             self.requires("boost/1.89.0#010f59feedfd171b15f467b42f723d13", force=True)
