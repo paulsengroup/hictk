@@ -422,7 +422,7 @@ Once all tests have passed, :code:`hictk` can be installed as follows:
   user@dev:/tmp$ . /tmp/venv/bin/activate
 
   # Install system-wide (requires root/admin rights)
-  user@dev:/tmp$ cmake --install /tmp/hictk/build
+  user@dev:/tmp$ cmake --install /tmp/hictk/build --strip
   -- Install configuration: "Release"
   -- Installing: /usr/local/bin/hictk
   -- Set non-toolchain portion of runtime path of "/usr/local/bin/hictk" to ""
@@ -431,7 +431,7 @@ Once all tests have passed, :code:`hictk` can be installed as follows:
   ...
 
   # Alternatively, install to custom path
-  user@dev:/tmp$ cmake --install /tmp/hictk/build --prefix "$HOME/.local/"
+  user@dev:/tmp$ cmake --install /tmp/hictk/build --prefix "$HOME/.local/" --strip
   -- Install configuration: "Release"
   -- Installing: /home/user/.local/bin/hictk
   -- Set non-toolchain portion of runtime path of "/home/user/.local/bin/hictk" to ""
@@ -440,7 +440,7 @@ Once all tests have passed, :code:`hictk` can be installed as follows:
   ...
 
   # Install the hictk binary only (i.e. without the header files required for development)
-  user@dev:/tmp$ cmake --install /tmp/hictk/build --component Runtime
+  user@dev:/tmp$ cmake --install /tmp/hictk/build --component Runtime --strip
   -- Install configuration: "Release"
   -- Installing: /usr/local/bin/hictk
   -- Set non-toolchain portion of runtime path of "/usr/local/bin/hictk" to ""

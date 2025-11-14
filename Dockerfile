@@ -82,7 +82,9 @@ RUN cmake -DCMAKE_C_STANDARD="$C_STANDARD"                    \
 
 # Build and install project
 RUN cmake --build "$build_dir" -t hictk -j "$(nproc)"  \
-&& cmake --install "$build_dir" --component Runtime    \
+&& cmake --install "$build_dir" \
+         --component Runtime    \
+         --strip                \
 && rm -r "$build_dir"
 
 ARG FINAL_BASE_IMAGE=ubuntu:24.04

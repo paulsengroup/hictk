@@ -52,15 +52,6 @@ target_link_system_libraries(
     Threads::Threads
 )
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set_target_properties(
-    hictk
-    PROPERTIES
-      LINK_FLAGS_RELEASE
-        -s
-  )
-endif()
-
 include(GNUInstallDirs)
 install(
   TARGETS
