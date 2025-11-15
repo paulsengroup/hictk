@@ -4,6 +4,9 @@
 
 if(HICTK_WITH_ARROW)
   find_package(Arrow REQUIRED QUIET)
+  if(NOT TARGET ArrowCompute::arrow_compute_shared AND NOT TARGET ArrowCompute::arrow_compute_static)
+    find_package(ArrowCompute REQUIRED QUIET)
+  endif()
 endif()
 
 if(HICTK_WITH_EIGEN)
