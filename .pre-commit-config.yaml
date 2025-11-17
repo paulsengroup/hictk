@@ -34,12 +34,12 @@ repos:
     hooks:
       - id: codespell
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
+    rev: v0.19.0
     hooks:
       - id: markdownlint-cli2
   # Formatters should be run late so that they can re-format any prior changes.
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.9.0
+    rev: 25.11.0
     hooks:
       - id: black
         args: ["--line-length", "120", "--target-version", "py311"]
@@ -49,12 +49,12 @@ repos:
       - id: isort
         args: ["--profile", "black", "--py", "311"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.2
+    rev: v21.1.5
     hooks:
       - id: clang-format
         types_or: [c, c++]
   - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.22.3
+    rev: 0.23.1
     hooks:
       - id: gersemi
         exclude: ^cmake/modules/
