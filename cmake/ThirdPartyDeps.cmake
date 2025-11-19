@@ -7,7 +7,7 @@ FetchContent_Declare(
   _hictk_mimalloc
   URL
     "${CMAKE_CURRENT_SOURCE_DIR}/external/mimalloc-v3.1.5.tar.xz"
-  URL_HASH SHA256=239b9196d6000942f351077f42be6170e5e4bd5dc7ee2642370d8222e4e0c4bb
+  URL_HASH SHA256=289c51e3911fdcdaa202dfbc1a367af57a0a4718ef92a0a0c5a3698001f818a0
   SYSTEM
 )
 if(HICTK_WITH_MIMALLOC)
