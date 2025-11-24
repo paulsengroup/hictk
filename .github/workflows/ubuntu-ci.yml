@@ -61,7 +61,7 @@ jobs:
       ci-type: ${{ steps.ci-type.outputs.type }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.event.after }}
@@ -200,7 +200,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -436,7 +436,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4
@@ -523,7 +523,7 @@ jobs:
           fi
 
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore test dataset
         uses: actions/cache/restore@v4

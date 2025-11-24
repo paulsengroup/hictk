@@ -83,7 +83,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -212,7 +212,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download hictk_fuzzer
         uses: actions/download-artifact@v6
@@ -412,7 +412,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download hictk_fuzzer
         uses: actions/download-artifact@v6
