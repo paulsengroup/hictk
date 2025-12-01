@@ -1,8 +1,8 @@
 # Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
 # SPDX-License-Identifier: MIT
 
-furo==2024.8.6
-sphinx==8.2.3
+furo==2025.9.25
+sphinx==9.0.0
 sphinx-copybutton==0.5.2
 sphinx-togglebutton==0.3.2
 sphinxcontrib-moderncmakedomain==3.29.0
