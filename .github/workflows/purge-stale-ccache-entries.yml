@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Download IDs of stale entries
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           pattern: stale-cache-*

@@ -50,7 +50,7 @@ jobs:
       no-files-changed: ${{ steps.changed-files.outputs.skip }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -79,7 +79,7 @@ jobs:
 
       - name: Upload filelist.txt
         if: steps.changed-files.outputs.skip != 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: clang-tidy-filelist
           path: filelist.txt
@@ -114,7 +114,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -145,7 +145,7 @@ jobs:
           ./run-clang-tidy.py --help
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ needs.build-deps.outputs.tar }}
@@ -176,7 +176,7 @@ jobs:
         run: cmake --build build -t _hictk_check_git
 
       - name: Download list of changed files
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: clang-tidy-filelist
 
