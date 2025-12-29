@@ -73,7 +73,7 @@ struct ChromosomeCmp {
 namespace std {
 template <>
 struct hash<hictk::Chromosome> {
-  std::size_t operator()(const hictk::Chromosome& c) const;
+  std::size_t operator()(const hictk::Chromosome& c) const noexcept;
 };
 }  // namespace std
 

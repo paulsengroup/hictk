@@ -123,6 +123,7 @@ constexpr bool ChromosomeCmp::operator()(const Chromosome& c1, std::uint32_t id2
 
 }  // namespace hictk
 
-inline std::size_t std::hash<hictk::Chromosome>::operator()(const hictk::Chromosome& c) const {
+inline std::size_t std::hash<hictk::Chromosome>::operator()(
+    const hictk::Chromosome& c) const noexcept {
   return hictk::internal::hash_combine(0, c.id(), c.name(), c.size());
 }
