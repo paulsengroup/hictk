@@ -8,23 +8,25 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include "hictk/bin.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
+#include "hictk/reference.hpp"
 #include "hictk/suppress_warnings.hpp"
 
 namespace hictk {  // NOLINT
 
 template <typename I>
-inline BinTableVariable<I>::BinTableVariable(Reference chroms, const std::vector<I> &start_pos,
-                                             const std::vector<I> &end_pos, I bin_offset)
+BinTableVariable<I>::BinTableVariable(Reference chroms, const std::vector<I> &start_pos,
+                                      const std::vector<I> &end_pos, I bin_offset)
     : _chroms(std::move(chroms)) {
   assert(start_pos.size() == end_pos.size());
   _bin_end_prefix_sum[0] = bin_offset;
@@ -53,17 +55,17 @@ inline BinTableVariable<I>::BinTableVariable(Reference chroms, const std::vector
 }
 
 template <typename I>
-inline std::size_t BinTableVariable<I>::size() const noexcept {
+std::size_t BinTableVariable<I>::size() const noexcept {
   return _bin_end_prefix_sum.size() - 1;
 }
 
 template <typename I>
-inline bool BinTableVariable<I>::empty() const noexcept {
+bool BinTableVariable<I>::empty() const noexcept {
   return size() == 0;
 }
 
 template <typename I>
-inline std::size_t BinTableVariable<I>::num_chromosomes() const {
+std::size_t BinTableVariable<I>::num_chromosomes() const {
   return chromosomes().size();
 }
 
@@ -79,39 +81,39 @@ constexpr const std::vector<std::uint64_t> &BinTableVariable<I>::num_bin_prefix_
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::begin() const -> iterator {
+auto BinTableVariable<I>::begin() const -> iterator {
   return iterator(*this);
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::end() const -> iterator {
+auto BinTableVariable<I>::end() const -> iterator {
   return iterator::make_end_iterator(*this);
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::cbegin() const -> iterator {
+auto BinTableVariable<I>::cbegin() const -> iterator {
   return begin();
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::cend() const -> iterator {
+auto BinTableVariable<I>::cend() const -> iterator {
   return end();
 }
 
 template <typename I>
-inline bool BinTableVariable<I>::operator==(const BinTableVariable &other) const {
+bool BinTableVariable<I>::operator==(const BinTableVariable &other) const {
   return _chroms == other._chroms &&
          std::equal(_num_bins_prefix_sum.begin(), _num_bins_prefix_sum.end(),
                     other._num_bins_prefix_sum.begin());
 }
 
 template <typename I>
-inline bool BinTableVariable<I>::operator!=(const BinTableVariable &other) const {
+bool BinTableVariable<I>::operator!=(const BinTableVariable &other) const {
   return !(*this == other);
 }
 
 template <typename I>
-inline BinTableVariable<I> BinTableVariable<I>::subset(const Chromosome &chrom) const {
+BinTableVariable<I> BinTableVariable<I>::subset(const Chromosome &chrom) const {
   // GCC8 fails to compile when using if constexpr instead #ifndef
   // See: https://github.com/fmtlib/fmt/issues/1455
 #ifndef NDEBUG
@@ -136,24 +138,24 @@ inline BinTableVariable<I> BinTableVariable<I>::subset(const Chromosome &chrom) 
 }
 
 template <typename I>
-inline BinTableVariable<I> BinTableVariable<I>::subset(std::string_view chrom_name) const {
+BinTableVariable<I> BinTableVariable<I>::subset(std::string_view chrom_name) const {
   return subset(_chroms.at(chrom_name));
 }
 
 template <typename I>
-inline BinTableVariable<I> BinTableVariable<I>::subset(std::uint32_t chrom_id) const {
+BinTableVariable<I> BinTableVariable<I>::subset(std::uint32_t chrom_id) const {
   return subset(_chroms.at(chrom_id));
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::find_overlap(const GenomicInterval &query) const
+auto BinTableVariable<I>::find_overlap(const GenomicInterval &query) const
     -> std::pair<BinTableVariable<I>::iterator, BinTableVariable<I>::iterator> {
   return find_overlap(query.chrom(), query.start(), query.end());
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::find_overlap(const Chromosome &chrom, std::uint32_t start,
-                                              std::uint32_t end) const
+auto BinTableVariable<I>::find_overlap(const Chromosome &chrom, std::uint32_t start,
+                                       std::uint32_t end) const
     -> std::pair<BinTableVariable<I>::iterator, BinTableVariable<I>::iterator> {
   assert(start < end);
 
@@ -164,15 +166,15 @@ inline auto BinTableVariable<I>::find_overlap(const Chromosome &chrom, std::uint
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::find_overlap(std::string_view chrom_name, std::uint32_t start,
-                                              std::uint32_t end) const
+auto BinTableVariable<I>::find_overlap(std::string_view chrom_name, std::uint32_t start,
+                                       std::uint32_t end) const
     -> std::pair<BinTableVariable<I>::iterator, BinTableVariable<I>::iterator> {
   return find_overlap(_chroms.at(chrom_name), start, end);
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
-                                              std::uint32_t end) const
+auto BinTableVariable<I>::find_overlap(std::uint32_t chrom_id, std::uint32_t start,
+                                       std::uint32_t end) const
     -> std::pair<BinTableVariable<I>::iterator, BinTableVariable<I>::iterator> {
   return find_overlap(_chroms.at(chrom_id), start, end);
 }
@@ -198,7 +200,7 @@ Bin BinTableVariable<I>::at(std::uint64_t bin_id) const {
 }
 
 template <typename I>
-inline Bin BinTableVariable<I>::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
+Bin BinTableVariable<I>::at_hint(std::uint64_t bin_id, const Chromosome &chrom) const {
   if (_bin_end_prefix_sum.size() <= bin_id) {
     throw std::out_of_range(fmt::format(FMT_STRING("bin id {} not found: out of range"), bin_id));
   }
@@ -221,36 +223,35 @@ inline Bin BinTableVariable<I>::at_hint(std::uint64_t bin_id, const Chromosome &
 }
 
 template <typename I>
-inline std::pair<Bin, Bin> BinTableVariable<I>::at(const GenomicInterval &gi) const {
+std::pair<Bin, Bin> BinTableVariable<I>::at(const GenomicInterval &gi) const {
   const auto [bin1_id, bin2_id] = map_to_bin_ids(gi);
   return std::make_pair(at_hint(bin1_id, gi.chrom()), at_hint(bin2_id, gi.chrom()));
 }
 
 template <typename I>
-inline Bin BinTableVariable<I>::at(const Chromosome &chrom, std::uint32_t pos) const {
+Bin BinTableVariable<I>::at(const Chromosome &chrom, std::uint32_t pos) const {
   return at_hint(map_to_bin_id(chrom, pos), chrom);
 }
 
 template <typename I>
-inline Bin BinTableVariable<I>::at(std::string_view chrom_name, std::uint32_t pos) const {
+Bin BinTableVariable<I>::at(std::string_view chrom_name, std::uint32_t pos) const {
   return at(map_to_bin_id(chrom_name, pos));
 }
 
 template <typename I>
-inline Bin BinTableVariable<I>::at(std::uint32_t chrom_id, std::uint32_t pos) const {
+Bin BinTableVariable<I>::at(std::uint32_t chrom_id, std::uint32_t pos) const {
   return at(map_to_bin_id(chrom_id, pos));
 }
 
 template <typename I>
-inline std::pair<std::uint64_t, std::uint64_t> BinTableVariable<I>::map_to_bin_ids(
+std::pair<std::uint64_t, std::uint64_t> BinTableVariable<I>::map_to_bin_ids(
     const GenomicInterval &gi) const {
   return std::make_pair(map_to_bin_id(gi.chrom(), gi.start()),
                         map_to_bin_id(gi.chrom(), gi.end() - (std::min)(gi.end(), 1U)));
 }
 
 template <typename I>
-inline std::uint64_t BinTableVariable<I>::map_to_bin_id(const Chromosome &chrom,
-                                                        std::uint32_t pos) const {
+std::uint64_t BinTableVariable<I>::map_to_bin_id(const Chromosome &chrom, std::uint32_t pos) const {
   // GCC8 fails to compile when using if constexpr instead #ifndef
   // See: https://github.com/fmtlib/fmt/issues/1455
 #ifndef NDEBUG
@@ -272,20 +273,19 @@ inline std::uint64_t BinTableVariable<I>::map_to_bin_id(const Chromosome &chrom,
 }
 
 template <typename I>
-inline std::uint64_t BinTableVariable<I>::map_to_bin_id(std::string_view chrom_name,
-                                                        std::uint32_t pos) const {
+std::uint64_t BinTableVariable<I>::map_to_bin_id(std::string_view chrom_name,
+                                                 std::uint32_t pos) const {
   return map_to_bin_id(_chroms.at(chrom_name), pos);
 }
 
 template <typename I>
-inline std::uint64_t BinTableVariable<I>::map_to_bin_id(std::uint32_t chrom_id,
-                                                        std::uint32_t pos) const {
+std::uint64_t BinTableVariable<I>::map_to_bin_id(std::uint32_t chrom_id, std::uint32_t pos) const {
   return map_to_bin_id(_chroms.at(chrom_id), pos);
 }
 
 template <typename I>
-inline void BinTableVariable<I>::validate_bin_coords(const std::vector<I> &start_pos,
-                                                     const std::vector<I> &end_pos) {
+void BinTableVariable<I>::validate_bin_coords(const std::vector<I> &start_pos,
+                                              const std::vector<I> &end_pos) {
   if (start_pos.front() != 0) {
     throw std::runtime_error("Bin table does not start from zero");
   }
@@ -326,7 +326,7 @@ inline void BinTableVariable<I>::validate_bin_coords(const std::vector<I> &start
 }
 
 template <typename I>
-inline BinTableVariable<I>::iterator::iterator(const BinTableVariable &bin_table) noexcept
+BinTableVariable<I>::iterator::iterator(const BinTableVariable &bin_table) noexcept
     : _bin_table{&bin_table} {
   if (_bin_table->chromosomes().at(_chrom_id).is_all()) {
     _chrom_id++;
@@ -369,7 +369,7 @@ constexpr bool BinTableVariable<I>::iterator::operator>=(const iterator &other) 
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::make_end_iterator(const BinTableVariable &table) noexcept
+auto BinTableVariable<I>::iterator::make_end_iterator(const BinTableVariable &table) noexcept
     -> iterator {
   iterator it(table);
 
@@ -379,17 +379,17 @@ inline auto BinTableVariable<I>::iterator::make_end_iterator(const BinTableVaria
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator*() const noexcept -> value_type {
+auto BinTableVariable<I>::iterator::operator*() const noexcept -> value_type {
   return _value;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator[](difference_type i) const -> value_type {
+auto BinTableVariable<I>::iterator::operator[](difference_type i) const -> value_type {
   return *(*this + i);
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator++() -> iterator & {
+auto BinTableVariable<I>::iterator::operator++() -> iterator & {
   assert(_bin_table);
   if (++_bin_id == _bin_table->size()) {
     *this = make_end_iterator(*_bin_table);
@@ -407,14 +407,14 @@ inline auto BinTableVariable<I>::iterator::operator++() -> iterator & {
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator++(int) -> iterator {
+auto BinTableVariable<I>::iterator::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iterator & {
+auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iterator & {
   if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
@@ -443,13 +443,13 @@ inline auto BinTableVariable<I>::iterator::operator+=(difference_type i) -> iter
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator+(difference_type i) const -> iterator {
+auto BinTableVariable<I>::iterator::operator+(difference_type i) const -> iterator {
   auto it = *this;
   return it += i;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator--() -> iterator & {
+auto BinTableVariable<I>::iterator::operator--() -> iterator & {
   assert(_bin_table);
   --_bin_id;
 
@@ -464,14 +464,14 @@ inline auto BinTableVariable<I>::iterator::operator--() -> iterator & {
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator--(int) -> iterator {
+auto BinTableVariable<I>::iterator::operator--(int) -> iterator {
   auto it = *this;
   std::ignore = --(*this);
   return it;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iterator & {
+auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iterator & {
   if (HICTK_UNLIKELY(i == 0)) {
     return *this;
   }
@@ -499,14 +499,13 @@ inline auto BinTableVariable<I>::iterator::operator-=(difference_type i) -> iter
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator-(difference_type i) const -> iterator {
+auto BinTableVariable<I>::iterator::operator-(difference_type i) const -> iterator {
   auto it = *this;
   return it -= i;
 }
 
 template <typename I>
-inline auto BinTableVariable<I>::iterator::operator-(const iterator &other) const
-    -> difference_type {
+auto BinTableVariable<I>::iterator::operator-(const iterator &other) const -> difference_type {
   assert(_bin_table);
   assert(other._bin_table);
 
@@ -517,17 +516,17 @@ inline auto BinTableVariable<I>::iterator::operator-(const iterator &other) cons
 }
 
 template <typename I>
-inline const Chromosome &BinTableVariable<I>::iterator::chromosome() const {
+const Chromosome &BinTableVariable<I>::iterator::chromosome() const {
   return chromosome(_chrom_id);
 }
 
 template <typename I>
-inline const Chromosome &BinTableVariable<I>::iterator::chromosome(std::uint32_t chrom_id) const {
+const Chromosome &BinTableVariable<I>::iterator::chromosome(std::uint32_t chrom_id) const {
   return _bin_table->chromosomes().at(chrom_id);
 }
 
 template <typename I>
-inline Bin BinTableVariable<I>::iterator::get_bin() const {
+Bin BinTableVariable<I>::iterator::get_bin() const {
   if (_bin_id == _bin_table->size()) {
     return {};
   }

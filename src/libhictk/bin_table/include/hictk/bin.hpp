@@ -53,11 +53,9 @@ class Bin {
 
 }  // namespace hictk
 
-namespace std {
 template <>
-struct hash<hictk::Bin> {
-  size_t operator()(const hictk::Bin &b) const;
+struct std::hash<hictk::Bin> {
+  std::size_t operator()(const hictk::Bin &b) const noexcept;
 };
-}  // namespace std
 
 #include "./impl/bin_impl.hpp"

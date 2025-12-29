@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <limits>
-#include <map>
-#include <string>
+#include <string_view>
 #include <vector>
 
 #include "hictk/bin.hpp"
-#include "hictk/common.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
 

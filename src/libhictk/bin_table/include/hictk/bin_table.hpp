@@ -6,15 +6,16 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <iterator>
-#include <limits>
+#include <string_view>
+#include <utility>
 #include <variant>
+#include <vector>
 
+#include "hictk/bin.hpp"
 #include "hictk/bin_table_fixed.hpp"
 #include "hictk/bin_table_variable.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
 
