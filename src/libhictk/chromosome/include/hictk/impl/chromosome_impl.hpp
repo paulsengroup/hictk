@@ -20,7 +20,13 @@
 namespace hictk {
 
 inline Chromosome::Chromosome(std::uint32_t id, std::string name_, std::uint32_t size_) noexcept
-    : _name(std::make_shared<const std::string>(std::move(name_))), _id(id), _size(size_) {
+    : Chromosome(id, std::make_shared<const std::string>(std::move(name_)), size_) {}
+
+inline Chromosome::Chromosome(std::uint32_t id, std::shared_ptr<const std::string> name_,
+                              std::uint32_t size_)
+    : _name(!!name_ ? std::move(name_) : std::make_shared<const std::string>("")),
+      _id(id),
+      _size(size_) {
   assert(_id != (std::numeric_limits<std::uint32_t>::max)());
   assert(_size != 0);
 }
@@ -30,7 +36,11 @@ constexpr Chromosome::operator bool() const noexcept { return id() != null_id; }
 constexpr std::uint32_t Chromosome::id() const noexcept { return _id; }
 
 inline std::string_view Chromosome::name() const noexcept {
-  return !!_name ? std::string_view{*_name} : "";  // NOLINT
+  return !!name_ptr() ? std::string_view{*name_ptr()} : "";  // NOLINT
+}
+
+constexpr const std::shared_ptr<const std::string>& Chromosome::name_ptr() const noexcept {
+  return _name;
 }
 
 constexpr std::uint32_t Chromosome::size() const noexcept { return _size; }

@@ -24,11 +24,13 @@ class Chromosome {
  public:
   Chromosome() = default;
   Chromosome(std::uint32_t id_, std::string name_, std::uint32_t size_) noexcept;
+  Chromosome(std::uint32_t id_, std::shared_ptr<const std::string> name_, std::uint32_t size_);
 
   [[nodiscard]] constexpr explicit operator bool() const noexcept;
 
   [[nodiscard]] constexpr std::uint32_t id() const noexcept;
   [[nodiscard]] std::string_view name() const noexcept;
+  [[nodiscard]] constexpr const std::shared_ptr<const std::string>& name_ptr() const noexcept;
   [[nodiscard]] constexpr std::uint32_t size() const noexcept;
   [[nodiscard]] bool is_all() const noexcept;
 

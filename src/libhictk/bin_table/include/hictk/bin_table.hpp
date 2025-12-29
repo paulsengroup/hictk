@@ -9,6 +9,7 @@
 #include <functional>
 #include <iterator>
 #include <limits>
+#include <variant>
 
 #include "hictk/bin_table_fixed.hpp"
 #include "hictk/bin_table_variable.hpp"
@@ -16,6 +17,7 @@
 #include "hictk/common.hpp"
 #include "hictk/genomic_interval.hpp"
 #include "hictk/reference.hpp"
+
 namespace hictk {
 
 class BinTable {

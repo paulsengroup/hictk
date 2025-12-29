@@ -5,6 +5,7 @@
 #include "./pixel_parser.hpp"
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>

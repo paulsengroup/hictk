@@ -103,6 +103,8 @@ class Reference {
   [[nodiscard]] Reference add_ALL(std::uint32_t scaling_factor = 1) const;
 
  private:
+  explicit Reference(ChromBuff chromosomes, bool validate = true);
+
   void validate_chrom_id(std::uint32_t chrom_id) const;
 
   template <typename ChromosomeNameIt, typename ChromosomeSizeIt>
@@ -122,8 +124,6 @@ class Reference {
 
   [[nodiscard]] static std::vector<std::uint64_t> compute_size_prefix_sum(
       const ChromBuff& chroms) noexcept;
-
-  void validate() const;
 };
 }  // namespace hictk
 

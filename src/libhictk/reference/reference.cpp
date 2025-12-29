@@ -24,6 +24,7 @@ HICTK_DISABLE_WARNING_POP
 #include <fstream>
 #include <initializer_list>
 #include <iterator>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -31,12 +32,62 @@ HICTK_DISABLE_WARNING_POP
 #include <vector>
 
 #include "hictk/chromosome.hpp"
+#include "hictk/common.hpp"
 #include "hictk/numeric_utils.hpp"
 
 namespace hictk {
 
 Reference::Reference(std::initializer_list<Chromosome> chromosomes)
     : Reference(chromosomes.begin(), chromosomes.end()) {}
+
+[[nodiscard]] static std::vector<Chromosome> sanitize_chromosomes(
+    std::vector<Chromosome> chromosomes, bool validate) {
+  if (chromosomes.empty()) {
+    return chromosomes;
+  }
+
+  if (!validate) {
+    chromosomes.shrink_to_fit();
+    return chromosomes;
+  }
+
+  if (!std::is_sorted(chromosomes.begin(), chromosomes.end())) {
+    throw std::runtime_error("chromosomes are not sorted by ID");
+  }
+
+  phmap::flat_hash_set<std::uint32_t> ids(chromosomes.size());
+  for (const auto& chrom : chromosomes) {
+    if (chrom.size() == 0) {
+      throw std::runtime_error(
+          fmt::format(FMT_STRING("chromosome {} has a size of 0"), chrom.name()));
+    }
+    ids.emplace(chrom.id());
+  }
+
+  if (ids.size() != chromosomes.size()) {
+    throw std::runtime_error(
+        fmt::format(FMT_STRING("found two or more chromosomes with the same ID")));
+  }
+
+  chromosomes.shrink_to_fit();
+  return chromosomes;
+}
+
+Reference::Reference(ChromBuff chromosomes, bool validate)
+    : _buff(sanitize_chromosomes(std::move(chromosomes), validate)),
+      _map(construct_chrom_map(_buff)),
+      _size_prefix_sum(compute_size_prefix_sum(_buff)),
+      _longest_chrom(find_longest_chromosome(_buff)),
+      _chrom_with_longest_name(find_chromosome_with_longest_name(_buff)) {
+  if (empty()) {
+    assert(_longest_chrom == 0);
+    assert(_chrom_with_longest_name == 0);
+    return;
+  }
+
+  assert(_longest_chrom < _buff.size());
+  assert(_chrom_with_longest_name < _buff.size());
+}
 
 Reference Reference::from_chrom_sizes(const std::filesystem::path& path_to_chrom_sizes) {
   try {
@@ -82,7 +133,7 @@ auto Reference::find(std::uint32_t id) const -> const_iterator {
 }
 
 auto Reference::find(std::string_view chrom_name) const -> const_iterator {
-  auto it = _map.find(chrom_name);
+  const auto it = _map.find(chrom_name);
   if (it == _map.end()) {
     return end();
   }
@@ -98,6 +149,10 @@ auto Reference::find(const Chromosome& chrom) const -> const_iterator {
   return match;
 }
 
+[[noreturn]] static void raise_chromosome_not_found(std::string_view chrom_name) {
+  throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom_name));
+}
+
 const Chromosome& Reference::at(std::uint32_t id) const {
   validate_chrom_id(id);
   return *find(id);
@@ -107,7 +162,7 @@ const Chromosome& Reference::at(std::string_view chrom_name) const {
   if (const auto match = find(chrom_name); match != end()) {
     return *match;
   }
-  throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom_name));
+  raise_chromosome_not_found(chrom_name);
 }
 
 const Chromosome& Reference::operator[](std::uint32_t id) const noexcept {
@@ -131,7 +186,7 @@ std::uint32_t Reference::get_id(std::string_view chrom_name) const {
   if (const auto match = find(chrom_name); match != end()) {
     return static_cast<std::uint32_t>(std::distance(begin(), match));
   }
-  throw std::out_of_range(fmt::format(FMT_STRING("chromosome \"{}\" not found"), chrom_name));
+  raise_chromosome_not_found(chrom_name);
 }
 
 bool Reference::operator==(const Reference& other) const {
@@ -151,7 +206,7 @@ bool Reference::operator==(const Reference& other) const {
 bool Reference::operator!=(const Reference& other) const { return !(*this == other); }
 
 const Chromosome& Reference::longest_chromosome() const {
-  if (empty()) {
+  if (HICTK_UNLIKELY(empty())) {
     throw std::runtime_error("longest_chromosome() was called on an empty Reference");
   }
   assert(_longest_chrom < _buff.size());
@@ -159,32 +214,67 @@ const Chromosome& Reference::longest_chromosome() const {
 }
 
 const Chromosome& Reference::chromosome_with_longest_name() const {
-  if (empty()) {
+  if (HICTK_UNLIKELY(empty())) {
     throw std::runtime_error("chromosome_with_longest_name() was called on an empty Reference");
   }
   assert(_chrom_with_longest_name < _buff.size());
   return _buff[_chrom_with_longest_name];
 }
 
-Reference Reference::remove_ALL() const {
-  std::vector<Chromosome> chroms{};
-  std::copy_if(begin(), end(), std::back_inserter(chroms),
-               [](const Chromosome& chrom) { return !chrom.is_all(); });
+[[nodiscard]] static bool contains_ALL(const Reference& chroms) {
+  return std::any_of(chroms.begin(), chroms.end(),
+                     [](const Chromosome& chrom) { return chrom.is_all(); });
+}
 
-  return {chroms.begin(), chroms.end()};
+static void chrom_copy_helper(const Reference& chroms, std::vector<Chromosome>& buff) {
+  for (const auto& chrom : chroms) {
+    if (chrom.is_all()) {
+      continue;
+    }
+
+    const auto chrom_id = static_cast<std::uint32_t>(buff.size());
+    buff.emplace_back(chrom_id, chrom.name_ptr(), chrom.size());
+  }
+}
+
+Reference Reference::remove_ALL() const {
+  if (!contains_ALL(*this)) {
+    return *this;
+  }
+
+  std::vector<Chromosome> chroms{};
+  chroms.reserve(size() - 1);
+  chrom_copy_helper(*this, chroms);
+
+  return Reference{std::move(chroms), false};
+}
+
+[[nodiscard]] static std::uint32_t compute_ALL_size(const Reference& chroms,
+                                                    std::uint32_t scaling_factor) noexcept {
+  assert(scaling_factor != 0);
+  const auto size =
+      std::accumulate(chroms.begin(), chroms.end(), std::uint32_t{},
+                      [scaling_factor](std::uint32_t accumulator, const Chromosome& chrom) {
+                        return accumulator + (chrom.size() / scaling_factor);
+                      });
+
+  return std::max(std::uint32_t{1}, size);
 }
 
 Reference Reference::add_ALL(std::uint32_t scaling_factor) const {
-  std::uint32_t all_size = 0;
-  for (const auto& chrom : *this) {
-    all_size += chrom.size() / scaling_factor;
+  const auto all_size = compute_ALL_size(*this, scaling_factor);
+  std::vector<Chromosome> chroms{};
+
+  if (contains_ALL(*this)) {
+    chroms.reserve(size());
+  } else {
+    chroms.reserve(size() + 1);
   }
 
-  std::vector chroms{Chromosome{0, "All", std::max(std::uint32_t{1}, all_size)}};
-  std::copy_if(begin(), end(), std::back_inserter(chroms),
-               [](const Chromosome& chrom) { return !chrom.is_all(); });
+  chroms.emplace_back(0, "All", all_size);
+  chrom_copy_helper(*this, chroms);
 
-  return {chroms.begin(), chroms.end()};
+  return Reference{std::move(chroms), false};
 }
 
 void Reference::validate_chrom_id(std::uint32_t chrom_id) const {
@@ -206,46 +296,48 @@ auto Reference::construct_chrom_map(const ChromBuff& chroms) -> ChromMap {
   return buff;
 }
 
-std::size_t Reference::find_longest_chromosome(const ChromBuff& chroms) noexcept {
+struct FindLongestChrom {};
+struct FindLongestChromName {};
+
+[[nodiscard]] static std::size_t get_size(const Chromosome& chrom, const FindLongestChrom&) {
+  return chrom.size();
+}
+
+[[nodiscard]] static std::size_t get_size(const Chromosome& chrom, const FindLongestChromName&) {
+  return chrom.name().size();
+}
+
+template <typename Strategy>
+[[nodiscard]] static std::size_t find_longest_chromosome_impl(
+    const std::vector<Chromosome>& chroms) noexcept {
   if (chroms.empty()) {
     return Chromosome{}.id();
   }
 
-  std::uint32_t max_length = 0;
-  std::size_t i = Chromosome{}.id();
-  for (std::size_t j = 0; j < chroms.size(); ++j) {
-    const auto& chrom = chroms[j];
+  std::size_t chrom_id = 0;
+  for (std::size_t i = 1; i < chroms.size(); ++i) {
+    const auto& chrom = chroms[i];
     if (chrom.is_all()) {
       continue;
     }
-    if (chrom.size() > max_length) {
-      max_length = chrom.size();
-      i = j;
+
+    const auto new_size = get_size(chrom, Strategy{});
+    const auto max_size = get_size(chroms[chrom_id], Strategy{});
+
+    if (new_size > max_size) {
+      chrom_id = i;
     }
   }
 
-  return i;
+  return chrom_id;
+}
+
+std::size_t Reference::find_longest_chromosome(const ChromBuff& chroms) noexcept {
+  return find_longest_chromosome_impl<FindLongestChrom>(chroms);
 }
 
 std::size_t Reference::find_chromosome_with_longest_name(const ChromBuff& chroms) noexcept {
-  if (chroms.empty()) {
-    return Chromosome{}.id();
-  }
-
-  std::size_t max_length = 0;
-  std::size_t i = Chromosome{}.id();
-  for (std::size_t j = 0; j < chroms.size(); ++j) {
-    const auto& chrom = chroms[j];
-    if (chrom.is_all()) {
-      continue;
-    }
-    if (chrom.name().size() > max_length) {
-      max_length = chrom.name().size();
-      i = j;
-    }
-  }
-
-  return i;
+  return find_longest_chromosome_impl<FindLongestChromName>(chroms);
 }
 
 std::vector<std::uint64_t> Reference::compute_size_prefix_sum(const ChromBuff& chroms) noexcept {
@@ -257,33 +349,6 @@ std::vector<std::uint64_t> Reference::compute_size_prefix_sum(const ChromBuff& c
   buff.back() = buff[chroms.size()] + 1;
 
   return buff;
-}
-
-void Reference::validate() const {
-  if (empty()) {
-    return;
-  }
-
-  assert(_longest_chrom < _buff.size());
-  assert(_chrom_with_longest_name < _buff.size());
-
-  if (!std::is_sorted(_buff.begin(), _buff.end())) {
-    throw std::runtime_error("chromosomes are not sorted by ID");
-  }
-
-  phmap::flat_hash_set<std::uint32_t> ids{};
-  for (const auto& chrom : _buff) {
-    if (chrom.size() == 0) {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("chromosome {} has a size of 0"), chrom.name()));
-    }
-    ids.emplace(chrom.id());
-  }
-
-  if (ids.size() != _buff.size()) {
-    throw std::runtime_error(
-        fmt::format(FMT_STRING("found two or more chromosomes with the same ID")));
-  }
 }
 
 }  // namespace hictk

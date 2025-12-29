@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(fmt REQUIRED QUIET)
 find_package(phmap REQUIRED QUIET)
 
 add_library(hictk_internal_reference STATIC)
@@ -35,4 +36,4 @@ target_link_libraries(
     hictk::format
 )
 
-target_link_system_libraries(hictk_internal_reference PUBLIC phmap)
+target_link_system_libraries(hictk_internal_reference PUBLIC phmap PRIVATE fmt::fmt-header-only)
