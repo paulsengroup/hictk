@@ -1,0 +1,79 @@
+// Copyright (C) 2026 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+// This file was generated automatically by CMake.
+
+#include "hictk/version.hpp"
+
+#include <fmt/format.h>
+
+#include <cassert>
+#include <string>
+#include <string_view>
+
+#include "hictk/git.hpp"
+
+namespace hictk {
+const std::string_view HICTK_VERSION_STRING{config::version::str()};
+const std::string_view HICTK_VERSION_STRING_LONG{config::version::str_long()};
+}  // namespace hictk
+
+namespace hictk::config::version {
+
+[[nodiscard]] static constexpr std::string_view short_version() noexcept {
+  // clang-format off
+  constexpr std::string_view buff{"@HICTK_PROJECT_VERSION_MAJOR@.@HICTK_PROJECT_VERSION_MINOR@.@HICTK_PROJECT_VERSION_PATCH@"};
+  // clang-format on
+  assert(!buff.empty());
+  return buff;
+}
+
+[[nodiscard]] static std::string generate_suffix() noexcept {
+  namespace git = config::git;
+  std::string buff{"@HICTK_PROJECT_VERSION_SUFFIX@"};
+  if constexpr (!git::state_available()) {
+    return buff;
+  }
+
+  constexpr std::string_view is_dirty_suffix = git::is_dirty() ? "-dirty" : "";
+  const std::string short_hash_suffix = fmt::format(FMT_STRING("-{}"), git::describe());
+  const std::string expected_release_tag =
+      fmt::format(FMT_STRING("v{}{}{}"), short_version(), buff.empty() ? "" : "-", buff);
+
+  if (git::tag() != expected_release_tag) {
+    buff.append(short_hash_suffix);
+  }
+  buff.append(is_dirty_suffix);
+
+  if (!buff.empty() && buff.front() == '-') {
+    buff.erase(0, 1);
+  }
+
+  return buff;
+}
+
+[[nodiscard]] std::string_view suffix() noexcept {
+  static const std::string buff{generate_suffix()};
+  return buff;
+}
+
+[[nodiscard]] static std::string str_helper() noexcept {
+  if (suffix().empty()) {
+    return std::string{short_version()};
+  }
+  return fmt::format(FMT_STRING("{}-{}"), short_version(), suffix());
+}
+
+[[nodiscard]] std::string_view str() noexcept {
+  static const std::string buff{str_helper()};
+  return buff;
+}
+
+[[nodiscard]] std::string_view str_long(std::string_view prefix) noexcept {
+  assert(!prefix.empty());
+  static const std::string buff{fmt::format(FMT_STRING("{}-v{}"), prefix, str())};
+  return buff;
+}
+
+}  // namespace hictk::config::version
