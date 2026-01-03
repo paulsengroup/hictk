@@ -72,11 +72,9 @@ struct ChromosomeCmp {
 
 }  // namespace hictk
 
-namespace std {
 template <>
-struct hash<hictk::Chromosome> {
+struct std::hash<hictk::Chromosome> {
   std::size_t operator()(const hictk::Chromosome& c) const noexcept;
 };
-}  // namespace std
 
 #include "./impl/chromosome_impl.hpp"  // NOLINT
