@@ -90,7 +90,7 @@ class HiCInteractionToBlockMapper {
 
  private:
   std::filesystem::path _path{};
-  filestream::FileStream<> _fs{};
+  filestream::FileStream _fs{};
   std::shared_ptr<const BinTable> _bin_table{};
 
   using MatrixIndexMap =

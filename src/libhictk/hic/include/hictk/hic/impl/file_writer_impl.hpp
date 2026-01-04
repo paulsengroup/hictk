@@ -209,7 +209,7 @@ inline HiCFileWriter::HiCFileWriter(std::string_view path_, Reference chromosome
                                     std::string_view assembly_, std::size_t n_threads,
                                     std::size_t chunk_size, std::filesystem::path tmpdir,
                                     std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
-    : _fs(filestream::FileStream<>::create(std::string{path_}, std::make_shared<std::mutex>())),
+    : _fs(filestream::FileStream::create(std::string{path_}, std::make_shared<std::mutex>())),
       _tmpdir(std::move(tmpdir)),
       _header(init_header(path_, std::move(chromosomes_), std::move(resolutions_), assembly_,
                           skip_all_vs_all_matrix)),
@@ -1078,7 +1078,7 @@ inline HiCSectionOffsets HiCFileWriter::write_norm_vectors() {
   }
 }
 
-inline HiCHeader HiCFileWriter::read_header(filestream::FileStream<> &fs) {
+inline HiCHeader HiCFileWriter::read_header(filestream::FileStream &fs) {
   return HiCHeader::deserialize(0, fs);
 }
 

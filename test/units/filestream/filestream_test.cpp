@@ -60,13 +60,13 @@ static const auto& path = path_plaintext;
 
 TEST_CASE("FileStream ctor", "[filestream][short]") {
   SECTION("default") {
-    const FileStream<> s{};
+    const FileStream s{};
     CHECK(s.path().empty());
     CHECK(s.size() == 0);
   }
 
   SECTION("valid path (read)") {
-    const FileStream<> s(path_plaintext, nullptr);
+    const FileStream s(path_plaintext, nullptr);
     CHECK(s.path() == path_plaintext);
     CHECK(s.size() == 502941);
     CHECK(!s.eof());
@@ -74,18 +74,18 @@ TEST_CASE("FileStream ctor", "[filestream][short]") {
 
   SECTION("valid path (write)") {
     const auto path1 = testdir() / "filestream_ctor_write.bin";
-    const auto s = FileStream<>::create(path1.string(), nullptr);
+    const auto s = FileStream::create(path1.string(), nullptr);
     CHECK(s.path() == path1);
     CHECK(s.size() == 0);
     CHECK(!s.eof());
   }
 
-  SECTION("invalid path") { CHECK_THROWS(FileStream<>("not-a-path", nullptr)); }
+  SECTION("invalid path") { CHECK_THROWS(FileStream("not-a-path", nullptr)); }
 }
 
 TEST_CASE("FileStream seek", "[filestream][short]") {
   SECTION("read") {
-    FileStream<> s(path_plaintext, nullptr);
+    FileStream s(path_plaintext, nullptr);
     SECTION("seek within chunk") {
       s.seekg(5);
       CHECK(s.tellg() == 5);
@@ -124,7 +124,7 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
   SECTION("write") {
     const auto path1 = testdir() / "filestream_seek.bin";
     std::filesystem::remove(path1);  // NOLINT
-    auto s = FileStream<>::create(path1.string(), nullptr);
+    auto s = FileStream::create(path1.string(), nullptr);
 
     SECTION("seek within chunk") {
       s.seekp(5);
@@ -160,7 +160,7 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
 }
 
 TEST_CASE("FileStream read", "[filestream][short]") {
-  FileStream<> s(path_plaintext, nullptr);
+  FileStream s(path_plaintext, nullptr);
   std::string buffer{"garbage"};
   const auto expected = read_file(path);
   REQUIRE(s.size() == static_cast<std::streamsize>(expected.size()));
@@ -200,7 +200,7 @@ TEST_CASE("FileStream read", "[filestream][short]") {
   }
 
   SECTION("multi-threaded") {
-    s = FileStream<>(path_plaintext, std::make_shared<std::mutex>());
+    s = FileStream(path_plaintext, std::make_shared<std::mutex>());
 
     const std::streampos offset1 = 0;
     const std::streampos offset2 = 5;
@@ -256,7 +256,7 @@ TEST_CASE("FileStream read", "[filestream][short]") {
 }
 
 TEST_CASE("FileStream read_append", "[filestream][short]") {
-  FileStream<> s(path_plaintext, nullptr);
+  FileStream s(path_plaintext, nullptr);
 
   std::string buffer;
   const auto expected = read_file(path);
@@ -289,7 +289,7 @@ TEST_CASE("FileStream read_append", "[filestream][short]") {
 }
 
 TEST_CASE("FileStream getline", "[filestream][short]") {
-  FileStream<> s(path_plaintext, nullptr);
+  FileStream s(path_plaintext, nullptr);
 
   std::string buffer;
   const auto expected = read_file_by_line(path);
@@ -330,7 +330,7 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
   }
 
   SECTION("multi-threaded") {
-    s = FileStream<>(path_plaintext, std::make_shared<std::mutex>());
+    s = FileStream(path_plaintext, std::make_shared<std::mutex>());
 
     const std::streampos offset1 = 25;
     const std::streampos offset2 = 30;
@@ -393,7 +393,7 @@ TEST_CASE("FileStream getline", "[filestream][short]") {
 }
 
 TEST_CASE("FileStream read binary", "[filestream][short]") {
-  FileStream<> s(path_binary, nullptr);
+  FileStream s(path_binary, nullptr);
   const std::streampos offset = 10;
   s.seekg(offset);
 
@@ -472,7 +472,7 @@ TEST_CASE("FileStream read binary", "[filestream][short]") {
 TEST_CASE("FileStream write", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
-  auto s = FileStream<>::create(tmpfile.string(), nullptr);
+  auto s = FileStream::create(tmpfile.string(), nullptr);
 
   SECTION("small write") {
     constexpr std::string_view buffer{"test"};
@@ -502,7 +502,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
   SECTION("multi-threaded") {
     s.close();
     std::filesystem::remove(tmpfile);  // NOLINT
-    s = FileStream<>::create(tmpfile.string(), std::make_shared<std::mutex>());
+    s = FileStream::create(tmpfile.string(), std::make_shared<std::mutex>());
 
     std::string_view msg1{"0123456789"};
     std::string_view msg2{"abcdefghijklmnopqrstwxyz"};
@@ -563,7 +563,7 @@ TEST_CASE("FileStream write", "[filestream][short]") {
 }
 
 template <typename T>
-static void write_and_compare(FileStream<>& s, const T& data) {
+static void write_and_compare(FileStream& s, const T& data) {
   s.write(data);
   s.flush();
   REQUIRE(s.size() == sizeof(T));
@@ -573,7 +573,7 @@ static void write_and_compare(FileStream<>& s, const T& data) {
 TEST_CASE("FileStream write binary", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write_binary.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
-  auto s = FileStream<>::create(tmpfile.string(), nullptr);
+  auto s = FileStream::create(tmpfile.string(), nullptr);
 
   HICTK_DISABLE_WARNING_PUSH
   HICTK_DISABLE_WARNING_USELESS_CAST
@@ -617,7 +617,7 @@ TEST_CASE("FileStream write binary", "[filestream][short]") {
 TEST_CASE("FileStream resize", "[filestream][short]") {
   const auto tmpfile = testdir() / "filestream_write.bin";
   std::filesystem::remove(tmpfile);  // NOLINT
-  auto s = FileStream<>::create(tmpfile.string(), nullptr);
+  auto s = FileStream::create(tmpfile.string(), nullptr);
 
   const std::string_view msg{"this is a relatively long string"};
 

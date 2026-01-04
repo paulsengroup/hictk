@@ -40,9 +40,9 @@ struct HiCHeader {
   bool operator!=(const HiCHeader& other) const noexcept;
 
   [[nodiscard]] std::string serialize(BinaryBuffer& buffer, bool clear = true) const;
-  [[nodiscard]] static HiCHeader deserialize(std::streampos offset, filestream::FileStream<>& fs);
+  [[nodiscard]] static HiCHeader deserialize(std::streampos offset, filestream::FileStream& fs);
   [[nodiscard]] static HiCHeader unsafe_deserialize(std::streampos offset,
-                                                    filestream::FileStream<>& fs);
+                                                    filestream::FileStream& fs);
 };
 
 }  // namespace hictk::hic::internal

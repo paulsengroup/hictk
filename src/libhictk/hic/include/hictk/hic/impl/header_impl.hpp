@@ -78,13 +78,12 @@ inline std::string HiCHeader::serialize(BinaryBuffer &buffer, bool clear) const 
   return buffer.get();
 }
 
-inline HiCHeader HiCHeader::deserialize(std::streampos offset, filestream::FileStream<> &fs) {
+inline HiCHeader HiCHeader::deserialize(std::streampos offset, filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
-inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset,
-                                               filestream::FileStream<> &fs) {
+inline HiCHeader HiCHeader::unsafe_deserialize(std::streampos offset, filestream::FileStream &fs) {
   fs.unsafe_seekg(offset);
   std::string strbuff;
   fs.unsafe_getline(strbuff, '\0');

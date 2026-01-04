@@ -41,10 +41,10 @@ HICTK_DISABLE_WARNING_POP
 namespace hictk::hic::internal {
 
 inline HiCFileReader::HiCFileReader(std::string url)
-    : _fs(std::make_shared<filestream::FileStream<>>(HiCFileReader::openStream(std::move(url)))),
+    : _fs(std::make_shared<filestream::FileStream>(HiCFileReader::openStream(std::move(url)))),
       _header(std::make_shared<const HiCHeader>(HiCFileReader::readHeader(*_fs))) {}
 
-inline filestream::FileStream<> HiCFileReader::openStream(std::string url) {
+inline filestream::FileStream HiCFileReader::openStream(std::string url) {
   try {
     return {std::move(url), nullptr};  // opening wo/ locking is ok
   } catch (const std::exception &e) {
@@ -143,18 +143,18 @@ inline void HiCFileReader::discardNormalizationFactors(std::uint32_t wantedChrom
   std::ignore = readNormalizationFactors(wantedChrom);
 }
 
-inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream<> &fs, std::string &buff) {
+inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseMatrixTypeStr(buff);
 }
 
-inline balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream<> &fs,
+inline balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
                                                                 std::string &buff) {
   fs.getline(buff, '\0');
   return balancing::Method{buff};
 }
 
-inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream<> &fs, std::string &buff) {
+inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseUnitStr(buff);
 }
@@ -174,7 +174,7 @@ inline std::int64_t HiCFileReader::readNValues() {
   return _fs->read<std::int32_t>();
 }
 
-inline bool HiCFileReader::checkMagicString(filestream::FileStream<> &fs) {
+inline bool HiCFileReader::checkMagicString(filestream::FileStream &fs) {
   return fs.getline('\0') == "HIC";
 }
 
@@ -251,7 +251,7 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
 
 inline bool HiCFileReader::checkMagicString() { return checkMagicString(*_fs); }
 
-inline HiCHeader HiCFileReader::readHeader(filestream::FileStream<> &fs) {
+inline HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
   return HiCHeader::deserialize(0, fs);
 }
 

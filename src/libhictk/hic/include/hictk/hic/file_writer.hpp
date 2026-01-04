@@ -104,7 +104,7 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  filestream::FileStream<> _fs{};
+  filestream::FileStream _fs{};
   std::filesystem::path _tmpdir{};
 
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
@@ -191,7 +191,7 @@ class HiCFileWriter {
   void serialize();
 
  private:
-  [[nodiscard]] static HiCHeader read_header(filestream::FileStream<>& fs);
+  [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,

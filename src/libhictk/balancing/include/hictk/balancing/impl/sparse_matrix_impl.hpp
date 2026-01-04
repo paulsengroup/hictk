@@ -367,7 +367,7 @@ inline void SparseMatrix::push_back(std::uint64_t bin1_id, std::uint64_t bin2_id
   _counts.push_back(count);
 }
 
-inline void SparseMatrix::serialize(filestream::FileStream<>& fs, std::string& tmpbuff,
+inline void SparseMatrix::serialize(filestream::FileStream& fs, std::string& tmpbuff,
                                     ZSTD_CCtx& ctx, int compression_lvl) const {
   fs.unsafe_write(size());
 
@@ -407,7 +407,7 @@ inline void SparseMatrix::serialize(filestream::FileStream<>& fs, std::string& t
   fs.unsafe_flush();
 }
 
-inline void SparseMatrix::deserialize(filestream::FileStream<>& fs, std::string& tmpbuff,
+inline void SparseMatrix::deserialize(filestream::FileStream& fs, std::string& tmpbuff,
                                       ZSTD_DCtx& ctx) {
   const auto size_ = fs.unsafe_read<std::size_t>();
 
@@ -724,7 +724,7 @@ inline double SparseMatrixChunked::compute_scaling_factor_for_scale(
 inline FileBackedSparseMatrix::FileBackedSparseMatrix(std::filesystem::path tmp_file,
                                                       std::size_t chunk_size, int compression_lvl)
     : _path(std::move(tmp_file)),
-      _fs(filestream::FileStream<>::create(_path.string(), nullptr)),  // creating wo/ locking is ok
+      _fs(filestream::FileStream::create(_path.string(), nullptr)),  // creating wo/ locking is ok
       _chunk_size(chunk_size),
       _compression_lvl(compression_lvl),
       _zstd_cctx(ZSTD_createCCtx()),
@@ -769,7 +769,7 @@ inline void FileBackedSparseMatrix::finalize() {
   if (!_matrix.empty()) {
     write_chunk();
   }
-  _fs = filestream::FileStream<>(_path.string(), nullptr);  // opening wo/ locking is ok
+  _fs = filestream::FileStream(_path.string(), nullptr);  // opening wo/ locking is ok
 }
 
 inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
@@ -777,7 +777,7 @@ inline void FileBackedSparseMatrix::marginalize(VectorOfAtomicDecimals& marg,
                                                 bool init_buffer) const {
   auto marginalize_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
+    filestream::FileStream fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -813,7 +813,7 @@ inline void FileBackedSparseMatrix::marginalize_nnz(VectorOfAtomicDecimals& marg
                                                     bool init_buffer) const {
   auto marginalize_nnz_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
+    filestream::FileStream fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -850,7 +850,7 @@ inline void FileBackedSparseMatrix::times_outer_product_marg(VectorOfAtomicDecim
                                                              bool init_buffer) const {
   auto times_outer_product_marg_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
+    filestream::FileStream fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -887,7 +887,7 @@ inline void FileBackedSparseMatrix::multiply(VectorOfAtomicDecimals& buffer,
                                              BS::light_thread_pool* tpool, bool init_buffer) const {
   auto multiply_impl = [&](std::size_t istart, std::size_t iend) {
     std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-    filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
+    filestream::FileStream fs(_path.string(), nullptr);  // opening wo/ locking is ok
     auto matrix = _matrix;
     std::string buff{};
     for (const auto& offset : nonstd::span(_index).subspan(istart, iend - istart)) {
@@ -928,7 +928,7 @@ inline double FileBackedSparseMatrix::compute_scaling_factor_for_scale(
   double norm_sum = 0.0;
 
   std::unique_ptr<ZSTD_DCtx_s> zstd_dctx(ZSTD_createDCtx());
-  filestream::FileStream<> fs(_path.string(), nullptr);  // opening wo/ locking is ok
+  filestream::FileStream fs(_path.string(), nullptr);  // opening wo/ locking is ok
   std::string buff{};
 
   for (const auto& offset : _index) {

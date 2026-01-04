@@ -470,13 +470,13 @@ inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool cle
 }
 
 inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(std::streampos offset,
-                                                            filestream::FileStream<> &fs) {
+                                                            filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline ExpectedValuesBlock ExpectedValuesBlock::unsafe_deserialize(std::streampos offset,
-                                                                   filestream::FileStream<> &fs) {
+                                                                   filestream::FileStream &fs) {
   assert(offset >= 0);
   ExpectedValuesBlock evb{};
 
@@ -550,13 +550,13 @@ inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) c
 }
 
 inline ExpectedValues ExpectedValues::deserialize(std::streampos offset,
-                                                  filestream::FileStream<> &fs) {
+                                                  filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline ExpectedValues ExpectedValues::unsafe_deserialize(std::streampos offset,
-                                                         filestream::FileStream<> &fs) {
+                                                         filestream::FileStream &fs) {
   assert(offset >= 0);
   ExpectedValues evs{};
 
@@ -639,13 +639,13 @@ inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer
   return buffer.get();
 }
 inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   assert(offset >= 0);
   NormalizedExpectedValuesBlock nevb{};
 
@@ -716,14 +716,14 @@ inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, boo
   return buffer.get();
 }
 
-inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(std::streampos offset,
+                                                                      filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline NormalizedExpectedValues NormalizedExpectedValues::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   assert(offset >= 0);
   NormalizedExpectedValues nevs{};
 
@@ -789,13 +789,13 @@ inline std::string NormalizationVectorIndexBlock::serialize(BinaryBuffer &buffer
 }
 
 inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   assert(offset >= 0);
   NormalizationVectorIndexBlock nvib{};
 
@@ -849,14 +849,14 @@ inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, boo
   return buffer.get();
 }
 
-inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(std::streampos offset,
+                                                                      filestream::FileStream &fs) {
   [[maybe_unused]] const auto lck = fs.lock();
   return unsafe_deserialize(offset, fs);
 }
 
 inline NormalizationVectorIndex NormalizationVectorIndex::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
+    std::streampos offset, filestream::FileStream &fs) {
   assert(offset >= 0);
   NormalizationVectorIndex nvi{};
 
