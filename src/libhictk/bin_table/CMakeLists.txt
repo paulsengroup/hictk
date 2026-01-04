@@ -42,6 +42,8 @@ target_link_libraries(
     hictk::genomic_interval
     hictk::reference
     hictk::type_traits
+  PRIVATE
+    hictk::hash
 )
 
 target_link_system_libraries(hictk_internal_bin_table PRIVATE fmt::fmt-header-only)

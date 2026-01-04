@@ -34,6 +34,7 @@ target_link_libraries(
     hictk::common
   PRIVATE
     hictk::format
+    hictk::numeric
 )
 
 target_link_system_libraries(hictk_internal_reference PUBLIC phmap PRIVATE fmt::fmt-header-only)

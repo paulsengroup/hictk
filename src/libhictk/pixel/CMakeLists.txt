@@ -30,4 +30,5 @@ target_link_libraries(
     hictk::format
     hictk::hash
     hictk::type_traits
+    hictk::numeric
 )

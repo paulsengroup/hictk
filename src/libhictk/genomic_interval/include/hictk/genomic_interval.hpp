@@ -72,11 +72,9 @@ class GenomicInterval {
 
 }  // namespace hictk
 
-namespace std {
 template <>
-struct hash<hictk::GenomicInterval> {
+struct std::hash<hictk::GenomicInterval> {
   std::size_t operator()(const hictk::GenomicInterval &gi) const noexcept;
 };
-}  // namespace std
 
 #include "./impl/genomic_interval_impl.hpp"  // NOLINT
