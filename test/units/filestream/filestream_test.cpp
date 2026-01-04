@@ -6,6 +6,7 @@
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -20,7 +21,6 @@
 
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/test/testdir.hpp"
-#include "hictk/type_traits.hpp"
 
 namespace hictk::test::filestream {
 
@@ -28,6 +28,8 @@ using namespace hictk::filestream;
 
 const auto path_plaintext = (datadir / "various" / "data.txt").string();  // NOLINT(cert-err58-cpp)
 const auto path_binary = (datadir / "various" / "data.zip").string();     // NOLINT(cert-err58-cpp)
+[[maybe_unused]] constexpr std::size_t plaintext_file_size = 502'941;
+[[maybe_unused]] constexpr std::size_t binary_file_size = 70'536;
 static const auto& path = path_plaintext;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
@@ -68,19 +70,66 @@ TEST_CASE("FileStream ctor", "[filestream][short]") {
   SECTION("valid path (read)") {
     const FileStream s(path_plaintext, nullptr);
     CHECK(s.path() == path_plaintext);
-    CHECK(s.size() == 502941);
+    CHECK(s.size() == plaintext_file_size);
     CHECK(!s.eof());
   }
 
   SECTION("valid path (write)") {
-    const auto path1 = testdir() / "filestream_ctor_write.bin";
+    const auto path1 = testdir() / "filestream_ctor_write_1.bin";
     const auto s = FileStream::create(path1.string(), nullptr);
     CHECK(s.path() == path1);
     CHECK(s.size() == 0);
     CHECK(!s.eof());
   }
 
+  SECTION("file already exists (write)") {
+    const auto path1 = testdir() / "filestream_ctor_write_2.bin";
+    {
+      std::ofstream{path1};
+    }
+    REQUIRE(std::filesystem::exists(path1));
+    CHECK_THROWS_WITH(FileStream::create(path1.string(), nullptr),
+                      Catch::Matchers::Matches("file .* already exists"));
+  }
+
   SECTION("invalid path") { CHECK_THROWS(FileStream("not-a-path", nullptr)); }
+
+  SECTION("move") {
+    FileStream s1(path_plaintext, nullptr);
+    REQUIRE(s1.path() == path_plaintext);
+    REQUIRE(s1.size() == plaintext_file_size);
+    const auto s2 = std::move(s1);
+    CHECK(s2.path() == path_plaintext);
+    CHECK(s2.size() == plaintext_file_size);
+  }
+}
+
+TEST_CASE("FileStream tell", "[filestream][short]") {
+  SECTION("tellg valid") {
+    const FileStream s(path_plaintext, nullptr);
+    CHECK(s.tellg() == 0);
+  }
+
+  SECTION("tellg invalid") {
+    FileStream s(path_plaintext, nullptr);
+    s.close();
+    CHECK_THROWS_WITH(
+        s.tellg(), Catch::Matchers::StartsWith("FileStream::tellg() called on a bad file handle"));
+  }
+
+  SECTION("tellp valid") {
+    const auto path1 = testdir() / "filestream_tellp_1.bin";
+    const auto s = FileStream::create(path1, nullptr);
+    CHECK(s.tellp() == 0);
+  }
+
+  SECTION("tellp invalid") {
+    const auto path1 = testdir() / "filestream_tellp_2.bin";
+    auto s = FileStream::create(path1, nullptr);
+    s.close();
+    CHECK_THROWS_WITH(
+        s.tellp(), Catch::Matchers::StartsWith("FileStream::tellp() called on a bad file handle"));
+  }
 }
 
 TEST_CASE("FileStream seek", "[filestream][short]") {
@@ -88,6 +137,9 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
     FileStream s(path_plaintext, nullptr);
     SECTION("seek within chunk") {
       s.seekg(5);
+      CHECK(s.tellg() == 5);
+
+      s.seekg(std::streampos{5});
       CHECK(s.tellg() == 5);
 
       s.seekg(10);
@@ -130,6 +182,9 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
       s.seekp(5);
       CHECK(s.tellp() == 5);
 
+      s.seekp(std::streampos{5});
+      CHECK(s.tellp() == 5);
+
       s.seekp(10);
       CHECK(s.tellp() == 10);
     }
@@ -156,6 +211,64 @@ TEST_CASE("FileStream seek", "[filestream][short]") {
       s.seekp(0, std::ios::end);
       CHECK_NOTHROW(s.seekp(1, std::ios::cur));
     }
+  }
+}
+
+TEST_CASE("FileStream size", "[filestream][short]") {
+  SECTION("valid") {
+    const FileStream s(path_plaintext, nullptr);
+    CHECK(s.size() == plaintext_file_size);
+  }
+
+  SECTION("invalid") {
+    SECTION("too small") {
+      const auto path1 = testdir() / "filestream_size_1.bin";
+      std::filesystem::copy(path_plaintext, path1);
+
+      REQUIRE(std::filesystem::exists(path1));
+
+      const FileStream s(path1, nullptr);
+      REQUIRE(s.size() == plaintext_file_size);
+      std::filesystem::resize_file(path1, plaintext_file_size - 1);
+      CHECK_THROWS_WITH(
+          s.size(),
+          Catch::Matchers::Matches(
+              R"(FileStream::size\(\): file .* is corrupted: expected size \d+, found \d+)"));
+    }
+
+    SECTION("too big") {
+      const auto path2 = testdir() / "filestream_size_2.bin";
+      std::filesystem::copy(path_plaintext, path2);
+
+      REQUIRE(std::filesystem::exists(path2));
+
+      const FileStream s(path2, nullptr);
+      REQUIRE(s.size() == plaintext_file_size);
+      std::filesystem::resize_file(path2, plaintext_file_size + 1);
+      CHECK_THROWS_WITH(
+          s.size(),
+          Catch::Matchers::Matches(
+              R"(FileStream::size\(\): file .* is corrupted: expected size \d+, found \d+)"));
+    }
+  }
+}
+
+TEST_CASE("FileStream is_locked", "[filestream][short]") {
+  SECTION("wo/ mutex") {
+    const FileStream s(path_plaintext, nullptr);
+    CHECK_FALSE(s.is_locked());
+    const auto lck = s.lock();
+    CHECK_FALSE(s.is_locked());
+  }
+
+  SECTION("w/ mutex") {
+    const FileStream s(path_plaintext, std::make_shared<std::mutex>());
+    CHECK_FALSE(s.is_locked());
+    {
+      const auto lck = s.lock();
+      CHECK(s.is_locked());
+    }
+    CHECK_FALSE(s.is_locked());
   }
 }
 
@@ -562,6 +675,34 @@ TEST_CASE("FileStream write", "[filestream][short]") {
   }
 }
 
+TEST_CASE("FileStream append", "[filestream][short]") {
+  const auto tmpfile = testdir() / "filestream_append.bin";
+  constexpr std::string_view msg{"ABCD\n"};
+  constexpr std::int64_t num_lines = 10;
+
+  {
+    auto s = FileStream::create(tmpfile.string(), nullptr);
+    REQUIRE(s.size() == 0);
+
+    for (std::int64_t i = 0; i < num_lines; ++i) {
+      const auto expected_start = static_cast<std::int64_t>(msg.size()) * i;
+      const auto expected_end = expected_start + static_cast<std::int64_t>(msg.size());
+      const auto [start, end] = s.append(msg);
+      CHECK(start == expected_start);
+      CHECK(end == expected_end);
+    }
+  }
+
+  std::ifstream ifs{tmpfile.string(), std::ios_base::in};
+  std::string buff;
+
+  std::int64_t i = 0;
+  for (; std::getline(ifs, buff); ++i) {
+    CHECK(buff == msg.substr(0, msg.size() - 1));
+  }
+  CHECK(i == num_lines);
+}
+
 template <typename T>
 static void write_and_compare(FileStream& s, const T& data) {
   s.write(data);
@@ -615,26 +756,38 @@ TEST_CASE("FileStream write binary", "[filestream][short]") {
 }
 
 TEST_CASE("FileStream resize", "[filestream][short]") {
-  const auto tmpfile = testdir() / "filestream_write.bin";
-  std::filesystem::remove(tmpfile);  // NOLINT
-  auto s = FileStream::create(tmpfile.string(), nullptr);
+  SECTION("valid") {
+    const auto tmpfile = testdir() / "filestream_write.bin";
+    std::filesystem::remove(tmpfile);  // NOLINT
+    auto s = FileStream::create(tmpfile.string(), nullptr);
 
-  const std::string_view msg{"this is a relatively long string"};
+    const std::string_view msg{"this is a relatively long string"};
 
-  s.write(msg);
-  CHECK(s.size() == conditional_static_cast<std::streamsize>(msg.size()));
-  CHECK(s.tellg() == 0);
-  CHECK(s.tellp() == s.size());
+    s.write(msg);
+    CHECK(s.size() == conditional_static_cast<std::streamsize>(msg.size()));
+    CHECK(s.tellg() == 0);
+    CHECK(s.tellp() == s.size());
 
-  s.resize(5);
-  CHECK(s.size() == std::streamsize{5});
-  CHECK(s.tellg() == 0);
-  CHECK(s.tellp() == 5);
+    s.resize(5);
+    CHECK(s.size() == std::streamsize{5});
+    CHECK(s.tellg() == 0);
+    CHECK(s.tellp() == 5);
 
-  s.resize(100);
-  CHECK(s.size() == std::streamsize{100});
-  CHECK(s.tellg() == 0);
-  CHECK(s.tellp() == 5);
+    s.resize(100);
+    CHECK(s.size() == std::streamsize{100});
+    CHECK(s.tellg() == 0);
+    CHECK(s.tellp() == 5);
+  }
+
+  SECTION("invalid") {
+    const auto path1 = testdir() / "filestream_resize.bin";
+    std::filesystem::copy(path_plaintext, path1);
+    FileStream s(path1, nullptr);
+
+    CHECK_THROWS_WITH(s.resize(1),
+                      Catch::Matchers::Equals(
+                          "FileStream::resize() was called on a file opened in read-only mode"));
+  }
 }
 
 // NOLINTEND(*-avoid-magic-numbers, readability-function-cognitive-complexity)
