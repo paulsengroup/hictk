@@ -147,7 +147,7 @@ TEST_CASE("ThinPixel: parsers", "[pixel][short]") {
 
     SECTION("invalid") {
       CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, ""),
-                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+                        Catch::Matchers::ContainsSubstring("found an empty line"));
       CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
       CHECK_THROWS_WITH(ThinPixel<N>::from_coo(bins, "0\t1\tchr"),
@@ -175,7 +175,7 @@ TEST_CASE("Pixel: parsers", "[pixel][short]") {
     SECTION("valid") { CHECK(Pixel<N>::from_coo(bins, "0\t1\t1") == expected1); }
     SECTION("invalid") {
       CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, ""),
-                        Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
+                        Catch::Matchers::ContainsSubstring("found an empty line"));
       CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "chr1\t0\t10\tchr1\t10\t20\t1"),
                         Catch::Matchers::ContainsSubstring("expected exactly 3 fields"));
       CHECK_THROWS_WITH(Pixel<N>::from_coo(bins, "0\t1\tchr"),

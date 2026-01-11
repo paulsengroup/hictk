@@ -9,6 +9,7 @@
 
 #include "hictk/chromosome.hpp"
 #include "hictk/genomic_interval.hpp"
+#include "hictk/hash.hpp"
 
 namespace hictk {
 
