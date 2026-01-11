@@ -22,6 +22,7 @@
 #include "hictk/cooler/utils.hpp"
 #include "hictk/hic/file_writer.hpp"
 #include "hictk/hic/utils.hpp"
+#include "hictk/hic/validation.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::utils {
@@ -75,8 +76,8 @@ inline void validate_chromosomes(const std::vector<File>& files) {
 }
 
 template <typename N>
-[[nodiscard]] inline std::tuple<std::vector<PixelSelector>, std::vector<PixelSelector::iterator<N>>,
-                                std::vector<PixelSelector::iterator<N>>>
+[[nodiscard]] std::tuple<std::vector<PixelSelector>, std::vector<PixelSelector::iterator<N>>,
+                         std::vector<PixelSelector::iterator<N>>>
 init_iterators(const std::vector<File>& files) {
   std::vector<PixelSelector> selectors{};
   std::vector<PixelSelector::iterator<N>> heads{};
@@ -120,10 +121,9 @@ template <typename Str>
 
 /// Iterable of strings
 template <typename N, typename Str>
-inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri,
-                          std::uint32_t resolution, bool overwrite_if_exists,
-                          std::size_t chunk_size, std::size_t update_frequency,
-                          std::uint32_t compression_lvl) {
+void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri, std::uint32_t resolution,
+                   bool overwrite_if_exists, std::size_t chunk_size, std::size_t update_frequency,
+                   std::uint32_t compression_lvl) {
   if (std::distance(first_uri, last_uri) < 2) {
     throw std::runtime_error("cannot merge less than 2 files");
   }
@@ -172,10 +172,10 @@ inline void merge_to_cool(Str first_uri, Str last_uri, std::string_view dest_uri
 
 /// Iterable of strings
 template <typename Str>
-inline void merge_to_hic(Str first_file, Str last_file, std::string_view dest_file,
-                         std::uint32_t resolution, const std::filesystem::path& tmp_dir,
-                         bool overwrite_if_exists, std::size_t chunk_size, std::size_t n_threads,
-                         std::uint32_t compression_lvl, bool skip_all_vs_all) {
+void merge_to_hic(Str first_file, Str last_file, std::string_view dest_file,
+                  std::uint32_t resolution, const std::filesystem::path& tmp_dir,
+                  bool overwrite_if_exists, std::size_t chunk_size, std::size_t n_threads,
+                  std::uint32_t compression_lvl, bool skip_all_vs_all) {
   if (std::distance(first_file, last_file) < 2) {
     throw std::runtime_error("cannot merge less than 2 files");
   }
