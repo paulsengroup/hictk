@@ -286,10 +286,7 @@ class HiCFileWriter {
 
 template <>
 struct std::hash<hictk::hic::internal::MatrixBodyMetadataTank::Key> {
-  std::size_t operator()(
-      hictk::hic::internal::MatrixBodyMetadataTank::Key const& k) const noexcept {
-    return hictk::internal::hash_combine(0, k.chrom1, k.chrom2);
-  }
+  std::size_t operator()(hictk::hic::internal::MatrixBodyMetadataTank::Key const& k) const noexcept;
 };
 
 #include "./impl/file_writer_impl.hpp"  // NOLINT

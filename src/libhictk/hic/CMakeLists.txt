@@ -24,12 +24,12 @@ else()
   )
 endif()
 
-add_library(hictk_internal_hic INTERFACE)
+add_library(hictk_internal_hic STATIC)
 add_library(hictk::hic ALIAS hictk_internal_hic)
 
 target_sources(
   hictk_internal_hic
-  INTERFACE
+  PUBLIC
     FILE_SET HEADERS
       BASE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -45,6 +45,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/footer.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/footer_cache.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/header.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/hic_file.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/index.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/interaction_block.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/interaction_to_block_mapper.hpp"
@@ -54,11 +55,8 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/validation.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/block_cache_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/block_reader_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/file_reader_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/file_writer_data_structures_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/file_writer_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/file_zoomify_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/footer_cache_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/footer_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/header_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/hic_file_impl.hpp"
@@ -67,41 +65,60 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/interaction_to_block_mapper_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/pixel_selector_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/serialized_block_pqueue_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/utils_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/utils_merge_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/validation_impl.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/impl/weight_cache_impl.hpp"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/block_cache.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/block_reader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_reader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_writer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_writer_data_structures.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/file_zoomify.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/footer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/footer_cache.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/header.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hic_file.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/index.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/interaction_block.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/interaction_to_block_mapper.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pixel_selector.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/validation.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/weight_cache.cpp"
 )
 
 target_include_directories(
   hictk_internal_hic
-  INTERFACE
+  PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
   hictk_internal_hic
-  INTERFACE
+  PUBLIC
     hictk::balancing
+    hictk::binary_buffer
+    hictk::bin_table
+    hictk::chromosome
     hictk::common
     hictk::default_delete_libdeflate
     hictk::default_delete_zstd
-    hictk::binary_buffer
-    hictk::chromosome
     hictk::expected_values_aggregator
     hictk::filestream
+    hictk::format
+    hictk::genomic_interval
     hictk::hash
     hictk::pixel
     hictk::reference
-    hictk::static_binary_buffer
     hictk::tmpdir
     hictk::transformers
+  PRIVATE
+    hictk::static_binary_buffer
     hictk::version
 )
 
 target_link_system_libraries(
   hictk_internal_hic
-  INTERFACE
+  PUBLIC
     bshoshany-thread-pool::bshoshany-thread-pool
     concurrentqueue::concurrentqueue
     fmt::fmt-header-only

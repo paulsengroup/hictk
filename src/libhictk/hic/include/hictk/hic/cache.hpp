@@ -6,13 +6,7 @@
 
 // IWYU pragma: private, include "hictk/hic.hpp"
 
-// clang-format off
-#include "hictk/suppress_warnings.hpp"
-HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include <parallel_hashmap/phmap.h>
-HICTK_DISABLE_WARNING_POP
-// clang-format on
 
 #include <cstddef>
 #include <cstdint>
@@ -24,7 +18,6 @@ HICTK_DISABLE_WARNING_POP
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
-#include "hictk/hash.hpp"
 #include "hictk/hic/interaction_block.hpp"
 
 namespace hictk::hic::internal {
@@ -38,9 +31,7 @@ struct BlockID {
 
 template <>
 struct std::hash<hictk::hic::internal::BlockID> {
-  std::size_t operator()(hictk::hic::internal::BlockID const& bid) const noexcept {
-    return hictk::internal::hash_combine(0, bid.chrom1_id, bid.chrom2_id, bid.id);
-  }
+  std::size_t operator()(hictk::hic::internal::BlockID const& bid) const noexcept;
 };
 
 namespace hictk::hic::internal {
@@ -107,5 +98,4 @@ class WeightCache {
 
 }  // namespace hictk::hic::internal
 
-#include "./impl/block_cache_impl.hpp"   // NOLINT
-#include "./impl/weight_cache_impl.hpp"  // NOLINT
+#include "./impl/block_cache_impl.hpp"  // NOLINT

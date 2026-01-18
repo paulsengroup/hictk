@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -14,107 +12,43 @@
 #include <iterator>
 #include <limits>
 #include <memory>
-#include <random>
-#include <tuple>
+#include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
 #include "hictk/balancing/weights.hpp"
-#include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
-#include "hictk/hic/cache.hpp"
+#include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
-#include "hictk/hic/file_reader.hpp"
-#include "hictk/hic/footer.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
 
 namespace hictk::hic {
 
-inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
-                                    std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_,
-                                    const PixelCoordinates &coords,
-                                    std::optional<std::uint64_t> diagonal_band_width)
-    : PixelSelector(std::move(hfs_), std::move(footer_), std::move(cache_), std::move(bins_),
-                    coords, coords, diagonal_band_width) {}
-
-inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCFileReader> hfs_,
-                                    std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<internal::BlockCache> cache_,
-                                    std::shared_ptr<const BinTable> bins_, PixelCoordinates coord1_,
-                                    PixelCoordinates coord2_,
-                                    std::optional<std::uint64_t> diagonal_band_width)
-    : _reader(std::make_shared<internal::HiCBlockReader>(std::move(hfs_), footer_->index(),
-                                                         std::move(bins_), std::move(cache_))),
-      _footer(std::move(footer_)),
-      _coord1(std::make_shared<const PixelCoordinates>(std::move(coord1_))),
-      _coord2(std::make_shared<const PixelCoordinates>(std::move(coord2_))),
-      _diagonal_band_width(diagonal_band_width) {
-  const auto query_is_cis = _coord1->bin1.chrom() == _coord2->bin1.chrom();
-  if ((!query_is_cis && _coord1->bin1 > _coord2->bin1) ||
-      (query_is_cis && _coord1->bin1.start() > _coord2->bin1.start())) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
-        _coord1->bin1.chrom().name(), _coord1->bin1.start(), _coord1->bin2.end(),
-        _coord2->bin1.chrom().name(), _coord2->bin1.start(), _coord2->bin2.end()));
-  }
-}
-
-// NOLINTNEXTLINE(bugprone-exception-escape)
-inline PixelSelector::~PixelSelector() noexcept {
-  try {
-    if (_reader) {
-      clear_cache();
-    }
-  } catch (const std::exception &e) {
-    SPDLOG_WARN(
-        FMT_STRING("failed to clear the PixelSelector interaction cache of file \"{}\". "
-                   "Applications are not affected. However, if this happens repeatedly the system "
-                   "may run out of available memory. Reason: {}"),
-        _footer->path(), e.what());
-  } catch (...) {
-    SPDLOG_WARN(
-        FMT_STRING("failed to clear the PixelSelector interaction cache of file \"{}\". "
-                   "Applications are not affected. However, if this happens repeatedly the system "
-                   "may run out of available memory."),
-        _footer->path());
-  }
-}
-
-inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
-  return _reader->index().chrom1() == _reader->index().chrom2() && *_coord1 == *other._coord1 &&
-         *_coord2 == *other._coord2;
-}
-
-inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept {
-  return !(*this == other);
-}
-
 template <typename N>
-inline auto PixelSelector::cbegin(bool sorted) const -> iterator<N> {
+auto PixelSelector::cbegin(bool sorted) const -> iterator<N> {
   return iterator<N>(*this, sorted, _diagonal_band_width);
 }
 
 template <typename N>
-inline auto PixelSelector::cend() const -> iterator<N> {
+auto PixelSelector::cend() const -> iterator<N> {
   return iterator<N>::at_end(_reader, _coord1, _coord2);
 }
 
 template <typename N>
-inline auto PixelSelector::begin(bool sorted) const -> iterator<N> {
+auto PixelSelector::begin(bool sorted) const -> iterator<N> {
   return cbegin<N>(sorted);
 }
 
 template <typename N>
-inline auto PixelSelector::end() const -> iterator<N> {
+auto PixelSelector::end() const -> iterator<N> {
   return cend<N>();
 }
 
 template <typename N>
-inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const {
+ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const {
   auto return_pixel = [&]() -> ThinPixel<N> {
     if constexpr (std::is_floating_point_v<N>) {
       return {pixel.bin1_id, pixel.bin2_id, conditional_static_cast<N>(pixel.count)};
@@ -147,12 +81,12 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
 
   const auto expectedCount = [&]() {
     if (is_inter()) {
-      return float(_reader->avg());
+      return static_cast<float>(_reader->avg());
     }
 
     const auto i =
         std::min(bin2 - bin1, conditional_static_cast<std::uint64_t>(expected.size() - 1));
-    return float(expected[i]);
+    return static_cast<float>(expected[i]);
   }();
 
   if (matrix_type() == MatrixType::expected) {
@@ -166,25 +100,8 @@ inline ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const
   return return_pixel();
 }
 
-inline PixelSelector::PixelSelector(std::shared_ptr<internal::HiCBlockReader> reader_,
-                                    std::shared_ptr<const internal::HiCFooter> footer_,
-                                    std::shared_ptr<const PixelCoordinates> coord1_,
-                                    std::shared_ptr<const PixelCoordinates> coord2_,
-                                    std::optional<std::uint64_t> diagonal_band_width)
-    : _reader(std::move(reader_)),
-      _footer(std::move(footer_)),
-      _coord1(std::move(coord1_)),
-      _coord2(std::move(coord2_)),
-      _diagonal_band_width(diagonal_band_width) {}
-
-inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1_,
-                                          PixelCoordinates coord2_) const {
-  return {_reader, _footer, std::make_shared<const PixelCoordinates>(std::move(coord1_)),
-          std::make_shared<const PixelCoordinates>(std::move(coord2_)), _diagonal_band_width};
-}
-
 template <typename N>
-inline std::vector<Pixel<N>> PixelSelector::read_all() const {
+std::vector<Pixel<N>> PixelSelector::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
   // and a second time to copy the actual data)
   std::vector<Pixel<N>> buff{};
@@ -196,123 +113,9 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
-inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return *_coord1; }
-inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return *_coord2; }
-inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
-  if (!_coord1) {
-    assert(!_coord2);
-    return 0;
-  }
-
-  assert(bins().type() == BinTable::Type::fixed);
-
-  if (_coord1->bin1.chrom() != _coord2->bin1.chrom()) {
-    const auto height = _coord1->bin2.id() - _coord1->bin1.id() + 1;
-    const auto width = _coord2->bin2.id() - _coord2->bin1.id() + 1;
-    return height * width;
-  }
-
-  const auto start1 = _coord1->bin1.start();
-  const auto start2 = _coord2->bin1.start();
-
-  const auto end1 = ((_coord1->bin2.rel_id() + 1) * resolution()) + 1;
-  const auto end2 = ((_coord2->bin2.rel_id() + 1) * resolution()) + 1;
-
-  return area(start1, end1, start2, end2, resolution(), upper_triangle);
-}
-
-inline MatrixType PixelSelector::matrix_type() const noexcept { return metadata().matrix_type; }
-inline const balancing::Method &PixelSelector::normalization() const noexcept {
-  return metadata().normalization;
-}
-inline MatrixUnit PixelSelector::unit() const noexcept { return _reader->index().unit(); }
-inline std::uint32_t PixelSelector::resolution() const noexcept {
-  assert(_footer);
-  return _footer->resolution();
-}
-
-inline const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1->bin1.chrom(); }
-inline const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2->bin1.chrom(); }
-
-inline const balancing::Weights &PixelSelector::weights1() const noexcept {
-  return _footer->weights1();
-}
-inline const balancing::Weights &PixelSelector::weights2() const noexcept {
-  return _footer->weights2();
-}
-
-inline const BinTable &PixelSelector::bins() const noexcept { return _reader->bins(); }
-inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
-  return _reader->bins_ptr();
-}
-
-inline const internal::HiCFooterMetadata &PixelSelector::metadata() const noexcept {
-  assert(!!_footer);
-  return _footer->metadata();
-}
-
-inline bool PixelSelector::is_inter() const noexcept { return !is_intra(); }
-
-inline bool PixelSelector::is_intra() const noexcept { return chrom1() == chrom2(); }
-
-inline bool PixelSelector::empty() const noexcept { return _reader->index().empty(); }
-
-inline std::size_t PixelSelector::estimate_optimal_cache_size(
-    [[maybe_unused]] std::size_t num_samples) const {
-  if (_reader->index().empty()) {
-    return 0;  // should we throw instead?
-  }
-
-  std::seed_seq sseq({_reader->index().size()});
-  std::mt19937_64 rand_eng(sseq);
-
-  // Try to guess the average block size
-  std::size_t avg_block_size = 0;
-  const auto &idx = _reader->index();
-
-  std::vector<internal::BlockIndex> blocks(std::min(idx.size(), num_samples));
-  std::sample(idx.begin(), idx.end(), blocks.begin(), blocks.size(), rand_eng);
-  for (const auto &blki : blocks) {
-    avg_block_size += _reader->read_size(chrom1(), chrom2(), blki);
-  }
-  avg_block_size /= blocks.size();
-
-  // Try to guess how many blocks overlap a single row of pixels
-  std::size_t max_blocks_per_row = 0;
-  const auto &chrom = coord1().bin1.chrom();
-  const auto bin_size = bins().resolution();
-
-  const std::size_t first_bin_id = 0;
-  const std::size_t last_bin_id = bins().at(chrom, chrom.size() - 1).rel_id();
-
-  const auto samples = std::min(num_samples, bins().subset(chrom).size());
-  for (std::size_t i = 0; i < samples; ++i) {
-    const auto bin_id = std::uniform_int_distribution<std::size_t>{
-        first_bin_id, std::min(last_bin_id, last_bin_id - 1)}(rand_eng);
-
-    const auto pos1 = static_cast<std::uint32_t>(bin_id * bin_size);
-    const auto bin1 = bins().at(chrom, pos1);
-
-    auto overlap = idx.find_overlaps({bin1, bin1}, coord2(), _diagonal_band_width);
-    const auto num_blocks = static_cast<std::size_t>(std::distance(overlap.begin(), overlap.end()));
-    max_blocks_per_row = (std::max)(max_blocks_per_row, num_blocks);
-  }
-
-  return max_blocks_per_row * avg_block_size * sizeof(ThinPixel<float>);
-}
-
-inline void PixelSelector::clear_cache() const {
-  if (_reader->cache_size() == 0) {
-    return;
-  }
-  for (auto blki : _reader->index().find_overlaps(coord1(), coord2(), _diagonal_band_width)) {
-    _reader->evict(coord1().bin1.chrom(), coord2().bin1.chrom(), blki);
-  }
-}
-
 template <typename N>
-inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorted,
-                                            std::optional<std::uint64_t> diagonal_band_width)
+PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorted,
+                                     std::optional<std::uint64_t> diagonal_band_width)
     : _reader(sel._reader),
       _coord1(sel._coord1),
       _coord2(sel._coord2),
@@ -335,9 +138,9 @@ inline PixelSelector::iterator<N>::iterator(const PixelSelector &sel, bool sorte
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBlockReader> reader,
-                                               std::shared_ptr<const PixelCoordinates> coord1,
-                                               std::shared_ptr<const PixelCoordinates> coord2)
+auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBlockReader> reader,
+                                        std::shared_ptr<const PixelCoordinates> coord1,
+                                        std::shared_ptr<const PixelCoordinates> coord2)
     -> iterator {
   iterator it{};
 
@@ -350,7 +153,7 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<internal::HiCBloc
 }
 
 template <typename N>
-inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
+bool PixelSelector::iterator<N>::operator==(const iterator &other) const noexcept {
   const auto same_query = coord1() == other.coord1() && coord2() == other.coord2();
 
   if (!same_query) {
@@ -369,12 +172,12 @@ inline bool PixelSelector::iterator<N>::operator==(const iterator &other) const 
 }
 
 template <typename N>
-inline bool PixelSelector::iterator<N>::operator!=(const iterator &other) const noexcept {
+bool PixelSelector::iterator<N>::operator!=(const iterator &other) const noexcept {
   return !(*this == other);
 }
 
 template <typename N>
-inline bool PixelSelector::iterator<N>::operator<(const iterator &other) const noexcept {
+bool PixelSelector::iterator<N>::operator<(const iterator &other) const noexcept {
   const auto bin11 = bin1_id();
   const auto bin21 = other.bin1_id();
 
@@ -389,7 +192,7 @@ inline bool PixelSelector::iterator<N>::operator<(const iterator &other) const n
 }
 
 template <typename N>
-inline bool PixelSelector::iterator<N>::operator>(const iterator &other) const noexcept {
+bool PixelSelector::iterator<N>::operator>(const iterator &other) const noexcept {
   const auto bin11 = bin1_id();
   const auto bin21 = other.bin1_id();
 
@@ -404,21 +207,21 @@ inline bool PixelSelector::iterator<N>::operator>(const iterator &other) const n
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::operator*() const -> const_reference {
+auto PixelSelector::iterator<N>::operator*() const -> const_reference {
   assert(!!_buffer);
   assert(_buffer_i < _buffer->size());
   return (*_buffer)[_buffer_i];
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::operator->() const -> const_pointer {
+auto PixelSelector::iterator<N>::operator->() const -> const_pointer {
   assert(!!_buffer);
   assert(_buffer_i < _buffer->size());
   return &(*_buffer)[_buffer_i];
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
+auto PixelSelector::iterator<N>::operator++() -> iterator & {
   assert(!!_buffer);
 
   ++_buffer_i;
@@ -430,50 +233,50 @@ inline auto PixelSelector::iterator<N>::operator++() -> iterator & {
 }
 
 template <typename N>
-inline auto PixelSelector::iterator<N>::operator++(int) -> iterator {
+auto PixelSelector::iterator<N>::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
 }
 
 template <typename N>
-inline bool PixelSelector::iterator<N>::is_at_end() const noexcept {
+bool PixelSelector::iterator<N>::is_at_end() const noexcept {
   return _buffer == nullptr;
 }
 
 template <typename N>
-inline const BinTable &PixelSelector::iterator<N>::bins() const noexcept {
+const BinTable &PixelSelector::iterator<N>::bins() const noexcept {
   assert(!!_reader);
   return _reader->bins();
 }
 template <typename N>
-inline const PixelCoordinates &PixelSelector::iterator<N>::coord1() const noexcept {
+const PixelCoordinates &PixelSelector::iterator<N>::coord1() const noexcept {
   assert(!!_coord1);
   return *_coord1;
 }
 template <typename N>
-inline const PixelCoordinates &PixelSelector::iterator<N>::coord2() const noexcept {
+const PixelCoordinates &PixelSelector::iterator<N>::coord2() const noexcept {
   assert(!!_coord2);
   return *_coord2;
 }
 
 template <typename N>
-inline std::size_t PixelSelector::iterator<N>::size() const noexcept {
+std::size_t PixelSelector::iterator<N>::size() const noexcept {
   return !_buffer ? 0 : _buffer->size();
 }
 
 template <typename N>
-inline std::uint64_t PixelSelector::iterator<N>::bin1_id() const noexcept {
+std::uint64_t PixelSelector::iterator<N>::bin1_id() const noexcept {
   return !is_at_end() ? (*this)->bin1_id : std::numeric_limits<std::size_t>::max();
 }
 template <typename N>
-inline std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
+std::uint64_t PixelSelector::iterator<N>::bin2_id() const noexcept {
   return !is_at_end() ? (*this)->bin2_id : std::numeric_limits<std::size_t>::max();
 }
 
 template <typename N>
-inline std::vector<internal::BlockIndex>
-PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_bins) const {
+std::vector<internal::BlockIndex> PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(
+    std::size_t num_bins) const {
   const auto bin_size = bins().resolution();
 
   const auto end_pos = coord1().bin2.start();
@@ -487,7 +290,7 @@ PixelSelector::iterator<N>::find_blocks_overlapping_next_chunk(std::size_t num_b
 }
 
 template <typename N>
-inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
+std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noexcept {
   assert(!!_reader);
   const auto bin_size = bins().resolution();
   const auto num_bins =
@@ -499,11 +302,11 @@ inline std::uint32_t PixelSelector::iterator<N>::compute_chunk_size() const noex
   const auto pos1 = (std::min)(end_pos, static_cast<std::uint32_t>(_bin1_id) * bins().resolution());
   const auto pos2 = (std::min)(end_pos, pos1 + (num_bins * bin_size));
 
-  return static_cast<std::uint32_t>((pos2 - pos1 + bin_size - 1) / bin_size);
+  return (pos2 - pos1 + bin_size - 1) / bin_size;
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_chunk() {
+void PixelSelector::iterator<N>::read_next_chunk() {
   assert(!!_reader);
   if (!_sorted) {
     return read_next_chunk_unsorted();
@@ -519,7 +322,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk() {
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
+void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
   assert(!!_reader);
 
   if (_block_it == _block_idx->end()) {
@@ -559,7 +362,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_unsorted() {
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
+void PixelSelector::iterator<N>::read_next_chunk_sorted() {
   assert(!!_reader);
   assert(_sorted);
 
@@ -611,7 +414,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_sorted() {
 }
 
 template <typename N>
-inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
+void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
   assert(!!_reader);
   assert(_sorted);
 
@@ -684,7 +487,7 @@ inline void PixelSelector::iterator<N>::read_next_chunk_v9_intra_sorted() {
 }
 
 template <typename N>
-inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float> pixel) const {
+ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float> pixel) const {
   assert(!!_footer);
 
   auto return_pixel = [&]() -> ThinPixel<N> {
@@ -725,12 +528,12 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
 
   const auto expected_count = [&]() {
     if (is_inter) {
-      return float(_reader->avg());
+      return static_cast<float>(_reader->avg());
     }
 
     const auto i =
         std::min(bin2 - bin1, conditional_static_cast<std::uint64_t>(expected.size() - 1));
-    return float(expected[i]);
+    return static_cast<float>(expected[i]);
   }();
 
   if (matrix_type == MatrixType::expected) {
@@ -745,10 +548,8 @@ inline ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float>
 }
 
 template <typename N>
-inline std::shared_ptr<const internal::Index::Overlap>
-PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
-                                                std::optional<std::uint64_t> diagonal_band_width,
-                                                bool sorted) {
+std::shared_ptr<const internal::Index::Overlap> PixelSelector::iterator<N>::preload_block_index(
+    const PixelSelector &sel, std::optional<std::uint64_t> diagonal_band_width, bool sorted) {
   const auto &idx = sel._reader->index();
   const auto is_intra = sel.coord1().bin1.chrom() == sel.coord2().bin2.chrom();
   if (sorted && is_intra && idx.version() > 8) {  // NOLINT(*-avoid-magic-numbers)
@@ -759,46 +560,26 @@ PixelSelector::iterator<N>::preload_block_index(const PixelSelector &sel,
       idx.find_overlaps(sel.coord1(), sel.coord2(), diagonal_band_width));
 }
 
-inline PixelSelectorAll::PixelSelectorAll(std::vector<PixelSelector> selectors_,
-                                          std::shared_ptr<internal::WeightCache> weight_cache)
-    : _selectors(std::move(selectors_)),
-      _bins(_selectors.empty() ? nullptr : _selectors.front().bins_ptr()),
-      _weight_cache(std::move(weight_cache)) {
-  if (_selectors.empty()) {
-    throw std::invalid_argument(
-        "selectors_ cannot be empty! You may want to call a different constructor.");
-  }
-
-  assert(!!_bins);
-}
-
-inline PixelSelectorAll::PixelSelectorAll(
-    std::shared_ptr<const BinTable> bins_,
-    std::shared_ptr<internal::WeightCache> weight_cache) noexcept
-    : _bins(std::move(bins_)), _weight_cache(std::move(weight_cache)) {}
-
-inline bool PixelSelectorAll::empty() const noexcept { return begin<float>() == end<float>(); }
-
 template <typename N>
-inline auto PixelSelectorAll::begin(bool sorted) const -> iterator<N> {
+auto PixelSelectorAll::begin(bool sorted) const -> iterator<N> {
   return cbegin<N>(sorted);
 }
 template <typename N>
-inline auto PixelSelectorAll::cbegin(bool sorted) const -> iterator<N> {
+auto PixelSelectorAll::cbegin(bool sorted) const -> iterator<N> {
   return iterator<N>(*this, sorted);
 }
 
 template <typename N>
-inline auto PixelSelectorAll::end() const -> iterator<N> {
+auto PixelSelectorAll::end() const -> iterator<N> {
   return cend<N>();
 }
 template <typename N>
-inline auto PixelSelectorAll::cend() const -> iterator<N> {
+auto PixelSelectorAll::cend() const -> iterator<N> {
   return iterator<N>{};
 }
 
 template <typename N>
-inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
+std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
   // and a second time to copy the actual data)
   std::vector<Pixel<N>> buff{};
@@ -809,78 +590,25 @@ inline std::vector<Pixel<N>> PixelSelectorAll::read_all() const {
   return buff;
 }
 
-inline std::uint64_t PixelSelectorAll::size(bool upper_triangle) const noexcept {
-  const auto n = bins().size();
-  if (upper_triangle) {
-    return (n * (n + 1)) / 2;
-  }
-  return n * n;
-}
-
-inline MatrixType PixelSelectorAll::matrix_type() const noexcept {
-  return _selectors.front().matrix_type();
-}
-inline const balancing::Method &PixelSelectorAll::normalization() const noexcept {
-  return _selectors.front().normalization();
-}
-inline MatrixUnit PixelSelectorAll::unit() const noexcept { return _selectors.front().unit(); }
-inline std::uint32_t PixelSelectorAll::resolution() const noexcept { return bins().resolution(); }
-
-inline const BinTable &PixelSelectorAll::bins() const noexcept {
-  assert(_bins);
-  return *_bins;
-}
-inline std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
-
-inline const balancing::Weights &PixelSelectorAll::weights() const {
-  if (!_weight_cache) {
-    throw std::runtime_error(
-        "PixelSelectorAll::weights() was called on an instance of PixelSelectorAll with null "
-        "_weight_cache");
-  }
-  auto weights = _weight_cache->get_or_init(0, normalization());
-  if (!weights->empty()) {
-    return *weights;
-  }
-
-  if (normalization() == balancing::Method::NONE()) {
-    *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
-    return *weights;
-  }
-
-  std::vector<double> buff(bins().size(), std::numeric_limits<double>::quiet_NaN());
-  std::for_each(_selectors.begin(), _selectors.end(), [&](const PixelSelector &sel) {
-    if (sel.is_intra()) {
-      const auto &chrom_weights = sel.weights1();
-      const auto offset = static_cast<std::ptrdiff_t>(bins().at(sel.chrom1()).id());
-      std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-                chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
-    }
-  });
-
-  *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
-  return *weights;
-}
-
 template <typename N>
-inline bool PixelSelectorAll::iterator<N>::Pair::operator<(const Pair &other) const noexcept {
+bool PixelSelectorAll::iterator<N>::Pair::operator<(const Pair &other) const noexcept {
   return first < other.first;
 }
 
 template <typename N>
-inline bool PixelSelectorAll::iterator<N>::Pair::operator>(const Pair &other) const noexcept {
+bool PixelSelectorAll::iterator<N>::Pair::operator>(const Pair &other) const noexcept {
   return first > other.first;
 }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector, bool sorted)
+PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector, bool sorted)
     : _selectors(std::make_shared<SelectorQueue>()),
       _active_selectors(std::make_shared<SelectorQueue>()),
       _its(std::make_shared<ItPQueue>()),
       _sorted(sorted),
       _buff(std::make_shared<std::vector<ThinPixel<N>>>()) {
   if (selector._selectors.empty()) {
-    *this = iterator<N>{};
+    *this = iterator{};
     return;
   }
   std::for_each(selector._selectors.begin(), selector._selectors.end(),
@@ -892,7 +620,7 @@ inline PixelSelectorAll::iterator<N>::iterator(const PixelSelectorAll &selector,
 }
 
 template <typename N>
-inline PixelSelectorAll::iterator<N>::iterator(const iterator &other)
+PixelSelectorAll::iterator<N>::iterator(const iterator &other)
     : _selectors(other._selectors ? std::make_shared<SelectorQueue>(*other._selectors) : nullptr),
       _active_selectors(other._active_selectors
                             ? std::make_shared<SelectorQueue>(*other._active_selectors)
@@ -904,7 +632,7 @@ inline PixelSelectorAll::iterator<N>::iterator(const iterator &other)
       _i(other._i) {}
 
 template <typename N>
-inline auto PixelSelectorAll::iterator<N>::operator=(const iterator<N> &other) -> iterator & {
+auto PixelSelectorAll::iterator<N>::operator=(const iterator<N> &other) -> iterator & {
   if (this == &other) {
     return *this;
   }
@@ -922,7 +650,7 @@ inline auto PixelSelectorAll::iterator<N>::operator=(const iterator<N> &other) -
 }
 
 template <typename N>
-inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
+bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) const noexcept {
   if (!_buff || !other._buff) {
     return _buff == other._buff;
   }
@@ -933,24 +661,24 @@ inline bool PixelSelectorAll::iterator<N>::operator==(const iterator<N> &other) 
 }
 
 template <typename N>
-inline bool PixelSelectorAll::iterator<N>::operator!=(const iterator<N> &other) const noexcept {
+bool PixelSelectorAll::iterator<N>::operator!=(const iterator<N> &other) const noexcept {
   return !(*this == other);
 }
 
 template <typename N>
-inline auto PixelSelectorAll::iterator<N>::operator*() const -> const_reference {
+auto PixelSelectorAll::iterator<N>::operator*() const -> const_reference {
   assert(_buff);
   assert(_i < _buff->size());
   return (*_buff)[_i];
 }
 
 template <typename N>
-inline auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
+auto PixelSelectorAll::iterator<N>::operator->() const -> const_pointer {
   return &*(*this);
 }
 
 template <typename N>
-inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
+auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
   assert(_buff);
   if (++_i == _buff->size()) {
     read_next_chunk();
@@ -959,14 +687,14 @@ inline auto PixelSelectorAll::iterator<N>::operator++() -> iterator & {
 }
 
 template <typename N>
-inline auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
+auto PixelSelectorAll::iterator<N>::operator++(int) -> iterator {
   auto it = *this;
   std::ignore = ++(*this);
   return it;
 }
 
 template <typename N>
-inline void PixelSelectorAll::iterator<N>::init_iterators() {
+void PixelSelectorAll::iterator<N>::init_iterators() {
   assert(_its->empty());
   if (_selectors->empty()) {
     _buff = nullptr;
@@ -1003,7 +731,7 @@ inline void PixelSelectorAll::iterator<N>::init_iterators() {
 }
 
 template <typename N>
-inline void PixelSelectorAll::iterator<N>::read_next_chunk() {
+void PixelSelectorAll::iterator<N>::read_next_chunk() {
   constexpr std::size_t chunk_size = 100'000;
   if (_selectors->empty() && _its->empty()) {
     _buff = nullptr;  // signal end

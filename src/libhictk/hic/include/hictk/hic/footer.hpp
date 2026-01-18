@@ -76,12 +76,12 @@ class HiCFooter {
 
 template <>
 struct std::hash<hictk::hic::internal::HiCFooterMetadata> {
-  inline std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept;
+  std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept;
 };
 
 template <>
 struct std::hash<hictk::hic::internal::HiCFooter> {
-  inline std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
+  std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
 };
 
 #include "./impl/footer_impl.hpp"  // NOLINT

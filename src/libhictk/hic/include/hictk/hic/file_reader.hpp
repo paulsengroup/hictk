@@ -37,7 +37,7 @@ class HiCFileReader {
  public:
   HiCFileReader() = default;
   explicit HiCFileReader(std::string url);
-  [[nodiscard]] inline const std::string &path() const noexcept;
+  [[nodiscard]] const std::string &path() const noexcept;
   [[nodiscard]] const HiCHeader &header() const noexcept;
 
   [[nodiscard]] std::int32_t version() const noexcept;
@@ -112,5 +112,3 @@ class HiCFileReader {
   [[nodiscard]] static auto init_decompressor() -> Decompressor;
 };
 }  // namespace hictk::hic::internal
-
-#include "./impl/file_reader_impl.hpp"  // NOLINT
