@@ -67,7 +67,12 @@ set(
 foreach(PKG ${HICTK_DEPENDENCIES})
   find_package(${PKG} REQUIRED QUIET)
   string(TOUPPER ${PKG} PKG_UPPER)
-  string(REGEX REPLACE "[^a-zA-Z0-9_]" _ PKG_NORMALIZED ${PKG_UPPER})
+  string(
+    REGEX REPLACE "[^a-zA-Z0-9_]"
+    _
+    PKG_NORMALIZED
+    ${PKG_UPPER}
+  )
   target_compile_definitions(
     hictk_internal_tools_build_metadata
     PRIVATE

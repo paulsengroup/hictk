@@ -73,7 +73,12 @@ set(
 
 # Disable warnings that are problematic when enabled in certain compilers
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0))
-  string(REPLACE -Wduplicated-branches -Wno-duplicated-branches GCC_WARNINGS "${GCC_WARNINGS}")
+  string(
+    REPLACE -Wduplicated-branches
+    -Wno-duplicated-branches
+    GCC_WARNINGS
+    "${GCC_WARNINGS}"
+  )
 endif()
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 22.0))

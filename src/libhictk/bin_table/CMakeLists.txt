@@ -8,7 +8,8 @@ target_sources(
   hictk_internal_bin_table
   INTERFACE
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/bin_table.hpp"

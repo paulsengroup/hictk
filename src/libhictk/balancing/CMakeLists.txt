@@ -14,7 +14,8 @@ target_sources(
   hictk_internal_balancing
   INTERFACE
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/common.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/ice.hpp"

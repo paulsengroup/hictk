@@ -12,7 +12,8 @@ target_sources(
   hictk_internal_expected_values_aggregator
   INTERFACE
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/expected_values_aggregator.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/expected_values_aggregator_impl.hpp"
