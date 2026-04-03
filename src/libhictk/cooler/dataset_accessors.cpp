@@ -1,0 +1,114 @@
+// Copyright (C) 2022 Roberto Rossini <roberros@uio.no>
+//
+// SPDX-License-Identifier: MIT
+
+#include "hictk/cooler/dataset.hpp"
+
+#if __has_include(<hdf5/hdf5.h>)
+#include <hdf5/H5Ppublic.h>
+#include <hdf5/H5Tpublic.h>
+#else
+#include <H5Ppublic.h>
+#include <H5Tpublic.h>
+#endif
+
+#include <fmt/format.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <highfive/H5DataSet.hpp>
+#include <highfive/H5DataType.hpp>
+#include <highfive/H5Utility.hpp>
+#include <string>
+#include <type_traits>
+
+#include "hictk/cooler/attribute.hpp"
+#include "hictk/cooler/group.hpp"
+
+namespace hictk::cooler {
+
+HighFive::DataSet Dataset::operator()() { return _dataset; }
+
+const HighFive::DataSet &Dataset::operator()() const noexcept { return _dataset; }
+
+std::string Dataset::file_name() const { return _root_group().getFile().getName(); }
+
+std::string Dataset::hdf5_path() const { return _dataset.getPath(); }
+
+std::string Dataset::name() const {
+  auto path = hdf5_path();
+  const auto last_slash_pos = path.rfind('/');
+  if (last_slash_pos == std::string::npos) {
+    return path;
+  }
+
+  return path.substr(last_slash_pos + 1);
+}
+
+std::string Dataset::uri() const {
+  return fmt::format(FMT_STRING("{}::{}"), file_name(), hdf5_path());
+}
+
+std::size_t Dataset::size() const { return _dataset_size; }
+
+bool Dataset::empty() const { return size() == 0; }
+
+std::size_t Dataset::get_chunk_size() const noexcept { return _chunk_size; }
+
+std::size_t Dataset::get_chunk_size(const HighFive::DataSet &dset) {
+  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
+  hsize_t size{};
+  const auto dims = H5Pget_chunk(dset.getCreatePropertyList().getId(), 1, &size);
+  if (dims != 1) {
+    return dset.getElementCount();
+  }
+  return size;
+}
+
+HighFive::DataSet Dataset::get() { return _dataset; }
+const HighFive::DataSet &Dataset::get() const { return _dataset; }
+
+RootGroup Dataset::get_parent() const { return _root_group; }
+
+bool Dataset::has_attribute(std::string_view key) const { return Attribute::exists(_dataset, key); }
+
+HighFive::DataType Dataset::get_h5type() const {
+  auto h5type = _dataset.getDataType();
+  if (h5type.isFixedLenStr()) {
+    return h5type;
+  }
+  if (h5type.isVariableStr()) {
+    return HighFive::create_datatype<std::string>();
+  }
+
+  if (h5type.getClass() != HighFive::DataTypeClass::Enum) {
+    return h5type;
+  }
+
+  // Useful to suppress warnings about treating enum datasets as plain int datasets
+  const auto is_unsigned = H5Tget_sign(h5type.getId()) == H5T_SGN_NONE;
+  // NOLINTNEXTLINE(*-avoid-non-const-global-variables)
+  auto create_dtype = [&]([[maybe_unused]] auto tunsigned, [[maybe_unused]] auto tsigned) {
+    using T1 = decltype(tunsigned);
+    using T2 = decltype(tsigned);
+    static_assert(std::is_unsigned_v<T1>);
+    static_assert(std::is_signed_v<T2>);
+    static_assert(sizeof(T1) == sizeof(T2));
+    return is_unsigned ? HighFive::create_datatype<T1>() : HighFive::create_datatype<T2>();
+  };
+
+  switch (h5type.getSize()) {
+    case sizeof(std::uint8_t):
+      return create_dtype(std::uint8_t{}, std::int8_t{});
+    case sizeof(std::uint16_t):
+      return create_dtype(std::uint16_t{}, std::int16_t{});
+    case sizeof(std::uint32_t):
+      return create_dtype(std::uint32_t{}, std::int32_t{});
+    case sizeof(std::uint64_t):
+      return create_dtype(std::uint64_t{}, std::int64_t{});
+    default:
+      unreachable_code();
+  }
+}
+
+}  // namespace hictk::cooler

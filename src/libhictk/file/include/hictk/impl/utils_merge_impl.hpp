@@ -5,6 +5,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <cassert>
@@ -20,6 +21,7 @@
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
+#include "hictk/file.hpp"
 #include "hictk/hic/file_writer.hpp"
 #include "hictk/hic/utils.hpp"
 #include "hictk/hic/validation.hpp"

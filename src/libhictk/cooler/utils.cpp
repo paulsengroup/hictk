@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
+#include "hictk/cooler/utils.hpp"
 
 #include <fmt/format.h>
 #include <fmt/std.h>
@@ -12,6 +12,7 @@
 #include <exception>
 #include <filesystem>
 #include <highfive/H5File.hpp>
+#include <highfive/H5Utility.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -21,7 +22,7 @@
 
 namespace hictk::cooler::utils {
 
-inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &path, bool sorted) {
+std::vector<std::uint32_t> list_resolutions(const std::filesystem::path &path, bool sorted) {
   [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
   try {
     if (!is_multires_file(path.string(), false)) {
