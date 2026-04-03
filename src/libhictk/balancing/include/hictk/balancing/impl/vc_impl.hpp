@@ -6,14 +6,13 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include "hictk/balancing/common.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/pixel.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::balancing {
@@ -80,32 +79,6 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
   _chrom_offsets.push_back(_biases.size());
   _scale.push_back(std::sqrt(norm_sum / sum));
 }
-
-inline balancing::Weights VC::get_weights(bool rescale) const {
-  if (!rescale) {
-    return {_biases, balancing::Weights::Type::DIVISIVE};
-  }
-
-  std::vector<double> biases(_biases.size());
-  std::uint64_t chrom_id = 0;
-  for (std::size_t i = 0; i < _biases.size(); ++i) {
-    if (i >= _chrom_offsets[chrom_id + 1]) {
-      chrom_id++;
-    }
-    biases[i] = _biases[i] * _scale[chrom_id];
-  }
-
-  std::transform(biases.begin(), biases.end(), biases.begin(), [](const double n) {
-    if (std::isnan(n)) {
-      return 1.0;
-    }
-    return n;
-  });
-
-  return {biases, balancing::Weights::Type::DIVISIVE};
-}
-
-inline const std::vector<double>& VC::get_scale() const noexcept { return _scale; }
 
 template <typename File>
 inline auto VC::compute_cis(const File& f) -> Result {

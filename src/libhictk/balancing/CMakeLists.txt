@@ -7,12 +7,12 @@ find_package(phmap REQUIRED QUIET)
 find_package(span-lite REQUIRED QUIET)
 find_package(zstd REQUIRED QUIET)
 
-add_library(hictk_internal_balancing INTERFACE)
+add_library(hictk_internal_balancing STATIC)
 add_library(hictk::balancing ALIAS hictk_internal_balancing)
 
 target_sources(
   hictk_internal_balancing
-  INTERFACE
+  PUBLIC
     FILE_SET HEADERS
       BASE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -29,30 +29,40 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/sparse_matrix_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/vc_impl.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/impl/weights_impl.hpp"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/common.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ice.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/methods.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/scale.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sparse_matrix.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/vc.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/weights.cpp"
 )
 
 target_include_directories(
   hictk_internal_balancing
-  INTERFACE
+  PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
   hictk_internal_balancing
-  INTERFACE
+  PUBLIC
+    hictk::binary_buffer
     hictk::common
     hictk::default_delete_zstd
     hictk::filestream
     hictk::pixel
+    hictk::transformers
 )
 
 target_link_system_libraries(
   hictk_internal_balancing
-  INTERFACE
+  PUBLIC
     bshoshany-thread-pool::bshoshany-thread-pool
     nonstd::span-lite
     phmap
     "zstd::libzstd_$<IF:$<BOOL:${BUILD_SHARED_LIBS}>,shared,static>"
 )
 
-target_compile_definitions(hictk_internal_balancing INTERFACE span_FEATURE_MAKE_SPAN=1)
+target_compile_definitions(hictk_internal_balancing PUBLIC span_FEATURE_MAKE_SPAN=1)

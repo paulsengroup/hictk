@@ -4,25 +4,23 @@
 
 #pragma once
 
-#include <zstd.h>
-
 #include <BS_thread_pool.hpp>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <ios>
 #include <memory>
 #include <nonstd/span.hpp>
 #include <string>
-#include <type_traits>
 #include <vector>
 
-#include "hictk/binary_buffer.hpp"
-#include "hictk/common.hpp"
 #include "hictk/default_delete_zstd.hpp"
 #include "hictk/filestream.hpp"
+
+// pre-declarations
+class ZSTD_CCtx_s;
+class ZSTD_DCtx_s;
 
 namespace hictk::balancing::internal {
 
