@@ -6,7 +6,7 @@
 
 #ifdef HICTK_WITH_ARROW
 
-// clang-format: off
+// clang-format off
 #include "hictk/suppress_warnings.hpp"
 
 HICTK_DISABLE_WARNING_PUSH
@@ -15,7 +15,7 @@ HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
 #include <arrow/table.h>
 #include <arrow/type.h>
 HICTK_DISABLE_WARNING_POP
-// clang-format: on
+// clang-format on
 
 #include <cstdint>
 #include <memory>
