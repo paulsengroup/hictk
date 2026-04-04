@@ -267,31 +267,29 @@ PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
                diagonal_band_width);
 }
 
-const balancing::Weights& File::normalization(const balancing::Method& norm,
-                                              const Chromosome& chrom) const {
+const Weights& File::normalization(const balancing::Method& norm, const Chromosome& chrom) const {
   const auto w = normalization_ptr(norm, chrom);
   assert(w);
   return *w;
 }
-const balancing::Weights& File::normalization(std::string_view norm,
-                                              const Chromosome& chrom) const {
+const Weights& File::normalization(std::string_view norm, const Chromosome& chrom) const {
   const auto w = normalization_ptr(norm, chrom);
   assert(w);
   return *w;
 }
-const balancing::Weights& File::normalization(const balancing::Method& norm) const {
+const Weights& File::normalization(const balancing::Method& norm) const {
   const auto w = normalization_ptr(norm);
   assert(w);
   return *w;
 }
-const balancing::Weights& File::normalization(std::string_view norm) const {
+const Weights& File::normalization(std::string_view norm) const {
   const auto w = normalization_ptr(norm);
   assert(w);
   return *w;
 }
 
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(const balancing::Method& norm,
-                                                                  const Chromosome& chrom) const {
+std::shared_ptr<const Weights> File::normalization_ptr(const balancing::Method& norm,
+                                                       const Chromosome& chrom) const {
   assert(_weight_cache);
   const auto expected_length = (chrom.size() + bins().resolution() - 1) / bins().resolution();
 
@@ -323,19 +321,18 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(const balancin
   auto weights = _weight_cache->get_or_init(chrom, norm);
   assert(weights->empty());
 
-  *weights = balancing::Weights{std::numeric_limits<double>::quiet_NaN(), expected_length,
-                                balancing::Weights::Type::DIVISIVE};
+  *weights =
+      Weights{std::numeric_limits<double>::quiet_NaN(), expected_length, Weights::Type::DIVISIVE};
 
   return weights;
 }
 
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(std::string_view norm,
-                                                                  const Chromosome& chrom) const {
+std::shared_ptr<const Weights> File::normalization_ptr(std::string_view norm,
+                                                       const Chromosome& chrom) const {
   return normalization_ptr(balancing::Method{norm}, chrom);
 }
 
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(
-    const balancing::Method& norm) const {
+std::shared_ptr<const Weights> File::normalization_ptr(const balancing::Method& norm) const {
   assert(_weight_cache);
   auto weights = _weight_cache->get_or_init(0, norm);
   if (!weights->empty()) {
@@ -343,7 +340,7 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(
   }
 
   if (norm == balancing::Method::NONE()) {
-    *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+    *weights = Weights{1.0, bins().size(), Weights::Type::DIVISIVE};
     return weights;
   }
 
@@ -358,8 +355,8 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(
     try {
       const auto& chrom_weights = normalization(norm, chrom);
       const auto offset = static_cast<std::ptrdiff_t>(bins().at(chrom).id());
-      std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-                chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
+      std::copy(chrom_weights.begin(Weights::Type::DIVISIVE),
+                chrom_weights.end(Weights::Type::DIVISIVE), buff.begin() + offset);
     } catch (const std::runtime_error& e) {
       const auto missing_norm_msg =
           fmt::format(FMT_STRING("unable to read \"{}\" weights"), norm.to_string());
@@ -375,11 +372,11 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(
         fmt::format(FMT_STRING("unable to read \"{}\" weights"), norm.to_string()));
   }
 
-  *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
+  *weights = Weights{std::move(buff), Weights::Type::DIVISIVE};
   return weights;
 }
 
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(std::string_view norm) const {
+std::shared_ptr<const Weights> File::normalization_ptr(std::string_view norm) const {
   return normalization_ptr(balancing::Method{norm});
 }
 

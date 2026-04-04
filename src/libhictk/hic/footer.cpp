@@ -11,9 +11,9 @@
 #include <utility>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/hash.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
@@ -28,8 +28,7 @@ bool HiCFooterMetadata::operator!=(const HiCFooterMetadata &other) const noexcep
 }
 
 HiCFooter::HiCFooter(Index index_, HiCFooterMetadata metadata_, std::vector<double> expected_values,
-                     std::shared_ptr<balancing::Weights> weights1,
-                     std::shared_ptr<balancing::Weights> weights2) noexcept
+                     std::shared_ptr<Weights> weights1, std::shared_ptr<Weights> weights2) noexcept
     : _index(std::move(index_)),
       _metadata(std::move(metadata_)),
       _expectedValues(std::move(expected_values)),
@@ -46,12 +45,12 @@ const Index &HiCFooter::index() const noexcept { return _index; }
 
 balancing::Method HiCFooter::normalization() const noexcept { return metadata().normalization; }
 
-const balancing::Weights &HiCFooter::weights1() const noexcept {
+const Weights &HiCFooter::weights1() const noexcept {
   assert(_weights1);
   return *_weights1;
 }
 
-const balancing::Weights &HiCFooter::weights2() const noexcept {
+const Weights &HiCFooter::weights2() const noexcept {
   assert(_weights2);
   return *_weights2;
 }

@@ -95,7 +95,7 @@ target_include_directories(
 target_link_libraries(
   hictk_internal_hic
   PUBLIC
-    hictk::balancing
+    hictk::balancing_methods
     hictk::binary_buffer
     hictk::bin_table
     hictk::chromosome
@@ -111,6 +111,7 @@ target_link_libraries(
     hictk::reference
     hictk::tmpdir
     hictk::transformers
+    hictk::weights
   PRIVATE
     hictk::static_binary_buffer
     hictk::version

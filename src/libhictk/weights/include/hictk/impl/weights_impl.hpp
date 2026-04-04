@@ -17,7 +17,7 @@
 #include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk::balancing {
+namespace hictk {
 
 template <typename N>
 inline ThinPixel<N> Weights::balance(ThinPixel<N> p) const {
@@ -158,4 +158,4 @@ constexpr void Weights::iterator::ConstIt::bound_check([[maybe_unused]] std::ptr
 #endif
 }
 
-}  // namespace hictk::balancing
+}  // namespace hictk

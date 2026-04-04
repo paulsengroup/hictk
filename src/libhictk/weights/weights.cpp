@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/balancing/weights.hpp"
+#include "hictk/weights.hpp"
 
 #include <fmt/format.h>
 
@@ -22,7 +22,7 @@
 #include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk::balancing {
+namespace hictk {
 
 Weights::Weights(std::vector<double> weights, Type type)
     : _weights(std::make_shared<WeightVect>(std::move(weights))), _type(type) {
@@ -498,4 +498,4 @@ auto Weights::iterator::operator-(const iterator& other) const -> difference_typ
   throw std::logic_error("caught attempt to compare iterators of different type");
 }
 
-}  // namespace hictk::balancing
+}  // namespace hictk

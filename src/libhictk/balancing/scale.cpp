@@ -12,8 +12,8 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/common.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::balancing {
 

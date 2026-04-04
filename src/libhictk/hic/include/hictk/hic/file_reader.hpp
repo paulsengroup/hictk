@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/filestream.hpp"
@@ -24,6 +23,7 @@
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/header.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
@@ -47,8 +47,8 @@ class HiCFileReader {
   [[nodiscard]] HiCFooter read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
                                       const BinTable &bins, MatrixType matrix_type,
                                       const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
-                                      std::shared_ptr<balancing::Weights> &weights1,
-                                      std::shared_ptr<balancing::Weights> &weights2);
+                                      std::shared_ptr<Weights> &weights1,
+                                      std::shared_ptr<Weights> &weights2);
 
   [[nodiscard]] std::int64_t read_footer_file_offset(std::string_view key);
   [[nodiscard]] std::vector<double> read_footer_expected_values(
@@ -61,9 +61,8 @@ class HiCFileReader {
       std::uint32_t wanted_resolution);
   void read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
                         const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
-                        std::uint32_t wanted_resolution,
-                        std::shared_ptr<balancing::Weights> &weights1,
-                        std::shared_ptr<balancing::Weights> &weights2);
+                        std::uint32_t wanted_resolution, std::shared_ptr<Weights> &weights1,
+                        std::shared_ptr<Weights> &weights2);
 
   [[nodiscard]] std::vector<balancing::Method> list_avail_normalizations(
       MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution);

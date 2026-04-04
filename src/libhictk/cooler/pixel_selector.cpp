@@ -16,26 +16,24 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler {
 
 PixelSelector::PixelSelector(const Index &index, const Dataset &pixels_bin1_id,
                              const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                             std::shared_ptr<const balancing::Weights> weights,
-                             bool symmetric_upper_) noexcept
+                             std::shared_ptr<const Weights> weights, bool symmetric_upper_) noexcept
     : PixelSelector(index.bins_ptr(), pixels_bin1_id, pixels_bin2_id, pixels_count,
                     std::move(weights), symmetric_upper_) {}
 
 PixelSelector::PixelSelector(std::shared_ptr<const BinTable> bins, const Dataset &pixels_bin1_id,
                              const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                             std::shared_ptr<const balancing::Weights> weights,
-                             bool symmetric_upper_) noexcept
+                             std::shared_ptr<const Weights> weights, bool symmetric_upper_) noexcept
     : _bins(std::move(bins)),
       _pixels_bin1_id(&pixels_bin1_id),
       _pixels_bin2_id(&pixels_bin2_id),
@@ -48,8 +46,7 @@ PixelSelector::PixelSelector(std::shared_ptr<const BinTable> bins, const Dataset
 
 PixelSelector::PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                              const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                             const PixelCoordinates &coords,
-                             std::shared_ptr<const balancing::Weights> weights,
+                             const PixelCoordinates &coords, std::shared_ptr<const Weights> weights,
                              bool symmetric_upper_)
     : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords, coords,
                     std::move(weights), symmetric_upper_) {}
@@ -57,8 +54,7 @@ PixelSelector::PixelSelector(std::shared_ptr<const Index> index, const Dataset &
 PixelSelector::PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                              const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                              PixelCoordinates coord1, PixelCoordinates coord2,
-                             std::shared_ptr<const balancing::Weights> weights,
-                             bool symmetric_upper_)
+                             std::shared_ptr<const Weights> weights, bool symmetric_upper_)
     : _coord1(std::move(coord1)),
       _coord2(std::move(coord2)),
       _index(std::move(index)),
@@ -147,7 +143,7 @@ PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordinates coo
           _weights,       _symmetric_upper};
 }
 
-const balancing::Weights &PixelSelector::weights() const noexcept {
+const Weights &PixelSelector::weights() const noexcept {
   assert(_weights);
   return *_weights;
 }

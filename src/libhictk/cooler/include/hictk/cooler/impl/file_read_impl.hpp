@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
@@ -42,6 +41,7 @@
 #include "hictk/string.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler {
 

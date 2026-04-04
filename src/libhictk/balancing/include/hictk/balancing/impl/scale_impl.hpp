@@ -21,10 +21,10 @@
 #include "hictk/balancing/common.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::balancing {
 

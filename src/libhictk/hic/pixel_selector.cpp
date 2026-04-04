@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/cache.hpp"
@@ -28,6 +27,7 @@
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/footer.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic {
 
@@ -145,8 +145,8 @@ std::uint32_t PixelSelector::resolution() const noexcept {
 const Chromosome &PixelSelector::chrom1() const noexcept { return _coord1->bin1.chrom(); }
 const Chromosome &PixelSelector::chrom2() const noexcept { return _coord2->bin1.chrom(); }
 
-const balancing::Weights &PixelSelector::weights1() const noexcept { return _footer->weights1(); }
-const balancing::Weights &PixelSelector::weights2() const noexcept { return _footer->weights2(); }
+const Weights &PixelSelector::weights1() const noexcept { return _footer->weights1(); }
+const Weights &PixelSelector::weights2() const noexcept { return _footer->weights2(); }
 
 const BinTable &PixelSelector::bins() const noexcept { return _reader->bins(); }
 std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept {
@@ -259,7 +259,7 @@ const BinTable &PixelSelectorAll::bins() const noexcept {
 }
 std::shared_ptr<const BinTable> PixelSelectorAll::bins_ptr() const noexcept { return _bins; }
 
-const balancing::Weights &PixelSelectorAll::weights() const {
+const Weights &PixelSelectorAll::weights() const {
   if (!_weight_cache) {
     throw std::runtime_error(
         "PixelSelectorAll::weights() was called on an instance of PixelSelectorAll with null "
@@ -271,7 +271,7 @@ const balancing::Weights &PixelSelectorAll::weights() const {
   }
 
   if (normalization() == balancing::Method::NONE()) {
-    *weights = balancing::Weights{1.0, bins().size(), balancing::Weights::Type::DIVISIVE};
+    *weights = Weights{1.0, bins().size(), Weights::Type::DIVISIVE};
     return *weights;
   }
 
@@ -280,12 +280,12 @@ const balancing::Weights &PixelSelectorAll::weights() const {
     if (sel.is_intra()) {
       const auto &chrom_weights = sel.weights1();
       const auto offset = static_cast<std::ptrdiff_t>(bins().at(sel.chrom1()).id());
-      std::copy(chrom_weights.begin(balancing::Weights::Type::DIVISIVE),
-                chrom_weights.end(balancing::Weights::Type::DIVISIVE), buff.begin() + offset);
+      std::copy(chrom_weights.begin(Weights::Type::DIVISIVE),
+                chrom_weights.end(Weights::Type::DIVISIVE), buff.begin() + offset);
     }
   });
 
-  *weights = balancing::Weights{std::move(buff), balancing::Weights::Type::DIVISIVE};
+  *weights = Weights{std::move(buff), Weights::Type::DIVISIVE};
   return *weights;
 }
 

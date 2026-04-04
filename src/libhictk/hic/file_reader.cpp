@@ -23,13 +23,13 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
@@ -375,20 +375,21 @@ std::vector<double> HiCFileReader::read_footer_expected_values_norm(
   return expectedValues;
 }
 
-[[nodiscard]] static balancing::Weights default_initialize_weight_vector(
-    const Chromosome &chrom, const balancing::Method &norm, std::uint32_t resolution) {
+[[nodiscard]] static Weights default_initialize_weight_vector(const Chromosome &chrom,
+                                                              const balancing::Method &norm,
+                                                              std::uint32_t resolution) {
   const auto filler_weight =
       norm == balancing::Method::NONE() ? 1.0 : std::numeric_limits<double>::quiet_NaN();
 
   const auto num_bins1 = (chrom.size() + resolution - 1) / resolution;
-  return {filler_weight, num_bins1, balancing::Weights::Type::DIVISIVE};
+  return {filler_weight, num_bins1, Weights::Type::DIVISIVE};
 }
 
 void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
                                      const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
                                      std::uint32_t wanted_resolution,
-                                     std::shared_ptr<balancing::Weights> &weights1,
-                                     std::shared_ptr<balancing::Weights> &weights2) {
+                                     std::shared_ptr<Weights> &weights1,
+                                     std::shared_ptr<Weights> &weights2) {
   assert(weights1);
   assert(weights2);
   if (!weights1->empty() && !weights2->empty()) {
@@ -428,9 +429,8 @@ void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome 
       const auto numBins =
           static_cast<std::size_t>((chrom1.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights1 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
+      *weights1 = Weights{readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+                          Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
 
@@ -441,9 +441,8 @@ void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome 
       const auto numBins =
           static_cast<std::size_t>((chrom2.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights2 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
+      *weights2 = Weights{readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+                          Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
   }
@@ -464,8 +463,8 @@ void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome 
 HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
                                      const BinTable &bins, MatrixType matrix_type,
                                      const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
-                                     std::shared_ptr<balancing::Weights> &weights1,
-                                     std::shared_ptr<balancing::Weights> &weights2) {
+                                     std::shared_ptr<Weights> &weights1,
+                                     std::shared_ptr<Weights> &weights2) {
   assert(chrom1 <= chrom2);
   assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), bins.resolution()) !=
          _header->resolutions.end());

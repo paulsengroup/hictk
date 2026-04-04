@@ -22,7 +22,7 @@ HICTK_DISABLE_WARNING_POP
 #include "hictk/common.hpp"
 #include "hictk/pixel.hpp"
 
-namespace hictk::balancing {
+namespace hictk {
 
 class Weights {
  public:

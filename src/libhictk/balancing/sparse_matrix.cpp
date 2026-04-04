@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <memory>
 #include <nonstd/span.hpp>
 #include <stdexcept>

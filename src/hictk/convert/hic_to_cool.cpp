@@ -70,7 +70,7 @@ static void copy_weights(hic::File& hf, CoolerFile& cf, balancing::Method norm,
   SPDLOG_INFO(FMT_STRING("[{}] processing {} normalization vector..."), hf.bins().resolution(),
               norm);
 
-  const auto weights = hf.normalization(norm)(balancing::Weights::Type::DIVISIVE);
+  const auto weights = hf.normalization(norm)(Weights::Type::DIVISIVE);
   using T = std::remove_reference_t<decltype(cf)>;
   if constexpr (std::is_same_v<T, cooler::File>) {
     cf.write_weights(norm.to_string(), weights.begin(), weights.end(), false, true);

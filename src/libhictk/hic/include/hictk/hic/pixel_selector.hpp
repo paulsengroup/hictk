@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/cache.hpp"
@@ -27,6 +26,7 @@
 #include "hictk/hic/footer.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic {
 
@@ -91,8 +91,8 @@ class PixelSelector {
   [[nodiscard]] const Chromosome &chrom1() const noexcept;
   [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
-  [[nodiscard]] const balancing::Weights &weights1() const noexcept;
-  [[nodiscard]] const balancing::Weights &weights2() const noexcept;
+  [[nodiscard]] const Weights &weights1() const noexcept;
+  [[nodiscard]] const Weights &weights2() const noexcept;
 
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
@@ -229,7 +229,7 @@ class PixelSelectorAll {
   [[nodiscard]] std::uint32_t resolution() const noexcept;
   [[nodiscard]] const BinTable &bins() const noexcept;
   [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;
-  [[nodiscard]] const balancing::Weights &weights() const;
+  [[nodiscard]] const Weights &weights() const;
 
   template <typename N>
   class iterator {

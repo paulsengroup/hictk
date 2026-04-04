@@ -16,9 +16,9 @@
 #include <utility>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/interaction_block.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 struct BlockID {
@@ -80,7 +80,7 @@ class BlockCache {
 };
 
 class WeightCache {
-  using Value = std::shared_ptr<balancing::Weights>;
+  using Value = std::shared_ptr<Weights>;
   phmap::flat_hash_map<std::pair<std::uint32_t, balancing::Method>, Value> _weights{};
 
  public:

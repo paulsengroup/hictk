@@ -10,13 +10,13 @@
 #include <cstdint>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::balancing {
 
-balancing::Weights VC::get_weights(bool rescale) const {
+Weights VC::get_weights(bool rescale) const {
   if (!rescale) {
-    return {_biases, balancing::Weights::Type::DIVISIVE};
+    return {_biases, Weights::Type::DIVISIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -35,7 +35,7 @@ balancing::Weights VC::get_weights(bool rescale) const {
     return n;
   });
 
-  return {biases, balancing::Weights::Type::DIVISIVE};
+  return {biases, Weights::Type::DIVISIVE};
 }
 
 const std::vector<double>& VC::get_scale() const noexcept { return _scale; }

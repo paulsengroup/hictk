@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/utils.hpp"
@@ -28,6 +27,7 @@
 #include "hictk/hic/validation.hpp"
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk {
 
@@ -97,7 +97,7 @@ PixelSelector PixelSelector::fetch(PixelCoordinates coord1_, PixelCoordinates co
       _sel);
 }
 
-const balancing::Weights& PixelSelector::weights() const noexcept {
+const Weights& PixelSelector::weights() const noexcept {
   assert(_weights);
   return *_weights;
 }
@@ -301,7 +301,7 @@ std::vector<balancing::Method> File::avail_normalizations() const {
   return std::visit([](const auto& fp) { return fp.avail_normalizations(); }, _fp);
 }
 
-const balancing::Weights& File::normalization(std::string_view normalization_) const {
+const Weights& File::normalization(std::string_view normalization_) const {
   assert(!_fp.valueless_by_exception());
   if (std::holds_alternative<cooler::File>(_fp)) {
     return std::get<cooler::File>(_fp).normalization(normalization_);

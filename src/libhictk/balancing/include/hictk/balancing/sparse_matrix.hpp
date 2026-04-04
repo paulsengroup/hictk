@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <zstd.h>
+
 #include <BS_thread_pool.hpp>
 #include <atomic>
 #include <cstddef>
@@ -19,8 +21,8 @@
 #include "hictk/filestream.hpp"
 
 // pre-declarations
-class ZSTD_CCtx_s;
-class ZSTD_DCtx_s;
+// class ZSTD_CCtx_s;
+// class ZSTD_DCtx_s;
 
 namespace hictk::balancing::internal {
 

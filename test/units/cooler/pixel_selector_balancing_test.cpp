@@ -9,9 +9,9 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/test/testdir.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler::test::pixel_selector {
 
@@ -24,9 +24,9 @@ TEST_CASE("Cooler: pixel selector w/ balancing", "[pixel_selector][short]") {
 
   SECTION("read weights") {
     SECTION("valid") {
-      CHECK(clr.normalization("weight").type() == hictk::balancing::Weights::Type::MULTIPLICATIVE);
+      CHECK(clr.normalization("weight").type() == hictk::Weights::Type::MULTIPLICATIVE);
       for (const auto* name : {"GW_SCALE", "INTER_SCALE", "SCALE", "VC", "VC_SQRT"}) {
-        CHECK(clr.normalization(name).type() == hictk::balancing::Weights::Type::DIVISIVE);
+        CHECK(clr.normalization(name).type() == hictk::Weights::Type::DIVISIVE);
       }
     }
 

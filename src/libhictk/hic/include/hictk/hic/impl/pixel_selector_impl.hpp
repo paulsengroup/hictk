@@ -18,12 +18,12 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/common.hpp"
 #include "hictk/hic/block_reader.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic {
 
@@ -57,8 +57,8 @@ ThinPixel<N> PixelSelector::transform_pixel(ThinPixel<float> pixel) const {
     }
   };
 
-  const auto &weights1 = _footer->weights1()(balancing::Weights::Type::DIVISIVE);
-  const auto &weights2 = _footer->weights2()(balancing::Weights::Type::DIVISIVE);
+  const auto &weights1 = _footer->weights1()(Weights::Type::DIVISIVE);
+  const auto &weights2 = _footer->weights2()(Weights::Type::DIVISIVE);
   const auto &expected = _footer->expectedValues();
 
   const auto bin1 = pixel.bin1_id;
@@ -498,8 +498,8 @@ ThinPixel<N> PixelSelector::iterator<N>::transform_pixel(ThinPixel<float> pixel)
     }
   };
 
-  assert(_footer->weights1().type() == balancing::Weights::Type::DIVISIVE);
-  assert(_footer->weights2().type() == balancing::Weights::Type::DIVISIVE);
+  assert(_footer->weights1().type() == Weights::Type::DIVISIVE);
+  assert(_footer->weights2().type() == Weights::Type::DIVISIVE);
 
   const auto &weights1 = _footer->weights1();
   const auto &weights2 = _footer->weights2();

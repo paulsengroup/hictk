@@ -94,7 +94,7 @@ inline auto VC::compute_cis(const File& f) -> Result {
 
     offsets.push_back(f.bins().subset(chrom).num_bin_prefix_sum().front());
 
-    const auto chrom_weights = vc.get_weights(false)(balancing::Weights::Type::DIVISIVE);
+    const auto chrom_weights = vc.get_weights(false)(Weights::Type::DIVISIVE);
     scales.push_back(vc.get_scale().front());
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
@@ -126,7 +126,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -136,7 +136,7 @@ inline auto VC::compute_gw(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 }  // namespace hictk::balancing

@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::balancing {
 
@@ -205,9 +205,9 @@ std::vector<double> ICE::compute_weights_from_chromosome_sizes(
   return weights;
 }
 
-balancing::Weights ICE::get_weights(bool rescale) const {
+Weights ICE::get_weights(bool rescale) const {
   if (!rescale) {
-    return {_biases, balancing::Weights::Type::MULTIPLICATIVE};
+    return {_biases, Weights::Type::MULTIPLICATIVE};
   }
 
   std::vector<double> biases(_biases.size());
@@ -227,7 +227,7 @@ balancing::Weights ICE::get_weights(bool rescale) const {
                      });
     }
   }
-  return {biases, balancing::Weights::Type::MULTIPLICATIVE};
+  return {biases, Weights::Type::MULTIPLICATIVE};
 }
 
 std::vector<double> ICE::scale() const noexcept { return _scale; }

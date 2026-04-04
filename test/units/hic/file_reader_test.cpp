@@ -32,7 +32,7 @@ const auto pathV8 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic8").string();
 // NOLINTNEXTLINE(cert-err58-cpp)
 const auto pathV9 = (datadir / "hic" / "4DNFIZ1ZVXC8.hic9").string();
 
-[[maybe_unused]] static void check_weights_are_constant(const balancing::Weights& weights,
+[[maybe_unused]] static void check_weights_are_constant(const Weights& weights,
                                                         double value = 1.0) {
   REQUIRE(weights.is_constant());
   REQUIRE(!weights.empty());
@@ -96,7 +96,7 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
                                             0.008417076032024847};
 
   SECTION("observed NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::observed,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
@@ -111,8 +111,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed VC BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
 
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::VC(), MatrixUnit::BP, w1, w2);
@@ -128,8 +128,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed VC_SQRT BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, w1, w2);
 
@@ -144,8 +144,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed KR BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::KR(), MatrixUnit::BP, w1, w2);
 
@@ -160,8 +160,8 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("observed SCALE BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::SCALE(), MatrixUnit::BP, w1, w2);
 
@@ -176,7 +176,7 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::oe,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
@@ -197,7 +197,7 @@ TEST_CASE("HiC: read footer (v8)", "[hic][v8][short]") {
   }
 
   SECTION("expected NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::expected,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
@@ -232,7 +232,7 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
                                             0.008417075820557469};
 
   SECTION("observed NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::observed,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
@@ -247,8 +247,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("observed VC BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::VC(), MatrixUnit::BP, w1, w2);
 
@@ -263,8 +263,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("observed VC_SQRT BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::VC_SQRT(), MatrixUnit::BP, w1, w2);
 
@@ -279,8 +279,8 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("observed SCALE BP 5000") {
-    auto w1 = std::make_shared<balancing::Weights>();
-    auto w2 = std::make_shared<balancing::Weights>();
+    auto w1 = std::make_shared<Weights>();
+    auto w2 = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2R, bins, MatrixType::observed,
                                  hictk::balancing::Method::SCALE(), MatrixUnit::BP, w1, w2);
 
@@ -295,7 +295,7 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("oe NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::oe,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 
@@ -316,7 +316,7 @@ TEST_CASE("HiC: read footer (v9)", "[hic][v9][short]") {
   }
 
   SECTION("expected NONE BP 5000") {
-    auto w = std::make_shared<balancing::Weights>();
+    auto w = std::make_shared<Weights>();
     const auto f = s.read_footer(chr2L, chr2L, bins, MatrixType::expected,
                                  hictk::balancing::Method::NONE(), MatrixUnit::BP, w, w);
 

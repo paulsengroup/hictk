@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
@@ -44,6 +43,7 @@
 #include "hictk/string.hpp"
 #include "hictk/suppress_warnings.hpp"
 #include "hictk/type_traits.hpp"
+#include "hictk/weights.hpp"
 
 namespace {
 template <typename T>
@@ -97,8 +97,7 @@ bool File::check_sentinel_attr(const HighFive::Group &grp) {
   return static_cast<bool>(sentinel) && *sentinel == internal::SENTINEL_ATTR_VALUE;
 }
 
-PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights,
-                          bool load_index) const {
+PixelSelector File::fetch(std::shared_ptr<const Weights> weights, bool load_index) const {
   if (!weights) {
     weights = normalization_ptr(balancing::Method::NONE());
   }
@@ -123,7 +122,7 @@ PixelSelector File::fetch(std::shared_ptr<const balancing::Weights> weights,
           _attrs.storage_mode == "symmetric-upper"};
 }
 
-PixelSelector File::fetch(std::string_view range, std::shared_ptr<const balancing::Weights> weights,
+PixelSelector File::fetch(std::string_view range, std::shared_ptr<const Weights> weights,
                           QUERY_TYPE query_type) const {
   const auto gi = query_type == QUERY_TYPE::BED
                       ? GenomicInterval::parse_bed(chromosomes(), range)
@@ -133,7 +132,7 @@ PixelSelector File::fetch(std::string_view range, std::shared_ptr<const balancin
 }
 
 PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   assert(start < end);
 
   return fetch(PixelCoordinates{bins().at(chrom_name, start),
@@ -142,7 +141,7 @@ PixelSelector File::fetch(std::string_view chrom_name, std::uint32_t start, std:
 }
 
 PixelSelector File::fetch(const PixelCoordinates &coord,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   const auto &current_chrom = coord.bin1.chrom();
   const auto &next_chrom = chromosomes().at(
       std::min(static_cast<std::uint32_t>(chromosomes().size() - 1), coord.bin1.chrom().id() + 1));
@@ -168,8 +167,7 @@ PixelSelector File::fetch(const PixelCoordinates &coord,
 }
 
 PixelSelector File::fetch(std::string_view range1, std::string_view range2,
-                          std::shared_ptr<const balancing::Weights> weights,
-                          QUERY_TYPE query_type) const {
+                          std::shared_ptr<const Weights> weights, QUERY_TYPE query_type) const {
   if (range1 == range2) {
     return fetch(range1, std::move(weights), query_type);
   }
@@ -188,7 +186,7 @@ PixelSelector File::fetch(std::string_view range1, std::string_view range2,
 
 PixelSelector File::fetch(std::string_view chrom1, std::uint32_t start1, std::uint32_t end1,
                           std::string_view chrom2, std::uint32_t start2, std::uint32_t end2,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   assert(start1 < end1);
   assert(start2 < end2);
 
@@ -223,13 +221,13 @@ PixelSelector File::fetch(std::string_view chrom1_name, std::uint32_t start1, st
 }
 
 PixelSelector File::fetch(std::uint64_t first_bin, std::uint64_t last_bin,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   return fetch(first_bin, last_bin, first_bin, last_bin, std::move(weights));
 }
 
 PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
                           std::uint64_t first_bin2, std::uint64_t last_bin2,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   PixelCoordinates coord1{bins().at(first_bin1), bins().at(last_bin1)};
   PixelCoordinates coord2{bins().at(first_bin2), bins().at(last_bin2)};
 
@@ -237,7 +235,7 @@ PixelSelector File::fetch(std::uint64_t first_bin1, std::uint64_t last_bin1,
 }
 
 PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
-                          std::shared_ptr<const balancing::Weights> weights) const {
+                          std::shared_ptr<const Weights> weights) const {
   if (_attrs.storage_mode != "symmetric-upper" && !coord1.empty()) {
     assert(!coord2.empty());
     throw std::runtime_error(
@@ -267,36 +265,34 @@ PixelSelector File::fetch(PixelCoordinates coord1, PixelCoordinates coord2,
 bool File::has_normalization(std::string_view normalization_) const {
   return has_normalization(balancing::Method{normalization_});
 }
-const balancing::Weights &File::normalization(std::string_view normalization_, bool rescale) const {
+const Weights &File::normalization(std::string_view normalization_, bool rescale) const {
   return *normalization_ptr(balancing::Method{normalization_}, rescale);
 }
-const balancing::Weights &File::normalization(std::string_view normalization_,
-                                              balancing::Weights::Type type, bool rescale) const {
+const Weights &File::normalization(std::string_view normalization_, Weights::Type type,
+                                   bool rescale) const {
   return *normalization_ptr(balancing::Method{normalization_}, type, rescale);
 }
 
-const balancing::Weights &File::normalization(const balancing::Method &normalization_,
-                                              bool rescale) const {
+const Weights &File::normalization(const balancing::Method &normalization_, bool rescale) const {
   return *normalization_ptr(normalization_, rescale);
 }
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(std::string_view normalization_,
-                                                                  bool rescale) const {
+std::shared_ptr<const Weights> File::normalization_ptr(std::string_view normalization_,
+                                                       bool rescale) const {
   return normalization_ptr(balancing::Method{normalization_}, rescale);
 }
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(std::string_view normalization_,
-                                                                  balancing::Weights::Type type,
-                                                                  bool rescale) const {
+std::shared_ptr<const Weights> File::normalization_ptr(std::string_view normalization_,
+                                                       Weights::Type type, bool rescale) const {
   return normalization_ptr(balancing::Method{normalization_}, type, rescale);
 }
 
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(
-    const balancing::Method &normalization_, bool rescale) const {
-  return normalization_ptr(normalization_, balancing::Weights::Type::INFER, rescale);
+std::shared_ptr<const Weights> File::normalization_ptr(const balancing::Method &normalization_,
+                                                       bool rescale) const {
+  return normalization_ptr(normalization_, Weights::Type::INFER, rescale);
 }
 
 // NOLINTNEXTLINE(*-function-cognitive-complexity)
-std::shared_ptr<const balancing::Weights> File::normalization_ptr(
-    const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale) const {
+std::shared_ptr<const Weights> File::normalization_ptr(const balancing::Method &normalization_,
+                                                       Weights::Type type, bool rescale) const {
   if (!rescale) {
     if (const auto it = _weights.find(normalization_.to_string()); it != _weights.end()) {
       return it->second;
@@ -309,8 +305,8 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(
   }
 
   if (normalization_ == "NONE") {
-    auto weights = std::make_shared<const balancing::Weights>(
-        1.0, bins().size(), balancing::Weights::Type::MULTIPLICATIVE);
+    auto weights =
+        std::make_shared<const Weights>(1.0, bins().size(), Weights::Type::MULTIPLICATIVE);
     if (rescale) {
       _weights_scaled.emplace(normalization_.to_string(), weights);
     } else {
@@ -333,21 +329,20 @@ std::shared_ptr<const balancing::Weights> File::normalization_ptr(
       _root_group, dset_path,
       Dataset::init_access_props(DEFAULT_HDF5_CHUNK_SIZE, DEFAULT_HDF5_DATASET_CACHE_SIZE, 1.0)};
 
-  if (type == balancing::Weights::Type::INFER || type == balancing::Weights::Type::UNKNOWN) {
+  if (type == Weights::Type::INFER || type == Weights::Type::UNKNOWN) {
     if (dset.has_attribute("divisive_weights")) {
-      type = dset.read_attribute<bool>("divisive_weights")
-                 ? balancing::Weights::Type::DIVISIVE
-                 : balancing::Weights::Type::MULTIPLICATIVE;
+      type = dset.read_attribute<bool>("divisive_weights") ? Weights::Type::DIVISIVE
+                                                           : Weights::Type::MULTIPLICATIVE;
     } else {
-      type = balancing::Weights::infer_type(dset.name());
-      if (type == balancing::Weights::Type::UNKNOWN) {
+      type = Weights::infer_type(dset.name());
+      if (type == Weights::Type::UNKNOWN) {
         throw std::runtime_error(
             fmt::format(FMT_STRING("unable to infer type for \"{}\" weights"), dset.uri()));
       }
     }
   }
 
-  auto weights = std::make_shared<balancing::Weights>(dset.read_all<std::vector<double>>(), type);
+  auto weights = std::make_shared<Weights>(dset.read_all<std::vector<double>>(), type);
   if (!rescale) {
     _weights.emplace(normalization_.to_string(), weights);
     return weights;

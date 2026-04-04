@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::balancing {
 

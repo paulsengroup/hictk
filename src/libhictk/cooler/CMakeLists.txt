@@ -81,7 +81,7 @@ target_include_directories(
 target_link_libraries(
   hictk_internal_cooler
   PUBLIC
-    hictk::balancing
+    hictk::balancing_methods
     hictk::bin_table
     hictk::chromosome
     hictk::common
@@ -95,6 +95,7 @@ target_link_libraries(
     hictk::type_traits
     hictk::variant
     hictk::version
+    hictk::weights
 )
 
 target_link_system_libraries(

@@ -12,8 +12,8 @@
 #include <utility>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
@@ -24,7 +24,7 @@ auto WeightCache::get_or_init(std::uint32_t chrom_id, balancing::Method norm) ->
     return it->second;
   }
 
-  return _weights.emplace(std::move(key), std::make_shared<balancing::Weights>()).first->second;
+  return _weights.emplace(std::move(key), std::make_shared<Weights>()).first->second;
 }
 
 auto WeightCache::get_or_init(const Chromosome &chrom, balancing::Method norm) -> Value {

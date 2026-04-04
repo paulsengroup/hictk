@@ -14,13 +14,13 @@
 #include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler {
 
@@ -89,8 +89,7 @@ template <typename N>
 inline PixelSelector::iterator<N>::iterator(
     // NOLINTBEGIN(*-unnecessary-value-param)
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-    std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size,
-    std::shared_ptr<const Index> index)
+    std::shared_ptr<const Weights> weights, bool fixed_bin_size, std::shared_ptr<const Index> index)
     // NOLINTEND(*-unnecessary-value-param)
     : _bin1_id_it(pixels_bin1_id.begin<BinIDT>()),
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
@@ -107,7 +106,7 @@ inline PixelSelector::iterator<N>::iterator(
     // NOLINTBEGIN(*-unnecessary-value-param)
     std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
     const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-    PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size)
+    PixelCoordinates coord2, std::shared_ptr<const Weights> weights, bool fixed_bin_size)
     // NOLINTEND(*-unnecessary-value-param)
     : _index(std::move(index)),
       _coord1(std::move(coord1)),
@@ -152,7 +151,7 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> inde
                                                const Dataset &pixels_bin1_id,
                                                const Dataset &pixels_bin2_id,
                                                const Dataset &pixels_count,
-                                               std::shared_ptr<const balancing::Weights> weights,
+                                               std::shared_ptr<const Weights> weights,
                                                bool fixed_bin_size) -> iterator {
   iterator it{};
   it._index = std::move(index);

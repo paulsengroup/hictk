@@ -11,15 +11,14 @@
 #include <variant>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk {
 
 template <typename PixelSelectorT>
-PixelSelector::PixelSelector(PixelSelectorT selector,
-                             std::shared_ptr<const balancing::Weights> weights)
+PixelSelector::PixelSelector(PixelSelectorT selector, std::shared_ptr<const Weights> weights)
     : _sel(std::move(selector)), _weights(std::move(weights)) {
   assert(_weights);
 }

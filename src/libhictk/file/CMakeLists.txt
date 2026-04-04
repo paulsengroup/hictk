@@ -33,7 +33,7 @@ target_include_directories(
 target_link_libraries(
   hictk_internal_file
   PUBLIC
-    hictk::balancing
+    hictk::balancing_methods
     hictk::bin_table
     hictk::cooler
     hictk::genomic_interval
@@ -41,6 +41,7 @@ target_link_libraries(
     hictk::pixel
     hictk::reference
     hictk::tmpdir
+    hictk::weights
 )
 
 target_link_system_libraries(hictk_internal_file PUBLIC fmt::fmt-header-only)
