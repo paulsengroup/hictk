@@ -74,13 +74,11 @@ def main():
 
         headers.extend(extract_headers(cmakelists))
 
-    spdx_header = textwrap.dedent(
-        """
+    spdx_header = textwrap.dedent("""
         // Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
         //
         // SPDX-License-Identifier: MIT
-        """
-    ).strip()
+        """).strip()
 
     print(spdx_header, end="\n\n")
 

@@ -9,7 +9,8 @@ target_sources(
   hictk_internal_variant
   INTERFACE
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/generic_variant.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/numeric_variant.hpp"

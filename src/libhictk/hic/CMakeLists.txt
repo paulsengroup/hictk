@@ -31,7 +31,8 @@ target_sources(
   hictk_internal_hic
   INTERFACE
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/hic/block_reader.hpp"
