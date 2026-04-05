@@ -72,7 +72,7 @@ jobs:
           set -u
           set -e
 
-          hash="${{ hashFiles('conanfile.py', 'utils/devel/build_dependencies.py') }}"
+          hash="${{ hashFiles('conanfile.py', 'conan.lock', 'utils/devel/build_dependencies.py') }}"
 
           image="$(echo '${{ inputs.image }}' |
                    rev |
@@ -110,30 +110,6 @@ jobs:
       - name: Clean Conan cache (pre-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
         run: conan remove --confirm '*'
-
-      - name: Install build dependencies
-        if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        run: |
-          apt-get update
-          apt-get install -y -q gcc g++
-
-          CC=gcc CXX=g++ conan profile detect --name gcc
-
-          conan install \
-             --requires 'b2/5.2.1' \
-             --build='*'           \
-             -pr:b=gcc             \
-             -pr:h=gcc
-
-      - name: Tweak conan profile
-        if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
-        run: |
-          # Newer versions of b2 lead to exceptions like
-          # ConanException: These libraries were built, but were not used in any boost module
-          cat << EOF | tee -a "$CONAN_DEFAULT_PROFILE_PATH"
-          [tool_requires]
-          boost/*: b2/5.2.1
-          EOF
 
       - name: Build and deploy dependencies
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'
