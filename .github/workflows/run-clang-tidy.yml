@@ -16,6 +16,7 @@ on:
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   pull_request:
     paths:
@@ -28,6 +29,7 @@ on:
       - ".clang-tidy"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -44,7 +46,7 @@ permissions:
 jobs:
   detect-changed-files:
     name: Detect Changed Files
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
 
     outputs:
       no-files-changed: ${{ steps.changed-files.outputs.skip }}
@@ -194,7 +196,7 @@ jobs:
   clang-tidy-status-check:
     name: Status Check (clang-tidy)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - run-clang-tidy
 

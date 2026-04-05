@@ -16,6 +16,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   pull_request:
     paths:
@@ -226,7 +227,7 @@ jobs:
   cppstd-status-check:
     name: Status Check (cppstd)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-project
 

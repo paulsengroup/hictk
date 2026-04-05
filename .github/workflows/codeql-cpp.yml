@@ -16,6 +16,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
   pull_request:
     paths:
       - ".github/workflows/codeql-cpp.yml"

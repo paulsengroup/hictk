@@ -17,6 +17,7 @@ on:
       - "CMakeLists.txt"
       - "Dockerfile"
       - "conanfile.py"
+      - "conan.lock"
     tags:
       - "v*.*.*"
 
@@ -32,6 +33,7 @@ on:
       - "CMakeLists.txt"
       - "Dockerfile"
       - "conanfile.py"
+      - "conan.lock"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -239,7 +241,7 @@ jobs:
 
   merge-images:
     name: Merge images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [build-dockerfile]
     if: github.event_name != 'pull_request'
     permissions:
@@ -315,7 +317,7 @@ jobs:
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-dockerfile
       - merge-images

@@ -15,6 +15,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   pull_request:
     paths:
@@ -26,6 +27,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   schedule:
     # Run weekly
@@ -449,8 +451,8 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/profiles/"            \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-21           \
-            --llvm-profdata-bin llvm-profdata-21 \
+            --llvm-cov-bin llvm-cov-22           \
+            --llvm-profdata-bin llvm-profdata-22 \
             ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
@@ -467,7 +469,7 @@ jobs:
   fuzzy-testing-status-check:
     name: Status Check (fuzzy-testing)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-project
       - fuzzy-project
