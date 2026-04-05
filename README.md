@@ -162,7 +162,9 @@ The CLI application and C++ library are capable of reading and writing files in 
 
 - Seamless conversion between Cooler and .hic formats (from hic to cool and vice versa)
 - Uniform interface to query interaction matrices
-- High performance and low memory requirements (see benchmarks in the [Supplementary Text](https://academic.oup.com/bioinformatics/article/40/7/btae408/7698028#468964761) from our paper)
+- High performance and low memory requirements (see benchmarks in the
+  [Supplementary Text](https://academic.oup.com/bioinformatics/article/40/7/btae408/7698028#468964761)
+  from our paper)
 - Easy access to file metadata
 - Create files from interaction pairs or pre-binned interaction counts
   (e.g. [4DN-DCIC pairs](https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md#example-pairs-file)
