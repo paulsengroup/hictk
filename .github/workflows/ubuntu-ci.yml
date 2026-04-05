@@ -150,11 +150,11 @@ jobs:
 
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@577015a976afe8a1c437697ef530fe40cb3e5232
 
   build-deps-dbg:
     name: Build dependencies (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: Debug
       conan-version: "2.27.*"
@@ -164,7 +164,7 @@ jobs:
 
   build-deps-rel:
     name: Build dependencies (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: Release
       conan-version: "2.27.*"
@@ -409,7 +409,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     permissions:
       contents: read
       actions: write

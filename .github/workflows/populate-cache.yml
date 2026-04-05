@@ -29,7 +29,7 @@ permissions:
 jobs:
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@577015a976afe8a1c437697ef530fe40cb3e5232
 
   build-deps-linux:
     name: Build dependencies (Linux)
@@ -44,7 +44,7 @@ jobs:
               cppstd: 23,
               image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22,
             }
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.27.*"
@@ -58,7 +58,7 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         os: [macos-15-intel, macos-26]
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.27.*"
@@ -71,7 +71,7 @@ jobs:
     strategy:
       matrix:
         build-type: [Debug, Release]
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: ${{ matrix.build-type }}
       conan-version: "2.27.*"
