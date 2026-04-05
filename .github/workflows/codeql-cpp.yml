@@ -16,6 +16,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
   pull_request:
     paths:
       - ".github/workflows/codeql-cpp.yml"
@@ -33,12 +34,12 @@ permissions:
 jobs:
   build-deps:
     name: Build dependencies
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: Debug
-      conan-version: "2.21.*"
-      cppstd: 17
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.27.*"
+      cppstd: 20
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22"
       ref: main
 
   analyze:

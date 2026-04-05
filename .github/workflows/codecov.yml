@@ -18,6 +18,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   pull_request:
     paths:
@@ -32,6 +33,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -48,16 +50,16 @@ permissions:
 jobs:
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@577015a976afe8a1c437697ef530fe40cb3e5232
 
   build-deps:
     name: Build dependencies
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: RelWithDebInfo
-      conan-version: "2.21.*"
-      cppstd: 17
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.27.*"
+      cppstd: 20
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22
       ref: main
 
   build-project:
@@ -65,7 +67,7 @@ jobs:
     needs: build-deps
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       options: "--user=root"
 
     env:
@@ -257,7 +259,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     permissions:
       contents: read
       actions: write
@@ -267,7 +269,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       options: "--user=root"
 
     env:
@@ -338,8 +340,8 @@ jobs:
             --output-dir coverage/               \
             --prefix=profiles/                   \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-21           \
-            --llvm-profdata-bin llvm-profdata-21 \
+            --llvm-cov-bin llvm-cov-22           \
+            --llvm-profdata-bin llvm-profdata-22 \
             "${binaries[@]}"
 
       - name: Upload coverage reports to Codecov
@@ -358,7 +360,7 @@ jobs:
     needs: [cache-test-dataset, build-project]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       options: "--user=root"
 
     env:
@@ -616,16 +618,16 @@ jobs:
             --output-dir coverage/               \
             --prefix="$PWD/hictk."               \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-21           \
-            --llvm-profdata-bin llvm-profdata-21 \
+            --llvm-cov-bin llvm-cov-22           \
+            --llvm-profdata-bin llvm-profdata-22 \
             build/src/hictk/hictk
 
           utils/devel/collect_coverage_data.py   \
             --output-dir coverage/               \
             --prefix="$PWD/hictk-no-telem."      \
             --format lcov                        \
-            --llvm-cov-bin llvm-cov-21           \
-            --llvm-profdata-bin llvm-profdata-21 \
+            --llvm-cov-bin llvm-cov-22           \
+            --llvm-profdata-bin llvm-profdata-22 \
             build-no-telem/src/hictk/hictk
 
       - name: Upload coverage reports to Codecov
@@ -642,7 +644,7 @@ jobs:
   codecov-status-check:
     name: Status Check (Codecov)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-project
       - run-unit-tests

@@ -81,7 +81,7 @@ jobs:
           set -u
           set -e
 
-          hash="${{ hashFiles('conanfile.py', 'utils/devel/build_dependencies.py') }}"
+          hash="${{ hashFiles('conanfile.py', 'conan.lock', 'utils/devel/build_dependencies.py') }}"
 
           cl.exe 1> /dev/null 2> version.txt
           compiler="msvc-$(head -n 1 version.txt | grep -o '[[:digit:].]\+' | head -n 1)"
@@ -123,13 +123,6 @@ jobs:
           conan_profile="$(conan profile path default)"
 
           sed -i 's/compiler\.cppstd=.*/compiler.cppstd=${{ inputs.cppstd }}/' "$conan_profile"
-
-          # Newer versions of b2 lead to exceptions like
-          # ConanException: These libraries were built, but were not used in any boost module
-          cat << EOF | tee -a "$conan_profile"
-          [tool_requires]
-          boost/*: b2/5.2.1
-          EOF
 
       - name: Clean Conan cache (pre-build)
         if: steps.lookup-conan-cache.outputs.cache-hit != 'true'

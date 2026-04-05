@@ -96,6 +96,13 @@ dynamic_project_options(
   "${CUDA_WARNINGS}"
 )
 
+if(MSVC)
+  # Ignore warnings about missing pdb
+  list(APPEND CMAKE_EXE_LINKER_FLAGS "/ignore:4099")
+  list(APPEND CMAKE_SHARED_LINKER_FLAGS "/ignore:4099")
+  list(APPEND CMAKE_STATIC_LINKER_FLAGS "/ignore:4099")
+endif()
+
 add_library(hictk::project_options ALIAS hictk_project_options)
 add_library(hictk::project_warnings ALIAS hictk_project_warnings)
 

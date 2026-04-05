@@ -16,7 +16,7 @@ permissions:
 jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       actions: write
 

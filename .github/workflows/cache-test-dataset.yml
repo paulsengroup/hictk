@@ -24,7 +24,7 @@ env:
 jobs:
   cache-test-datasets:
     name: Cache test datasets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     outputs:
       cache-key: ${{ steps.generate-cache-key.outputs.key }}

@@ -16,6 +16,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   pull_request:
     paths:
@@ -28,6 +29,7 @@ on:
       - "utils/devel/build_dependencies.py"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   workflow_dispatch:
     inputs:
@@ -55,7 +57,7 @@ permissions:
 jobs:
   matrix-factory:
     name: Generate job matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
       ci-type: ${{ steps.ci-type.outputs.type }}
@@ -91,90 +93,83 @@ jobs:
             var includes = []
 
             // Debug builds (short CI)
-            includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-21',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-22',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'ON'  })
 
             // Release builds (short CI)
-            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'ON'  })
-            includes.push({ compiler: 'clang-21',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'gcc-15',    os: 'ubuntu-25.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'ON'  })
+            includes.push({ compiler: 'clang-22',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'ON'  })
 
             if (ci_short) {
               return { include: includes }
             }
 
             // Debug builds (long CI)
-            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-14',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-15',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-21',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Debug',   developer_mode: 'OFF' })
 
             // Release builds (long CI)
-            includes.push({ compiler: 'gcc-8',     os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-8',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-9',   os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-10',  os: 'ubuntu-20.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-14',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-15',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
-            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-9',     os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-10',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-11',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-12',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-13',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'gcc-14',    os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-11',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-12',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-13',  os: 'ubuntu-22.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-14',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-15',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-16',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-17',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-18',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-19',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-20',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
 
             // Make sure project builds with CMake 3.25
-            includes.push({ compiler: 'clang-21',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.25.2', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-22',  os: 'ubuntu-24.04',  generator: 'Ninja', cmake: '3.25.2', build_type: 'Release', developer_mode: 'OFF' })
             // Make sure project builds with make
-            includes.push({ compiler: 'clang-21',  os: 'ubuntu-24.04',  generator: 'Unix Makefiles', cmake: '4.1.*', build_type: 'Release', developer_mode: 'OFF' })
+            includes.push({ compiler: 'clang-22',  os: 'ubuntu-24.04',  generator: 'Unix Makefiles', cmake: '4.3.*', build_type: 'Release', developer_mode: 'OFF' })
 
             return { include: includes }
 
   cache-test-dataset:
     name: Cache test dataset
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@577015a976afe8a1c437697ef530fe40cb3e5232
 
   build-deps-dbg:
     name: Build dependencies (Debug)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: Debug
-      conan-version: "2.21.*"
-      cppstd: 17
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.27.*"
+      cppstd: 20
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22"
       ref: main
 
   build-deps-rel:
     name: Build dependencies (Release)
-    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
+    uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     with:
       build-type: Release
-      conan-version: "2.21.*"
-      cppstd: 17
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.27.*"
+      cppstd: 20
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22"
       ref: main
 
   build-project:
@@ -414,7 +409,7 @@ jobs:
   purge-stale-ccache-entries:
     name: Purge stale CCache entries
     needs: [build-project]
-    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@18f6815c7416feef4b4bd9ceffe69baae7fefabb
+    uses: paulsengroup/hictk/.github/workflows/purge-stale-ccache-entries.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     permissions:
       contents: read
       actions: write
@@ -680,7 +675,7 @@ jobs:
   ubuntu-ci-status-check:
     name: Status Check (Ubuntu CI)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-project
       - run-unit-tests

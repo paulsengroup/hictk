@@ -17,6 +17,7 @@ on:
       - "CMakeLists.txt"
       - "Dockerfile"
       - "conanfile.py"
+      - "conan.lock"
     tags:
       - "v*.*.*"
 
@@ -32,6 +33,7 @@ on:
       - "CMakeLists.txt"
       - "Dockerfile"
       - "conanfile.py"
+      - "conan.lock"
 
 # https://stackoverflow.com/a/72408109
 concurrency:
@@ -47,7 +49,7 @@ permissions:
 
 jobs:
   cache-test-dataset:
-    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@ec6c8c43e445043aa05d189aa2799c949166cf27
+    uses: paulsengroup/hictk/.github/workflows/cache-test-dataset.yml@577015a976afe8a1c437697ef530fe40cb3e5232
     name: Cache test dataset
 
   build-dockerfile:
@@ -85,7 +87,7 @@ jobs:
           OS_VERSION='24.04'
 
           COMPILER_NAME='clang'
-          COMPILER_VERSION='21'
+          COMPILER_VERSION='22'
           C_COMPILER="$COMPILER_NAME-$COMPILER_VERSION"
 
           FINAL_BASE_IMAGE_TAG="$OS_VERSION"
@@ -239,7 +241,7 @@ jobs:
 
   merge-images:
     name: Merge images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [build-dockerfile]
     if: github.event_name != 'pull_request'
     permissions:
@@ -315,7 +317,7 @@ jobs:
   build-dockerfile-status-check:
     name: Status Check (Build Dockerfile)
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       - build-dockerfile
       - merge-images

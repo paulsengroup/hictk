@@ -18,7 +18,7 @@ jobs:
   delete-stale-caches:
     name: Delete Stale Cache entries
     if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       actions: write
     steps:
