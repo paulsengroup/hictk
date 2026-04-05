@@ -176,6 +176,7 @@ jobs:
                 -DOPT_ENABLE_CLANG_TIDY=OFF                          \
                 -DOPT_ENABLE_CPPCHECK=OFF                            \
                 -DCMAKE_INSTALL_PREFIX=dest                          \
+                -G Ninja                                             \
                 -S '${{ github.workspace }}'                         \
                 -B '${{ github.workspace }}/build'
 
@@ -283,6 +284,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
+
+      - name: Setup Developer CMD
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
 
       - uses: actions/setup-python@v6
         with:

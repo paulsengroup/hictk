@@ -79,6 +79,7 @@ RUN cmake -DCMAKE_C_STANDARD="$C_STANDARD"                    \
           -DHICTK_GIT_TAG="$HICTK_GIT_TAG"                    \
           -DHICTK_WITH_ARROW=OFF                              \
           -DHICTK_WITH_EIGEN=OFF                              \
+          -G Ninja                                            \
           -S "$src_dir"                                       \
           -B "$build_dir"
 

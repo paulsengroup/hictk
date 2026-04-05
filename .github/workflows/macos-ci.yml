@@ -254,6 +254,7 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX=dest                            \
                 -DCMAKE_C_FLAGS='-g'                                   \
                 -DCMAKE_CXX_FLAGS='-g'                                 \
+                -G Ninja                                               \
                 -S '${{ github.workspace }}'                           \
                 -B '${{ github.workspace }}/build'
 
