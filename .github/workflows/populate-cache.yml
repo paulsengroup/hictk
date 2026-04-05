@@ -26,11 +26,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  UBUNTU_20.04_IMAGE: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
-  UBUNTU_24.04_IMAGE: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21"
-  CONAN_VERSION: "2.21.*"
-
 jobs:
   cache-test-dataset:
     name: Cache test dataset
@@ -41,23 +36,18 @@ jobs:
     strategy:
       matrix:
         build-type: [Debug, RelWithDebInfo, Release]
-        cppstd: [17]
-        image: [ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21]
+        cppstd: [20]
+        image: [ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22]
         include:
           - {
               build-type: Release,
-              cppstd: 20,
-              image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21,
-            }
-          - {
-              build-type: Release,
               cppstd: 23,
-              image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21,
+              image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22,
             }
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
-      conan-version: "2.21.*"
+      conan-version: "2.27.*"
       cppstd: ${{ matrix.cppstd }}
       image: ${{ matrix.image }}
       ref: ${{ inputs.ref }}
@@ -71,8 +61,8 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: ${{ matrix.os }}
       ref: ${{ inputs.ref }}
 
@@ -84,7 +74,7 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-windows.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: ${{ matrix.build-type }}
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: windows-2025
       ref: ${{ inputs.ref }}
