@@ -36,6 +36,8 @@ RUN mkdir -p "$src_dir" "$build_dir"
 
 # Build hictk deps using Conan
 COPY conanfile.py "$src_dir/conanfile.py"
+COPY conan.lock "$src_dir/conan.lock"
+
 RUN conan install "$src_dir/conanfile.py"                      \
              --build=missing                                   \
              -c:a=tools.cmake.cmaketoolchain:generator=Ninja   \
