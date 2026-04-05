@@ -36,9 +36,9 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Debug
-      conan-version: "2.21.*"
-      cppstd: 17
-      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-20.04-cxx-clang-21"
+      conan-version: "2.27.*"
+      cppstd: 20
+      image: "ghcr.io/paulsengroup/ci-docker-images/ubuntu-22.04-cxx-clang-22"
       ref: main
 
   analyze:

@@ -84,8 +84,8 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Debug
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: macos-15-intel
       ref: main
 
@@ -94,8 +94,8 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: macos-15-intel
       ref: main
 
@@ -104,8 +104,8 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Debug
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: macos-26
       ref: main
 
@@ -114,8 +114,8 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-macos.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
-      conan-version: "2.21.*"
-      cppstd: 17
+      conan-version: "2.27.*"
+      cppstd: 20
       os: macos-26
       ref: main
 

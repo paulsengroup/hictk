@@ -39,9 +39,9 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
-      conan-version: "2.21.*"
+      conan-version: "2.27.*"
       cppstd: 20
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       ref: main
 
   build-deps-cpp23:
@@ -49,9 +49,9 @@ jobs:
     uses: paulsengroup/hictk/.github/workflows/build-conan-deps-linux.yml@40293429314b8a380c0ed0108f60b865ff96609b
     with:
       build-type: Release
-      conan-version: "2.21.*"
+      conan-version: "2.27.*"
       cppstd: 23
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       ref: main
 
   build-project:
@@ -61,7 +61,7 @@ jobs:
       - build-deps-cpp20
       - build-deps-cpp23
     container:
-      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-21
+      image: ghcr.io/paulsengroup/ci-docker-images/ubuntu-24.04-cxx-clang-22
       options: "--user=root"
 
     env:
