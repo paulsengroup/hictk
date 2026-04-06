@@ -142,7 +142,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
@@ -217,7 +217,7 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ steps.cache-key.outputs.deps-key }}
           path: ${{ steps.cache-key.outputs.deps-path }}
@@ -260,7 +260,7 @@ jobs:
 
       - name: Restore Ccache folder
         id: cache-ccache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
           restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
@@ -287,7 +287,7 @@ jobs:
           gtar --exclude='*.o' -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -299,7 +299,7 @@ jobs:
           retention-days: 1
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -331,7 +331,7 @@ jobs:
                  --verbose
 
       - name: Save Ccache folder
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           key: ${{ steps.cache-key.outputs.ccache-key }}
           path: ${{ env.CCACHE_DIR }}
@@ -349,7 +349,7 @@ jobs:
 
       - name: Upload stale cache entries
         if: steps.cache-ccache.outputs.cache-matched-key != ''
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.stale-cache.outputs.name }}
           path: "${{ steps.stale-cache.outputs.name }}"
@@ -378,17 +378,17 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -441,7 +441,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
@@ -449,14 +449,14 @@ jobs:
           cache-dependency-path: "test/integration/pyproject.toml"
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
           fail-on-cache-miss: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\

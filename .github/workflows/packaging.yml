@@ -57,13 +57,13 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ needs.build-deps.outputs.tar }}
@@ -118,13 +118,13 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ needs.build-deps.outputs.tar }}

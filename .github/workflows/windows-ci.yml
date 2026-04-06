@@ -105,7 +105,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Developer CMD
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -140,7 +140,7 @@ jobs:
 
       - name: Restore cached dependencies (Debug)
         if: matrix.build_type == 'Debug'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps-dbg.outputs.cache-key }}
           path: ${{ needs.build-deps-dbg.outputs.tar }}
@@ -148,7 +148,7 @@ jobs:
 
       - name: Restore cached dependencies (Release)
         if: matrix.build_type == 'Release'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps-rel.outputs.cache-key }}
           path: ${{ needs.build-deps-rel.outputs.tar }}
@@ -195,7 +195,7 @@ jobs:
           tar --exclude='*.obj' -cf - build/ | zstd -T0 -13 -o unit-tests.tar.zst
 
       - name: Upload unit tests
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -206,7 +206,7 @@ jobs:
           retention-days: 1
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -228,10 +228,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
@@ -239,7 +239,7 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Download unit tests artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: "unit-tests-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
@@ -283,7 +283,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Developer CMD
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -294,7 +294,7 @@ jobs:
           cache-dependency-path: "test/integration/pyproject.toml"
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
@@ -302,7 +302,7 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Download binaries artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: "binaries-${{ matrix.os }}-\
             ${{ matrix.compiler_name }}-\
