@@ -8,7 +8,6 @@
 #include "hictk/balancing/scale.hpp"
 #include "hictk/balancing/sparse_matrix.hpp"
 #include "hictk/balancing/vc.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/bin_table_fixed.hpp"
@@ -87,5 +86,6 @@
 #include "hictk/type_traits.hpp"
 #include "hictk/variant_buff.hpp"
 #include "hictk/version.hpp"
+#include "hictk/weights.hpp"
 
 int main() { std::cout << hictk::config::version::str_long() << '\n'; }

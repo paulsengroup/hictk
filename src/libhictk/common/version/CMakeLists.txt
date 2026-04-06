@@ -5,7 +5,8 @@
 include("${PROJECT_SOURCE_DIR}/cmake/Licensing.cmake")
 include("${PROJECT_SOURCE_DIR}/cmake/Versioning.cmake")
 
-set(HICTK_VERSION_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
+set(HICTK_VERSION_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(HICTK_VERSION_INCLUDE_DIR "${HICTK_VERSION_SOURCE_DIR}/include")
 
 # gersemi: off
 ConfigureLicensing(
@@ -16,19 +17,19 @@ ConfigureLicensing(
 
 ConfigureVersioning(
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${HICTK_VERSION_INCLUDE_DIR}/hictk"
+  "${HICTK_VERSION_SOURCE_DIR}"
 )
 # gersemi: on
 
 find_package(fmt REQUIRED QUIET)
 
-add_library(hictk_internal_common_version INTERFACE)
+add_library(hictk_internal_common_version STATIC)
 add_library(hictk::version ALIAS hictk_internal_common_version)
 add_dependencies(hictk_internal_common_version _hictk_check_git)
 
 target_sources(
   hictk_internal_common_version
-  INTERFACE
+  PUBLIC
     FILE_SET HEADERS
       BASE_DIRS
         "${HICTK_VERSION_INCLUDE_DIR}"
@@ -36,13 +37,15 @@ target_sources(
         "${HICTK_VERSION_INCLUDE_DIR}/hictk/git.hpp"
         "${HICTK_VERSION_INCLUDE_DIR}/hictk/license.hpp"
         "${HICTK_VERSION_INCLUDE_DIR}/hictk/version.hpp"
+  PRIVATE
+    "${HICTK_VERSION_SOURCE_DIR}/version.cpp"
 )
 
 target_include_directories(
   hictk_internal_common_version
-  INTERFACE
+  PUBLIC
     "$<BUILD_INTERFACE:${HICTK_VERSION_INCLUDE_DIR}>"
     "$<INSTALL_INTERFACE:include>"
 )
 
-target_link_libraries(hictk_internal_common_version INTERFACE fmt::fmt-header-only)
+target_link_libraries(hictk_internal_common_version PRIVATE fmt::fmt-header-only)

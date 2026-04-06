@@ -4,6 +4,7 @@
 
 #include "./common.hpp"
 
+#include <fmt/compile.h>
 #include <fmt/format.h>
 #include <parallel_hashmap/btree.h>
 
@@ -75,7 +76,7 @@ void dump_bins(const File& f, std::string_view range1, std::string_view range2) 
 
 static void dump_weights(const BinTable& bins, std::string_view range,
                          const std::vector<balancing::Method>& norms,
-                         const std::vector<balancing::Weights>& weights, bool print_header) {
+                         const std::vector<Weights>& weights, bool print_header) {
   const auto [i0, i1] = compute_bin_ids(bins, range);
 
   if (print_header) {
@@ -85,7 +86,7 @@ static void dump_weights(const BinTable& bins, std::string_view range,
   for (std::size_t i = i0; i < i1; ++i) {
     for (std::size_t j = 0; j < norms.size(); ++j) {
       const auto& w = weights[j];
-      if (w.type() == balancing::Weights::Type::DIVISIVE) {
+      if (w.type() == Weights::Type::DIVISIVE) {
         record[j] = w[i];
       } else {
         record[j] = 1.0 / w[i];
@@ -101,7 +102,7 @@ void dump_weights(const File& f, std::string_view range1, std::string_view range
     return;
   }
 
-  std::vector<balancing::Weights> weights{};
+  std::vector<Weights> weights{};
   for (const auto& norm : norms) {
     weights.emplace_back(f.normalization(norm.to_string()));  // NOLINT
   }

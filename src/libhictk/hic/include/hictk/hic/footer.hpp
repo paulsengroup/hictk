@@ -15,10 +15,10 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 struct HiCFooterMetadata {
@@ -40,14 +40,13 @@ class HiCFooter {
   Index _index{};
   HiCFooterMetadata _metadata{};
   std::vector<double> _expectedValues{};
-  std::shared_ptr<balancing::Weights> _weights1{};
-  std::shared_ptr<balancing::Weights> _weights2{};
+  std::shared_ptr<Weights> _weights1{};
+  std::shared_ptr<Weights> _weights2{};
 
  public:
   HiCFooter() = default;
   HiCFooter(Index index_, HiCFooterMetadata metadata_, std::vector<double> expected_values,
-            std::shared_ptr<balancing::Weights> weights1,
-            std::shared_ptr<balancing::Weights> weights2) noexcept;
+            std::shared_ptr<Weights> weights1, std::shared_ptr<Weights> weights2) noexcept;
 
   constexpr explicit operator bool() const noexcept;
   bool operator==(const HiCFooter &other) const noexcept;
@@ -67,8 +66,8 @@ class HiCFooter {
   [[nodiscard]] constexpr std::int64_t fileOffset() const noexcept;
 
   [[nodiscard]] constexpr const std::vector<double> &expectedValues() const noexcept;
-  [[nodiscard]] const balancing::Weights &weights1() const noexcept;
-  [[nodiscard]] const balancing::Weights &weights2() const noexcept;
+  [[nodiscard]] const Weights &weights1() const noexcept;
+  [[nodiscard]] const Weights &weights2() const noexcept;
 
   [[nodiscard]] constexpr std::vector<double> &expectedValues() noexcept;
 };
@@ -76,12 +75,12 @@ class HiCFooter {
 
 template <>
 struct std::hash<hictk::hic::internal::HiCFooterMetadata> {
-  inline std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept;
+  std::size_t operator()(hictk::hic::internal::HiCFooterMetadata const &m) const noexcept;
 };
 
 template <>
 struct std::hash<hictk::hic::internal::HiCFooter> {
-  inline std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
+  std::size_t operator()(hictk::hic::internal::HiCFooter const &f) const noexcept;
 };
 
 #include "./impl/footer_impl.hpp"  // NOLINT

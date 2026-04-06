@@ -1,35 +1,38 @@
-// Copyright (C) 2024 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2026 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
+#include "hictk/hic/file_zoomify.hpp"
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "hictk/hic.hpp"
 #include "hictk/hic/utils.hpp"
-#include "hictk/version.hpp"
+#include "hictk/transformers/coarsen.hpp"
 
 namespace hictk::hic::internal {
 
-inline HiCFileZoomify::HiCFileZoomify(std::string_view input_hic, std::string_view output_hic,
-                                      const std::vector<std::uint32_t>& resolutions,
-                                      std::size_t n_threads, std::size_t chunk_size,
-                                      const std::filesystem::path& tmpdir,
-                                      std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
+HiCFileZoomify::HiCFileZoomify(std::string_view input_hic, std::string_view output_hic,
+                               const std::vector<std::uint32_t>& resolutions, std::size_t n_threads,
+                               std::size_t chunk_size, const std::filesystem::path& tmpdir,
+                               std::uint32_t compression_lvl, bool skip_all_vs_all_matrix)
     : _path_to_input_hic(std::string{input_hic}),
       _hfw(init_writer(input_hic, output_hic, resolutions, n_threads, chunk_size, tmpdir,
                        compression_lvl, skip_all_vs_all_matrix)) {
   init();
 }
 
-inline void HiCFileZoomify::init() {
+void HiCFileZoomify::init() {
   const auto avail_resolutions = hic::utils::list_resolutions(_path_to_input_hic);
   const auto base_resolution = compute_base_resolution(_hfw.resolutions().front());
 
@@ -47,7 +50,7 @@ inline void HiCFileZoomify::init() {
   }
 }
 
-inline std::uint32_t HiCFileZoomify::compute_base_resolution(std::uint32_t tgt_resolution) const {
+std::uint32_t HiCFileZoomify::compute_base_resolution(std::uint32_t tgt_resolution) const {
   const auto avail_resolutions = hic::utils::list_resolutions(_path_to_input_hic, true);
   auto base_resolution = avail_resolutions.front();
 
@@ -66,10 +69,10 @@ inline std::uint32_t HiCFileZoomify::compute_base_resolution(std::uint32_t tgt_r
   return base_resolution;
 }
 
-inline void HiCFileZoomify::ingest_interactions(std::uint32_t resolution) {
-  // TODO: check if .hic is version 9
-  // if it is, copy blocks directly
-  // if it isn't copy pixels
+void HiCFileZoomify::ingest_interactions(std::uint32_t resolution) {
+  // TODO: check if .hic is version 9:
+  //  - if it is, copy blocks directly
+  //  - if it isn't copy pixels
 
   SPDLOG_INFO(FMT_STRING("[{} bp] ingesting interactions..."), resolution);
   const File hf(_path_to_input_hic, resolution);
@@ -77,8 +80,7 @@ inline void HiCFileZoomify::ingest_interactions(std::uint32_t resolution) {
   _hfw.add_pixels(resolution, sel.begin<float>(), sel.end<float>());
 }
 
-inline void HiCFileZoomify::coarsen_interactions(std::uint32_t resolution,
-                                                 std::uint32_t base_resolution) {
+void HiCFileZoomify::coarsen_interactions(std::uint32_t resolution, std::uint32_t base_resolution) {
   if (resolution % base_resolution != 0) {
     throw std::runtime_error(fmt::format(
         FMT_STRING("unable to generate pixels at resolution {} by coarsening resolution {}"),
@@ -94,15 +96,14 @@ inline void HiCFileZoomify::coarsen_interactions(std::uint32_t resolution,
   _hfw.add_pixels(resolution, sel2.begin(), sel2.end());
 }
 
-inline void HiCFileZoomify::zoomify() { _hfw.serialize(); }
+void HiCFileZoomify::zoomify() { _hfw.serialize(); }
 
-inline HiCFileWriter HiCFileZoomify::init_writer(std::string_view input_hic,
-                                                 std::string_view output_hic,
-                                                 const std::vector<std::uint32_t>& resolutions,
-                                                 std::size_t n_threads, std::size_t chunk_size,
-                                                 const std::filesystem::path& tmpdir,
-                                                 std::uint32_t compression_lvl,
-                                                 bool skip_all_vs_all_matrix) {
+HiCFileWriter HiCFileZoomify::init_writer(std::string_view input_hic, std::string_view output_hic,
+                                          const std::vector<std::uint32_t>& resolutions,
+                                          std::size_t n_threads, std::size_t chunk_size,
+                                          const std::filesystem::path& tmpdir,
+                                          std::uint32_t compression_lvl,
+                                          bool skip_all_vs_all_matrix) {
   auto resolutions_ = resolutions;
   std::sort(resolutions_.begin(), resolutions_.end());
 

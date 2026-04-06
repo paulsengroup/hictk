@@ -33,10 +33,6 @@ struct indexEntry {
   constexpr bool operator!=(const indexEntry &other) const noexcept { return !(*this == other); }
 };
 
-}  // namespace hictk::hic
-
-namespace hictk::hic {
-
 enum class MatrixType : std::uint_fast8_t { observed, oe, expected };
 enum class MatrixUnit : std::uint_fast8_t { BP, FRAG };
 

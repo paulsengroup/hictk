@@ -7,9 +7,9 @@
 #include <filesystem>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/test/testdir.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler::test::cooler_file {
 
@@ -30,7 +30,7 @@ TEST_CASE("Cooler: read weights", "[cooler][short]") {
     CHECK(clr2.has_normalization("SCALE"));
     CHECK(!clr2.has_normalization("FOOBAR"));
 
-    CHECK(clr2.normalization("SCALE").type() == hictk::balancing::Weights::Type::DIVISIVE);
+    CHECK(clr2.normalization("SCALE").type() == hictk::Weights::Type::DIVISIVE);
   }
 }
 

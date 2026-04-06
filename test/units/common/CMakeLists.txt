@@ -11,7 +11,13 @@ include(Catch)
 
 add_executable(hictk_common_tests)
 
-target_sources(hictk_common_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/genomic_units_test.cpp")
+target_sources(
+  hictk_common_tests
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/genomic_units_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tmpdir_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/version_test.cpp"
+)
 
 target_link_libraries(
   hictk_common_tests
@@ -19,6 +25,8 @@ target_link_libraries(
     hictk::project_warnings
     hictk::project_options
     hictk::genomic_units
+    hictk::tmpdir
+    hictk::version
 )
 
 target_link_system_libraries(

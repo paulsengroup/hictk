@@ -5,6 +5,7 @@
 #include "hictk/tools/rename_chromosomes.hpp"
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <parallel_hashmap/btree.h>
 #include <spdlog/spdlog.h>
 

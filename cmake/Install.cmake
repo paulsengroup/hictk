@@ -27,6 +27,7 @@ install(
 install(
   TARGETS
     hictk_internal_balancing
+    hictk_internal_balancing_methods
     hictk_internal_bin_table
     hictk_internal_binary_buffer
     hictk_internal_chromosome
@@ -53,6 +54,7 @@ install(
     hictk_internal_reference
     hictk_internal_transformers
     hictk_internal_variant
+    hictk_internal_weights
   EXPORT libhictk-internal-targets
   COMPONENT Libraries
   FILE_SET HEADERS

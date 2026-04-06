@@ -1,8 +1,8 @@
-// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2026 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
+#include "hictk/hic/utils.hpp"
 
 #include <parallel_hashmap/phmap.h>
 
@@ -18,7 +18,7 @@
 #include "hictk/hic/file_reader.hpp"
 
 namespace hictk::hic::utils {
-inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path, bool sorted) {
+std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& path, bool sorted) {
   auto resolutions = hic::internal::HiCFileReader(path.string()).header().resolutions;
   if (sorted) {
     std::sort(resolutions.begin(), resolutions.end());
@@ -26,10 +26,8 @@ inline std::vector<std::uint32_t> list_resolutions(const std::filesystem::path& 
   return resolutions;
 }
 
-namespace internal {
-inline std::vector<balancing::Method> avail_normalizations_union(const std::filesystem::path& path,
-                                                                 MatrixType matrix_type,
-                                                                 MatrixUnit matrix_unit) {
+[[nodiscard]] static std::vector<balancing::Method> avail_normalizations_union(
+    const std::filesystem::path& path, MatrixType matrix_type, MatrixUnit matrix_unit) {
   hic::internal::HiCFileReader reader(path.string());
 
   const auto& resolutions = reader.header().resolutions;
@@ -55,8 +53,9 @@ inline std::vector<balancing::Method> avail_normalizations_union(const std::file
   return norms_sorted;
 }
 
-inline std::vector<balancing::Method> avail_normalizations_intersection(
-    const std::filesystem::path& path, MatrixType matrix_type, MatrixUnit matrix_unit) {
+std::vector<balancing::Method> avail_normalizations_intersection(const std::filesystem::path& path,
+                                                                 MatrixType matrix_type,
+                                                                 MatrixUnit matrix_unit) {
   hic::internal::HiCFileReader reader(path.string());
 
   const auto& resolutions = reader.header().resolutions;
@@ -91,17 +90,14 @@ inline std::vector<balancing::Method> avail_normalizations_intersection(
   return filtered_norms;
 }
 
-}  // namespace internal
-
-inline std::vector<balancing::Method> list_normalizations(const std::filesystem::path& path,
-                                                          std::string_view policy,
-                                                          MatrixType matrix_type,
-                                                          MatrixUnit matrix_unit) {
+std::vector<balancing::Method> list_normalizations(const std::filesystem::path& path,
+                                                   std::string_view policy, MatrixType matrix_type,
+                                                   MatrixUnit matrix_unit) {
   if (policy == "union") {
-    return internal::avail_normalizations_union(path, matrix_type, matrix_unit);
+    return avail_normalizations_union(path, matrix_type, matrix_unit);
   }
   if (policy == "intersection") {
-    return internal::avail_normalizations_intersection(path, matrix_type, matrix_unit);
+    return avail_normalizations_intersection(path, matrix_type, matrix_unit);
   }
   throw std::invalid_argument(R"(policy should be either "union" or "intersection")");
 }

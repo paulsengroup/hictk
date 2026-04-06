@@ -72,8 +72,8 @@ File handle
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp::function:: [[nodiscard]] const std::vector<balancing::Method>& avail_normalizations(std::string_view policy = "union") const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(std::string_view normalization_) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(std::string_view normalization_) const;
 
   Accessors for normalization methods/vectors.
 
@@ -217,7 +217,7 @@ Pixel selector
 
   Return the :cpp:class:`BinTable` used to map :cpp:class:`Pixel`\s to genomic :cpp:class:`Bin`\s.
 
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &weights() const noexcept;
+  .. cpp:function:: [[nodiscard]] const Weights &weights() const noexcept;
 
   Return the balancing weights associated with the :cpp:class:`PixelSelector` instance.
 

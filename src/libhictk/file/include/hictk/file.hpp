@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/pixel_selector.hpp"
@@ -25,6 +24,7 @@
 #include "hictk/pixel.hpp"
 #include "hictk/reference.hpp"
 #include "hictk/tmpdir.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk {
 
@@ -32,7 +32,7 @@ class PixelSelector {
   using PixelSelectorVar =
       std::variant<cooler::PixelSelector, hic::PixelSelector, hic::PixelSelectorAll>;
   PixelSelectorVar _sel{cooler::PixelSelector{}};
-  std::shared_ptr<const balancing::Weights> _weights{};
+  std::shared_ptr<const Weights> _weights{};
 
  public:
   template <typename N>
@@ -41,8 +41,7 @@ class PixelSelector {
   PixelSelector() = delete;
 
   template <typename PixelSelectorT>
-  explicit PixelSelector(PixelSelectorT selector,
-                         std::shared_ptr<const balancing::Weights> weights);
+  explicit PixelSelector(PixelSelectorT selector, std::shared_ptr<const Weights> weights);
 
   template <typename N>
   [[nodiscard]] auto begin(bool sorted = true) const -> iterator<N>;
@@ -69,7 +68,7 @@ class PixelSelector {
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1_, PixelCoordinates coord2_) const;
 
-  [[nodiscard]] const balancing::Weights &weights() const noexcept;
+  [[nodiscard]] const Weights &weights() const noexcept;
 
   template <typename PixelSelectorT>
   [[nodiscard]] constexpr const PixelSelectorT &get() const;
@@ -172,8 +171,8 @@ class File {
 
   [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_) const;
-  [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(
+  [[nodiscard]] const Weights &normalization(std::string_view normalization_) const;
+  [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(
       std::string_view normalization_) const;
 
   template <typename FileT>

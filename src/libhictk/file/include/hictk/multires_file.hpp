@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -13,6 +12,7 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/cooler/multires_cooler.hpp"
 #include "hictk/file.hpp"
 #include "hictk/hic.hpp"
@@ -21,19 +21,22 @@
 namespace hictk {
 
 class MultiResFile {
+ public:
+  using QUERY_TYPE = GenomicInterval::Type;
+  enum class Format : std::uint_fast8_t { UNKNOWN, MCOOL, HIC };
+
+ private:
   std::string _path{};
-  hic::MatrixType _type{};
-  hic::MatrixUnit _unit{};
+  hic::MatrixType _type{hic::MatrixType::observed};
+  hic::MatrixUnit _unit{hic::MatrixUnit::BP};
+  Format _format{Format::UNKNOWN};
   Reference _chroms{};
   std::vector<std::uint32_t> _resolutions{};
   mutable std::optional<std::pair<std::string, std::vector<balancing::Method>>> _normalizations{};
-  std::string _format{};
   std::uint8_t _format_version{};
-  BinTable::Type _bin_type{};
+  BinTable::Type _bin_type{BinTable::Type::fixed};
 
  public:
-  using QUERY_TYPE = hictk::GenomicInterval::Type;
-
   explicit MultiResFile(const cooler::MultiResFile& mclr);
   explicit MultiResFile(const hic::File& hf);
   explicit MultiResFile(std::string uri, hic::MatrixType type_ = hic::MatrixType::observed,
@@ -41,12 +44,12 @@ class MultiResFile {
 
   [[nodiscard]] std::string path() const;
 
-  [[nodiscard]] bool is_hic() const noexcept;
-  [[nodiscard]] bool is_mcool() const noexcept;
+  [[nodiscard]] constexpr bool is_hic() const noexcept;
+  [[nodiscard]] constexpr bool is_mcool() const noexcept;
 
   [[nodiscard]] constexpr hic::MatrixType matrix_type() const noexcept;
   [[nodiscard]] constexpr hic::MatrixUnit matrix_unit() const noexcept;
-  [[nodiscard]] std::string_view format() const noexcept;
+  [[nodiscard]] constexpr std::string_view format() const noexcept;
   [[nodiscard]] constexpr std::uint8_t version() const noexcept;
   [[nodiscard]] constexpr BinTable::Type bin_type() const noexcept;
   [[nodiscard]] constexpr const std::vector<std::uint32_t>& resolutions() const noexcept;

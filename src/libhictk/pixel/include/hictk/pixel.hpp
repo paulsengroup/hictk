@@ -11,13 +11,39 @@
 #include <type_traits>
 #include <utility>
 
-#include "hictk/bin_table.hpp"
-#include "hictk/chromosome.hpp"
-#include "hictk/type_traits.hpp"
+#include "hictk/bin.hpp"
 
 namespace hictk {
 
+class BinTable;
 class Chromosome;
+
+namespace internal {
+struct ThinPixel {
+  std::uint64_t bin1_id{};
+  std::uint64_t bin2_id{};
+  std::string_view count{};
+
+  [[nodiscard]] static auto from_coo(std::string_view line, std::int64_t offset = 0) -> ThinPixel;
+};
+
+struct Pixel {
+  Bin bin1;  // NOLINT
+  Bin bin2;  // NOLINT
+  std::string_view count{};
+
+  [[nodiscard]] static auto from_bg2(const BinTable &bins, std::string_view line,
+                                     std::int64_t offset = 0) -> Pixel;
+  [[nodiscard]] static auto from_validpair(const BinTable &bins, std::string_view line,
+                                           std::int64_t offset = 0) -> Pixel;
+  [[nodiscard]] static auto from_4dn_pairs(const BinTable &bins, std::string_view line,
+                                           std::int64_t offset = 0) -> Pixel;
+};
+
+[[noreturn]] void raise_pixel_parsing_error(std::string_view line, std::string_view format,
+                                            std::string_view error_msg);
+
+}  // namespace internal
 
 template <typename N>
 struct ThinPixel {
@@ -34,9 +60,9 @@ struct ThinPixel {
   [[nodiscard]] bool operator>(const ThinPixel &other) const noexcept;
   [[nodiscard]] bool operator>=(const ThinPixel &other) const noexcept;
 
-  static auto from_coo(std::string_view line, std::int64_t offset = 0) -> ThinPixel;
-  static auto from_coo(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
-      -> ThinPixel;
+  [[nodiscard]] static auto from_coo(std::string_view line, std::int64_t offset = 0) -> ThinPixel;
+  [[nodiscard]] static auto from_coo(const BinTable &bins, std::string_view line,
+                                     std::int64_t offset = 0) -> ThinPixel;
 };
 
 struct PixelCoordinates {
@@ -81,22 +107,22 @@ struct Pixel {
   Pixel(const BinTable &bins, const ThinPixel<N> &p);
 
   [[nodiscard]] explicit operator bool() const noexcept;
-  [[nodiscard]] bool operator==(const Pixel<N> &other) const noexcept;
-  [[nodiscard]] bool operator!=(const Pixel<N> &other) const noexcept;
-  [[nodiscard]] bool operator<(const Pixel<N> &other) const noexcept;
-  [[nodiscard]] bool operator<=(const Pixel<N> &other) const noexcept;
-  [[nodiscard]] bool operator>(const Pixel<N> &other) const noexcept;
-  [[nodiscard]] bool operator>=(const Pixel<N> &other) const noexcept;
+  [[nodiscard]] bool operator==(const Pixel &other) const noexcept;
+  [[nodiscard]] bool operator!=(const Pixel &other) const noexcept;
+  [[nodiscard]] bool operator<(const Pixel &other) const noexcept;
+  [[nodiscard]] bool operator<=(const Pixel &other) const noexcept;
+  [[nodiscard]] bool operator>(const Pixel &other) const noexcept;
+  [[nodiscard]] bool operator>=(const Pixel &other) const noexcept;
 
   [[nodiscard]] ThinPixel<N> to_thin() const noexcept;
-  static auto from_coo(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
-      -> Pixel;
-  static auto from_bg2(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
-      -> Pixel;
-  static auto from_validpair(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
-      -> Pixel;
-  static auto from_4dn_pairs(const BinTable &bins, std::string_view line, std::int64_t offset = 0)
-      -> Pixel;
+  [[nodiscard]] static auto from_coo(const BinTable &bins, std::string_view line,
+                                     std::int64_t offset = 0) -> Pixel;
+  [[nodiscard]] static auto from_bg2(const BinTable &bins, std::string_view line,
+                                     std::int64_t offset = 0) -> Pixel;
+  [[nodiscard]] static auto from_validpair(const BinTable &bins, std::string_view line,
+                                           std::int64_t offset = 0) -> Pixel;
+  [[nodiscard]] static auto from_4dn_pairs(const BinTable &bins, std::string_view line,
+                                           std::int64_t offset = 0) -> Pixel;
 };
 
 [[nodiscard]] std::uint64_t area(const PixelCoordinates &coords, std::uint32_t resolution,

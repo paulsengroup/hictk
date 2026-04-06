@@ -8,97 +8,21 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <stdexcept>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
+#include "hictk/chromosome.hpp"
 #include "hictk/common.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler {
-
-inline PixelSelector::PixelSelector(const Index &index, const Dataset &pixels_bin1_id,
-                                    const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                                    std::shared_ptr<const balancing::Weights> weights,
-                                    bool symmetric_upper_) noexcept
-    : PixelSelector(index.bins_ptr(), pixels_bin1_id, pixels_bin2_id, pixels_count,
-                    std::move(weights), symmetric_upper_) {}
-
-inline PixelSelector::PixelSelector(std::shared_ptr<const BinTable> bins,
-                                    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                                    const Dataset &pixels_count,
-                                    std::shared_ptr<const balancing::Weights> weights,
-                                    bool symmetric_upper_) noexcept
-    : _bins(std::move(bins)),
-      _pixels_bin1_id(&pixels_bin1_id),
-      _pixels_bin2_id(&pixels_bin2_id),
-      _pixels_count(&pixels_count),
-      _weights(std::move(weights)),
-      _symmetric_upper(symmetric_upper_) {
-  assert(_bins);
-  assert(_weights);
-}
-
-inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
-                                    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                                    const Dataset &pixels_count, const PixelCoordinates &coords,
-                                    std::shared_ptr<const balancing::Weights> weights,
-                                    bool symmetric_upper_)
-    : PixelSelector(std::move(index), pixels_bin1_id, pixels_bin2_id, pixels_count, coords, coords,
-                    std::move(weights), symmetric_upper_) {}
-
-inline PixelSelector::PixelSelector(std::shared_ptr<const Index> index,
-                                    const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                                    const Dataset &pixels_count, PixelCoordinates coord1,
-                                    PixelCoordinates coord2,
-                                    std::shared_ptr<const balancing::Weights> weights,
-                                    bool symmetric_upper_)
-    : _coord1(std::move(coord1)),
-      _coord2(std::move(coord2)),
-      _index(std::move(index)),
-      _bins(_index->bins_ptr()),
-      _pixels_bin1_id(&pixels_bin1_id),
-      _pixels_bin2_id(&pixels_bin2_id),
-      _pixels_count(&pixels_count),
-      _weights(std::move(weights)),
-      _symmetric_upper(symmetric_upper_) {
-  assert(_index);
-  assert(_weights);
-
-  if (!_symmetric_upper) {
-    assert(_coord1.empty() && _coord2.empty());
-  }
-
-  const auto query_is_cis = _coord1.bin1.chrom() == _coord2.bin1.chrom();
-  if ((!query_is_cis && _coord1.bin1 > _coord2.bin1) ||
-      (query_is_cis && _coord1.bin1.start() > _coord2.bin1.start())) {
-    throw std::runtime_error(fmt::format(
-        FMT_STRING("query {}:{}-{}; {}:{}-{}; overlaps with the lower-triangle of the matrix"),
-        _coord1.bin1.chrom().name(), _coord1.bin1.start(), _coord1.bin2.end(),
-        _coord2.bin1.chrom().name(), _coord2.bin1.start(), _coord2.bin2.end()));
-  }
-}
-
-inline bool PixelSelector::operator==(const PixelSelector &other) const noexcept {
-  // clang-format off
-  return begin<int>() == other.begin<int>() &&
-         end<int>() == other.end<int>() &&
-         _weights == other._weights &&
-         _symmetric_upper == other._symmetric_upper;
-  // clang-format on
-}
-
-inline bool PixelSelector::operator!=(const PixelSelector &other) const noexcept {
-  return !(*this == other);
-}
 
 template <typename N>
 inline auto PixelSelector::begin() const -> iterator<N> {
@@ -150,8 +74,6 @@ inline auto PixelSelector::cend() const -> iterator<N> {
                              fixed_bins);
 }
 
-inline bool PixelSelector::empty() const { return begin<double>() == end<double>(); }
-
 template <typename N>
 inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   // We push_back into buff to avoid traversing pixels twice (once to figure out the vector size,
@@ -163,66 +85,11 @@ inline std::vector<Pixel<N>> PixelSelector::read_all() const {
   return buff;
 }
 
-inline const PixelCoordinates &PixelSelector::coord1() const noexcept { return _coord1; }
-
-inline const PixelCoordinates &PixelSelector::coord2() const noexcept { return _coord2; }
-
-inline std::uint64_t PixelSelector::size(bool upper_triangle) const {
-  if (!_coord1) {
-    assert(!_coord2);
-    const auto n = bins().size();
-    if (upper_triangle && _symmetric_upper) {
-      return (n * (n + 1)) / 2;
-    }
-    return n * n;
-  }
-
-  if (bins().type() != BinTable::Type::fixed) {
-    throw std::runtime_error(
-        "computing the number of pixels overlapping a query over a matrix with variable bin size "
-        "is not supported.");
-  }
-
-  assert(_symmetric_upper);
-
-  if (_coord1.bin1.chrom() != _coord2.bin1.chrom()) {
-    const auto height = _coord1.bin2.id() - _coord1.bin1.id() + 1;
-    const auto width = _coord2.bin2.id() - _coord2.bin1.id() + 1;
-    return height * width;
-  }
-
-  const auto start1 = _coord1.bin1.start();
-  const auto start2 = _coord2.bin1.start();
-
-  const auto end1 = ((_coord1.bin2.rel_id() + 1) * bins().resolution()) + 1;
-  const auto end2 = ((_coord2.bin2.rel_id() + 1) * bins().resolution()) + 1;
-
-  return area(start1, end1, start2, end2, bins().resolution(), upper_triangle);
-}
-
-inline const BinTable &PixelSelector::bins() const noexcept { return *bins_ptr(); }
-
-inline std::shared_ptr<const BinTable> PixelSelector::bins_ptr() const noexcept { return _bins; }
-
-inline PixelSelector PixelSelector::fetch(PixelCoordinates coord1, PixelCoordinates coord2) const {
-  return {_index,         *_pixels_bin1_id,  *_pixels_bin2_id,
-          *_pixels_count, std::move(coord1), std::move(coord2),
-          _weights,       _symmetric_upper};
-}
-
-inline const balancing::Weights &PixelSelector::weights() const noexcept {
-  assert(_weights);
-  return *_weights;
-}
-
-inline bool PixelSelector::is_symmetric_upper() const noexcept { return _symmetric_upper; }
-
 template <typename N>
 inline PixelSelector::iterator<N>::iterator(
     // NOLINTBEGIN(*-unnecessary-value-param)
     const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-    std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size,
-    std::shared_ptr<const Index> index)
+    std::shared_ptr<const Weights> weights, bool fixed_bin_size, std::shared_ptr<const Index> index)
     // NOLINTEND(*-unnecessary-value-param)
     : _bin1_id_it(pixels_bin1_id.begin<BinIDT>()),
       _bin2_id_it(pixels_bin2_id.begin<BinIDT>()),
@@ -239,7 +106,7 @@ inline PixelSelector::iterator<N>::iterator(
     // NOLINTBEGIN(*-unnecessary-value-param)
     std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
     const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-    PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size)
+    PixelCoordinates coord2, std::shared_ptr<const Weights> weights, bool fixed_bin_size)
     // NOLINTEND(*-unnecessary-value-param)
     : _index(std::move(index)),
       _coord1(std::move(coord1)),
@@ -284,7 +151,7 @@ inline auto PixelSelector::iterator<N>::at_end(std::shared_ptr<const Index> inde
                                                const Dataset &pixels_bin1_id,
                                                const Dataset &pixels_bin2_id,
                                                const Dataset &pixels_count,
-                                               std::shared_ptr<const balancing::Weights> weights,
+                                               std::shared_ptr<const Weights> weights,
                                                bool fixed_bin_size) -> iterator {
   iterator it{};
   it._index = std::move(index);
