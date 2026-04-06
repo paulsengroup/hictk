@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -96,7 +96,7 @@ jobs:
           apt-get install -y python3.12 python3.12-dev
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ needs.build-deps.outputs.tar }}
@@ -141,7 +141,7 @@ jobs:
           ./hictk_fuzzer --help
 
       - name: Upload hictk_fuzzer
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: hictk_fuzzer
           path: hictk_fuzzer
@@ -214,10 +214,10 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download hictk_fuzzer
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: hictk_fuzzer
 
@@ -396,7 +396,7 @@ jobs:
 
       - name: Upload coverage profiles
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: fuzzy-testing-cov-${{ steps.test-params.outputs.profile-prefix }}
           path: profiles/
@@ -414,10 +414,10 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download hictk_fuzzer
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: hictk_fuzzer
 
@@ -427,7 +427,7 @@ jobs:
           chmod 500 hictk_fuzzer
 
       - name: Download coverage profiles
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           pattern: fuzzy-testing-cov-*
           merge-multiple: true
@@ -456,7 +456,7 @@ jobs:
             ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           flags: "tests | fuzzer"
           fail_ci_if_error: true
