@@ -15,8 +15,10 @@ target_sources(
   hictk_internal_balancing_methods
   PUBLIC
     FILE_SET HEADERS
-      BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-      FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/methods.hpp"
+      BASE_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/balancing/methods.hpp"
   PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/methods.cpp"
 )
