@@ -80,7 +80,7 @@ jobs:
           - 23
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"

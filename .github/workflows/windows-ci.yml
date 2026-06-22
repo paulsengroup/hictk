@@ -52,7 +52,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
     steps:
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         id: set-result
         with:
           script: |
@@ -105,7 +105,7 @@ jobs:
       matrix: ${{ fromJSON(needs.matrix-factory.outputs.matrix) }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Developer CMD
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -228,7 +228,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
         uses: actions/cache/restore@v5
@@ -283,7 +283,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Developer CMD
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0

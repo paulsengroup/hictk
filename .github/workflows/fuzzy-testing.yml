@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -214,7 +214,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download hictk_fuzzer
         uses: actions/download-artifact@v8
@@ -414,7 +414,7 @@ jobs:
 
     steps:
       - name: Clone hictk
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download hictk_fuzzer
         uses: actions/download-artifact@v8
@@ -456,7 +456,7 @@ jobs:
             ./hictk_fuzzer
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           flags: "tests | fuzzer"
           fail_ci_if_error: true

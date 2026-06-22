@@ -63,7 +63,7 @@ jobs:
       ci-type: ${{ steps.ci-type.outputs.type }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.after }}
@@ -80,7 +80,7 @@ jobs:
           fi
 
       - name: Generate matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: set-result
         with:
           script: |
@@ -195,7 +195,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -431,7 +431,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
         uses: actions/cache/restore@v5
@@ -518,7 +518,7 @@ jobs:
           fi
 
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
         uses: actions/cache/restore@v5

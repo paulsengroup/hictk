@@ -55,7 +55,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-result.outputs.result }}
     steps:
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         id: set-result
         with:
           script: |
@@ -142,7 +142,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -378,7 +378,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
         uses: actions/cache/restore@v5
@@ -441,7 +441,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:

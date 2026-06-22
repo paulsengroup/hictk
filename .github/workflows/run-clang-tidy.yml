@@ -52,7 +52,7 @@ jobs:
       no-files-changed: ${{ steps.changed-files.outputs.skip }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -116,7 +116,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
