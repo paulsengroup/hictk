@@ -35,7 +35,7 @@ jobs:
     name: Lint CMakeLists.txt
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Generate requirements.txt
         run: echo 'gersemi==0.26.1' > requirements.txt
