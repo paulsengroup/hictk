@@ -37,7 +37,7 @@ int main(int argc, char **argv) noexcept {
       std::for_each(f.begin<std::uint32_t>(), f.end<std::uint32_t>(),
                     [&]([[maybe_unused]] const auto n) { size++; });
       const auto t1 = std::chrono::system_clock::now();
-      const auto delta = static_cast<std ::uint64_t>(
+      const auto delta = static_cast<std::uint64_t>(
           std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
       elapsed_time += delta;
     }
