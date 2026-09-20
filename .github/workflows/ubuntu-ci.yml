@@ -63,7 +63,7 @@ jobs:
       ci-type: ${{ steps.ci-type.outputs.type }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.after }}
@@ -80,7 +80,7 @@ jobs:
           fi
 
       - name: Generate matrix
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: set-result
         with:
           script: |
@@ -195,7 +195,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -268,7 +268,7 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: ${{ steps.cache-key.outputs.deps-key }}
           path: ${{ steps.cache-key.outputs.deps-path }}
@@ -279,7 +279,7 @@ jobs:
 
       - name: Restore Ccache folder
         id: cache-ccache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: ${{ steps.cache-key.outputs.ccache-restore-key-1 }}
           restore-keys: ${{ steps.cache-key.outputs.ccache-restore-key-2 }}
@@ -381,7 +381,7 @@ jobs:
                  --verbose
 
       - name: Save Ccache folder
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           key: ${{ steps.cache-key.outputs.ccache-key }}
           path: ${{ env.CCACHE_DIR }}
@@ -431,10 +431,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
@@ -518,10 +518,10 @@ jobs:
           fi
 
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Restore test dataset
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: ${{ needs.cache-test-dataset.outputs.cache-key }}
           path: test/data/hictk_test_data.tar.zst
