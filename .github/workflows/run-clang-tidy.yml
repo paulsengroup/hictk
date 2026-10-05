@@ -52,7 +52,7 @@ jobs:
       no-files-changed: ${{ steps.changed-files.outputs.skip }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -116,7 +116,7 @@ jobs:
       TMPDIR: "/tmp/"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Fix permissions
         run: chown -R "$(id -u):$(id -g)" "$PWD"
@@ -147,7 +147,7 @@ jobs:
           ./run-clang-tidy.py --help
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           key: ${{ needs.build-deps.outputs.cache-key }}
           path: ${{ needs.build-deps.outputs.tar }}
