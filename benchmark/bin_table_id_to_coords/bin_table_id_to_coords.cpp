@@ -76,7 +76,7 @@ struct Config {
   }
   const auto t1 = std::chrono::system_clock::now();
 
-  return static_cast<std ::uint64_t>(
+  return static_cast<std::uint64_t>(
       std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count());
 }
 
