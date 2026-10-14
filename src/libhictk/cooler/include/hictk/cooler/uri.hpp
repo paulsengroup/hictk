@@ -25,5 +25,3 @@ struct CoolerURI {
 
 [[nodiscard]] CoolerURI parse_cooler_uri(std::string_view uri);
 }  // namespace hictk::cooler
-
-#include "./impl/uri_impl.hpp"  // NOLINT

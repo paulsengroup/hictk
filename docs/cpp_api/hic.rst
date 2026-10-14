@@ -75,14 +75,14 @@ File handle
   .. cpp:function:: [[nodiscard]] const std::vector<std::uint32_t> &avail_resolutions() const noexcept;
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &norm) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view norm) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm, const Chromosome &chrom) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &norm) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view norm) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(const balancing::Method &norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(std::string_view norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(const balancing::Method &norm) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(std::string_view norm) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(const balancing::Method &norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(std::string_view norm, const Chromosome &chrom) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(const balancing::Method &norm) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(std::string_view norm) const;
 
   **Fetch methods (1D queries)**
 
@@ -148,8 +148,8 @@ Pixel selector
   .. cpp:function:: [[nodiscard]] const Chromosome &chrom1() const noexcept;
   .. cpp:function:: [[nodiscard]] const Chromosome &chrom2() const noexcept;
 
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &weights1() const noexcept;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &weights2() const noexcept;
+  .. cpp:function:: [[nodiscard]] const Weights &weights1() const noexcept;
+  .. cpp:function:: [[nodiscard]] const Weights &weights2() const noexcept;
 
   .. cpp:function:: [[nodiscard]] const BinTable &bins() const noexcept;
   .. cpp:function:: [[nodiscard]] std::shared_ptr<const BinTable> bins_ptr() const noexcept;

@@ -185,13 +185,13 @@ TEST_CASE("HiC: SerializedBlockPQueue", "[hic][v9][short]") {
   }
 }
 
-static void compare_weights(const balancing::Weights& weights_, const balancing::Weights& expected_,
+static void compare_weights(const Weights& weights_, const Weights& expected_,
                             // NOLINTNEXTLINE(*-avoid-magic-numbers)
                             double atol = 1.0e-5, double rtol = 1.0e-5) {
   REQUIRE(weights_.size() == expected_.size());
 
-  const auto weights = weights_(balancing::Weights::Type::DIVISIVE);
-  const auto expected = expected_(balancing::Weights::Type::DIVISIVE);
+  const auto weights = weights_(Weights::Type::DIVISIVE);
+  const auto expected = expected_(Weights::Type::DIVISIVE);
 
   for (std::size_t i = 0; i < weights.size(); ++i) {
     if (std::isnan(expected[i])) {
@@ -455,10 +455,9 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
                             hf1.normalization("SCALE", hf1.chromosomes().at("chr2L"))),
           Catch::Matchers::ContainsSubstring("file already contains"));
 
-      CHECK_THROWS_WITH(
-          w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
-                            balancing::Weights{{1, 2, 3}, balancing::Weights::Type::DIVISIVE}),
-          Catch::Matchers::ContainsSubstring("weight shape mismatch"));
+      CHECK_THROWS_WITH(w.add_norm_vector("VC", w.chromosomes().at("chr2L"), "BP", hf1.resolution(),
+                                          Weights{{1, 2, 3}, Weights::Type::DIVISIVE}),
+                        Catch::Matchers::ContainsSubstring("weight shape mismatch"));
 
       w.write_norm_vectors_and_norm_expected_values();
     }
@@ -507,16 +506,15 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
         const auto buff =
             generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
         weights.insert(weights.end(), buff.begin(), buff.end());
-        w.add_norm_vector("FOO", chrom, "BP", resolution,
-                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, false);
+        w.add_norm_vector("FOO", chrom, "BP", resolution, Weights{buff, Weights::Type::DIVISIVE},
+                          false);
       }
       w.write_norm_vectors_and_norm_expected_values();
     }
     // compare weights
     {
       const hic::File hf(path2, resolution);
-      compare_weights(hf.normalization("FOO"),
-                      balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
+      compare_weights(hf.normalization("FOO"), Weights{weights, Weights::Type::DIVISIVE});
     }
 
     // overwrite weights
@@ -531,16 +529,15 @@ TEST_CASE("HiC: HiCFileWriter (add weights)", "[hic][v9][long]") {
         const auto buff =
             generate_random_weights(chrom.size(), resolution, hf.fetch(chrom.name()).empty());
         weights.insert(weights.end(), buff.begin(), buff.end());
-        w.add_norm_vector("FOO", chrom, "BP", resolution,
-                          balancing::Weights{buff, balancing::Weights::Type::DIVISIVE}, true);
+        w.add_norm_vector("FOO", chrom, "BP", resolution, Weights{buff, Weights::Type::DIVISIVE},
+                          true);
       }
       w.write_norm_vectors_and_norm_expected_values();
     }
 
     // compare weights
     const hic::File hf(path2, resolution);
-    compare_weights(hf.normalization("FOO"),
-                    balancing::Weights{weights, balancing::Weights::Type::DIVISIVE});
+    compare_weights(hf.normalization("FOO"), Weights{weights, Weights::Type::DIVISIVE});
   }
 }
 

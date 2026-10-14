@@ -12,11 +12,11 @@
 #include <memory>
 #include <vector>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/cooler/dataset.hpp"
 #include "hictk/cooler/index.hpp"
 #include "hictk/pixel.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::cooler {
 
@@ -33,25 +33,25 @@ class PixelSelector {
   const Dataset *_pixels_bin1_id{};
   const Dataset *_pixels_bin2_id{};
   const Dataset *_pixels_count{};
-  std::shared_ptr<const balancing::Weights> _weights{};
+  std::shared_ptr<const Weights> _weights{};
   bool _symmetric_upper{true};
 
  public:
   PixelSelector() = default;
   PixelSelector(const Index &index, const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                const Dataset &pixels_count, std::shared_ptr<const balancing::Weights> weights,
+                const Dataset &pixels_count, std::shared_ptr<const Weights> weights,
                 bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const BinTable> bins, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                std::shared_ptr<const balancing::Weights> weights, bool symmetric_upper_) noexcept;
+                std::shared_ptr<const Weights> weights, bool symmetric_upper_) noexcept;
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                const PixelCoordinates &coords, std::shared_ptr<const balancing::Weights> weights,
+                const PixelCoordinates &coords, std::shared_ptr<const Weights> weights,
                 bool symmetric_upper_);
 
   PixelSelector(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                 const Dataset &pixels_bin2_id, const Dataset &pixels_count, PixelCoordinates coord1,
-                PixelCoordinates coord2, std::shared_ptr<const balancing::Weights> weights,
+                PixelCoordinates coord2, std::shared_ptr<const Weights> weights,
                 bool symmetric_upper_);
 
   [[nodiscard]] bool operator==(const PixelSelector &other) const noexcept;
@@ -82,7 +82,7 @@ class PixelSelector {
 
   [[nodiscard]] PixelSelector fetch(PixelCoordinates coord1, PixelCoordinates coord2) const;
 
-  [[nodiscard]] const balancing::Weights &weights() const noexcept;
+  [[nodiscard]] const Weights &weights() const noexcept;
 
   [[nodiscard]] bool is_symmetric_upper() const noexcept;
 
@@ -101,7 +101,7 @@ class PixelSelector {
     PixelCoordinates _coord1{};
     PixelCoordinates _coord2{};
 
-    std::shared_ptr<const balancing::Weights> _weights{};
+    std::shared_ptr<const Weights> _weights{};
     std::uint64_t _h5_end_offset{};
     // this is an offset used to speed up trans queries by skipping over values that are unlikely to
     // overlap with the query range.
@@ -111,19 +111,17 @@ class PixelSelector {
     bool _fixed_bin_size{true};
 
     explicit iterator(const Dataset &pixels_bin1_id, const Dataset &pixels_bin2_id,
-                      const Dataset &pixels_count,
-                      std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size,
-                      std::shared_ptr<const Index> index = {});
+                      const Dataset &pixels_count, std::shared_ptr<const Weights> weights,
+                      bool fixed_bin_size, std::shared_ptr<const Index> index = {});
 
     explicit iterator(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                       const Dataset &pixels_bin2_id, const Dataset &pixels_count,
                       PixelCoordinates coord1, PixelCoordinates coord2,
-                      std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size);
+                      std::shared_ptr<const Weights> weights, bool fixed_bin_size);
 
     static auto at_end(std::shared_ptr<const Index> index, const Dataset &pixels_bin1_id,
                        const Dataset &pixels_bin2_id, const Dataset &pixels_count,
-                       std::shared_ptr<const balancing::Weights> weights, bool fixed_bin_size)
-        -> iterator;
+                       std::shared_ptr<const Weights> weights, bool fixed_bin_size) -> iterator;
 
    public:
     using difference_type = std::ptrdiff_t;

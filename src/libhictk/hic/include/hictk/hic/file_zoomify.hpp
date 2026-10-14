@@ -49,4 +49,3 @@ class HiCFileZoomify {
 };
 
 }  // namespace hictk::hic::internal
-#include "./impl/file_zoomify_impl.hpp"  // NOLINT

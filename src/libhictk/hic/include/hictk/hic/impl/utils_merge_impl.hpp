@@ -9,8 +9,10 @@
 #include <filesystem>
 #include <vector>
 
+#include "hictk/hic.hpp"
 #include "hictk/hic/file_reader.hpp"
 #include "hictk/hic/file_writer.hpp"
+#include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::hic::utils {
 

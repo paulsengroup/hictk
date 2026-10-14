@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
 #if __has_include(<hdf5/hdf5.h>)
 #include <hdf5/H5Dpublic.h>
 #include <hdf5/H5Ipublic.h>
@@ -17,6 +15,8 @@
 #include <H5Ppublic.h>
 #include <H5Tpublic.h>
 #endif
+
+#include <fmt/format.h>
 
 #include <cassert>
 #include <cstddef>
@@ -30,6 +30,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -37,31 +38,6 @@
 #include "hictk/type_traits.hpp"
 
 namespace hictk::cooler {
-
-inline std::size_t Dataset::write(const std::vector<std::string> &buff, std::size_t offset,
-                                  bool allow_dataset_resize) {
-  if (buff.empty()) {
-    return offset;
-  }
-  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset + buff.size() > size()) {
-    if (allow_dataset_resize) {
-      resize(offset + buff.size());
-    } else {
-      throw_out_of_range_excp(offset, buff.size());
-    }
-  }
-
-  const auto str_length = get_h5type().getSize();
-  std::string strbuff(str_length * buff.size(), '\0');
-  for (std::size_t i = 0; i < buff.size(); ++i) {
-    strbuff.insert(i * str_length, buff[i]);
-  }
-  auto dspace = select(offset, buff.size());
-  dspace.write_raw(strbuff.data(), dspace.getDataType());
-
-  return size();
-}
 
 template <typename N, typename>
 inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset,
@@ -80,16 +56,6 @@ inline std::size_t Dataset::write(const std::vector<N> &buff, std::size_t offset
 
   select(offset, buff.size()).write(buff);
   return size();
-}
-
-// NOLINTNEXTLINE(*-convert-member-functions-to-static)
-inline std::size_t Dataset::write(const VariantBuffer &vbuff, std::size_t offset,
-                                  bool allow_dataset_resize) {
-  std::size_t new_offset{};
-  std::visit([&](const auto &buff) { new_offset = write(buff, offset, allow_dataset_resize); },
-             vbuff.get());
-
-  return new_offset;
 }
 
 template <typename InputIt, typename UnaryOperation,  // NOLINTNEXTLINE(*modernize-type-traits)
@@ -153,36 +119,6 @@ inline std::size_t Dataset::write(N buff, std::size_t offset, bool allow_dataset
   return ++_dataset_size;
 }
 
-inline std::size_t Dataset::write(std::string buff, std::size_t offset, bool allow_dataset_resize) {
-  [[maybe_unused]] const HighFive::SilenceHDF5 silencer{};  // NOLINT
-  if (offset >= size()) {
-    if (allow_dataset_resize) {
-      resize(offset + 1);
-    } else {
-      throw_out_of_range_excp(offset);
-    }
-  }
-
-  auto selector = select(offset);
-
-  const auto str_length = selector.getDataType().getSize();
-  buff.resize(str_length, '\0');
-
-  selector.write_raw(buff.data(), selector.getDataType());
-
-  return ++_dataset_size;
-}
-
-// NOLINTNEXTLINE(*-convert-member-functions-to-static)
-inline std::size_t Dataset::write(const GenericVariant &vbuff, std::size_t offset,
-                                  bool allow_dataset_resize) {
-  std::size_t new_offset{};
-  std::visit([&](const auto &buff) { new_offset = write(buff, offset, allow_dataset_resize); },
-             vbuff);
-
-  return new_offset;
-}
-
 template <typename BuffT>
 inline std::size_t Dataset::append(const BuffT &buff) {
   return write(buff, size(), true);
@@ -207,7 +143,7 @@ inline HighFive::DataSet Dataset::create_fixed_str_dataset(
 
   auto dspace = HighFive::DataSpace({0}, {max_dim});
 
-  // Unfortunately we have to drop down to the C api to create this kind of dataset for the time
+  // Unfortunately we have to drop down to the C API to create this kind of dataset for the time
   // being
   auto dtype_id = H5Tcopy(H5T_C_S1);
   H5Tset_cset(dtype_id, H5T_CSET_ASCII);

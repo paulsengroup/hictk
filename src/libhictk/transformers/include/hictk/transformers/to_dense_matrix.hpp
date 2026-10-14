@@ -86,8 +86,8 @@ class ToDenseMatrix {
 
   [[nodiscard]] static std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
                                  Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
-  slice_weights(const balancing::Weights& weights1, const balancing::Weights& weights2,
-                std::int64_t offset1, std::int64_t offset2, std::int64_t size1, std::int64_t size2);
+  slice_weights(const Weights& weights1, const Weights& weights2, std::int64_t offset1,
+                std::int64_t offset2, std::int64_t size1, std::int64_t size2);
 
   void validate_dtype() const;
 };

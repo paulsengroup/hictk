@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <ios>
 #include <iosfwd>
@@ -19,13 +20,14 @@
 
 namespace hictk::filestream {
 
-template <typename Mutex = std::mutex>
 class FileStream {
   // NOLINTBEGIN(*-avoid-magic-numbers)
   static_assert(sizeof(char) == 1, "char must be 1 byte wide!");
   static_assert(sizeof(float) == 4, "float must be 4 bytes wide!");
   static_assert(sizeof(double) == 8, "double must be 8 bytes wide!");
   // NOLINTEND(*-avoid-magic-numbers)
+
+  using Mutex = std::mutex;
 
   std::string _path{};
   mutable std::shared_ptr<Mutex> _mtx{};
@@ -86,7 +88,7 @@ class FileStream {
 
   // Locks mutex protecting the underlying file streams.
   // IMPORTANT: while the lock is held, only unsafe_* methods can be used.
-  [[nodiscard]] std::unique_lock<Mutex> lock() const;
+  [[nodiscard]] auto lock() const -> std::unique_lock<Mutex>;
   [[nodiscard]] bool is_locked() const noexcept;
 
   // read char*
@@ -183,11 +185,9 @@ class FileStream {
   void resize(std::streamsize new_size);
 
  private:
-  [[nodiscard]] std::streampos new_posg(std::streamoff offset, std::ios::seekdir way);
-  [[nodiscard]] std::streampos new_posg_checked(std::streamoff offset, std::ios::seekdir way);
-  [[nodiscard]] std::streampos new_posp(std::streamoff offset, std::ios::seekdir way);
-  void update_file_size();
-  void unsafe_update_file_size();
+  [[nodiscard]] std::streampos new_posg(std::streamoff offset, std::ios::seekdir way) const;
+  [[nodiscard]] std::streampos new_posg_checked(std::streamoff offset, std::ios::seekdir way) const;
+  [[nodiscard]] std::streampos new_posp(std::streamoff offset, std::ios::seekdir way) const;
   [[nodiscard]] static std::ifstream open_file_read(const std::string &path,
                                                     std::ifstream::openmode mode);
   [[nodiscard]] static std::ofstream open_file_write(const std::string &path,
@@ -198,6 +198,9 @@ class FileStream {
   template <typename T, typename I1, typename I2>
   static void validate_read(I1 bytes_read, I2 count_expected,
                             std::string_view prefix = "FileStream::read*()");
+  [[noreturn]] static void raise_read_validation_error(std::string_view prefix,
+                                                       std::int64_t bytes_expected,
+                                                       std::int64_t bytes_read);
 };
 }  // namespace hictk::filestream
 

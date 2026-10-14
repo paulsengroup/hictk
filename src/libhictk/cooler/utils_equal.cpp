@@ -2,28 +2,18 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-#include "hictk/common.hpp"
+#include "hictk/cooler/common.hpp"
 #include "hictk/cooler/cooler.hpp"
 #include "hictk/cooler/dataset.hpp"
+#include "hictk/cooler/utils.hpp"
 
-namespace hictk::cooler::utils {
-
-inline bool equal(std::string_view uri1, std::string_view uri2, bool ignore_attributes) {
-  if (uri1 == uri2) {
-    return true;
-  }
-  return equal(File::open_read_once(uri1), File::open_read_once(uri2), ignore_attributes);
-}
-
-namespace internal {
-inline bool attributes_are_equal(Attributes attr1, Attributes attr2) {
+namespace {
+bool attributes_are_equal(hictk::cooler::Attributes attr1, hictk::cooler::Attributes attr2) {
   attr1.creation_date = "";  // NOLINT
   attr2.creation_date = "";  // NOLINT
   attr1.metadata = "";       // NOLINT
@@ -33,7 +23,7 @@ inline bool attributes_are_equal(Attributes attr1, Attributes attr2) {
 }
 
 template <typename T = std::int64_t>
-inline bool datasets_are_equal(const Dataset& d1, const Dataset& d2) {
+bool datasets_are_equal(const hictk::cooler::Dataset& d1, const hictk::cooler::Dataset& d2) {
   if (d1.size() != d2.size()) {
     return false;
   }
@@ -45,14 +35,23 @@ inline bool datasets_are_equal(const Dataset& d1, const Dataset& d2) {
   return std::equal(d1.begin<T>(256'000), d1.end<T>(256'000), d2.begin<T>(256'000));
 }
 
-}  // namespace internal
+}  // namespace
 
-inline bool equal(const File& clr1, const File& clr2, bool ignore_attributes) {
+namespace hictk::cooler::utils {
+
+bool equal(std::string_view uri1, std::string_view uri2, bool ignore_attributes) {
+  if (uri1 == uri2) {
+    return true;
+  }
+  return equal(File::open_read_once(uri1), File::open_read_once(uri2), ignore_attributes);
+}
+
+bool equal(const File& clr1, const File& clr2, bool ignore_attributes) {
   if (clr1.uri() == clr2.uri()) {
     return true;
   }
 
-  if (!ignore_attributes && !internal::attributes_are_equal(clr1.attributes(), clr2.attributes())) {
+  if (!ignore_attributes && !attributes_are_equal(clr1.attributes(), clr2.attributes())) {
     return false;
   }
 
@@ -60,14 +59,12 @@ inline bool equal(const File& clr1, const File& clr2, bool ignore_attributes) {
   for (const auto name : MANDATORY_DATASET_NAMES) {
     bool difference_found;  // NOLINT
     if (name == "chroms/name") {
-      difference_found =
-          !internal::datasets_are_equal<std::string>(clr1.dataset(name), clr2.dataset(name));
+      difference_found = !datasets_are_equal<std::string>(clr1.dataset(name), clr2.dataset(name));
     } else if (name == "pixels/count" && float_counts) {
-      difference_found =
-          !internal::datasets_are_equal<double>(clr1.dataset(name), clr2.dataset(name));
+      difference_found = !datasets_are_equal<double>(clr1.dataset(name), clr2.dataset(name));
 
     } else {
-      difference_found = !internal::datasets_are_equal(clr1.dataset(name), clr2.dataset(name));
+      difference_found = !datasets_are_equal(clr1.dataset(name), clr2.dataset(name));
     }
 
     if (difference_found) {

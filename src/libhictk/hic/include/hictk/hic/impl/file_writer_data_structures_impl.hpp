@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <libdeflate.h>
 #include <parallel_hashmap/btree.h>
 
@@ -11,11 +12,12 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <iterator>
+#include <limits>
+#include <stdexcept>
 #include <string>
-#include <string_view>
-#include <tuple>
-#include <utility>
-#include <vector>
+#include <type_traits>
 
 #include "hictk/binary_buffer.hpp"
 #include "hictk/fmt/pixel.hpp"
@@ -23,119 +25,31 @@
 
 namespace hictk::hic::internal {
 
-inline std::string MatrixMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(chr1Idx);
-    buffer.write(chr2Idx);
-    buffer.write(nResolutions);
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing a MatrixMetadata object: " +
-                             std::string{e.what()});
-  }
-  return buffer.get();
-}
-
-inline std::string MatrixBlockMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(blockNumber);
-    buffer.write(blockPosition);
-    buffer.write(blockSizeBytes);
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing a MatrixBlockMetadata object: " +
-                             std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline bool MatrixBlockMetadata::operator<(const MatrixBlockMetadata &other) const noexcept {
-  return blockNumber < other.blockNumber;
-}
-
-inline bool MatrixResolutionMetadata::operator<(
-    const MatrixResolutionMetadata &other) const noexcept {
-  if (unit != other.unit) {
-    return unit < other.unit;
-  }
-  return binSize < other.binSize;
-}
-
-inline std::string MatrixResolutionMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(unit);
-    buffer.write(resIdx);
-    buffer.write(sumCounts);
-    buffer.write(occupiedCellCount);
-    buffer.write(percent5);
-    buffer.write(percent95);
-    buffer.write(binSize);
-    buffer.write(blockSize);
-    buffer.write(blockColumnCount);
-    buffer.write(blockCount);
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a MatrixResolutionMetadata object: " +
-        std::string{e.what()});
-  }
-
-  for (const auto &blk : _block_metadata) {
-    std::ignore = blk.serialize(buffer, false);
-  }
-
-  return buffer.get();
-}
-
 template <typename It>
-inline void MatrixResolutionMetadata::set_block_metadata(It first_block, It last_block) {
+void MatrixResolutionMetadata::set_block_metadata(It first_block, It last_block) {
   _block_metadata.clear();
   std::copy(first_block, last_block, std::back_inserter(_block_metadata));
   blockCount = static_cast<std::int32_t>(_block_metadata.size());
 }
 
-inline std::string MatrixBodyMetadata::serialize(BinaryBuffer &buffer, bool clear) const {
-  try {
-    std::ignore = matrixMetadata.serialize(buffer, clear);
-    for (const auto &metadata : resolutionMetadata) {
-      std::ignore = metadata.serialize(buffer, false);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing a MatrixBodyMetadata object: " +
-                             std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
 template <typename N>
-inline bool MatrixInteractionBlock<N>::Pixel::operator<(const Pixel &other) const noexcept {
+bool MatrixInteractionBlock<N>::Pixel::operator<(const Pixel &other) const noexcept {
   return column < other.column;
 }
 
 template <typename N>
-inline std::size_t MatrixInteractionBlock<N>::size() const noexcept {
+std::size_t MatrixInteractionBlock<N>::size() const noexcept {
   return static_cast<std::size_t>(nRecords);
 }
 
 template <typename N>
-inline double MatrixInteractionBlock<N>::sum() const noexcept {
+double MatrixInteractionBlock<N>::sum() const noexcept {
   return _sum;
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::emplace_back(const hictk::Pixel<N> &p,
-                                                    std::uint32_t bin_id_offset) {
+void MatrixInteractionBlock<N>::emplace_back(const hictk::Pixel<N> &p,
+                                             std::uint32_t bin_id_offset) {
   try {
     _sum += conditional_static_cast<double>(p.count);
 
@@ -171,7 +85,7 @@ inline void MatrixInteractionBlock<N>::emplace_back(const hictk::Pixel<N> &p,
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::finalize() {
+void MatrixInteractionBlock<N>::finalize() {
   try {
     const auto size_lor = compute_size_lor_repr();
     const auto size_dense = compute_size_dense_repr();
@@ -188,23 +102,23 @@ inline void MatrixInteractionBlock<N>::finalize() {
     // this can overflow, but it's ok because in this case use_lor=true
     w = static_cast<std::int16_t>(width);
   } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while finalizing a MatrixInteractionBlock object: " +
-        std::string{e.what()});
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while finalizing a MatrixInteractionBlock object: {}"),
+        e.what()));
   }
 }
 
 template <typename N>
-inline auto MatrixInteractionBlock<N>::operator()() const noexcept
+auto MatrixInteractionBlock<N>::operator()() const noexcept
     -> const phmap::btree_map<RowID, Row> & {
   return _interactions;
 }
 
 template <typename N>
-inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
-                                                        libdeflate_compressor &compressor,
-                                                        std::string &compression_buffer,
-                                                        bool clear) const {
+std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
+                                                 libdeflate_compressor &compressor,
+                                                 std::string &compression_buffer,
+                                                 bool clear) const {
   if (matrixRepresentation == 1) {
     return serialize_lor(buffer, compressor, compression_buffer, clear);
   }
@@ -212,7 +126,7 @@ inline std::string MatrixInteractionBlock<N>::serialize(BinaryBuffer &buffer,
 }
 
 template <typename N>
-inline std::size_t MatrixInteractionBlock<N>::compute_size_lor_repr() const noexcept {
+std::size_t MatrixInteractionBlock<N>::compute_size_lor_repr() const noexcept {
   std::size_t size_ = sizeof(nRecords) + sizeof(binColumnOffset) + sizeof(binRowOffset) +
                       sizeof(useFloatContact) + sizeof(useIntXPos) + sizeof(useIntYPos) +
                       sizeof(matrixRepresentation);
@@ -227,7 +141,7 @@ inline std::size_t MatrixInteractionBlock<N>::compute_size_lor_repr() const noex
 }
 
 template <typename N>
-inline std::size_t MatrixInteractionBlock<N>::compute_size_dense_repr() const noexcept {
+std::size_t MatrixInteractionBlock<N>::compute_size_dense_repr() const noexcept {
   const auto width = compute_dense_width();
   const auto npixels = width * width;
 
@@ -238,7 +152,7 @@ inline std::size_t MatrixInteractionBlock<N>::compute_size_dense_repr() const no
 }
 
 template <typename N>
-inline std::size_t MatrixInteractionBlock<N>::compute_dense_width() const noexcept {
+std::size_t MatrixInteractionBlock<N>::compute_dense_width() const noexcept {
   const auto min_row = _interactions.begin()->first;
   const auto max_row = (--_interactions.end())->first;
   const auto height = max_row - min_row;
@@ -251,10 +165,10 @@ inline std::size_t MatrixInteractionBlock<N>::compute_dense_width() const noexce
 }
 
 template <typename N>
-inline std::string MatrixInteractionBlock<N>::serialize_lor(BinaryBuffer &buffer,
-                                                            libdeflate_compressor &compressor,
-                                                            std::string &compression_buffer,
-                                                            bool clear) const {
+std::string MatrixInteractionBlock<N>::serialize_lor(BinaryBuffer &buffer,
+                                                     libdeflate_compressor &compressor,
+                                                     std::string &compression_buffer,
+                                                     bool clear) const {
   assert(matrixRepresentation == 1);
   // TODO support representation using shorts
 
@@ -290,28 +204,29 @@ inline std::string MatrixInteractionBlock<N>::serialize_lor(BinaryBuffer &buffer
       }
     }
   } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a MatrixInteractionBlock using the sparse "
-        "representation: " +
-        std::string{e.what()});
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while serializing a MatrixInteractionBlock using the sparse "
+                   "representation: {}"),
+        e.what()));
   }
 
   try {
     compress(buffer.get(), compression_buffer, compressor);
   } catch (const std::exception &e) {
     throw std::runtime_error(
-        "an error occurred while compressing a serialized object of MatrixInteractionBlock type "
-        "(sparse representation): " +
-        std::string{e.what()});
+        fmt::format(FMT_STRING("an error occurred while compressing a serialized object of "
+                               "MatrixInteractionBlock type "
+                               "(sparse representation): {}"),
+                    e.what()));
   }
   return compression_buffer;
 }
 
 template <typename N>
-inline std::string MatrixInteractionBlock<N>::serialize_dense(BinaryBuffer &buffer,
-                                                              libdeflate_compressor &compressor,
-                                                              std::string &compression_buffer,
-                                                              bool clear) const {
+std::string MatrixInteractionBlock<N>::serialize_dense(BinaryBuffer &buffer,
+                                                       libdeflate_compressor &compressor,
+                                                       std::string &compression_buffer,
+                                                       bool clear) const {
   assert(matrixRepresentation == 2);
   // TODO support representation using shorts
 
@@ -352,28 +267,28 @@ inline std::string MatrixInteractionBlock<N>::serialize_dense(BinaryBuffer &buff
     buffer.write(w);
     buffer.write(counts);
   } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a MatrixInteractionBlock using the dense "
-        "representation: " +
-        std::string{e.what()});
+    throw std::runtime_error(fmt::format(
+        FMT_STRING("an error occurred while serializing a MatrixInteractionBlock using the dense "
+                   "representation: {}"),
+        e.what()));
   }
 
   try {
     compress(buffer.get(), compression_buffer, compressor);
   } catch (const std::exception &e) {
     throw std::runtime_error(
-        "an error occurred while compressing a serialized object of MatrixInteractionBlock type "
-        "(dense representation): " +
-        std::string{e.what()});
+        fmt::format(FMT_STRING("an error occurred while compressing a serialized object of "
+                               "MatrixInteractionBlock type "
+                               "(dense representation): {}"),
+                    e.what()));
   }
 
   return compression_buffer;
 }
 
 template <typename N>
-inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
-                                                std::string &buffer_out,
-                                                libdeflate_compressor &compressor) {
+void MatrixInteractionBlock<N>::compress(const std::string &buffer_in, std::string &buffer_out,
+                                         libdeflate_compressor &compressor) {
   buffer_out.resize(buffer_out.capacity());
   if (buffer_out.empty()) {
     buffer_out.resize(libdeflate_deflate_compress_bound(&compressor, buffer_in.size()));
@@ -391,487 +306,6 @@ inline void MatrixInteractionBlock<N>::compress(const std::string &buffer_in,
         buffer_out.size() * 2, libdeflate_deflate_compress_bound(&compressor, buffer_in.size()));
     buffer_out.resize(new_size);
   }
-}
-
-inline std::string FooterMasterIndex::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(key);
-    buffer.write(position);
-    buffer.write(size);
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing a FooterMasterIndex object: " +
-                             std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline std::int64_t ExpectedValuesBlock::nValues() const noexcept {
-  return static_cast<std::int64_t>(value.size());
-}
-
-inline std::int32_t ExpectedValuesBlock::nChrScaleFactors() const noexcept {
-  assert(chrIndex.size() == chrScaleFactor.size());
-  return static_cast<std::int32_t>(chrIndex.size());
-}
-
-inline ExpectedValuesBlock::ExpectedValuesBlock(std::string_view unit_, std::uint32_t bin_size,
-                                                const std::vector<double> &weights,
-                                                const std::vector<std::uint32_t> &chrom_ids,
-                                                const std::vector<double> &scale_factors)
-    : unit(std::string{unit_}),
-      binSize(static_cast<std::int32_t>(bin_size)),
-      value(weights.size()),
-      chrIndex(chrom_ids.size()),
-      chrScaleFactor(chrom_ids.size()) {
-  std::transform(weights.begin(), weights.end(), value.begin(),
-                 [](const auto n) { return static_cast<float>(n); });
-  std::transform(chrom_ids.begin(), chrom_ids.end(), chrIndex.begin(),
-                 [](const auto n) { return static_cast<std::int32_t>(n); });
-  std::transform(scale_factors.begin(), scale_factors.end(), chrScaleFactor.begin(),
-                 [](const auto n) { return static_cast<float>(n); });
-}
-
-inline bool ExpectedValuesBlock::operator<(const ExpectedValuesBlock &other) const noexcept {
-  if (unit != other.unit) {
-    return unit < other.unit;
-  }
-
-  return binSize < other.binSize;
-}
-
-inline std::string ExpectedValuesBlock::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(unit);
-    buffer.write(binSize);
-    buffer.write(nValues());
-    buffer.write(value);
-    buffer.write(nChrScaleFactors());
-
-    assert(chrIndex.size() == chrScaleFactor.size());
-    for (std::size_t i = 0; i < chrIndex.size(); ++i) {
-      buffer.write(chrIndex[i]);
-      buffer.write(chrScaleFactor[i]);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing an ExpectedValuesBlock object: " +
-                             std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline ExpectedValuesBlock ExpectedValuesBlock::deserialize(std::streampos offset,
-                                                            filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline ExpectedValuesBlock ExpectedValuesBlock::unsafe_deserialize(std::streampos offset,
-                                                                   filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  ExpectedValuesBlock evb{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    fs.unsafe_getline(evb.unit, '\0');
-    fs.unsafe_read(evb.binSize);
-    const auto nValues = static_cast<std::size_t>(fs.unsafe_read<std::int64_t>());
-    evb.value.resize(nValues);
-    fs.unsafe_read(evb.value);
-    const auto nChrScaleFactors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
-    evb.chrIndex.resize(nChrScaleFactors);
-    evb.chrScaleFactor.resize(nChrScaleFactors);
-
-    for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-      evb.chrIndex.emplace_back(fs.unsafe_read<std::int32_t>());
-      evb.chrScaleFactor.emplace_back(fs.unsafe_read<float>());
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while deserializing an ExpectedValuesBlock object: " +
-        std::string{e.what()});
-  }
-
-  return evb;
-}
-
-inline std::int32_t ExpectedValues::nExpectedValueVectors() const noexcept {
-  return static_cast<std::int32_t>(expectedValues().size());
-}
-
-inline const phmap::btree_set<ExpectedValuesBlock> &ExpectedValues::expectedValues()
-    const noexcept {
-  return _expected_values;
-}
-
-inline void ExpectedValues::emplace(const ExpectedValuesBlock &evb, bool force_overwrite) {
-  auto [it, inserted] = _expected_values.emplace(evb);
-  if (!inserted) {
-    if (force_overwrite) {
-      *it = evb;
-    } else {
-      throw std::runtime_error(
-          fmt::format(FMT_STRING("ExpectedValues already contains vector for {} resolution ({})"),
-                      it->binSize, it->unit));
-    }
-  }
-}
-
-inline std::string ExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(nExpectedValueVectors());
-
-    if (nExpectedValueVectors() == 0) {
-      return buffer.get();
-    }
-
-    for (const auto &ev : expectedValues()) {
-      std::ignore = ev.serialize(buffer, false);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while serializing an ExpectedValues object: " +
-                             std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline ExpectedValues ExpectedValues::deserialize(std::streampos offset,
-                                                  filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline ExpectedValues ExpectedValues::unsafe_deserialize(std::streampos offset,
-                                                         filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  ExpectedValues evs{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    const auto nExpectedValueVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
-    for (std::size_t i = 0; i < nExpectedValueVectors; ++i) {
-      evs.emplace(ExpectedValuesBlock::unsafe_deserialize(fs.unsafe_tellg(), fs), true);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error("an error occurred while deserializing an ExpectedValues object: " +
-                             std::string{e.what()});
-  }
-  return evs;
-}
-
-inline std::int64_t NormalizedExpectedValuesBlock::nValues() const noexcept {
-  return static_cast<std::int64_t>(value.size());
-}
-
-inline std::int32_t NormalizedExpectedValuesBlock::nChrScaleFactors() const noexcept {
-  assert(chrIndex.size() == chrScaleFactor.size());
-  return static_cast<std::int32_t>(chrIndex.size());
-}
-
-inline NormalizedExpectedValuesBlock::NormalizedExpectedValuesBlock(
-    std::string_view type_, std::string_view unit_, std::uint32_t bin_size,
-    const std::vector<double> &weights, const std::vector<std::uint32_t> &chrom_ids,
-    const std::vector<double> &scale_factors)
-    : type(std::string{type_}),
-      unit(std::string{unit_}),
-      binSize(static_cast<std::int32_t>(bin_size)),
-      value(weights.size()),
-      chrIndex(chrom_ids.size()),
-      chrScaleFactor(chrom_ids.size()) {
-  std::transform(weights.begin(), weights.end(), value.begin(),
-                 [](const auto n) { return static_cast<float>(n); });
-  std::transform(chrom_ids.begin(), chrom_ids.end(), chrIndex.begin(),
-                 [](const auto n) { return static_cast<std::int32_t>(n); });
-  std::transform(scale_factors.begin(), scale_factors.end(), chrScaleFactor.begin(),
-                 [](const auto n) { return static_cast<float>(n); });
-}
-
-inline bool NormalizedExpectedValuesBlock::operator<(
-    const NormalizedExpectedValuesBlock &other) const noexcept {
-  if (type != other.type) {
-    return type < other.type;
-  }
-  if (unit != other.unit) {
-    return unit < other.unit;
-  }
-  return binSize < other.binSize;
-}
-
-inline std::string NormalizedExpectedValuesBlock::serialize(BinaryBuffer &buffer,
-                                                            bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(type);
-    buffer.write(unit);
-    buffer.write(binSize);
-    buffer.write(nValues());
-    buffer.write(value);
-    buffer.write(nChrScaleFactors());
-
-    assert(chrIndex.size() == chrScaleFactor.size());
-    for (std::size_t i = 0; i < chrIndex.size(); ++i) {
-      buffer.write(chrIndex[i]);
-      buffer.write(chrScaleFactor[i]);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a NormalizedExpectedValuesBlock object: " +
-        std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline NormalizedExpectedValuesBlock NormalizedExpectedValuesBlock::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  NormalizedExpectedValuesBlock nevb{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    fs.unsafe_getline(nevb.type, '\0');
-    fs.unsafe_getline(nevb.unit, '\0');
-    fs.unsafe_read(nevb.binSize);
-    const auto nValues = static_cast<std::size_t>(fs.unsafe_read<std::int64_t>());
-    nevb.value.resize(nValues);
-    fs.unsafe_read(nevb.value);
-    const auto nChrScaleFactors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
-    nevb.chrIndex.resize(nChrScaleFactors);
-    nevb.chrScaleFactor.resize(nChrScaleFactors);
-
-    for (std::size_t i = 0; i < nChrScaleFactors; ++i) {
-      nevb.chrIndex.emplace_back(fs.unsafe_read<std::int32_t>());
-      nevb.chrScaleFactor.emplace_back(fs.unsafe_read<float>());
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while deserializing a NormalizedExpectedValuesBlock object: " +
-        std::string{e.what()});
-  }
-
-  return nevb;
-}
-
-inline std::int32_t NormalizedExpectedValues::nNormExpectedValueVectors() const noexcept {
-  return static_cast<std::int32_t>(_normalized_expected_values.size());
-}
-
-inline const phmap::btree_set<NormalizedExpectedValuesBlock> &
-NormalizedExpectedValues::normExpectedValues() const noexcept {
-  return _normalized_expected_values;
-}
-
-inline void NormalizedExpectedValues::emplace(const NormalizedExpectedValuesBlock &evb,
-                                              bool force_overwrite) {
-  auto [it, inserted] = _normalized_expected_values.emplace(evb);
-  if (!inserted) {
-    if (force_overwrite) {
-      *it = evb;
-    } else {
-      throw std::runtime_error(fmt::format(
-          FMT_STRING("NormalizedExpectedValues already contains {} vector for {} resolution ({})"),
-          it->type, it->binSize, it->unit));
-    }
-  }
-}
-
-inline std::string NormalizedExpectedValues::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(nNormExpectedValueVectors());
-    for (const auto &nev : _normalized_expected_values) {
-      std::ignore = nev.serialize(buffer, false);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a NormalizedExpectedValues object: " +
-        std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline NormalizedExpectedValues NormalizedExpectedValues::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline NormalizedExpectedValues NormalizedExpectedValues::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  NormalizedExpectedValues nevs{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    const auto nNormExpectedValueVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
-    for (std::size_t i = 0; i < nNormExpectedValueVectors; ++i) {
-      nevs.emplace(NormalizedExpectedValuesBlock::unsafe_deserialize(fs.unsafe_tellg(), fs), true);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while deserializing a NormalizedExpectedValues object: " +
-        std::string{e.what()});
-  }
-
-  return nevs;
-}
-
-inline NormalizationVectorIndexBlock::NormalizationVectorIndexBlock(
-    std::string type_, std::uint32_t chrom_idx, std::string unit_, std::uint32_t bin_size,
-    std::size_t position_, std::size_t n_bytes)
-    : type(std::move(type_)),
-      chrIdx(static_cast<std::int32_t>(chrom_idx)),
-      unit(std::move(unit_)),
-      binSize(static_cast<std::int32_t>(bin_size)),
-      position(static_cast<std::int64_t>(position_)),
-      nBytes(static_cast<std::int64_t>(n_bytes)) {}
-
-inline bool NormalizationVectorIndexBlock::operator<(
-    const NormalizationVectorIndexBlock &other) const noexcept {
-  if (type != other.type) {
-    return type < other.type;
-  }
-  if (chrIdx != other.chrIdx) {
-    return chrIdx < other.chrIdx;
-  }
-  if (unit != other.unit) {
-    return unit < other.unit;
-  }
-  return binSize < other.binSize;
-}
-
-inline std::string NormalizationVectorIndexBlock::serialize(BinaryBuffer &buffer,
-                                                            bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(type);
-    buffer.write(chrIdx);
-    buffer.write(unit);
-    buffer.write(binSize);
-    buffer.write(position);
-    buffer.write(nBytes);
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a NormalizationVectorIndexBlock object: " +
-        std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline NormalizationVectorIndexBlock NormalizationVectorIndexBlock::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  NormalizationVectorIndexBlock nvib{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    fs.unsafe_getline(nvib.type, '\0');
-    nvib.chrIdx = fs.unsafe_read<std::int32_t>();
-    fs.unsafe_getline(nvib.unit, '\0');
-    nvib.binSize = fs.unsafe_read<std::int32_t>();
-    nvib.position = fs.unsafe_read<std::int64_t>();
-    nvib.nBytes = fs.unsafe_read<std::int64_t>();
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while deserializing a NormalizationVectorIndexBlock object: " +
-        std::string{e.what()});
-  }
-
-  return nvib;
-}
-
-inline std::int32_t NormalizationVectorIndex::nNormVectors() const noexcept {
-  return static_cast<std::int32_t>(_norm_vect_idx.size());
-}
-
-inline const std::vector<NormalizationVectorIndexBlock> &
-NormalizationVectorIndex::normalizationVectorIndex() const noexcept {
-  return _norm_vect_idx;
-}
-
-inline void NormalizationVectorIndex::emplace_back(NormalizationVectorIndexBlock blk) {
-  _norm_vect_idx.emplace_back(std::move(blk));
-}
-
-inline std::string NormalizationVectorIndex::serialize(BinaryBuffer &buffer, bool clear) const {
-  if (clear) {
-    buffer.clear();
-  }
-
-  try {
-    buffer.write(nNormVectors());
-
-    for (const auto &nv : _norm_vect_idx) {
-      std::ignore = nv.serialize(buffer, false);
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while serializing a NormalizationVectorIndex object: " +
-        std::string{e.what()});
-  }
-
-  return buffer.get();
-}
-
-inline NormalizationVectorIndex NormalizationVectorIndex::deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  [[maybe_unused]] const auto lck = fs.lock();
-  return unsafe_deserialize(offset, fs);
-}
-
-inline NormalizationVectorIndex NormalizationVectorIndex::unsafe_deserialize(
-    std::streampos offset, filestream::FileStream<> &fs) {
-  assert(offset >= 0);
-  NormalizationVectorIndex nvi{};
-
-  try {
-    fs.unsafe_seekg(offset);
-    const auto nNormVectors = static_cast<std::size_t>(fs.unsafe_read<std::int32_t>());
-    for (std::size_t i = 0; i < nNormVectors; ++i) {
-      nvi.emplace_back(NormalizationVectorIndexBlock::unsafe_deserialize(fs.unsafe_tellg(), fs));
-    }
-  } catch (const std::exception &e) {
-    throw std::runtime_error(
-        "an error occurred while deserializing a NormalizationVectorIndex object: " +
-        std::string{e.what()});
-  }
-  return nvi;
 }
 
 }  // namespace hictk::hic::internal

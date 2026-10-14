@@ -27,10 +27,12 @@ target_link_libraries(
     hictk::project_options
     hictk::project_warnings
     hictk::balancing
+    hictk::balancing_methods
     hictk::cooler
     hictk::hic
     hictk::file
     hictk::tmpdir
+    hictk::weights
   PUBLIC
     hictk_internal_tools_config
 )

@@ -1,20 +1,13 @@
-// Copyright (C) 2023 Roberto Rossini <roberros@uio.no>
+// Copyright (C) 2026 Roberto Rossini <roberros@uio.no>
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
-// clang-format off
-#include "hictk/suppress_warnings.hpp"
-HICTK_DISABLE_WARNING_PUSH
-HICTK_DISABLE_WARNING_DEPRECATED_DECLARATIONS
-#include <parallel_hashmap/phmap.h>
-HICTK_DISABLE_WARNING_POP
-// clang-format on
+#include "hictk/hic/file_reader.hpp"
 
 #include <fmt/compile.h>
 #include <fmt/format.h>
 #include <libdeflate.h>
+#include <parallel_hashmap/phmap.h>
 
 #include <algorithm>
 #include <cassert>
@@ -30,21 +23,21 @@ HICTK_DISABLE_WARNING_POP
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/chromosome.hpp"
 #include "hictk/filestream.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/hic/index.hpp"
 #include "hictk/reference.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
-inline HiCFileReader::HiCFileReader(std::string url)
-    : _fs(std::make_shared<filestream::FileStream<>>(HiCFileReader::openStream(std::move(url)))),
-      _header(std::make_shared<const HiCHeader>(HiCFileReader::readHeader(*_fs))) {}
+HiCFileReader::HiCFileReader(std::string url)
+    : _fs(std::make_shared<filestream::FileStream>(openStream(std::move(url)))),
+      _header(std::make_shared<const HiCHeader>(readHeader(*_fs))) {}
 
-inline filestream::FileStream<> HiCFileReader::openStream(std::string url) {
+filestream::FileStream HiCFileReader::openStream(std::string url) {
   try {
     return {std::move(url), nullptr};  // opening wo/ locking is ok
   } catch (const std::exception &e) {
@@ -52,20 +45,20 @@ inline filestream::FileStream<> HiCFileReader::openStream(std::string url) {
   }
 }
 
-inline const std::string &HiCFileReader::path() const noexcept { return _fs->path(); }
-inline const HiCHeader &HiCFileReader::header() const noexcept { return *_header; }
+const std::string &HiCFileReader::path() const noexcept { return _fs->path(); }
+const HiCHeader &HiCFileReader::header() const noexcept { return *_header; }
 
-inline std::int32_t HiCFileReader::version() const noexcept {
+std::int32_t HiCFileReader::version() const noexcept {
   assert(_header->version != -1);
   return _header->version;
 }
 
-inline void HiCFileReader::discardExpectedVector(std::int64_t nValues) {
+void HiCFileReader::discardExpectedVector(std::int64_t nValues) {
   const std::int64_t elementSize = version() > 8 ? sizeof(float) : sizeof(double);
   _fs->seekg(nValues * elementSize, std::ios::cur);
 }
 
-inline std::vector<double> HiCFileReader::readExpectedVector(std::int64_t nValues) {
+std::vector<double> HiCFileReader::readExpectedVector(std::int64_t nValues) {
   std::vector<double> initialExpectedValues(static_cast<std::size_t>(nValues));
   if (version() > 8) {  // NOLINT(*-avoid-magic-numbers)
     std::vector<float> tmpbuff(static_cast<std::size_t>(nValues));
@@ -82,7 +75,7 @@ inline std::vector<double> HiCFileReader::readExpectedVector(std::int64_t nValue
   return initialExpectedValues;
 }
 
-inline std::vector<double> HiCFileReader::readNormalizationFactors(std::uint32_t wantedChrom) {
+std::vector<double> HiCFileReader::readNormalizationFactors(std::uint32_t wantedChrom) {
   const auto nFactors = _fs->read<std::int32_t>();
   std::vector<double> normFactors{};
   auto readFactor = [this]() {
@@ -102,8 +95,8 @@ inline std::vector<double> HiCFileReader::readNormalizationFactors(std::uint32_t
   return normFactors;
 }
 
-inline void HiCFileReader::applyNormalizationFactors(std::vector<double> &expectedValues,
-                                                     const std::vector<double> &normFactors) {
+void HiCFileReader::applyNormalizationFactors(std::vector<double> &expectedValues,
+                                              const std::vector<double> &normFactors) {
   if (normFactors.empty() || expectedValues.empty()) {
     return;
   }
@@ -112,8 +105,8 @@ inline void HiCFileReader::applyNormalizationFactors(std::vector<double> &expect
                    [&](auto n) { return n / factor; });
   }
 }
-inline std::vector<double> HiCFileReader::readNormalizationVector(indexEntry cNormEntry,
-                                                                  std::size_t numValuesExpected) {
+std::vector<double> HiCFileReader::readNormalizationVector(indexEntry cNormEntry,
+                                                           std::size_t numValuesExpected) {
   _fs->seekg(cNormEntry.position);
   const auto numValues = static_cast<std::size_t>(readNValues());
 
@@ -139,48 +132,48 @@ inline std::vector<double> HiCFileReader::readNormalizationVector(indexEntry cNo
   return buffer;
 }
 
-inline void HiCFileReader::discardNormalizationFactors(std::uint32_t wantedChrom) {
+void HiCFileReader::discardNormalizationFactors(std::uint32_t wantedChrom) {
   std::ignore = readNormalizationFactors(wantedChrom);
 }
 
-inline MatrixType HiCFileReader::readMatrixType(filestream::FileStream<> &fs, std::string &buff) {
+MatrixType HiCFileReader::readMatrixType(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseMatrixTypeStr(buff);
 }
 
-inline balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream<> &fs,
-                                                                std::string &buff) {
+balancing::Method HiCFileReader::readNormalizationMethod(filestream::FileStream &fs,
+                                                         std::string &buff) {
   fs.getline(buff, '\0');
   return balancing::Method{buff};
 }
 
-inline MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream<> &fs, std::string &buff) {
+MatrixUnit HiCFileReader::readMatrixUnit(filestream::FileStream &fs, std::string &buff) {
   fs.getline(buff, '\0');
   return ParseUnitStr(buff);
 }
 
-inline MatrixType HiCFileReader::readMatrixType() { return readMatrixType(*_fs, _strbuff); }
+MatrixType HiCFileReader::readMatrixType() { return readMatrixType(*_fs, _strbuff); }
 
-inline balancing::Method HiCFileReader::readNormalizationMethod() {
+balancing::Method HiCFileReader::readNormalizationMethod() {
   return readNormalizationMethod(*_fs, _strbuff);
 }
 
-inline MatrixUnit HiCFileReader::readMatrixUnit() { return readMatrixUnit(*_fs, _strbuff); }
+MatrixUnit HiCFileReader::readMatrixUnit() { return readMatrixUnit(*_fs, _strbuff); }
 
-inline std::int64_t HiCFileReader::readNValues() {
+std::int64_t HiCFileReader::readNValues() {
   if (version() > 8) {  // NOLINT(*-avoid-magic-numbers)
     return _fs->read<std::int64_t>();
   }
   return _fs->read<std::int32_t>();
 }
 
-inline bool HiCFileReader::checkMagicString(filestream::FileStream<> &fs) {
+bool HiCFileReader::checkMagicString(filestream::FileStream &fs) {
   return fs.getline('\0') == "HIC";
 }
 
-inline std::int64_t HiCFileReader::masterOffset() const noexcept { return _header->footerPosition; }
+std::int64_t HiCFileReader::masterOffset() const noexcept { return _header->footerPosition; }
 
-inline auto HiCFileReader::init_decompressor() -> Decompressor {
+auto HiCFileReader::init_decompressor() -> Decompressor {
   Decompressor zs(libdeflate_alloc_decompressor(),
                   [](auto *ptr) { libdeflate_free_decompressor(ptr); });
   if (!zs) {
@@ -190,9 +183,9 @@ inline auto HiCFileReader::init_decompressor() -> Decompressor {
   return zs;
 }
 
-inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
-                                       const Chromosome &chrom2, const BinTable &bins,
-                                       MatrixUnit wantedUnit) {
+Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome &chrom1,
+                                const Chromosome &chrom2, const BinTable &bins,
+                                MatrixUnit wantedUnit) {
   const auto wantedResolution = bins.resolution();
   _fs->seekg(fileOffset);
 
@@ -249,13 +242,13 @@ inline Index HiCFileReader::read_index(std::int64_t fileOffset, const Chromosome
                   chrom1.name(), chrom2.name(), wantedUnit, wantedResolution));
 }
 
-inline bool HiCFileReader::checkMagicString() { return checkMagicString(*_fs); }
+bool HiCFileReader::checkMagicString() { return checkMagicString(*_fs); }
 
-inline HiCHeader HiCFileReader::readHeader(filestream::FileStream<> &fs) {
+HiCHeader HiCFileReader::readHeader(filestream::FileStream &fs) {
   return HiCHeader::deserialize(0, fs);
 }
 
-inline void HiCFileReader::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
+void HiCFileReader::readAndInflate(const BlockIndex &idx, std::string &plainTextBuffer) {
   try {
     // _strbuff is used to store compressed data
     // plainTextBuffer is used to store decompressed data
@@ -294,7 +287,7 @@ inline void HiCFileReader::readAndInflate(const BlockIndex &idx, std::string &pl
   }
 }
 
-inline bool HiCFileReader::checkMagicString(std::string url) noexcept {
+bool HiCFileReader::checkMagicString(std::string url) noexcept {
   try {
     filestream::FileStream fs(openStream(std::move(url)));
     return checkMagicString(fs);
@@ -303,7 +296,7 @@ inline bool HiCFileReader::checkMagicString(std::string url) noexcept {
   }
 }
 
-inline std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key) {
+std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key) {
   std::ignore = readNValues();  // nBytes
 
   std::int64_t pos = -1;
@@ -320,7 +313,7 @@ inline std::int64_t HiCFileReader::read_footer_file_offset(std::string_view key)
   return pos;
 }
 
-inline std::vector<double> HiCFileReader::read_footer_expected_values(
+std::vector<double> HiCFileReader::read_footer_expected_values(
     const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
     const balancing::Method &wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   std::vector<double> expectedValues{};
@@ -349,7 +342,7 @@ inline std::vector<double> HiCFileReader::read_footer_expected_values(
   return expectedValues;
 }
 
-inline std::vector<double> HiCFileReader::read_footer_expected_values_norm(
+std::vector<double> HiCFileReader::read_footer_expected_values_norm(
     const Chromosome &chrom1, const Chromosome &chrom2, MatrixType matrix_type,
     const balancing::Method &wanted_norm, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (_fs->tellg() == static_cast<std::streampos>(_fs->size())) {
@@ -382,20 +375,21 @@ inline std::vector<double> HiCFileReader::read_footer_expected_values_norm(
   return expectedValues;
 }
 
-[[nodiscard]] inline balancing::Weights default_initialize_weight_vector(
-    const Chromosome &chrom, const balancing::Method &norm, std::uint32_t resolution) {
+[[nodiscard]] static Weights default_initialize_weight_vector(const Chromosome &chrom,
+                                                              const balancing::Method &norm,
+                                                              std::uint32_t resolution) {
   const auto filler_weight =
       norm == balancing::Method::NONE() ? 1.0 : std::numeric_limits<double>::quiet_NaN();
 
   const auto num_bins1 = (chrom.size() + resolution - 1) / resolution;
-  return {filler_weight, num_bins1, balancing::Weights::Type::DIVISIVE};
+  return {filler_weight, num_bins1, Weights::Type::DIVISIVE};
 }
 
-inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
-                                            const balancing::Method &wanted_norm,
-                                            MatrixUnit wanted_unit, std::uint32_t wanted_resolution,
-                                            std::shared_ptr<balancing::Weights> &weights1,
-                                            std::shared_ptr<balancing::Weights> &weights2) {
+void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chromosome &chrom2,
+                                     const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
+                                     std::uint32_t wanted_resolution,
+                                     std::shared_ptr<Weights> &weights1,
+                                     std::shared_ptr<Weights> &weights2) {
   assert(weights1);
   assert(weights2);
   if (!weights1->empty() && !weights2->empty()) {
@@ -435,9 +429,8 @@ inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chro
       const auto numBins =
           static_cast<std::size_t>((chrom1.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights1 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
+      *weights1 = Weights{readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+                          Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
 
@@ -448,9 +441,8 @@ inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chro
       const auto numBins =
           static_cast<std::size_t>((chrom2.size() + wanted_resolution - 1) / wanted_resolution);
       const auto currentPos = static_cast<std::int64_t>(_fs->tellg());
-      *weights2 = balancing::Weights{
-          readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
-          balancing::Weights::Type::DIVISIVE};
+      *weights2 = Weights{readNormalizationVector(indexEntry{filePosition, sizeInBytes}, numBins),
+                          Weights::Type::DIVISIVE};
       _fs->seekg(currentPos);
     }
   }
@@ -468,12 +460,11 @@ inline void HiCFileReader::read_footer_norm(const Chromosome &chrom1, const Chro
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
-                                            const BinTable &bins, MatrixType matrix_type,
-                                            const balancing::Method &wanted_norm,
-                                            MatrixUnit wanted_unit,
-                                            std::shared_ptr<balancing::Weights> &weights1,
-                                            std::shared_ptr<balancing::Weights> &weights2) {
+HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chromosome &chrom2,
+                                     const BinTable &bins, MatrixType matrix_type,
+                                     const balancing::Method &wanted_norm, MatrixUnit wanted_unit,
+                                     std::shared_ptr<Weights> &weights1,
+                                     std::shared_ptr<Weights> &weights2) {
   assert(chrom1 <= chrom2);
   assert(std::find(_header->resolutions.begin(), _header->resolutions.end(), bins.resolution()) !=
          _header->resolutions.end());
@@ -565,7 +556,7 @@ inline HiCFooter HiCFileReader::read_footer(const Chromosome &chrom1, const Chro
   return {std::move(index), std::move(metadata), std::move(expectedValues), weights1, weights2};
 }
 
-inline std::vector<balancing::Method> HiCFileReader::read_avail_normalizations(
+std::vector<balancing::Method> HiCFileReader::read_avail_normalizations(
     MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   phmap::flat_hash_set<balancing::Method> methods{};
   const auto nNormVectors = _fs->read<std::int32_t>();
@@ -591,7 +582,7 @@ inline std::vector<balancing::Method> HiCFileReader::read_avail_normalizations(
   return methods_;
 }
 
-inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
+std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
     MatrixType matrix_type, MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (version() >= 9) {  // NOLINT(*-avoid-magic-numbers)
     return list_avail_normalizations_v9(wanted_unit, wanted_resolution);
@@ -617,7 +608,7 @@ inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations(
   return read_avail_normalizations(wanted_unit, wanted_resolution);
 }
 
-inline std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9(
+std::vector<balancing::Method> HiCFileReader::list_avail_normalizations_v9(
     MatrixUnit wanted_unit, std::uint32_t wanted_resolution) {
   if (_header->normVectorIndexPosition <= 0) {
     return {};

@@ -11,18 +11,18 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <ios>
 #include <memory>
 #include <nonstd/span.hpp>
 #include <string>
-#include <type_traits>
 #include <vector>
 
-#include "hictk/binary_buffer.hpp"
-#include "hictk/common.hpp"
 #include "hictk/default_delete_zstd.hpp"
 #include "hictk/filestream.hpp"
+
+// pre-declarations
+// class ZSTD_CCtx_s;
+// class ZSTD_DCtx_s;
 
 namespace hictk::balancing::internal {
 
@@ -128,9 +128,9 @@ class SparseMatrix {
   void push_back(std::uint64_t bin1_id, std::uint64_t bin2_id, double count,
                  std::size_t bin_offset = 0);
 
-  void serialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
+  void serialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_CCtx& ctx,
                  int compression_lvl = 3) const;
-  void deserialize(filestream::FileStream<>& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
+  void deserialize(filestream::FileStream& fs, std::string& tmpbuff, ZSTD_DCtx& ctx);
 
   void marginalize(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
   void marginalize_nnz(VectorOfAtomicDecimals& marg, bool init_buffer = true) const;
@@ -182,7 +182,7 @@ class FileBackedSparseMatrix {
   mutable SparseMatrix _matrix{};
   mutable std::string _buff{};
   std::filesystem::path _path{};
-  mutable filestream::FileStream<> _fs{};
+  mutable filestream::FileStream _fs{};
 
   std::vector<std::streampos> _index{};
   std::size_t _size{};

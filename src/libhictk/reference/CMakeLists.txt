@@ -2,34 +2,39 @@
 #
 # SPDX-License-Identifier: MIT
 
+find_package(fmt REQUIRED QUIET)
 find_package(phmap REQUIRED QUIET)
 
-add_library(hictk_internal_reference INTERFACE)
+add_library(hictk_internal_reference STATIC)
 add_library(hictk::reference ALIAS hictk_internal_reference)
 
 target_sources(
   hictk_internal_reference
-  INTERFACE
+  PUBLIC
     FILE_SET HEADERS
       BASE_DIRS
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
       FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/reference.hpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/hictk/impl/reference_impl.hpp"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/reference.cpp"
 )
 
 target_include_directories(
   hictk_internal_reference
-  INTERFACE
+  PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>"
 )
 target_link_libraries(
   hictk_internal_reference
-  INTERFACE
+  PUBLIC
     hictk::chromosome
     hictk::common
+  PRIVATE
     hictk::format
+    hictk::numeric
 )
 
-target_link_system_libraries(hictk_internal_reference INTERFACE phmap)
+target_link_system_libraries(hictk_internal_reference PUBLIC phmap PRIVATE fmt::fmt-header-only)

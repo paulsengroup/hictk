@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "hictk/cooler/uri.hpp"
+
 #include <fmt/format.h>
 
 #include <cassert>
@@ -10,20 +12,7 @@
 #include <string_view>
 #include <utility>
 
-namespace hictk::cooler {
-inline CoolerURI::CoolerURI(std::string_view p1, std::string_view p2)
-    : CoolerURI(std::string{p1}, std::string{p2}) {}
-
-inline CoolerURI::CoolerURI(std::string p1, std::string p2)
-    : file_path(std::move(p1)), group_path(std::move(p2)) {}
-
-inline CoolerURI::CoolerURI(std::pair<std::string_view, std::string_view> paths)
-    : CoolerURI(paths.first, paths.second) {}
-
-inline CoolerURI::CoolerURI(std::pair<std::string, std::string> paths)
-    : CoolerURI(std::move(paths.first), std::move(paths.second)) {}
-
-namespace internal {
+namespace {
 constexpr std::pair<std::string_view, std::string_view> str_partition(std::string_view str,
                                                                       std::string_view delim) {
   assert(!delim.empty());
@@ -40,11 +29,24 @@ constexpr std::pair<std::string_view, std::string_view> str_partition(std::strin
   const auto p2 = p1 + delim.size();
   return {str.substr(0, p1), str.substr(p2)};
 }
-}  // namespace internal
+}  // namespace
 
-inline CoolerURI parse_cooler_uri(std::string_view uri) {
+namespace hictk::cooler {
+CoolerURI::CoolerURI(std::string_view p1, std::string_view p2)
+    : CoolerURI(std::string{p1}, std::string{p2}) {}
+
+CoolerURI::CoolerURI(std::string p1, std::string p2)
+    : file_path(std::move(p1)), group_path(std::move(p2)) {}
+
+CoolerURI::CoolerURI(std::pair<std::string_view, std::string_view> paths)
+    : CoolerURI(paths.first, paths.second) {}
+
+CoolerURI::CoolerURI(std::pair<std::string, std::string> paths)
+    : CoolerURI(std::move(paths.first), std::move(paths.second)) {}
+
+CoolerURI parse_cooler_uri(std::string_view uri) {
   constexpr std::string_view separator = "::";
-  auto [tok1, tok2] = internal::str_partition(uri, separator);
+  auto [tok1, tok2] = ::str_partition(uri, separator);
 
   if (tok1.empty()) {
     throw std::runtime_error(fmt::format(FMT_STRING("Invalid Cooler URI: \"{}\""), uri));

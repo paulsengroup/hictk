@@ -10,10 +10,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <tuple>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "hictk/common.hpp"
 

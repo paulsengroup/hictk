@@ -40,7 +40,7 @@ namespace hictk::tools {
 
 template <typename BalanceConfig>
 void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c,
-                       const phmap::flat_hash_map<std::uint32_t, balancing::Weights>& weights,
+                       const phmap::flat_hash_map<std::uint32_t, Weights>& weights,
                        bool force_overwrite) {
   for (const auto& [resolution, weights_] : weights) {
     hfw.add_norm_vector(c.name, "BP", resolution, weights_, force_overwrite);
@@ -66,9 +66,8 @@ void write_weights_hic(hic::internal::HiCFileWriter& hfw, const BalanceConfig& c
 }
 
 template <typename BalanceConfig>
-void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                          const balancing::Weights& weights, const std::vector<double>& variance,
-                          const std::vector<double>& scale) {
+void write_weights_cooler(std::string_view uri, const BalanceConfig& c, const Weights& weights,
+                          const std::vector<double>& variance, const std::vector<double>& scale) {
   const auto& [file, grp] = cooler::parse_cooler_uri(uri);
   const auto path = fmt::format(FMT_STRING("{}/bins/{}"), grp, c.name);
   const auto link_path = fmt::format(FMT_STRING("{}/bins/weight"), grp);
@@ -94,7 +93,7 @@ void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
   dset.append(weights.begin(), weights.end());
 
   dset.write_attribute("cis_only", c.mode == "cis");
-  dset.write_attribute("divisive_weights", weights.type() == balancing::Weights::Type::DIVISIVE);
+  dset.write_attribute("divisive_weights", weights.type() == Weights::Type::DIVISIVE);
   if constexpr (std::is_same_v<BalanceICEConfig, BalanceConfig>) {
     dset.write_attribute("ignore_diags", static_cast<std::int64_t>(c.masked_diags));
     dset.write_attribute("mad_max", static_cast<std::int64_t>(c.mad_max));
@@ -133,8 +132,7 @@ void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 template <typename BalanceConfig>
-void write_weights_cooler(std::string_view uri, const BalanceConfig& c,
-                          const balancing::Weights& weights) {
+void write_weights_cooler(std::string_view uri, const BalanceConfig& c, const Weights& weights) {
   return write_weights_cooler(uri, c, weights, {-1}, {-1});
 }
 
@@ -181,8 +179,7 @@ int balance_cooler(cooler::File& f, const BalanceConfig& c, const std::filesyste
   const auto weights = balancer.get_weights(c.rescale_marginals);
 
   if (c.stdout_) {
-    for (const auto& w :
-         balancer.get_weights(c.rescale_marginals)(balancing::Weights::Type::DIVISIVE)) {
+    for (const auto& w : balancer.get_weights(c.rescale_marginals)(Weights::Type::DIVISIVE)) {
       fmt::print(FMT_COMPILE("{}\n"), w);
     }
     return 0;
@@ -226,7 +223,7 @@ int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
     mode = Balancer::Type::trans;
   }
 
-  phmap::flat_hash_map<std::uint32_t, balancing::Weights> weights{resolutions.size()};
+  phmap::flat_hash_map<std::uint32_t, Weights> weights{resolutions.size()};
   for (const auto& res : resolutions) {
     SPDLOG_INFO(FMT_STRING("balancing resolution {}..."), res);
     const hic::File f(c.path_to_input.string(), res);
@@ -234,8 +231,7 @@ int balance_hic(const BalanceConfig& c, const std::filesystem::path& tmp_dir) {
     const Balancer balancer(f, mode, params);
 
     if (c.stdout_) {
-      for (const auto& w :
-           balancer.get_weights(c.rescale_marginals)(balancing::Weights::Type::DIVISIVE)) {
+      for (const auto& w : balancer.get_weights(c.rescale_marginals)(Weights::Type::DIVISIVE)) {
         fmt::print(FMT_COMPILE("{}\n"), w);
       }
       return 0;

@@ -32,55 +32,41 @@ class RootGroup {
 
  public:
   RootGroup() = default;
-  explicit RootGroup(HighFive::Group grp) noexcept : _group(std::move(grp)) {}
+  explicit RootGroup(HighFive::Group grp) noexcept;
 
   RootGroup(const RootGroup& other) = default;
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  RootGroup(RootGroup&& other) noexcept : _group(std::move(other._group)) {}
+  RootGroup(RootGroup&& other) noexcept;
 
   ~RootGroup() noexcept = default;
 
-  [[nodiscard]] constexpr explicit operator bool() const noexcept { return _group.has_value(); }
-  [[nodiscard]] constexpr bool operator!() const noexcept { return !bool(*this); }
+  [[nodiscard]] constexpr explicit operator bool() const noexcept;
+  [[nodiscard]] constexpr bool operator!() const noexcept;
 
   RootGroup& operator=(const RootGroup& other) = default;
-  // NOLINTNEXTLINE(bugprone-exception-escape)
-  RootGroup& operator=(RootGroup&& other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    _group = std::move(other._group);
+  RootGroup& operator=(RootGroup&& other) noexcept;
 
-    return *this;
-  }
+  [[nodiscard]] constexpr HighFive::Group& operator()();
+  [[nodiscard]] constexpr const HighFive::Group& operator()() const;
 
-  [[nodiscard]] constexpr HighFive::Group& operator()() {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    return _group.value();
-  }
-  [[nodiscard]] constexpr const HighFive::Group& operator()() const {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    return _group.value();
-  }
+  [[nodiscard]] std::string file_name() const;
+  [[nodiscard]] std::string hdf5_path() const;
+  [[nodiscard]] std::string uri() const;
 
-  [[nodiscard]] std::string file_name() const {
-    if (!_group.has_value()) {
-      return "";
-    }
-    return _group->getFile().getName();
-  }
-  [[nodiscard]] std::string hdf5_path() const {
-    if (!_group.has_value()) {
-      return "";
-    }
-    return _group->getPath();
-  }
-  [[nodiscard]] std::string uri() const {
-    if (!_group.has_value()) {
-      return "";
-    }
-    return fmt::format(FMT_STRING("{}::{}"), file_name(), hdf5_path());
-  }
+  template <typename N>
+  void read_attribute(std::string_view key, N& buff) const;
+  template <typename N>
+  [[nodiscard]] N read_attribute(std::string_view key) const;
+
+  template <typename N>
+  [[nodiscard]] bool try_read_attribute(std::string_view key, N& buff) const;
+  template <typename N>
+  [[nodiscard]] std::optional<N> try_read_attribute(std::string_view key) const;
+
+  template <typename N>
+  [[nodiscard]] bool try_read_sum_attribute(std::string_view key, N& buff) const;
+  template <typename N>
+  [[nodiscard]] std::optional<N> try_read_sum_attribute(std::string_view key) const;
 };
 
 class Group {
@@ -89,18 +75,13 @@ class Group {
 
  public:
   Group() = default;
-  Group(RootGroup root_grp, HighFive::Group grp) noexcept
-      : _root_group(std::move(root_grp)), _group(std::move(grp)) {}
-  [[nodiscard]] constexpr HighFive::Group& operator()() {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    return _group.value();
-  }
-  [[nodiscard]] constexpr const HighFive::Group& operator()() const {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    return _group.value();
-  }
+  Group(RootGroup root_grp, HighFive::Group grp) noexcept;
+  [[nodiscard]] constexpr HighFive::Group& operator()();
+  [[nodiscard]] constexpr const HighFive::Group& operator()() const;
 };
 
 using GroupMap = phmap::flat_hash_map<std::string, Group>;
 
 }  // namespace hictk::cooler
+
+#include "./impl/group_impl.hpp"

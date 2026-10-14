@@ -218,8 +218,7 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const hictk::PixelSelector& sel) 
 template <typename N, typename PixelSelector>
 inline std::pair<Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>,
                  Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor>>
-ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights1,
-                                               const balancing::Weights& weights2,
+ToDenseMatrix<N, PixelSelector>::slice_weights(const Weights& weights1, const Weights& weights2,
                                                std::int64_t offset1, std::int64_t offset2,
                                                std::int64_t size1, std::int64_t size2) {
   if constexpr (std::is_integral_v<N>) {
@@ -236,8 +235,8 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
   Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor> slice1(size1);
 
   for (std::int64_t i = 0; i < size1; ++i) {
-    slice1(i) = conditional_static_cast<N>(weights1.at(static_cast<std::size_t>(offset1 + i),
-                                                       balancing::Weights::Type::MULTIPLICATIVE));
+    slice1(i) = conditional_static_cast<N>(
+        weights1.at(static_cast<std::size_t>(offset1 + i), Weights::Type::MULTIPLICATIVE));
   }
 
   const auto symmetric_query = &weights1 == &weights2 && offset1 == offset2 && size1 == size2;
@@ -247,8 +246,8 @@ ToDenseMatrix<N, PixelSelector>::slice_weights(const balancing::Weights& weights
 
   Eigen::Matrix<N, Eigen::Dynamic, Eigen::RowMajor> slice2(size2);
   for (std::int64_t i = 0; i < size2; ++i) {
-    slice2(i) = conditional_static_cast<N>(weights2.at(static_cast<std::size_t>(offset2 + i),
-                                                       balancing::Weights::Type::MULTIPLICATIVE));
+    slice2(i) = conditional_static_cast<N>(
+        weights2.at(static_cast<std::size_t>(offset2 + i), Weights::Type::MULTIPLICATIVE));
   }
 
   return std::make_pair(std::move(slice1), std::move(slice2));

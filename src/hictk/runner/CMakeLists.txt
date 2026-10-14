@@ -13,7 +13,7 @@ target_include_directories(hictk_internal_tools_runner PUBLIC "${CMAKE_CURRENT_S
 
 target_link_libraries(
   hictk_internal_tools_runner
-  PRIVATE
+  PUBLIC
     hictk::project_options
     hictk::project_warnings
     hictk_internal_tools_balance
@@ -28,7 +28,6 @@ target_link_libraries(
     hictk_internal_tools_telemetry
     hictk_internal_tools_validate
     hictk_internal_tools_zoomify
-  PUBLIC
     hictk_internal_tools_cli
     hictk_internal_tools_config
 )

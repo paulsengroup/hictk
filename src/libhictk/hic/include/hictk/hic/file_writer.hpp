@@ -23,7 +23,6 @@
 #include <queue>
 #include <string>
 
-#include "hictk/balancing/weights.hpp"
 #include "hictk/bin_table.hpp"
 #include "hictk/binary_buffer.hpp"
 #include "hictk/default_delete_libdeflate.hpp"
@@ -37,6 +36,7 @@
 #include "hictk/hic/interaction_to_block_mapper.hpp"
 #include "hictk/hic/serialized_block_pqueue.hpp"
 #include "hictk/tmpdir.hpp"
+#include "hictk/weights.hpp"
 
 namespace hictk::hic::internal {
 
@@ -104,7 +104,7 @@ class HiCFileWriter {
     std::uint64_t nnz{};
   };
 
-  filestream::FileStream<> _fs{};
+  filestream::FileStream _fs{};
   std::filesystem::path _tmpdir{};
 
   using BinTables = phmap::flat_hash_map<std::uint32_t, std::shared_ptr<const BinTable>>;
@@ -179,19 +179,18 @@ class HiCFileWriter {
 
   // Write normalization vectors
   void add_norm_vector(std::string_view type, const Chromosome& chrom, std::string_view unit,
-                       std::uint32_t bin_size, const balancing::Weights& weights,
-                       bool force_overwrite = false,
+                       std::uint32_t bin_size, const Weights& weights, bool force_overwrite = false,
                        std::size_t position = std::numeric_limits<std::size_t>::max(),
                        std::size_t n_bytes = std::numeric_limits<std::size_t>::max());
   void add_norm_vector(std::string_view type, std::string_view unit, std::uint32_t bin_size,
-                       const balancing::Weights& weights, bool force_overwrite = false);
+                       const Weights& weights, bool force_overwrite = false);
 
   void write_norm_vectors_and_norm_expected_values();
 
   void serialize();
 
  private:
-  [[nodiscard]] static HiCHeader read_header(filestream::FileStream<>& fs);
+  [[nodiscard]] static HiCHeader read_header(filestream::FileStream& fs);
   [[nodiscard]] static HiCHeader init_header(std::string_view path, Reference chromosomes,
                                              std::vector<std::uint32_t> resolutions,
                                              std::string_view assembly,
@@ -225,7 +224,7 @@ class HiCFileWriter {
       -> std::pair<HiCSectionOffsets, Stats>;
 
   // Normalization
-  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const balancing::Weights& weights,
+  void add_norm_vector(const NormalizationVectorIndexBlock& blk, const Weights& weights,
                        bool force_overwrite = false);
   void add_norm_vector(const NormalizationVectorIndexBlock& blk, const std::vector<float>& weights,
                        bool force_overwrite = false);
@@ -286,10 +285,7 @@ class HiCFileWriter {
 
 template <>
 struct std::hash<hictk::hic::internal::MatrixBodyMetadataTank::Key> {
-  std::size_t operator()(
-      hictk::hic::internal::MatrixBodyMetadataTank::Key const& k) const noexcept {
-    return hictk::internal::hash_combine(0, k.chrom1, k.chrom2);
-  }
+  std::size_t operator()(hictk::hic::internal::MatrixBodyMetadataTank::Key const& k) const noexcept;
 };
 
 #include "./impl/file_writer_impl.hpp"  // NOLINT

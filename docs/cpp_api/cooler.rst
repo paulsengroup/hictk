@@ -95,25 +95,25 @@ Single-resolution Cooler (.cool)
   **Fetch methods (1D queries)**
 
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(const balancing::Method &normalization = balancing::Method::NONE(), bool load_index = false) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::shared_ptr<const balancing::Weights> weights, bool load_index = false) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::shared_ptr<const Weights> weights, bool load_index = false) const;
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, std::shared_ptr<const balancing::Weights> weights, QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, std::shared_ptr<const balancing::Weights> weights) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, std::shared_ptr<const Weights> weights, QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, std::shared_ptr<const Weights> weights) const;
 
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range, const balancing::Method &normalization = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom_name, std::uint32_t start, std::uint32_t end, const balancing::Method &normalization = balancing::Method::NONE()) const;
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin, std::uint64_t last_bin, std::shared_ptr<const Weights> weights = nullptr) const;
 
   **Fetch methods (2D queries)**
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, std::shared_ptr<const balancing::Weights> weights, QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, std::shared_ptr<const balancing::Weights> weights) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, std::shared_ptr<const Weights> weights, QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, std::shared_ptr<const Weights> weights) const;
 
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view range1, std::string_view range2, const balancing::Method &normalization = balancing::Method::NONE(), QUERY_TYPE query_type = QUERY_TYPE::UCSC) const;
   .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::string_view chrom1_name, std::uint32_t start1, std::uint32_t end1, std::string_view chrom2_name, std::uint32_t start2, std::uint32_t end2, const balancing::Method &normalization = balancing::Method::NONE()) const;
 
-  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, std::shared_ptr<const balancing::Weights> weights = nullptr) const;
+  .. cpp:function:: [[nodiscard]] PixelSelector fetch(std::uint64_t first_bin1, std::uint64_t last_bin1, std::uint64_t first_bin2, std::uint64_t last_bin2, std::shared_ptr<const Weights> weights = nullptr) const;
 
   **Write pixels**
 
@@ -122,16 +122,16 @@ Single-resolution Cooler (.cool)
   **Normalization**
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(std::string_view normalization) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(std::string_view normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(std::string_view normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(std::string_view normalization_, Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(std::string_view normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(std::string_view normalization_, Weights::Type type, bool rescale = false) const;
 
   .. cpp:function:: [[nodiscard]] bool has_normalization(const balancing::Method &normalization) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &normalization_, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] std::shared_ptr<const balancing::Weights> normalization_ptr(const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_, bool rescale = false) const;
-  .. cpp:function:: [[nodiscard]] const balancing::Weights &normalization(const balancing::Method &normalization_, balancing::Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(const balancing::Method &normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] std::shared_ptr<const Weights> normalization_ptr(const balancing::Method &normalization_, Weights::Type type, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(const balancing::Method &normalization_, bool rescale = false) const;
+  .. cpp:function:: [[nodiscard]] const Weights &normalization(const balancing::Method &normalization_, Weights::Type type, bool rescale = false) const;
   .. cpp:function:: [[nodiscard]] std::vector<balancing::Method> avail_normalizations() const;
 
   .. cpp:function:: bool purge_weights(std::string_view name = "");

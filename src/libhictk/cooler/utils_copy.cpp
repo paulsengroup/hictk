@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include <fmt/format.h>
+
+#include "hictk/cooler/utils.hpp"
 
 #if __has_include(<hdf5/hdf5.h>)
 #include <hdf5/H5Opublic.h>
@@ -29,7 +29,7 @@
 
 namespace hictk::cooler::utils {
 
-inline void copy(std::string_view uri1, std::string_view uri2) {
+void copy(std::string_view uri1, std::string_view uri2) {
   const auto uri = parse_cooler_uri(uri2);
   if (std::filesystem::exists(uri2) && is_cooler(uri2)) {
     throw std::runtime_error("destination already contains a Cooler");
@@ -38,7 +38,7 @@ inline void copy(std::string_view uri1, std::string_view uri2) {
   copy(uri1, RootGroup{dest.getGroup(uri.group_path)});
 }
 
-inline void copy(std::string_view uri1, RootGroup dest) {
+void copy(std::string_view uri1, const RootGroup &dest) {
   try {
     if (!is_cooler(uri1)) {
       throw std::runtime_error("input is not a valid Cooler");

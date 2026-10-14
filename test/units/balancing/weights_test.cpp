@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "hictk/balancing/weights.hpp"
+#include "hictk/weights.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
@@ -15,7 +15,7 @@
 
 namespace hictk::test::balancing {
 
-using Weights = hictk::balancing::Weights;
+using Weights = hictk::Weights;
 
 // NOLINTBEGIN(*-avoid-magic-numbers, readability-function-cognitive-complexity)
 TEST_CASE("Weights (vector)", "[balancing][weights][short]") {

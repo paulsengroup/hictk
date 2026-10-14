@@ -150,8 +150,7 @@ inline void Cooler::fetch_df(COODataFrame<N>& buff, std::string_view range1,
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
 
-  const auto divisive_weights =
-      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+  const auto divisive_weights = infer_weight_type(uri(), normalization) == Weights::Type::DIVISIVE;
 
   auto selector =
       normalization == "NONE"
@@ -184,8 +183,7 @@ inline void Cooler::fetch_df(BG2DataFrame<N>& buff, std::string_view range1,
     throw std::runtime_error("Cooler::fetch_df() was called on an un-initialized object");
   }
 
-  const auto divisive_weights =
-      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+  const auto divisive_weights = infer_weight_type(uri(), normalization) == Weights::Type::DIVISIVE;
 
   auto selector =
       normalization == "NONE"
@@ -222,8 +220,7 @@ inline Eigen2DDense<N> Cooler::fetch_dense(std::string_view range1, std::string_
         "fetching balanced interactions requires Eigen2DDense<N> to be of floating-point type");
   }
 
-  const auto divisive_weights =
-      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+  const auto divisive_weights = infer_weight_type(uri(), normalization) == Weights::Type::DIVISIVE;
 
   auto selector =
       normalization == "NONE"
@@ -261,8 +258,7 @@ inline EigenSparse<N> Cooler::fetch_sparse(std::string_view range1, std::string_
         "fetching balanced interactions requires EigenSparse<N> to be of floating-point type");
   }
 
-  const auto divisive_weights =
-      infer_weight_type(uri(), normalization) == balancing::Weights::Type::DIVISIVE;
+  const auto divisive_weights = infer_weight_type(uri(), normalization) == Weights::Type::DIVISIVE;
 
   auto selector =
       normalization == "NONE"
@@ -276,14 +272,14 @@ inline EigenSparse<N> Cooler::fetch_sparse(std::string_view range1, std::string_
   return scipy_coo_to_eigen<N>(selector.attr("fetch")(range1, range2));
 }
 
-inline balancing::Weights::Type Cooler::infer_weight_type(std::string_view uri,
-                                                          std::string_view normalization) {
+inline Weights::Type Cooler::infer_weight_type(std::string_view uri,
+                                               std::string_view normalization) {
   if (normalization == "NONE") {
-    return balancing::Weights::Type::MULTIPLICATIVE;
+    return Weights::Type::MULTIPLICATIVE;
   }
   const auto weights = hictk::cooler::File{uri}.normalization_ptr(normalization);
   if (!weights) {
-    return balancing::Weights::Type::UNKNOWN;
+    return Weights::Type::UNKNOWN;
   }
 
   return weights->type();

@@ -19,6 +19,7 @@ add_subdirectory(pixel)
 add_subdirectory(reference)
 add_subdirectory(transformers)
 add_subdirectory(variant)
+add_subdirectory(weights)
 
 add_library(libhictk INTERFACE)
 add_library(hictk::libhictk ALIAS libhictk)
@@ -27,6 +28,7 @@ target_link_libraries(
   libhictk
   INTERFACE
     hictk::balancing
+    hictk::balancing_methods
     hictk::bin_table
     hictk::binary_buffer
     hictk::chromosome
@@ -52,6 +54,7 @@ target_link_libraries(
     hictk::pixel
     hictk::reference
     hictk::transformers
+    hictk::weights
     hictk::variant
 )
 

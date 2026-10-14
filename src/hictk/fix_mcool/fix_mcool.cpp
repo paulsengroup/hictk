@@ -5,6 +5,7 @@
 #include "hictk/tools/fix_mcool.hpp"
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>

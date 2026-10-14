@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "hictk/balancing/methods.hpp"
+#include "hictk/bin_table.hpp"
 #include "hictk/hic/common.hpp"
 #include "hictk/tmpdir.hpp"
 
@@ -44,5 +45,4 @@ void merge(
 
 }  // namespace hictk::hic::utils
 
-#include "./impl/utils_impl.hpp"        // NOLINT
 #include "./impl/utils_merge_impl.hpp"  // NOLINT

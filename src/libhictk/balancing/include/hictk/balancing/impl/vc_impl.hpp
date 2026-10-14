@@ -6,14 +6,13 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include "hictk/balancing/common.hpp"
 #include "hictk/chromosome.hpp"
+#include "hictk/pixel.hpp"
 #include "hictk/transformers/pixel_merger.hpp"
 
 namespace hictk::balancing {
@@ -81,32 +80,6 @@ inline VC::VC(PixelIt first, PixelIt last, const hictk::BinTable& bins,
   _scale.push_back(std::sqrt(norm_sum / sum));
 }
 
-inline balancing::Weights VC::get_weights(bool rescale) const {
-  if (!rescale) {
-    return {_biases, balancing::Weights::Type::DIVISIVE};
-  }
-
-  std::vector<double> biases(_biases.size());
-  std::uint64_t chrom_id = 0;
-  for (std::size_t i = 0; i < _biases.size(); ++i) {
-    if (i >= _chrom_offsets[chrom_id + 1]) {
-      chrom_id++;
-    }
-    biases[i] = _biases[i] * _scale[chrom_id];
-  }
-
-  std::transform(biases.begin(), biases.end(), biases.begin(), [](const double n) {
-    if (std::isnan(n)) {
-      return 1.0;
-    }
-    return n;
-  });
-
-  return {biases, balancing::Weights::Type::DIVISIVE};
-}
-
-inline const std::vector<double>& VC::get_scale() const noexcept { return _scale; }
-
 template <typename File>
 inline auto VC::compute_cis(const File& f) -> Result {
   std::vector<std::uint64_t> offsets{};
@@ -121,7 +94,7 @@ inline auto VC::compute_cis(const File& f) -> Result {
 
     offsets.push_back(f.bins().subset(chrom).num_bin_prefix_sum().front());
 
-    const auto chrom_weights = vc.get_weights(false)(balancing::Weights::Type::DIVISIVE);
+    const auto chrom_weights = vc.get_weights(false)(Weights::Type::DIVISIVE);
     scales.push_back(vc.get_scale().front());
     weights.insert(weights.end(), chrom_weights.begin(), chrom_weights.end());
   }
@@ -153,7 +126,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 template <typename File>
@@ -163,7 +136,7 @@ inline auto VC::compute_gw(const File& f) -> Result {
 
   return {{0, f.bins().size()},
           vc.get_scale(),
-          vc.get_weights(false).to_vector(balancing::Weights::Type::DIVISIVE)};
+          vc.get_weights(false).to_vector(Weights::Type::DIVISIVE)};
 }
 
 }  // namespace hictk::balancing
