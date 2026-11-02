@@ -204,7 +204,7 @@ TEST_CASE("PixelSelector::iterator", "[file][short]") {
           std::make_tuple("hic gw", hf, hf),
           std::make_tuple("cooler", clr, clr),
           // clang-format on
-      };
+  };
 
   using T = std::int32_t;
 
