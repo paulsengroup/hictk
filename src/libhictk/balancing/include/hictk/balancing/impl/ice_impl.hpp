@@ -252,33 +252,11 @@ template <typename File>
 [[nodiscard]] inline auto ICE::construct_sparse_matrix_trans(const File& f,
                                                              std::size_t num_masked_diags)
     -> internal::SparseMatrixChunked {
-  using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 
-  std::vector<SelectorT> selectors{};
-  for (const Chromosome& chrom1 : f.chromosomes()) {
-    if (chrom1.is_all()) {
-      continue;
-    }
-    for (std::uint32_t chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size();
-         ++chrom2_id) {
-      const auto& chrom2 = f.chromosomes().at(chrom2_id);
-      if (chrom2.is_all()) {
-        continue;
-      }
-
-      selectors.emplace_back(f.fetch(chrom1.name(), chrom2.name()));
-    }
-  }
-
-  std::vector<PixelIt> heads{};
-  std::vector<PixelIt> tails{};
-  for (const auto& sel : selectors) {
-    heads.emplace_back(sel.template begin<double>());
-    tails.emplace_back(sel.template end<double>());
-  }
-
-  const transformers::PixelMerger<PixelIt> merger{std::move(heads), std::move(tails)};
+  auto iterators = init_trans_pixel_iterators(f);
+  const transformers::PixelMerger<PixelIt> merger{std::move(iterators.heads),
+                                                  std::move(iterators.tails)};
 
   internal::SparseMatrixChunked m{};
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -373,33 +351,11 @@ inline auto ICE::construct_sparse_matrix_chunked_trans(const File& f, std::size_
                                                        const std::filesystem::path& tmpfile,
                                                        std::size_t chunk_size)
     -> internal::FileBackedSparseMatrix {
-  using SelectorT = decltype(f.fetch("chr1", "chr2"));
   using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
 
-  std::vector<SelectorT> selectors{};
-  for (const Chromosome& chrom1 : f.chromosomes()) {
-    if (chrom1.is_all()) {
-      continue;
-    }
-    for (std::uint32_t chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size();
-         ++chrom2_id) {
-      const auto& chrom2 = f.chromosomes().at(chrom2_id);
-      if (chrom2.is_all()) {
-        continue;
-      }
-
-      selectors.emplace_back(f.fetch(chrom1.name(), chrom2.name()));
-    }
-  }
-
-  std::vector<PixelIt> heads{};
-  std::vector<PixelIt> tails{};
-  for (const auto& sel : selectors) {
-    heads.emplace_back(sel.template begin<double>());
-    tails.emplace_back(sel.template end<double>());
-  }
-
-  const transformers::PixelMerger<PixelIt> merger{heads, tails};
+  auto iterators = init_trans_pixel_iterators(f);
+  const transformers::PixelMerger<PixelIt> merger{std::move(iterators.heads),
+                                                  std::move(iterators.tails)};
 
   internal::FileBackedSparseMatrix m(tmpfile, chunk_size);
   std::for_each(merger.begin(), merger.end(), [&](const ThinPixel<double>& p) {
@@ -703,6 +659,54 @@ template <typename Vector>
 inline bool ICE::process_in_parallel(const Vector& marg,
                                      const BS::light_thread_pool* tpool) noexcept {
   return marg.size() > 10'000 && !!tpool;  // NOLINT(*-avoid-magic-numbers)
+}
+
+template <typename File>
+inline auto ICE::init_trans_pixel_iterators(const File& f) {
+  using PixelIt = decltype(f.fetch("chr1", "chr2").template begin<double>());
+
+  struct Result {
+    std::vector<PixelIt> heads{};
+    std::vector<PixelIt> tails{};
+  };
+
+  Result res{};
+
+  [[maybe_unused]] std::size_t num_skipped_matrices{0};
+  for (const Chromosome& chrom1 : f.chromosomes()) {
+    if (chrom1.is_all()) {
+      continue;
+    }
+    for (std::uint32_t chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size();
+         ++chrom2_id) {
+      const auto& chrom2 = f.chromosomes().at(chrom2_id);
+      if (chrom2.is_all()) {
+        continue;
+      }
+
+      auto sel = f.fetch(chrom1.name(), chrom2.name());
+      auto it1 = sel.template begin<double>();
+      auto it2 = sel.template end<double>();
+
+      if (it1 != it2) {
+        SPDLOG_INFO(FMT_STRING("[{}:{}]: adding to the list of submatrices to be balanced..."),
+                    chrom1.name(), chrom2.name());
+        res.heads.emplace_back(std::move(it1));
+        res.tails.emplace_back(std::move(it2));
+      } else {
+        SPDLOG_DEBUG(FMT_STRING("[{}:{}]: skipping because the sub-matrix has no interactions!"),
+                     chrom1.name(), chrom2.name());
+        ++num_skipped_matrices;
+      }
+    }
+  }
+
+  if (num_skipped_matrices != 0) {
+    SPDLOG_WARN(FMT_STRING("skipped {} chrom-chrom matrices as they had 0 interactions"),
+                num_skipped_matrices);
+  }
+
+  return res;
 }
 
 }  // namespace hictk::balancing

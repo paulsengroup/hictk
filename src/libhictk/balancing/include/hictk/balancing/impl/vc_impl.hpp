@@ -136,6 +136,7 @@ inline auto VC::compute_trans(const File& f) -> Result {
   using PixelIt = decltype(f.fetch("chr1").template begin<double>());
   std::vector<PixelIt> heads{};
   std::vector<PixelIt> tails{};
+  [[maybe_unused]] std::size_t num_skipped_matrices{0};
   for (const Chromosome& chrom1 : f.chromosomes()) {
     if (chrom1.is_all()) {
       continue;
@@ -143,13 +144,29 @@ inline auto VC::compute_trans(const File& f) -> Result {
     for (auto chrom2_id = chrom1.id() + 1; chrom2_id < f.chromosomes().size(); ++chrom2_id) {
       const auto& chrom2 = f.chromosomes().at(chrom2_id);
       const auto sel = f.fetch(chrom1.name(), chrom2.name());
-      heads.emplace_back(sel.template begin<double>());
-      tails.emplace_back(sel.template end<double>());
+
+      auto it1 = sel.template begin<double>();
+      auto it2 = sel.template end<double>();
+      if (it1 != it2) {
+        SPDLOG_INFO(FMT_STRING("[{}:{}]: adding to the list of submatrices to be balanced..."),
+                    chrom1.name(), chrom2.name());
+        heads.emplace_back(std::move(it1));
+        tails.emplace_back(std::move(it2));
+      } else {
+        SPDLOG_DEBUG(FMT_STRING("[{}:{}]: skipping because the sub-matrix has no interactions!"),
+                     chrom1.name(), chrom2.name());
+        ++num_skipped_matrices;
+      }
     }
   }
 
-  const auto sel = transformers::PixelMerger(std::move(heads), std::move(tails));
-  const VC vc{sel.begin(), sel.end(), f.bins()};
+  if (num_skipped_matrices != 0) {
+    SPDLOG_WARN(FMT_STRING("skipped {} chrom-chrom matrices as they had 0 interactions"),
+                num_skipped_matrices);
+  }
+
+  const transformers::PixelMerger merger{std::move(heads), std::move(tails)};
+  const VC vc{merger.begin(), merger.end(), f.bins()};
 
   return {{0, f.bins().size()},
           vc.get_scale(),

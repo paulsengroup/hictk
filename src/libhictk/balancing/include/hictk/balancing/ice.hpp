@@ -167,6 +167,9 @@ class ICE {
   template <typename Vector>
   [[nodiscard]] static bool process_in_parallel(const Vector& marg,
                                                 const BS::light_thread_pool* tpool) noexcept;
+
+  template <typename File>
+  [[nodiscard]] static auto init_trans_pixel_iterators(const File& f);
 };
 
 }  // namespace hictk::balancing
